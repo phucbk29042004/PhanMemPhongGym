@@ -1,0 +1,127 @@
+[
+    {
+        "code": "760",
+        "name": "Quận 1",
+        "province_code": "79"
+    },
+    {
+        "code": "770",
+        "name": "Quận 3",
+        "province_code": "79"
+    },
+    {
+        "code": "773",
+        "name": "Quận 4",
+        "province_code": "79"
+    },
+    {
+        "code": "774",
+        "name": "Quận 5",
+        "province_code": "79"
+    },
+    {
+        "code": "775",
+        "name": "Quận 6",
+        "province_code": "79"
+    },
+    {
+        "code": "778",
+        "name": "Quận 7",
+        "province_code": "79"
+    },
+    {
+        "code": "776",
+        "name": "Quận 8",
+        "province_code": "79"
+    },
+    {
+        "code": "771",
+        "name": "Quận 10",
+        "province_code": "79"
+    },
+    {
+        "code": "772",
+        "name": "Quận 11",
+        "province_code": "79"
+    },
+    {
+        "code": "761",
+        "name": "Quận 12",
+        "province_code": "79"
+    },
+    {
+        "code": "764",
+        "name": "Quận Gò Vấp",
+        "province_code": "79"
+    },
+    {
+        "code": "765",
+        "name": "Quận Bình Thạnh",
+        "province_code": "79"
+    },
+    {
+        "code": "766",
+        "name": "Quận Tân Bình",
+        "province_code": "79"
+    },
+    {
+        "code": "767",
+        "name": "Quận Tân Phú",
+        "province_code": "79"
+    },
+    {
+        "code": "768",
+        "name": "Quận Phú Nhuận",
+        "province_code": "79"
+    },
+    {
+        "code": "777",
+        "name": "Quận Bình Tân",
+        "province_code": "79"
+    },
+    {
+        "code": "769",
+        "name": "Thành phố Thủ Đức",
+        "province_code": "79"
+    },
+    {
+        "code": "783",
+        "name": "Huyện Củ Chi",
+        "province_code": "79"
+    },
+    {
+        "code": "784",
+        "name": "Huyện Hóc Môn",
+        "province_code": "79"
+    },
+    {
+        "code": "785",
+        "name": "Huyện Bình Chánh",
+        "province_code": "79"
+    },
+    {
+        "code": "786",
+        "name": "Huyện Nhà Bè",
+        "province_code": "79"
+    },
+    {
+        "code": "787",
+        "name": "Huyện Cần Giờ",
+        "province_code": "79"
+    },
+    {
+        "code": "001",
+        "name": "Quận Ba Đình",
+        "province_code": "01"
+    },
+    {
+        "code": "002",
+        "name": "Quận Hoàn Kiếm",
+        "province_code": "01"
+    },
+    {
+        "code": "005",
+        "name": "Quận Cầu Giấy",
+        "province_code": "01"
+    }
+]

@@ -28,6 +28,8 @@ export const getMembers = (req, res) => {
     SELECT
       h.id, h.ma_ho_so, h.ho_ten, h.gioi_tinh, h.ngay_sinh,
       h.so_dien_thoai, h.email, h.avatar_url, h.ghi_chu, h.ngay_tao,
+      h.chi_nhanh, h.phong_tap, h.noi_sinh, h.cccd, h.que_quan,
+      h.tinh_thanh, h.quan_huyen, h.phuong_xa, h.loai_hv,
       -- Tính trạng thái màu sắc (tương tự view v_trang_thai_hoi_vien)
       CASE
         WHEN NOT EXISTS (SELECT 1 FROM dang_ky_goi_tap dk WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong')
@@ -104,8 +106,14 @@ export const getMemberById = (req, res) => {
 
 // ── POST /api/members ─────────────────────────────────────
 export const createMember = async (req, res) => {
-  const { ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email, dia_chi_tam_tru, ghi_chu } = req.body;
+  const {
+    ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email, dia_chi_tam_tru, ghi_chu,
+    loai_ho_so, chi_nhanh, phong_tap, noi_sinh, cccd, que_quan,
+    tinh_thanh, quan_huyen, phuong_xa, chuyen_mon, chuc_vu, loai_hv
+  } = req.body;
+
   if (!ho_ten) return error(res, 'Họ tên là bắt buộc.', 400);
+  const loai = loai_ho_so || 'hoi_vien'; // Mặc định là hội viên
 
   let avatar_url = null;
   let cloudinary_public_id = null;
@@ -121,35 +129,53 @@ export const createMember = async (req, res) => {
     }
   }
 
-  // Tạo mã hồ sơ tự động: HV001, HV002, ...
-  const lastMaHoSo = db.prepare(`
-    SELECT ma_ho_so FROM ho_so WHERE loai_ho_so = 'hoi_vien' ORDER BY id DESC LIMIT 1
-  `).get();
-  const nextNum = lastMaHoSo
-    ? String(parseInt(lastMaHoSo.ma_ho_so.replace('HV', '')) + 1).padStart(3, '0')
-    : '001';
-  const ma_ho_so = `HV${nextNum}`;
+  // Tạo mã hồ sơ tự động theo loại: HV, PT, NV
+  const prefixes = { 'hoi_vien': 'HV', 'pt': 'PT', 'nhan_vien': 'NV', 'le_tan': 'LT' };
+  const prefix = prefixes[loai] || 'HS';
+
+  const lastHoSo = db.prepare(`
+    SELECT ma_ho_so FROM ho_so WHERE loai_ho_so = ? ORDER BY id DESC LIMIT 1
+  `).get(loai);
+
+  let nextNum = '001';
+  if (lastHoSo && lastHoSo.ma_ho_so) {
+    const match = lastHoSo.ma_ho_so.match(/\d+/);
+    if (match) nextNum = String(parseInt(match[0]) + 1).padStart(3, '0');
+  }
+  const ma_ho_so = `${prefix}${nextNum}`;
 
   const result = db.prepare(`
-    INSERT INTO ho_so (ma_ho_so, loai_ho_so, ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email,
-                       dia_chi_tam_tru, avatar_url, cloudinary_public_id, ghi_chu, nguoi_tao_id)
-    VALUES (?, 'hoi_vien', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(ma_ho_so, ho_ten, gioi_tinh || null, ngay_sinh || null, so_dien_thoai || null,
-         email || null, dia_chi_tam_tru || null, avatar_url, cloudinary_public_id, ghi_chu || null, req.user.id);
+    INSERT INTO ho_so (
+      ma_ho_so, loai_ho_so, ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email,
+      dia_chi_tam_tru, avatar_url, cloudinary_public_id, ghi_chu, nguoi_tao_id,
+      chi_nhanh, phong_tap, noi_sinh, cccd, que_quan, tinh_thanh, quan_huyen, phuong_xa,
+      chuyen_mon, chuc_vu, loai_hv
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    ma_ho_so, loai, ho_ten, gioi_tinh || null, ngay_sinh || null, so_dien_thoai || null, email || null,
+    dia_chi_tam_tru || null, avatar_url, cloudinary_public_id, ghi_chu || null, req.user.id,
+    chi_nhanh || null, phong_tap || null, noi_sinh || null, cccd || null, que_quan || null,
+    tinh_thanh || null, quan_huyen || null, phuong_xa || null, chuyen_mon || null, chuc_vu || null, loai_hv || null
+  );
 
   const newMember = db.prepare('SELECT * FROM ho_so WHERE id = ?').get(result.lastInsertRowid);
-  ghi_audit_log(req, 'CREATE', 'ho_so', result.lastInsertRowid, null, { ho_ten, loai_ho_so: 'hoi_vien' }, 'Thêm hội viên mới');
+  ghi_audit_log(req, 'CREATE', 'ho_so', result.lastInsertRowid, null, { ho_ten, loai_ho_so: loai }, `Thêm hồ sơ ${loai} mới`);
 
-  return success(res, newMember, 'Thêm hội viên thành công', 201);
+  return success(res, newMember, 'Thêm hồ sơ thành công', 201);
 };
 
 // ── PUT /api/members/:id ──────────────────────────────────
 export const updateMember = (req, res) => {
   const { id } = req.params;
   const old = db.prepare('SELECT * FROM ho_so WHERE id = ? AND is_deleted = 0').get(id);
-  if (!old) return error(res, 'Không tìm thấy hội viên.', 404);
+  if (!old) return error(res, 'Không tìm thấy hồ sơ.', 404);
 
-  const { ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email, dia_chi_tam_tru, ghi_chu } = req.body;
+  const {
+    ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email, dia_chi_tam_tru, ghi_chu,
+    chi_nhanh, phong_tap, noi_sinh, cccd, que_quan, tinh_thanh, quan_huyen, phuong_xa,
+    chuyen_mon, chuc_vu, loai_hv
+  } = req.body;
 
   db.prepare(`
     UPDATE ho_so SET
@@ -160,13 +186,27 @@ export const updateMember = (req, res) => {
       email = COALESCE(?, email),
       dia_chi_tam_tru = COALESCE(?, dia_chi_tam_tru),
       ghi_chu = COALESCE(?, ghi_chu),
+      chi_nhanh = COALESCE(?, chi_nhanh),
+      phong_tap = COALESCE(?, phong_tap),
+      noi_sinh = COALESCE(?, noi_sinh),
+      cccd = COALESCE(?, cccd),
+      que_quan = COALESCE(?, que_quan),
+      tinh_thanh = COALESCE(?, tinh_thanh),
+      quan_huyen = COALESCE(?, quan_huyen),
+      phuong_xa = COALESCE(?, phuong_xa),
+      chuyen_mon = COALESCE(?, chuyen_mon),
+      chuc_vu = COALESCE(?, chuc_vu),
+      loai_hv = COALESCE(?, loai_hv),
       nguoi_cap_nhat_id = ?
     WHERE id = ?
-  `).run(ho_ten || null, gioi_tinh || null, ngay_sinh || null, so_dien_thoai || null,
-         email || null, dia_chi_tam_tru || null, ghi_chu || null, req.user.id, id);
+  `).run(
+    ho_ten || null, gioi_tinh || null, ngay_sinh || null, so_dien_thoai || null, email || null, dia_chi_tam_tru || null, ghi_chu || null,
+    chi_nhanh || null, phong_tap || null, noi_sinh || null, cccd || null, que_quan || null, tinh_thanh || null, quan_huyen || null, phuong_xa || null,
+    chuyen_mon || null, chuc_vu || null, loai_hv || null, req.user.id, id
+  );
 
   const updated = db.prepare('SELECT * FROM ho_so WHERE id = ?').get(id);
-  ghi_audit_log(req, 'UPDATE', 'ho_so', parseInt(id), old, updated, 'Cập nhật thông tin hội viên');
+  ghi_audit_log(req, 'UPDATE', 'ho_so', parseInt(id), old, updated, 'Cập nhật thông tin hồ sơ');
 
   return success(res, updated, 'Cập nhật thành công');
 };

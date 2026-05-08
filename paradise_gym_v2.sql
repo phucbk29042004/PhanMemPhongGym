@@ -75,6 +75,17 @@ CREATE TABLE IF NOT EXISTS ho_so (
     avatar_url           TEXT,   -- URL công khai từ Cloudinary
     cloudinary_public_id TEXT,   -- Dùng để xóa ảnh cũ trên Cloudinary khi đổi ảnh
     ghi_chu         TEXT,
+    -- Thông tin bổ sung (Mới cập nhật)
+    chi_nhanh       TEXT,
+    phong_tap       TEXT,
+    noi_sinh        TEXT,
+    que_quan        TEXT,
+    tinh_thanh      TEXT,
+    quan_huyen      TEXT,
+    phuong_xa       TEXT,
+    chuyen_mon      TEXT, -- Dành cho PT
+    chuc_vu         TEXT, -- Dành cho Nhân viên
+    loai_hv         TEXT, -- Dành cho Hội viên (VIP, Thường...)
     -- Soft Delete — KHÔNG bao giờ xóa thật hồ sơ
     is_deleted      INTEGER NOT NULL DEFAULT 0 CHECK (is_deleted IN (0,1)),
     ngay_xoa        DATETIME,
