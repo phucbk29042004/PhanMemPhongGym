@@ -8,13 +8,15 @@ import cors from 'cors';
 import morgan from 'morgan';
 
 // Import routes
-import authRoutes         from './routes/auth.routes.js';
-import membersRoutes      from './routes/members.routes.js';
-import packagesRoutes     from './routes/packages.routes.js';
-import trainersRoutes     from './routes/trainers.routes.js';
-import checkinsRoutes     from './routes/checkins.routes.js';
-import ptSchedulesRoutes  from './routes/pt-schedules.routes.js';
-import revenueRoutes      from './routes/revenue.routes.js';
+import authRoutes              from './routes/auth.routes.js';
+import membersRoutes           from './routes/members.routes.js';
+import packagesRoutes          from './routes/packages.routes.js';
+import trainersRoutes          from './routes/trainers.routes.js';
+import checkinsRoutes          from './routes/checkins.routes.js';
+import ptSchedulesRoutes       from './routes/pt-schedules.routes.js';
+import ptRegistrationsRoutes   from './routes/pt-registrations.routes.js';
+import staffRoutes             from './routes/staff.routes.js';
+import revenueRoutes           from './routes/revenue.routes.js';
 
 // Import error handlers
 import { notFound, globalError } from './middlewares/error-handler.js';
@@ -33,13 +35,15 @@ app.use(express.urlencoded({ extended: true }));
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 // ── Routes ─────────────────────────────────────────────────
-app.use('/api/auth',         authRoutes);
-app.use('/api/members',      membersRoutes);
-app.use('/api/packages',     packagesRoutes);
-app.use('/api/trainers',     trainersRoutes);
-app.use('/api/checkins',     checkinsRoutes);
-app.use('/api/pt/schedules', ptSchedulesRoutes);
-app.use('/api/revenue',      revenueRoutes);
+app.use('/api/auth',              authRoutes);
+app.use('/api/members',           membersRoutes);
+app.use('/api/packages',          packagesRoutes);
+app.use('/api/trainers',          trainersRoutes);
+app.use('/api/checkins',          checkinsRoutes);
+app.use('/api/pt/schedules',      ptSchedulesRoutes);
+app.use('/api/pt/registrations',  ptRegistrationsRoutes);
+app.use('/api/staff',             staffRoutes);
+app.use('/api/revenue',           revenueRoutes);
 
 // ── Health check ───────────────────────────────────────────
 app.get('/api/health', (req, res) => {

@@ -84,7 +84,7 @@ export const getMemberById = (req, res) => {
        WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong') AS goi_tap_hien_tai,
       -- PT đang đăng ký
       (SELECT json_group_array(json_object(
-        'pt_id', dp.pt_id, 'ten_pt', pt.ho_ten, 'avatar_pt', pt.avatar_url,
+        'id', dp.id, 'pt_id', dp.pt_id, 'ten_pt', pt.ho_ten, 'avatar_pt', pt.avatar_url,
         'buoi_dang_ky', dp.so_buoi_dang_ky, 'buoi_da_tap', dp.so_buoi_da_tap,
         'trang_thai', dp.trang_thai
       )) FROM dang_ky_pt dp JOIN ho_so pt ON pt.id = dp.pt_id
@@ -293,6 +293,87 @@ export const getMemberHistory = (req, res) => {
     ORDER BY dk.ngay_tao DESC
   `).all(id);
   return success(res, rows);
+};
+
+// ── GET /api/members/birthday ────────────────────────────
+// Sinh nhật hội viên trong khoảng thời gian
+export const getBirthday = (req, res) => {
+  const { period = 'week' } = req.query;
+
+  let condition;
+  if (period === 'today') {
+    condition = `strftime('%m-%d', h.ngay_sinh) = strftime('%m-%d', 'now', 'localtime')`;
+  } else if (period === 'month') {
+    condition = `strftime('%m', h.ngay_sinh) = strftime('%m', 'now', 'localtime')`;
+  } else {
+    // week: 7 ngày tới (so sánh MM-DD)
+    condition = `strftime('%m-%d', h.ngay_sinh) BETWEEN
+      strftime('%m-%d', 'now', 'localtime') AND
+      strftime('%m-%d', 'now', 'localtime', '+7 days')`;
+  }
+
+  const rows = db.prepare(`
+    SELECT h.id, h.ma_ho_so, h.ho_ten, h.ngay_sinh, h.so_dien_thoai, h.email, h.avatar_url,
+           strftime('%d/%m', h.ngay_sinh) AS ngay_sinh_display
+    FROM ho_so h
+    WHERE h.loai_ho_so = 'hoi_vien'
+      AND h.is_deleted = 0
+      AND h.ngay_sinh IS NOT NULL
+      AND ${condition}
+    ORDER BY strftime('%m-%d', h.ngay_sinh) ASC
+  `).all();
+
+  return success(res, rows);
+};
+
+// ── GET /api/me/profile ───────────────────────────────────
+// Hội viên / PT tự xem hồ sơ và lịch của mình
+export const getMyProfile = (req, res) => {
+  const hoSo = db.prepare(`
+    SELECT h.*, tk.ten_dang_nhap
+    FROM ho_so h
+    JOIN tai_khoan tk ON tk.id = h.tai_khoan_id
+    WHERE tk.id = ? AND h.is_deleted = 0
+  `).get(req.user.id);
+
+  if (!hoSo) return error(res, 'Không tìm thấy hồ sơ.', 404);
+  delete hoSo.mat_khau_hash;
+
+  // Nếu là hội viên: gắn gói tập và đăng ký PT đang hoạt động
+  if (hoSo.loai_ho_so === 'hoi_vien') {
+    hoSo.goi_tap = db.prepare(`
+      SELECT dk.id, dk.tu_ngay, dk.den_ngay, dk.gia_thuc_te, dk.trang_thai,
+             gt.ten_goi, gt.so_thang
+      FROM dang_ky_goi_tap dk
+      JOIN goi_tap gt ON gt.id = dk.goi_tap_id
+      WHERE dk.ho_so_id = ? AND dk.trang_thai = 'dang_hoat_dong'
+      ORDER BY dk.den_ngay DESC
+    `).all(hoSo.id);
+
+    hoSo.dang_ky_pt = db.prepare(`
+      SELECT dp.id, dp.so_buoi_dang_ky, dp.so_buoi_da_tap, dp.tu_ngay, dp.den_ngay,
+             dp.trang_thai, pt.ho_ten AS ten_pt, pt.avatar_url AS avatar_pt, pt.chuyen_mon
+      FROM dang_ky_pt dp
+      JOIN ho_so pt ON pt.id = dp.pt_id
+      WHERE dp.hoi_vien_id = ? AND dp.trang_thai = 'dang_hoat_dong'
+    `).all(hoSo.id);
+  }
+
+  // Nếu là PT: gắn lịch dạy sắp tới
+  if (hoSo.loai_ho_so === 'pt') {
+    hoSo.lich_day_sap_toi = db.prepare(`
+      SELECT lt.id, lt.ngay_tap, lt.gio_bat_dau, lt.gio_ket_thuc,
+             lt.trang_thai, hv.ho_ten AS ten_hoi_vien
+      FROM lich_tap lt
+      JOIN ho_so hv ON hv.id = lt.hoi_vien_id
+      WHERE lt.pt_id = ? AND lt.trang_thai = 'cho_tap'
+        AND lt.ngay_tap >= date('now', 'localtime')
+      ORDER BY lt.ngay_tap ASC, lt.gio_bat_dau ASC
+      LIMIT 10
+    `).all(hoSo.id);
+  }
+
+  return success(res, hoSo);
 };
 
 // ── POST /api/members/:id/package ────────────────────────

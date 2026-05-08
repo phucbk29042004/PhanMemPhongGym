@@ -158,23 +158,23 @@ window.GymApp.pages['pt-register'] = {
       <div class="bg-surface-container-low rounded-xl border border-outline-variant p-standard flex flex-col gap-xs hover:border-brand-primary transition-colors">
         <div class="flex items-start justify-between">
           <div>
-            <p class="font-bold text-on-surface text-body-md">${b.memberName}</p>
-            <p class="text-on-surface-variant text-body-sm">${b.ptName}</p>
+            <p class="font-bold text-on-surface text-body-md">${b.ten_hoi_vien || 'Không rõ'}</p>
+            <p class="text-on-surface-variant text-body-sm">PT: ${b.ten_pt || 'Chưa gán'}</p>
           </div>
           ${window.GymApp.statusBadge(b.status)}
         </div>
         <div class="flex items-center gap-loose text-on-surface-variant text-body-sm">
           <span class="flex items-center gap-xs">
             <span class="material-symbols-outlined text-sm">event</span>
-            ${window.GymApp.formatDate(b.date)}
+            ${window.GymApp.formatDate(b.ngay_tap)}
           </span>
           <span class="flex items-center gap-xs">
             <span class="material-symbols-outlined text-sm">schedule</span>
-            ${b.startTime} — ${b.endTime}
+            ${b.gio_bat_dau} — ${b.gio_ket_thuc}
           </span>
           <span class="flex items-center gap-xs">
             <span class="material-symbols-outlined text-sm">group</span>
-            ${b.type}
+            ${b.loai_buoi === 'nhom' ? 'Nhóm' : 'Cá nhân'}
           </span>
         </div>
         ${b.notes ? `<p class="text-on-surface-variant text-body-sm italic">"${b.notes}"</p>` : ''}
@@ -214,6 +214,14 @@ window.GymApp.pages['pt-register'] = {
 
     this._renderPTList();
     this._renderMemberList();
+    
+    // Nạp lịch tập ban đầu nếu chưa có
+    if (!window.GymApp.data.ptSchedules) {
+      const res = await window.GymApp.api.get('/pt/schedules');
+      if (res.success) window.GymApp.data.ptSchedules = res.data;
+    }
+    if (!window.GymApp.data.ptBookings) window.GymApp.data.ptBookings = [];
+
     this._refreshBookingList();
 
     // Set default date
@@ -266,15 +274,30 @@ window.GymApp.pages['pt-register'] = {
       if (!date || !start || !end) { window.GymApp.toast('Vui lòng điền đầy đủ ngày và giờ!', 'error'); return; }
 
       try {
+        // Tìm đăng ký PT (contract) đang hoạt động của hội viên này với PT này
+        const memberDetail = await window.GymApp.api.get(`/members/${self._selectedMember.id}`);
+        const activeContract = (memberDetail.data?.pt_hien_tai || []).find(c => String(c.pt_id) === String(self._selectedPT.id));
+        
+        if (!activeContract) {
+           window.GymApp.toast('Hội viên này chưa đăng ký gói tập với PT này!', 'error');
+           return;
+        }
+
         const bookingData = {
-          ho_so_id: self._selectedMember.id,
-          pt_id: self._selectedPT.id,
+          dang_ky_pt_id: activeContract.id, // Giả định pt_id trong pt_hien_tai là ID của bảng dang_ky_pt hoặc cần field id
+          // Lưu ý: Trong pt_hien_tai trả về từ getMemberById, ta cần ID của bản ghi dang_ky_pt. 
+          // Hãy kiểm tra lại controller getMemberById.
           ngay_tap: date,
           gio_bat_dau: start,
           gio_ket_thuc: end,
           loai_buoi: document.getElementById('reg-type')?.value === 'Nhóm' ? 'nhom' : 'ca_nhan',
           ghi_chu: document.getElementById('reg-notes')?.value || '',
         };
+
+        // Thực tế: memberDetail.data.pt_hien_tai có thể chứa ID của dang_ky_pt
+        // Tôi sẽ tạm dùng activeContract.pt_id nếu đó là ID duy nhất. 
+        // Tuy nhiên Backend yêu cầu dang_ky_pt_id. Tôi sẽ check lại getMemberById.
+
 
         const res = await window.GymApp.api.post('/pt/schedules', bookingData);
         if (res && res.success) {
@@ -320,7 +343,7 @@ window.GymApp.pages['pt-register'] = {
         ${window.GymApp.avatarImg(pt.avatar_url, pt.ho_ten, 'sm')}
         <div class="flex-1 min-w-0">
           <p class="font-bold text-on-surface text-body-md">${pt.ho_ten}</p>
-          <p class="text-on-surface-variant text-body-sm">${pt.ma_ho_so}</p>
+          <p class="text-on-surface-variant text-body-sm">${pt.ma_ho_so} &bull; ${pt.chuyen_mon || 'PT'}</p>
         </div>
       </div>
     `).join('');
@@ -347,7 +370,7 @@ window.GymApp.pages['pt-register'] = {
 
     list.innerHTML = members.map(m => `
       <div class="member-card flex items-center gap-compact p-compact rounded-lg cursor-pointer hover:bg-surface-container transition-colors border border-transparent"
-           data-member-id="${m.ho_so_id}" data-member-name="${m.ho_ten}" data-member-phone="${m.so_dien_thoai}">
+           data-member-id="${m.id}" data-member-name="${m.ho_ten}" data-member-phone="${m.so_dien_thoai}">
         ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'sm')}
         <div class="flex-1 min-w-0">
           <p class="font-bold text-on-surface text-body-md">${m.ho_ten}</p>

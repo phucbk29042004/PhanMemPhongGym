@@ -274,6 +274,10 @@ window.GymApp.pages['member-add'] = {
     // 4. Lưu hồ sơ
     document.getElementById('btn-save-member')?.addEventListener('click', async () => {
       const btn = document.getElementById('btn-save-member');
+      const tinhThanh = document.getElementById('reg-tinh-thanh');
+      const quanHuyen = document.getElementById('reg-quan-huyen');
+      const phuongXa = document.getElementById('reg-phuong-xa');
+
       const data = {
         ho_ten: document.getElementById('reg-ho-ten').value,
         loai_ho_so: typeSelect.value,
@@ -285,9 +289,9 @@ window.GymApp.pages['member-add'] = {
         noi_sinh: document.getElementById('reg-noi-sinh').value,
         que_quan: document.getElementById('reg-que-quan').value,
         chi_nhanh: document.getElementById('reg-chi-nhanh').value,
-        tinh_thanh: document.getElementById('reg-tinh-thanh').options[document.getElementById('reg-tinh-thanh').selectedIndex]?.text,
-        quan_huyen: document.getElementById('reg-quan-huyen').options[document.getElementById('reg-quan-huyen').selectedIndex]?.text,
-        phuong_xa: document.getElementById('reg-phuong-xa').options[document.getElementById('reg-phuong-xa').selectedIndex]?.text,
+        tinh_thanh: tinhThanh.selectedIndex > 0 ? tinhThanh.options[tinhThanh.selectedIndex].text : '',
+        quan_huyen: quanHuyen.selectedIndex > 0 ? quanHuyen.options[quanHuyen.selectedIndex].text : '',
+        phuong_xa: phuongXa.selectedIndex > 0 ? phuongXa.options[phuongXa.selectedIndex].text : '',
         dia_chi_tam_tru: document.getElementById('reg-dia-chi').value,
         chuyen_mon: document.getElementById('reg-chuyen-mon')?.value,
         chuc_vu: document.getElementById('reg-chuc-vu')?.value,
@@ -310,6 +314,16 @@ window.GymApp.pages['member-add'] = {
         } else { window.GymApp.toast(res.message, 'error'); }
       } catch(e) { window.GymApp.toast('Lỗi kết nối máy chủ', 'error'); }
       finally { btn.disabled = false; btn.innerHTML = '<span class="material-symbols-outlined text-sm">save</span> Lưu hồ sơ'; }
+    });
+
+    // 5. Lưu đăng ký gói tập
+    document.getElementById('btn-save-package')?.addEventListener('click', async () => {
+      const pkgId = document.getElementById('pkg-select').value;
+      if (!pkgId) return window.GymApp.toast('Vui lòng chọn gói tập!', 'error');
+      
+      // Ở trang member-add, ta chưa có ho_so_id cho đến khi lưu hồ sơ xong.
+      // Do đó thường quy trình là: Lưu hồ sơ -> Có ID -> Lưu Gói tập.
+      window.GymApp.toast('Vui lòng "Lưu hồ sơ" trước khi lưu gói tập!', 'info');
     });
   },
 

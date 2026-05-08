@@ -8,6 +8,7 @@ import {
   getMembers, getMemberById, createMember, updateMember,
   deleteMember, updateAvatar, getExpiringMembers,
   getExpiredMembers, getMemberHistory, registerPackage,
+  getBirthday, getMyProfile,
 } from '../controllers/members.controller.js';
 import { verifyToken } from '../middlewares/auth.js';
 import { requireRole } from '../middlewares/role.js';
@@ -17,9 +18,11 @@ const router = Router();
 // Tất cả routes bên dưới yêu cầu đăng nhập
 router.use(verifyToken);
 
-// Danh sách hội viên sắp hết hạn & đã hết hạn (đặt trước /:id để không bị conflict)
+// Các route static phải đặt TRƯỚC /:id để không bị conflict
 router.get('/expiring', requireRole('admin', 'le_tan'), getExpiringMembers);
 router.get('/expired',  requireRole('admin', 'le_tan'), getExpiredMembers);
+router.get('/birthday', requireRole('admin', 'le_tan'), getBirthday);
+router.get('/me/profile', verifyToken, getMyProfile);
 
 // CRUD cơ bản
 router.get('/',    requireRole('admin', 'le_tan'), getMembers);

@@ -225,9 +225,29 @@ window.GymApp.pages['members-list'] = {
   },
 
   // ===== MODAL CHI TIẾT HỘI VIÊN (3 TAB) =====
-  _showMemberModal: function (id) {
+  _showMemberModal: async function (id) {
     const self = this;
-    const m = (window.GymApp.data.members || []).find(x => (x.id || x.ho_so_id) == id);
+    let m = null;
+    let pkgHistory = [];
+    let memberSchedules = [];
+
+    const _fetchModalData = async () => {
+      const [memberRes, historyRes, schedRes] = await Promise.all([
+        window.GymApp.api.get(`/members/${id}`),
+        window.GymApp.api.get(`/members/${id}/history`),
+        window.GymApp.api.get(`/pt/schedules?hoi_vien_id=${id}`),
+      ]);
+      m = memberRes.data;
+      pkgHistory = Array.isArray(historyRes.data) ? historyRes.data : [];
+      memberSchedules = Array.isArray(schedRes.data) ? schedRes.data : [];
+    };
+
+    try {
+      await _fetchModalData();
+    } catch (err) {
+      console.error('Failed to fetch member details:', err);
+      m = (window.GymApp.data.members || []).find(x => (x.id || x.ho_so_id) == id);
+    }
     if (!m) return;
     document.getElementById('gym-member-modal')?.remove();
 
@@ -267,6 +287,20 @@ window.GymApp.pages['members-list'] = {
 
     document.body.appendChild(overlay);
 
+    const refreshAndSetTab = async (t) => {
+      try {
+        const [memberRes, historyRes, schedRes] = await Promise.all([
+          window.GymApp.api.get(`/members/${id}`),
+          window.GymApp.api.get(`/members/${id}/history`),
+          window.GymApp.api.get(`/pt/schedules?hoi_vien_id=${id}`),
+        ]);
+        m = memberRes.data;
+        pkgHistory = Array.isArray(historyRes.data) ? historyRes.data : [];
+        memberSchedules = Array.isArray(schedRes.data) ? schedRes.data : [];
+      } catch (_) {}
+      setTab(t);
+    };
+
     const setTab = (t) => {
       overlay.querySelectorAll('.member-detail-tab').forEach(btn => {
         const active = btn.dataset.mtab === t;
@@ -274,10 +308,8 @@ window.GymApp.pages['members-list'] = {
         btn.style.color = active ? '#fff' : '';
         btn.className = btn.className;
       });
-      const pkgHistory = self._getMemberPackageHistory(m);
-      const memberSchedules = self._getMemberSchedules(m);
       document.getElementById('member-modal-body').innerHTML = self._renderMemberTab(t, m, pkgHistory, memberSchedules);
-      self._bindMemberTabEvents(t, m, () => setTab(t));
+      self._bindMemberTabEvents(t, m, () => refreshAndSetTab(t));
     };
 
     overlay.querySelectorAll('.member-detail-tab').forEach(btn => {
@@ -296,11 +328,11 @@ window.GymApp.pages['members-list'] = {
     return [
       {
         id: `${m.id}-current`,
-        name: m.package,
-        price: this._getPackagePrice(m.package) || 0,
-        from: m.joinDate,
-        to: m.expireDate,
-        status: m.status === 'active' ? 'Đã thanh toán' : 'Hết hạn',
+        name: m.ten_goi_tap || m.package || '—',
+        price: this._getPackagePrice(m.ten_goi_tap || m.package) || 0,
+        from: m.ngay_bat_dau || m.joinDate,
+        to: m.ngay_het_han || m.expireDate,
+        status: (m.trang_thai === 'active' || m.trang_thai === 'dang_hoat_dong') ? 'Đã thanh toán' : 'Hết hạn',
         note: 'Gói hiện tại',
       },
       {
@@ -316,8 +348,8 @@ window.GymApp.pages['members-list'] = {
   },
 
   _getPackagePrice: function (packageName) {
-    const pkg = (window.GymApp.data.packages || []).find(p => p.name === packageName);
-    return pkg ? pkg.price : 0;
+    const pkg = (window.GymApp.data.packages || []).find(p => (p.ten_goi || p.name) === packageName);
+    return pkg ? (pkg.gia || pkg.price) : 0;
   },
 
   _getMemberPackageHistory: function (m) {
@@ -335,12 +367,24 @@ window.GymApp.pages['members-list'] = {
 
   _getMemberSchedules: function (m) {
     return (window.GymApp.data.ptSchedules || [])
-      .filter(s => s.memberId === m.id || s.memberName === m.name)
-      .sort((a, b) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`));
+      .filter(s => s.ho_so_id === m.id || s.memberId === m.id || s.ten_hoi_vien === m.ho_ten || s.memberName === m.ho_ten)
+      .sort((a, b) => `${a.ngay_tap || a.date} ${a.gio_bat_dau || a.startTime}`.localeCompare(`${b.ngay_tap || b.date} ${b.gio_bat_dau || b.startTime}`));
   },
 
   _packageStatusBadge: function (status) {
+    const dbMap = {
+      'dang_hoat_dong': 'Đang hoạt động',
+      'het_han': 'Hết hạn',
+      'da_huy': 'Đã hủy',
+      'dang_cho': 'Đang chờ',
+      'cho_duyet': 'Đang chờ',
+      'paid': 'Đã thanh toán',
+      'debt': 'Còn nợ',
+      'free': 'Miễn phí',
+    };
+    status = dbMap[status] || status;
     const palette = {
+      'Đang hoạt động': ['#e7f5e9', '#1D9336'],
       'Đã thanh toán': ['#e7f5e9', '#1D9336'],
       'Còn nợ': ['#fff2cc', '#7a5b00'],
       'Miễn phí': ['#e0f2fe', '#0369a1'],
@@ -377,16 +421,20 @@ window.GymApp.pages['members-list'] = {
     }
 
     if (tab === 'package') {
-      const upcomingPackages = this._getUpcomingPackages(m);
+      const today = new Date(); today.setHours(0,0,0,0);
+      const upcomingPackages = pkgHistory.filter(p => {
+        const from = new Date(p.tu_ngay || p.from);
+        return from > today;
+      });
       const upcomingRows = upcomingPackages.length === 0
         ? `<tr><td colspan="5" class="px-standard py-standard text-center text-on-surface-variant text-body-sm">Chưa có gói sắp tới</td></tr>`
         : upcomingPackages.map(p => `
           <tr class="h-11 border-t border-outline-variant hover:bg-surface-container-low transition-colors">
-            <td class="px-standard text-body-md font-bold text-on-surface">${p.name}</td>
-            <td class="px-standard text-body-sm text-on-surface-variant">${window.GymApp.formatCurrency(p.price || 0)}</td>
-            <td class="px-standard text-body-sm text-on-surface-variant">${window.GymApp.formatDate(p.from)}</td>
-            <td class="px-standard text-body-sm text-on-surface-variant">${window.GymApp.formatDate(p.to)}</td>
-            <td class="px-standard">${this._packageStatusBadge('Sắp tới')}</td>
+            <td class="px-standard text-body-md font-bold text-on-surface">${p.ten_goi || p.name || '—'}</td>
+            <td class="px-standard text-body-sm text-on-surface-variant">${window.GymApp.formatCurrency(p.gia_thuc_te || p.gia || p.price || 0)}</td>
+            <td class="px-standard text-body-sm text-on-surface-variant">${window.GymApp.formatDate(p.tu_ngay || p.from)}</td>
+            <td class="px-standard text-body-sm text-on-surface-variant">${window.GymApp.formatDate(p.den_ngay || p.to)}</td>
+            <td class="px-standard">${this._packageStatusBadge(p.trang_thai || 'Sắp tới')}</td>
           </tr>
         `).join('');
       return `
@@ -458,14 +506,16 @@ window.GymApp.pages['members-list'] = {
               </tr>
             </thead>
             <tbody>
-              ${pkgHistory.map(p => `
+              ${pkgHistory.length === 0
+                ? `<tr><td colspan="6" class="px-standard py-loose text-center text-on-surface-variant text-body-sm">Chưa có lịch sử đăng ký gói tập</td></tr>`
+                : pkgHistory.map(p => `
                 <tr class="h-11 border-t border-outline-variant hover:bg-surface-container-low transition-colors">
-                  <td class="px-standard text-body-md font-bold text-on-surface">${p.name}</td>
-                  <td class="px-standard text-body-sm text-on-surface-variant">${window.GymApp.formatCurrency(p.price || 0)}</td>
-                  <td class="px-standard text-body-sm text-on-surface-variant">${window.GymApp.formatDate(p.from)}</td>
-                  <td class="px-standard text-body-sm text-on-surface-variant">${window.GymApp.formatDate(p.to)}</td>
-                  <td class="px-standard">${this._packageStatusBadge(p.status)}</td>
-                  <td class="px-standard text-body-sm text-on-surface-variant">${p.note || '—'}</td>
+                  <td class="px-standard text-body-md font-bold text-on-surface">${p.ten_goi || p.name || '—'}</td>
+                  <td class="px-standard text-body-sm text-on-surface-variant">${window.GymApp.formatCurrency(p.gia_thuc_te || p.gia || p.price || 0)}</td>
+                  <td class="px-standard text-body-sm text-on-surface-variant">${window.GymApp.formatDate(p.tu_ngay || p.from)}</td>
+                  <td class="px-standard text-body-sm text-on-surface-variant">${window.GymApp.formatDate(p.den_ngay || p.to)}</td>
+                  <td class="px-standard">${this._packageStatusBadge(p.trang_thai || p.status)}</td>
+                  <td class="px-standard text-body-sm text-on-surface-variant">${p.ghi_chu_tt || p.ghi_chu || p.note || '—'}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -475,27 +525,87 @@ window.GymApp.pages['members-list'] = {
     }
 
     if (tab === 'schedule') {
-      const rows = memberSchedules.length === 0
+      const ptContracts = Array.isArray(m.pt_hien_tai) ? m.pt_hien_tai : [];
+      const today = new Date(); today.setHours(0,0,0,0);
+      const canSchedule = ptContracts.some(c => {
+        const buoiConLai = (c.buoi_dang_ky || 0) - (c.buoi_da_tap || 0);
+        const conHan = !c.den_ngay || new Date(c.den_ngay) >= today;
+        return buoiConLai > 0 && conHan;
+      });
+
+      const ptRows = ptContracts.length === 0
+        ? `<tr><td colspan="5" class="px-standard py-loose text-center text-on-surface-variant text-body-sm">Chưa có gói PT nào được đăng ký</td></tr>`
+        : ptContracts.map(c => {
+            const buoiConLai = (c.buoi_dang_ky || 0) - (c.buoi_da_tap || 0);
+            const conHan = !c.den_ngay || new Date(c.den_ngay) >= today;
+            const statusLabel = (!conHan) ? 'Hết hạn' : (buoiConLai <= 0 ? 'Hết buổi' : 'Đang hoạt động');
+            const statusColor = statusLabel === 'Đang hoạt động' ? '#1D9336' : '#ba1a1a';
+            return `
+            <tr class="h-11 border-t border-outline-variant hover:bg-surface-container-low transition-colors">
+              <td class="px-standard text-body-sm font-bold text-on-surface">${c.ten_pt || '—'}</td>
+              <td class="px-standard text-body-sm text-on-surface-variant">${c.chuyen_mon || '—'}</td>
+              <td class="px-standard text-body-sm text-on-surface-variant">
+                <span style="font-weight:700;color:${buoiConLai > 0 ? '#1D9336' : '#ba1a1a'}">${buoiConLai}</span>
+                <span style="color:#6e7a6b;">/ ${c.buoi_dang_ky || 0} buổi</span>
+              </td>
+              <td class="px-standard text-body-sm text-on-surface-variant">${c.den_ngay ? window.GymApp.formatDate(c.den_ngay) : '—'}</td>
+              <td class="px-standard">
+                <span style="padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;background:${statusColor}20;color:${statusColor};">${statusLabel}</span>
+              </td>
+            </tr>`;
+          }).join('');
+
+      const scheduleRows = memberSchedules.length === 0
         ? `<tr><td colspan="5" class="px-standard py-loose text-center text-on-surface-variant text-body-sm">Chưa có lịch tập nào được đặt</td></tr>`
         : memberSchedules.map(s => `
           <tr class="h-11 border-t border-outline-variant hover:bg-surface-container-low transition-colors">
-            <td class="px-standard text-body-sm font-bold text-on-surface">${s.ptName}</td>
-            <td class="px-standard text-body-sm text-on-surface-variant">${window.GymApp.formatDate(s.date)}</td>
-            <td class="px-standard text-body-sm text-on-surface-variant">${s.startTime} — ${s.endTime}</td>
-            <td class="px-standard">${window.GymApp.statusBadge(s.status)}</td>
-            <td class="px-standard text-body-sm text-on-surface-variant">${s.notes || '—'}</td>
-          </tr>
-        `).join('');
+            <td class="px-standard text-body-sm font-bold text-on-surface">${s.ten_pt || '—'}</td>
+            <td class="px-standard text-body-sm text-on-surface-variant">${window.GymApp.formatDate(s.ngay_tap || s.date)}</td>
+            <td class="px-standard text-body-sm text-on-surface-variant">${s.gio_bat_dau || s.startTime} — ${s.gio_ket_thuc || s.endTime}</td>
+            <td class="px-standard">${window.GymApp.statusBadge(s.trang_thai || s.status)}</td>
+            <td class="px-standard text-body-sm text-on-surface-variant">${s.ghi_chu || '—'}</td>
+          </tr>`).join('');
+
+      const scheduleWarning = !canSchedule && ptContracts.length > 0
+        ? `<div style="padding:8px 14px;border-radius:8px;background:#fff3cd;border:1px solid #ffc107;color:#856404;font-size:12px;font-weight:600;margin-bottom:8px;">
+             ⚠️ Không thể đặt lịch — tất cả gói PT đã hết buổi hoặc hết hạn.
+           </div>` : '';
+
       return `
-        <div class="flex justify-end mb-standard">
-          <button id="btn-add-schedule" class="flex items-center gap-xs px-standard py-compact rounded-lg text-white font-bold text-body-sm hover:opacity-90 transition-all" style="background:#1D9336;">
-            <span class="material-symbols-outlined text-sm">add</span>Đăng ký lịch mới
-          </button>
-        </div>
-        <div class="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden">
-          <div class="bg-surface-container-high px-standard py-compact">
-            <p class="font-bold text-on-surface text-body-sm uppercase tracking-wider">Lịch tập với PT</p>
+        <!-- SECTION 1: Gói PT -->
+        <div class="bg-surface-container rounded-xl border border-outline-variant overflow-hidden mb-standard">
+          <div class="bg-surface-container-high px-standard py-compact flex items-center justify-between">
+            <p class="font-bold text-on-surface text-body-sm uppercase tracking-wider">Gói PT đã đăng ký</p>
+            <button id="btn-add-pt-reg" class="flex items-center gap-xs px-standard py-xs rounded-lg text-white font-bold text-body-sm hover:opacity-90 transition-all" style="background:#6750a4;font-size:12px;">
+              <span class="material-symbols-outlined" style="font-size:14px;">add</span>Đăng ký gói PT
+            </button>
           </div>
+          <table class="w-full text-left border-collapse">
+            <thead class="bg-surface-container">
+              <tr class="h-10">
+                <th class="px-standard font-bold text-body-sm text-on-surface">Huấn luyện viên</th>
+                <th class="px-standard font-bold text-body-sm text-on-surface">Chuyên môn</th>
+                <th class="px-standard font-bold text-body-sm text-on-surface">Buổi còn lại</th>
+                <th class="px-standard font-bold text-body-sm text-on-surface">Hết hạn</th>
+                <th class="px-standard font-bold text-body-sm text-on-surface">Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody>${ptRows}</tbody>
+          </table>
+        </div>
+
+        <!-- SECTION 2: Lịch tập -->
+        <div class="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden">
+          <div class="bg-surface-container-high px-standard py-compact flex items-center justify-between">
+            <p class="font-bold text-on-surface text-body-sm uppercase tracking-wider">Lịch tập đã đặt</p>
+            ${canSchedule
+              ? `<button id="btn-add-schedule" class="flex items-center gap-xs px-standard py-xs rounded-lg text-white font-bold text-body-sm hover:opacity-90 transition-all" style="background:#1D9336;font-size:12px;">
+                   <span class="material-symbols-outlined" style="font-size:14px;">add</span>Đặt lịch mới
+                 </button>`
+              : `<span style="font-size:11px;color:#6e7a6b;font-style:italic;">Cần có gói PT hợp lệ để đặt lịch</span>`
+            }
+          </div>
+          ${scheduleWarning}
           <table class="w-full text-left border-collapse">
             <thead class="bg-surface-container">
               <tr class="h-10">
@@ -506,7 +616,7 @@ window.GymApp.pages['members-list'] = {
                 <th class="px-standard font-bold text-body-sm text-on-surface">Ghi chú</th>
               </tr>
             </thead>
-            <tbody>${rows}</tbody>
+            <tbody>${scheduleRows}</tbody>
           </table>
         </div>
       `;
@@ -520,6 +630,7 @@ window.GymApp.pages['members-list'] = {
       document.getElementById('btn-add-package')?.addEventListener('click', () => self._showAddPackageModal(m, refreshTab));
     }
     if (tab === 'schedule') {
+      document.getElementById('btn-add-pt-reg')?.addEventListener('click', () => self._showAddPtRegistrationModal(m, refreshTab));
       document.getElementById('btn-add-schedule')?.addEventListener('click', () => self._showAddScheduleModal(m, refreshTab));
     }
   },
@@ -531,8 +642,8 @@ window.GymApp.pages['members-list'] = {
 
     const pkgs = window.GymApp.data.packages || [];
     const pkgNames = pkgs.length
-      ? pkgs.map(p => ({ name: typeof p === 'object' ? p.name : p, price: typeof p === 'object' ? (p.price || 0) : 0 }))
-      : [...new Set(window.GymApp.data.members.map(x => x.package))].map(n => ({ name: n, price: 0 }));
+      ? pkgs.map(p => ({ name: p.ten_goi || p.name, price: p.gia || p.price || 0 }))
+      : [...new Set(window.GymApp.data.members.map(x => x.ten_goi_tap || x.package))].map(n => ({ name: n, price: 0 }));
 
     const REQ = `<span style="color:#ba1a1a;margin-left:2px;font-weight:700;">*</span>`;
     const inputCls = `class="bg-surface-container-lowest text-on-surface border border-outline-variant" style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;"`;
@@ -546,7 +657,7 @@ window.GymApp.pages['members-list'] = {
         <div class="bg-surface-container-lowest border-b border-outline-variant px-loose py-standard flex items-center justify-between" style="position:sticky;top:0;z-index:1;">
           <div>
             <h3 class="font-bold text-on-surface" style="font-size:16px;">Thêm gói tập</h3>
-            <p class="text-on-surface-variant text-body-sm">Hội viên: <strong>${m.name}</strong></p>
+            <p class="text-on-surface-variant text-body-sm">Hội viên: <strong>${m.ho_ten || m.name}</strong></p>
           </div>
           <button id="close-sub-modal" style="background:transparent;border:none;cursor:pointer;">
             <span class="material-symbols-outlined text-on-surface-variant text-xl">close</span>
@@ -595,6 +706,19 @@ window.GymApp.pages['members-list'] = {
                 <option value="paid">Đã thanh toán</option>
                 <option value="debt">Còn nợ</option>
                 <option value="free">Miễn phí</option>
+              </select>
+            </div>
+
+            <!-- Phương thức thanh toán -->
+            <div>
+              <label class="block text-body-sm font-bold text-on-surface mb-xs">Phương thức TT ${REQ}</label>
+              <select id="pkg-payment-method" ${inputCls}>
+                <option value="tien_mat">Tiền mặt</option>
+                <option value="chuyen_khoan">Chuyển khoản</option>
+                <option value="the">Thẻ</option>
+                <option value="momo">MoMo</option>
+                <option value="zalopay">ZaloPay</option>
+                <option value="khac">Khác</option>
               </select>
             </div>
 
@@ -673,48 +797,166 @@ window.GymApp.pages['members-list'] = {
       document.getElementById('pkg-debt').value = Math.max(0, need - paid);
     }
 
-    document.getElementById('pkg-save-btn').addEventListener('click', () => {
+    document.getElementById('pkg-save-btn').addEventListener('click', async () => {
       const name = document.getElementById('pkg-name').value;
       const price = parseFloat(document.getElementById('pkg-price').value) || 0;
       const from = document.getElementById('pkg-from').value;
       const to = document.getElementById('pkg-to').value;
       const regStatus = document.getElementById('pkg-reg-status').value;
+      
       if (!name || !price || !from || !to || !regStatus) {
         window.GymApp.toast('Vui lòng điền đầy đủ các trường bắt buộc (*)', 'error');
         return;
       }
-      if (new Date(to) < new Date(from)) {
-        window.GymApp.toast('Ngày kết thúc không được nhỏ hơn ngày bắt đầu', 'error');
+
+      const pkg = (window.GymApp.data.packages || []).find(p => (p.ten_goi || p.name) === name);
+      if (!pkg) {
+        window.GymApp.toast('Gói tập không hợp lệ', 'error');
         return;
       }
-      const statusMap = { paid: 'Đã thanh toán', debt: 'Còn nợ', free: 'Miễn phí' };
-      const paid = parseFloat(document.getElementById('pkg-paid').value) || 0;
-      const newPackage = {
-        id: `PKH-${Date.now()}`,
-        name,
-        price,
-        from,
-        to,
-        status: statusMap[regStatus] || 'Đã thanh toán',
-        discountCode: document.getElementById('pkg-discount-code').value.trim(),
-        needPay: parseFloat(document.getElementById('pkg-need-pay').value) || 0,
-        paid,
-        debt: parseFloat(document.getElementById('pkg-debt').value) || 0,
-        paymentDate: document.getElementById('pkg-payment-date').value,
-        note: document.getElementById('pkg-note').value.trim() || 'Gói vừa thêm',
-      };
-      self._memberPackageHistory[m.id] = [newPackage, ...(self._memberPackageHistory[m.id] || [])];
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      if (new Date(from) <= today && today <= new Date(to)) {
-        m.package = name;
-        m.expireDate = to;
-        m.status = 'active';
+
+      try {
+        const payload = {
+          goi_tap_id: pkg.id,
+          tu_ngay: from,
+          gia_thuc_te: price,
+          phuong_thuc_tt: document.getElementById('pkg-payment-method').value,
+          ghi_chu_tt: document.getElementById('pkg-note').value.trim(),
+          ma_giao_dich: document.getElementById('pkg-discount-code').value.trim()
+        };
+
+        await window.GymApp.api.post(`/members/${m.id}/package`, payload);
+        window.GymApp.toast('Đăng ký gói tập thành công!', 'success');
+        
+        // Refresh data
+        if (window.GymApp.fetchInitialData) await window.GymApp.fetchInitialData();
         self._applyMemberFilter();
+        close();
+        if (typeof onSaved === 'function') onSaved();
+      } catch (err) {
+        console.error('Package registration error:', err);
+        window.GymApp.toast(err.message || 'Lỗi khi lưu gói tập', 'error');
       }
-      window.GymApp.toast('Đã lưu gói tập thành công!', 'success');
-      close();
-      if (typeof onSaved === 'function') onSaved();
+    });
+  },
+
+  // ===== MODAL ĐĂNG KÝ GÓI PT =====
+  _showAddPtRegistrationModal: function (m, onSaved) {
+    const self = this;
+    document.getElementById('gym-sub-modal')?.remove();
+
+    const REQ = `<span style="color:#ba1a1a;margin-left:2px;font-weight:700;">*</span>`;
+    const inputCls = `class="bg-surface-container-lowest text-on-surface border border-outline-variant" style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;"`;
+    const pts = (window.GymApp.data.pts || []);
+
+    const overlay = document.createElement('div');
+    overlay.id = 'gym-sub-modal';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);padding:16px;';
+
+    overlay.innerHTML = `
+      <div class="modal-card" style="border-radius:16px;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;position:relative;box-shadow:0 30px 80px rgba(0,0,0,0.4);">
+        <div class="bg-surface-container-lowest border-b border-outline-variant px-loose py-standard flex items-center justify-between" style="position:sticky;top:0;z-index:1;">
+          <div>
+            <h3 class="font-bold text-on-surface" style="font-size:16px;">Đăng ký gói PT</h3>
+            <p class="text-on-surface-variant text-body-sm">Hội viên: <strong>${m.ho_ten}</strong></p>
+          </div>
+          <button id="close-sub-modal" style="background:transparent;border:none;cursor:pointer;">
+            <span class="material-symbols-outlined text-on-surface-variant text-xl">close</span>
+          </button>
+        </div>
+        <div class="p-loose flex flex-col gap-standard bg-surface-container-lowest">
+          <div class="grid grid-cols-2 gap-standard">
+
+            <!-- Chọn PT -->
+            <div style="grid-column:1/-1;">
+              <label class="block text-body-sm font-bold text-on-surface mb-xs">Huấn luyện viên ${REQ}</label>
+              <select id="ptreg-pt" ${inputCls}>
+                <option value="">— Chọn huấn luyện viên —</option>
+                ${pts.map(pt => `<option value="${pt.id}">${pt.ho_ten || pt.name}${pt.chuyen_mon ? ' — ' + pt.chuyen_mon : ''}</option>`).join('')}
+              </select>
+            </div>
+
+            <!-- Số buổi -->
+            <div>
+              <label class="block text-body-sm font-bold text-on-surface mb-xs">Số buổi đăng ký ${REQ}</label>
+              <input id="ptreg-sessions" type="number" min="1" placeholder="VD: 10" ${inputCls} />
+            </div>
+
+            <!-- Giá thực tế -->
+            <div>
+              <label class="block text-body-sm font-bold text-on-surface mb-xs">Giá thực tế (VNĐ) ${REQ}</label>
+              <input id="ptreg-price" type="number" min="0" placeholder="VD: 2000000" ${inputCls} />
+            </div>
+
+            <!-- Từ ngày -->
+            <div>
+              <label class="block text-body-sm font-bold text-on-surface mb-xs">Từ ngày ${REQ}</label>
+              <input id="ptreg-from" type="date" value="${new Date().toISOString().split('T')[0]}" ${inputCls} />
+            </div>
+
+            <!-- Đến ngày -->
+            <div>
+              <label class="block text-body-sm font-bold text-on-surface mb-xs">Đến ngày <span style="font-size:11px;color:#6e7a6b;">(tùy chọn)</span></label>
+              <input id="ptreg-to" type="date" ${inputCls} />
+            </div>
+
+            <!-- Ghi chú -->
+            <div style="grid-column:1/-1;">
+              <label class="block text-body-sm font-bold text-on-surface mb-xs">Ghi chú</label>
+              <textarea id="ptreg-note" rows="2" placeholder="Ghi chú thêm..." class="bg-surface-container-lowest text-on-surface border border-outline-variant"
+                style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;resize:vertical;font-family:inherit;"></textarea>
+            </div>
+
+          </div>
+          <p style="font-size:11px;" class="text-on-surface-variant">Các trường có dấu <span style="color:#ba1a1a;font-weight:700;">*</span> là bắt buộc</p>
+          <div class="flex gap-standard">
+            <button id="ptreg-cancel-btn" class="flex-1 py-compact rounded-xl border border-outline-variant text-on-surface-variant font-bold hover:bg-surface-container transition-colors text-body-md">Hủy</button>
+            <button id="ptreg-save-btn" class="flex-1 py-compact rounded-xl font-bold text-white text-body-md transition-all hover:opacity-90" style="background:#6750a4;">Đăng ký gói PT</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const close = () => overlay.remove();
+    document.getElementById('close-sub-modal').addEventListener('click', close);
+    document.getElementById('ptreg-cancel-btn').addEventListener('click', close);
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+    document.getElementById('ptreg-save-btn').addEventListener('click', async () => {
+      const ptId    = document.getElementById('ptreg-pt').value;
+      const sessions = parseInt(document.getElementById('ptreg-sessions').value) || 0;
+      const price   = parseFloat(document.getElementById('ptreg-price').value);
+      const from    = document.getElementById('ptreg-from').value;
+      const to      = document.getElementById('ptreg-to').value;
+      const note    = document.getElementById('ptreg-note').value.trim();
+
+      if (!ptId || !sessions || isNaN(price) || !from) {
+        window.GymApp.toast('Vui lòng điền đầy đủ các trường bắt buộc (*)', 'error');
+        return;
+      }
+      if (sessions < 1) {
+        window.GymApp.toast('Số buổi phải lớn hơn 0', 'error');
+        return;
+      }
+
+      try {
+        await window.GymApp.api.post('/pt/registrations', {
+          hoi_vien_id: m.id,
+          pt_id: ptId,
+          so_buoi_dang_ky: sessions,
+          tu_ngay: from,
+          den_ngay: to || undefined,
+          gia_thuc_te: price,
+          ghi_chu: note || undefined,
+        });
+        window.GymApp.toast('Đăng ký gói PT thành công!', 'success');
+        close();
+        if (typeof onSaved === 'function') await onSaved();
+      } catch (err) {
+        window.GymApp.toast(err.message || 'Đăng ký thất bại', 'error');
+      }
     });
   },
 
@@ -724,6 +966,7 @@ window.GymApp.pages['members-list'] = {
 
     const REQ = `<span style="color:#ba1a1a;margin-left:2px;font-weight:700;">*</span>`;
     const inputCls = `class="bg-surface-container-lowest text-on-surface border border-outline-variant" style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;"`;
+    const ptContracts = Array.isArray(m.pt_hien_tai) ? m.pt_hien_tai : [];
 
     // Generate time slots 00:00 → 23:45 per 15 min
     const timeSlots = [];
@@ -742,7 +985,7 @@ window.GymApp.pages['members-list'] = {
         <div class="bg-surface-container-lowest border-b border-outline-variant px-loose py-standard flex items-center justify-between" style="position:sticky;top:0;z-index:1;">
           <div>
             <h3 class="font-bold text-on-surface" style="font-size:16px;">Đăng ký lịch tập PT</h3>
-            <p class="text-on-surface-variant text-body-sm">Hội viên: <strong>${m.name}</strong></p>
+            <p class="text-on-surface-variant text-body-sm">Hội viên: <strong>${m.ho_ten || m.name}</strong></p>
           </div>
           <button id="close-sub-modal" style="background:transparent;border:none;cursor:pointer;">
             <span class="material-symbols-outlined text-on-surface-variant text-xl">close</span>
@@ -750,13 +993,18 @@ window.GymApp.pages['members-list'] = {
         </div>
         <div class="p-loose flex flex-col gap-standard bg-surface-container-lowest">
 
-          <!-- Chọn PT -->
+          <!-- Chọn PT (từ hợp đồng đang active) -->
           <div>
             <label class="block text-body-sm font-bold text-on-surface mb-xs">Huấn luyện viên ${REQ}</label>
-            <select id="sch-pt" ${inputCls}>
-              <option value="">— Chọn huấn luyện viên —</option>
-              ${window.GymApp.data.pts.map(pt => `<option value="${pt.id}">${pt.name} — ${pt.specialty}</option>`).join('')}
-            </select>
+            ${ptContracts.length === 0
+              ? `<div style="padding:10px 14px;border-radius:8px;background:#ffdad6;color:#93000a;font-size:13px;font-weight:600;">
+                   Hội viên chưa có gói PT đang hoạt động. Vui lòng đăng ký gói PT trước.
+                 </div>`
+              : `<select id="sch-pt" ${inputCls}>
+                   <option value="">— Chọn huấn luyện viên —</option>
+                   ${ptContracts.map(c => `<option value="${c.id}">${c.ten_pt} — ${c.chuyen_mon || 'PT'} (còn ${(c.buoi_dang_ky||0) - (c.buoi_da_tap||0)} buổi)</option>`).join('')}
+                 </select>`
+            }
           </div>
 
           <!-- Chọn ngày -->
@@ -822,35 +1070,50 @@ window.GymApp.pages['members-list'] = {
     document.getElementById('sch-cancel-btn').addEventListener('click', close);
     overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
 
-    document.getElementById('sch-save-btn').addEventListener('click', () => {
-      const pt = document.getElementById('sch-pt').value;
+    document.getElementById('sch-save-btn').addEventListener('click', async () => {
+      if (ptContracts.length === 0) {
+        window.GymApp.toast('Hội viên chưa có gói PT. Vui lòng đăng ký gói PT trước!', 'error');
+        return;
+      }
+      const contractId = document.getElementById('sch-pt')?.value;
       const date = document.getElementById('sch-date').value;
-      if (!pt || !date || !selectedTime) {
+      if (!contractId || !date || !selectedTime) {
         window.GymApp.toast('Vui lòng chọn đầy đủ PT, ngày và giờ (*)', 'error');
         return;
       }
-      const trainer = window.GymApp.data.pts.find(x => x.id === pt);
-      const [hour, minute] = selectedTime.split(':').map(Number);
-      const end = new Date(`${date}T${selectedTime}:00`);
-      end.setMinutes(end.getMinutes() + 60);
-      const endTime = `${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}`;
-      window.GymApp.data.ptSchedules = window.GymApp.data.ptSchedules || [];
-      window.GymApp.data.ptSchedules.push({
-        id: `SCH-${String(window.GymApp.data.ptSchedules.length + 1).padStart(3, '0')}-${Date.now()}`,
-        ptId: pt,
-        ptName: trainer ? trainer.name : pt,
-        memberId: m.id,
-        memberName: m.name,
-        date,
-        startTime: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
-        endTime,
-        type: 'Cá nhân',
-        status: 'pending',
-        notes: document.getElementById('sch-note').value.trim(),
-      });
-      window.GymApp.toast('Đã đăng ký lịch tập thành công!', 'success');
-      close();
-      if (typeof onSaved === 'function') onSaved();
+
+      // contractId là id của dang_ky_pt (không phải pt_id)
+      const activeContract = ptContracts.find(c => String(c.id) === String(contractId));
+      if (!activeContract) {
+        window.GymApp.toast('Không tìm thấy hợp đồng PT!', 'error');
+        return;
+      }
+
+      try {
+        const payload = {
+          dang_ky_pt_id: activeContract.id,
+          ngay_tap: date,
+          gio_bat_dau: selectedTime,
+          gio_ket_thuc: (function() {
+            const [h, min] = selectedTime.split(':').map(Number);
+            const d = new Date();
+            d.setHours(h, min + 60);
+            return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+          })(),
+          ghi_chu: document.getElementById('sch-note').value.trim()
+        };
+
+        await window.GymApp.api.post('/pt/schedules', payload);
+        window.GymApp.toast('Đã đăng ký lịch tập thành công!', 'success');
+        
+        // Refresh data
+        if (window.GymApp.fetchInitialData) await window.GymApp.fetchInitialData();
+        close();
+        if (typeof onSaved === 'function') onSaved();
+      } catch (err) {
+        console.error('Schedule registration error:', err);
+        window.GymApp.toast(err.message || 'Lỗi khi đặt lịch tập', 'error');
+      }
     });
   },
 

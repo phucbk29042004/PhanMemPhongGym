@@ -38,10 +38,10 @@ window.GymApp.pages['pt-training'] = {
         </div>
 
         <!-- Header: Tìm kiếm + Bộ lọc + Tải lại -->
-        <div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-standard shadow-sm">
-          <div class="flex flex-col md:flex-row items-start md:items-center gap-standard">
+        <div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-standard shadow-sm overflow-hidden">
+          <div class="flex flex-wrap items-center gap-standard">
             <!-- Tìm kiếm -->
-            <div class="relative flex-1">
+            <div class="relative flex-1 min-w-[200px]">
               <span class="material-symbols-outlined absolute left-standard top-1/2 -translate-y-1/2 text-outline text-sm">search</span>
               <input
                 id="pt-search"
@@ -52,20 +52,20 @@ window.GymApp.pages['pt-training'] = {
             </div>
 
             <!-- Bộ lọc trạng thái -->
-            <select id="pt-filter-status" class="bg-surface-container-low border border-outline-variant text-on-surface px-standard py-compact rounded-lg focus:border-brand-primary outline-none font-body-md text-body-md">
+            <select id="pt-filter-status" class="bg-surface-container-low border border-outline-variant text-on-surface px-standard py-compact rounded-lg focus:border-brand-primary outline-none font-body-md text-body-md min-w-[150px]">
               <option value="">Tất cả trạng thái</option>
               <option value="confirmed">Đã xác nhận</option>
               <option value="pending">Chờ xác nhận</option>
             </select>
 
             <!-- Bộ lọc PT -->
-            <select id="pt-filter-pt" class="bg-surface-container-low border border-outline-variant text-on-surface px-standard py-compact rounded-lg focus:border-brand-primary outline-none font-body-md text-body-md">
+            <select id="pt-filter-pt" class="bg-surface-container-low border border-outline-variant text-on-surface px-standard py-compact rounded-lg focus:border-brand-primary outline-none font-body-md text-body-md min-w-[150px]">
               <option value="">Tất cả PT</option>
-              ${window.GymApp.data.pts.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}
+              ${(window.GymApp.data.pts || []).map(p => `<option value="${p.id}">${p.ho_ten || p.name}</option>`).join('')}
             </select>
 
             <!-- Nút tải lại -->
-            <button id="pt-reload" class="flex items-center gap-xs px-loose py-compact rounded-lg border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary transition-colors font-body-md">
+            <button id="pt-reload" class="flex items-center gap-xs px-loose py-compact rounded-lg border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary transition-colors font-body-md whitespace-nowrap">
               <span class="material-symbols-outlined text-sm">refresh</span>
               Tải lại
             </button>

@@ -1,6 +1,6 @@
 # 🏛️ Kiến Trúc Hệ Thống — Paradise GYM
 
-> Cập nhật lần cuối: 08/05/2026 — Triển khai toàn bộ Backend Node.js và hợp nhất tài liệu kiến trúc Fullstack.
+> Cập nhật lần cuối: 08/05/2026 — Hoàn thiện toàn bộ Backend API (Đăng ký PT, Nhân viên, Sinh nhật, My Profile). Nâng cấp FE Modal chi tiết hội viên 3 tab.
 
 ---
 
@@ -74,8 +74,11 @@ graph TD
 | Module | Endpoints | Chức năng chính |
 |--------|-----------|-----------------|
 | **Auth** | `/api/auth/login`, `/me`, `/doi-mat-khau` | Xác thực, phân quyền. |
-| **Members** | `/api/members`, `/:id/package`, `/:id/avatar` | Quản lý hội viên, đăng ký gói. |
+| **Members** | `/api/members`, `/:id/package`, `/:id/avatar`, `/birthday`, `/me/profile` | Quản lý hội viên, đăng ký gói, sinh nhật, tự xem hồ sơ. |
 | **Trainers** | `/api/trainers`, `/:id/schedules` | Quản lý PT và lịch dạy. |
+| **PT Schedules** | `/api/pt/schedules` | Đặt lịch tập, xác nhận, hủy buổi. |
+| **PT Registrations** | `/api/pt/registrations`, `/:id/cancel` | Đăng ký gói PT, hủy đăng ký. |
+| **Staff** | `/api/staff` | Quản lý nhân viên lễ tân/nội bộ. |
 | **Checkins** | `/api/checkins`, `/stats` | Vào-ra, biểu đồ mật độ. |
 | **Revenue** | `/api/revenue`, `/dashboard` | Thống kê doanh thu. |
 
@@ -99,6 +102,10 @@ graph TD
 - [x] **Check-in**: Log vào/ra, Thống kê mật độ phục vụ biểu đồ Dashboard.
 - [x] **PT Schedule**: Đặt lịch tập, Kiểm tra trùng lịch của PT, Xác nhận/Hủy buổi.
 - [x] **Doanh thu**: Thống kê 30 ngày, Dashboard tổng quan (API JSON).
+- [x] **Đăng ký PT**: CRUD `dang_ky_pt`, hủy đăng ký tự động hủy buổi tập.
+- [x] **Nhân viên**: Quản lý hồ sơ lễ tân/nội bộ, tùy chọn tạo tài khoản đăng nhập.
+- [x] **Sinh nhật**: Lọc hội viên sinh nhật theo today/week/month.
+- [x] **My Profile**: Hội viên/PT tự xem hồ sơ + gói tập/lịch dạy hiện tại.
 - [x] **Hệ thống**: Middleware RBAC (quyen_json), Audit Logging (ghi vết hành động).
 
 ### Tích hợp Fullstack (Kết nối FE-BE)
@@ -106,6 +113,8 @@ graph TD
 - [x] **Xác thực**: Trang Login kết nối API, bảo mật toàn bộ SPA.
 - [x] **Dashboard**: Thống kê thực tế từ Database thay thế mock data.
 - [x] **Hội viên**: Danh sách hội viên và PT lấy trực tiếp từ API.
+- [x] **Persistence (Lưu trữ vĩnh viễn)**: Tích hợp API POST cho đăng ký gói tập và lịch PT, đảm bảo dữ liệu không mất khi refresh.
+- [x] **UI Synchronization**: Đồng bộ hóa toàn bộ property naming giữa JS và SQL Schema (ho_ten, ten_goi, chuyen_mon).
 
 ---
 
@@ -115,3 +124,4 @@ graph TD
 - **08/05/2026**: Sử dụng **better-sqlite3** để xử lý database đồng bộ, giúp code API sạch hơn và hiệu năng cao cho ứng dụng đơn luồng.
 - **08/05/2026**: Triển khai **Memory Storage Multer** để bảo mật (không lưu file tạm) và tối ưu tốc độ upload lên Cloudinary.
 - **08/05/2026**: Áp dụng **RBAC linh hoạt** qua cột `quyen_json`, cho phép thay đổi quyền hạn mà không cần sửa code middleware.
+- **08/05/2026**: Triển khai **Fullstack Persistence Strategy**: Chuyển đổi toàn bộ logic lưu tạm (local array) sang API-driven persistence (SQLite storage), giải quyết vấn đề mất dữ liệu khi cập nhật code hoặc tải lại trang.
