@@ -14,6 +14,30 @@
 
 ## 📋 Danh Sách Thay Đổi
 
+### 08/05/2026 17:16 — Thực hiện redesign tab Hội viên dạng card responsive
+- **Loại**: Chỉnh sửa (Frontend — redesign giao diện)
+- **File/Thành phần liên quan**: `FE/assets/js/pages/members-list.js`
+- **Mô tả**: Chuyển vùng danh sách Hội viên từ bảng ngang sang grid card responsive giống phong cách tab PT, giữ đầy đủ thông tin hiện tại gồm avatar, tên, số điện thoại, mã HV, trạng thái, gói tập, chi nhánh, ngày hết hạn và các nút thao tác. Giữ nguyên hook search/filter/pagination/modal và bổ sung xử lý `truncate`, `min-w-0` để nội dung dài không tràn layout.
+- **Kết quả**: Thành công
+
+---
+
+### 08/05/2026 21:15 — Đổi tab Hội viên từ bảng sang card grid
+- **Loại**: Chỉnh sửa (Frontend — redesign giao diện)
+- **File chỉnh sửa**: `FE/assets/js/pages/members-list.js`
+- **Mô tả**: Viết lại `_renderMemberTable()` từ dạng bảng sang card grid 4 cột (giống kiểu tab PT cũ). Mỗi card gồm: avatar lg + dot status online/offline, tên (đổi xanh khi hover) + SĐT, 2 info block (Mã HV / Trạng thái), 2 info block (Gói tập / Hết hạn), nút thao tác (visibility/edit/delete). Đổi container `members-table-container` từ div wrapper sang `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`. Logic filter/search/pagination/init không thay đổi.
+- **Kết quả**: Thành công
+
+---
+
+### 08/05/2026 21:00 — Redesign tab PT trong members-list từ card grid sang bảng
+- **Loại**: Chỉnh sửa (Frontend — redesign giao diện)
+- **File chỉnh sửa**: `FE/assets/js/pages/members-list.js`
+- **Mô tả**: Viết lại hàm `_renderPtCards()` từ dạng card grid 4 cột sang dạng bảng (`table`) giống tab Hội viên. Cột mới: Huấn luyện viên (avatar + dot status + tên + SĐT), Mã PT, Chuyên môn, Học viên (icon-bg), Đánh giá (star pill + kinh nghiệm), Thao tác (visibility/edit/delete ẩn → hiện khi hover). Đổi container `pt-cards-container` từ `grid` sang `div` thường. Toàn bộ logic filter/sort/pagination/init **không thay đổi**.
+- **Kết quả**: Thành công
+
+---
+
 ### 08/05/2026 16:37 — Sửa chiều cao card Lịch đã đặt theo card Thông tin đặt lịch
 - **Loại**: Sửa bug / Cải thiện UI (Frontend)
 - **File/Thành phần liên quan**: `FE/assets/js/pages/pt-register.js`

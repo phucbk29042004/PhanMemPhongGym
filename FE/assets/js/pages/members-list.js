@@ -67,7 +67,7 @@ window.GymApp.pages['members-list'] = {
                 </button>
               </div>
             </div>
-            <div id="members-table-container" class="bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl overflow-hidden border border-outline-variant shadow-sm transition-all hover:shadow-md">
+            <div id="members-table-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-loose">
               ${this._renderMemberTable()}
             </div>
           </div>
@@ -134,82 +134,86 @@ window.GymApp.pages['members-list'] = {
     const self = this;
     const start = (self._memberPage - 1) * self._perPage;
     const paginated = self._memberFiltered.slice(start, start + self._perPage);
-    const rows = paginated.length === 0
-      ? `<tr><td colspan="7" class="px-loose py-20 text-center text-on-surface-variant text-body-sm">
+
+    if (paginated.length === 0) {
+      return `
+        <div class="col-span-full py-20 text-center text-on-surface-variant bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl border border-outline-variant shadow-sm">
            <div class="flex flex-col items-center opacity-40">
              <span class="material-symbols-outlined text-6xl mb-xs">person_search</span>
              <p class="font-medium">Không tìm thấy hội viên nào</p>
            </div>
-         </td></tr>`
-      : paginated.map(m => `
-        <tr class="h-16 border-b border-outline-variant hover:bg-brand-primary/[0.06] hover:shadow-[0_4px_20px_rgba(29,147,54,0.08)] transition-all group cursor-default">
-          <td class="px-loose">
-            <div class="flex items-center gap-loose">
-              <div class="relative group-hover:scale-105 transition-transform duration-300">
-                ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'sm')}
-                <span class="absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full ${m.trang_thai === 'active' ? 'bg-green-500' : 'bg-outline'}"></span>
-              </div>
-              <div class="flex flex-col">
-                <p class="font-bold text-on-surface text-body-md group-hover:text-brand-primary transition-colors member-name-link cursor-pointer" data-id="${m.id}">${m.ho_ten}</p>
-                <p class="text-on-surface-variant text-body-sm font-medium flex items-center gap-xs">
-                  <span class="material-symbols-outlined text-xs">call</span>${m.so_dien_thoai || '—'}
-                </p>
-              </div>
+        </div>`;
+    }
+
+    const cards = paginated.map(m => {
+      const isActive = m.trang_thai === 'active' || m.trang_thai === 'dang_tap';
+      const packageName = m.ten_goi_tap || 'Chưa ĐK';
+      return `
+        <div class="gym-card bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl border border-outline-variant p-loose shadow-sm flex flex-col gap-standard transition-all hover:-translate-y-1 hover:shadow-xl hover:border-brand-primary/50 group min-w-0">
+          <div class="flex items-center gap-loose min-w-0">
+            <div class="relative group-hover:scale-110 transition-transform duration-500 flex-shrink-0">
+              ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'lg')}
+              <span class="absolute bottom-0 right-0 w-3.5 h-3.5 border-2 border-white rounded-full ${isActive ? 'bg-green-500 shadow-sm shadow-green-200' : 'bg-outline'}"></span>
             </div>
-          </td>
-          <td class="px-loose text-on-surface font-bold text-body-sm tracking-wider">${m.ma_ho_so}</td>
-          <td class="px-loose">${window.GymApp.statusBadge(m.trang_thai)}</td>
-          <td class="px-loose">
-             <div class="flex flex-col">
-                <span class="text-on-surface font-bold text-body-sm">${m.ten_goi_tap || 'Chưa ĐK'}</span>
-                <span class="text-on-surface-variant text-[10px] uppercase font-bold tracking-tighter opacity-60">Gói tập hội viên</span>
-             </div>
-          </td>
-          <td class="px-loose">
-            <div class="flex items-center gap-xs text-on-surface-variant text-body-sm font-medium">
-              <span class="material-symbols-outlined text-xs">location_on</span>
-              Paradise Gym
-            </div>
-          </td>
-          <td class="px-loose">
-            <div class="flex flex-col">
-               <span class="text-on-surface font-bold text-body-sm">${window.GymApp.formatDate(m.ngay_het_han)}</span>
-               <span class="text-on-surface-variant text-[10px] uppercase font-bold tracking-tighter opacity-60">Hạn sử dụng</span>
-            </div>
-          </td>
-          <td class="px-loose text-right">
-            <div class="flex justify-end gap-xs opacity-40 group-hover:opacity-100 transition-opacity">
-              <button class="w-9 h-9 flex items-center justify-center rounded-xl bg-surface-container text-on-surface-variant hover:bg-brand-primary hover:text-white transition-all member-view-btn" data-id="${m.id}" title="Xem chi tiết">
-                <span class="material-symbols-outlined text-xl">visibility</span>
+            <div class="flex flex-col min-w-0">
+              <button class="member-name-link text-left font-bold text-on-surface text-body-md truncate group-hover:text-brand-primary transition-colors cursor-pointer" data-id="${m.id}" title="${m.ho_ten || 'Không rõ'}" style="background:transparent;border:none;padding:0;">
+                ${m.ho_ten || 'Không rõ'}
               </button>
-              <button class="w-9 h-9 flex items-center justify-center rounded-xl bg-surface-container text-on-surface-variant hover:bg-brand-primary hover:text-white transition-all" title="Sửa">
-                <span class="material-symbols-outlined text-xl">edit</span>
+              <p class="text-on-surface-variant text-body-sm font-medium flex items-center gap-xs min-w-0">
+                <span class="material-symbols-outlined text-xs flex-shrink-0">call</span>
+                <span class="truncate">${m.so_dien_thoai || '—'}</span>
+              </p>
+            </div>
+          </div>
+
+          <div class="h-px bg-outline-variant/30 w-full my-xs"></div>
+
+          <div class="grid grid-cols-2 gap-compact min-w-0">
+            <div class="flex flex-col bg-surface-container-low/50 p-compact rounded-xl border border-outline-variant/20 min-w-0">
+              <span class="text-on-surface-variant text-[10px] uppercase font-bold tracking-widest opacity-60">Mã HV</span>
+              <span class="text-on-surface font-bold text-body-sm truncate" title="${m.ma_ho_so || '—'}">${m.ma_ho_so || '—'}</span>
+            </div>
+            <div class="flex flex-col bg-surface-container-low/50 p-compact rounded-xl border border-outline-variant/20 min-w-0">
+              <span class="text-on-surface-variant text-[10px] uppercase font-bold tracking-widest opacity-60">Trạng thái</span>
+              <span class="mt-xs">${window.GymApp.statusBadge(m.trang_thai)}</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-compact min-w-0">
+            <div class="flex flex-col bg-surface-container-low/50 p-compact rounded-xl border border-outline-variant/20 min-w-0">
+              <span class="text-on-surface-variant text-[10px] uppercase font-bold tracking-widest opacity-60">Gói tập</span>
+              <span class="text-on-surface font-bold text-body-sm truncate" title="${packageName}">${packageName}</span>
+            </div>
+            <div class="flex flex-col bg-surface-container-low/50 p-compact rounded-xl border border-outline-variant/20 min-w-0">
+              <span class="text-on-surface-variant text-[10px] uppercase font-bold tracking-widest opacity-60">Hết hạn</span>
+              <span class="text-on-surface font-bold text-body-sm truncate">${window.GymApp.formatDate(m.ngay_het_han)}</span>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between gap-compact mt-auto pt-xs min-w-0">
+            <div class="flex items-center gap-xs text-on-surface-variant text-body-sm font-medium min-w-0">
+              <span class="material-symbols-outlined text-sm flex-shrink-0">location_on</span>
+              <span class="truncate">Paradise Gym</span>
+            </div>
+            <div class="flex gap-xs flex-shrink-0">
+              <button class="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-container text-on-surface-variant hover:bg-brand-primary hover:text-white transition-all member-view-btn" data-id="${m.id}" title="Xem chi tiết">
+                <span class="material-symbols-outlined text-lg">visibility</span>
               </button>
-              <button class="w-9 h-9 flex items-center justify-center rounded-xl bg-surface-container text-on-surface-variant hover:bg-error hover:text-white transition-all" title="Xóa">
-                <span class="material-symbols-outlined text-xl">delete</span>
+              <button class="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-container text-on-surface-variant hover:bg-brand-primary hover:text-white transition-all" title="Sửa">
+                <span class="material-symbols-outlined text-lg">edit</span>
+              </button>
+              <button class="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-container text-on-surface-variant hover:bg-error hover:text-white transition-all" title="Xóa">
+                <span class="material-symbols-outlined text-lg">delete</span>
               </button>
             </div>
-          </td>
-        </tr>
-      `).join('');
+          </div>
+        </div>
+      `;
+    }).join('');
+
     return `
-      <div class="overflow-x-auto custom-scrollbar">
-        <table class="w-full text-left border-collapse table-fixed min-w-[900px]">
-          <thead class="bg-surface-container-high/40 text-on-surface border-b border-outline-variant">
-            <tr class="h-12">
-              <th class="px-loose font-bold text-body-sm uppercase tracking-widest w-[30%]">Hội viên</th>
-              <th class="px-loose font-bold text-body-sm uppercase tracking-widest w-[12%]">Mã HV</th>
-              <th class="px-loose font-bold text-body-sm uppercase tracking-widest w-[15%]">Trạng thái</th>
-              <th class="px-loose font-bold text-body-sm uppercase tracking-widest w-[15%]">Gói tập</th>
-              <th class="px-loose font-bold text-body-sm uppercase tracking-widest w-[13%]">Chi nhánh</th>
-              <th class="px-loose font-bold text-body-sm uppercase tracking-widest w-[10%]">Hết hạn</th>
-              <th class="px-loose font-bold text-body-sm uppercase tracking-widest text-right w-[15%]">Thao tác</th>
-            </tr>
-          </thead>
-          <tbody class="text-on-surface">${rows}</tbody>
-        </table>
-      </div>
-      <div class="p-loose border-t border-outline-variant bg-surface-container-lowest/40 backdrop-blur-sm">
+      ${cards}
+      <div class="col-span-full mt-loose">
         ${window.GymApp.renderPagination(self._memberPage, self._memberFiltered.length, self._perPage)}
       </div>
     `;
