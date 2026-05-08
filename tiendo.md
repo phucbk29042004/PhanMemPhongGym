@@ -14,6 +14,34 @@
 
 ## 📋 Danh Sách Thay Đổi
 
+### 08/05/2026 16:37 — Sửa chiều cao card Lịch đã đặt theo card Thông tin đặt lịch
+- **Loại**: Sửa bug / Cải thiện UI (Frontend)
+- **File/Thành phần liên quan**: `FE/assets/js/pages/pt-register.js`
+- **Mô tả**: Đổi grid màn Đăng ký lịch tập PT sang `items-stretch`, đặt card Lịch đã đặt `h-full min-h-0`, cho vùng danh sách `flex-1 min-h-0 overflow-y-auto`, và giảm số lịch mỗi trang xuống 3 để card bên phải luôn cao bằng card Thông tin đặt lịch khi sidebar mở hoặc thu gọn.
+- **Kết quả**: Thành công
+
+---
+
+### 08/05/2026 16:31 — Tối ưu card Lịch đã đặt trong Đăng ký lịch tập PT
+- **Loại**: Chỉnh sửa / Cải thiện UI (Frontend)
+- **File/Thành phần liên quan**: `FE/assets/js/pages/pt-register.js`
+- **Mô tả**: Chia layout màn Đăng ký lịch tập PT theo tỉ lệ 7:3 ở desktop, bỏ cơ chế kéo cao card Lịch đã đặt gây khoảng trắng phía dưới, và thêm phân trang cho danh sách lịch đã đặt để dữ liệu nhiều không tràn khỏi card.
+- **Kết quả**: Thành công
+
+---
+
+### 08/05/2026 20:30 — Redesign giao diện toàn bộ (Bước 3 + 4): packages, member-add, pt-training, pt-register
+- **Loại**: Chỉnh sửa (Frontend — redesign + bug fix)
+- **File chỉnh sửa**:
+    - `FE/assets/js/pages/packages.js` — Redesign: stat cards với icon-bg, card gói tập giữ gradient xanh nhưng rounded-2xl + hover glow, bảng so sánh dùng gym-table + section-header
+    - `FE/assets/js/pages/member-add.js` — Redesign: rounded-2xl, icon-bg cho section headers, inputs/selects rounded-xl, btn-primary, tab switcher rounded-2xl
+    - `FE/assets/js/pages/pt-training.js` — Redesign + **Fix bug**: `init()` đổi thành `async`, thêm fetch `/pt/schedules` khi `ptSchedules` rỗng, nút Tải lại cũng fetch lại, stat cards với icon-bg, PT cards với gym-card hover glow, section-header cho panel PT
+    - `FE/assets/js/pages/pt-register.js` — Redesign + **Fix bug**: null-safe spread `Array.isArray()` check thay vì `[...undefined]`, đổi `b.status` → `b.trang_thai` trong statusBadge, rounded-2xl, gym-card cho booking items, section-header, max-height + overflow-y-auto cho booking list, empty state đẹp hơn
+- **Mô tả**: Tiếp nối redesign toàn bộ giao diện theo Material 3 Glassmorphism. Sửa 2 bug quan trọng: (1) pt-training không có dữ liệu khi vào thẳng trang, (2) pt-register crash do TypeError khi ptSchedules/ptBookings là undefined + badge không hiển thị đúng trạng thái
+- **Kết quả**: Thành công
+
+---
+
 ### 08/05/2026 16:30 — Hoàn thiện Backend API còn thiếu (Phase 3)
 - **Loại**: Tạo mới & Chỉnh sửa (Backend)
 - **File tạo mới**:

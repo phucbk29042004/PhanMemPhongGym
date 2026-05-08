@@ -14,19 +14,19 @@
       theme: {
         extend: {
           colors: {
-            "on-error-container": "#93000a", "inverse-surface": "#2d3135", "on-surface": "#181c20",
-            "inverse-on-surface": "#eef1f6", "surface-container-highest": "#e0e3e8", "on-primary": "#ffffff",
-            "on-tertiary-container": "#fffbff", "surface-bright": "#f7f9ff", "surface-container-low": "#f1f4f9",
-            "surface-dim": "#d7dadf", "surface": "#f7f9ff", "tertiary-fixed-dim": "#ffb1c4",
-            "surface-tint": "#006e21", "primary-fixed-dim": "#6fde76", "on-surface-variant": "#3f4a3c",
+            "on-error-container": "#93000a", "inverse-surface": "#2d3135", "on-surface": "var(--text-on-surface)",
+            "inverse-on-surface": "#eef1f6", "surface-container-highest": "var(--bg-surface-highest)", "on-primary": "#ffffff",
+            "on-tertiary-container": "#fffbff", "surface-bright": "#f7f9ff", "surface-container-low": "var(--bg-surface-low)",
+            "surface-dim": "#d7dadf", "surface": "var(--bg-surface)", "tertiary-fixed-dim": "#ffb1c4",
+            "surface-tint": "#006e21", "primary-fixed-dim": "#6fde76", "on-surface-variant": "var(--text-on-surface-variant)",
             "inverse-primary": "#6fde76", "tertiary-fixed": "#ffd9e1", "tertiary-container": "#c54772",
             "tertiary": "#a52d59", "on-tertiary-fixed-variant": "#891544", "on-tertiary": "#ffffff",
             "primary-fixed": "#8bfb8f", "error": "#ba1a1a", "outline": "#6e7a6b", "on-secondary": "#ffffff",
-            "background": "#f7f9ff", "secondary": "#575f67", "on-secondary-fixed": "#141d23",
-            "surface-variant": "#e0e3e8", "on-background": "#181c20", "surface-container-high": "#e5e8ee",
-            "secondary-container": "#d8e1ea", "surface-container-lowest": "#ffffff", "error-container": "#ffdad6",
-            "secondary-fixed": "#dbe4ed", "outline-variant": "#becab9", "on-tertiary-fixed": "#3f001a",
-            "on-error": "#ffffff", "surface-container": "#ebeef3", "on-secondary-fixed-variant": "#3f484f",
+            "background": "var(--bg-background)", "secondary": "#575f67", "on-secondary-fixed": "#141d23",
+            "surface-variant": "var(--bg-surface-highest)", "on-background": "var(--text-on-surface)", "surface-container-high": "var(--bg-surface-high)",
+            "secondary-container": "#d8e1ea", "surface-container-lowest": "var(--bg-surface-lowest)", "error-container": "#ffdad6",
+            "secondary-fixed": "#dbe4ed", "outline-variant": "var(--outline-variant)", "on-tertiary-fixed": "#3f001a",
+            "on-error": "#ffffff", "surface-container": "var(--bg-surface-container)", "on-secondary-fixed-variant": "#3f484f",
             "on-primary-container": "#f7fff1", "secondary-fixed-dim": "#bfc8d0", "primary-container": "#03872c",
             "on-secondary-container": "#5b646b", "on-primary-fixed-variant": "#005317", "primary": "#006b20",
             "on-primary-fixed": "#002105", "brand-primary": "#1D9336"
@@ -76,20 +76,20 @@
 <div class="flex h-screen w-full overflow-hidden">
 
   <!-- ===== SIDEBAR ===== -->
-  <aside id="sidebar" class="flex flex-col h-full bg-surface-container-low border-r border-outline-variant w-64 flex-shrink-0">
+  <aside id="sidebar" class="flex flex-col h-full bg-surface-container-low border-r border-outline-variant w-64 flex-shrink-0" style="box-shadow:2px 0 12px rgba(0,0,0,0.06)">
 
     <!-- Toggle + Logo -->
-    <div class="sidebar-toggle-area flex items-center border-b border-outline-variant px-compact py-standard gap-compact flex-shrink-0">
-      <button id="sidebar-toggle" class="p-atom rounded-lg hover:bg-surface-container transition-colors flex-shrink-0" title="Thu gọn / Mở rộng">
+    <div class="sidebar-toggle-area sidebar-logo-area flex items-center border-b border-outline-variant px-compact py-standard gap-compact flex-shrink-0">
+      <button id="sidebar-toggle" class="p-atom rounded-xl hover:bg-surface-container transition-colors flex-shrink-0" title="Thu gọn / Mở rộng">
         <span class="material-symbols-outlined text-on-surface-variant text-xl">menu</span>
       </button>
       <div class="sidebar-label flex items-center gap-compact overflow-hidden flex-1">
-        <div class="w-7 h-7 bg-brand-primary rounded-lg flex items-center justify-center flex-shrink-0">
-          <span class="material-symbols-outlined text-white" style="font-size:15px">fitness_center</span>
+        <div class="w-8 h-8 bg-brand-primary rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+          <span class="material-symbols-outlined text-white" style="font-size:16px;font-variation-settings:'FILL' 1,'wght' 500">fitness_center</span>
         </div>
         <div class="min-w-0">
           <h1 class="font-display-xl text-display-xl text-brand-primary font-bold leading-tight whitespace-nowrap">Paradise GYM</h1>
-          <p class="text-on-surface-variant font-body-sm text-body-sm">v1.0.0</p>
+          <p class="text-on-surface-variant font-body-sm text-body-sm" style="font-size:10px">Quản lý phòng tập</p>
         </div>
       </div>
     </div>
@@ -99,65 +99,67 @@
 
       <!-- Tổng quan -->
       <button
-        class="nav-item flex items-center gap-standard w-full px-standard py-compact rounded-lg text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-colors"
+        class="nav-item flex items-center gap-standard w-full px-standard py-compact rounded-xl text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150"
         data-page="dashboard" title="Tổng quan"
       >
         <span class="material-symbols-outlined text-xl flex-shrink-0">dashboard</span>
-        <span class="sidebar-label font-body-md text-body-md">Tổng quan</span>
+        <span class="sidebar-label font-body-md text-body-md font-medium">Tổng quan</span>
       </button>
 
       <!-- Quản lý hội viên (Accordion) -->
       <div class="accordion-group">
         <button
-          class="accordion-trigger flex items-center gap-standard w-full px-standard py-compact rounded-lg text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-colors"
+          class="accordion-trigger flex items-center gap-standard w-full px-standard py-compact rounded-xl text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150"
           data-accordion="hoi-vien" title="Quản lý hội viên"
         >
-          <span class="material-symbols-outlined text-xl flex-shrink-0">people</span>
-          <span class="sidebar-label font-body-md text-body-md flex-1 text-left">Quản lý hội viên</span>
+          <span class="material-symbols-outlined text-xl flex-shrink-0">manage_accounts</span>
+          <span class="sidebar-label font-body-md text-body-md font-medium flex-1 text-left">Quản lý</span>
           <span class="material-symbols-outlined text-sm arrow-icon transition-transform duration-200 sidebar-label flex-shrink-0">chevron_right</span>
         </button>
 
         <div class="accordion-content overflow-hidden" id="accordion-hoi-vien" style="max-height:0; transition: max-height 0.25s ease;">
-          <div class="pl-7 py-atom space-y-atom">
+          <div class="pl-6 py-atom space-y-atom">
 
-            <button class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-lg text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-colors" data-page="members-list" title="Danh sách hội viên">
-              <span class="material-symbols-outlined text-sm flex-shrink-0">format_list_bulleted</span>
+            <button class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150" data-page="members-list" title="Danh sách hội viên">
+              <span class="material-symbols-outlined text-sm flex-shrink-0">people</span>
               <span class="sidebar-label">Danh sách hội viên</span>
             </button>
 
-            <button class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-lg text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-colors" data-page="member-add" title="Thêm mới hội viên">
+            <button class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150" data-page="member-add" title="Thêm mới hội viên">
               <span class="material-symbols-outlined text-sm flex-shrink-0">person_add</span>
-              <span class="sidebar-label">Thêm mới hội viên</span>
+              <span class="sidebar-label">Thêm hội viên mới</span>
             </button>
 
-            <button class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-lg text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-colors" data-page="checkin" title="Vào - Ra">
-              <span class="material-symbols-outlined text-sm flex-shrink-0">login</span>
-              <span class="sidebar-label">Vào - Ra</span>
+            <button class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150" data-page="checkin" title="Vào - Ra">
+              <span class="material-symbols-outlined text-sm flex-shrink-0">how_to_reg</span>
+              <span class="sidebar-label">Check-in / Ra</span>
             </button>
 
-            <button class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-lg text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-colors" data-page="expired" title="Danh sách hết hạn">
+            <button class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150" data-page="expired" title="Danh sách hết hạn">
               <span class="material-symbols-outlined text-sm flex-shrink-0">event_busy</span>
-              <span class="sidebar-label">Danh sách hết hạn</span>
+              <span class="sidebar-label">Hết hạn / Sắp hết hạn</span>
             </button>
 
-            <button class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-lg text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-colors" data-page="pt-training" title="Lịch đào tạo PT">
+            <button class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150" data-page="birthday" title="Sinh nhật">
+              <span class="material-symbols-outlined text-sm flex-shrink-0">cake</span>
+              <span class="sidebar-label">Sinh nhật hội viên</span>
+            </button>
+
+            <button class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150" data-page="packages" title="Gói tập">
+              <span class="material-symbols-outlined text-sm flex-shrink-0">card_membership</span>
+              <span class="sidebar-label">Gói tập</span>
+            </button>
+
+            <div class="h-px bg-outline-variant/40 my-atom"></div>
+
+            <button class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150" data-page="pt-training" title="Lịch đào tạo PT">
               <span class="material-symbols-outlined text-sm flex-shrink-0">sports_gymnastics</span>
               <span class="sidebar-label">Lịch đào tạo PT</span>
             </button>
 
-            <button class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-lg text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-colors" data-page="pt-register" title="Đăng ký lịch tập PT">
+            <button class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150" data-page="pt-register" title="Đăng ký lịch tập PT">
               <span class="material-symbols-outlined text-sm flex-shrink-0">edit_calendar</span>
-              <span class="sidebar-label">Đăng ký lịch tập PT</span>
-            </button>
-
-            <button class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-lg text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-colors" data-page="packages" title="Danh sách gói tập">
-              <span class="material-symbols-outlined text-sm flex-shrink-0">card_membership</span>
-              <span class="sidebar-label">Danh sách gói tập</span>
-            </button>
-
-            <button class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-lg text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-colors" data-page="birthday" title="Sinh nhật">
-              <span class="material-symbols-outlined text-sm flex-shrink-0">cake</span>
-              <span class="sidebar-label">Sinh nhật</span>
+              <span class="sidebar-label">Đặt lịch PT</span>
             </button>
 
           </div>
@@ -167,7 +169,7 @@
 
     <!-- Đăng xuất -->
     <div class="border-t border-outline-variant px-compact py-standard flex-shrink-0">
-      <button class="flex items-center gap-standard w-full px-standard py-compact rounded-lg text-on-surface-variant hover:text-error hover:bg-error-container transition-colors" title="Đăng xuất">
+      <button id="btn-logout" class="flex items-center gap-standard w-full px-standard py-compact rounded-xl text-on-surface-variant hover:text-error hover:bg-error-container transition-all duration-150" title="Đăng xuất">
         <span class="material-symbols-outlined text-xl flex-shrink-0">logout</span>
         <span class="sidebar-label font-body-md text-body-md">Đăng xuất</span>
       </button>
@@ -178,17 +180,23 @@
   <div class="flex flex-col flex-1 min-w-0 overflow-hidden">
 
     <!-- Header -->
-    <header class="flex justify-end items-center px-loose w-full bg-surface border-b border-outline-variant h-12 flex-shrink-0 gap-standard">
-      <button id="theme-toggle" class="material-symbols-outlined text-on-surface-variant hover:text-brand-primary p-atom rounded transition-colors" title="Chuyển chế độ sáng/tối">
+    <header class="gym-header flex justify-end items-center px-loose w-full h-12 flex-shrink-0 gap-standard sticky top-0 z-10">
+      <button id="theme-toggle" class="material-symbols-outlined text-on-surface-variant hover:text-brand-primary p-atom rounded-lg transition-all" title="Chuyển chế độ sáng/tối">
         <span id="theme-icon">dark_mode</span>
       </button>
-      <button class="material-symbols-outlined text-on-surface-variant hover:text-brand-primary p-atom rounded transition-colors">notifications</button>
-      <button class="material-symbols-outlined text-on-surface-variant hover:text-brand-primary p-atom rounded transition-colors">settings</button>
-      <div class="flex items-center gap-compact ml-compact">
-        <div class="w-7 h-7 rounded-full bg-brand-primary flex items-center justify-center">
-          <span class="material-symbols-outlined text-white text-sm">person</span>
+      <button class="material-symbols-outlined text-on-surface-variant hover:text-brand-primary p-atom rounded-lg transition-all relative">
+        notifications
+        <span class="absolute top-0.5 right-0.5 w-2 h-2 bg-brand-primary rounded-full" style="font-size:0"></span>
+      </button>
+      <button class="material-symbols-outlined text-on-surface-variant hover:text-brand-primary p-atom rounded-lg transition-all">settings</button>
+      <div class="flex items-center gap-compact ml-xs pl-standard border-l border-outline-variant">
+        <div class="w-7 h-7 rounded-full bg-gradient-to-br from-brand-primary to-[#157a2a] flex items-center justify-center shadow-sm">
+          <span class="material-symbols-outlined text-white text-sm" style="font-variation-settings:'FILL' 1">person</span>
         </div>
-        <span class="text-body-sm text-on-surface font-bold">Admin</span>
+        <div class="flex flex-col leading-none">
+          <span class="text-body-sm text-on-surface font-bold">Admin</span>
+          <span class="text-on-surface-variant" style="font-size:10px">Quản trị viên</span>
+        </div>
       </div>
     </header>
 
@@ -196,8 +204,11 @@
     <main id="content-area" class="flex-grow overflow-y-auto bg-background p-loose">
       <div class="flex items-center justify-center h-full">
         <div class="text-center">
-          <span class="material-symbols-outlined text-6xl text-outline">fitness_center</span>
-          <p class="text-on-surface-variant mt-standard">Đang tải...</p>
+          <div class="w-16 h-16 bg-brand-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-standard">
+            <span class="material-symbols-outlined text-brand-primary" style="font-size:32px;font-variation-settings:'FILL' 1">fitness_center</span>
+          </div>
+          <p class="text-on-surface font-bold">Paradise GYM</p>
+          <p class="text-on-surface-variant mt-xs text-body-sm">Đang tải dữ liệu...</p>
         </div>
       </div>
     </main>

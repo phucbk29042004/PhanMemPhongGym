@@ -18,43 +18,80 @@ window.GymApp.pages['dashboard'] = {
       avatar: c.avatar_url
     }));
 
+    const stats = [
+      { icon: 'people', label: 'Tổng hội viên', value: dbData.hoi_vien.tong, sub: `${dbData.hoi_vien.con_han} đang hoạt động`, iconBg: 'icon-bg-green', color: 'text-brand-primary' },
+      { icon: 'how_to_reg', label: 'Check-in hôm nay', value: dbData.luot_vao_ra_hom_nay.luot_vao, sub: 'Lượt vào tập', iconBg: 'icon-bg-green', color: 'text-brand-primary' },
+      { icon: 'warning_amber', label: 'Sắp hết hạn', value: dbData.hoi_vien.sap_het_han, sub: 'Cần gia hạn sớm', iconBg: 'icon-bg-orange', color: 'text-[#e65100]' },
+      { icon: 'payments', label: 'Doanh thu hôm nay', value: window.GymApp.formatCurrency(dbData.doanh_thu_hom_nay?.tong_tien || 0), sub: `${dbData.doanh_thu_hom_nay?.tong_don || 0} giao dịch`, iconBg: 'icon-bg-green', color: 'text-brand-primary' },
+    ];
+
     return `
-      <div class="flex flex-col gap-margin">
+      <div class="flex flex-col gap-margin animate-in fade-in duration-500">
+
+        <!-- Page Title -->
+        <div class="page-title-bar flex flex-col md:flex-row md:items-center justify-between gap-compact">
+          <div>
+            <h2 class="font-display-lg text-display-lg text-on-surface font-bold tracking-tight">Tổng quan hệ thống</h2>
+            <p class="text-on-surface-variant font-body-sm text-body-sm mt-xs flex items-center gap-xs">
+              <span class="material-symbols-outlined text-sm">calendar_today</span>
+              ${new Date().toLocaleDateString('vi-VN', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
+            </p>
+          </div>
+          <div class="flex items-center gap-compact">
+             <button class="bg-brand-primary/10 text-brand-primary px-loose py-compact rounded-full font-bold text-body-sm hover:bg-brand-primary/20 transition-all flex items-center gap-xs" onclick="window.GymApp.fetchInitialData()">
+                <span class="material-symbols-outlined text-lg">refresh</span> Làm mới
+             </button>
+          </div>
+        </div>
 
         <!-- Stat Cards -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-loose">
-          ${[
-            { icon: 'people', label: 'Tổng hội viên', value: dbData.hoi_vien.tong, sub: `${dbData.hoi_vien.con_han} đang hoạt động`, color: 'text-brand-primary' },
-            { icon: 'login', label: 'Check-in hôm nay', value: dbData.luot_vao_ra_hom_nay.luot_vao, sub: 'Lượt vào tập', color: 'text-[#006b20]' },
-            { icon: 'warning', label: 'Sắp hết hạn', value: dbData.hoi_vien.sap_het_han, sub: 'Cần gia hạn sớm', color: 'text-[#e65100]' },
-            { icon: 'payments', label: 'Doanh thu hôm nay', value: window.GymApp.formatCurrency(dbData.doanh_thu_hom_nay?.tong_tien || 0), sub: 'Tiền thu thực tế', color: 'text-brand-primary' },
-          ].map(c => `
-            <div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-loose flex flex-col gap-sm shadow-sm">
-              <div class="flex items-center justify-between">
-                <span class="text-on-surface-variant font-body-sm text-body-sm uppercase tracking-wider font-bold">${c.label}</span>
-                <span class="material-symbols-outlined ${c.color} text-xl">${c.icon}</span>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-loose">
+          ${stats.map(c => `
+            <div class="gym-card bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl border border-outline-variant p-loose shadow-sm flex flex-col gap-standard transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-brand-primary/40 group relative overflow-hidden">
+              <div class="absolute inset-0 bg-gradient-to-br from-brand-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div class="flex items-center justify-between relative z-10">
+                <span class="text-on-surface-variant font-body-sm text-body-sm font-bold uppercase tracking-wider leading-tight" style="max-width:calc(100% - 52px)">${c.label}</span>
+                <div class="w-10 h-10 rounded-xl ${c.iconBg} flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                  <span class="material-symbols-outlined ${c.color} text-xl" style="font-variation-settings:'FILL' 1">${c.icon}</span>
+                </div>
               </div>
-              <span class="${c.color} font-display-lg text-display-lg font-bold">${c.value}</span>
-              <span class="text-on-surface-variant font-body-sm text-body-sm">${c.sub}</span>
+              <div class="relative z-10 flex flex-col">
+                <span class="${c.color} font-display-lg text-display-lg font-bold tracking-tight">${c.value}</span>
+                <span class="text-on-surface-variant font-body-sm text-body-sm flex items-center gap-xs mt-xs">
+                  <span class="w-1.5 h-1.5 rounded-full ${c.color.replace('text-', 'bg-')} animate-pulse"></span>
+                  ${c.sub}
+                </span>
+              </div>
             </div>
           `).join('')}
         </div>
 
         <!-- Charts Row -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-loose">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-loose">
 
-          <!-- Biểu đồ doanh thu theo tháng -->
-          <div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-loose shadow-sm">
-            <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface mb-standard">Doanh thu theo tháng (triệu VNĐ)</h3>
-            <div style="height:220px">
+          <!-- Biểu đồ doanh thu -->
+          <div class="lg:col-span-2 gym-card bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl border border-outline-variant shadow-sm overflow-hidden transition-all hover:shadow-lg">
+            <div class="section-header px-loose py-standard border-b border-outline-variant flex items-center gap-compact bg-surface-container-lowest/40">
+              <div class="w-8 h-8 rounded-lg bg-brand-primary/10 flex items-center justify-center">
+                <span class="material-symbols-outlined text-brand-primary text-lg" style="font-variation-settings:'FILL' 1">bar_chart</span>
+              </div>
+              <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface flex-1">Doanh thu 12 tháng</h3>
+              <span class="text-on-surface-variant text-body-sm italic">triệu VNĐ</span>
+            </div>
+            <div class="p-loose" style="height:280px">
               <canvas id="chart-revenue"></canvas>
             </div>
           </div>
 
           <!-- Biểu đồ gói tập -->
-          <div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-loose shadow-sm">
-            <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface mb-standard">Phân bố gói tập</h3>
-            <div style="height:220px">
+          <div class="gym-card bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl border border-outline-variant shadow-sm overflow-hidden transition-all hover:shadow-lg">
+            <div class="section-header px-loose py-standard border-b border-outline-variant flex items-center gap-compact bg-surface-container-lowest/40">
+              <div class="icon-bg icon-bg-blue">
+                <span class="material-symbols-outlined text-blue-600 dark:text-blue-400 text-lg" style="font-variation-settings:'FILL' 1">donut_large</span>
+              </div>
+              <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface">Phân bố hội viên</h3>
+            </div>
+            <div class="p-loose flex flex-col items-center justify-center" style="height:280px">
               <canvas id="chart-packages"></canvas>
             </div>
           </div>
@@ -64,72 +101,105 @@ window.GymApp.pages['dashboard'] = {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-loose">
 
           <!-- Check-in gần nhất -->
-          <div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden">
-            <div class="px-loose py-standard border-b border-outline-variant flex items-center justify-between">
-              <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface">Check-in gần nhất</h3>
-              <button class="text-brand-primary font-body-sm text-body-sm hover:underline" data-page="checkin">Xem tất cả</button>
+          <div class="bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl border border-outline-variant shadow-sm overflow-hidden transition-all hover:shadow-lg">
+            <div class="section-header px-loose py-standard border-b border-outline-variant flex items-center justify-between bg-surface-container-lowest/40">
+              <div class="flex items-center gap-compact">
+                <div class="w-8 h-8 rounded-lg bg-brand-primary/10 flex items-center justify-center">
+                  <span class="material-symbols-outlined text-brand-primary text-lg" style="font-variation-settings:'FILL' 1">how_to_reg</span>
+                </div>
+                <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface">Check-in gần nhất</h3>
+              </div>
+              <button class="text-brand-primary font-bold text-body-sm hover:underline flex items-center gap-xs transition-all" onclick="window.GymApp.loadPage('checkin')">
+                Xem tất cả <span class="material-symbols-outlined text-sm">arrow_forward</span>
+              </button>
             </div>
             <div class="divide-y divide-outline-variant">
-              ${recentCheckins.map(c => `
-                <div class="flex items-center gap-compact px-loose py-compact">
-                  ${window.GymApp.avatarImg(c.avatar, c.name, 'sm')}
-                  <div class="flex-1 min-w-0">
-                    <p class="font-bold text-on-surface text-body-md truncate">${c.name}</p>
-                    <p class="text-on-surface-variant text-body-sm">${c.memberId}</p>
-                  </div>
-                  <span class="text-on-surface-variant text-body-sm flex-shrink-0">${c.time}</span>
-                </div>
-              `).join('')}
+              ${recentCheckins.length === 0
+                ? `<div class="flex flex-col items-center justify-center py-loose text-center opacity-60">
+                     <span class="material-symbols-outlined text-4xl mb-xs">person_off</span>
+                     <p class="text-on-surface-variant text-body-sm font-medium">Chưa có check-in hôm nay</p>
+                   </div>`
+                : recentCheckins.map(c => `
+                    <div class="flex items-center gap-compact px-loose py-compact hover:bg-brand-primary/5 transition-all group cursor-default">
+                      <div class="relative">
+                        ${window.GymApp.avatarImg(c.avatar, c.name, 'sm')}
+                        <span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <p class="font-bold text-on-surface text-body-md truncate group-hover:text-brand-primary transition-colors">${c.name}</p>
+                        <p class="text-on-surface-variant text-body-sm font-medium">${c.memberId}</p>
+                      </div>
+                      <div class="flex items-center gap-xs bg-brand-primary/10 px-compact py-xs rounded-full flex-shrink-0 group-hover:bg-brand-primary group-hover:text-white transition-all">
+                        <span class="material-symbols-outlined text-brand-primary group-hover:text-white transition-colors" style="font-size:12px">schedule</span>
+                        <span class="text-brand-primary font-bold text-body-sm group-hover:text-white transition-colors">${c.time}</span>
+                      </div>
+                    </div>
+                  `).join('')
+              }
             </div>
           </div>
 
-          <!-- Phân bổ trạng thái -->
-          <div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden">
-            <div class="px-loose py-standard border-b border-outline-variant flex items-center justify-between">
-              <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface">Tình trạng hội viên</h3>
-              <button class="text-brand-primary font-body-sm text-body-sm hover:underline" data-page="members-list">Chi tiết</button>
+          <!-- Tình trạng hội viên -->
+          <div class="bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl border border-outline-variant shadow-sm overflow-hidden transition-all hover:shadow-lg">
+            <div class="section-header px-loose py-standard border-b border-outline-variant flex items-center justify-between bg-surface-container-lowest/40">
+              <div class="flex items-center gap-compact">
+                <div class="icon-bg icon-bg-pink">
+                  <span class="material-symbols-outlined text-tertiary text-lg" style="font-variation-settings:'FILL' 1">analytics</span>
+                </div>
+                <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface">Tình trạng hội viên</h3>
+              </div>
+              <button class="text-brand-primary font-bold text-body-sm hover:underline flex items-center gap-xs transition-all" onclick="window.GymApp.loadPage('members-list')">
+                Chi tiết <span class="material-symbols-outlined text-sm">arrow_forward</span>
+              </button>
             </div>
             <div class="divide-y divide-outline-variant">
-              <div class="flex items-center justify-between px-loose py-compact">
-                 <span class="text-on-surface text-body-md">Đang hoạt động (Còn hạn)</span>
-                 <span class="font-bold text-brand-primary">${dbData.hoi_vien.con_han}</span>
-              </div>
-              <div class="flex items-center justify-between px-loose py-compact">
-                 <span class="text-on-surface text-body-md">Sắp hết hạn (7 ngày)</span>
-                 <span class="font-bold text-[#e65100]">${dbData.hoi_vien.sap_het_han}</span>
-              </div>
-              <div class="flex items-center justify-between px-loose py-compact">
-                 <span class="text-on-surface text-body-md">Đã hết hạn tập</span>
-                 <span class="font-bold text-error">${dbData.hoi_vien.het_han}</span>
-              </div>
-              <div class="flex items-center justify-between px-loose py-compact">
-                 <span class="text-on-surface text-body-md">Chưa đăng ký gói</span>
-                 <span class="font-bold text-on-surface-variant">${dbData.hoi_vien.chua_dang_ky}</span>
-              </div>
+              ${[
+                { label: 'Còn hạn', value: dbData.hoi_vien.con_han, color: 'text-brand-primary', dot: 'bg-brand-primary', glow: 'shadow-[0_0_8px_rgba(29,147,54,0.4)]' },
+                { label: 'Sắp hết hạn (7 ngày)', value: dbData.hoi_vien.sap_het_han, color: 'text-[#e65100]', dot: 'bg-[#e65100]', glow: 'shadow-[0_0_8px_rgba(230,81,0,0.4)]' },
+                { label: 'Đã hết hạn', value: dbData.hoi_vien.het_han, color: 'text-error', dot: 'bg-error', glow: 'shadow-[0_0_8px_rgba(186,26,26,0.4)]' },
+                { label: 'Chưa đăng ký gói', value: dbData.hoi_vien.chua_dang_ky, color: 'text-on-surface-variant', dot: 'bg-outline', glow: '' },
+              ].map(r => `
+                <div class="flex items-center justify-between px-loose py-compact hover:bg-surface-container-low transition-all group cursor-default">
+                  <div class="flex items-center gap-compact">
+                    <span class="w-2 h-2 rounded-full ${r.dot} ${r.glow} group-hover:scale-150 transition-transform"></span>
+                    <span class="text-on-surface text-body-md font-medium">${r.label}</span>
+                  </div>
+                  <span class="font-display-2xl text-display-2xl font-bold ${r.color} group-hover:scale-110 transition-transform">${r.value}</span>
+                </div>
+              `).join('')}
             </div>
           </div>
         </div>
 
         <!-- Footer Info -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-loose">
-            <div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-loose shadow-sm flex items-center gap-loose">
-                <div class="w-12 h-12 bg-primary-container rounded-full flex items-center justify-center">
-                    <span class="material-symbols-outlined text-white">sports_gymnastics</span>
-                </div>
-                <div>
-                    <p class="text-on-surface-variant text-body-sm">Tổng số huấn luyện viên (PT)</p>
-                    <p class="text-2xl font-bold text-on-surface">${dbData.tong_pt}</p>
-                </div>
+          <div class="gym-card bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl border border-outline-variant p-loose shadow-sm flex items-center gap-loose transition-all hover:shadow-lg hover:border-brand-primary/30 group">
+            <div class="w-14 h-14 bg-brand-primary rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+              <span class="material-symbols-outlined text-white text-3xl" style="font-variation-settings:'FILL' 1">sports_gymnastics</span>
             </div>
-            <div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-loose shadow-sm flex items-center gap-loose">
-                <div class="w-12 h-12 bg-secondary-container rounded-full flex items-center justify-center">
-                    <span class="material-symbols-outlined text-secondary">calendar_today</span>
-                </div>
-                <div>
-                    <p class="text-on-surface-variant text-body-sm">Lịch tập hôm nay</p>
-                    <p class="text-2xl font-bold text-on-surface">${dbData.lich_tap_hom_nay.tong} <span class="text-sm font-normal text-on-surface-variant">(${dbData.lich_tap_hom_nay.da_tap} đã hoàn thành)</span></p>
-                </div>
+            <div>
+              <p class="text-on-surface-variant text-body-sm font-bold uppercase tracking-wider leading-tight">Tổng huấn luyện viên (PT)</p>
+              <p class="text-3xl font-bold text-on-surface tracking-tight mt-xs">${dbData.tong_pt}</p>
             </div>
+            <div class="ml-auto opacity-20 group-hover:opacity-40 transition-opacity">
+               <span class="material-symbols-outlined text-5xl">diversity_3</span>
+            </div>
+          </div>
+          <div class="gym-card bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl border border-outline-variant p-loose shadow-sm flex items-center gap-loose transition-all hover:shadow-lg hover:border-secondary/30 group">
+            <div class="w-14 h-14 bg-secondary-container rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+              <span class="material-symbols-outlined text-secondary text-3xl" style="font-variation-settings:'FILL' 1">calendar_today</span>
+            </div>
+            <div>
+              <p class="text-on-surface-variant text-body-sm font-bold uppercase tracking-wider leading-tight">Lịch tập hôm nay</p>
+              <div class="flex items-baseline gap-xs mt-xs">
+                <p class="text-3xl font-bold text-on-surface tracking-tight">${dbData.lich_tap_hom_nay.tong}</p>
+                <p class="text-on-surface-variant text-body-sm font-medium">buổi <span class="text-brand-primary">(${dbData.lich_tap_hom_nay.da_tap} hoàn thành)</span></p>
+              </div>
+            </div>
+            <div class="ml-auto opacity-20 group-hover:opacity-40 transition-opacity">
+               <span class="material-symbols-outlined text-5xl">event_available</span>
+            </div>
+          </div>
         </div>
 
       </div>
@@ -141,20 +211,23 @@ window.GymApp.pages['dashboard'] = {
       const res = await window.GymApp.api.get('/revenue/dashboard');
       if (res && res.success) {
         window.GymApp.data.stats = res.data;
-        // Re-render to update stats
         const contentArea = document.getElementById('content-area');
         if (contentArea && window.GymApp.currentPage === 'dashboard') {
-            contentArea.innerHTML = this.render();
+          contentArea.innerHTML = this.render();
+          this._initCharts();
+          return;
         }
       }
     } catch (err) {
       console.error('Failed to fetch dashboard stats', err);
     }
+    this._initCharts();
+  },
 
+  _initCharts: function () {
     const dbData = window.GymApp.data.stats;
     if (!dbData) return;
 
-    // Chart doanh thu
     const ctxRev = document.getElementById('chart-revenue');
     if (ctxRev) {
       window.GymApp._activeChart = new Chart(ctxRev, {
@@ -164,27 +237,58 @@ window.GymApp.pages['dashboard'] = {
           datasets: [{
             label: 'Doanh thu',
             data: [12, 18, 21, 17, 23, 26, 19, 28, 31, 27, 32, 29],
-            backgroundColor: '#1D933620', borderColor: '#1D9336', borderWidth: 2, borderRadius: 4,
+            backgroundColor: 'rgba(29,147,54,0.15)',
+            borderColor: '#1D9336',
+            borderWidth: 2,
+            borderRadius: 6,
+            hoverBackgroundColor: 'rgba(29,147,54,0.3)',
           }]
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { 
+              grid: { display: false }, 
+              ticks: { color: document.documentElement.classList.contains('dark') ? '#a8b5a5' : '#3f4a3c', font: { size: 10 } } 
+            },
+            y: { 
+              beginAtZero: true, 
+              grid: { color: document.documentElement.classList.contains('dark') ? 'rgba(255,255,255,0.05)' : 'rgba(190,202,185,0.3)' }, 
+              ticks: { color: document.documentElement.classList.contains('dark') ? '#a8b5a5' : '#3f4a3c', font: { size: 10 } } 
+            }
+          }
+        }
       });
     }
 
-    // Chart gói tập (Dùng dữ liệu revenue để vẽ nếu cần, tạm thời ẩn hoặc vẽ từ packageStats)
     const ctxPkg = document.getElementById('chart-packages');
     if (ctxPkg && dbData.hoi_vien) {
       new Chart(ctxPkg, {
         type: 'doughnut',
         data: {
-          labels: ['Còn hạn', 'Sắp hết hạn', 'Hết hạn', 'Chưa gói'],
+          labels: ['Còn hạn', 'Sắp hết hạn', 'Hết hạn', 'Chưa đăng ký'],
           datasets: [{
             data: [dbData.hoi_vien.con_han, dbData.hoi_vien.sap_het_han, dbData.hoi_vien.het_han, dbData.hoi_vien.chua_dang_ky],
-            backgroundColor: ['#1D9336', '#f59e0b', '#ba1a1a', '#575f67'],
-            borderWidth: 2, borderColor: '#f7f9ff',
+            backgroundColor: ['#1D9336', '#f59e0b', '#ba1a1a', '#9ca3af'],
+            borderWidth: 2, 
+            borderColor: document.documentElement.classList.contains('dark') ? '#1c2028' : '#ffffff',
           }]
         },
-        options: { responsive: true, maintainAspectRatio: false }
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { 
+            legend: { 
+              position: 'bottom', 
+              labels: { 
+                color: document.documentElement.classList.contains('dark') ? '#dde1e7' : '#181c20',
+                font: { size: 11 }, 
+                padding: 12 
+              } 
+            } 
+          },
+          cutout: '65%',
+        }
       });
     }
   }

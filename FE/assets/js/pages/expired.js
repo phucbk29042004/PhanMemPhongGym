@@ -18,10 +18,7 @@ window.GymApp.pages['expired'] = {
       return diff >= 0 && diff <= 30;
     }).map(m => {
       const expireDate = m.ngay_het_han || m.expireDate;
-      return {
-        ...m,
-        daysLeft: Math.ceil((new Date(expireDate) - now) / (1000 * 60 * 60 * 24))
-      };
+      return { ...m, daysLeft: Math.ceil((new Date(expireDate) - now) / (1000 * 60 * 60 * 24)) };
     });
     this._expiringList = expiring;
 
@@ -30,42 +27,48 @@ window.GymApp.pages['expired'] = {
 
         <!-- Header -->
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-standard">
-          <div>
-            <h2 class="font-display-2xl text-display-2xl text-on-surface font-bold">Danh sách hết hạn</h2>
-            <p class="text-on-surface-variant font-body-sm text-body-sm">Theo dõi hội viên hết hạn và sắp hết hạn gói tập</p>
+          <div class="page-title-bar">
+            <h2 class="font-display-lg text-display-lg text-on-surface font-bold">Hết hạn & Sắp hết hạn</h2>
+            <p class="text-on-surface-variant font-body-sm text-body-sm mt-xs">Theo dõi và gia hạn gói tập cho hội viên</p>
           </div>
-          <button class="bg-brand-primary text-white px-loose py-compact rounded-lg font-bold hover:bg-[#187a2d] flex items-center gap-compact shadow-sm">
+          <button class="btn-primary text-white px-loose py-compact rounded-xl font-bold flex items-center gap-compact">
             <span class="material-symbols-outlined text-sm">send</span>
             Gửi thông báo gia hạn
           </button>
         </div>
 
         <!-- Stats -->
-        <div class="grid grid-cols-3 gap-loose">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-loose">
           ${[
-            { label: 'Đã hết hạn', value: expired.length, color: 'text-error', icon: 'cancel', bg: 'bg-error-container' },
-            { label: 'Sắp hết hạn (30 ngày)', value: expiring.length, color: 'text-[#e65100]', icon: 'warning', bg: 'bg-[#fff3e0]' },
-            { label: 'Cần liên hệ hôm nay', value: Math.ceil(expired.length * 0.4), color: 'text-brand-primary', icon: 'phone', bg: 'bg-[#e7f5e9]' },
+            { label: 'Đã hết hạn', value: expired.length, color: 'text-error', icon: 'cancel', iconBg: 'icon-bg-red' },
+            { label: 'Sắp hết hạn (30 ngày)', value: expiring.length, color: 'text-[#e65100]', icon: 'warning_amber', iconBg: 'icon-bg-orange' },
+            { label: 'Cần liên hệ hôm nay', value: Math.ceil(expired.length * 0.4), color: 'text-brand-primary', icon: 'phone_in_talk', iconBg: 'icon-bg-green' },
           ].map(s => `
-            <div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-loose shadow-sm flex items-center gap-loose">
-              <div class="w-12 h-12 ${s.bg} rounded-xl flex items-center justify-center flex-shrink-0">
-                <span class="material-symbols-outlined ${s.color}">${s.icon}</span>
+            <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-loose shadow-sm flex items-center gap-loose">
+              <div class="icon-bg ${s.iconBg}" style="width:48px;height:48px;border-radius:14px">
+                <span class="material-symbols-outlined ${s.color} text-2xl" style="font-variation-settings:'FILL' 1">${s.icon}</span>
               </div>
               <div>
                 <p class="text-on-surface-variant text-body-sm font-bold">${s.label}</p>
-                <p class="${s.color} font-display-2xl text-display-2xl font-bold">${s.value}</p>
+                <p class="${s.color} font-display-lg text-display-lg font-bold">${s.value}</p>
               </div>
             </div>
           `).join('')}
         </div>
 
         <!-- Tabs -->
-        <div class="flex gap-xs bg-surface-container p-xs rounded-xl border border-outline-variant w-fit">
-          <button id="tab-expired-list" class="px-loose py-compact rounded-lg font-bold text-body-md bg-surface-container-lowest text-brand-primary shadow-sm">
-            Đã hết hạn (${expired.length})
+        <div class="flex gap-xs bg-surface-container p-xs rounded-2xl border border-outline-variant w-fit shadow-sm">
+          <button id="tab-expired-list" class="px-loose py-compact rounded-xl font-bold text-body-md bg-surface-container-lowest text-brand-primary shadow-sm transition-all">
+            <span class="flex items-center gap-xs">
+              <span class="material-symbols-outlined text-sm">cancel</span>
+              Đã hết hạn (${expired.length})
+            </span>
           </button>
-          <button id="tab-expiring-list" class="px-loose py-compact rounded-lg font-bold text-body-md text-on-surface-variant hover:text-brand-primary">
-            Sắp hết hạn (${expiring.length})
+          <button id="tab-expiring-list" class="px-loose py-compact rounded-xl font-bold text-body-md text-on-surface-variant hover:text-brand-primary transition-all">
+            <span class="flex items-center gap-xs">
+              <span class="material-symbols-outlined text-sm">warning_amber</span>
+              Sắp hết hạn (${expiring.length})
+            </span>
           </button>
         </div>
 
@@ -85,22 +88,25 @@ window.GymApp.pages['expired'] = {
 
   _renderExpiredTable: function (list) {
     if (!list) list = this._expiredList;
-    if (list.length === 0) return `<div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-margin text-center text-on-surface-variant">Không có hội viên hết hạn</div>`;
+    if (list.length === 0) return `
+      <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant p-margin text-center">
+        <span class="material-symbols-outlined text-4xl text-outline">event_available</span>
+        <p class="text-on-surface-variant text-body-sm mt-standard">Không có hội viên hết hạn</p>
+      </div>`;
     const start = (this._expiredPage - 1) * this._perPage;
     const paginated = list.slice(start, start + this._perPage);
     return `
-      <div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden">
+      <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse">
-            <thead class="bg-surface-container-high">
+          <table class="w-full text-left border-collapse gym-table">
+            <thead>
               <tr class="h-10">
-                <th class="px-loose font-bold text-body-md">Hội viên</th>
-                <th class="px-loose font-bold text-body-md">Mã HV</th>
-                <th class="px-loose font-bold text-body-md">Gói tập</th>
-                <th class="px-loose font-bold text-body-md">Chi nhánh</th>
-                <th class="px-loose font-bold text-body-md">Hết hạn từ</th>
-                <th class="px-loose font-bold text-body-md">Trạng thái</th>
-                <th class="px-loose font-bold text-body-md text-right">Thao tác</th>
+                <th class="px-loose font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Hội viên</th>
+                <th class="px-loose font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Mã HV</th>
+                <th class="px-loose font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Gói tập</th>
+                <th class="px-loose font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Hết hạn từ</th>
+                <th class="px-loose font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Trạng thái</th>
+                <th class="px-loose font-bold text-body-sm text-on-surface-variant uppercase tracking-wider text-right">Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -115,18 +121,24 @@ window.GymApp.pages['expired'] = {
                       </div>
                     </div>
                   </td>
-                  <td class="px-loose text-on-surface-variant text-body-sm font-bold">${m.ma_ho_so}</td>
+                  <td class="px-loose">
+                    <span class="text-on-surface-variant text-body-sm font-bold bg-surface-container px-compact py-xs rounded-lg">${m.ma_ho_so}</span>
+                  </td>
                   <td class="px-loose text-body-md">${m.ten_goi_tap || 'N/A'}</td>
-                  <td class="px-loose text-on-surface-variant text-body-sm">Main Gym</td>
-                  <td class="px-loose text-error text-body-sm font-bold">${window.GymApp.formatDate(m.ngay_het_han)}</td>
+                  <td class="px-loose">
+                    <div class="flex items-center gap-xs text-error text-body-sm font-bold">
+                      <span class="material-symbols-outlined" style="font-size:14px">event_busy</span>
+                      ${window.GymApp.formatDate(m.ngay_het_han)}
+                    </div>
+                  </td>
                   <td class="px-loose">${window.GymApp.statusBadge('expired')}</td>
                   <td class="px-loose text-right">
                     <div class="flex justify-end gap-atom">
-                      <button class="flex items-center gap-xs text-body-sm bg-brand-primary text-white px-compact py-xs rounded-lg hover:bg-[#187a2d] transition-colors font-bold renew-btn">
+                      <button class="renew-btn flex items-center gap-xs text-body-sm btn-primary text-white px-compact py-xs rounded-lg font-bold">
                         <span class="material-symbols-outlined text-sm">autorenew</span>
                         Gia hạn
                       </button>
-                      <button class="material-symbols-outlined text-outline hover:text-brand-primary transition-colors text-xl p-atom rounded" title="Gọi điện">phone</button>
+                      <button class="material-symbols-outlined text-outline hover:text-brand-primary transition-colors text-xl p-atom rounded-lg hover:bg-surface-container" title="Gọi điện">phone</button>
                     </div>
                   </td>
                 </tr>
@@ -141,27 +153,32 @@ window.GymApp.pages['expired'] = {
 
   _renderExpiringTable: function (list) {
     if (!list) list = this._expiringList;
-    if (list.length === 0) return `<div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-margin text-center text-on-surface-variant">Không có hội viên sắp hết hạn</div>`;
+    if (list.length === 0) return `
+      <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant p-margin text-center">
+        <span class="material-symbols-outlined text-4xl text-outline">event_available</span>
+        <p class="text-on-surface-variant text-body-sm mt-standard">Không có hội viên sắp hết hạn</p>
+      </div>`;
     const sorted = [...list].sort((a, b) => a.daysLeft - b.daysLeft);
     const start = (this._expiringPage - 1) * this._perPage;
     const paginated = sorted.slice(start, start + this._perPage);
     return `
-      <div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden">
+      <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse">
-            <thead class="bg-surface-container-high">
+          <table class="w-full text-left border-collapse gym-table">
+            <thead>
               <tr class="h-10">
-                <th class="px-loose font-bold text-body-md">Hội viên</th>
-                <th class="px-loose font-bold text-body-md">Mã HV</th>
-                <th class="px-loose font-bold text-body-md">Gói tập</th>
-                <th class="px-loose font-bold text-body-md">Hết hạn</th>
-                <th class="px-loose font-bold text-body-md">Còn lại</th>
-                <th class="px-loose font-bold text-body-md text-right">Thao tác</th>
+                <th class="px-loose font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Hội viên</th>
+                <th class="px-loose font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Mã HV</th>
+                <th class="px-loose font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Gói tập</th>
+                <th class="px-loose font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Hết hạn</th>
+                <th class="px-loose font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Còn lại</th>
+                <th class="px-loose font-bold text-body-sm text-on-surface-variant uppercase tracking-wider text-right">Thao tác</th>
               </tr>
             </thead>
             <tbody>
               ${paginated.map(m => {
                 const urgency = m.daysLeft <= 7 ? 'text-error' : m.daysLeft <= 15 ? 'text-[#e65100]' : 'text-[#f59e0b]';
+                const urgencyBg = m.daysLeft <= 7 ? 'bg-error-container' : m.daysLeft <= 15 ? 'bg-[#fff3e0]' : 'bg-[#fffde7]';
                 return `
                   <tr class="h-12 border-b border-outline-variant hover:bg-surface-container-low transition-colors">
                     <td class="px-loose">
@@ -173,19 +190,19 @@ window.GymApp.pages['expired'] = {
                         </div>
                       </div>
                     </td>
-                    <td class="px-loose text-on-surface-variant text-body-sm font-bold">${m.ma_ho_so}</td>
+                    <td class="px-loose">
+                      <span class="text-on-surface-variant text-body-sm font-bold bg-surface-container px-compact py-xs rounded-lg">${m.ma_ho_so}</span>
+                    </td>
                     <td class="px-loose text-body-md">${m.ten_goi_tap || 'N/A'}</td>
                     <td class="px-loose text-on-surface-variant text-body-sm">${window.GymApp.formatDate(m.ngay_het_han)}</td>
                     <td class="px-loose">
-                      <span class="${urgency} font-bold text-body-sm">${m.daysLeft} ngày</span>
+                      <span class="${urgency} ${urgencyBg} font-bold text-body-sm px-compact py-xs rounded-full">${m.daysLeft} ngày</span>
                     </td>
                     <td class="px-loose text-right">
-                      <div class="flex justify-end gap-atom">
-                        <button class="flex items-center gap-xs text-body-sm bg-brand-primary text-white px-compact py-xs rounded-lg hover:bg-[#187a2d] transition-colors font-bold renew-btn">
-                          <span class="material-symbols-outlined text-sm">autorenew</span>
-                          Gia hạn ngay
-                        </button>
-                      </div>
+                      <button class="renew-btn flex items-center gap-xs text-body-sm btn-primary text-white px-compact py-xs rounded-lg font-bold ml-auto">
+                        <span class="material-symbols-outlined text-sm">autorenew</span>
+                        Gia hạn
+                      </button>
                     </td>
                   </tr>
                 `;
@@ -203,7 +220,6 @@ window.GymApp.pages['expired'] = {
     this._expiredPage = 1;
     this._expiringPage = 1;
 
-    // Pagination handler
     window.GymApp._pgHandler = function (pg) {
       if (self._tab === 'expired') {
         self._expiredPage = pg;
@@ -220,15 +236,16 @@ window.GymApp.pages['expired'] = {
       self._tab = 'expired';
       document.getElementById('panel-expired').classList.remove('hidden');
       document.getElementById('panel-expiring').classList.add('hidden');
-      document.getElementById('tab-expired-list').className = 'px-loose py-compact rounded-lg font-bold text-body-md bg-surface-container-lowest text-brand-primary shadow-sm';
-      document.getElementById('tab-expiring-list').className = 'px-loose py-compact rounded-lg font-bold text-body-md text-on-surface-variant hover:text-brand-primary';
+      document.getElementById('tab-expired-list').className = 'px-loose py-compact rounded-xl font-bold text-body-md bg-surface-container-lowest text-brand-primary shadow-sm transition-all';
+      document.getElementById('tab-expiring-list').className = 'px-loose py-compact rounded-xl font-bold text-body-md text-on-surface-variant hover:text-brand-primary transition-all';
     });
+
     document.getElementById('tab-expiring-list')?.addEventListener('click', () => {
       self._tab = 'expiring';
       document.getElementById('panel-expiring').classList.remove('hidden');
       document.getElementById('panel-expired').classList.add('hidden');
-      document.getElementById('tab-expiring-list').className = 'px-loose py-compact rounded-lg font-bold text-body-md bg-surface-container-lowest text-brand-primary shadow-sm';
-      document.getElementById('tab-expired-list').className = 'px-loose py-compact rounded-lg font-bold text-body-md text-on-surface-variant hover:text-brand-primary';
+      document.getElementById('tab-expiring-list').className = 'px-loose py-compact rounded-xl font-bold text-body-md bg-surface-container-lowest text-brand-primary shadow-sm transition-all';
+      document.getElementById('tab-expired-list').className = 'px-loose py-compact rounded-xl font-bold text-body-md text-on-surface-variant hover:text-brand-primary transition-all';
     });
 
     this._bindRenewBtns();

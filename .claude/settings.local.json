@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"import\\('./src/config/db.js'\\).then\\(\\({default: db}\\) => { const rows = db.prepare\\('SELECT id, hoi_vien_id, pt_id, trang_thai FROM dang_ky_pt'\\).all\\(\\); console.log\\(JSON.stringify\\(rows\\)\\); }\\)\")",
+      "Bash(node -e \"import\\('./src/config/db.js'\\).then\\(\\({default: db}\\) => { const rows = db.prepare\\('SELECT id, hoi_vien_id, dang_ky_pt_id FROM lich_tap ORDER BY id'\\).all\\(\\); console.log\\(JSON.stringify\\(rows\\)\\); }\\)\")",
+      "Bash(node -e ' *)",
+      "Bash(node -e \"import\\('./src/config/db.js'\\).then\\(\\({default: db}\\) => { const info = db.prepare\\('PRAGMA table_info\\(dang_ky_pt\\)'\\).all\\(\\); console.log\\(JSON.stringify\\(info.map\\(c => \\({name: c.name, dflt_value: c.dflt_value}\\)\\), null, 2\\)\\); }\\)\")"
+    ]
+  }
+}

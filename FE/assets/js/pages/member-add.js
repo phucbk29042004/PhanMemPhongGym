@@ -5,26 +5,27 @@ window.GymApp.pages['member-add'] = {
   render: function () {
     return `
       <div class="flex flex-col gap-compact w-full xl:w-[90%] max-w-none mx-auto">
+
         <!-- Header -->
         <div class="flex items-center gap-standard">
-          <button class="flex items-center gap-xs text-on-surface-variant hover:text-brand-primary transition-colors" data-page="members-list">
+          <button class="flex items-center justify-center w-9 h-9 rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-surface-container transition-all" data-page="members-list">
             <span class="material-symbols-outlined text-xl">arrow_back</span>
           </button>
-          <div>
+          <div class="page-title-bar">
             <h2 class="font-display-2xl text-display-2xl text-on-surface font-bold">Quản lý Hồ sơ mới</h2>
             <p class="text-on-surface-variant font-body-sm text-body-sm">Đăng ký Hội viên, PT hoặc Nhân viên mới</p>
           </div>
         </div>
 
         <!-- Tab Switcher -->
-        <div class="flex gap-xs bg-surface-container p-xs rounded-xl border border-outline-variant w-fit">
-          <button id="tab-register" class="tab-btn px-loose py-compact rounded-lg font-bold text-body-md transition-all bg-surface-container-lowest text-brand-primary shadow-sm">
+        <div class="flex gap-xs bg-surface-container p-xs rounded-2xl border border-outline-variant w-fit shadow-sm">
+          <button id="tab-register" class="tab-btn px-loose py-compact rounded-xl font-bold text-body-md transition-all bg-surface-container-lowest text-brand-primary shadow-sm">
             <span class="flex items-center gap-xs">
               <span class="material-symbols-outlined text-sm">person_add</span>
               Thông tin hồ sơ
             </span>
           </button>
-          <button id="tab-package" class="tab-btn px-loose py-compact rounded-lg font-bold text-body-md transition-all text-on-surface-variant hover:text-brand-primary">
+          <button id="tab-package" class="tab-btn px-loose py-compact rounded-xl font-bold text-body-md transition-all text-on-surface-variant hover:text-brand-primary">
             <span class="flex items-center gap-xs">
               <span class="material-symbols-outlined text-sm">card_membership</span>
               Gói tập (Hội viên)
@@ -33,16 +34,17 @@ window.GymApp.pages['member-add'] = {
         </div>
 
         <div id="form-register">
-          <div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-compact md:p-standard">
-            
+          <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm p-compact md:p-standard">
+
+            <!-- Avatar + Mã/Tên/Loại -->
             <div class="flex items-start gap-compact mb-compact">
               <div class="flex flex-col items-center gap-xs flex-shrink-0">
                 <div class="relative">
-                  <div id="avatar-area-reg" class="w-20 h-20 md:w-24 md:h-24 bg-surface-container-low border-2 border-dashed border-outline-variant rounded-xl flex items-center justify-center cursor-pointer overflow-hidden">
+                  <div id="avatar-area-reg" class="w-20 h-20 md:w-24 md:h-24 bg-surface-container-low border-2 border-dashed border-outline-variant rounded-2xl flex items-center justify-center cursor-pointer overflow-hidden transition-all hover:border-brand-primary">
                     <span class="material-symbols-outlined text-outline text-4xl" id="avatar-placeholder-reg">person</span>
                     <img id="avatar-preview-reg" class="w-full h-full object-cover absolute inset-0 hidden" alt="preview" />
                   </div>
-                  <button type="button" id="avatar-btn-reg" class="absolute -bottom-2 -right-2 w-8 h-8 bg-brand-primary rounded-full flex items-center justify-center shadow-md hover:bg-[#187a2d] transition-colors z-10">
+                  <button type="button" id="avatar-btn-reg" class="absolute -bottom-2 -right-2 w-8 h-8 btn-primary rounded-full flex items-center justify-center shadow-md z-10">
                     <span class="material-symbols-outlined text-white text-sm">photo_camera</span>
                   </button>
                   <input type="file" id="avatar-input-reg" class="hidden" accept="image/*" />
@@ -53,23 +55,24 @@ window.GymApp.pages['member-add'] = {
                 ${this._field('Mã số hồ sơ', 'reg-ma-ho-so', 'text', 'Tự động...', '', true)}
                 ${this._field('Họ và tên *', 'reg-ho-ten', 'text', 'Nhập họ và tên đầy đủ')}
                 ${this._select('Loại hồ sơ *', 'reg-loai-ho-so', [
-                  {v:'hoi_vien', t:'Hội viên'}, 
-                  {v:'pt', t:'Huấn luyện viên (PT)'}, 
+                  {v:'hoi_vien', t:'Hội viên'},
+                  {v:'pt', t:'Huấn luyện viên (PT)'},
                   {v:'nhan_vien', t:'Nhân viên'}
                 ])}
               </div>
             </div>
 
-            <!-- Trường thông tin đặc thù -->
-            <div id="extra-fields" class="mb-compact grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-compact border-y border-outline-variant/30 py-compact hidden">
-                <!-- Sẽ nạp động qua JS -->
-            </div>
+            <!-- Trường đặc thù theo loại -->
+            <div id="extra-fields" class="mb-compact grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-compact border-y border-outline-variant/30 py-compact hidden"></div>
 
+            <!-- Thông tin cá nhân -->
             <div class="mb-compact">
-              <h3 class="font-bold text-on-surface text-body-md mb-xs flex items-center gap-xs">
-                <span class="material-symbols-outlined text-brand-primary text-sm">badge</span>
-                Thông tin cá nhân
-              </h3>
+              <div class="flex items-center gap-compact mb-standard">
+                <div class="icon-bg icon-bg-green" style="width:32px;height:32px;border-radius:8px">
+                  <span class="material-symbols-outlined text-brand-primary text-sm" style="font-variation-settings:'FILL' 1">badge</span>
+                </div>
+                <h3 class="font-bold text-on-surface text-body-md">Thông tin cá nhân</h3>
+              </div>
               <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-compact">
                 ${this._field('Ngày sinh', 'reg-ngay-sinh', 'date')}
                 ${this._select('Giới tính', 'reg-gioi-tinh', [{v:'nam',t:'Nam'},{v:'nu',t:'Nữ'},{v:'khac',t:'Khác'}])}
@@ -82,11 +85,14 @@ window.GymApp.pages['member-add'] = {
               </div>
             </div>
 
+            <!-- Địa chỉ -->
             <div class="mb-compact">
-              <h3 class="font-bold text-on-surface text-body-md mb-xs flex items-center gap-xs">
-                <span class="material-symbols-outlined text-brand-primary text-sm">location_on</span>
-                Địa chỉ thường trú
-              </h3>
+              <div class="flex items-center gap-compact mb-standard">
+                <div class="icon-bg icon-bg-orange" style="width:32px;height:32px;border-radius:8px">
+                  <span class="material-symbols-outlined text-[#e65100] text-sm" style="font-variation-settings:'FILL' 1">location_on</span>
+                </div>
+                <h3 class="font-bold text-on-surface text-body-md">Địa chỉ thường trú</h3>
+              </div>
               <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-compact">
                 ${this._select('Tỉnh / Thành phố', 'reg-tinh-thanh', [])}
                 ${this._select('Quận / Huyện', 'reg-quan-huyen', [])}
@@ -96,8 +102,8 @@ window.GymApp.pages['member-add'] = {
             </div>
 
             <div class="flex justify-end gap-compact pt-compact border-t border-outline-variant">
-              <button type="button" class="px-loose py-compact rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-colors" data-page="members-list">Hủy</button>
-              <button type="button" id="btn-save-member" class="bg-brand-primary text-white px-loose py-compact rounded-lg font-bold hover:bg-[#187a2d] shadow-sm flex items-center gap-compact">
+              <button type="button" class="px-loose py-compact rounded-xl border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-colors font-bold" data-page="members-list">Hủy</button>
+              <button type="button" id="btn-save-member" class="btn-primary text-white px-loose py-compact rounded-xl font-bold flex items-center gap-compact">
                 <span class="material-symbols-outlined text-sm">save</span>
                 Lưu hồ sơ
               </button>
@@ -106,12 +112,13 @@ window.GymApp.pages['member-add'] = {
         </div>
 
         <div id="form-package" class="hidden">
-          <div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-compact md:p-standard">
+          <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm p-compact md:p-standard">
+
             <!-- Chọn gói tập -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-compact mb-compact">
               <div>
                 <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Chọn gói tập</label>
-                <select id="pkg-select" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-standard py-compact rounded-lg focus:border-brand-primary outline-none">
+                <select id="pkg-select" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none transition-colors">
                   <option value="">— Chọn gói tập —</option>
                   ${(window.GymApp.data.packages || []).map(p => `<option value="${p.id}">${p.ten_goi} — ${window.GymApp.formatCurrency(p.gia)}</option>`).join('')}
                 </select>
@@ -119,12 +126,14 @@ window.GymApp.pages['member-add'] = {
               ${this._field('Giá gói tập (VNĐ)', 'pkg-price', 'text', '0', '', true)}
             </div>
 
-            <!-- Thông tin đăng ký -->
+            <!-- Thời hạn -->
             <div class="mb-compact">
-              <h3 class="font-bold text-on-surface text-body-md mb-xs flex items-center gap-xs">
-                <span class="material-symbols-outlined text-brand-primary text-sm">event</span>
-                Thời hạn gói tập
-              </h3>
+              <div class="flex items-center gap-compact mb-standard">
+                <div class="icon-bg icon-bg-green" style="width:32px;height:32px;border-radius:8px">
+                  <span class="material-symbols-outlined text-brand-primary text-sm" style="font-variation-settings:'FILL' 1">event</span>
+                </div>
+                <h3 class="font-bold text-on-surface text-body-md">Thời hạn gói tập</h3>
+              </div>
               <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-compact">
                 ${this._field('Từ ngày', 'pkg-from', 'date')}
                 ${this._field('Đến ngày', 'pkg-to', 'date')}
@@ -135,10 +144,12 @@ window.GymApp.pages['member-add'] = {
 
             <!-- Thanh toán -->
             <div class="mb-compact">
-              <h3 class="font-bold text-on-surface text-body-md mb-xs flex items-center gap-xs">
-                <span class="material-symbols-outlined text-brand-primary text-sm">payments</span>
-                Thanh toán
-              </h3>
+              <div class="flex items-center gap-compact mb-standard">
+                <div class="icon-bg icon-bg-orange" style="width:32px;height:32px;border-radius:8px">
+                  <span class="material-symbols-outlined text-[#e65100] text-sm" style="font-variation-settings:'FILL' 1">payments</span>
+                </div>
+                <h3 class="font-bold text-on-surface text-body-md">Thanh toán</h3>
+              </div>
               <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-compact">
                 ${this._field('Tổng tiền', 'pkg-total', 'text', '0', '', true)}
                 ${this._field('Tiền khách trả', 'pkg-paid', 'text', 'Nhập số tiền')}
@@ -148,8 +159,8 @@ window.GymApp.pages['member-add'] = {
             </div>
 
             <div class="flex justify-end gap-compact pt-compact border-t border-outline-variant">
-              <button type="button" class="px-loose py-compact rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-colors" data-page="members-list">Hủy</button>
-              <button type="button" id="btn-save-package" class="bg-brand-primary text-white px-loose py-compact rounded-lg font-bold hover:bg-[#187a2d] shadow-sm flex items-center gap-compact">
+              <button type="button" class="px-loose py-compact rounded-xl border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-colors font-bold" data-page="members-list">Hủy</button>
+              <button type="button" id="btn-save-package" class="btn-primary text-white px-loose py-compact rounded-xl font-bold flex items-center gap-compact">
                 <span class="material-symbols-outlined text-sm">save</span>
                 Lưu đăng ký gói
               </button>
@@ -163,14 +174,14 @@ window.GymApp.pages['member-add'] = {
   _field: function (label, id, type, placeholder = '', hint = '', readonly = false) {
     return `<div>
       <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">${label}</label>
-      <input id="${id}" type="${type}" placeholder="${placeholder}" ${readonly ? 'readonly class="w-full bg-surface-container border border-outline-variant text-on-surface-variant px-standard py-compact rounded-lg outline-none cursor-not-allowed"' : 'class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-standard py-compact rounded-lg focus:border-brand-primary outline-none"'} />
+      <input id="${id}" type="${type}" placeholder="${placeholder}" ${readonly ? 'readonly class="w-full bg-surface-container border border-outline-variant text-on-surface-variant px-standard py-compact rounded-xl outline-none cursor-not-allowed"' : 'class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none transition-colors"'} />
     </div>`;
   },
 
   _select: function (label, id, options) {
     return `<div>
       <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">${label}</label>
-      <select id="${id}" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-standard py-compact rounded-lg focus:border-brand-primary outline-none">
+      <select id="${id}" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none transition-colors">
         <option value="">— ${label} —</option>
         ${options.map(o => `<option value="${o.v}">${o.t}</option>`).join('')}
       </select>
@@ -190,10 +201,10 @@ window.GymApp.pages['member-add'] = {
         fetch('assets/data/wards.json').then(r => r.json())
       ]);
       self._provinces = pRes; self._districts = dRes; self._wards = wRes;
-      
+
       const pSelect = document.getElementById('reg-tinh-thanh');
       pSelect.innerHTML = '<option value="">— Chọn Tỉnh/Thành —</option>' + pRes.map(p => `<option value="${p.code}">${p.name}</option>`).join('');
-      
+
       pSelect.addEventListener('change', () => {
         const code = pSelect.value;
         const filtered = self._districts.filter(d => d.province_code === code);
@@ -209,7 +220,7 @@ window.GymApp.pages['member-add'] = {
       });
     } catch(e) { console.error('Address load error:', e); }
 
-    // 2. Xử lý Chuyển đổi Tab
+    // 2. Tab Switcher
     const tabReg = document.getElementById('tab-register');
     const tabPkg = document.getElementById('tab-package');
     const formReg = document.getElementById('form-register');
@@ -218,22 +229,22 @@ window.GymApp.pages['member-add'] = {
     tabReg?.addEventListener('click', () => {
       formReg.classList.remove('hidden');
       formPkg.classList.add('hidden');
-      tabReg.className = 'tab-btn px-loose py-compact rounded-lg font-bold text-body-md transition-all bg-surface-container-lowest text-brand-primary shadow-sm';
-      tabPkg.className = 'tab-btn px-loose py-compact rounded-lg font-bold text-body-md transition-all text-on-surface-variant hover:text-brand-primary';
+      tabReg.className = 'tab-btn px-loose py-compact rounded-xl font-bold text-body-md transition-all bg-surface-container-lowest text-brand-primary shadow-sm';
+      tabPkg.className = 'tab-btn px-loose py-compact rounded-xl font-bold text-body-md transition-all text-on-surface-variant hover:text-brand-primary';
     });
 
     tabPkg?.addEventListener('click', () => {
       formPkg.classList.remove('hidden');
       formReg.classList.add('hidden');
-      tabPkg.className = 'tab-btn px-loose py-compact rounded-lg font-bold text-body-md transition-all bg-surface-container-lowest text-brand-primary shadow-sm';
-      tabReg.className = 'tab-btn px-loose py-compact rounded-lg font-bold text-body-md transition-all text-on-surface-variant hover:text-brand-primary';
+      tabPkg.className = 'tab-btn px-loose py-compact rounded-xl font-bold text-body-md transition-all bg-surface-container-lowest text-brand-primary shadow-sm';
+      tabReg.className = 'tab-btn px-loose py-compact rounded-xl font-bold text-body-md transition-all text-on-surface-variant hover:text-brand-primary';
     });
 
-    // 3. Xử lý Gói tập (Tự động điền giá)
+    // 3. Gói tập — tự động điền giá
     const pkgSelect = document.getElementById('pkg-select');
     const pkgPrice = document.getElementById('pkg-price');
     const pkgTotal = document.getElementById('pkg-total');
-    
+
     pkgSelect?.addEventListener('change', () => {
       const pkgId = pkgSelect.value;
       const pkg = (window.GymApp.data.packages || []).find(p => String(p.id) === pkgId);
@@ -249,7 +260,7 @@ window.GymApp.pages['member-add'] = {
     if (pkgFrom) pkgFrom.value = today;
     if (pkgPayDate) pkgPayDate.value = today;
 
-    // 4. Xử lý Loại hồ sơ & Trường đặc thù
+    // 4. Loại hồ sơ & Trường đặc thù
     typeSelect?.addEventListener('change', () => {
       const type = typeSelect.value;
       extraFields.classList.remove('hidden');
@@ -262,16 +273,15 @@ window.GymApp.pages['member-add'] = {
       } else {
         extraFields.classList.add('hidden');
       }
-      // Sinh mã hồ sơ mới khi đổi loại
       const prefixes = { 'hoi_vien': 'HV', 'pt': 'PT', 'nhan_vien': 'NV' };
       const prefix = prefixes[type] || 'HS';
       document.getElementById('reg-ma-ho-so').value = `${prefix}-${String(Date.now()).slice(-4)}`;
     });
 
-    // 3. Avatar Upload
+    // 5. Avatar Upload
     window.GymApp.pages['member-add']._setupAvatarUpload('avatar-btn-reg','avatar-input-reg','avatar-preview-reg','avatar-placeholder-reg','avatar-area-reg');
 
-    // 4. Lưu hồ sơ
+    // 6. Lưu hồ sơ
     document.getElementById('btn-save-member')?.addEventListener('click', async () => {
       const btn = document.getElementById('btn-save-member');
       const tinhThanh = document.getElementById('reg-tinh-thanh');
@@ -304,7 +314,7 @@ window.GymApp.pages['member-add'] = {
 
       btn.disabled = true;
       btn.innerHTML = '<span class="animate-spin material-symbols-outlined text-sm">sync</span> Đang lưu...';
-      
+
       try {
         const res = await window.GymApp.api.post('/members', data);
         if (res.success) {
@@ -316,13 +326,10 @@ window.GymApp.pages['member-add'] = {
       finally { btn.disabled = false; btn.innerHTML = '<span class="material-symbols-outlined text-sm">save</span> Lưu hồ sơ'; }
     });
 
-    // 5. Lưu đăng ký gói tập
+    // 7. Lưu đăng ký gói tập
     document.getElementById('btn-save-package')?.addEventListener('click', async () => {
       const pkgId = document.getElementById('pkg-select').value;
       if (!pkgId) return window.GymApp.toast('Vui lòng chọn gói tập!', 'error');
-      
-      // Ở trang member-add, ta chưa có ho_so_id cho đến khi lưu hồ sơ xong.
-      // Do đó thường quy trình là: Lưu hồ sơ -> Có ID -> Lưu Gói tập.
       window.GymApp.toast('Vui lòng "Lưu hồ sơ" trước khi lưu gói tập!', 'info');
     });
   },

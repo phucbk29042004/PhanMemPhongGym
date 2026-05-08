@@ -1,4 +1,29 @@
 /* Paradise GYM — Custom styles */
+:root {
+  --bg-background: #f7f9ff;
+  --bg-surface: #f7f9ff;
+  --bg-surface-lowest: #ffffff;
+  --bg-surface-low: #f1f4f9;
+  --bg-surface-container: #ebeef3;
+  --bg-surface-high: #e5e8ee;
+  --bg-surface-highest: #e0e3e8;
+  --text-on-surface: #181c20;
+  --text-on-surface-variant: #3f4a3c;
+  --outline-variant: #becab9;
+}
+
+html.dark {
+  --bg-background: #0a0c10;
+  --bg-surface: #111318;
+  --bg-surface-lowest: #1c2028;
+  --bg-surface-low: #141720;
+  --bg-surface-container: #1a1e24;
+  --bg-surface-high: #22272f;
+  --bg-surface-highest: #282e37;
+  --text-on-surface: #dde1e7;
+  --text-on-surface-variant: #a8b5a5;
+  --outline-variant: #393f46;
+}
 
 .material-symbols-outlined {
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -198,14 +223,14 @@ html.dark { color-scheme: dark; }
 html.dark body { background-color: #111318; color: #dde1e7; }
 
 /* Backgrounds */
-html.dark .bg-background  { background-color: #111318 !important; }
-html.dark .bg-surface     { background-color: #141720 !important; }
-html.dark .bg-surface-container-lowest  { background-color: #1c2028 !important; }
-html.dark .bg-surface-container-low     { background-color: #1a1e24 !important; }
-html.dark .bg-surface-container         { background-color: #22272f !important; }
-html.dark .bg-surface-container-high    { background-color: #282e37 !important; }
-html.dark .bg-surface-container-highest { background-color: #2d333c !important; }
-html.dark .bg-surface-variant  { background-color: #2d333c !important; }
+html.dark .bg-background  { background-color: var(--bg-background) !important; }
+html.dark .bg-surface     { background-color: var(--bg-surface) !important; }
+html.dark .bg-surface-container-lowest  { background-color: var(--bg-surface-lowest) !important; }
+html.dark .bg-surface-container-low     { background-color: var(--bg-surface-low) !important; }
+html.dark .bg-surface-container         { background-color: var(--bg-surface-container) !important; }
+html.dark .bg-surface-container-high    { background-color: var(--bg-surface-high) !important; }
+html.dark .bg-surface-container-highest { background-color: var(--bg-surface-highest) !important; }
+html.dark .bg-surface-variant  { background-color: var(--bg-surface-highest) !important; }
 html.dark .bg-error-container  { background-color: #430005 !important; }
 html.dark .bg-secondary-container { background-color: #2a3040 !important; }
 
@@ -301,3 +326,194 @@ html.dark .shadow-md { box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important; }
 /* Theme toggle button */
 #theme-toggle { transition: transform 0.3s ease; }
 #theme-toggle:hover { transform: rotate(20deg); }
+
+/* ===== CARD HOVER GLOW (Material 3 Float + Green Glow) ===== */
+.gym-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  background-color: var(--bg-surface-lowest);
+}
+.gym-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 28px rgba(29, 147, 54, 0.14), 0 2px 8px rgba(0,0,0,0.06);
+  border-color: rgba(29, 147, 54, 0.38) !important;
+}
+html.dark .gym-card {
+  background-color: rgba(28, 32, 40, 0.8) !important;
+}
+html.dark .gym-card:hover {
+  box-shadow: 0 8px 28px rgba(76, 206, 95, 0.16), 0 2px 8px rgba(0,0,0,0.4);
+  border-color: rgba(76, 206, 95, 0.32) !important;
+}
+
+/* ===== ICON BACKGROUND CIRCLES FOR STAT CARDS ===== */
+.icon-bg {
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; border-radius: 12px; width: 42px; height: 42px;
+}
+.icon-bg-green  { background: rgba(29, 147, 54, 0.10); }
+.icon-bg-orange { background: rgba(230, 81, 0, 0.10); }
+.icon-bg-pink   { background: rgba(165, 45, 89, 0.10); }
+.icon-bg-red    { background: rgba(186, 26, 26, 0.10); }
+.icon-bg-blue   { background: rgba(87, 95, 103, 0.10); }
+html.dark .icon-bg-green  { background: rgba(76, 206, 95, 0.12); }
+html.dark .icon-bg-orange { background: rgba(255, 144, 64, 0.12); }
+html.dark .icon-bg-pink   { background: rgba(240, 98, 146, 0.12); }
+html.dark .icon-bg-red    { background: rgba(255, 128, 128, 0.12); }
+html.dark .icon-bg-blue   { background: rgba(168, 181, 165, 0.12); }
+
+/* ===== ENHANCED NAV ACTIVE STATE ===== */
+.nav-active {
+  background-color: #e7f5e9 !important;
+  color: #1D9336 !important;
+  border-left: 3px solid #1D9336 !important;
+}
+html.dark .nav-active {
+  background-color: #0e2a14 !important;
+  color: #4cce5f !important;
+  border-left-color: #4cce5f !important;
+}
+
+/* ===== SECTION HEADER GRADIENT ===== */
+.section-header {
+  background: linear-gradient(90deg, #f1f4f9 0%, #f7f9ff 100%);
+}
+html.dark .section-header {
+  background: linear-gradient(90deg, #1a1e24 0%, #1c2028 100%) !important;
+}
+
+/* ===== PRIMARY BUTTON GRADIENT ===== */
+.btn-primary {
+  background: linear-gradient(135deg, #1D9336 0%, #157a2a 100%);
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(29, 147, 54, 0.28);
+}
+.btn-primary:hover {
+  background: linear-gradient(135deg, #157a2a 0%, #1D9336 100%);
+  box-shadow: 0 4px 18px rgba(29, 147, 54, 0.38);
+  transform: translateY(-1px);
+}
+.btn-primary:active { transform: translateY(0); box-shadow: 0 2px 6px rgba(29,147,54,0.2); }
+
+/* ===== INPUT FOCUS GLOW ===== */
+.gym-input:focus {
+  border-color: #1D9336 !important;
+  box-shadow: 0 0 0 3px rgba(29, 147, 54, 0.12) !important;
+  outline: none !important;
+}
+html.dark .gym-input:focus {
+  border-color: #4cce5f !important;
+  box-shadow: 0 0 0 3px rgba(76, 206, 95, 0.14) !important;
+}
+
+/* ===== PAGE TITLE AREA ===== */
+.page-title-bar {
+  padding-bottom: 4px;
+  border-left: 4px solid #1D9336;
+  padding-left: 12px;
+}
+html.dark .page-title-bar { border-left-color: #4cce5f; }
+
+/* ===== TABLE ENHANCED ===== */
+.gym-table thead th {
+  background: linear-gradient(90deg, #e5e8ee 0%, #ebeef3 100%);
+}
+html.dark .gym-table thead th {
+  background: linear-gradient(90deg, #282e37 0%, #22272f 100%) !important;
+  color: #a8b5a5 !important;
+}
+.gym-table tbody tr { transition: all 0.15s ease; }
+.gym-table tbody tr:hover { background-color: rgba(29,147,54,0.04) !important; }
+html.dark .gym-table tbody tr:hover { background-color: rgba(76,206,95,0.06) !important; }
+
+/* ===== PILL/CHIP TAGS ===== */
+.gym-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+/* ===== SIDEBAR LOGO AREA ===== */
+.sidebar-logo-area {
+  background: linear-gradient(135deg, rgba(29,147,54,0.08) 0%, transparent 100%);
+}
+html.dark .sidebar-logo-area {
+  background: linear-gradient(135deg, rgba(76,206,95,0.08) 0%, transparent 100%) !important;
+}
+
+/* ===== HEADER GLASS EFFECT ===== */
+.gym-header {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(247,249,255,0.92) !important;
+  border-bottom: 1px solid rgba(190,202,185,0.6) !important;
+}
+html.dark .gym-header {
+  background: rgba(20, 23, 32, 0.92) !important;
+  border-bottom-color: rgba(57, 63, 70, 0.6) !important;
+}
+
+/* ===== PREMIUM GLASSMORPHISM & UTILITIES ===== */
+.glass-card-premium {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+html.dark .glass-card-premium {
+  background: rgba(30, 32, 40, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.float-hover:hover {
+  transform: translateY(-4px);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.glow-green:hover {
+  box-shadow: 0 0 20px rgba(29, 147, 54, 0.25);
+  border-color: rgba(29, 147, 54, 0.5) !important;
+}
+html.dark .glow-green:hover {
+  box-shadow: 0 0 20px rgba(76, 206, 95, 0.3);
+  border-color: rgba(76, 206, 95, 0.4) !important;
+}
+
+/* Redesign Modal Card globally */
+.modal-card {
+  background: rgba(247, 250, 255, 0.85) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+}
+html.dark .modal-card {
+  background: rgba(24, 28, 36, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Custom Scrollbar for premium feel */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(29, 147, 54, 0.15);
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(29, 147, 54, 0.3);
+}
+html.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(76, 206, 95, 0.15);
+}
+
+/* Animations */
+@keyframes fadeInSlideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-premium {
+  animation: fadeInSlideUp 0.4s cubic-bezier(0, 0, 0.2, 1) forwards;
+}

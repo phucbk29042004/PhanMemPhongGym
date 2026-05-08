@@ -1,6 +1,6 @@
 # 🏛️ Kiến Trúc Hệ Thống — Paradise GYM
 
-> Cập nhật lần cuối: 08/05/2026 — Hoàn thiện toàn bộ Backend API (Đăng ký PT, Nhân viên, Sinh nhật, My Profile). Nâng cấp FE Modal chi tiết hội viên 3 tab.
+> Cập nhật lần cuối: 08/05/2026 — Tối ưu màn Đăng ký lịch tập PT: layout 7:3, card bằng chiều cao và phân trang Lịch đã đặt.
 
 ---
 
@@ -92,6 +92,7 @@ graph TD
 - [x] Dark/Light mode (Persistence).
 - [x] Form thêm mới hội viên (>25 trường dữ liệu).
 - [x] Bảng dữ liệu hỗ trợ Tìm kiếm không nháy (No-flicker).
+- [x] Màn Đăng ký lịch tập PT có layout 7:3, card hai bên bằng chiều cao và phân trang danh sách lịch đã đặt.
 - [x] 6 màn hình chức năng chính (Dashboard, Members, Checkin, Expired, PT, Packages).
 
 ### Backend (Logic & Security)

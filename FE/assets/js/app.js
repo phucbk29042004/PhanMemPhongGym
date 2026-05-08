@@ -265,6 +265,12 @@
     localStorage.setItem('gym-theme', t);
     const icon = document.getElementById('theme-icon');
     if (icon) icon.textContent = t === 'dark' ? 'light_mode' : 'dark_mode';
+
+    // Re-render dashboard charts if active
+    if (window.GymApp.currentPage === 'dashboard') {
+      const db = window.GymApp.pages['dashboard'];
+      if (db && db.init) db.init();
+    }
   }
 
   // ===== DATA SYNC =====
