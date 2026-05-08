@@ -9,8 +9,10 @@ window.GymApp.pages['members-list'] = {
   _memberPackageHistory: {},
 
   render: function () {
-    this._memberFiltered = [...window.GymApp.data.members];
-    this._ptFiltered = [...window.GymApp.data.pts];
+    const rawMembers = window.GymApp.data.members;
+    const rawPts = window.GymApp.data.pts;
+    this._memberFiltered = Array.isArray(rawMembers) ? [...rawMembers] : [];
+    this._ptFiltered = Array.isArray(rawPts) ? [...rawPts] : [];
     this._ptSortState = '';
     return `
       <div class="flex flex-col gap-margin">
@@ -96,16 +98,21 @@ window.GymApp.pages['members-list'] = {
 
         <!-- Stats -->
         <div class="grid grid-cols-3 gap-loose">
-          ${[
-            { label: 'Tổng hội viên', value: window.GymApp.data.members.length, color: 'text-brand-primary' },
-            { label: 'Đang hoạt động', value: window.GymApp.data.members.filter(m => m.status === 'active').length, color: 'text-brand-primary' },
-            { label: 'Hết hạn', value: window.GymApp.data.members.filter(m => m.status === 'expired').length, color: 'text-error' },
-          ].map(s => `
-            <div class="bg-surface-container-lowest p-loose rounded-xl border border-outline-variant shadow-sm flex flex-col gap-atom">
-              <span class="text-on-surface-variant font-body-sm text-body-sm uppercase tracking-wider font-bold">${s.label}</span>
-              <span class="${s.color} font-display-2xl text-display-2xl font-bold">${s.value}</span>
-            </div>
-          `).join('')}
+          ${
+            (function() {
+              const stats = window.GymApp.data.stats?.hoi_vien || { tong: 0, con_han: 0, het_han: 0 };
+              return [
+                { label: 'Tổng hội viên', value: stats.tong, color: 'text-brand-primary' },
+                { label: 'Đang hoạt động', value: stats.con_han, color: 'text-brand-primary' },
+                { label: 'Hết hạn', value: stats.het_han, color: 'text-error' },
+              ].map(s => `
+                <div class="bg-surface-container-lowest p-loose rounded-xl border border-outline-variant shadow-sm flex flex-col gap-atom">
+                  <span class="text-on-surface-variant font-body-sm text-body-sm uppercase tracking-wider font-bold">${s.label}</span>
+                  <span class="${s.color} font-display-2xl text-display-2xl font-bold">${s.value}</span>
+                </div>
+              `).join('');
+            })()
+          }
         </div>
       </div>
     `;
@@ -121,18 +128,18 @@ window.GymApp.pages['members-list'] = {
         <tr class="h-12 border-b border-outline-variant hover:bg-surface-container-low transition-colors">
           <td class="px-loose">
             <div class="flex items-center gap-compact">
-              ${window.GymApp.avatarImg(m.avatar, m.name, 'sm')}
+              ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'sm')}
               <div>
-                <p class="font-bold text-brand-primary text-body-md cursor-pointer hover:underline member-name-link" data-id="${m.id}">${m.name}</p>
-                <p class="text-on-surface-variant text-body-sm">${m.phone}</p>
+                <p class="font-bold text-brand-primary text-body-md cursor-pointer hover:underline member-name-link" data-id="${m.id}">${m.ho_ten}</p>
+                <p class="text-on-surface-variant text-body-sm">${m.so_dien_thoai || '—'}</p>
               </div>
             </div>
           </td>
-          <td class="px-loose text-on-surface-variant text-body-sm font-bold">${m.id}</td>
-          <td class="px-loose">${window.GymApp.statusBadge(m.status)}</td>
-          <td class="px-loose text-body-md text-on-surface">${m.package}</td>
-          <td class="px-loose text-on-surface-variant text-body-sm">${m.branch}</td>
-          <td class="px-loose text-on-surface-variant text-body-sm">${window.GymApp.formatDate(m.expireDate)}</td>
+          <td class="px-loose text-on-surface-variant text-body-sm font-bold">${m.ma_ho_so}</td>
+          <td class="px-loose">${window.GymApp.statusBadge(m.trang_thai)}</td>
+          <td class="px-loose text-body-md text-on-surface">${m.ten_goi_tap || 'Chưa ĐK'}</td>
+          <td class="px-loose text-on-surface-variant text-body-sm">Paradise Gym</td>
+          <td class="px-loose text-on-surface-variant text-body-sm">${window.GymApp.formatDate(m.ngay_het_han)}</td>
           <td class="px-loose text-right">
             <div class="flex justify-end gap-atom">
               <button class="material-symbols-outlined text-outline hover:text-brand-primary transition-colors text-xl p-atom rounded hover:bg-surface-container member-view-btn" data-id="${m.id}" title="Xem chi tiết">visibility</button>
@@ -173,22 +180,22 @@ window.GymApp.pages['members-list'] = {
         <tr class="h-12 border-b border-outline-variant hover:bg-surface-container-low transition-colors">
           <td class="px-loose">
             <div class="flex items-center gap-compact">
-              ${window.GymApp.avatarImg(pt.avatar, pt.name, 'sm')}
+              ${window.GymApp.avatarImg(pt.avatar_url, pt.ho_ten, 'sm')}
               <div>
-                <p class="font-bold text-brand-primary text-body-md cursor-pointer hover:underline pt-name-link" data-id="${pt.id}">${pt.name}</p>
-                <p class="text-on-surface-variant text-body-sm">${pt.phone}</p>
+                <p class="font-bold text-brand-primary text-body-md cursor-pointer hover:underline pt-name-link" data-id="${pt.id}">${pt.ho_ten}</p>
+                <p class="text-on-surface-variant text-body-sm">${pt.so_dien_thoai || '—'}</p>
               </div>
             </div>
           </td>
-          <td class="px-loose text-on-surface-variant text-body-sm font-bold">${pt.id}</td>
-          <td class="px-loose text-body-md text-on-surface">${pt.specialty}</td>
+          <td class="px-loose text-on-surface-variant text-body-sm font-bold">${pt.ma_ho_so}</td>
+          <td class="px-loose text-body-md text-on-surface">${pt.chuyen_mon || pt.specialty || 'Huấn luyện viên'}</td>
           <td class="px-loose">
             <div class="flex items-center gap-atom">
               <span class="material-symbols-outlined text-sm" style="color:#f59e0b;font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24;">star</span>
-              <span class="font-bold text-body-md text-on-surface">${pt.rating}</span>
+              <span class="font-bold text-body-md text-on-surface">4.8</span>
             </div>
           </td>
-          <td class="px-loose text-on-surface-variant text-body-sm">${pt.experience} năm</td>
+          <td class="px-loose text-on-surface-variant text-body-sm">${pt.kinh_nghiem || 0} năm</td>
           <td class="px-loose text-right">
             <div class="flex justify-end gap-atom">
               <button class="material-symbols-outlined text-outline hover:text-brand-primary transition-colors text-xl p-atom rounded hover:bg-surface-container pt-view-btn" data-id="${pt.id}" title="Xem chi tiết">visibility</button>
@@ -220,7 +227,7 @@ window.GymApp.pages['members-list'] = {
   // ===== MODAL CHI TIẾT HỘI VIÊN (3 TAB) =====
   _showMemberModal: function (id) {
     const self = this;
-    const m = window.GymApp.data.members.find(x => x.id === id);
+    const m = (window.GymApp.data.members || []).find(x => (x.id || x.ho_so_id) == id);
     if (!m) return;
     document.getElementById('gym-member-modal')?.remove();
 
@@ -236,11 +243,11 @@ window.GymApp.pages['members-list'] = {
             <span class="material-symbols-outlined text-on-surface-variant text-xl">close</span>
           </button>
           <div class="flex items-center gap-loose mb-standard">
-            ${window.GymApp.avatarImg(m.avatar, m.name, 'lg')}
+            ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'lg')}
             <div>
-              <h3 class="font-bold text-on-surface" style="font-size:18px;">${m.name}</h3>
-              <p class="text-on-surface-variant text-body-sm">${m.id} · ${m.profileType || 'Hội viên'}</p>
-              <div class="mt-atom">${window.GymApp.statusBadge(m.status)}</div>
+              <h3 class="font-bold text-on-surface" style="font-size:18px;">${m.ho_ten}</h3>
+              <p class="text-on-surface-variant text-body-sm">${m.ma_ho_so} · ${m.loai_ho_so || 'Hội viên'}</p>
+              <div class="mt-atom">${window.GymApp.statusBadge(m.trang_thai)}</div>
             </div>
           </div>
           <!-- Tabs -->
@@ -348,19 +355,23 @@ window.GymApp.pages['members-list'] = {
     if (tab === 'info') {
       return `
         <div class="grid grid-cols-2 gap-standard">
-          ${[
-            ['Giới tính', m.gender], ['Ngày sinh', window.GymApp.formatDate(m.dob)],
-            ['Số điện thoại', m.phone], ['Email', m.email],
-            ['Chi nhánh', m.branch], ['Phòng tập', m.gym],
-            ['Gói tập', m.package], ['Ngày tham gia', window.GymApp.formatDate(m.joinDate)],
-            ['Ngày hết hạn', window.GymApp.formatDate(m.expireDate)],
-            ['Địa chỉ', [m.ward, m.district, m.province].filter(Boolean).join(', ')],
-          ].map(([label, val]) => `
-            <div class="bg-surface-container p-standard rounded-lg">
-              <p class="text-on-surface-variant text-body-sm font-bold uppercase tracking-wider mb-atom">${label}</p>
-              <p class="text-on-surface text-body-md font-bold">${val || '—'}</p>
-            </div>
-          `).join('')}
+          ${
+            [
+              ['Giới tính', m.gioi_tinh === 'male' ? 'Nam' : 'Nữ'],
+              ['Ngày sinh', window.GymApp.formatDate(m.ngay_sinh)],
+              ['Số điện thoại', m.so_dien_thoai],
+              ['Email', m.email],
+              ['Gói tập hiện tại', m.ten_goi_tap || 'Chưa đăng ký'],
+              ['Ngày tham gia', window.GymApp.formatDate(m.ngay_tao)],
+              ['Ngày hết hạn', window.GymApp.formatDate(m.ngay_het_han)],
+              ['Địa chỉ', m.dia_chi || '—'],
+            ].map(([label, val]) => `
+              <div class="bg-surface-container p-standard rounded-lg">
+                <p class="text-on-surface-variant text-body-sm font-bold uppercase tracking-wider mb-atom">${label}</p>
+                <p class="text-on-surface text-body-md font-bold">${val || '—'}</p>
+              </div>
+            `).join('')
+          }
         </div>
       `;
     }
@@ -379,31 +390,30 @@ window.GymApp.pages['members-list'] = {
           </tr>
         `).join('');
       return `
-        <!-- Gói đang dùng -->
         <div class="bg-surface-container rounded-xl border border-outline-variant p-standard mb-standard">
           <div class="flex items-center justify-between mb-standard">
             <h4 class="font-bold text-on-surface text-body-md flex items-center gap-xs">
               <span class="material-symbols-outlined text-sm text-brand-primary">fitness_center</span>
               Gói đang sử dụng
             </h4>
-            ${window.GymApp.statusBadge(m.status)}
+            ${window.GymApp.statusBadge(m.trang_thai)}
           </div>
           <div class="grid grid-cols-4 gap-standard">
             <div>
               <p class="text-on-surface-variant text-body-sm mb-atom">Tên gói</p>
-              <p class="font-bold text-on-surface text-body-md">${m.package}</p>
+              <p class="font-bold text-on-surface text-body-md">${m.ten_goi_tap || 'N/A'}</p>
             </div>
             <div>
               <p class="text-on-surface-variant text-body-sm mb-atom">Giá gói</p>
-              <p class="font-bold text-on-surface text-body-md">${window.GymApp.formatCurrency(this._getPackagePrice(m.package) || 0)}</p>
+              <p class="font-bold text-on-surface text-body-md">${window.GymApp.formatCurrency(m.gia_goi_tap || 0)}</p>
             </div>
             <div>
               <p class="text-on-surface-variant text-body-sm mb-atom">Từ ngày</p>
-              <p class="font-bold text-on-surface text-body-md">${window.GymApp.formatDate(m.joinDate)}</p>
+              <p class="font-bold text-on-surface text-body-md">${window.GymApp.formatDate(m.ngay_bat_dau)}</p>
             </div>
             <div>
               <p class="text-on-surface-variant text-body-sm mb-atom">Đến ngày</p>
-              <p class="font-bold text-on-surface text-body-md">${window.GymApp.formatDate(m.expireDate)}</p>
+              <p class="font-bold text-on-surface text-body-md">${window.GymApp.formatDate(m.ngay_het_han)}</p>
             </div>
           </div>
         </div>
@@ -1118,9 +1128,11 @@ window.GymApp.pages['members-list'] = {
   _applyMemberFilter: function () {
     const q = document.getElementById('member-search')?.value.toLowerCase() || '';
     const { status, pkg, gender } = this._filterState;
-    this._memberFiltered = window.GymApp.data.members.filter(m => {
-      const matchQ = !q || m.name.toLowerCase().includes(q) || m.id.toLowerCase().includes(q) || m.phone.includes(q);
-      return matchQ && (!status || m.status === status) && (!pkg || m.package === pkg) && (!gender || m.gender === gender);
+    const rawMembers = window.GymApp.data.members;
+    const members = Array.isArray(rawMembers) ? rawMembers : [];
+    this._memberFiltered = members.filter(m => {
+      const matchQ = !q || (m.ho_ten || '').toLowerCase().includes(q) || (m.ma_ho_so || '').toLowerCase().includes(q) || (m.so_dien_thoai || '').includes(q);
+      return matchQ && (!status || m.trang_thai === status) && (!pkg || m.ten_goi_tap === pkg) && (!gender || m.gioi_tinh === gender);
     });
     this._memberPage = 1;
     this._refreshMemberTable();
@@ -1131,9 +1143,9 @@ window.GymApp.pages['members-list'] = {
     const sorted = [...list];
     switch (this._ptSortState) {
       case 'name-asc':
-        return sorted.sort((a, b) => a.name.localeCompare(b.name, 'vi'));
+        return sorted.sort((a, b) => (a.ho_ten || '').localeCompare(b.ho_ten || '', 'vi'));
       case 'name-desc':
-        return sorted.sort((a, b) => b.name.localeCompare(a.name, 'vi'));
+        return sorted.sort((a, b) => (b.ho_ten || '').localeCompare(a.ho_ten || '', 'vi'));
       case 'rating-desc':
         return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
       case 'experience-desc':
@@ -1141,7 +1153,7 @@ window.GymApp.pages['members-list'] = {
       case 'sessions-desc':
         return sorted.sort((a, b) => (b.sessions || 0) - (a.sessions || 0));
       case 'joinDate-desc':
-        return sorted.sort((a, b) => new Date(b.joinDate) - new Date(a.joinDate));
+        return sorted.sort((a, b) => new Date(b.ngay_tao) - new Date(a.ngay_tao));
       default:
         return sorted;
     }
@@ -1150,9 +1162,13 @@ window.GymApp.pages['members-list'] = {
   _applyPtFilter: function () {
     const q = document.getElementById('pt-search')?.value.toLowerCase() || '';
     const { specialty, status } = this._ptFilterState;
-    this._ptFiltered = this._sortPtList(window.GymApp.data.pts.filter(pt => {
-      const matchQ = !q || pt.name.toLowerCase().includes(q) || pt.specialty.toLowerCase().includes(q);
-      return matchQ && (!specialty || pt.specialty === specialty) && (!status || pt.status === status);
+    this._ptFiltered = this._sortPtList((window.GymApp.data.pts || []).filter(pt => {
+      const name = (pt.ho_ten || '').toLowerCase();
+      const spec = (pt.chuyen_mon || '').toLowerCase();
+      const matchQ = !q || name.includes(q) || spec.includes(q);
+      const matchS = !status || pt.trang_thai === status || pt.status === status;
+      const matchSpec = !specialty || pt.chuyen_mon === specialty || pt.specialty === specialty;
+      return matchQ && matchSpec && matchS;
     }));
     this._ptPage = 1;
     this._refreshPtTable();
@@ -1198,13 +1214,14 @@ window.GymApp.pages['members-list'] = {
     };
   },
 
-  // ===== INIT =====
   init: function () {
     const self = this;
     this._memberPage = 1;
     this._ptPage = 1;
-    this._memberFiltered = [...window.GymApp.data.members];
-    this._ptFiltered = [...window.GymApp.data.pts];
+
+    // Sử dụng dữ liệu đã được app.js nạp sẵn
+    this._memberFiltered = [...(window.GymApp.data.members || [])];
+    this._ptFiltered = [...(window.GymApp.data.pts || [])];
 
     this._setupPgHandler();
     this._bindMemberTableEvents();
@@ -1214,6 +1231,11 @@ window.GymApp.pages['members-list'] = {
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => self._switchTab(btn.dataset.tab));
     });
+
+    // Re-render tables with new data
+    this._refreshMemberTable();
+    this._refreshPtTable();
+    
     self._switchTab(self._tab);
 
     // Search

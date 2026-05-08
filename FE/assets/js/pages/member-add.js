@@ -53,7 +53,7 @@ window.GymApp.pages['member-add'] = {
               </div>
 
               <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-compact">
-                ${this._field('Mã hội viên', 'reg-id', 'text', 'Tự động tạo', 'Mã hội viên sẽ tự sinh', true)}
+                ${this._field('Mã hội viên', 'reg-id', 'text', 'Tự động tạo', 'Mã hội viên sẽ tự sinh bởi hệ thống', true)}
                 ${this._field('Họ và tên', 'reg-name', 'text', 'Nhập họ và tên đầy đủ')}
               </div>
             </div>
@@ -259,10 +259,44 @@ window.GymApp.pages['member-add'] = {
     if (idField) idField.value = newId;
 
     // Lưu hội viên
-    document.getElementById('btn-save-member')?.addEventListener('click', () => {
+    document.getElementById('btn-save-member')?.addEventListener('click', async () => {
+      const btn = document.getElementById('btn-save-member');
       const name = document.getElementById('reg-name')?.value.trim();
       if (!name) { window.GymApp.toast('Vui lòng nhập họ và tên!', 'error'); return; }
-      window.GymApp.toast('Đã lưu hội viên thành công!', 'success');
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">sync</span> Đang lưu...';
+
+      try {
+        const data = {
+          ho_ten: name,
+          ngay_sinh: document.getElementById('reg-dob')?.value,
+          gioi_tinh: document.getElementById('reg-gender')?.value === 'Nam' ? 'male' : 'female',
+          so_dien_thoai: document.getElementById('reg-phone')?.value,
+          email: document.getElementById('reg-email')?.value,
+          dia_chi: document.getElementById('reg-address')?.value,
+          loai_ho_so: 'hv'
+        };
+
+        // TODO: Handle avatar upload if needed
+        const res = await window.GymApp.api.post('/members', data);
+
+        if (res && res.success) {
+          window.GymApp.toast('Đã lưu hội viên thành công!', 'success');
+          // Refresh global data
+          await window.GymApp.fetchInitialData();
+          // Navigate back
+          window.GymApp.navigateTo('members-list');
+        } else {
+          window.GymApp.toast(res.message || 'Lỗi khi lưu hội viên', 'error');
+        }
+      } catch (err) {
+        console.error('Save member error:', err);
+        window.GymApp.toast('Không thể kết nối máy chủ', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span class="material-symbols-outlined text-sm">save</span> Lưu hội viên';
+      }
     });
 
     // Lưu gói tập

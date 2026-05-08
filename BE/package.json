@@ -1,0 +1,15 @@
+{
+  "name": "paradise-gym-backend",
+  "version": "1.0.0",
+  "description": "Backend API cho hệ thống quản lý phòng gym Paradise GYM",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "init-db": "node init-db.js"
+  },
+  "keywords": ["gym", "api", "nodejs", "sqlite"],
+  "author": "Paradise GYM Team",
+  "license": "ISC"
+}

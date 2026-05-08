@@ -3,10 +3,13 @@ window.GymApp.pages['checkin'] = {
   _perPage: 10,
 
   render: function () {
-    const checkins = window.GymApp.data.checkins;
+    const checkins = window.GymApp.data.checkins || [];
     const hourCounts = {};
     for (let h = 5; h <= 22; h++) hourCounts[h] = 0;
-    checkins.forEach(c => { if (hourCounts[c.hour] !== undefined) hourCounts[c.hour]++; });
+    checkins.forEach(c => {
+      const hour = new Date(c.thoi_diem).getHours();
+      if (hourCounts[hour] !== undefined) hourCounts[hour]++;
+    });
     const peakHour = Object.entries(hourCounts).sort((a, b) => b[1] - a[1])[0];
 
     return `
@@ -50,14 +53,14 @@ window.GymApp.pages['checkin'] = {
             <div class="grid grid-cols-2 md:grid-cols-3 gap-standard max-h-96 overflow-y-auto pr-xs">
               ${checkins.map(c => `
                 <div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-standard shadow-sm flex flex-col items-center gap-sm hover:border-brand-primary transition-colors">
-                  ${window.GymApp.avatarImg(c.avatar, c.name, 'lg')}
+                  ${window.GymApp.avatarImg(c.avatar_url, c.ho_ten, 'lg')}
                   <div class="text-center">
-                    <p class="font-bold text-on-surface text-body-md truncate w-full">${c.name}</p>
-                    <p class="text-on-surface-variant text-body-sm">${c.memberId}</p>
+                    <p class="font-bold text-on-surface text-body-md truncate w-full">${c.ho_ten}</p>
+                    <p class="text-on-surface-variant text-body-sm">${c.ma_ho_so}</p>
                   </div>
                   <div class="flex items-center gap-xs bg-[#e7f5e9] rounded-full px-compact py-xs">
                     <span class="material-symbols-outlined text-brand-primary text-sm">schedule</span>
-                    <span class="text-brand-primary text-body-sm font-bold">${c.time}</span>
+                    <span class="text-brand-primary text-body-sm font-bold">${new Date(c.thoi_diem).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                 </div>
               `).join('')}
@@ -80,7 +83,7 @@ window.GymApp.pages['checkin'] = {
   },
 
   _renderDetailTable: function () {
-    const checkins = window.GymApp.data.checkins;
+    const checkins = window.GymApp.data.checkins || [];
     const start = (this._page - 1) * this._perPage;
     const paginated = checkins.slice(start, start + this._perPage);
 
@@ -88,18 +91,18 @@ window.GymApp.pages['checkin'] = {
       <tr class="h-11 border-b border-outline-variant hover:bg-surface-container-low transition-colors">
         <td class="px-loose">
           <div class="flex items-center gap-compact">
-            ${window.GymApp.avatarImg(c.avatar, c.name, 'sm')}
-            <span class="font-bold text-on-surface text-body-md">${c.name}</span>
+            ${window.GymApp.avatarImg(c.avatar_url, c.ho_ten, 'sm')}
+            <span class="font-bold text-on-surface text-body-md">${c.ho_ten}</span>
           </div>
         </td>
-        <td class="px-loose text-on-surface-variant text-body-sm font-bold">${c.memberId}</td>
+        <td class="px-loose text-on-surface-variant text-body-sm font-bold">${c.ma_ho_so}</td>
         <td class="px-loose">
           <span class="flex items-center gap-xs text-on-surface text-body-md">
             <span class="material-symbols-outlined text-brand-primary text-sm">schedule</span>
-            ${c.time}
+            ${new Date(c.thoi_diem).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
           </span>
         </td>
-        <td class="px-loose">${window.GymApp.statusBadge('active')}</td>
+        <td class="px-loose">${window.GymApp.statusBadge(c.loai === 'vao' ? 'active' : 'inactive')}</td>
       </tr>
     `).join('');
 
@@ -121,21 +124,37 @@ window.GymApp.pages['checkin'] = {
     `;
   },
 
-  init: function () {
+  init: async function () {
     const self = this;
     this._page = 1;
 
     // Pagination handler
     window.GymApp._pgHandler = function (pg) {
       self._page = pg;
-      document.getElementById('checkin-table-container').innerHTML = self._renderDetailTable();
+      const table = document.getElementById('checkin-table-container');
+      if (table) table.innerHTML = self._renderDetailTable();
     };
 
     // Chart
-    const checkins = window.GymApp.data.checkins;
+    const checkins = window.GymApp.data.checkins || [];
+    if (checkins.length === 0) {
+      try {
+        const res = await window.GymApp.api.get('/checkins');
+        if (res?.success) window.GymApp.data.checkins = res.data;
+      } catch (err) { console.error('Failed to fetch checkins', err); }
+    }
+    
+    // Render lại nếu có dữ liệu mới (không gọi lại init để tránh loop)
+    const freshCheckins = window.GymApp.data.checkins || [];
+    const chartCanvas = document.getElementById('chart-checkin-hourly');
+    if (!chartCanvas) return;
+
     const hourCounts = {};
     for (let h = 5; h <= 22; h++) hourCounts[h] = 0;
-    checkins.forEach(c => { if (hourCounts[c.hour] !== undefined) hourCounts[c.hour]++; });
+    freshCheckins.forEach(c => {
+        const hour = new Date(c.thoi_diem).getHours();
+        if (hourCounts[hour] !== undefined) hourCounts[hour]++;
+    });
 
     const ctx = document.getElementById('chart-checkin-hourly');
     if (!ctx) return;

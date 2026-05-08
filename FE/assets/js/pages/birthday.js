@@ -6,12 +6,18 @@ window.GymApp.pages['birthday'] = {
 
   _getBirthdayGroups: function () {
     const currentYear = new Date().getFullYear();
+    const rawMembers = window.GymApp.data.members;
+    const membersList = Array.isArray(rawMembers) ? rawMembers : [];
     return Array.from({ length: 12 }, (_, idx) => {
       const month = idx + 1;
-      const members = window.GymApp.data.members
-        .filter(m => Number(m.dob.split('-')[1]) === month)
+      const members = membersList
+        .filter(m => {
+          const bDay = m.ngay_sinh || m.dob;
+          return bDay && typeof bDay === 'string' && Number(bDay.split('-')[1]) === month;
+        })
         .map(m => {
-          const [year, mth, day] = m.dob.split('-').map(Number);
+          const bDay = m.ngay_sinh || m.dob;
+          const [year, mth, day] = bDay.split('-').map(Number);
           return {
             ...m,
             birthDay: day,
@@ -19,7 +25,7 @@ window.GymApp.pages['birthday'] = {
             ageThisYear: currentYear - year,
           };
         })
-        .sort((a, b) => a.birthDay - b.birthDay || a.name.localeCompare(b.name, 'vi'));
+        .sort((a, b) => a.birthDay - b.birthDay || (a.ho_ten || '').localeCompare(b.ho_ten || '', 'vi'));
 
       return {
         month,
@@ -32,8 +38,12 @@ window.GymApp.pages['birthday'] = {
   _getTodayBirthdays: function () {
     const today = new Date();
     const todayMD = `${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    return window.GymApp.data.members.filter(m => {
-      const parts = m.dob.split('-');
+    const rawMembers = window.GymApp.data.members;
+    const members = Array.isArray(rawMembers) ? rawMembers : [];
+    return members.filter(m => {
+      const bDay = m.ngay_sinh || m.dob;
+      if (!bDay) return false;
+      const parts = bDay.split('-');
       return `${parts[1]}-${parts[2]}` === todayMD;
     });
   },
@@ -124,10 +134,10 @@ window.GymApp.pages['birthday'] = {
                       <div class="flex flex-wrap gap-compact">
                         ${group.members.map(m => `
                           <div class="birthday-member-chip flex items-center gap-compact bg-surface-container border border-outline-variant rounded-lg px-compact py-xs">
-                            ${window.GymApp.avatarImg(m.avatar, m.name, 'sm')}
+                            ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'sm')}
                             <div class="min-w-0">
-                              <p class="font-bold text-on-surface text-body-sm">${m.name}</p>
-                              <p class="text-on-surface-variant" style="font-size:11px;">${String(m.birthDay).padStart(2, '0')}/${String(m.birthMonth).padStart(2, '0')} · ${m.ageThisYear} tuổi · ${m.phone}</p>
+                              <p class="font-bold text-on-surface text-body-sm">${m.ho_ten}</p>
+                              <p class="text-on-surface-variant" style="font-size:11px;">${String(m.birthDay).padStart(2, '0')}/${String(m.birthMonth).padStart(2, '0')} · ${m.ageThisYear} tuổi · ${m.so_dien_thoai || ''}</p>
                             </div>
                           </div>
                         `).join('')}
@@ -156,8 +166,8 @@ window.GymApp.pages['birthday'] = {
             <div class="flex flex-wrap gap-compact">
               ${todayBirthdays.map(m => `
                 <button class="birthday-today-chip flex items-center gap-compact bg-surface-container border border-outline-variant rounded-lg px-compact py-xs hover:border-brand-primary transition-colors" data-label="Sinh nhật hôm nay" data-count="${todayBirthdays.length}">
-                  ${window.GymApp.avatarImg(m.avatar, m.name, 'sm')}
-                  <span class="font-bold text-on-surface text-body-sm">${m.name}</span>
+                  ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'sm')}
+                  <span class="font-bold text-on-surface text-body-sm">${m.ho_ten}</span>
                 </button>
               `).join('')}
             </div>

@@ -14,20 +14,27 @@ window.GymApp.pages['pt-training'] = {
 
         <!-- Stats PT -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-loose">
-          ${[
-            { label: 'Tổng PT', value: window.GymApp.data.pts.length, icon: 'sports_gymnastics', color: 'text-brand-primary' },
-            { label: 'Lịch hôm nay', value: window.GymApp.data.ptSchedules.filter(s => s.date === new Date().toISOString().split('T')[0]).length, icon: 'event_available', color: 'text-[#006b20]' },
-            { label: 'Đã xác nhận', value: window.GymApp.data.ptSchedules.filter(s=>s.status==='confirmed').length, icon: 'check_circle', color: 'text-brand-primary' },
-            { label: 'Chờ xác nhận', value: window.GymApp.data.ptSchedules.filter(s=>s.status==='pending').length, icon: 'pending', color: 'text-[#e65100]' },
-          ].map(s => `
-            <div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-loose shadow-sm flex flex-col gap-sm">
-              <div class="flex items-center justify-between">
-                <span class="text-on-surface-variant font-body-sm text-body-sm uppercase tracking-wider font-bold">${s.label}</span>
-                <span class="material-symbols-outlined ${s.color} text-xl">${s.icon}</span>
-              </div>
-              <span class="${s.color} font-display-2xl text-display-2xl font-bold">${s.value}</span>
-            </div>
-          `).join('')}
+          ${
+            (function() {
+              const pts = window.GymApp.data.pts || [];
+              const schedules = window.GymApp.data.ptSchedules || [];
+              const today = new Date().toISOString().split('T')[0];
+              return [
+                { label: 'Tổng PT', value: pts.length, icon: 'sports_gymnastics', color: 'text-brand-primary' },
+                { label: 'Lịch hôm nay', value: schedules.filter(s => s.ngay_tap === today).length, icon: 'event_available', color: 'text-[#006b20]' },
+                { label: 'Đã tập', value: schedules.filter(s=>s.trang_thai==='da_tap').length, icon: 'check_circle', color: 'text-brand-primary' },
+                { label: 'Chờ tập', value: (schedules.filter(s=>s.trang_thai==='cho_tap' || s.trang_thai==='pending').length), icon: 'pending', color: 'text-[#e65100]' },
+              ].map(s => `
+                <div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-loose shadow-sm flex flex-col gap-sm">
+                  <div class="flex items-center justify-between">
+                    <span class="text-on-surface-variant font-body-sm text-body-sm uppercase tracking-wider font-bold">${s.label}</span>
+                    <span class="material-symbols-outlined ${s.color} text-xl">${s.icon}</span>
+                  </div>
+                  <span class="${s.color} font-display-2xl text-display-2xl font-bold">${s.value}</span>
+                </div>
+              `).join('');
+            })()
+          }
         </div>
 
         <!-- Header: Tìm kiếm + Bộ lọc + Tải lại -->
@@ -67,28 +74,28 @@ window.GymApp.pages['pt-training'] = {
 
         <!-- Container: Cards lịch đào tạo -->
         <div id="pt-schedule-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-loose">
-          ${this._renderCards(window.GymApp.data.ptSchedules)}
+          ${window.GymApp.pages['pt-training']._renderCards(window.GymApp.data.ptSchedules || [])}
         </div>
 
         <!-- Danh sách PT -->
         <div>
           <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface mb-standard">Huấn luyện viên</h3>
           <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-loose">
-            ${window.GymApp.data.pts.map(pt => `
+            ${(window.GymApp.data.pts || []).map(pt => `
               <div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-loose shadow-sm flex flex-col items-center gap-standard hover:shadow-md transition-shadow">
-                ${window.GymApp.avatarImg(pt.avatar, pt.name, 'lg')}
+                ${window.GymApp.avatarImg(pt.avatar_url, pt.ho_ten, 'lg')}
                 <div class="text-center">
-                  <p class="font-bold text-on-surface text-body-md">${pt.name}</p>
-                  <p class="text-on-surface-variant text-body-sm">${pt.specialty}</p>
+                  <p class="font-bold text-on-surface text-body-md">${pt.ho_ten}</p>
+                  <p class="text-on-surface-variant text-body-sm">${pt.ma_ho_so}</p>
                 </div>
                 <div class="flex items-center gap-xs">
                   <span class="material-symbols-outlined text-sm text-[#f59e0b]">star</span>
-                  <span class="font-bold text-on-surface text-body-sm">${pt.rating}</span>
-                  <span class="text-on-surface-variant text-body-sm">(${pt.sessions} buổi)</span>
+                  <span class="font-bold text-on-surface text-body-sm">4.8</span>
+                  <span class="text-on-surface-variant text-body-sm">(${pt.so_hoc_vien || 0} học viên)</span>
                 </div>
                 <div class="flex items-center gap-xs text-on-surface-variant text-body-sm">
                   <span class="material-symbols-outlined text-sm">work</span>
-                  ${pt.experience} năm KN
+                  ${pt.tong_buoi_da_day || 0} buổi đã dạy
                 </div>
               </div>
             `).join('')}
@@ -100,18 +107,19 @@ window.GymApp.pages['pt-training'] = {
   },
 
   _renderCards: function (schedules) {
-    if (schedules.length === 0) {
+    const list = Array.isArray(schedules) ? schedules : [];
+    if (list.length === 0) {
       return `<div class="md:col-span-3 bg-surface-container-lowest rounded-xl border border-outline-variant p-margin text-center text-on-surface-variant">
         <span class="material-symbols-outlined text-4xl text-outline">event_busy</span>
         <p class="mt-standard">Không tìm thấy lịch đào tạo</p>
       </div>`;
     }
-    return schedules.map(s => `
+    return list.map(s => `
       <div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden hover:shadow-md transition-shadow">
         <!-- Card header -->
         <div class="px-loose py-standard border-b border-outline-variant flex items-center justify-between bg-surface-container-low">
-          <span class="text-on-surface-variant text-body-sm font-bold">${s.id}</span>
-          ${window.GymApp.statusBadge(s.status)}
+          <span class="text-on-surface-variant text-body-sm font-bold">#${s.id}</span>
+          ${window.GymApp.statusBadge(s.trang_thai || s.status)}
         </div>
 
         <!-- Card body -->
@@ -123,7 +131,7 @@ window.GymApp.pages['pt-training'] = {
             </div>
             <div>
               <p class="text-on-surface-variant text-body-sm">Huấn luyện viên</p>
-              <p class="font-bold text-on-surface text-body-md">${s.ptName}</p>
+              <p class="font-bold text-on-surface text-body-md">${s.ten_pt || s.ptName}</p>
             </div>
           </div>
 
@@ -134,7 +142,7 @@ window.GymApp.pages['pt-training'] = {
             </div>
             <div>
               <p class="text-on-surface-variant text-body-sm">Hội viên</p>
-              <p class="font-bold text-on-surface text-body-md">${s.memberName}</p>
+              <p class="font-bold text-on-surface text-body-md">${s.ten_hoi_vien || s.memberName}</p>
             </div>
           </div>
 
@@ -144,15 +152,15 @@ window.GymApp.pages['pt-training'] = {
               <span class="material-symbols-outlined text-brand-primary text-sm">schedule</span>
             </div>
             <div>
-              <p class="text-on-surface-variant text-body-sm">${window.GymApp.formatDate(s.date)}</p>
-              <p class="font-bold text-on-surface text-body-md">${s.startTime} — ${s.endTime}</p>
+              <p class="text-on-surface-variant text-body-sm">${window.GymApp.formatDate(s.ngay_tap || s.date)}</p>
+              <p class="font-bold text-on-surface text-body-md">${s.gio_bat_dau || s.startTime} — ${s.gio_ket_thuc || s.endTime}</p>
             </div>
           </div>
 
           <!-- Loại & ghi chú -->
           <div class="flex items-center gap-standard">
-            <span class="bg-surface-container px-compact py-xs rounded-full text-body-sm text-on-surface-variant font-bold">${s.type}</span>
-            ${s.notes ? `<span class="text-on-surface-variant text-body-sm truncate">${s.notes}</span>` : ''}
+            <span class="bg-surface-container px-compact py-xs rounded-full text-body-sm text-on-surface-variant font-bold">${s.loai_buoi || s.type || 'Cá nhân'}</span>
+            ${s.ghi_chu || s.notes ? `<span class="text-on-surface-variant text-body-sm truncate">${s.ghi_chu || s.notes}</span>` : ''}
           </div>
         </div>
 
@@ -170,10 +178,12 @@ window.GymApp.pages['pt-training'] = {
     const q = document.getElementById('pt-search')?.value.toLowerCase() || '';
     const status = document.getElementById('pt-filter-status')?.value || '';
     const ptId = document.getElementById('pt-filter-pt')?.value || '';
-    const filtered = window.GymApp.data.ptSchedules.filter(s => {
-      const matchQ = !q || s.ptName.toLowerCase().includes(q) || s.memberName.toLowerCase().includes(q);
-      const matchS = !status || s.status === status;
-      const matchPt = !ptId || s.ptId === ptId;
+    const filtered = (window.GymApp.data.ptSchedules || []).filter(s => {
+      const ptName = (s.ten_pt || s.ptName || '').toLowerCase();
+      const hvName = (s.ten_hoi_vien || s.memberName || '').toLowerCase();
+      const matchQ = !q || ptName.includes(q) || hvName.includes(q);
+      const matchS = !status || s.trang_thai === status || s.status === status;
+      const matchPt = !ptId || s.pt_id == ptId || s.ptId == ptId;
       return matchQ && matchS && matchPt;
     });
     document.getElementById('pt-schedule-container').innerHTML = this._renderCards(filtered);

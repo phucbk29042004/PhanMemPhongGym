@@ -1,7 +1,7 @@
 window.GymApp.pages['packages'] = {
   render: function () {
-    const packages = window.GymApp.data.packages;
-    const total = packages.reduce((s, p) => s + p.members, 0);
+    const packages = window.GymApp.data.packages || [];
+    const total = packages.reduce((s, p) => s + (p.so_nguoi_dang_ky || 0), 0);
 
     return `
       <div class="flex flex-col gap-margin">
@@ -22,7 +22,7 @@ window.GymApp.pages['packages'] = {
         <div class="grid grid-cols-3 gap-loose">
           ${[
             { label: 'Tổng gói tập', value: packages.length, color: 'text-brand-primary' },
-            { label: 'Đang hoạt động', value: packages.filter(p=>p.status==='active').length, color: 'text-brand-primary' },
+            { label: 'Đang hoạt động', value: packages.filter(p => p.trang_thai === 'dang_ban' || p.trang_thai === 'active').length, color: 'text-brand-primary' },
             { label: 'Tổng hội viên đăng ký', value: total, color: 'text-brand-primary' },
           ].map(s => `
             <div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-loose shadow-sm flex flex-col gap-atom">
@@ -35,7 +35,7 @@ window.GymApp.pages['packages'] = {
         <!-- Cards gói tập -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-loose">
           ${packages.map(p => {
-            const popularity = Math.round((p.members / total) * 100);
+            const popularity = total > 0 ? Math.round(((p.so_nguoi_dang_ky || 0) / total) * 100) : 0;
             return `
               <div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                 <!-- Header card -->
@@ -43,17 +43,17 @@ window.GymApp.pages['packages'] = {
                   <div class="flex items-start justify-between">
                     <div>
                       <p class="font-bold text-body-md opacity-80">Gói tập</p>
-                      <h3 class="font-display-2xl text-display-2xl font-bold">${p.name}</h3>
+                      <h3 class="font-display-2xl text-display-2xl font-bold">${p.ten_goi}</h3>
                     </div>
                     <span class="material-symbols-outlined text-2xl opacity-80">card_membership</span>
                   </div>
-                  <p class="text-2xl font-bold mt-standard">${window.GymApp.formatCurrency(p.price)}</p>
-                  <p class="text-body-sm opacity-75 mt-xs">${p.duration} ngày</p>
+                  <p class="text-2xl font-bold mt-standard">${window.GymApp.formatCurrency(p.gia)}</p>
+                  <p class="text-body-sm opacity-75 mt-xs">${p.so_thang} tháng ${p.so_ngay_them ? '+ ' + p.so_ngay_them + ' ngày' : ''}</p>
                 </div>
 
                 <!-- Body card -->
                 <div class="p-loose flex flex-col gap-standard">
-                  <p class="text-on-surface-variant text-body-sm">${p.description}</p>
+                  <p class="text-on-surface-variant text-body-sm">${p.mo_ta || 'Không có mô tả'}</p>
 
                   <!-- Popularity bar -->
                   <div>
@@ -69,9 +69,9 @@ window.GymApp.pages['packages'] = {
                   <div class="flex items-center justify-between">
                     <div class="flex items-center gap-xs text-on-surface-variant">
                       <span class="material-symbols-outlined text-sm">people</span>
-                      <span class="text-body-sm">${p.members} hội viên</span>
+                      <span class="text-body-sm">${p.so_nguoi_dang_ky || 0} hội viên</span>
                     </div>
-                    ${window.GymApp.statusBadge(p.status)}
+                    ${window.GymApp.statusBadge('active')}
                   </div>
                 </div>
 
@@ -106,12 +106,12 @@ window.GymApp.pages['packages'] = {
               <tbody>
                 ${packages.map(p => `
                   <tr class="h-11 border-b border-outline-variant hover:bg-surface-container-low">
-                    <td class="px-loose font-bold text-on-surface text-body-md">${p.name}</td>
-                    <td class="px-loose text-brand-primary font-bold text-body-md">${window.GymApp.formatCurrency(p.price)}</td>
-                    <td class="px-loose text-on-surface-variant text-body-sm">${p.duration} ngày</td>
-                    <td class="px-loose text-on-surface-variant text-body-sm">${window.GymApp.formatCurrency(Math.round(p.price / p.duration))}</td>
-                    <td class="px-loose text-body-md">${p.members}</td>
-                    <td class="px-loose">${window.GymApp.statusBadge(p.status)}</td>
+                    <td class="px-loose font-bold text-on-surface text-body-md">${p.ten_goi}</td>
+                    <td class="px-loose text-brand-primary font-bold text-body-md">${window.GymApp.formatCurrency(p.gia)}</td>
+                    <td class="px-loose text-on-surface-variant text-body-sm">${p.so_thang} tháng</td>
+                    <td class="px-loose text-on-surface-variant text-body-sm">${window.GymApp.formatCurrency(Math.round(p.gia / (p.so_thang * 30)))}</td>
+                    <td class="px-loose text-body-md">${p.so_nguoi_dang_ky || 0}</td>
+                    <td class="px-loose">${window.GymApp.statusBadge('active')}</td>
                   </tr>
                 `).join('')}
               </tbody>

@@ -63,7 +63,15 @@
 </head>
 <body class="font-body-md text-body-md overflow-hidden bg-background text-on-surface">
 
-<script>window.GymApp = { data: {}, pages: {}, currentPage: null };</script>
+<script>
+  window.GymApp = { 
+    data: { 
+      members: [], pts: [], packages: [], checkins: [], ptSchedules: [], ptBookings: [], stats: null 
+    }, 
+    pages: {}, 
+    currentPage: null 
+  };
+</script>
 
 <div class="flex h-screen w-full overflow-hidden">
 
@@ -109,7 +117,7 @@
           <span class="material-symbols-outlined text-sm arrow-icon transition-transform duration-200 sidebar-label flex-shrink-0">chevron_right</span>
         </button>
 
-        <div class="accordion-content" id="accordion-hoi-vien" style="max-height:0; transition: max-height 0.25s ease;">
+        <div class="accordion-content overflow-hidden" id="accordion-hoi-vien" style="max-height:0; transition: max-height 0.25s ease;">
           <div class="pl-7 py-atom space-y-atom">
 
             <button class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-lg text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-colors" data-page="members-list" title="Danh sách hội viên">
@@ -196,7 +204,9 @@
   </div>
 </div>
 
-<script src="assets/js/data/mock-data.js"></script>
+<!-- Global Data synced via app.js -->
+<script src="assets/js/api.js"></script>
+<script src="assets/js/auth.js"></script>
 <script src="assets/js/pages/dashboard.js"></script>
 <script src="assets/js/pages/members-list.js"></script>
 <script src="assets/js/pages/member-add.js"></script>

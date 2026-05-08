@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Đăng nhập - Paradise GYM</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
+    <style>
+        body {
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .focus-halo:focus-within {
+            box-shadow: rgba(29, 147, 54, 0.16) 0px 0px 0px 4px;
+        }
+
+        .button-primary-active:active {
+            transform: scale(0.98);
+            transition-duration: 200ms;
+        }
+
+        .bg-gradient-soft {
+            background: linear-gradient(135deg, #f7f9ff 0%, #e8f0fe 100%);
+        }
+
+        /* Hide scrollbar but keep functionality */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            /* IE and Edge */
+            scrollbar-width: none;
+            /* Firefox */
+        }
+    </style>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#004d2a",
+                        "primary-container": "#1D9336",
+                        "on-primary": "#ffffff",
+                        "surface": "#f7f9ff",
+                        "outline-variant": "#bec9bf",
+                        "on-surface": "#181c20",
+                        "on-surface-variant": "#3f4941",
+                        "error": "#ba1a1a",
+                        "text-secondary": "#1D9336"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.5rem",
+                        "xl": "1rem",
+                        "2xl": "1.5rem"
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+
+<body class="bg-white text-on-surface h-screen overflow-hidden flex flex-col">
+    <main class="flex-grow h-full w-full">
+        <div class="w-full h-full grid grid-cols-1 lg:grid-cols-2 gap-0 overflow-hidden">
+
+            <!-- Left Side: Brand Visual (Hidden on mobile) -->
+            <div class="hidden lg:block relative overflow-hidden bg-primary h-full">
+                <img alt="Paradise GYM Premium" class="object-cover w-full h-full opacity-80"
+                    src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=2070&auto=format&fit=crop" />
+                <div
+                    class="absolute inset-0 bg-gradient-to-t from-primary via-primary/20 to-transparent flex flex-col justify-end p-12">
+                    <div class="mb-6">
+                        <div class="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-4 shadow-xl">
+                            <span class="material-symbols-outlined text-primary text-4xl">fitness_center</span>
+                        </div>
+                        <h2 class="text-4xl font-extrabold text-white mb-2 leading-tight">Paradise GYM</h2>
+                        <div class="h-1 w-20 bg-white rounded-full"></div>
+                    </div>
+                    <p class="text-white/90 text-xl font-medium max-w-sm leading-relaxed">
+                        Hệ thống quản lý phòng tập thông minh.
+                        <span class="block text-white/70 text-base mt-2">Dễ dàng. Hiệu quả. Chuyên nghiệp.</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Right Side: Login Form -->
+            <div class="flex flex-col p-8 md:p-10 lg:p-16 justify-center bg-white h-full overflow-y-auto no-scrollbar">
+                <div class="w-full max-w-[360px] mx-auto">
+                    <div class="mb-6">
+                        <div class="flex items-center justify-between mb-4 lg:hidden">
+                            <div class="flex items-center gap-2">
+                                <span
+                                    class="material-symbols-outlined text-primary-container text-3xl">fitness_center</span>
+                                <span class="font-extrabold text-xl text-primary">Paradise GYM</span>
+                            </div>
+                        </div>
+                        <h1 class="text-2xl font-extrabold text-on-surface mb-1">Đăng nhập</h1>
+                        <p class="text-on-surface-variant text-sm font-medium">Chào mừng bạn quay trở lại hệ thống.</p>
+                    </div>
+
+                    <form id="login-form" class="space-y-4">
+                    <!-- Username Input -->
+                    <div class="space-y-2">
+                        <label class="text-sm font-bold text-on-surface flex items-center gap-1" for="username">
+                            Tên đăng nhập <span class="text-error">*</span>
+                        </label>
+                        <div class="relative focus-halo rounded-xl transition-all">
+                            <span
+                                class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant">person</span>
+                            <input
+                                class="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-outline-variant focus:border-primary-container rounded-xl outline-none transition-all font-medium"
+                                id="username" placeholder="Nhập tên đăng nhập của bạn" type="text" required />
+                        </div>
+                    </div>
+
+                    <!-- Password Input -->
+                    <div class="space-y-2">
+                        <label class="text-sm font-bold text-on-surface flex items-center gap-1" for="password">
+                            Mật khẩu <span class="text-error">*</span>
+                        </label>
+                        <div class="relative focus-halo rounded-xl transition-all">
+                            <span
+                                class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant">lock</span>
+                            <input
+                                class="w-full pl-12 pr-12 py-3.5 bg-gray-50 border border-outline-variant focus:border-primary-container rounded-xl outline-none transition-all font-medium"
+                                id="password" placeholder="••••••••" type="password" required />
+                            <button type="button"
+                                class="absolute right-4 top-1/2 -translate-y-1/2 text-outline-variant hover:text-on-surface transition-colors">
+                                <span class="material-symbols-outlined text-xl">visibility</span>
+                            </button>
+                        </div>
+                        <div class="flex justify-end">
+                            <a class="text-xs font-bold text-primary-container hover:underline" href="#">Quên mật khẩu?</a>
+                        </div>
+                    </div>
+
+                    <!-- Login Button -->
+                    <!-- Login Button -->
+                    <div class="flex justify-center pt-2">
+                        <button id="login-btn"
+                            class="w-fit px-12 py-2.5 bg-primary-container text-white font-semibold rounded-xl shadow-md shadow-green-100 hover:bg-primary transition-all focus:ring-4 focus:ring-primary/20 button-primary-active flex items-center justify-center gap-2 text-sm"
+                            type="submit">
+                            <span class="material-symbols-outlined text-lg">login</span>
+                            <span>Đăng nhập ngay</span>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Divider -->
+                <div class="relative my-6">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-outline-variant/50"></div>
+                    </div>
+                    <div class="relative flex justify-center text-[10px] uppercase tracking-widest font-bold">
+                        <span class="bg-white px-4 text-outline-variant">Hoặc đăng nhập với</span>
+                    </div>
+                </div>
+
+                <!-- Social Login -->
+                <div class="grid grid-cols-2 gap-4">
+                    <button
+                        class="flex items-center justify-center gap-3 py-3 border border-outline-variant rounded-xl hover:bg-gray-50 transition-all font-bold text-sm">
+                        <img alt="Google" class="w-5 h-5"
+                            src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" />
+                        <span>Google</span>
+                    </button>
+                    <button
+                        class="flex items-center justify-center gap-3 py-3 border border-outline-variant rounded-xl hover:bg-gray-50 transition-all font-bold text-sm">
+                        <span class="material-symbols-outlined text-blue-600">qr_code_scanner</span>
+                        <span>Quét QR</span>
+                    </button>
+                </div>
+
+                <!-- Footer Link -->
+                <div class="mt-6 text-center">
+                    <p class="text-sm text-on-surface-variant font-medium">
+                        Chưa có tài khoản?
+                        <a class="text-primary-container font-extrabold hover:underline ml-1" href="#">Liên hệ quản trị viên</a>
+                    </p>
+                </div>
+            </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script>window.GymApp = { data: {}, pages: {} };</script>
+    <script src="assets/js/api.js"></script>
+    <script src="assets/js/auth.js"></script>
+    <script>
+        // Standard toast for login page (avoid blocking alert)
+        window.GymApp.toast = function (message, type = 'success') {
+            const colors = { success: 'background:#1D9336', error: 'background:#ba1a1a', info: 'background:#575f67' };
+            const el = document.createElement('div');
+            el.style.cssText = `position:fixed;bottom:20px;right:20px;z-index:9999;${colors[type]};color:#fff;padding:12px 24px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.3);font-size:14px;font-weight:600;transition:all 0.3s ease;`;
+            el.innerHTML = message;
+            document.body.appendChild(el);
+            setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3000);
+        };
+
+        // Handle Form Submission
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('login-btn');
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            btn.disabled = true;
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<span class="animate-spin material-symbols-outlined text-xl">progress_activity</span><span>Đang xác thực...</span>';
+
+            const success = await window.GymApp.auth.login(username, password);
+
+            if (!success) {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+            }
+        });
+
+        // Toggle visibility (UI only for now)
+        const passInput = document.getElementById('password');
+        const toggleBtn = passInput.nextElementSibling;
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', () => {
+                const isPass = passInput.type === 'password';
+                passInput.type = isPass ? 'text' : 'password';
+                toggleBtn.querySelector('span').textContent = isPass ? 'visibility_off' : 'visibility';
+            });
+        }
+    </script>
+</body>
+
+</html>

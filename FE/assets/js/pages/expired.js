@@ -4,19 +4,25 @@ window.GymApp.pages['expired'] = {
   _expiredList: [], _expiringList: [],
 
   render: function () {
-    const members = window.GymApp.data.members;
+    const raw = window.GymApp.data.members;
+    const members = Array.isArray(raw) ? raw : [];
     const now = new Date();
 
-    const expired = members.filter(m => m.status === 'expired');
+    const expired = members.filter(m => m.trang_thai === 'expired' || m.trang_thai === 'het_han');
     this._expiredList = expired;
     const expiring = members.filter(m => {
-      if (m.status !== 'active') return false;
-      const diff = (new Date(m.expireDate) - now) / (1000 * 60 * 60 * 24);
+      if (m.trang_thai !== 'active' && m.trang_thai !== 'dang_tap') return false;
+      const expireDate = m.ngay_het_han || m.expireDate;
+      if (!expireDate) return false;
+      const diff = (new Date(expireDate) - now) / (1000 * 60 * 60 * 24);
       return diff >= 0 && diff <= 30;
-    }).map(m => ({
-      ...m,
-      daysLeft: Math.ceil((new Date(m.expireDate) - now) / (1000 * 60 * 60 * 24))
-    }));
+    }).map(m => {
+      const expireDate = m.ngay_het_han || m.expireDate;
+      return {
+        ...m,
+        daysLeft: Math.ceil((new Date(expireDate) - now) / (1000 * 60 * 60 * 24))
+      };
+    });
     this._expiringList = expiring;
 
     return `
@@ -102,17 +108,17 @@ window.GymApp.pages['expired'] = {
                 <tr class="h-12 border-b border-outline-variant hover:bg-surface-container-low transition-colors">
                   <td class="px-loose">
                     <div class="flex items-center gap-compact">
-                      ${window.GymApp.avatarImg(m.avatar, m.name, 'sm')}
+                      ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'sm')}
                       <div>
-                        <p class="font-bold text-on-surface text-body-md">${m.name}</p>
-                        <p class="text-on-surface-variant text-body-sm">${m.phone}</p>
+                        <p class="font-bold text-on-surface text-body-md">${m.ho_ten}</p>
+                        <p class="text-on-surface-variant text-body-sm">${m.so_dien_thoai || '—'}</p>
                       </div>
                     </div>
                   </td>
-                  <td class="px-loose text-on-surface-variant text-body-sm font-bold">${m.id}</td>
-                  <td class="px-loose text-body-md">${m.package}</td>
-                  <td class="px-loose text-on-surface-variant text-body-sm">${m.branch}</td>
-                  <td class="px-loose text-error text-body-sm font-bold">${window.GymApp.formatDate(m.expireDate)}</td>
+                  <td class="px-loose text-on-surface-variant text-body-sm font-bold">${m.ma_ho_so}</td>
+                  <td class="px-loose text-body-md">${m.ten_goi_tap || 'N/A'}</td>
+                  <td class="px-loose text-on-surface-variant text-body-sm">Main Gym</td>
+                  <td class="px-loose text-error text-body-sm font-bold">${window.GymApp.formatDate(m.ngay_het_han)}</td>
                   <td class="px-loose">${window.GymApp.statusBadge('expired')}</td>
                   <td class="px-loose text-right">
                     <div class="flex justify-end gap-atom">
@@ -160,16 +166,16 @@ window.GymApp.pages['expired'] = {
                   <tr class="h-12 border-b border-outline-variant hover:bg-surface-container-low transition-colors">
                     <td class="px-loose">
                       <div class="flex items-center gap-compact">
-                        ${window.GymApp.avatarImg(m.avatar, m.name, 'sm')}
+                        ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'sm')}
                         <div>
-                          <p class="font-bold text-on-surface text-body-md">${m.name}</p>
-                          <p class="text-on-surface-variant text-body-sm">${m.phone}</p>
+                          <p class="font-bold text-on-surface text-body-md">${m.ho_ten}</p>
+                          <p class="text-on-surface-variant text-body-sm">${m.so_dien_thoai || '—'}</p>
                         </div>
                       </div>
                     </td>
-                    <td class="px-loose text-on-surface-variant text-body-sm font-bold">${m.id}</td>
-                    <td class="px-loose text-body-md">${m.package}</td>
-                    <td class="px-loose text-on-surface-variant text-body-sm">${window.GymApp.formatDate(m.expireDate)}</td>
+                    <td class="px-loose text-on-surface-variant text-body-sm font-bold">${m.ma_ho_so}</td>
+                    <td class="px-loose text-body-md">${m.ten_goi_tap || 'N/A'}</td>
+                    <td class="px-loose text-on-surface-variant text-body-sm">${window.GymApp.formatDate(m.ngay_het_han)}</td>
                     <td class="px-loose">
                       <span class="${urgency} font-bold text-body-sm">${m.daysLeft} ngày</span>
                     </td>
