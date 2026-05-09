@@ -8,11 +8,27 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
-**✅ HOÀN THÀNH**: Toàn bộ Backend API đã đầy đủ. Frontend đã tích hợp đầy đủ với modal chi tiết hội viên 3 tab, form đăng ký gói tập, form đặt lịch PT. Hệ thống sẵn sàng kiểm thử end-to-end.
+**✅ HOÀN THÀNH**: Hệ thống đã có đầy đủ 3 portal riêng biệt theo role: Admin/Lễ tân (`index.html`), PT (`pt-portal.html`), Hội viên (`member-portal.html`). Sau khi đăng nhập tự động redirect đúng portal theo role.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
+
+### 09/05/2026 — Tách Portal PT và Portal Hội viên theo role
+- **Loại**: Tính năng mới (Frontend)
+- **File tạo mới**:
+    - `FE/pt-portal.html` — Trang portal dành riêng cho Huấn luyện viên (PT)
+    - `FE/member-portal.html` — Trang portal dành riêng cho Hội viên
+    - `FE/assets/js/pt-portal.js` — SPA logic cho PT Portal: Dashboard, Lịch tập của tôi, Học viên của tôi, Hồ sơ cá nhân
+    - `FE/assets/js/member-portal.js` — SPA logic cho Member Portal: Dashboard (gói tập + cảnh báo + PT + lịch sắp tới), Lịch tập, Lịch sử vào/ra, Hồ sơ cá nhân
+- **File chỉnh sửa**:
+    - `FE/assets/js/auth.js` — Đổi redirect sau login thành redirect theo `vai_tro`: admin/le_tan → `index.html`, pt → `pt-portal.html`, hoi_vien → `member-portal.html`
+- **Chi tiết**:
+    - Mỗi portal có guard kiểm tra role — nếu sai role sẽ redirect về đúng portal
+    - PT Portal: sidebar đầy đủ, dark mode, filter lịch tập theo trạng thái/ngày/tên HV
+    - Member Portal: giao diện mobile-friendly với bottom tab bar, hiển thị cảnh báo khi gói tập còn ≤ 7 ngày, không hiển thị giá tiền
+    - Backend endpoint đã đủ: `/pt/schedules`, `/checkins/me`, `/members/me/profile` (có `goi_tap` + `dang_ky_pt`)
+- **Kết quả**: Thành công
 
 ### 08/05/2026 17:16 — Thực hiện redesign tab Hội viên dạng card responsive
 - **Loại**: Chỉnh sửa (Frontend — redesign giao diện)

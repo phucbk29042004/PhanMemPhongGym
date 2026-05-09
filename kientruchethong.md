@@ -1,6 +1,6 @@
 # 🏛️ Kiến Trúc Hệ Thống — Paradise GYM
 
-> Cập nhật lần cuối: 08/05/2026 — Tối ưu màn Đăng ký lịch tập PT: layout 7:3, card bằng chiều cao và phân trang Lịch đã đặt.
+> Cập nhật lần cuối: 09/05/2026 — Tách Portal PT (`pt-portal.html`) và Portal Hội viên (`member-portal.html`), redirect theo role sau login.
 
 ---
 
@@ -31,12 +31,15 @@ graph TD
 
 ## 3. Các Thành Phần Hệ Thống
 
-### 3.1. Frontend (SPA Architecture)
+### 3.1. Frontend (Multi-Portal SPA Architecture)
 - **Vị trí**: `FE/`
-- **Router**: `assets/js/app.js` — Quản lý chuyển view và điều hướng SPA.
-- **Dữ liệu**: `assets/js/api.js` (Fetch wrapper) & `assets/js/auth.js` (Auth logic).
-- **Styles**: `index.html` (Tailwind) & `assets/css/styles.css` — Custom Material 3 components.
-- **Logic trang**: `assets/js/pages/*.js` — Các module chức năng riêng biệt.
+- **3 Portal riêng biệt theo role**:
+    - `index.html` + `assets/js/app.js` — Admin / Lễ tân (toàn quyền quản lý)
+    - `pt-portal.html` + `assets/js/pt-portal.js` — PT (xem lịch cá nhân, học viên, hồ sơ)
+    - `member-portal.html` + `assets/js/member-portal.js` — Hội viên (xem gói tập, lịch tập, vào/ra, hồ sơ)
+- **Dữ liệu**: `assets/js/api.js` (Fetch wrapper) & `assets/js/auth.js` (Auth + redirect theo role).
+- **Styles**: Tailwind CDN + `assets/css/main.css` — Custom Material 3 Glassmorphism components.
+- **Logic trang Admin**: `assets/js/pages/*.js` — Các module chức năng riêng biệt.
 
 ### 3.2. Backend (REST API)
 - **Vị trí**: `BE/`
@@ -94,6 +97,9 @@ graph TD
 - [x] Bảng dữ liệu hỗ trợ Tìm kiếm không nháy (No-flicker).
 - [x] Màn Đăng ký lịch tập PT có layout 7:3, card hai bên bằng chiều cao và phân trang danh sách lịch đã đặt.
 - [x] 6 màn hình chức năng chính (Dashboard, Members, Checkin, Expired, PT, Packages).
+- [x] **PT Portal** (`pt-portal.html`): Dashboard, Lịch tập của tôi, Học viên của tôi, Hồ sơ cá nhân.
+- [x] **Member Portal** (`member-portal.html`): Dashboard (gói tập + cảnh báo + PT + lịch sắp tới), Lịch tập, Lịch sử vào/ra, Hồ sơ cá nhân. Bottom tab bar mobile-friendly.
+- [x] **Redirect theo role** sau login: admin/le_tan → `index.html`, pt → `pt-portal.html`, hoi_vien → `member-portal.html`.
 
 ### Backend (Logic & Security)
 - [x] **Xác thực & Bảo mật**: JWT (7 ngày), Hash bcrypt, Khóa tài khoản sau 5 lần sai.

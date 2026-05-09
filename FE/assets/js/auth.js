@@ -42,10 +42,17 @@
                     this.user = res.data.user;
                     
                     window.GymApp.toast('Đăng nhập thành công!', 'success');
-                    
-                    // Use a small delay to ensure toast/alert is seen before redirect
+
+                    // Redirect theo role
                     setTimeout(() => {
-                        window.location.href = 'index.html';
+                        const role = res.data.user?.vai_tro;
+                        if (role === 'pt') {
+                            window.location.href = 'pt-portal.html';
+                        } else if (role === 'hoi_vien') {
+                            window.location.href = 'member-portal.html';
+                        } else {
+                            window.location.href = 'index.html';
+                        }
                     }, 100);
                     return true;
                 }

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Paradise GYM — PT Portal</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "on-surface": "var(--text-on-surface)", "on-surface-variant": "var(--text-on-surface-variant)",
+            "surface-container-lowest": "var(--bg-surface-lowest)", "surface-container-low": "var(--bg-surface-low)",
+            "surface-container": "var(--bg-surface-container)", "surface-container-high": "var(--bg-surface-high)",
+            "outline-variant": "var(--outline-variant)", "background": "var(--bg-background)",
+            "brand-primary": "#1D9336", "primary-container": "#03872c", "error": "#ba1a1a",
+            "error-container": "#ffdad6", "secondary": "#575f67"
+          },
+          spacing: {
+            "xs": "4px", "sm": "8px", "compact": "8px", "standard": "10px", "loose": "20px",
+            "margin": "32px", "atom": "5px"
+          },
+          fontSize: {
+            "body-sm": ["12px", { lineHeight: "16px" }], "body-md": ["14px", { lineHeight: "20px" }],
+            "display-lg": ["32px", { lineHeight: "40px", fontWeight: "700" }],
+            "display-2xl": ["20px", { lineHeight: "28px", fontWeight: "600" }],
+            "display-xl": ["16px", { lineHeight: "24px", fontWeight: "600" }],
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="assets/css/main.css" />
+</head>
+<body class="font-body-md text-body-md overflow-hidden bg-background text-on-surface">
+
+<script>
+  window.GymApp = { data: { ptSchedules: [], myStudents: [] }, pages: {}, currentPage: null };
+</script>
+
+<div class="flex h-screen w-full overflow-hidden">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside id="sidebar" class="flex flex-col h-full bg-surface-container-low border-r border-outline-variant w-64 flex-shrink-0" style="box-shadow:2px 0 12px rgba(0,0,0,0.06)">
+
+    <!-- Logo -->
+    <div class="flex items-center border-b border-outline-variant px-compact py-standard gap-compact flex-shrink-0">
+      <button id="sidebar-toggle" class="p-atom rounded-xl hover:bg-surface-container transition-colors flex-shrink-0" title="Thu gọn / Mở rộng">
+        <span class="material-symbols-outlined text-on-surface-variant text-xl">menu</span>
+      </button>
+      <div class="sidebar-label flex items-center gap-compact overflow-hidden flex-1">
+        <div class="w-8 h-8 bg-brand-primary rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+          <span class="material-symbols-outlined text-white" style="font-size:16px;font-variation-settings:'FILL' 1,'wght' 500">sports_gymnastics</span>
+        </div>
+        <div class="min-w-0">
+          <h1 class="font-display-xl text-display-xl text-brand-primary font-bold leading-tight whitespace-nowrap">PT Portal</h1>
+          <p class="text-on-surface-variant font-body-sm text-body-sm" style="font-size:10px">Paradise GYM</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="flex-grow overflow-y-auto px-compact py-standard space-y-atom overflow-x-hidden">
+      <button class="nav-item flex items-center gap-standard w-full px-standard py-compact rounded-xl text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150" data-page="dashboard" title="Tổng quan">
+        <span class="material-symbols-outlined text-xl flex-shrink-0">dashboard</span>
+        <span class="sidebar-label font-body-md text-body-md font-medium">Tổng quan</span>
+      </button>
+      <button class="nav-item flex items-center gap-standard w-full px-standard py-compact rounded-xl text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150" data-page="my-schedule" title="Lịch tập của tôi">
+        <span class="material-symbols-outlined text-xl flex-shrink-0">calendar_month</span>
+        <span class="sidebar-label font-body-md text-body-md font-medium">Lịch tập của tôi</span>
+      </button>
+      <button class="nav-item flex items-center gap-standard w-full px-standard py-compact rounded-xl text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150" data-page="my-students" title="Học viên của tôi">
+        <span class="material-symbols-outlined text-xl flex-shrink-0">group</span>
+        <span class="sidebar-label font-body-md text-body-md font-medium">Học viên của tôi</span>
+      </button>
+      <button class="nav-item flex items-center gap-standard w-full px-standard py-compact rounded-xl text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150" data-page="my-profile" title="Hồ sơ cá nhân">
+        <span class="material-symbols-outlined text-xl flex-shrink-0">person</span>
+        <span class="sidebar-label font-body-md text-body-md font-medium">Hồ sơ cá nhân</span>
+      </button>
+    </nav>
+
+    <!-- Footer: user info + logout -->
+    <div class="border-t border-outline-variant px-compact py-standard flex-shrink-0 space-y-atom">
+      <div class="flex items-center gap-compact px-standard py-compact sidebar-label">
+        <div id="sidebar-avatar" class="w-8 h-8 rounded-full bg-brand-primary flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined text-white text-sm" style="font-variation-settings:'FILL' 1">person</span>
+        </div>
+        <div class="min-w-0 flex-1 sidebar-label">
+          <p id="sidebar-name" class="font-bold text-body-sm text-on-surface truncate">Huấn luyện viên</p>
+          <p class="text-on-surface-variant" style="font-size:10px">PT</p>
+        </div>
+      </div>
+      <button id="btn-logout" class="flex items-center gap-standard w-full px-standard py-compact rounded-xl text-on-surface-variant hover:text-error hover:bg-error-container transition-all duration-150" title="Đăng xuất">
+        <span class="material-symbols-outlined text-xl flex-shrink-0">logout</span>
+        <span class="sidebar-label font-body-md text-body-md">Đăng xuất</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ===== MAIN ===== -->
+  <div class="flex flex-col flex-1 min-w-0 overflow-hidden">
+
+    <!-- Header -->
+    <header class="gym-header flex justify-end items-center px-loose w-full h-12 flex-shrink-0 gap-standard sticky top-0 z-10">
+      <button id="theme-toggle" class="material-symbols-outlined text-on-surface-variant hover:text-brand-primary p-atom rounded-lg transition-all" title="Chuyển chế độ sáng/tối">
+        <span id="theme-icon">dark_mode</span>
+      </button>
+      <div class="flex items-center gap-compact ml-xs pl-standard border-l border-outline-variant">
+        <div id="header-avatar" class="w-7 h-7 rounded-full bg-gradient-to-br from-brand-primary to-[#157a2a] flex items-center justify-center shadow-sm">
+          <span class="material-symbols-outlined text-white text-sm" style="font-variation-settings:'FILL' 1">person</span>
+        </div>
+        <div class="flex flex-col leading-none">
+          <span id="header-name" class="text-body-sm text-on-surface font-bold">PT</span>
+          <span class="text-on-surface-variant" style="font-size:10px">Huấn luyện viên</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <main id="content-area" class="flex-1 overflow-y-auto p-loose"></main>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script>
+  window.GymApp.toast = function (message, type = 'success') {
+    const colors = { success: 'background:#1D9336', error: 'background:#ba1a1a', info: 'background:#575f67' };
+    const icons = { success: 'check_circle', error: 'error', info: 'info' };
+    const el = document.createElement('div');
+    el.style.cssText = `position:fixed;bottom:20px;right:20px;z-index:9997;${colors[type]};color:#fff;padding:10px 20px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.2);font-size:14px;display:flex;align-items:center;gap:8px;font-weight:500;`;
+    el.innerHTML = `<span class="material-symbols-outlined" style="font-size:18px">${icons[type]}</span>${message}`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 3000);
+  };
+  window.GymApp.formatDate = d => d ? new Date(d).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—';
+  window.GymApp.formatCurrency = n => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
+  window.GymApp.avatarInitials = function (name, size = 'md') {
+    const parts = (name || '').trim().split(' ');
+    const initials = parts.length >= 2 ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase() : (name || '??').slice(0, 2).toUpperCase();
+    const bg = ['#006b20','#a52d59','#575f67','#03872c','#005317','#1D9336'][((name||'').charCodeAt(0)||0)%6];
+    const dim = size === 'sm' ? 32 : size === 'lg' ? 48 : 36;
+    const fs  = size === 'sm' ? 12 : size === 'lg' ? 16 : 14;
+    return `<div style="width:${dim}px;height:${dim}px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:${fs}px;flex-shrink:0;">${initials}</div>`;
+  };
+  window.GymApp.avatarImg = function (url, name, size = 'md') {
+    const dim = size === 'sm' ? 32 : size === 'lg' ? 48 : 36;
+    if (url) return `<img src="${url}" alt="${name}" width="${dim}" height="${dim}" style="width:${dim}px;height:${dim}px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid #becab9;" loading="lazy">`;
+    return window.GymApp.avatarInitials(name, size);
+  };
+  window.GymApp.statusBadge = function (status) {
+    const map = {
+      cho_tap:  { bg: '#fff3e0', color: '#e65100', label: 'Chờ tập' },
+      da_tap:   { bg: '#e7f5e9', color: '#1D9336', label: 'Đã tập' },
+      da_huy:   { bg: '#ffdad6', color: '#93000a', label: 'Đã hủy' },
+      vang:     { bg: '#f3e5f5', color: '#6a1b9a', label: 'Vắng' },
+    };
+    const s = map[status] || { bg: '#ebeef3', color: '#181c20', label: status || '—' };
+    return `<span style="padding:2px 8px;border-radius:999px;font-size:9.6px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;background:${s.bg};color:${s.color}">${s.label}</span>`;
+  };
+</script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/pt-portal.js"></script>
+</body>
+</html>
