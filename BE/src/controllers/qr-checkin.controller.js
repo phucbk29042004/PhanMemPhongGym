@@ -62,9 +62,9 @@ export const scanQr = (req, res) => {
   // Kiểm tra hồ sơ còn tồn tại
   const hoSo = db.prepare(`
     SELECT h.id, h.ho_ten, h.ma_ho_so, h.avatar_url,
-           g.ngay_ket_thuc, g.trang_thai AS trang_thai_goi
+           g.den_ngay AS ngay_ket_thuc, g.trang_thai AS trang_thai_goi
     FROM ho_so h
-    LEFT JOIN goi_tap g ON g.hoi_vien_id = h.id AND g.trang_thai = 'dang_hoat_dong'
+    LEFT JOIN dang_ky_goi_tap g ON g.ho_so_id = h.id AND g.trang_thai = 'dang_hoat_dong'
     WHERE h.id = ? AND h.loai_ho_so = 'hoi_vien' AND h.is_deleted = 0
   `).get(ho_so_id);
 
@@ -82,7 +82,7 @@ export const scanQr = (req, res) => {
   const today = new Date().toISOString().slice(0, 10);
   const daCheckin = db.prepare(`
     SELECT id FROM luot_vao_ra
-    WHERE ho_so_id = ? AND DATE(thoi_gian_vao) = ? AND phuong_thuc = 'qr_code'
+    WHERE ho_so_id = ? AND DATE(thoi_diem) = ? AND loai = 'vao' AND phuong_thuc = 'qr_code'
   `).get(ho_so_id, today);
 
   if (daCheckin) {
@@ -91,9 +91,9 @@ export const scanQr = (req, res) => {
 
   // Ghi nhận check-in
   const result = db.prepare(`
-    INSERT INTO luot_vao_ra (ho_so_id, phuong_thuc, chi_nhanh, nguoi_xac_nhan_id)
-    VALUES (?, 'qr_code', ?, ?)
-  `).run(ho_so_id, chi_nhanh || null, req.user.id);
+    INSERT INTO luot_vao_ra (ho_so_id, loai, phuong_thuc, ghi_chu)
+    VALUES (?, 'vao', 'qr_code', ?)
+  `).run(ho_so_id, chi_nhanh ? `Chi nhánh: ${chi_nhanh}` : null);
 
   ghi_audit_log(req, 'CREATE', 'luot_vao_ra', result.lastInsertRowid, null,
     { ho_so_id, phuong_thuc: 'qr_code' }, 'QR Check-in');

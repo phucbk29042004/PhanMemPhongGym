@@ -13,6 +13,10 @@
     const page = window.GymApp.pages[pageName];
     if (!page) return;
 
+    // Dọn dẹp trang hiện tại (chart, timer, v.v.)
+    const currentPage = window.GymApp.pages[window.GymApp.currentPage];
+    if (currentPage?.destroy) currentPage.destroy();
+
     if (window.GymApp._activeChart) {
       window.GymApp._activeChart.destroy();
       window.GymApp._activeChart = null;
