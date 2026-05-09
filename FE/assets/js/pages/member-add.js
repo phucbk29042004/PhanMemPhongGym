@@ -101,6 +101,19 @@ window.GymApp.pages['member-add'] = {
               </div>
             </div>
 
+            <!-- Tạo tài khoản đăng nhập -->
+            <div class="mb-compact border border-outline-variant rounded-xl p-compact bg-surface-container">
+              <label class="flex items-center gap-compact cursor-pointer select-none mb-0" id="label-create-account">
+                <input type="checkbox" id="chk-create-account" class="w-4 h-4 rounded accent-brand-primary cursor-pointer" />
+                <span class="material-symbols-outlined text-brand-primary text-base" style="font-variation-settings:'FILL' 1">manage_accounts</span>
+                <span class="font-bold text-on-surface text-body-md">Tạo tài khoản đăng nhập ngay</span>
+              </label>
+              <div id="account-fields" class="hidden mt-compact grid grid-cols-1 md:grid-cols-2 gap-compact">
+                ${this._field('Tên đăng nhập *', 'reg-ten-dang-nhap', 'text', 'Số điện thoại hoặc tên đăng nhập')}
+                ${this._field('Mật khẩu *', 'reg-mat-khau', 'password', 'Ít nhất 6 ký tự')}
+              </div>
+            </div>
+
             <div class="flex justify-end gap-compact pt-compact border-t border-outline-variant">
               <button type="button" class="px-loose py-compact rounded-xl border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-colors font-bold" data-page="members-list">Hủy</button>
               <button type="button" id="btn-save-member" class="btn-primary text-white px-loose py-compact rounded-xl font-bold flex items-center gap-compact">
@@ -281,6 +294,26 @@ window.GymApp.pages['member-add'] = {
     // 5. Avatar Upload
     window.GymApp.pages['member-add']._setupAvatarUpload('avatar-btn-reg','avatar-input-reg','avatar-preview-reg','avatar-placeholder-reg','avatar-area-reg');
 
+    // 5b. Toggle form tạo tài khoản + tự fill SĐT
+    const chkAccount = document.getElementById('chk-create-account');
+    const accountFields = document.getElementById('account-fields');
+    chkAccount?.addEventListener('change', () => {
+      if (chkAccount.checked) {
+        accountFields.classList.remove('hidden');
+        const sdt = document.getElementById('reg-so-dien-thoai').value.trim();
+        if (sdt) document.getElementById('reg-ten-dang-nhap').value = sdt;
+      } else {
+        accountFields.classList.add('hidden');
+      }
+    });
+    // Khi SĐT thay đổi, cập nhật tên đăng nhập nếu chưa tự sửa
+    document.getElementById('reg-so-dien-thoai')?.addEventListener('blur', () => {
+      if (!chkAccount?.checked) return;
+      const sdt = document.getElementById('reg-so-dien-thoai').value.trim();
+      const usernameInput = document.getElementById('reg-ten-dang-nhap');
+      if (sdt && usernameInput) usernameInput.value = sdt;
+    });
+
     // 6. Lưu hồ sơ
     document.getElementById('btn-save-member')?.addEventListener('click', async () => {
       const btn = document.getElementById('btn-save-member');
@@ -317,11 +350,31 @@ window.GymApp.pages['member-add'] = {
 
       try {
         const res = await window.GymApp.api.post('/members', data);
-        if (res.success) {
+        if (!res.success) return window.GymApp.toast(res.message, 'error');
+
+        const newId = res.data?.id;
+
+        // Tạo tài khoản nếu checkbox được tick
+        const wantAccount = document.getElementById('chk-create-account')?.checked;
+        if (wantAccount && newId) {
+          const username = document.getElementById('reg-ten-dang-nhap')?.value.trim();
+          const password = document.getElementById('reg-mat-khau')?.value;
+          if (!username || !password) {
+            window.GymApp.toast('Hồ sơ đã lưu nhưng thiếu tên đăng nhập/mật khẩu — chưa tạo tài khoản.', 'info');
+          } else {
+            const accRes = await window.GymApp.api.post(`/members/${newId}/create-account`, { ten_dang_nhap: username, mat_khau: password });
+            if (accRes.success) {
+              window.GymApp.toast(`Đã tạo hồ sơ và tài khoản "${username}" thành công!`, 'success');
+            } else {
+              window.GymApp.toast(`Hồ sơ đã lưu. Lỗi tạo tài khoản: ${accRes.message}`, 'error');
+            }
+          }
+        } else {
           window.GymApp.toast('Đã tạo hồ sơ thành công!', 'success');
-          await window.GymApp.fetchInitialData();
-          window.GymApp.navigate('members-list');
-        } else { window.GymApp.toast(res.message, 'error'); }
+        }
+
+        await window.GymApp.fetchInitialData();
+        window.GymApp.navigate('members-list');
       } catch(e) { window.GymApp.toast('Lỗi kết nối máy chủ', 'error'); }
       finally { btn.disabled = false; btn.innerHTML = '<span class="material-symbols-outlined text-sm">save</span> Lưu hồ sơ'; }
     });

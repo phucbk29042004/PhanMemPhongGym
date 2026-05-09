@@ -8,7 +8,7 @@ import {
   getMembers, getMemberById, createMember, updateMember,
   deleteMember, updateAvatar, getExpiringMembers,
   getExpiredMembers, getMemberHistory, registerPackage,
-  getBirthday, getMyProfile,
+  getBirthday, getMyProfile, createAccount,
 } from '../controllers/members.controller.js';
 import { verifyToken } from '../middlewares/auth.js';
 import { requireRole } from '../middlewares/role.js';
@@ -37,5 +37,8 @@ router.put('/:id/avatar', requireRole('admin', 'le_tan'), uploadAvatar, updateAv
 // Lịch sử & đăng ký gói tập
 router.get('/:id/history', requireRole('admin', 'le_tan'), getMemberHistory);
 router.post('/:id/package', requireRole('admin', 'le_tan'), registerPackage);
+
+// Tạo tài khoản đăng nhập cho hồ sơ
+router.post('/:id/create-account', requireRole('admin', 'le_tan'), createAccount);
 
 export default router;

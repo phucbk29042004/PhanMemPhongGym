@@ -24,6 +24,7 @@ export const getTrainers = (req, res) => {
       h.id, h.ma_ho_so, h.ho_ten, h.gioi_tinh, h.ngay_sinh,
       h.so_dien_thoai, h.email, h.avatar_url, h.ghi_chu, h.ngay_tao,
       h.chi_nhanh, h.phong_tap, h.chuyen_mon, h.tinh_thanh, h.quan_huyen,
+      h.tai_khoan_id,
       -- Số học viên đang tập
       (SELECT COUNT(DISTINCT dp.hoi_vien_id) FROM dang_ky_pt dp WHERE dp.pt_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS so_hoc_vien,
       -- Tổng buổi đã dạy

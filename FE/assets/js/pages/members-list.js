@@ -469,6 +469,7 @@ window.GymApp.pages['members-list'] = {
 
   _renderMemberTab: function (tab, m, pkgHistory, memberSchedules) {
     if (tab === 'info') {
+      const hasAccount = !!m.tai_khoan_id;
       return `
         <div class="grid grid-cols-2 gap-standard">
           ${[
@@ -487,6 +488,42 @@ window.GymApp.pages['members-list'] = {
               </div>
             `).join('')
         }
+        </div>
+        <!-- Tài khoản đăng nhập -->
+        <div class="mt-standard border border-outline-variant rounded-xl p-standard bg-surface-container">
+          <div class="flex items-center justify-between mb-standard">
+            <div class="flex items-center gap-compact">
+              <span class="material-symbols-outlined text-brand-primary text-base" style="font-variation-settings:'FILL' 1">manage_accounts</span>
+              <span class="font-bold text-on-surface text-body-md">Tài khoản đăng nhập</span>
+            </div>
+            ${hasAccount
+              ? `<span style="padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;background:#e7f5e9;color:#1D9336;">Đã có tài khoản</span>`
+              : `<span style="padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;background:#fff3e0;color:#e65100;">Chưa có tài khoản</span>`
+            }
+          </div>
+          ${hasAccount
+            ? `<p class="text-on-surface-variant text-body-sm">Hồ sơ này đã được liên kết với tài khoản đăng nhập.</p>`
+            : `<div class="grid grid-cols-2 gap-compact" id="modal-account-form">
+                <div>
+                  <label class="block text-body-sm font-bold text-on-surface-variant mb-xs">Tên đăng nhập *</label>
+                  <input id="modal-username" type="text" value="${m.so_dien_thoai || ''}" placeholder="Số điện thoại hoặc tên đăng nhập"
+                    class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none transition-colors text-body-md" />
+                </div>
+                <div>
+                  <label class="block text-body-sm font-bold text-on-surface-variant mb-xs">Mật khẩu *</label>
+                  <input id="modal-password" type="password" placeholder="Ít nhất 6 ký tự"
+                    class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none transition-colors text-body-md" />
+                </div>
+                <div class="col-span-2 flex justify-end">
+                  <button id="btn-create-account" data-id="${m.id}"
+                    class="flex items-center gap-xs px-loose py-compact rounded-xl font-bold text-white text-body-sm transition-all hover:opacity-90"
+                    style="background:#1D9336;">
+                    <span class="material-symbols-outlined text-sm">person_add</span>
+                    Tạo tài khoản
+                  </button>
+                </div>
+              </div>`
+          }
         </div>
       `;
     }
@@ -699,6 +736,31 @@ window.GymApp.pages['members-list'] = {
 
   _bindMemberTabEvents: function (tab, m, refreshTab) {
     const self = this;
+    if (tab === 'info') {
+      document.getElementById('btn-create-account')?.addEventListener('click', async () => {
+        const btn = document.getElementById('btn-create-account');
+        const username = document.getElementById('modal-username')?.value.trim();
+        const password = document.getElementById('modal-password')?.value;
+        if (!username || !password) return window.GymApp.toast('Vui lòng nhập đủ tên đăng nhập và mật khẩu.', 'error');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="animate-spin material-symbols-outlined text-sm">sync</span> Đang tạo...';
+        try {
+          const res = await window.GymApp.api.post(`/members/${m.id}/create-account`, { ten_dang_nhap: username, mat_khau: password });
+          if (res.success) {
+            window.GymApp.toast(`Đã tạo tài khoản "${username}" thành công!`, 'success');
+            refreshTab();
+          } else {
+            window.GymApp.toast(res.message || 'Không thể tạo tài khoản.', 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<span class="material-symbols-outlined text-sm">person_add</span> Tạo tài khoản';
+          }
+        } catch (e) {
+          window.GymApp.toast('Lỗi kết nối máy chủ.', 'error');
+          btn.disabled = false;
+          btn.innerHTML = '<span class="material-symbols-outlined text-sm">person_add</span> Tạo tài khoản';
+        }
+      });
+    }
     if (tab === 'package') {
       document.getElementById('btn-add-package')?.addEventListener('click', () => self._showAddPackageModal(m, refreshTab));
     }
@@ -1235,22 +1297,25 @@ window.GymApp.pages['members-list'] = {
     const stars = Array.from({ length: 5 }, (_, i) =>
       `<span class="material-symbols-outlined text-sm" style="color:${i < Math.round(pt.rating) ? '#f59e0b' : '#becab9'};font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24;">star</span>`
     ).join('');
+    const hasAccount = !!pt.tai_khoan_id;
     window.GymApp.showModal(`
       <div class="p-loose">
         <div class="flex items-center gap-loose mb-loose pb-loose border-b border-outline-variant">
-          ${window.GymApp.avatarImg(pt.avatar, pt.name, 'lg')}
+          ${window.GymApp.avatarImg(pt.avatar_url || pt.avatar, pt.ho_ten || pt.name, 'lg')}
           <div>
-            <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface">${pt.name}</h3>
-            <p class="text-on-surface-variant text-body-sm">${pt.id} · Huấn luyện viên</p>
-            <div class="flex items-center gap-atom mt-atom">${stars}<span class="ml-atom font-bold text-body-md text-on-surface">${pt.rating}/5</span></div>
+            <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface">${pt.ho_ten || pt.name}</h3>
+            <p class="text-on-surface-variant text-body-sm">${pt.ma_ho_so || pt.id} · Huấn luyện viên</p>
+            <div class="flex items-center gap-atom mt-atom">${stars}<span class="ml-atom font-bold text-body-md text-on-surface">${pt.rating || 0}/5</span></div>
           </div>
         </div>
-        <div class="grid grid-cols-2 gap-standard">
+        <div class="grid grid-cols-2 gap-standard mb-standard">
           ${[
-        ['Chuyên môn', pt.specialty], ['Kinh nghiệm', `${pt.experience} năm`],
-        ['Số điện thoại', pt.phone], ['Email', pt.email],
-        ['Buổi đã dạy', `${pt.sessions} buổi`], ['Ngày gia nhập', window.GymApp.formatDate(pt.joinDate)],
-        ['Trạng thái', pt.status === 'active' ? 'Đang làm việc' : 'Nghỉ'],
+        ['Chuyên môn', pt.chuyen_mon || pt.specialty],
+        ['Số điện thoại', pt.so_dien_thoai || pt.phone],
+        ['Email', pt.email],
+        ['Số học viên', `${pt.so_hoc_vien || 0} học viên`],
+        ['Buổi đã dạy', `${pt.tong_buoi_da_day || pt.sessions || 0} buổi`],
+        ['Ngày gia nhập', window.GymApp.formatDate(pt.ngay_tao || pt.joinDate)],
       ].map(([label, val]) => `
             <div class="bg-surface-container p-standard rounded-lg">
               <p class="text-on-surface-variant text-body-sm font-bold uppercase tracking-wider mb-atom">${label}</p>
@@ -1258,8 +1323,71 @@ window.GymApp.pages['members-list'] = {
             </div>
           `).join('')}
         </div>
+        <!-- Tài khoản đăng nhập PT -->
+        <div class="border border-outline-variant rounded-xl p-standard bg-surface-container">
+          <div class="flex items-center justify-between mb-standard">
+            <div class="flex items-center gap-compact">
+              <span class="material-symbols-outlined text-brand-primary text-base" style="font-variation-settings:'FILL' 1">manage_accounts</span>
+              <span class="font-bold text-on-surface text-body-md">Tài khoản đăng nhập</span>
+            </div>
+            ${hasAccount
+              ? `<span style="padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;background:#e7f5e9;color:#1D9336;">Đã có tài khoản</span>`
+              : `<span style="padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;background:#fff3e0;color:#e65100;">Chưa có tài khoản</span>`
+            }
+          </div>
+          ${hasAccount
+            ? `<p class="text-on-surface-variant text-body-sm">PT này đã được liên kết với tài khoản đăng nhập.</p>`
+            : `<div class="grid grid-cols-2 gap-compact">
+                <div>
+                  <label class="block text-body-sm font-bold text-on-surface-variant mb-xs">Tên đăng nhập *</label>
+                  <input id="pt-modal-username" type="text" value="${pt.so_dien_thoai || ''}" placeholder="Số điện thoại hoặc tên đăng nhập"
+                    class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none transition-colors text-body-md" />
+                </div>
+                <div>
+                  <label class="block text-body-sm font-bold text-on-surface-variant mb-xs">Mật khẩu *</label>
+                  <input id="pt-modal-password" type="password" placeholder="Ít nhất 6 ký tự"
+                    class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none transition-colors text-body-md" />
+                </div>
+                <div class="col-span-2 flex justify-end">
+                  <button id="btn-pt-create-account" data-id="${pt.id}"
+                    class="flex items-center gap-xs px-loose py-compact rounded-xl font-bold text-white text-body-sm transition-all hover:opacity-90"
+                    style="background:#1D9336;">
+                    <span class="material-symbols-outlined text-sm">person_add</span>
+                    Tạo tài khoản
+                  </button>
+                </div>
+              </div>`
+          }
+        </div>
       </div>
     `);
+
+    // Bind event tạo tài khoản cho PT
+    document.getElementById('btn-pt-create-account')?.addEventListener('click', async () => {
+      const btn = document.getElementById('btn-pt-create-account');
+      const username = document.getElementById('pt-modal-username')?.value.trim();
+      const password = document.getElementById('pt-modal-password')?.value;
+      if (!username || !password) return window.GymApp.toast('Vui lòng nhập đủ tên đăng nhập và mật khẩu.', 'error');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="animate-spin material-symbols-outlined text-sm">sync</span> Đang tạo...';
+      try {
+        const res = await window.GymApp.api.post(`/members/${pt.id}/create-account`, { ten_dang_nhap: username, mat_khau: password });
+        if (res.success) {
+          window.GymApp.toast(`Đã tạo tài khoản "${username}" cho PT thành công!`, 'success');
+          // Cập nhật cache và đóng modal
+          pt.tai_khoan_id = res.data.tai_khoan_id;
+          document.getElementById('gym-modal')?.remove();
+        } else {
+          window.GymApp.toast(res.message || 'Không thể tạo tài khoản.', 'error');
+          btn.disabled = false;
+          btn.innerHTML = '<span class="material-symbols-outlined text-sm">person_add</span> Tạo tài khoản';
+        }
+      } catch (e) {
+        window.GymApp.toast('Lỗi kết nối máy chủ.', 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<span class="material-symbols-outlined text-sm">person_add</span> Tạo tài khoản';
+      }
+    });
   },
 
   // ===== FILTER MODAL HỘI VIÊN =====

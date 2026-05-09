@@ -8,11 +8,28 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
-**✅ HOÀN THÀNH**: Hệ thống đã có đầy đủ 3 portal riêng biệt theo role: Admin/Lễ tân (`index.html`), PT (`pt-portal.html`), Hội viên (`member-portal.html`). Sau khi đăng nhập tự động redirect đúng portal theo role.
+**✅ HOÀN THÀNH**: Admin/lễ tân có thể tạo tài khoản đăng nhập cho hội viên và PT ngay trong màn hình quản lý — không cần vào DB trực tiếp. Hệ thống 3-portal đã hoạt động đầy đủ.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
+
+### 09/05/2026 — Tạo tài khoản đăng nhập cho hồ sơ từ màn hình Admin
+- **Loại**: Tính năng mới (Fullstack)
+- **File chỉnh sửa**:
+    - `BE/src/controllers/members.controller.js` — Thêm function `createAccount` (bcrypt hash, transaction, audit log)
+    - `BE/src/routes/members.routes.js` — Thêm route `POST /api/members/:id/create-account` (chỉ admin/le_tan)
+    - `BE/src/controllers/trainers.controller.js` — Thêm `h.tai_khoan_id` vào query `getTrainers`
+    - `FE/assets/js/pages/member-add.js` — Thêm checkbox "Tạo tài khoản ngay" với auto-fill SĐT vào username
+    - `FE/assets/js/pages/members-list.js` — Thêm form tạo tài khoản trong modal chi tiết hội viên (tab info) và modal PT
+- **Chi tiết**:
+    - Backend: kiểm tra hồ sơ tồn tại, kiểm tra đã có tài khoản chưa, kiểm tra tên đăng nhập trùng, map `loai_ho_so → vai_tro`, bcrypt hash cost=12, transaction (INSERT tai_khoan + UPDATE ho_so.tai_khoan_id)
+    - Form thêm mới: checkbox toggle, tự fill username = SĐT, gọi API sau khi tạo hồ sơ thành công
+    - Modal hội viên: badge "Đã có / Chưa có tài khoản", form tạo có username (pre-fill SĐT) + password, sau thành công refresh tab
+    - Modal PT: tương tự modal hội viên, hiển thị trong `_showPtModal`
+- **Kết quả**: Thành công
+
+
 
 ### 09/05/2026 — Tách Portal PT và Portal Hội viên theo role
 - **Loại**: Tính năng mới (Frontend)

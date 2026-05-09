@@ -7,6 +7,7 @@ import db from '../config/db.js';
 import { success, error } from '../utils/response.js';
 import { uploadImage, deleteImage } from '../utils/cloudinary.js';
 import { ghi_audit_log } from '../utils/audit.js';
+import bcrypt from 'bcryptjs';
 
 // ── GET /api/members ──────────────────────────────────────
 // Lấy danh sách hội viên (hỗ trợ filter và phân trang)
@@ -408,4 +409,61 @@ export const registerPackage = (req, res) => {
     { ho_so_id: id, goi_tap_id, gia: gia_thuc_te }, 'Đăng ký gói tập cho hội viên');
 
   return success(res, { id: result.lastInsertRowid, den_ngay: denNgay }, 'Đăng ký gói tập thành công', 201);
+};
+
+// ── POST /api/members/:id/create-account ─────────────────
+// Admin/lễ tân tạo tài khoản đăng nhập cho hồ sơ bất kỳ
+export const createAccount = async (req, res) => {
+  const { id } = req.params;
+  const { ten_dang_nhap, mat_khau } = req.body;
+
+  if (!ten_dang_nhap || !mat_khau) {
+    return error(res, 'Thiếu tên đăng nhập hoặc mật khẩu.', 400);
+  }
+  if (mat_khau.length < 6) {
+    return error(res, 'Mật khẩu phải có ít nhất 6 ký tự.', 400);
+  }
+
+  // Kiểm tra hồ sơ tồn tại
+  const hoSo = db.prepare('SELECT id, ho_ten, loai_ho_so, tai_khoan_id FROM ho_so WHERE id = ? AND is_deleted = 0').get(id);
+  if (!hoSo) return error(res, 'Không tìm thấy hồ sơ.', 404);
+
+  // Kiểm tra hồ sơ đã có tài khoản chưa
+  if (hoSo.tai_khoan_id) {
+    return error(res, 'Hồ sơ này đã có tài khoản đăng nhập.', 409);
+  }
+
+  // Kiểm tra tên đăng nhập trùng
+  const existing = db.prepare('SELECT id FROM tai_khoan WHERE ten_dang_nhap = ?').get(ten_dang_nhap.trim());
+  if (existing) {
+    return error(res, 'Tên đăng nhập đã được sử dụng.', 409);
+  }
+
+  // Map loai_ho_so → ma_vai_tro
+  const roleMap = { hoi_vien: 'hoi_vien', pt: 'pt', le_tan: 'le_tan', nhan_vien: 'le_tan' };
+  const maVaiTro = roleMap[hoSo.loai_ho_so] || 'hoi_vien';
+  const vaiTro = db.prepare('SELECT id FROM vai_tro WHERE ma_vai_tro = ?').get(maVaiTro);
+  if (!vaiTro) return error(res, 'Không xác định được vai trò.', 500);
+
+  const hash = await bcrypt.hash(mat_khau, 12);
+
+  // Transaction: tạo tài khoản → cập nhật hồ sơ
+  const createTx = db.transaction(() => {
+    const ins = db.prepare(`
+      INSERT INTO tai_khoan (ten_dang_nhap, mat_khau_hash, vai_tro_id, nguoi_tao_id)
+      VALUES (?, ?, ?, ?)
+    `).run(ten_dang_nhap.trim(), hash, vaiTro.id, req.user.id);
+
+    db.prepare('UPDATE ho_so SET tai_khoan_id = ? WHERE id = ?').run(ins.lastInsertRowid, id);
+    return ins.lastInsertRowid;
+  });
+
+  const newTaiKhoanId = createTx();
+
+  ghi_audit_log(req, 'CREATE', 'tai_khoan', newTaiKhoanId, null,
+    { ho_so_id: id, ten_dang_nhap: ten_dang_nhap.trim(), vai_tro: maVaiTro },
+    `Tạo tài khoản đăng nhập cho hồ sơ ${hoSo.ho_ten}`);
+
+  return success(res, { tai_khoan_id: newTaiKhoanId, ten_dang_nhap: ten_dang_nhap.trim() },
+    'Tạo tài khoản thành công', 201);
 };
