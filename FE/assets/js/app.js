@@ -330,6 +330,10 @@
       _applyTheme(isDark ? 'light' : 'dark');
     });
 
+    document.getElementById('btn-qr-scan')?.addEventListener('click', () => {
+      window.open('scan.html', '_blank');
+    });
+
     const logoutBtn = document.querySelector('button[title="Đăng xuất"]');
     if (logoutBtn) {
       logoutBtn.addEventListener('click', () => {

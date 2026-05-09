@@ -95,6 +95,10 @@
     const page = pages[tabName];
     if (!page) return;
 
+    // Dọn dẹp trang hiện tại nếu có
+    const currentPage = pages[window.GymApp.currentPage];
+    if (currentPage?.destroy) currentPage.destroy();
+
     document.getElementById('content-area').innerHTML = page.render();
 
     // Cập nhật active tab
@@ -454,6 +458,136 @@
         }
       } catch (e) { console.error(e); }
     }
+  };
+
+  // ── QR Check-in ───────────────────────────────────────────
+  pages['my-qr'] = {
+    _refreshTimer: null,
+    _TTL_PHUT: 5,
+
+    render() {
+      return `
+        <div class="flex flex-col gap-loose">
+          <div class="page-title-bar">
+            <h2 class="font-display-lg text-display-lg text-on-surface font-bold">QR Check-in</h2>
+            <p class="text-on-surface-variant font-body-sm text-body-sm mt-xs">Cho lễ tân quét mã để xác nhận vào phòng tập</p>
+          </div>
+
+          <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
+            <!-- QR container -->
+            <div class="flex flex-col items-center p-margin gap-loose">
+              <div id="qr-wrapper" class="flex items-center justify-center rounded-2xl border-2 border-outline-variant bg-white" style="width:220px;height:220px;padding:12px;">
+                <div class="flex flex-col items-center gap-standard text-on-surface-variant">
+                  <span class="material-symbols-outlined text-4xl">qr_code_2</span>
+                  <p class="text-body-sm">Đang tạo mã...</p>
+                </div>
+              </div>
+
+              <!-- Thông tin hội viên -->
+              <div id="qr-member-info" class="text-center"></div>
+
+              <!-- Countdown -->
+              <div class="flex items-center gap-xs">
+                <span class="material-symbols-outlined text-sm text-on-surface-variant">schedule</span>
+                <p id="qr-countdown" class="text-body-sm text-on-surface-variant">Mã hết hạn sau <strong id="qr-seconds">—</strong> giây</p>
+              </div>
+
+              <!-- Refresh thủ công -->
+              <button id="btn-refresh-qr" class="flex items-center gap-xs px-loose py-compact rounded-xl bg-brand-primary text-white font-bold text-body-md hover:bg-[#157a2a] transition-all">
+                <span class="material-symbols-outlined text-sm">refresh</span>Làm mới mã
+              </button>
+            </div>
+
+            <div class="border-t border-outline-variant px-loose py-standard text-center">
+              <p class="text-on-surface-variant text-body-sm">Mã QR tự động làm mới mỗi <strong>${this._TTL_PHUT} phút</strong>. Không chia sẻ mã này với người khác.</p>
+            </div>
+          </div>
+        </div>
+      `;
+    },
+
+    async _loadQr() {
+      try {
+        const res = await window.GymApp.api.get('/checkin/my-qr');
+        if (!res?.success) {
+          document.getElementById('qr-wrapper').innerHTML = `<p class="text-error text-body-sm text-center">Không thể tải mã QR. Vui lòng thử lại.</p>`;
+          return;
+        }
+        const { token, ho_ten, ma_ho_so, avatar_url, het_han_sau_phut } = res.data;
+        this._TTL_PHUT = het_han_sau_phut || 5;
+
+        // Render QR code
+        const wrapper = document.getElementById('qr-wrapper');
+        if (!wrapper) return;
+        wrapper.innerHTML = '';
+        if (typeof QRCode !== 'undefined') {
+          new QRCode(wrapper, {
+            text: token,
+            width: 196,
+            height: 196,
+            colorDark: '#0a2e13',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.M,
+          });
+        } else {
+          wrapper.innerHTML = `<p class="text-body-sm text-on-surface-variant text-center">Lỗi tải thư viện QR.</p>`;
+        }
+
+        // Thông tin hội viên
+        const infoEl = document.getElementById('qr-member-info');
+        if (infoEl) {
+          const avatarHtml = avatar_url
+            ? `<img src="${avatar_url}" class="w-12 h-12 rounded-full object-cover mx-auto mb-xs border-2 border-brand-primary" />`
+            : window.GymApp.avatarInitials(ho_ten, 'lg');
+          infoEl.innerHTML = `
+            <div class="flex flex-col items-center gap-xs">
+              ${avatarHtml}
+              <p class="font-bold text-on-surface text-display-xl">${ho_ten || '—'}</p>
+              <p class="text-on-surface-variant text-body-sm">${ma_ho_so || ''}</p>
+            </div>
+          `;
+        }
+
+        // Đếm ngược
+        this._startCountdown(het_han_sau_phut * 60);
+      } catch (err) {
+        console.error('QR load error:', err);
+        const w = document.getElementById('qr-wrapper');
+        if (w) w.innerHTML = `<p class="text-error text-body-sm text-center">Lỗi kết nối máy chủ.</p>`;
+      }
+    },
+
+    _startCountdown(seconds) {
+      clearInterval(this._refreshTimer);
+      let remaining = seconds;
+      const el = document.getElementById('qr-seconds');
+      const updateEl = () => { if (el) el.textContent = remaining; };
+      updateEl();
+
+      this._refreshTimer = setInterval(() => {
+        remaining--;
+        updateEl();
+        if (remaining <= 0) {
+          clearInterval(this._refreshTimer);
+          // Tự động làm mới khi hết hạn
+          this._loadQr();
+        }
+      }, 1000);
+    },
+
+    init() {
+      this._loadQr();
+      document.getElementById('btn-refresh-qr')?.addEventListener('click', () => {
+        clearInterval(this._refreshTimer);
+        this._loadQr();
+        window.GymApp.toast('Đang làm mới mã QR...', 'info');
+      });
+    },
+
+    destroy() {
+      clearInterval(this._refreshTimer);
+      this._refreshTimer = null;
+    },
   };
 
   // ── Khởi động ──────────────────────────────────────────────

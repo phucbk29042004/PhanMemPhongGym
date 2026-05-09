@@ -29,6 +29,7 @@ Người có **quyền cao nhất**, truy cập và thao tác được toàn b�
 - Thay đổi ngày tập / giờ tập
 - Xác nhận buổi đã tập hay chưa
 - Hủy buổi tập
+- **Hoàn tác** xác nhận buổi tập do hệ thống tự xác nhận (trong vòng 1 ngày)
 
 ### 1.4 Theo Dõi & Thống Kê
 - Xem doanh thu hôm nay (tổng tiền, chi tiết, gói cao nhất)
@@ -43,8 +44,13 @@ Người có **quyền cao nhất**, truy cập và thao tác được toàn b�
 - Lọc xem theo loại hồ sơ: PT / nhân viên / hội viên
 - Chọn khoảng thời gian xem công tùy ý
 
-### 1.6 Tài Khoản
+### 1.6 Tài Khoản & Phân Quyền
 - Đổi mật khẩu tài khoản của mình
+- Tạo tài khoản đăng nhập cho bất kỳ hồ sơ nào (hội viên, PT, nhân viên) — username mặc định = số điện thoại
+
+### 1.7 Check-in QR
+- Mở trang quét QR (`scan.html`) để xác nhận hội viên vào phòng tập
+- Xem kết quả check-in ngay sau khi quét (thông tin hội viên, ngày hết hạn gói)
 
 ---
 
@@ -69,13 +75,19 @@ Người **trực tiếp tiếp nhận hội viên**, xử lý đăng ký và th
 - Đăng ký PT cho hội viên
 - Đăng ký buổi tập PT cho hội viên
 - Xem lịch tập (phạm vi tùy phân quyền admin cấp)
+- **Hoàn tác** xác nhận buổi tập do hệ thống tự xác nhận (trong vòng 1 ngày)
 
 ### 2.4 Theo Dõi Hàng Ngày
 - Xem lượng khách vào/ra phòng tập
 - Xem biểu đồ thống kê khách theo thời điểm trong ngày
 
-### 2.5 Tài Khoản
+### 2.5 Tài Khoản & Phân Quyền
 - Đổi mật khẩu tài khoản của mình
+- Tạo tài khoản đăng nhập cho hội viên và PT — username mặc định = số điện thoại
+
+### 2.6 Check-in QR
+- Mở trang quét QR (`scan.html`) để xác nhận hội viên vào phòng tập bằng camera điện thoại hoặc nhập thủ công
+- Xem kết quả check-in ngay sau khi quét (thông tin hội viên, gói tập, ngày hết hạn)
 
 ### ⛔ Giới Hạn So Với Admin
 - **Không** được thêm/sửa/xóa gói tập của phòng gym
@@ -92,19 +104,26 @@ Người **tự theo dõi quá trình tập luyện** của bản thân. Quyền
 
 ### 3.1 Hồ Sơ Cá Nhân
 - Xem thông tin hồ sơ cá nhân của mình
-- Xem gói tập đang đăng ký
-- Xem tên PT đang đăng ký
+- Xem gói tập đang đăng ký (tên gói, ngày bắt đầu, ngày hết hạn, số ngày còn lại)
+- Xem tên PT đang đăng ký (ảnh, chuyên môn, số buổi còn lại)
+- Nhận cảnh báo khi gói tập còn ≤ 7 ngày
 
 ### 3.2 Lịch Tập
 - Xem lịch tập với PT của **chính mình**
 - Xem các buổi tập đã đăng ký (khung giờ, ngày tập)
 - Xem trạng thái buổi tập (đã tập / chưa tập / đã hủy)
+- Lọc lịch theo trạng thái và ngày cụ thể
 
-### 3.3 Chấm Công / Vào-Ra
-- Xem chi tiết **giờ vào – giờ ra** của chính mình
-- Theo dõi lịch sử ra vào phòng tập của bản thân
+### 3.3 Check-in QR
+- Xem mã QR cá nhân trong tab "QR Check-in" trên Member Portal
+- Mã QR có hiệu lực **5 phút**, tự động làm mới (hoặc bấm làm mới thủ công)
+- Đưa mã cho lễ tân quét để xác nhận vào phòng tập *(thay thế thẻ từ)*
 
-### 3.4 Tài Khoản
+### 3.4 Lịch Sử Vào/Ra
+- Xem chi tiết **giờ vào** của chính mình
+- Theo dõi lịch sử vào phòng tập của bản thân (kể cả check-in qua QR)
+
+### 3.5 Tài Khoản
 - Đổi mật khẩu tài khoản của mình
 
 ### ⛔ Giới Hạn
@@ -127,12 +146,13 @@ Người **quản lý lịch dạy và học viên** của mình. Quyền hạn 
 - Xem khung giờ tập của từng học viên
 
 ### 4.2 Buổi Tập
-- Xem trạng thái từng buổi tập (đã xác nhận / chưa)
-- Xem lịch sử buổi tập với từng học viên
+- Xem trạng thái từng buổi tập (đã tập / chờ tập / đã hủy)
+- Xem lịch sử buổi tập với từng học viên (lọc theo trạng thái, ngày)
+- Xem check-in của học viên trước buổi tập (`da_checkin`)
 
 ### 4.3 Chấm Công / Vào-Ra
-- Xem chi tiết **giờ vào – giờ ra** của chính mình
-- Theo dõi lịch sử chấm công của bản thân
+- Xem chi tiết **giờ vào** của chính mình
+- Theo dõi lịch sử ra vào phòng tập của bản thân
 
 ### 4.4 Tài Khoản
 - Đổi mật khẩu tài khoản của mình
@@ -144,6 +164,7 @@ Người **quản lý lịch dạy và học viên** của mình. Quyền hạn 
 - **Không** xem doanh thu
 - **Không** xem danh sách hội viên toàn phòng
 - **Không** chỉnh sửa thông tin gói tập
+- **Không** quét QR check-in (chỉ lễ tân mới được quét)
 
 ---
 
@@ -160,14 +181,18 @@ Người **quản lý lịch dạy và học viên** của mình. Quyền hạn 
 | Xem lịch tập toàn phòng gym | ✅ | ❌ | ❌ | ❌ |
 | Xem lịch tập của chính mình | ✅ | ❌ | ✅ | ✅ |
 | Thay đổi lịch tập / PT / giờ | ✅ | ❌ | ❌ | ❌ |
-| Xác nhận / hủy buổi tập | ✅ | ❌ | ❌ | ❌ |
+| Xác nhận / hủy buổi tập | ✅ | ✅ | ❌ | ❌ |
+| **Hoàn tác** buổi tập (chỉ auto_cron, trong 1 ngày) | ✅ | ✅ | ❌ | ❌ |
 | Xem doanh thu | ✅ | ❌ | ❌ | ❌ |
 | Xem khách vào / ra phòng tập | ✅ | ✅ | ❌ | ❌ |
 | Xem danh sách sắp / hết hạn | ✅ | ✅ | ❌ | ❌ |
 | Cấu hình máy chấm công | ✅ | ❌ | ❌ | ❌ |
 | Xem giờ công toàn bộ nhân viên | ✅ | ❌ | ❌ | ❌ |
-| Xem giờ công của chính mình | ✅ | ✅ | ✅ | ✅ |
+| Xem giờ công / lịch sử vào–ra của chính mình | ✅ | ✅ | ✅ | ✅ |
 | Đổi mật khẩu tài khoản | ✅ | ✅ | ✅ | ✅ |
+| **Tạo tài khoản đăng nhập** cho hồ sơ | ✅ | ✅ | ❌ | ❌ |
+| **Quét QR** để check-in hội viên (`scan.html`) | ❌ | ✅ | ❌ | ❌ |
+| **Lấy mã QR** cá nhân để check-in | ❌ | ❌ | ✅ | ❌ |
 
 ---
 
@@ -180,4 +205,52 @@ Người **quản lý lịch dạy và học viên** của mình. Quyền hạn 
 
 ---
 
-*Phiên bản: 1.0 — Phân tích từ tài liệu: Hướng dẫn sử dụng phần mềm GYM Web (Paradise GYM)*
+## 🔄 7. LUỒNG NGHIỆP VỤ CHECK-IN QR
+
+> Thay thế hoàn toàn thẻ từ. Không cần máy quét thẻ vật lý.
+
+```
+[Hội viên]
+  → Mở Member Portal → Tab "QR Check-in"
+  → Hệ thống sinh JWT token 5 phút, hiển thị QR code
+
+[Lễ tân]
+  → Mở scan.html trên điện thoại hoặc máy tính bảng tại quầy
+  → Bật camera → Quét mã QR của hội viên
+  → Hệ thống kiểm tra: token hợp lệ? gói tập còn hạn? đã check-in hôm nay chưa?
+  → Ghi nhận vào bảng luot_vao_ra (phuong_thuc = 'qr_code')
+  → Hiển thị tên + ảnh hội viên → xác nhận thành công
+
+[Tự động cuối ngày — 22:00]
+  → Cron job quét toàn bộ lich_tap hôm nay có da_checkin = 1
+  → Tự xác nhận trang_thai = 'da_tap', ghi_chu = 'auto_cron'
+  → Trigger DB tự động trừ buổi trong dang_ky_pt
+
+[Trường hợp cần hoàn tác]
+  → Admin / Lễ tân vào màn hình PT Training
+  → Tìm card buổi tập có badge "auto_cron" → bấm nút "Hoàn tác"
+  → Nhập lý do → hệ thống đặt lại trang_thai = 'cho_tap', hoàn lại buổi trong dang_ky_pt
+```
+
+---
+
+## 🔄 8. LUỒNG NGHIỆP VỤ TẠO TÀI KHOẢN ĐĂNG NHẬP
+
+```
+[Cách 1 — Khi thêm mới hồ sơ]
+  → Admin / Lễ tân điền form thêm hội viên / PT
+  → Tick checkbox "Tạo tài khoản đăng nhập ngay"
+  → Username tự điền = Số điện thoại (có thể sửa)
+  → Nhập mật khẩu → Lưu hồ sơ → Tài khoản được tạo đồng thời
+
+[Cách 2 — Từ modal chi tiết hội viên / PT]
+  → Admin / Lễ tân mở modal chi tiết
+  → Nếu chưa có tài khoản → hiển thị form tạo tài khoản
+  → Username tự điền = Số điện thoại (có thể sửa)
+  → Nhập mật khẩu → Bấm "Tạo tài khoản" → Tài khoản được tạo
+  → Hội viên / PT dùng tài khoản này để đăng nhập đúng portal của mình
+```
+
+---
+
+*Phiên bản: 1.1 — Cập nhật 09/05/2026: Thêm nghiệp vụ QR Check-in, Tạo tài khoản đăng nhập, Hoàn tác buổi tập, cập nhật bảng phân quyền và luồng nghiệp vụ mới.*

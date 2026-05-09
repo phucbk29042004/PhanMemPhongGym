@@ -179,6 +179,12 @@ window.GymApp.pages['pt-training'] = {
           <button class="material-symbols-outlined text-outline hover:text-brand-primary text-xl p-atom rounded-lg hover:bg-surface-container transition-colors" title="Xem">visibility</button>
           <button class="material-symbols-outlined text-outline hover:text-brand-primary text-xl p-atom rounded-lg hover:bg-surface-container transition-colors" title="Sửa">edit</button>
           <button class="material-symbols-outlined text-outline hover:text-error text-xl p-atom rounded-lg hover:bg-error-container transition-colors" title="Hủy lịch">event_busy</button>
+          ${s.trang_thai === 'da_tap' && s.ghi_chu === 'auto_cron'
+            ? `<button class="btn-hoan-tac flex items-center gap-xs px-compact py-xs rounded-lg bg-orange-50 border border-orange-200 text-[#e65100] hover:bg-orange-100 transition-all text-body-sm font-bold" data-id="${s.id}" title="Hoàn tác xác nhận (buổi do hệ thống tự xác nhận)">
+                 <span class="material-symbols-outlined text-sm">undo</span>Hoàn tác
+               </button>`
+            : ''
+          }
         </div>
       </div>
     `).join('');
@@ -228,6 +234,40 @@ window.GymApp.pages['pt-training'] = {
       document.getElementById('pt-filter-pt').value = '';
       self._applyFilter();
       window.GymApp.toast('Đã tải lại danh sách!', 'success');
+    });
+
+    // Hoàn tác buổi tập (event delegation)
+    document.getElementById('pt-schedule-container')?.addEventListener('click', async function (e) {
+      const btn = e.target.closest('.btn-hoan-tac');
+      if (!btn) return;
+      const scheduleId = btn.dataset.id;
+      const ly_do = window.prompt('Lý do hoàn tác (tuỳ chọn):');
+      if (ly_do === null) return; // user bấm Cancel
+
+      try {
+        btn.disabled = true;
+        btn.textContent = 'Đang xử lý...';
+        const res = await window.GymApp.api.patch(`/pt/schedules/${scheduleId}/hoan-tac`, { ly_do });
+        if (res?.success) {
+          window.GymApp.toast('Hoàn tác thành công!', 'success');
+          // Cập nhật local data và re-render
+          const idx = (window.GymApp.data.ptSchedules || []).findIndex(s => s.id == scheduleId);
+          if (idx !== -1) {
+            window.GymApp.data.ptSchedules[idx].trang_thai = 'cho_tap';
+            window.GymApp.data.ptSchedules[idx].ghi_chu = ly_do ? `Hoàn tác: ${ly_do}` : 'Hoàn tác bởi admin';
+          }
+          self._applyFilter();
+        } else {
+          window.GymApp.toast(res?.message || 'Hoàn tác thất bại!', 'error');
+          btn.disabled = false;
+          btn.innerHTML = '<span class="material-symbols-outlined text-sm">undo</span>Hoàn tác';
+        }
+      } catch (err) {
+        console.error(err);
+        window.GymApp.toast('Lỗi kết nối máy chủ!', 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<span class="material-symbols-outlined text-sm">undo</span>Hoàn tác';
+      }
     });
   }
 };

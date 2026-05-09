@@ -50,6 +50,7 @@
         get: (endpoint) => window.GymApp.api.fetch(endpoint, { method: 'GET' }),
         post: (endpoint, body) => window.GymApp.api.fetch(endpoint, { method: 'POST', body: JSON.stringify(body) }),
         put: (endpoint, body) => window.GymApp.api.fetch(endpoint, { method: 'PUT', body: JSON.stringify(body) }),
+        patch: (endpoint, body) => window.GymApp.api.fetch(endpoint, { method: 'PATCH', body: JSON.stringify(body) }),
         delete: (endpoint) => window.GymApp.api.fetch(endpoint, { method: 'DELETE' }),
 
         /**

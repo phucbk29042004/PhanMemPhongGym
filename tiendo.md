@@ -8,11 +8,51 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
-**✅ HOÀN THÀNH**: Admin/lễ tân có thể tạo tài khoản đăng nhập cho hội viên và PT ngay trong màn hình quản lý — không cần vào DB trực tiếp. Hệ thống 3-portal đã hoạt động đầy đủ.
+**✅ HOÀN THÀNH**: Tính năng Check-in bằng QR Code đã được implement đầy đủ (BE + FE). Hội viên có thể lấy mã QR trong Member Portal, lễ tân quét tại `scan.html`, cron job tự động xác nhận buổi tập lúc 22:00, PT/admin có thể hoàn tác buổi tập do cron xác nhận.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
+
+### 09/05/2026 — Bổ sung upload ảnh QR và hướng dẫn sử dụng trong scan.html
+- **Loại**: Chỉnh sửa (Frontend)
+- **File chỉnh sửa**: `FE/scan.html`
+- **Mô tả**: Thêm nút "Tải ảnh QR lên" dùng `Html5Qrcode.scanFile()` để decode QR từ file ảnh (screenshot), thêm banner hướng dẫn cách quét đúng
+- **Kết quả**: Thành công
+
+### 09/05/2026 — Thêm nút "Quét QR" vào header Admin Portal
+- **Loại**: Chỉnh sửa (Frontend)
+- **File chỉnh sửa**:
+    - `FE/index.html` — Thêm nút "Quét QR" vào header (trước theme-toggle)
+    - `FE/assets/js/app.js` — Gắn sự kiện click mở `scan.html` trong tab mới
+- **Mô tả**: Lễ tân/admin có thể mở trang quét QR bằng 1 click từ header, không cần nhớ URL
+- **Kết quả**: Thành công
+
+### 09/05/2026 — Tính năng Check-in bằng QR Code (Fullstack)
+- **Loại**: Tính năng mới (Fullstack — BE + FE)
+- **File tạo mới**:
+    - `BE/src/controllers/qr-checkin.controller.js` — `getMyQr` (JWT 5 phút bằng QR_JWT_SECRET) + `scanQr` (xác thực token → kiểm tra gói → ghi luot_vao_ra)
+    - `BE/src/routes/qr-checkin.routes.js` — `GET /api/checkin/my-qr`, `POST /api/checkin/scan`
+    - `BE/src/jobs/cron-pt-confirm.js` — Cron job 22:00 tự động xác nhận buổi tập có check-in (node-cron)
+    - `FE/scan.html` — Trang standalone quét QR cho lễ tân (html5-qrcode + nhập thủ công)
+- **File chỉnh sửa**:
+    - `BE/src/config/db.js` — Migration: ALTER TABLE lich_tap ADD COLUMN da_checkin, CREATE TABLE cau_hinh
+    - `BE/src/app.js` — Mount `/api/checkin` routes, thêm PATCH vào CORS methods
+    - `BE/src/controllers/pt-schedules.controller.js` — Thêm `revertSchedule` (hoàn tác buổi do cron xác nhận)
+    - `BE/src/routes/pt-schedules.routes.js` — Thêm `PATCH /:id/hoan-tac`
+    - `BE/index.js` — Import + khởi động cron job khi server start
+    - `BE/package.json` — Thêm node-cron, restore đầy đủ dependencies
+    - `FE/member-portal.html` — Thêm tab "QR Check-in", import qrcode.js CDN
+    - `FE/assets/js/member-portal.js` — Thêm page `my-qr` (render QR, countdown 5 phút, auto-refresh)
+    - `FE/assets/js/pages/pt-training.js` — Thêm nút "Hoàn tác" trên card buổi `auto_cron`, event delegation + API call
+    - `FE/assets/js/api.js` — Thêm method `patch()`
+- **Chi tiết kỹ thuật**:
+    - QR token dùng `QR_JWT_SECRET` riêng (khác `JWT_SECRET`), TTL 5 phút
+    - Cron job dùng `confirmed_by_id = NULL + ghi_chu = 'auto_cron'` để phân biệt với xác nhận thủ công
+    - Hoàn tác chỉ được phép trong vòng 1 ngày và chỉ với buổi `auto_cron`
+    - Migration an toàn: ALTER TABLE trong try-catch (bỏ qua nếu cột đã tồn tại)
+    - scan.html hoạt động standalone, tự kiểm tra auth và vai_tro
+- **Kết quả**: Thành công
 
 ### 09/05/2026 — Tạo tài khoản đăng nhập cho hồ sơ từ màn hình Admin
 - **Loại**: Tính năng mới (Fullstack)

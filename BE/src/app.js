@@ -17,6 +17,7 @@ import ptSchedulesRoutes       from './routes/pt-schedules.routes.js';
 import ptRegistrationsRoutes   from './routes/pt-registrations.routes.js';
 import staffRoutes             from './routes/staff.routes.js';
 import revenueRoutes           from './routes/revenue.routes.js';
+import qrCheckinRoutes         from './routes/qr-checkin.routes.js';
 
 // Import error handlers
 import { notFound, globalError } from './middlewares/error-handler.js';
@@ -26,7 +27,7 @@ const app = express();
 // ── Middlewares ────────────────────────────────────────────
 app.use(cors({
   origin: process.env.CORS_ORIGIN || '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
@@ -44,6 +45,7 @@ app.use('/api/pt/schedules',      ptSchedulesRoutes);
 app.use('/api/pt/registrations',  ptRegistrationsRoutes);
 app.use('/api/staff',             staffRoutes);
 app.use('/api/revenue',           revenueRoutes);
+app.use('/api/checkin',           qrCheckinRoutes);
 
 // ── Health check ───────────────────────────────────────────
 app.get('/api/health', (req, res) => {

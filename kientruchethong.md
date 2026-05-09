@@ -1,6 +1,6 @@
 # 🏛️ Kiến Trúc Hệ Thống — Paradise GYM
 
-> Cập nhật lần cuối: 09/05/2026 — Tách Portal PT (`pt-portal.html`) và Portal Hội viên (`member-portal.html`), redirect theo role sau login.
+> Cập nhật lần cuối: 09/05/2026 — Thêm QR Check-in (endpoint, scan.html, member portal tab, cron job 22:00, hoàn tác buổi tập).
 
 ---
 
@@ -69,6 +69,7 @@ graph TD
 | `lich_tap` | Chi tiết các buổi tập của hội viên với PT. |
 | `doanh_thu` | Tổng hợp doanh thu tự động qua Triggers. |
 | `audit_log` | Nhật ký thay đổi dữ liệu nhạy cảm. |
+| `cau_hinh` | Cấu hình hệ thống (giờ cron, TTL QR, v.v.). |
 
 ---
 
@@ -79,10 +80,12 @@ graph TD
 | **Auth** | `/api/auth/login`, `/me`, `/doi-mat-khau` | Xác thực, phân quyền. |
 | **Members** | `/api/members`, `/:id/package`, `/:id/avatar`, `/birthday`, `/me/profile` | Quản lý hội viên, đăng ký gói, sinh nhật, tự xem hồ sơ. |
 | **Trainers** | `/api/trainers`, `/:id/schedules` | Quản lý PT và lịch dạy. |
-| **PT Schedules** | `/api/pt/schedules` | Đặt lịch tập, xác nhận, hủy buổi. |
+| **PT Schedules** | `/api/pt/schedules`, `PATCH /:id/hoan-tac` | Đặt lịch tập, xác nhận, hủy, hoàn tác buổi tập. |
 | **PT Registrations** | `/api/pt/registrations`, `/:id/cancel` | Đăng ký gói PT, hủy đăng ký. |
 | **Staff** | `/api/staff` | Quản lý nhân viên lễ tân/nội bộ. |
 | **Checkins** | `/api/checkins`, `/stats` | Vào-ra, biểu đồ mật độ. |
+| **QR Check-in** | `/api/checkin/my-qr`, `/api/checkin/scan` | Hội viên lấy QR token; lễ tân quét xác nhận vào. |
+| **PT Schedules** (thêm) | `PATCH /api/pt/schedules/:id/hoan-tac` | Hoàn tác buổi do cron tự xác nhận. |
 | **Revenue** | `/api/revenue`, `/dashboard` | Thống kê doanh thu. |
 
 ---
@@ -98,7 +101,8 @@ graph TD
 - [x] Màn Đăng ký lịch tập PT có layout 7:3, card hai bên bằng chiều cao và phân trang danh sách lịch đã đặt.
 - [x] 6 màn hình chức năng chính (Dashboard, Members, Checkin, Expired, PT, Packages).
 - [x] **PT Portal** (`pt-portal.html`): Dashboard, Lịch tập của tôi, Học viên của tôi, Hồ sơ cá nhân.
-- [x] **Member Portal** (`member-portal.html`): Dashboard (gói tập + cảnh báo + PT + lịch sắp tới), Lịch tập, Lịch sử vào/ra, Hồ sơ cá nhân. Bottom tab bar mobile-friendly.
+- [x] **Member Portal** (`member-portal.html`): Dashboard (gói tập + cảnh báo + PT + lịch sắp tới), Lịch tập, Lịch sử vào/ra, **QR Check-in** (tab mới, tự làm mới mỗi 5 phút), Hồ sơ cá nhân. Bottom tab bar mobile-friendly.
+- [x] **Scan QR** (`scan.html`): Trang standalone cho lễ tân quét QR bằng camera hoặc nhập thủ công, hiển thị thông tin hội viên sau khi check-in.
 - [x] **Redirect theo role** sau login: admin/le_tan → `index.html`, pt → `pt-portal.html`, hoi_vien → `member-portal.html`.
 
 ### Backend (Logic & Security)
@@ -107,6 +111,9 @@ graph TD
 - [x] **Hình ảnh**: Tích hợp Cloudinary (Upload/Xóa) cho Hội viên và PT.
 - [x] **Gói tập**: Quản lý Gói Gym & Gói PT.
 - [x] **Check-in**: Log vào/ra, Thống kê mật độ phục vụ biểu đồ Dashboard.
+- [x] **QR Check-in**: Hội viên lấy JWT token ngắn hạn (QR_JWT_SECRET riêng, 5 phút). Lễ tân quét xác nhận ghi `luot_vao_ra`. Buổi tập PT có `da_checkin=1` sẽ được cron tự xác nhận lúc 22:00.
+- [x] **Cron Job** (`BE/src/jobs/cron-pt-confirm.js`): Tự động xác nhận buổi tập PT (`cho_tap` + `da_checkin=1`) vào cuối ngày, dùng `ghi_chu='auto_cron'` để phân biệt với lễ tân xác nhận thủ công.
+- [x] **Hoàn tác buổi tập**: Admin/lễ tân có thể hoàn tác buổi do cron xác nhận (trong vòng 1 ngày) qua nút trên màn hình PT Training.
 - [x] **PT Schedule**: Đặt lịch tập, Kiểm tra trùng lịch của PT, Xác nhận/Hủy buổi.
 - [x] **Doanh thu**: Thống kê 30 ngày, Dashboard tổng quan (API JSON).
 - [x] **Đăng ký PT**: CRUD `dang_ky_pt`, hủy đăng ký tự động hủy buổi tập.

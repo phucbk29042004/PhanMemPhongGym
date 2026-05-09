@@ -5,8 +5,12 @@
 
 import 'dotenv/config';
 import app from './src/app.js';
+import { startCronJob } from './src/jobs/cron-pt-confirm.js';
 
 const PORT = process.env.PORT || 3000;
+
+// Khởi động cron job
+startCronJob();
 
 app.listen(PORT, () => {
   console.log('');

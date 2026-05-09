@@ -124,6 +124,55 @@ export const cancelSchedule = (req, res) => {
   return success(res, null, 'Đã hủy buổi tập');
 };
 
+// ── PATCH /api/pt/schedules/:id/hoan-tac ─────────────────
+// Hoàn tác xác nhận buổi tập (chỉ áp dụng cho buổi do cron tự xác nhận)
+export const revertSchedule = (req, res) => {
+  const { id } = req.params;
+  const { ly_do } = req.body;
+
+  const schedule = db.prepare('SELECT * FROM lich_tap WHERE id = ?').get(id);
+  if (!schedule) return error(res, 'Không tìm thấy lịch tập.', 404);
+  if (schedule.trang_thai !== 'da_tap') return error(res, 'Chỉ hoàn tác được buổi ở trạng thái "da_tap".', 400);
+
+  // Chỉ cho hoàn tác buổi do cron tự xác nhận (confirmed_by_id NULL + ghi_chu = 'auto_cron')
+  if (schedule.confirmed_by_id !== null || schedule.ghi_chu !== 'auto_cron') {
+    return error(res, 'Chỉ có thể hoàn tác buổi do hệ thống tự xác nhận (cron job). Buổi do lễ tân xác nhận không thể hoàn tác tại đây.', 403);
+  }
+
+  // Chỉ hoàn tác trong vòng 1 ngày (tránh sửa dữ liệu cũ)
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const ngayTapDate = new Date(schedule.ngay_tap);
+  if (ngayTapDate < yesterday) {
+    return error(res, 'Chỉ có thể hoàn tác buổi tập trong vòng 1 ngày.', 400);
+  }
+
+  // Dùng transaction để đảm bảo tính nhất quán
+  const revert = db.transaction(() => {
+    // Lấy dang_ky_pt để trừ lại so_buoi_da_tap
+    const dkpt = db.prepare('SELECT * FROM dang_ky_pt WHERE id = ?').get(schedule.dang_ky_pt_id);
+
+    // Đặt lại trạng thái buổi tập
+    db.prepare(`
+      UPDATE lich_tap SET
+        trang_thai = 'cho_tap', confirmed_by_id = NULL,
+        ngay_xac_nhan = NULL, da_checkin = 0,
+        ghi_chu = ?
+      WHERE id = ?
+    `).run(ly_do ? `Hoàn tác: ${ly_do}` : 'Hoàn tác bởi admin', id);
+
+    // Giảm so_buoi_da_tap trong dang_ky_pt (trigger đã tăng lúc confirm)
+    if (dkpt && dkpt.so_buoi_da_tap > 0) {
+      db.prepare(`UPDATE dang_ky_pt SET so_buoi_da_tap = so_buoi_da_tap - 1 WHERE id = ?`).run(schedule.dang_ky_pt_id);
+    }
+  });
+
+  revert();
+  ghi_audit_log(req, 'UPDATE', 'lich_tap', parseInt(id),
+    { trang_thai: 'da_tap' }, { trang_thai: 'cho_tap' }, `Hoàn tác xác nhận buổi tập: ${ly_do || ''}`);
+  return success(res, null, 'Hoàn tác buổi tập thành công');
+};
+
 // ── PUT /api/pt/schedules/:id ─────────────────────────────
 // Cập nhật lịch (đổi ngày/giờ — chỉ cho buổi chưa tập)
 export const updateSchedule = (req, res) => {

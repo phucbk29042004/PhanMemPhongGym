@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Paradise GYM — Quét QR Check-in</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="assets/js/api.js"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #f5f6fa; }
+    #qr-reader { width: 100%; max-width: 400px; margin: 0 auto; }
+    #qr-reader video { border-radius: 16px; }
+    #qr-reader__scan_region { border-radius: 16px; overflow: hidden; }
+    .result-card { animation: slideUp 0.3s ease; }
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col" style="background:#f5f6fa">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-10 bg-white border-b border-gray-200 flex items-center justify-between px-5 h-14" style="box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 bg-[#1D9336] rounded-xl flex items-center justify-center shadow-sm">
+        <span class="material-symbols-outlined text-white" style="font-size:16px;font-variation-settings:'FILL' 1,'wght' 500">fitness_center</span>
+      </div>
+      <div>
+        <h1 class="font-bold text-[#1D9336] leading-tight" style="font-size:15px">Paradise GYM</h1>
+        <p class="text-gray-400" style="font-size:10px">Quét QR Check-in</p>
+      </div>
+    </div>
+    <button id="btn-back" class="flex items-center gap-1 text-gray-500 hover:text-[#1D9336] text-sm font-medium transition-colors">
+      <span class="material-symbols-outlined text-base">arrow_back</span> Quay lại
+    </button>
+  </header>
+
+  <!-- Main -->
+  <main class="flex-1 flex flex-col items-center p-5 gap-5" style="max-width:500px;margin:0 auto;width:100%">
+
+    <!-- Auth check -->
+    <div id="auth-check" class="w-full flex flex-col items-center gap-4 py-10">
+      <span class="material-symbols-outlined text-5xl text-gray-300">hourglass_top</span>
+      <p class="text-gray-500 text-sm">Đang xác thực...</p>
+    </div>
+
+    <!-- Scanner section (ẩn ban đầu) -->
+    <div id="scanner-section" class="hidden w-full flex flex-col gap-5">
+
+      <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
+          <div class="w-8 h-8 bg-green-50 rounded-xl flex items-center justify-center">
+            <span class="material-symbols-outlined text-[#1D9336]" style="font-size:18px;font-variation-settings:'FILL' 1">qr_code_scanner</span>
+          </div>
+          <div>
+            <p class="font-bold text-gray-800">Quét mã QR hội viên</p>
+            <p class="text-gray-400 text-xs">Hướng camera vào mã QR trên điện thoại hội viên</p>
+          </div>
+        </div>
+        <div class="p-4">
+          <div id="qr-reader"></div>
+          <button id="btn-start-scan" class="w-full mt-4 flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#1D9336] text-white font-bold text-sm hover:bg-[#157a2a] transition-all">
+            <span class="material-symbols-outlined text-base">qr_code_scanner</span>Bắt đầu quét
+          </button>
+          <button id="btn-stop-scan" class="hidden w-full mt-4 flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-gray-300 text-gray-600 font-bold text-sm hover:bg-gray-50 transition-all">
+            <span class="material-symbols-outlined text-base">stop_circle</span>Dừng quét
+          </button>
+        </div>
+      </div>
+
+      <!-- Hướng dẫn sử dụng đúng -->
+      <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4 flex gap-3">
+        <span class="material-symbols-outlined text-blue-500 flex-shrink-0 mt-0.5" style="font-size:20px;font-variation-settings:'FILL' 1">info</span>
+        <div>
+          <p class="font-bold text-blue-700 text-sm mb-1">Cách quét đúng</p>
+          <p class="text-blue-600 text-xs leading-relaxed">Hội viên mở tab <strong>QR Check-in</strong> trên điện thoại → giơ điện thoại lên → lễ tân bấm <strong>"Bắt đầu quét"</strong> và hướng camera vào màn hình hội viên.</p>
+          <p class="text-blue-500 text-xs mt-1">Nếu không có camera: dùng nút <strong>"Tải ảnh QR"</strong> hoặc <strong>"Nhập thủ công"</strong> bên dưới.</p>
+        </div>
+      </div>
+
+      <!-- Upload ảnh QR -->
+      <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
+        <p class="font-bold text-gray-700 text-sm mb-1">Tải ảnh QR lên để quét</p>
+        <p class="text-gray-400 text-xs mb-3">Dùng khi hội viên gửi ảnh chụp màn hình QR qua Zalo/Messenger</p>
+        <label id="label-upload-qr" class="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl border-2 border-dashed border-gray-300 text-gray-500 font-bold text-sm hover:border-[#1D9336] hover:text-[#1D9336] cursor-pointer transition-all">
+          <span class="material-symbols-outlined text-base">upload_file</span>Chọn ảnh QR
+          <input id="input-upload-qr" type="file" accept="image/*" class="hidden" />
+        </label>
+        <p id="upload-status" class="text-xs text-gray-400 mt-2 text-center hidden">Đang xử lý ảnh...</p>
+      </div>
+
+      <!-- Manual input -->
+      <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
+        <p class="font-bold text-gray-700 text-sm mb-3">Nhập token thủ công</p>
+        <div class="flex gap-2">
+          <input id="manual-token" type="text" placeholder="Dán token QR vào đây..." class="flex-1 border border-gray-200 rounded-xl px-4 py-2 text-sm focus:border-[#1D9336] outline-none" />
+          <button id="btn-manual-scan" class="px-4 py-2 rounded-xl bg-[#1D9336] text-white font-bold text-sm hover:bg-[#157a2a] transition-all flex-shrink-0">Xác nhận</button>
+        </div>
+      </div>
+
+      <!-- Result card -->
+      <div id="result-area"></div>
+    </div>
+
+  </main>
+
+  <script>
+  (function () {
+    const API_BASE = (typeof window.GymApp !== 'undefined' && window.GymApp.api)
+      ? null  // dùng GymApp.api bên dưới
+      : null;
+
+    const token = localStorage.getItem('gym-token');
+    let html5QrScanner = null;
+    let isScanning = false;
+    let lastScanned = '';
+    let lastScannedTime = 0;
+
+    // ── Auth check ─────────────────────────────────────────────
+    async function init() {
+      if (!token) { showError('Bạn chưa đăng nhập.'); return; }
+
+      try {
+        const res = await apiGet('/auth/me');
+        if (!res?.success) { showError('Phiên đăng nhập hết hạn.'); return; }
+        const user = res.data;
+        if (user.vai_tro !== 'admin' && user.vai_tro !== 'le_tan') {
+          showError('Bạn không có quyền truy cập trang này.');
+          return;
+        }
+      } catch (e) {
+        showError('Không kết nối được máy chủ.');
+        return;
+      }
+
+      document.getElementById('auth-check').classList.add('hidden');
+      document.getElementById('scanner-section').classList.remove('hidden');
+      document.getElementById('scanner-section').style.display = 'flex';
+      bindEvents();
+    }
+
+    // ── API helper ─────────────────────────────────────────────
+    async function apiGet(path) {
+      const BASE = localStorage.getItem('gym-api-base') || 'http://localhost:3000/api';
+      const res = await fetch(BASE + path, {
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+      });
+      return res.json();
+    }
+
+    async function apiPost(path, body) {
+      const BASE = localStorage.getItem('gym-api-base') || 'http://localhost:3000/api';
+      const res = await fetch(BASE + path, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      return res.json();
+    }
+
+    // ── Scan handler ───────────────────────────────────────────
+    async function handleScan(qrToken) {
+      // Debounce: tránh quét cùng 1 QR 2 lần trong 3 giây
+      const now = Date.now();
+      if (qrToken === lastScanned && now - lastScannedTime < 3000) return;
+      lastScanned = qrToken;
+      lastScannedTime = now;
+
+      stopScanner();
+      showLoading();
+
+      try {
+        const res = await apiPost('/checkin/scan', { qr_token: qrToken });
+        if (res?.success) {
+          showSuccess(res.data, res.message);
+        } else {
+          showResultError(res?.message || 'Check-in thất bại.');
+        }
+      } catch (e) {
+        showResultError('Lỗi kết nối máy chủ.');
+      }
+    }
+
+    // ── Scanner controls ───────────────────────────────────────
+    function startScanner() {
+      if (isScanning) return;
+      html5QrScanner = new Html5Qrcode('qr-reader');
+      html5QrScanner.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        (decodedText) => handleScan(decodedText),
+        (err) => { /* bỏ qua lỗi scan liên tục */ }
+      ).then(() => {
+        isScanning = true;
+        document.getElementById('btn-start-scan').classList.add('hidden');
+        document.getElementById('btn-stop-scan').classList.remove('hidden');
+      }).catch(err => {
+        showResultError('Không thể mở camera: ' + err);
+      });
+    }
+
+    function stopScanner() {
+      if (!isScanning || !html5QrScanner) return;
+      html5QrScanner.stop().then(() => {
+        isScanning = false;
+        document.getElementById('btn-start-scan').classList.remove('hidden');
+        document.getElementById('btn-stop-scan').classList.add('hidden');
+        html5QrScanner = null;
+      }).catch(() => {});
+    }
+
+    // ── UI helpers ─────────────────────────────────────────────
+    function showLoading() {
+      document.getElementById('result-area').innerHTML = `
+        <div class="result-card bg-white rounded-2xl border border-gray-200 shadow-sm p-6 flex items-center gap-4">
+          <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center animate-spin">
+            <span class="material-symbols-outlined text-blue-500">sync</span>
+          </div>
+          <p class="font-bold text-gray-700">Đang xử lý...</p>
+        </div>`;
+    }
+
+    function showSuccess(data, message) {
+      const el = document.getElementById('result-area');
+      el.innerHTML = `
+        <div class="result-card bg-white rounded-2xl border-2 border-[#1D9336] shadow-md overflow-hidden">
+          <div class="bg-[#e7f5e9] flex items-center gap-3 px-5 py-4">
+            <span class="material-symbols-outlined text-[#1D9336] text-3xl" style="font-variation-settings:'FILL' 1">check_circle</span>
+            <div>
+              <p class="font-bold text-[#1D9336]">Check-in thành công!</p>
+              <p class="text-[#157a2a] text-xs">${new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-4 px-5 py-4">
+            ${data.avatar_url
+              ? `<img src="${data.avatar_url}" class="w-14 h-14 rounded-full object-cover border-2 border-[#1D9336] flex-shrink-0" />`
+              : `<div class="w-14 h-14 rounded-full bg-[#1D9336] flex items-center justify-center flex-shrink-0"><span class="text-white font-bold text-xl">${(data.ho_ten||'?').charAt(0)}</span></div>`
+            }
+            <div>
+              <p class="font-bold text-gray-800 text-base">${data.ho_ten || '—'}</p>
+              <p class="text-gray-400 text-xs">${data.ma_ho_so || ''}</p>
+              <p class="text-[#1D9336] text-xs mt-1 font-medium">Gói tập đến: ${data.ngay_ket_thuc ? new Date(data.ngay_ket_thuc).toLocaleDateString('vi-VN') : '—'}</p>
+            </div>
+          </div>
+          <div class="px-5 pb-4">
+            <button id="btn-scan-next" class="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#1D9336] text-white font-bold text-sm hover:bg-[#157a2a] transition-all">
+              <span class="material-symbols-outlined text-base">qr_code_scanner</span>Quét hội viên tiếp theo
+            </button>
+          </div>
+        </div>`;
+
+      document.getElementById('btn-scan-next')?.addEventListener('click', () => {
+        document.getElementById('result-area').innerHTML = '';
+        startScanner();
+      });
+    }
+
+    function showResultError(msg) {
+      document.getElementById('result-area').innerHTML = `
+        <div class="result-card bg-white rounded-2xl border-2 border-red-400 shadow-sm overflow-hidden">
+          <div class="bg-red-50 flex items-center gap-3 px-5 py-4">
+            <span class="material-symbols-outlined text-red-500 text-3xl" style="font-variation-settings:'FILL' 1">error</span>
+            <div>
+              <p class="font-bold text-red-600">Check-in thất bại</p>
+              <p class="text-red-500 text-xs">${msg}</p>
+            </div>
+          </div>
+          <div class="px-5 py-4">
+            <button id="btn-retry" class="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-gray-300 text-gray-600 font-bold text-sm hover:bg-gray-50 transition-all">
+              <span class="material-symbols-outlined text-base">refresh</span>Quét lại
+            </button>
+          </div>
+        </div>`;
+
+      document.getElementById('btn-retry')?.addEventListener('click', () => {
+        document.getElementById('result-area').innerHTML = '';
+        startScanner();
+      });
+    }
+
+    function showError(msg) {
+      document.getElementById('auth-check').innerHTML = `
+        <div class="flex flex-col items-center gap-4 py-10">
+          <span class="material-symbols-outlined text-5xl text-red-400" style="font-variation-settings:'FILL' 1">error</span>
+          <p class="text-red-500 font-bold text-sm">${msg}</p>
+          <a href="login.html" class="px-5 py-2 rounded-xl bg-[#1D9336] text-white font-bold text-sm">Đăng nhập lại</a>
+        </div>`;
+    }
+
+    // ── Bind events ────────────────────────────────────────────
+    function bindEvents() {
+      document.getElementById('btn-back')?.addEventListener('click', () => {
+        stopScanner();
+        history.back();
+      });
+
+      document.getElementById('btn-start-scan')?.addEventListener('click', startScanner);
+      document.getElementById('btn-stop-scan')?.addEventListener('click', stopScanner);
+
+      document.getElementById('btn-manual-scan')?.addEventListener('click', () => {
+        const t = document.getElementById('manual-token')?.value?.trim();
+        if (!t) { alert('Vui lòng dán token QR vào ô nhập.'); return; }
+        handleScan(t);
+        document.getElementById('manual-token').value = '';
+      });
+
+      document.getElementById('manual-token')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') document.getElementById('btn-manual-scan').click();
+      });
+
+      // Upload ảnh QR để decode
+      document.getElementById('input-upload-qr')?.addEventListener('change', async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const statusEl = document.getElementById('upload-status');
+        const labelEl  = document.getElementById('label-upload-qr');
+        statusEl.textContent = 'Đang đọc mã QR từ ảnh...';
+        statusEl.classList.remove('hidden');
+        labelEl.classList.add('opacity-50', 'pointer-events-none');
+
+        try {
+          // Dùng instance tạm — không attach vào DOM element nào
+          const scanner = new Html5Qrcode('qr-reader');
+          const decoded = await scanner.scanFile(file, false);
+          statusEl.classList.add('hidden');
+          labelEl.classList.remove('opacity-50', 'pointer-events-none');
+          // Reset input để có thể chọn lại cùng file
+          e.target.value = '';
+          handleScan(decoded);
+        } catch (err) {
+          statusEl.classList.add('hidden');
+          labelEl.classList.remove('opacity-50', 'pointer-events-none');
+          e.target.value = '';
+          showResultError('Không tìm thấy mã QR trong ảnh. Hãy thử chọn ảnh rõ hơn hoặc dùng camera trực tiếp.');
+        }
+      });
+    }
+
+    // ── Khởi động ──────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', init);
+  })();
+  </script>
+</body>
+</html>
