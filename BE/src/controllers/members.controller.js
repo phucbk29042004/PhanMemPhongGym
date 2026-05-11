@@ -86,7 +86,9 @@ export const getMemberById = (req, res) => {
       -- PT đang đăng ký
       (SELECT json_group_array(json_object(
         'id', dp.id, 'pt_id', dp.pt_id, 'ten_pt', pt.ho_ten, 'avatar_pt', pt.avatar_url,
+        'chuyen_mon', pt.chuyen_mon,
         'buoi_dang_ky', dp.so_buoi_dang_ky, 'buoi_da_tap', dp.so_buoi_da_tap,
+        'tu_ngay', dp.tu_ngay, 'den_ngay', dp.den_ngay,
         'trang_thai', dp.trang_thai
       )) FROM dang_ky_pt dp JOIN ho_so pt ON pt.id = dp.pt_id
        WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS pt_hien_tai
@@ -242,8 +244,12 @@ export const deleteMember = (req, res) => {
   const { id } = req.params;
   const { ly_do } = req.body;
 
-  const member = db.prepare('SELECT * FROM ho_so WHERE id = ? AND is_deleted = 0').get(id);
+  const member = db.prepare("SELECT * FROM ho_so WHERE id = ? AND loai_ho_so = 'hoi_vien'").get(id);
   if (!member) return error(res, 'Không tìm thấy hội viên.', 404);
+
+  if (member.is_deleted) {
+    return success(res, null, 'Hồ sơ hội viên đã được xoá trước đó');
+  }
 
   db.prepare(`
     UPDATE ho_so SET
@@ -256,6 +262,22 @@ export const deleteMember = (req, res) => {
 
   ghi_audit_log(req, 'DELETE', 'ho_so', parseInt(id), member, null, ly_do || 'Xóa hồ sơ hội viên');
   return success(res, null, 'Đã xoá hồ sơ hội viên (Soft Delete)');
+};
+
+// ── GET /api/members/check-duplicate ─────────────────────
+// Kiểm tra SĐT hoặc CCCD đã tồn tại chưa
+export const checkDuplicate = (req, res) => {
+  const { field, value, exclude_id } = req.query;
+  const allowed = ['so_dien_thoai', 'cccd', 'email'];
+  if (!field || !allowed.includes(field)) return error(res, 'field không hợp lệ', 400);
+  if (!value || !value.trim()) return success(res, { exists: false });
+
+  let query = `SELECT id FROM ho_so WHERE ${field} = ? AND is_deleted = 0`;
+  const params = [value.trim()];
+  if (exclude_id) { query += ' AND id != ?'; params.push(exclude_id); }
+
+  const row = db.prepare(query).get(...params);
+  return success(res, { exists: !!row });
 };
 
 // ── GET /api/members/expiring ─────────────────────────────

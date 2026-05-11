@@ -10,7 +10,7 @@ router.get('/',               getSchedules);                                    
 router.post('/',              requireRole('admin', 'le_tan'), createSchedule);          // Đặt lịch
 router.put('/:id',            requireRole('admin'), updateSchedule);                   // Sửa lịch
 router.put('/:id/confirm',    requireRole('admin', 'le_tan'), confirmSchedule);        // Xác nhận đã tập
-router.put('/:id/cancel',     requireRole('admin'), cancelSchedule);                   // Hủy lịch
+router.put('/:id/cancel',     requireRole('admin', 'le_tan'), cancelSchedule);        // Hủy lịch
 router.patch('/:id/hoan-tac', requireRole('admin', 'le_tan'), revertSchedule);         // Hoàn tác (chỉ buổi do cron xác nhận)
 
 export default router;

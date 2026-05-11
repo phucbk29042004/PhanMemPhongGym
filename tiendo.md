@@ -8,11 +8,71 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
-**✅ HOÀN THÀNH**: Tính năng Check-in bằng QR Code đã được implement đầy đủ (BE + FE). Hội viên có thể lấy mã QR trong Member Portal, lễ tân quét tại `scan.html`, cron job tự động xác nhận buổi tập lúc 22:00, PT/admin có thể hoàn tác buổi tập do cron xác nhận.
+**✅ HOÀN THÀNH Batch 4**: Member Portal & Check-in stats. Stat cards Check-in hiển thị dữ liệu thật (người trong phòng, so sánh hôm qua). Lịch tập Member Portal fetch mới khi vào tab + nút Tải lại. Profile bổ sung CCCD, ngày tham gia, quê quán, địa chỉ đầy đủ. Số ngày còn lại dùng `Math.ceil` (chính xác hơn).
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
+
+### 11/05/2026 13:57 — Chuẩn hóa nhãn enum trên giao diện
+- **Loại**: Sửa bug (Frontend)
+- **File/Thành phần liên quan**:
+  - `FE/assets/js/app.js`
+  - `FE/member-portal.html`
+  - `FE/pt-portal.html`
+  - `FE/assets/js/member-portal.js`
+  - `FE/assets/js/pages/members-list.js`
+  - `FE/assets/js/pages/pt-training.js`
+- **Mô tả**: Rà soát các giao diện hiển thị raw enum dạng gạch chân như `da_tap`, `cho_tap`, `ca_nhan`, `dang_hoat_dong`, `qr_code`, `the_tu`; bổ sung helper `formatEnumLabel` và mở rộng `statusBadge` để chuyển sang nhãn tiếng Việt trước khi render.
+- **Kết quả**: Thành công
+
+### 11/05/2026 13:49 — Fix lỗi xóa hội viên đã soft-delete
+- **Loại**: Sửa bug (Backend + Frontend)
+- **File/Thành phần liên quan**:
+  - `BE/src/controllers/members.controller.js`
+  - `FE/assets/js/pages/members-list.js`
+- **Mô tả**: Sửa `DELETE /api/members/:id` để nếu hồ sơ hội viên đã bị soft-delete trước đó thì trả success thay vì 404; đồng thời chuẩn hóa reload danh sách hội viên sau khi sửa/xóa theo đúng shape API `{ data: [...], pagination }`.
+- **Kết quả**: Thành công
+
+### 11/05/2026 — Batch 4: Member Portal & Check-in stats thực tế
+- **Loại**: Tính năng mới + Sửa bug (Frontend)
+- **File chỉnh sửa**:
+  - `FE/assets/js/pages/checkin.js` — Thêm `_stats` state; `_fetchAndRefresh()` gọi song song `GET /checkins/stats` (hôm nay) + `GET /checkins/stats?date=<hôm qua>` để lấy `dang_trong_phong`, `luot_vao`, so sánh % với hôm qua; Thay stat card cứng "+12%" bằng dữ liệu thật; Card "Đang trong phòng" thay card "Lượt vào cao nhất/giờ"; Thêm `id="checkin-stats-grid"` để cập nhật DOM sau mỗi refresh
+  - `FE/assets/js/member-portal.js` — (1) `Math.round` → `Math.ceil` cho `daysLeft`; (2) `my-schedule.init()` fetch `/pt/schedules` khi vào tab, thêm nút Tải lại trong bộ lọc; (3) `profile.render()` bổ sung 4 field: Ngày tham gia (`ngay_tao`), CCCD (`cccd`), Quê quán (`que_quan`), Địa chỉ đầy đủ (ghép `dia_chi_tam_tru + phuong_xa + quan_huyen + tinh_thanh`)
+- **Mô tả**: Stat cards check-in trước đây dùng data tính từ local array và hardcode "+12%". Đã fix: gọi API stats thật, hiển thị người đang trong phòng và % so hôm qua. Member Portal: lịch tập đồng bộ khi vào tab, profile đầy đủ thông tin cá nhân.
+- **Kết quả**: Thành công
+
+### 11/05/2026 — Batch 3: Lịch PT & Menu Doanh thu
+- **Loại**: Tính năng mới + Sửa bug (Frontend + Backend)
+- **File tạo mới**:
+  - `FE/assets/js/pages/revenue.js` — Trang Doanh thu: 4 stat card (tổng/hôm nay/gói tập/gói PT), biểu đồ cột Chart.js theo ngày (gói tập + gói PT chồng nhau), bảng giao dịch hôm nay, bộ lọc 7/30/90/365 ngày, nút tải lại
+- **File chỉnh sửa**:
+  - `BE/src/controllers/trainers.controller.js` — Thêm `getTrainerMembers`: trả danh sách HV có hợp đồng `dang_hoat_dong` với PT, kèm `dang_ky_pt_id` và số buổi còn lại
+  - `BE/src/routes/trainers.routes.js` — Thêm route `GET /:id/members`
+  - `BE/src/routes/pt-schedules.routes.js` — Mở role `PUT /:id/cancel` cho `le_tan` (trước chỉ admin)
+  - `FE/assets/js/pages/pt-register.js` — Viết lại: (1) Sau khi chọn PT gọi `GET /trainers/:id/members` chỉ hiện HV có hợp đồng; (2) Thêm select Thời lượng (30ph/1h/1.5h/2h), tự tính giờ kết thúc; (3) Dùng `dang_ky_pt_id` từ HV, bỏ bước fetch thêm `/members/:id`
+  - `FE/assets/js/pages/pt-training.js` — Thêm modal Sửa lịch (ngày/giờ/ghi chú, gọi `PUT /pt/schedules/:id`); bind nút Hủy (confirm + `PUT /pt/schedules/:id/cancel`); nút chỉ hiện cho buổi `cho_tap`
+  - `FE/index.html` — Thêm menu "Doanh thu" (icon `payments`) vào sidebar; import `revenue.js`
+- **Mô tả**: Đặt lịch PT trước đây hiện tất cả HV, giờ kết thúc phải nhập tay. Đã fix: lọc HV theo PT, tự tính giờ kết thúc. Trang Lịch đào tạo có nút Sửa/Hủy đầy đủ. Thêm trang Doanh thu hoàn chỉnh với chart và bảng giao dịch.
+- **Kết quả**: Thành công
+
+### 11/05/2026 — Batch 2: Form thêm mới hồ sơ — Validation, upload ảnh, gợi ý chuyên môn
+- **Loại**: Sửa bug + Tính năng mới (Frontend + Backend)
+- **File chỉnh sửa**:
+  - `FE/assets/js/pages/member-add.js` — Viết lại hoàn toàn: (1) Validation format inline (SĐT 10 số 03-09, Email có @, CCCD 9/12 số); (2) Validation trùng SĐT/CCCD với API trước khi lưu; (3) Upload ảnh bằng FormData gửi cùng hồ sơ, lưu lên Cloudinary qua BE; (4) Input chuyên môn PT dùng datalist 15 gợi ý; (5) Quê quán dùng datalist 63 tỉnh/thành; (6) Ngày sinh có min/max hợp lý (10–100 tuổi); (7) Gói tập tự tính ngày kết thúc từ so_thang; (8) Thêm field kinh nghiệm (năm) cho PT
+  - `BE/src/controllers/members.controller.js` — Thêm hàm `checkDuplicate`: kiểm tra SĐT/CCCD/email đã tồn tại chưa
+  - `BE/src/routes/members.routes.js` — Thêm route `GET /api/members/check-duplicate`
+- **Mô tả**: Form thêm mới hồ sơ trước đây không có validation, ảnh chỉ preview nhưng không lưu. Đã fix toàn diện: validation real-time, check trùng với DB, upload ảnh Cloudinary ngay lúc tạo hồ sơ.
+- **Kết quả**: Thành công
+
+### 11/05/2026 — Batch 1: Fix UI danh sách hội viên & tab chi tiết
+- **Loại**: Sửa bug + Cải thiện (Frontend + Backend)
+- **File chỉnh sửa**:
+  - `FE/assets/js/app.js` — Bổ sung đầy đủ các status vào `statusBadge`: `con_han`, `sap_het_han`, `het_han`, `chua_dang_ky`, `cho_tap`, `da_xac_nhan`, `da_huy`, `hoan_tac`, `dang_hoat_dong`, `vao`, `ra`
+  - `FE/assets/js/pages/members-list.js` — Fix giới tính (`'male'` → `'nam'/'nu'`); hiển thị đúng địa chỉ (`dia_chi_tam_tru` + tỉnh/huyện/xã); tab Gói tập dùng `goi_tap_hien_tai[0]` thay vì `m.ngay_bat_dau`; auto-fill `den_ngay` khi chọn gói tập/gói PT; thêm `data-thang` vào option gói PT; sửa giá trị select giới tính trong modal edit (`'Nam'` → `'nam'`); thêm nút edit PT với class `pt-edit-btn`, bind event; thêm `_showPtEditModal()`; thêm `_bindPtCardEvents` binding cho `pt-edit-btn`
+  - `BE/src/controllers/members.controller.js` — Bổ sung `chuyen_mon`, `tu_ngay`, `den_ngay` vào JSON `pt_hien_tai` trong `getMemberById`
+- **Mô tả**: Sửa các bug hiển thị trong danh sách hội viên: badge trạng thái hiện đúng màu theo DB value, tab Thông tin hiển thị đầy đủ địa chỉ/CCCD/quê quán, tab Gói tập hiện dữ liệu gói đang dùng thật, đăng ký gói tự động tính ngày kết thúc, tab PT của danh sách PT đã có nút Sửa hoạt động
+- **Kết quả**: Thành công
 
 ### 11/05/2026 — Fix nút Sửa/Xóa hội viên + hiệu ứng nút Làm mới Dashboard
 - **Loại**: Sửa bug + Thêm tính năng (Frontend)

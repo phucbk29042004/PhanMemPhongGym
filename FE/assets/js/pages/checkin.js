@@ -2,6 +2,7 @@ window.GymApp.pages['checkin'] = {
   _page: 1,
   _perPage: 10,
   _autoRefreshTimer: null,
+  _stats: null,
 
   _buildHourCounts: function (checkins) {
     const hourCounts = {};
@@ -16,17 +17,35 @@ window.GymApp.pages['checkin'] = {
     return hourCounts;
   },
 
-  render: function () {
-    const checkins = window.GymApp.data.checkins || [];
+  _buildStats: function (checkins) {
+    const s = this._stats || {};
     const hourCounts = this._buildHourCounts(checkins);
     const peakEntry = Object.entries(hourCounts).sort((a, b) => b[1] - a[1])[0];
 
-    const stats = [
-      { icon: 'how_to_reg', label: 'Check-in hôm nay', value: checkins.length, iconBg: 'icon-bg-green', color: 'text-brand-primary' },
-      { icon: 'schedule', label: 'Giờ cao điểm', value: peakEntry[0] + ':00', iconBg: 'icon-bg-orange', color: 'text-[#e65100]' },
-      { icon: 'groups', label: 'Lượt vào cao nhất/giờ', value: peakEntry[1], iconBg: 'icon-bg-green', color: 'text-brand-primary' },
-      { icon: 'trending_up', label: 'So với hôm qua', value: '+12%', iconBg: 'icon-bg-green', color: 'text-brand-primary' },
+    // So sánh hôm nay vs hôm qua
+    const luotVaoHomNay = s.luot_vao ?? checkins.length;
+    const luotVaoHomQua = s.luot_vao_hom_qua ?? null;
+    let soSanh = '—';
+    if (luotVaoHomQua !== null && luotVaoHomQua > 0) {
+      const pct = Math.round(((luotVaoHomNay - luotVaoHomQua) / luotVaoHomQua) * 100);
+      soSanh = (pct >= 0 ? '+' : '') + pct + '%';
+    } else if (luotVaoHomQua === 0 && luotVaoHomNay > 0) {
+      soSanh = '+100%';
+    }
+
+    const dangTrong = s.dang_trong_phong ?? '—';
+
+    return [
+      { icon: 'how_to_reg',  label: 'Check-in hôm nay',      value: luotVaoHomNay, iconBg: 'icon-bg-green', color: 'text-brand-primary' },
+      { icon: 'groups',      label: 'Đang trong phòng',       value: dangTrong,     iconBg: 'icon-bg-blue',  color: 'text-secondary' },
+      { icon: 'schedule',    label: 'Giờ cao điểm',           value: peakEntry[0] + ':00', iconBg: 'icon-bg-orange', color: 'text-[#e65100]' },
+      { icon: 'trending_up', label: 'So với hôm qua',         value: soSanh,        iconBg: 'icon-bg-green', color: 'text-brand-primary' },
     ];
+  },
+
+  render: function () {
+    const checkins = window.GymApp.data.checkins || [];
+    const stats = this._buildStats(checkins);
 
     return `
       <div class="flex flex-col gap-margin">
@@ -38,7 +57,7 @@ window.GymApp.pages['checkin'] = {
         </div>
 
         <!-- Stats -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-loose">
+        <div id="checkin-stats-grid" class="grid grid-cols-2 md:grid-cols-4 gap-loose">
           ${stats.map(s => `
             <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-loose shadow-sm flex flex-col gap-standard">
               <div class="flex items-center justify-between">
@@ -173,11 +192,42 @@ window.GymApp.pages['checkin'] = {
 
   _fetchAndRefresh: async function () {
     try {
-      const res = await window.GymApp.api.get('/checkins');
-      if (res?.success) window.GymApp.data.checkins = res.data || [];
+      // Lấy ngày hôm qua để so sánh
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yyyymmdd = yesterday.toISOString().split('T')[0];
+
+      const [checkinsRes, statsRes, statsYesterdayRes] = await Promise.all([
+        window.GymApp.api.get('/checkins'),
+        window.GymApp.api.get('/checkins/stats'),
+        window.GymApp.api.get(`/checkins/stats?date=${yyyymmdd}`),
+      ]);
+
+      if (checkinsRes?.success) window.GymApp.data.checkins = checkinsRes.data || [];
+      if (statsRes?.success) {
+        this._stats = statsRes.data || {};
+        this._stats.luot_vao_hom_qua = statsYesterdayRes?.data?.luot_vao ?? null;
+      }
     } catch (err) { console.error('Failed to fetch checkins', err); }
 
     const checkins = window.GymApp.data.checkins || [];
+
+    // Cập nhật stat cards
+    const statsGrid = document.getElementById('checkin-stats-grid');
+    if (statsGrid) {
+      const stats = this._buildStats(checkins);
+      statsGrid.innerHTML = stats.map(s => `
+        <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-loose shadow-sm flex flex-col gap-standard">
+          <div class="flex items-center justify-between">
+            <span class="text-on-surface-variant font-body-sm text-body-sm font-bold uppercase tracking-wider leading-tight" style="max-width:calc(100% - 52px)">${s.label}</span>
+            <div class="icon-bg ${s.iconBg}">
+              <span class="material-symbols-outlined ${s.color} text-xl" style="font-variation-settings:'FILL' 1">${s.icon}</span>
+            </div>
+          </div>
+          <span class="${s.color} font-display-lg text-display-lg font-bold">${s.value}</span>
+        </div>
+      `).join('');
+    }
 
     // Cập nhật badge số lượng
     const badge = document.getElementById('checkin-count-badge');

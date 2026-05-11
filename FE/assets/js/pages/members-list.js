@@ -130,6 +130,20 @@ window.GymApp.pages['members-list'] = {
     `;
   },
 
+  _normalizeListResponse: function (res) {
+    if (!res?.success) return [];
+    if (Array.isArray(res.data)) return res.data;
+    if (Array.isArray(res.data?.data)) return res.data.data;
+    return [];
+  },
+
+  _refreshMembersFromApi: async function () {
+    const membersRes = await window.GymApp.api.get('/members?limit=100');
+    window.GymApp.data.members = this._normalizeListResponse(membersRes);
+    this._memberFiltered = [...window.GymApp.data.members];
+    this._refreshMemberTable();
+  },
+
   _renderMemberTable: function () {
     const self = this;
     const start = (self._memberPage - 1) * self._perPage;
@@ -269,7 +283,7 @@ window.GymApp.pages['members-list'] = {
             <button class="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-container text-on-surface-variant hover:bg-brand-primary hover:text-white transition-all pt-view-btn" data-id="${pt.id}">
               <span class="material-symbols-outlined text-lg">visibility</span>
             </button>
-            <button class="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-container text-on-surface-variant hover:bg-brand-primary hover:text-white transition-all">
+            <button class="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-container text-on-surface-variant hover:bg-brand-primary hover:text-white transition-all pt-edit-btn" data-id="${pt.id}">
               <span class="material-symbols-outlined text-lg">edit</span>
             </button>
           </div>
@@ -327,7 +341,7 @@ window.GymApp.pages['members-list'] = {
             ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'lg')}
             <div>
               <h3 class="font-bold text-on-surface" style="font-size:18px;">${m.ho_ten}</h3>
-              <p class="text-on-surface-variant text-body-sm">${m.ma_ho_so} · ${m.loai_ho_so || 'Hội viên'}</p>
+              <p class="text-on-surface-variant text-body-sm">${m.ma_ho_so} · ${window.GymApp.formatEnumLabel(m.loai_ho_so || 'hoi_vien')}</p>
               <div class="mt-atom">${window.GymApp.statusBadge(m.trang_thai)}</div>
             </div>
           </div>
@@ -415,13 +429,15 @@ window.GymApp.pages['members-list'] = {
       'dang_hoat_dong': 'Đang hoạt động',
       'het_han': 'Hết hạn',
       'da_huy': 'Đã hủy',
+      'da_ket_thuc': 'Đã kết thúc',
       'dang_cho': 'Đang chờ',
       'cho_duyet': 'Đang chờ',
+      'cho_kich_hoat': 'Chờ kích hoạt',
       'paid': 'Đã thanh toán',
       'debt': 'Còn nợ',
       'free': 'Miễn phí',
     };
-    status = dbMap[status] || status;
+    status = dbMap[status] || window.GymApp.formatEnumLabel(status);
     const palette = {
       'Đang hoạt động': ['#e7f5e9', '#1D9336'],
       'Đã thanh toán': ['#e7f5e9', '#1D9336'],
@@ -440,14 +456,16 @@ window.GymApp.pages['members-list'] = {
       return `
         <div class="grid grid-cols-2 gap-standard">
           ${[
-          ['Giới tính', m.gioi_tinh === 'male' ? 'Nam' : 'Nữ'],
+          ['Giới tính', m.gioi_tinh === 'nam' ? 'Nam' : m.gioi_tinh === 'nu' ? 'Nữ' : m.gioi_tinh === 'male' ? 'Nam' : m.gioi_tinh === 'female' ? 'Nữ' : (m.gioi_tinh || '—')],
           ['Ngày sinh', window.GymApp.formatDate(m.ngay_sinh)],
           ['Số điện thoại', m.so_dien_thoai],
           ['Email', m.email],
+          ['CCCD / CMND', m.cccd || '—'],
+          ['Quê quán', m.que_quan || '—'],
           ['Gói tập hiện tại', m.ten_goi_tap || 'Chưa đăng ký'],
           ['Ngày tham gia', window.GymApp.formatDate(m.ngay_tao)],
           ['Ngày hết hạn', window.GymApp.formatDate(m.ngay_het_han)],
-          ['Địa chỉ', m.dia_chi || '—'],
+          ['Địa chỉ thường trú', [m.dia_chi_tam_tru, m.phuong_xa, m.quan_huyen, m.tinh_thanh].filter(Boolean).join(', ') || '—'],
         ].map(([label, val]) => `
               <div class="bg-surface-container p-standard rounded-lg">
                 <p class="text-on-surface-variant text-body-sm font-bold uppercase tracking-wider mb-atom">${label}</p>
@@ -512,6 +530,7 @@ window.GymApp.pages['members-list'] = {
             <td class="px-standard">${this._packageStatusBadge(p.trang_thai || 'Sắp tới')}</td>
           </tr>
         `).join('');
+      const activePkg = Array.isArray(m.goi_tap_hien_tai) && m.goi_tap_hien_tai.length > 0 ? m.goi_tap_hien_tai[0] : null;
       return `
         <div class="bg-surface-container rounded-xl border border-outline-variant p-standard mb-standard">
           <div class="flex items-center justify-between mb-standard">
@@ -521,24 +540,26 @@ window.GymApp.pages['members-list'] = {
             </h4>
             ${window.GymApp.statusBadge(m.trang_thai)}
           </div>
+          ${activePkg ? `
           <div class="grid grid-cols-4 gap-standard">
             <div>
               <p class="text-on-surface-variant text-body-sm mb-atom">Tên gói</p>
-              <p class="font-bold text-on-surface text-body-md">${m.ten_goi_tap || 'N/A'}</p>
+              <p class="font-bold text-on-surface text-body-md">${activePkg.ten_goi || '—'}</p>
             </div>
             <div>
               <p class="text-on-surface-variant text-body-sm mb-atom">Giá gói</p>
-              <p class="font-bold text-on-surface text-body-md">${window.GymApp.formatCurrency(m.gia_goi_tap || 0)}</p>
+              <p class="font-bold text-on-surface text-body-md">${window.GymApp.formatCurrency(activePkg.gia_thuc_te || 0)}</p>
             </div>
             <div>
               <p class="text-on-surface-variant text-body-sm mb-atom">Từ ngày</p>
-              <p class="font-bold text-on-surface text-body-md">${window.GymApp.formatDate(m.ngay_bat_dau)}</p>
+              <p class="font-bold text-on-surface text-body-md">${window.GymApp.formatDate(activePkg.tu_ngay)}</p>
             </div>
             <div>
               <p class="text-on-surface-variant text-body-sm mb-atom">Đến ngày</p>
-              <p class="font-bold text-on-surface text-body-md">${window.GymApp.formatDate(m.ngay_het_han)}</p>
+              <p class="font-bold text-on-surface text-body-md">${window.GymApp.formatDate(activePkg.den_ngay)}</p>
             </div>
           </div>
+          ` : `<p class="text-on-surface-variant text-body-sm">Hội viên chưa đăng ký gói tập nào.</p>`}
         </div>
         <!-- Nút thêm gói -->
         <div class="flex justify-end mb-standard">
@@ -874,14 +895,34 @@ window.GymApp.pages['members-list'] = {
     document.getElementById('pkg-cancel-btn').addEventListener('click', close);
     overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
 
-    // Auto-fill price when package selected
+    // Auto-fill price + den_ngay khi chọn gói tập
     document.getElementById('pkg-name').addEventListener('change', function () {
-      const opt = this.options[this.selectedIndex];
-      const price = parseFloat(opt.dataset.price) || 0;
-      if (price > 0) {
-        document.getElementById('pkg-price').value = price;
+      const name = this.value;
+      const pkg = (window.GymApp.data.packages || []).find(p => (p.ten_goi || p.name) === name);
+      if (!pkg) return;
+      if (pkg.gia > 0) {
+        document.getElementById('pkg-price').value = pkg.gia;
         calcDebt();
       }
+      // Tự tính ngày kết thúc = từ ngày + so_thang tháng + so_ngay_them ngày
+      const fromVal = document.getElementById('pkg-from').value;
+      if (fromVal && (pkg.so_thang || pkg.so_ngay_them)) {
+        const from = new Date(fromVal);
+        from.setMonth(from.getMonth() + (pkg.so_thang || 0));
+        from.setDate(from.getDate() + (pkg.so_ngay_them || 0));
+        document.getElementById('pkg-to').value = from.toISOString().split('T')[0];
+      }
+    });
+
+    // Khi thay đổi từ ngày → cập nhật lại đến ngày nếu đã chọn gói
+    document.getElementById('pkg-from').addEventListener('change', function () {
+      const name = document.getElementById('pkg-name').value;
+      const pkg = (window.GymApp.data.packages || []).find(p => (p.ten_goi || p.name) === name);
+      if (!pkg || !this.value) return;
+      const from = new Date(this.value);
+      from.setMonth(from.getMonth() + (pkg.so_thang || 0));
+      from.setDate(from.getDate() + (pkg.so_ngay_them || 0));
+      document.getElementById('pkg-to').value = from.toISOString().split('T')[0];
     });
 
     // Auto-calc need-to-pay & debt
@@ -990,7 +1031,7 @@ window.GymApp.pages['members-list'] = {
               <label class="block text-body-sm font-bold text-on-surface mb-xs">Gói PT ${REQ}</label>
               <select id="ptreg-goi" ${inputCls}>
                 <option value="">— Chọn gói PT —</option>
-                ${goiPtList.map(g => `<option value="${g.id}" data-price="${g.gia || 0}" data-buoi="${g.so_buoi || ''}">${g.ten_goi} — ${window.GymApp.formatCurrency(g.gia || 0)}${g.so_buoi ? ' / ' + g.so_buoi + ' buổi' : ''}</option>`).join('')}
+                ${goiPtList.map(g => `<option value="${g.id}" data-price="${g.gia || 0}" data-buoi="${g.so_buoi || ''}" data-thang="${g.so_thang || 0}">${g.ten_goi} — ${window.GymApp.formatCurrency(g.gia || 0)}${g.so_buoi ? ' / ' + g.so_buoi + ' buổi' : ''}</option>`).join('')}
               </select>
             </div>
 
@@ -1050,13 +1091,35 @@ window.GymApp.pages['members-list'] = {
 
     document.body.appendChild(overlay);
 
-    // Auto-fill số buổi và giá khi chọn gói PT
+    // Auto-fill số buổi, giá, và đến ngày khi chọn gói PT
     document.getElementById('ptreg-goi').addEventListener('change', function () {
       const opt = this.options[this.selectedIndex];
       const price = parseFloat(opt.dataset.price) || 0;
       const buoi = opt.dataset.buoi;
+      const soThang = parseInt(opt.dataset.thang) || 0;
       if (price > 0) document.getElementById('ptreg-price').value = price;
       if (buoi) document.getElementById('ptreg-sessions').value = buoi;
+      // Tự tính ngày kết thúc nếu gói theo tháng
+      if (soThang > 0) {
+        const fromVal = document.getElementById('ptreg-from').value;
+        if (fromVal) {
+          const from = new Date(fromVal);
+          from.setMonth(from.getMonth() + soThang);
+          document.getElementById('ptreg-to').value = from.toISOString().split('T')[0];
+        }
+      }
+    });
+
+    // Khi thay đổi từ ngày → cập nhật lại đến ngày nếu đã chọn gói
+    document.getElementById('ptreg-from').addEventListener('change', function () {
+      const goiSel = document.getElementById('ptreg-goi');
+      const opt = goiSel.options[goiSel.selectedIndex];
+      const soThang = parseInt(opt?.dataset?.thang) || 0;
+      if (soThang > 0 && this.value) {
+        const from = new Date(this.value);
+        from.setMonth(from.getMonth() + soThang);
+        document.getElementById('ptreg-to').value = from.toISOString().split('T')[0];
+      }
     });
 
     const close = () => overlay.remove();
@@ -1353,6 +1416,100 @@ window.GymApp.pages['members-list'] = {
         window.GymApp.toast('Lỗi kết nối máy chủ.', 'error');
         btn.disabled = false;
         btn.innerHTML = '<span class="material-symbols-outlined text-sm">person_add</span> Tạo tài khoản';
+      }
+    });
+  },
+
+  // ===== MODAL CHỈNH SỬA PT =====
+  _showPtEditModal: async function (id) {
+    const self = this;
+    let pt = null;
+    try {
+      const res = await window.GymApp.api.get(`/trainers/${id}`);
+      pt = res?.data || null;
+    } catch (_) {}
+    if (!pt) {
+      pt = (window.GymApp.data.pts || []).find(x => x.id === id);
+    }
+    if (!pt) { window.GymApp.toast('Không tìm thấy thông tin PT!', 'error'); return; }
+
+    document.getElementById('gym-pt-edit-modal')?.remove();
+    const overlay = document.createElement('div');
+    overlay.id = 'gym-pt-edit-modal';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);backdrop-filter:blur(3px);padding:16px;';
+
+    const field = (label, fid, type, value, readonly = false) => `
+      <div>
+        <label class="text-on-surface-variant text-body-sm font-bold block mb-xs">${label}</label>
+        <input id="pte-${fid}" type="${type}" value="${value || ''}" ${readonly ? 'readonly class="w-full bg-surface-container border border-outline-variant text-on-surface-variant px-standard py-compact rounded-xl outline-none cursor-not-allowed text-body-md"' : 'class="w-full bg-surface-container border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none text-body-md transition-colors"'} />
+      </div>
+    `;
+
+    overlay.innerHTML = `
+      <div class="modal-card" style="border-radius:16px;width:100%;max-width:520px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 25px 60px rgba(0,0,0,0.3);">
+        <div class="bg-surface-container-lowest px-loose py-standard border-b border-outline-variant flex items-center justify-between flex-shrink-0">
+          <div class="flex items-center gap-compact">
+            ${window.GymApp.avatarImg(pt.avatar_url, pt.ho_ten, 'sm')}
+            <div>
+              <h3 class="font-bold text-on-surface" style="font-size:17px">Chỉnh sửa PT</h3>
+              <p class="text-on-surface-variant text-body-sm">${pt.ma_ho_so || ''}</p>
+            </div>
+          </div>
+          <button id="close-pt-edit-modal" style="background:transparent;border:none;cursor:pointer;">
+            <span class="material-symbols-outlined text-on-surface-variant text-xl">close</span>
+          </button>
+        </div>
+        <div class="bg-surface-container-lowest overflow-y-auto flex-1 p-loose flex flex-col gap-standard">
+          ${field('Họ và tên *', 'ho_ten', 'text', pt.ho_ten)}
+          ${field('Số điện thoại', 'so_dien_thoai', 'tel', pt.so_dien_thoai)}
+          ${field('Email', 'email', 'email', pt.email)}
+          ${field('Chuyên môn', 'chuyen_mon', 'text', pt.chuyen_mon || pt.specialty)}
+          ${field('Kinh nghiệm (năm)', 'kinh_nghiem', 'number', pt.kinh_nghiem || 0)}
+          <div>
+            <label class="text-on-surface-variant text-body-sm font-bold block mb-xs">Ghi chú</label>
+            <textarea id="pte-ghi_chu" rows="2" class="w-full bg-surface-container border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none text-body-md resize-none transition-colors">${pt.ghi_chu || ''}</textarea>
+          </div>
+        </div>
+        <div class="bg-surface-container-lowest px-loose py-standard border-t border-outline-variant flex gap-standard justify-end flex-shrink-0">
+          <button id="cancel-pt-edit" class="px-loose py-compact rounded-xl border border-outline-variant text-on-surface-variant font-bold hover:bg-surface-container transition-colors">Hủy</button>
+          <button id="save-pt-edit" class="px-loose py-compact rounded-xl font-bold text-white hover:opacity-90 transition-all" style="background:#1D9336;">
+            <span class="material-symbols-outlined text-sm align-middle">save</span> Lưu thay đổi
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    document.getElementById('close-pt-edit-modal').addEventListener('click', close);
+    document.getElementById('cancel-pt-edit').addEventListener('click', close);
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+    document.getElementById('save-pt-edit').addEventListener('click', async () => {
+      const btn = document.getElementById('save-pt-edit');
+      const ho_ten = document.getElementById('pte-ho_ten').value.trim();
+      if (!ho_ten) { window.GymApp.toast('Họ tên không được để trống!', 'error'); return; }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="animate-spin material-symbols-outlined text-sm">sync</span> Đang lưu...';
+      try {
+        await window.GymApp.api.put(`/trainers/${id}`, {
+          ho_ten,
+          so_dien_thoai: document.getElementById('pte-so_dien_thoai').value.trim(),
+          email: document.getElementById('pte-email').value.trim(),
+          chuyen_mon: document.getElementById('pte-chuyen_mon').value.trim(),
+          kinh_nghiem: parseInt(document.getElementById('pte-kinh_nghiem').value) || 0,
+          ghi_chu: document.getElementById('pte-ghi_chu').value.trim(),
+        });
+        window.GymApp.toast('Đã cập nhật thông tin PT thành công!', 'success');
+        if (window.GymApp.fetchInitialData) await window.GymApp.fetchInitialData();
+        const c = document.getElementById('pt-cards-container');
+        if (c) { c.innerHTML = self._renderPtCards(); self._bindPtCardEvents(); }
+        close();
+      } catch (err) {
+        window.GymApp.toast(err.message || 'Lỗi khi lưu thông tin PT', 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<span class="material-symbols-outlined text-sm align-middle">save</span> Lưu thay đổi';
       }
     });
   },
@@ -1672,7 +1829,16 @@ window.GymApp.pages['members-list'] = {
   _bindPtCardEvents: function () {
     const self = this;
     document.querySelectorAll('.pt-view-btn').forEach(el => {
-      el.addEventListener('click', () => self._showPtModal(el.dataset.id));
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        self._showPtModal(parseInt(el.dataset.id));
+      });
+    });
+    document.querySelectorAll('.pt-edit-btn').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        self._showPtEditModal(parseInt(el.dataset.id));
+      });
     });
   },
 
@@ -1724,9 +1890,9 @@ window.GymApp.pages['members-list'] = {
             <label class="text-on-surface-variant text-body-sm font-bold block mb-xs">Giới tính</label>
             <select id="em-gioi_tinh" class="w-full bg-surface-container border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none text-body-md transition-colors">
               <option value="">— Chọn giới tính —</option>
-              <option value="Nam" ${m.gioi_tinh === 'Nam' ? 'selected' : ''}>Nam</option>
-              <option value="Nữ" ${m.gioi_tinh === 'Nữ' ? 'selected' : ''}>Nữ</option>
-              <option value="Khác" ${m.gioi_tinh === 'Khác' ? 'selected' : ''}>Khác</option>
+              <option value="nam" ${(m.gioi_tinh === 'nam' || m.gioi_tinh === 'male') ? 'selected' : ''}>Nam</option>
+              <option value="nu" ${(m.gioi_tinh === 'nu' || m.gioi_tinh === 'female') ? 'selected' : ''}>Nữ</option>
+              <option value="khac" ${m.gioi_tinh === 'khac' ? 'selected' : ''}>Khác</option>
             </select>
           </div>
           ${field('Địa chỉ', 'dia_chi_tam_tru', 'text', m.dia_chi_tam_tru)}
@@ -1772,11 +1938,7 @@ window.GymApp.pages['members-list'] = {
         if (res?.success) {
           window.GymApp.toast('Đã cập nhật thông tin hội viên!', 'success');
           close();
-          // Cập nhật lại dữ liệu local
-          const membersRes = await window.GymApp.api.get('/members');
-          if (membersRes?.success) window.GymApp.data.members = membersRes.data || [];
-          self._memberFiltered = [...(window.GymApp.data.members || [])];
-          self._refreshMemberTable();
+          await self._refreshMembersFromApi();
         } else {
           window.GymApp.toast(res?.message || 'Có lỗi xảy ra!', 'error');
           btn.disabled = false; btn.classList.remove('opacity-50');
@@ -1832,10 +1994,7 @@ window.GymApp.pages['members-list'] = {
         if (res?.success) {
           window.GymApp.toast(`Đã xóa hội viên ${name}!`, 'success');
           close();
-          const membersRes = await window.GymApp.api.get('/members');
-          if (membersRes?.success) window.GymApp.data.members = membersRes.data || [];
-          self._memberFiltered = [...(window.GymApp.data.members || [])];
-          self._refreshMemberTable();
+          await self._refreshMembersFromApi();
         } else {
           window.GymApp.toast(res?.message || 'Có lỗi xảy ra!', 'error');
           btn.disabled = false; btn.classList.remove('opacity-50');

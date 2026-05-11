@@ -6,9 +6,6 @@ window.GymApp.pages['pt-register'] = {
 
   render: function () {
     const pts = Array.isArray(window.GymApp.data.pts) ? window.GymApp.data.pts : [];
-    const membersRaw = Array.isArray(window.GymApp.data.members) ? window.GymApp.data.members : [];
-    const members = membersRaw.filter(m => m.trang_thai === 'dang_tap' || m.trang_thai === 'active');
-    // Fix bug: null-safe spread, tránh TypeError khi ptSchedules/ptBookings là undefined
     const schedules = Array.isArray(window.GymApp.data.ptSchedules) ? window.GymApp.data.ptSchedules : [];
     const bookings = Array.isArray(window.GymApp.data.ptBookings) ? window.GymApp.data.ptBookings : [];
     const totalBookings = schedules.length + bookings.length;
@@ -61,6 +58,7 @@ window.GymApp.pages['pt-register'] = {
                 <label class="block text-body-sm text-on-surface-variant font-bold mb-xs flex items-center gap-xs">
                   <span class="material-symbols-outlined text-brand-primary text-sm" style="font-variation-settings:'FILL' 1">person</span>
                   Chọn hội viên
+                  <span id="member-list-hint" class="text-on-surface-variant font-normal italic">(chọn PT trước)</span>
                 </label>
                 <div id="member-selection-area" class="space-y-xs">
                   <div class="relative mb-standard">
@@ -68,7 +66,7 @@ window.GymApp.pages['pt-register'] = {
                     <input id="search-member" type="text" placeholder="Tìm kiếm hội viên..." class="w-full bg-surface-container-low border border-outline-variant text-on-surface pl-8 pr-standard py-compact rounded-xl focus:border-brand-primary outline-none font-body-md text-body-md transition-colors" />
                   </div>
                   <div id="member-list" class="flex flex-col gap-xs max-h-64 overflow-y-auto pr-xs border border-outline-variant rounded-xl p-xs">
-                    <p class="text-center py-4 text-on-surface-variant text-body-sm">Đang tải danh sách hội viên...</p>
+                    <p class="text-center py-4 text-on-surface-variant text-body-sm">Vui lòng chọn PT trước</p>
                   </div>
                 </div>
                 <div id="selected-member-display" class="hidden p-compact bg-[#e7f5e9] rounded-xl border border-brand-primary flex items-center gap-compact mt-xs">
@@ -77,7 +75,7 @@ window.GymApp.pages['pt-register'] = {
                 </div>
               </div>
 
-              <!-- Ngày, giờ, loại -->
+              <!-- Ngày, giờ, loại, thời lượng -->
               <div class="grid grid-cols-1 md:grid-cols-2 gap-standard">
                 <div>
                   <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Loại đăng ký</label>
@@ -96,8 +94,17 @@ window.GymApp.pages['pt-register'] = {
                   <input id="reg-start" type="time" class="w-full bg-surface-container-low border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none font-body-md text-body-md transition-colors" />
                 </div>
                 <div>
-                  <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Giờ kết thúc</label>
-                  <input id="reg-end" type="time" class="w-full bg-surface-container-low border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none font-body-md text-body-md transition-colors" />
+                  <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Thời lượng</label>
+                  <select id="reg-duration" class="w-full bg-surface-container-low border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none font-body-md text-body-md transition-colors">
+                    <option value="30">30 phút</option>
+                    <option value="60" selected>1 giờ</option>
+                    <option value="90">1.5 giờ</option>
+                    <option value="120">2 giờ</option>
+                  </select>
+                </div>
+                <div class="md:col-span-2">
+                  <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Giờ kết thúc (tự tính)</label>
+                  <input id="reg-end" type="time" readonly class="w-full bg-surface-container border border-outline-variant text-on-surface-variant px-standard py-compact rounded-xl outline-none font-body-md text-body-md cursor-not-allowed" placeholder="Chọn giờ bắt đầu và thời lượng" />
                 </div>
               </div>
 
@@ -217,28 +224,86 @@ window.GymApp.pages['pt-register'] = {
     if (count) count.textContent = this._getAllBookings().length;
   },
 
+  // Tự tính giờ kết thúc từ giờ bắt đầu + thời lượng (phút)
+  _calcEndTime: function () {
+    const startVal = document.getElementById('reg-start')?.value;
+    const durationVal = parseInt(document.getElementById('reg-duration')?.value || '60');
+    if (!startVal) return;
+    const [h, m] = startVal.split(':').map(Number);
+    const totalMins = h * 60 + m + durationVal;
+    const endH = Math.floor(totalMins / 60) % 24;
+    const endM = totalMins % 60;
+    document.getElementById('reg-end').value =
+      String(endH).padStart(2, '0') + ':' + String(endM).padStart(2, '0');
+  },
+
+  // Load danh sách hội viên có hợp đồng với PT đã chọn
+  _loadMembersForPT: async function (ptId) {
+    const list = document.getElementById('member-list');
+    const hint = document.getElementById('member-list-hint');
+    if (!list) return;
+
+    list.innerHTML = '<p class="text-center py-4 text-on-surface-variant text-body-sm">Đang tải...</p>';
+    try {
+      const res = await window.GymApp.api.get(`/trainers/${ptId}/members`);
+      const members = res?.success ? (Array.isArray(res.data) ? res.data : []) : [];
+      if (hint) hint.textContent = members.length > 0 ? `(${members.length} hội viên)` : '(chưa có hội viên)';
+
+      if (members.length === 0) {
+        list.innerHTML = '<p class="text-center py-4 text-on-surface-variant text-body-sm">PT này chưa có hội viên đang hoạt động</p>';
+        return;
+      }
+
+      list.innerHTML = members.map(m => `
+        <div class="member-card flex items-center gap-compact p-compact rounded-xl cursor-pointer hover:bg-surface-container transition-colors border border-transparent hover:border-outline-variant"
+             data-member-id="${m.id}" data-member-name="${m.ho_ten}" data-dang-ky-pt-id="${m.dang_ky_pt_id}">
+          ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'sm')}
+          <div class="flex-1 min-w-0">
+            <p class="font-bold text-on-surface text-body-md">${m.ho_ten}</p>
+            <p class="text-on-surface-variant text-body-sm">${m.ma_ho_so} &bull; Còn ${m.buoi_con_lai} buổi</p>
+          </div>
+        </div>
+      `).join('');
+
+      // Bind click cho từng member card
+      list.querySelectorAll('.member-card').forEach(card => {
+        card.addEventListener('click', () => {
+          this._selectedMember = {
+            id: card.dataset.memberId,
+            name: card.dataset.memberName,
+            dang_ky_pt_id: card.dataset.dangKyPtId,
+          };
+          document.getElementById('member-selection-area').classList.add('hidden');
+          const display = document.getElementById('selected-member-display');
+          display.classList.remove('hidden');
+          document.getElementById('selected-member-info').innerHTML = `
+            ${window.GymApp.avatarImg('', card.dataset.memberName, 'sm')}
+            <span class="text-brand-primary font-bold text-body-sm">${card.dataset.memberName}</span>
+          `;
+        });
+      });
+    } catch (e) {
+      list.innerHTML = '<p class="text-center py-4 text-error text-body-sm">Lỗi tải danh sách hội viên</p>';
+    }
+  },
+
   init: async function () {
     const self = this;
     self._selectedPT = null;
     self._selectedMember = null;
     self._bookingPage = 1;
 
-    // Fetch dữ liệu nếu chưa có
+    // Fetch PT nếu chưa có
     if (!window.GymApp.data.pts || window.GymApp.data.pts.length === 0) {
       try {
-        const [ptsRes, membersRes] = await Promise.all([
-          window.GymApp.api.get('/trainers'),
-          window.GymApp.api.get('/members')
-        ]);
+        const ptsRes = await window.GymApp.api.get('/trainers');
         if (ptsRes?.success) window.GymApp.data.pts = Array.isArray(ptsRes.data) ? ptsRes.data : (ptsRes.data?.data || []);
-        if (membersRes?.success) window.GymApp.data.members = Array.isArray(membersRes.data) ? membersRes.data : (membersRes.data?.data || []);
       } catch (e) { }
     }
 
     this._renderPTList();
-    this._renderMemberList();
 
-    // Nạp lịch tập ban đầu nếu chưa có
+    // Nạp lịch tập ban đầu
     if (!window.GymApp.data.ptSchedules) {
       try {
         const res = await window.GymApp.api.get('/pt/schedules');
@@ -260,6 +325,10 @@ window.GymApp.pages['pt-register'] = {
     const regDate = document.getElementById('reg-date');
     if (regDate) regDate.value = today;
 
+    // Tự tính giờ kết thúc khi đổi giờ bắt đầu hoặc thời lượng
+    document.getElementById('reg-start')?.addEventListener('change', () => self._calcEndTime());
+    document.getElementById('reg-duration')?.addEventListener('change', () => self._calcEndTime());
+
     // Search PT
     document.getElementById('search-pt')?.addEventListener('input', e => {
       const q = e.target.value.toLowerCase();
@@ -270,21 +339,27 @@ window.GymApp.pages['pt-register'] = {
       });
     });
 
-    // Search Member
+    // Search Member (trong danh sách đã load)
     document.getElementById('search-member')?.addEventListener('input', e => {
       const q = e.target.value.toLowerCase();
       document.querySelectorAll('.member-card').forEach(card => {
         const name = card.dataset.memberName.toLowerCase();
-        const id = card.dataset.memberId?.toString().toLowerCase() || '';
-        card.style.display = name.includes(q) || id.includes(q) ? '' : 'none';
+        card.style.display = name.includes(q) ? '' : 'none';
       });
     });
 
-    // Clear PT
+    // Clear PT → reset cả member
     document.getElementById('clear-pt')?.addEventListener('click', () => {
       self._selectedPT = null;
+      self._selectedMember = null;
       document.getElementById('selected-pt-display').classList.add('hidden');
       document.getElementById('pt-selection-area').classList.remove('hidden');
+      // Reset member area
+      document.getElementById('selected-member-display').classList.add('hidden');
+      document.getElementById('member-selection-area').classList.remove('hidden');
+      document.getElementById('member-list').innerHTML = '<p class="text-center py-4 text-on-surface-variant text-body-sm">Vui lòng chọn PT trước</p>';
+      const hint = document.getElementById('member-list-hint');
+      if (hint) hint.textContent = '(chọn PT trước)';
     });
 
     // Clear Member
@@ -302,19 +377,13 @@ window.GymApp.pages['pt-register'] = {
       const date = document.getElementById('reg-date')?.value;
       const start = document.getElementById('reg-start')?.value;
       const end = document.getElementById('reg-end')?.value;
-      if (!date || !start || !end) { window.GymApp.toast('Vui lòng điền đầy đủ ngày và giờ!', 'error'); return; }
+      if (!date) { window.GymApp.toast('Vui lòng chọn ngày tập!', 'error'); return; }
+      if (!start) { window.GymApp.toast('Vui lòng chọn giờ bắt đầu!', 'error'); return; }
+      if (!end) { window.GymApp.toast('Giờ kết thúc chưa được tính. Hãy chọn giờ bắt đầu và thời lượng!', 'error'); return; }
 
       try {
-        const memberDetail = await window.GymApp.api.get(`/members/${self._selectedMember.id}`);
-        const activeContract = (memberDetail.data?.pt_hien_tai || []).find(c => String(c.pt_id) === String(self._selectedPT.id));
-
-        if (!activeContract) {
-          window.GymApp.toast('Hội viên này chưa đăng ký gói tập với PT này!', 'error');
-          return;
-        }
-
         const bookingData = {
-          dang_ky_pt_id: activeContract.id,
+          dang_ky_pt_id: self._selectedMember.dang_ky_pt_id,
           ngay_tap: date,
           gio_bat_dau: start,
           gio_ket_thuc: end,
@@ -331,10 +400,11 @@ window.GymApp.pages['pt-register'] = {
           self._refreshBookingList();
 
           document.getElementById('clear-pt').click();
-          document.getElementById('clear-member').click();
           document.getElementById('reg-start').value = '';
           document.getElementById('reg-end').value = '';
           document.getElementById('reg-notes').value = '';
+        } else {
+          window.GymApp.toast(res?.message || 'Đặt lịch thất bại!', 'error');
         }
       } catch (err) {
         console.error('Booking failed', err);
@@ -366,18 +436,22 @@ window.GymApp.pages['pt-register'] = {
 
     list.innerHTML = pts.map(pt => `
       <div class="pt-card flex items-center gap-compact p-compact rounded-xl cursor-pointer hover:bg-surface-container transition-colors border border-transparent hover:border-outline-variant"
-           data-pt-id="${pt.id}" data-pt-name="${pt.ho_ten}" data-pt-specialty="${pt.loai_ho_so || ''}">
+           data-pt-id="${pt.id}" data-pt-name="${pt.ho_ten}" data-pt-specialty="${pt.chuyen_mon || ''}">
         ${window.GymApp.avatarImg(pt.avatar_url, pt.ho_ten, 'sm')}
         <div class="flex-1 min-w-0">
           <p class="font-bold text-on-surface text-body-md">${pt.ho_ten}</p>
-          <p class="text-on-surface-variant text-body-sm">${pt.ma_ho_so} &bull; ${pt.chuyen_mon || 'PT'}</p>
+          <p class="text-on-surface-variant text-body-sm">${pt.ma_ho_so} &bull; ${pt.chuyen_mon || 'PT'} &bull; ${pt.so_hoc_vien || 0} HV</p>
         </div>
       </div>
     `).join('');
 
     list.querySelectorAll('.pt-card').forEach(card => {
       card.addEventListener('click', () => {
-        this._selectedPT = { id: card.dataset.ptId, name: card.dataset.ptName };
+        const ptId = card.dataset.ptId;
+        this._selectedPT = { id: ptId, name: card.dataset.ptName };
+        this._selectedMember = null;
+
+        // Ẩn vùng chọn PT, hiện thẻ đã chọn
         document.getElementById('pt-selection-area').classList.add('hidden');
         const display = document.getElementById('selected-pt-display');
         display.classList.remove('hidden');
@@ -385,41 +459,11 @@ window.GymApp.pages['pt-register'] = {
           ${window.GymApp.avatarImg('', card.dataset.ptName, 'sm')}
           <span class="text-brand-primary font-bold text-body-sm">${card.dataset.ptName}</span>
         `;
-      });
-    });
-  },
 
-  _renderMemberList: function () {
-    const members = Array.isArray(window.GymApp.data.members) ? window.GymApp.data.members.filter(m => m.trang_thai === 'dang_tap' || m.trang_thai === 'active') : [];
-    const list = document.getElementById('member-list');
-    if (!list) return;
-
-    if (members.length === 0) {
-      list.innerHTML = '<p class="text-center py-4 text-on-surface-variant text-body-sm">Không có hội viên đang hoạt động</p>';
-      return;
-    }
-
-    list.innerHTML = members.map(m => `
-      <div class="member-card flex items-center gap-compact p-compact rounded-xl cursor-pointer hover:bg-surface-container transition-colors border border-transparent hover:border-outline-variant"
-           data-member-id="${m.id}" data-member-name="${m.ho_ten}" data-member-phone="${m.so_dien_thoai || ''}">
-        ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'sm')}
-        <div class="flex-1 min-w-0">
-          <p class="font-bold text-on-surface text-body-md">${m.ho_ten}</p>
-          <p class="text-on-surface-variant text-body-sm">${m.ma_ho_so} &bull; ${m.so_dien_thoai || ''}</p>
-        </div>
-      </div>
-    `).join('');
-
-    list.querySelectorAll('.member-card').forEach(card => {
-      card.addEventListener('click', () => {
-        this._selectedMember = { id: card.dataset.memberId, name: card.dataset.memberName };
-        document.getElementById('member-selection-area').classList.add('hidden');
-        const display = document.getElementById('selected-member-display');
-        display.classList.remove('hidden');
-        document.getElementById('selected-member-info').innerHTML = `
-          ${window.GymApp.avatarImg('', card.dataset.memberName, 'sm')}
-          <span class="text-brand-primary font-bold text-body-sm">${card.dataset.memberName}</span>
-        `;
+        // Reset member display và load HV của PT này
+        document.getElementById('selected-member-display').classList.add('hidden');
+        document.getElementById('member-selection-area').classList.remove('hidden');
+        this._loadMembersForPT(ptId);
       });
     });
   },

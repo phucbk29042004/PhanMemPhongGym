@@ -136,16 +136,44 @@
       if (url) return `<img src="${url}" alt="${name}" width="${dim}" height="${dim}" style="width:${dim}px;height:${dim}px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid #becab9;" loading="lazy">`;
       return window.GymApp.avatarInitials(name, size);
     };
+    window.GymApp.formatEnumLabel = function (value) {
+      const map = {
+        cho_tap: 'Chờ tập',
+        da_tap: 'Đã tập',
+        da_xac_nhan: 'Đã xác nhận',
+        da_huy: 'Đã hủy',
+        hoan_tac: 'Hoàn tác',
+        vang: 'Vắng',
+        vao: 'Vào',
+        ra: 'Ra',
+        dang_hoat_dong: 'Đang hoạt động',
+        hoat_dong: 'Hoạt động',
+        het_han: 'Hết hạn',
+        thuong: 'Thường',
+        Normal: 'Thường',
+        Student: 'Sinh viên',
+        vip: 'VIP',
+        premium: 'Premium',
+        the_tu: 'Thẻ từ',
+        qr_code: 'QR Code',
+        khuon_mat: 'Khuôn mặt',
+        thu_cong: 'Thủ công',
+      };
+      if (!value) return '—';
+      return map[value] || String(value).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    };
     window.GymApp.statusBadge = function (status) {
       const map = {
         cho_tap: { bg: '#fff3e0', color: '#e65100', label: 'Chờ tập' },
         da_tap: { bg: '#e7f5e9', color: '#1D9336', label: 'Đã tập' },
+        da_xac_nhan: { bg: '#e7f5e9', color: '#1D9336', label: 'Đã xác nhận' },
         da_huy: { bg: '#ffdad6', color: '#93000a', label: 'Đã hủy' },
+        hoan_tac: { bg: '#fff8e1', color: '#f57f17', label: 'Hoàn tác' },
         vang: { bg: '#f3e5f5', color: '#6a1b9a', label: 'Vắng' },
         vao: { bg: '#e7f5e9', color: '#1D9336', label: 'Vào' },
         ra: { bg: '#e3f2fd', color: '#1565c0', label: 'Ra' },
       };
-      const s = map[status] || { bg: '#ebeef3', color: '#181c20', label: status || '—' };
+      const s = map[status] || { bg: '#ebeef3', color: '#181c20', label: window.GymApp.formatEnumLabel(status) };
       return `<span style="padding:2px 8px;border-radius:999px;font-size:9.6px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;background:${s.bg};color:${s.color}">${s.label}</span>`;
     };
   </script>

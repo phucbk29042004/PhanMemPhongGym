@@ -4,7 +4,7 @@
 > Được phân tích dựa trên file: *Hướng dẫn sử dụng phần mềm GYM Web*
 
 ---
-
+                                                                                            
 ## 👑 1. QUẢN TRỊ VIÊN (ADMIN)
 
 Người có **quyền cao nhất**, truy cập và thao tác được toàn bộ hệ thống.
@@ -253,4 +253,3 @@ Người **quản lý lịch dạy và học viên** của mình. Quyền hạn 
 
 ---
 
-*Phiên bản: 1.1 — Cập nhật 09/05/2026: Thêm nghiệp vụ QR Check-in, Tạo tài khoản đăng nhập, Hoàn tác buổi tập, cập nhật bảng phân quyền và luồng nghiệp vụ mới.*

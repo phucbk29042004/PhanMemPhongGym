@@ -1,6 +1,6 @@
 # 🏛️ Kiến Trúc Hệ Thống — Paradise GYM
 
-> Cập nhật lần cuối: 11/05/2026 — Fix nút Sửa/Xóa hội viên (modal inline + confirm dialog), hiệu ứng nút Làm mới Dashboard, dashboard check-in gần nhất thật, biểu đồ doanh thu thật, CRUD gói tập hoàn chỉnh.
+> Cập nhật lần cuối: 11/05/2026 — Chuẩn hóa hiển thị enum trên giao diện, chuyển các giá trị như `da_tap`, `ca_nhan`, `qr_code` sang nhãn tiếng Việt.
 
 ---
 

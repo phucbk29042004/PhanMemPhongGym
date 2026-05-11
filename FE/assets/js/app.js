@@ -212,15 +212,89 @@
   window.GymApp.formatCurrency = n => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
   window.GymApp.formatDate = d => d ? new Date(d).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—';
 
+  window.GymApp.formatEnumLabel = function (value) {
+    const map = {
+      con_han: 'Còn hạn',
+      sap_het_han: 'Sắp hết hạn',
+      het_han: 'Hết hạn',
+      chua_dang_ky: 'Chưa đăng ký',
+      dang_hoat_dong: 'Đang hoạt động',
+      hoat_dong: 'Hoạt động',
+      dang_ban: 'Đang bán',
+      dang_tap: 'Đang tập',
+      da_ket_thuc: 'Đã kết thúc',
+      cho_kich_hoat: 'Chờ kích hoạt',
+      cho_tap: 'Chờ tập',
+      da_tap: 'Đã tập',
+      da_xac_nhan: 'Đã xác nhận',
+      da_huy: 'Đã hủy',
+      hoan_tac: 'Hoàn tác',
+      vang: 'Vắng',
+      vao: 'Vào',
+      ra: 'Ra',
+      ca_nhan: 'Cá nhân',
+      nhom: 'Nhóm',
+      hoi_vien: 'Hội viên',
+      pt: 'Huấn luyện viên',
+      le_tan: 'Lễ tân',
+      nhan_vien: 'Nhân viên',
+      admin: 'Quản trị viên',
+      thuong: 'Thường',
+      Normal: 'Thường',
+      Student: 'Sinh viên',
+      vip: 'VIP',
+      premium: 'Premium',
+      the_tu: 'Thẻ từ',
+      qr_code: 'QR Code',
+      khuon_mat: 'Khuôn mặt',
+      thu_cong: 'Thủ công',
+      tien_mat: 'Tiền mặt',
+      chuyen_khoan: 'Chuyển khoản',
+      the: 'Thẻ',
+      vi_dien_tu: 'Ví điện tử',
+      paid: 'Đã thanh toán',
+      debt: 'Còn nợ',
+      free: 'Miễn phí',
+      active: 'Hoạt động',
+      inactive: 'Không hoạt động',
+      expired: 'Hết hạn',
+      pending: 'Chờ xác nhận',
+      confirmed: 'Đã xác nhận',
+    };
+    if (!value) return '—';
+    return map[value] || String(value).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  };
+
   window.GymApp.statusBadge = function (status) {
     const map = {
-      active: { cls: 'background:#e7f5e9;color:#1D9336', label: 'Hoạt động' },
-      inactive: { cls: 'background:#e0e3e8;color:#3f4a3c', label: 'Không HĐ' },
-      expired: { cls: 'background:#ffdad6;color:#93000a', label: 'Hết hạn' },
-      pending: { cls: 'background:#fff3e0;color:#e65100', label: 'Chờ XN' },
-      confirmed: { cls: 'background:#e7f5e9;color:#1D9336', label: 'Đã XN' },
+      // Trạng thái hội viên (từ BE)
+      con_han:        { cls: 'background:#e7f5e9;color:#1D9336',  label: 'Còn hạn' },
+      sap_het_han:    { cls: 'background:#fff8e1;color:#f57f17',  label: 'Sắp hết hạn' },
+      het_han:        { cls: 'background:#ffdad6;color:#ba1a1a',  label: 'Hết hạn' },
+      chua_dang_ky:   { cls: 'background:#e0e3e8;color:#3f4a3c',  label: 'Chưa ĐK' },
+      // Trạng thái lịch tập PT
+      cho_tap:        { cls: 'background:#e8def8;color:#6750a4',  label: 'Chờ tập' },
+      da_tap:         { cls: 'background:#e7f5e9;color:#1D9336',  label: 'Đã tập' },
+      da_xac_nhan:    { cls: 'background:#e7f5e9;color:#1D9336',  label: 'Đã XN' },
+      da_huy:         { cls: 'background:#ffdad6;color:#ba1a1a',  label: 'Đã hủy' },
+      hoan_tac:       { cls: 'background:#fff8e1;color:#f57f17',  label: 'Hoàn tác' },
+      vang:           { cls: 'background:#f3e5f5;color:#6a1b9a',  label: 'Vắng' },
+      // Trạng thái gói tập
+      dang_hoat_dong: { cls: 'background:#e7f5e9;color:#1D9336',  label: 'Đang dùng' },
+      hoat_dong:      { cls: 'background:#e7f5e9;color:#1D9336',  label: 'Hoạt động' },
+      dang_ban:       { cls: 'background:#e7f5e9;color:#1D9336',  label: 'Đang bán' },
+      cho_kich_hoat:  { cls: 'background:#fff3e0;color:#e65100',  label: 'Chờ kích hoạt' },
+      da_ket_thuc:    { cls: 'background:#e0e3e8;color:#3f4a3c',  label: 'Kết thúc' },
+      // Alias legacy
+      active:         { cls: 'background:#e7f5e9;color:#1D9336',  label: 'Hoạt động' },
+      inactive:       { cls: 'background:#e0e3e8;color:#3f4a3c',  label: 'Không HĐ' },
+      expired:        { cls: 'background:#ffdad6;color:#ba1a1a',  label: 'Hết hạn' },
+      pending:        { cls: 'background:#fff3e0;color:#e65100',  label: 'Chờ XN' },
+      confirmed:      { cls: 'background:#e7f5e9;color:#1D9336',  label: 'Đã XN' },
+      vao:            { cls: 'background:#e7f5e9;color:#1D9336',  label: 'Vào' },
+      ra:             { cls: 'background:#e0e3e8;color:#3f4a3c',  label: 'Ra' },
     };
-    const s = map[status] || { cls: 'background:#ebeef3;color:#181c20', label: status };
+    const s = map[status] || { cls: 'background:#ebeef3;color:#181c20', label: window.GymApp.formatEnumLabel(status) };
     return `<span style="padding:2px 8px;border-radius:999px;font-size:9.6px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;${s.cls}">${s.label}</span>`;
   };
 

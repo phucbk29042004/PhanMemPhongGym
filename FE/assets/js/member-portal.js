@@ -131,7 +131,7 @@
       // Gói tập còn hạn
       const activePackage = packages.find(p => p.trang_thai === 'dang_hoat_dong') || packages[0];
       const daysLeft = activePackage?.den_ngay
-        ? Math.max(0, Math.round((new Date(activePackage.den_ngay) - new Date()) / 86400000))
+        ? Math.max(0, Math.ceil((new Date(activePackage.den_ngay) - new Date()) / 86400000))
         : null;
       const isExpiringSoon = daysLeft !== null && daysLeft <= 7;
 
@@ -257,7 +257,7 @@
 
           <!-- Filter -->
           <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant p-standard shadow-sm">
-            <div class="flex flex-wrap gap-standard">
+            <div class="flex flex-wrap gap-standard items-center">
               <select id="ms-status" class="bg-surface-container-low border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none font-body-md text-body-md flex-1 min-w-[140px] transition-colors">
                 <option value="">Tất cả trạng thái</option>
                 <option value="cho_tap">Chờ tập</option>
@@ -266,6 +266,9 @@
                 <option value="vang">Vắng</option>
               </select>
               <input id="ms-date" type="date" class="bg-surface-container-low border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none font-body-md text-body-md flex-1 min-w-[140px] transition-colors" />
+              <button id="ms-reload" class="flex items-center gap-xs px-loose py-compact rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary transition-all font-body-md text-body-md whitespace-nowrap">
+                <span class="material-symbols-outlined text-sm">refresh</span>Tải lại
+              </button>
             </div>
           </div>
 
@@ -318,10 +321,34 @@
       document.getElementById('ms-list').innerHTML = this._renderList(filtered);
     },
 
-    init() {
+    async init() {
       const self = this;
+
+      // Fetch lịch mới nhất khi vào tab
+      try {
+        const res = await window.GymApp.api.get('/pt/schedules');
+        if (res?.success) {
+          window.GymApp.data.ptSchedules = res.data || [];
+          document.getElementById('ms-list').innerHTML = self._renderList(res.data || []);
+        }
+      } catch (e) { console.error('my-schedule fetch error', e); }
+
       document.getElementById('ms-status')?.addEventListener('change', () => self._applyFilter());
       document.getElementById('ms-date')?.addEventListener('change', () => self._applyFilter());
+
+      document.getElementById('ms-reload')?.addEventListener('click', async () => {
+        const btn = document.getElementById('ms-reload');
+        if (btn) btn.classList.add('opacity-50', 'pointer-events-none');
+        try {
+          const res = await window.GymApp.api.get('/pt/schedules');
+          if (res?.success) {
+            window.GymApp.data.ptSchedules = res.data || [];
+            self._applyFilter();
+          }
+        } catch (e) { console.error(e); }
+        if (btn) btn.classList.remove('opacity-50', 'pointer-events-none');
+        window.GymApp.toast('Đã tải lại lịch tập!', 'success');
+      });
     }
   };
 
@@ -391,16 +418,24 @@
       const p = window.GymApp.data.myProfile || {};
       const u = window.GymApp.auth.user || {};
 
+      // Địa chỉ đầy đủ: ghép các phần không rỗng
+      const diaChiParts = [p.dia_chi_tam_tru, p.phuong_xa, p.quan_huyen, p.tinh_thanh].filter(Boolean);
+      const diaChi = diaChiParts.length ? diaChiParts.join(', ') : null;
+
       const fields = [
-        { label: 'Mã hồ sơ', value: p.ma_ho_so, icon: 'badge' },
-        { label: 'Họ tên', value: p.ho_ten, icon: 'person' },
-        { label: 'Giới tính', value: p.gioi_tinh === 'nam' ? 'Nam' : p.gioi_tinh === 'nu' ? 'Nữ' : p.gioi_tinh || '—', icon: 'wc' },
-        { label: 'Ngày sinh', value: window.GymApp.formatDate(p.ngay_sinh), icon: 'cake' },
-        { label: 'Số điện thoại', value: p.so_dien_thoai, icon: 'phone' },
-        { label: 'Email', value: p.email, icon: 'email' },
-        { label: 'Chi nhánh', value: p.chi_nhanh, icon: 'location_on' },
-        { label: 'Loại hội viên', value: p.loai_hv, icon: 'star' },
-        { label: 'Ghi chú', value: p.ghi_chu, icon: 'notes' },
+        { label: 'Mã hồ sơ',       value: p.ma_ho_so,                                icon: 'badge' },
+        { label: 'Họ tên',          value: p.ho_ten,                                  icon: 'person' },
+        { label: 'Giới tính',       value: p.gioi_tinh === 'nam' ? 'Nam' : p.gioi_tinh === 'nu' ? 'Nữ' : p.gioi_tinh || '—', icon: 'wc' },
+        { label: 'Ngày sinh',       value: window.GymApp.formatDate(p.ngay_sinh),      icon: 'cake' },
+        { label: 'Ngày tham gia',   value: window.GymApp.formatDate(p.ngay_tao),       icon: 'event' },
+        { label: 'Số điện thoại',   value: p.so_dien_thoai,                           icon: 'phone' },
+        { label: 'Email',           value: p.email,                                   icon: 'email' },
+        { label: 'CCCD',            value: p.cccd,                                    icon: 'id_card' },
+        { label: 'Quê quán',        value: p.que_quan,                                icon: 'home_pin' },
+        { label: 'Địa chỉ',         value: diaChi,                                    icon: 'location_on' },
+        { label: 'Chi nhánh',       value: p.chi_nhanh,                               icon: 'store' },
+        { label: 'Loại hội viên',   value: window.GymApp.formatEnumLabel(p.loai_hv || 'thuong'), icon: 'star' },
+        { label: 'Ghi chú',         value: p.ghi_chu,                                 icon: 'notes' },
       ];
 
       const avatarUrl = p.avatar_url || u.avatar_url;
@@ -424,7 +459,7 @@
               </div>
               <div>
                 <p class="font-bold text-on-surface text-display-2xl">${tenHV || '—'}</p>
-                <p class="text-on-surface-variant text-body-sm mt-xs">Hội viên · ${p.loai_hv || 'Thường'}</p>
+                <p class="text-on-surface-variant text-body-sm mt-xs">Hội viên · ${window.GymApp.formatEnumLabel(p.loai_hv || 'thuong')}</p>
               </div>
             </div>
 
