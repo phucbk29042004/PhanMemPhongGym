@@ -672,4 +672,185 @@
     window._openQrModal = _openQrModal;
   })();
 
+  // ===== NOTIFICATIONS (BELL ICON) =====
+  (function () {
+    let _pollingTimer = null;
+    let _dropdownOpen = false;
+
+    const LOAI_ICON = {
+      sap_het_han_goi_tap:       'schedule',
+      het_han_goi_tap:           'event_busy',
+      check_in:                  'how_to_reg',
+      chua_check_in_truoc_buoi_pt: 'warning',
+      cron_tu_xac_nhan:          'smart_toy',
+      sap_het_buoi_pt:           'fitness_center',
+      ho_so_moi:                 'person_add',
+    };
+    const LOAI_COLOR = {
+      sap_het_han_goi_tap:       'text-amber-500',
+      het_han_goi_tap:           'text-red-500',
+      check_in:                  'text-green-600',
+      chua_check_in_truoc_buoi_pt:'text-orange-500',
+      cron_tu_xac_nhan:          'text-blue-500',
+      sap_het_buoi_pt:           'text-orange-400',
+      ho_so_moi:                 'text-purple-500',
+    };
+
+    function _timeAgo(dateStr) {
+      const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+      if (diff < 60) return 'vừa xong';
+      if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`;
+      if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`;
+      return `${Math.floor(diff / 86400)} ngày trước`;
+    }
+
+    function _updateBadge(count) {
+      const badge = document.getElementById('notif-badge');
+      if (!badge) return;
+      if (count > 0) {
+        badge.textContent = count > 99 ? '99+' : count;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    async function _fetchUnreadCount() {
+      try {
+        const res = await window.GymApp.api.get('/notifications/unread-count');
+        if (res?.success) _updateBadge(res.data.count);
+      } catch (_) {}
+    }
+
+    async function _openDropdown() {
+      const dropdown = document.getElementById('notif-dropdown');
+      const listEl = document.getElementById('notif-list');
+      if (!dropdown || !listEl) return;
+
+      dropdown.classList.remove('hidden');
+      _dropdownOpen = true;
+
+      listEl.innerHTML = `<div class="text-center py-8 text-on-surface-variant text-body-sm">Đang tải...</div>`;
+
+      try {
+        const res = await window.GymApp.api.get('/notifications');
+        if (!res?.success) throw new Error();
+        const items = res.data;
+
+        if (!items || items.length === 0) {
+          listEl.innerHTML = `<div class="text-center py-10 text-on-surface-variant text-body-sm">Không có thông báo nào</div>`;
+          return;
+        }
+
+        listEl.innerHTML = items.map(n => {
+          const icon = LOAI_ICON[n.loai] || 'notifications';
+          const color = LOAI_COLOR[n.loai] || 'text-on-surface-variant';
+          const bg = n.da_doc === 0 ? 'bg-[#e7f5e9] dark:bg-[#0d2b14]' : '';
+          return `
+            <div class="notif-item flex items-start gap-3 px-4 py-3 border-b border-outline-variant cursor-pointer hover:bg-surface-container transition-colors ${bg}"
+                 data-notif-id="${n.id}" data-da-doc="${n.da_doc}">
+              <span class="material-symbols-outlined ${color} flex-shrink-0 mt-0.5" style="font-size:20px;font-variation-settings:'FILL' 1">${icon}</span>
+              <div class="flex-1 min-w-0">
+                <p class="text-body-sm font-semibold text-on-surface leading-snug">${n.tieu_de}</p>
+                <p class="text-body-sm text-on-surface-variant mt-0.5 leading-snug">${n.noi_dung}</p>
+                <p class="text-[10px] text-on-surface-variant mt-1">${_timeAgo(n.ngay_tao)}</p>
+              </div>
+              ${n.da_doc === 0 ? '<span class="w-2 h-2 bg-brand-primary rounded-full flex-shrink-0 mt-1.5"></span>' : ''}
+            </div>`;
+        }).join('');
+      } catch (_) {
+        listEl.innerHTML = `<div class="text-center py-8 text-red-500 text-body-sm">Không tải được thông báo</div>`;
+      }
+    }
+
+    function _closeDropdown() {
+      document.getElementById('notif-dropdown')?.classList.add('hidden');
+      _dropdownOpen = false;
+    }
+
+    async function _markOneRead(id, itemEl) {
+      try {
+        await window.GymApp.api.patch(`/notifications/${id}/read`);
+        itemEl.classList.remove('bg-[#e7f5e9]', 'dark:bg-[#0d2b14]');
+        itemEl.dataset.daDoe = '1';
+        itemEl.querySelector('.w-2.h-2.bg-brand-primary')?.remove();
+        _fetchUnreadCount();
+      } catch (_) {}
+    }
+
+    async function _markAllRead() {
+      try {
+        await window.GymApp.api.patch('/notifications/read-all');
+        document.querySelectorAll('.notif-item').forEach(el => {
+          el.classList.remove('bg-[#e7f5e9]', 'dark:bg-[#0d2b14]');
+          el.querySelector('.w-2.h-2.bg-brand-primary')?.remove();
+        });
+        _updateBadge(0);
+      } catch (_) {}
+    }
+
+    async function _showLoginSummary() {
+      try {
+        const res = await window.GymApp.api.get('/notifications/summary');
+        if (!res?.success) return;
+        const d = res.data;
+        if (d.tong_chua_doc === 0) return;
+
+        const parts = [];
+        if (d.sap_het_han > 0) parts.push(`${d.sap_het_han} hội viên sắp hết hạn`);
+        if (d.het_han > 0) parts.push(`${d.het_han} hội viên đã hết hạn`);
+        if (d.sap_het_buoi_pt > 0) parts.push(`${d.sap_het_buoi_pt} hội viên sắp hết buổi PT`);
+
+        if (parts.length > 0) {
+          window.GymApp.toast(parts.join(', '), 'info');
+        }
+      } catch (_) {}
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      const bellBtn = document.getElementById('btn-bell');
+      const wrapper = document.getElementById('notif-wrapper');
+      if (!bellBtn) return;
+
+      // Mở/đóng dropdown khi bấm bell
+      bellBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (_dropdownOpen) {
+          _closeDropdown();
+        } else {
+          _openDropdown();
+        }
+      });
+
+      // Đóng khi click ngoài
+      document.addEventListener('click', function (e) {
+        if (_dropdownOpen && !wrapper?.contains(e.target)) {
+          _closeDropdown();
+        }
+      });
+
+      // Đánh dấu tất cả đã đọc
+      document.getElementById('btn-notif-read-all')?.addEventListener('click', function (e) {
+        e.stopPropagation();
+        _markAllRead();
+      });
+
+      // Click vào item → đánh dấu đã đọc
+      document.getElementById('notif-list')?.addEventListener('click', function (e) {
+        const item = e.target.closest('.notif-item');
+        if (!item) return;
+        const id = item.dataset.notifId;
+        const daDoc = item.dataset.daDoc;
+        if (id && daDoc === '0') _markOneRead(id, item);
+      });
+
+      // Polling mỗi 30 giây
+      _fetchUnreadCount();
+      _pollingTimer = setInterval(_fetchUnreadCount, 30000);
+
+      // Gọi summary khi app load xong (sau khi auth xác nhận)
+      setTimeout(_showLoginSummary, 1500);
+    });
+  })();
+
 })();

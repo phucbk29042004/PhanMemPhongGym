@@ -4,6 +4,7 @@
 
 import db from '../config/db.js';
 import { success, error } from '../utils/response.js';
+import { createNotification } from '../utils/notifications.js';
 
 // ── GET /api/checkins ─────────────────────────────────────
 // Lịch sử vào/ra (mặc định hôm nay)
@@ -52,10 +53,22 @@ export const createCheckin = (req, res) => {
   `).run(ho_so_id || null, loai, phuong_thuc, ghi_chu || null);
 
   const newRow = db.prepare(`
-    SELECT lv.*, h.ho_ten, h.avatar_url FROM luot_vao_ra lv
+    SELECT lv.*, h.ho_ten, h.ma_ho_so, h.avatar_url FROM luot_vao_ra lv
     LEFT JOIN ho_so h ON h.id = lv.ho_so_id
     WHERE lv.id = ?
   `).get(result.lastInsertRowid);
+
+  if (loai === 'vao' && newRow.ho_ten) {
+    const thoiGian = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    createNotification(
+      'check_in',
+      `Check-in — ${newRow.ma_ho_so || ''} ${newRow.ho_ten}`,
+      `${newRow.ma_ho_so || ''} ${newRow.ho_ten} vừa check-in lúc ${thoiGian}`,
+      ho_so_id,
+      'ho_so',
+      'ca_hai'
+    );
+  }
 
   return success(res, newRow, `Check-${loai} thành công`, 201);
 };

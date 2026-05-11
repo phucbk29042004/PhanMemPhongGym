@@ -8,11 +8,32 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
-**✅ Nút Quét QR thành modal**: Nút "Quét QR" trong header admin (`index.html`) giờ mở modal trực tiếp thay vì mở `scan.html` tab mới. Modal đầy đủ: camera scan, upload ảnh, nhập token thủ công, kết quả check-in.
+**✅ Hệ thống thông báo (Bell Icon)** đã hoàn thành: bảng `thong_bao` trong DB, 5 API endpoint, 7 loại sự kiện tự động (cron + realtime), bell icon dropdown trong header Admin/Lễ tân với polling 30 giây.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
+
+### 11/05/2026 — Hệ Thống Thông Báo Bell Icon
+- **Loại**: Tính năng mới (Backend + Frontend)
+- **File tạo mới**:
+  - `BE/src/utils/notifications.js` — Helper `createNotification()` dùng chung cho cron và realtime
+  - `BE/src/controllers/notifications.controller.js` — 5 handler: getNotifications, getUnreadCount, getSummary, markAsRead, markAllAsRead
+  - `BE/src/routes/notifications.routes.js` — Route `/api/notifications` với verifyToken
+  - `BE/src/jobs/cron-daily.js` — Cron 08:00 sáng (sinh thông báo sắp hết hạn, hết hạn, sắp hết buổi PT, xóa cũ 30 ngày) + Cron mỗi 5 phút (kiểm tra buổi PT chưa check-in)
+- **File chỉnh sửa**:
+  - `BE/src/config/db.js` — Migration tạo bảng `thong_bao` + 2 index tự động khi khởi động
+  - `BE/src/app.js` — Import và mount `/api/notifications`
+  - `BE/index.js` — Import và start `startDailyCronJobs()`
+  - `BE/src/jobs/cron-pt-confirm.js` — Sau xác nhận buổi tập → sinh thông báo `cron_tu_xac_nhan`
+  - `BE/src/controllers/qr-checkin.controller.js` — Sau QR check-in thành công → sinh `check_in`
+  - `BE/src/controllers/checkins.controller.js` — Sau check-in thủ công (loai='vao') → sinh `check_in`
+  - `BE/src/controllers/members.controller.js` — Sau tạo hội viên mới → sinh `ho_so_moi` cho admin
+  - `FE/index.html` — Thay nút notifications cũ bằng bell icon có badge + dropdown
+  - `FE/assets/js/app.js` — IIFE Notifications: polling 30s, dropdown render, mark read, login summary toast
+  - `FE/assets/css/main.css` — Style dropdown + scrollbar
+- **Mô tả**: Hệ thống thông báo đầy đủ 7 loại sự kiện. Phân quyền: admin nhận tất cả, lễ tân không nhận `ho_so_moi`. Polling FE 30 giây. Toast tổng hợp khi login.
+- **Kết quả**: Thành công
 
 ### 11/05/2026 — Modal Quét QR Check-in (thay thế mở scan.html tab mới)
 - **Loại**: Cải thiện UX (Frontend)

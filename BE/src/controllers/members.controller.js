@@ -7,6 +7,7 @@ import db from '../config/db.js';
 import { success, error } from '../utils/response.js';
 import { uploadImage, deleteImage } from '../utils/cloudinary.js';
 import { ghi_audit_log } from '../utils/audit.js';
+import { createNotification } from '../utils/notifications.js';
 import bcrypt from 'bcryptjs';
 
 // ── GET /api/members ──────────────────────────────────────
@@ -164,6 +165,18 @@ export const createMember = async (req, res) => {
 
   const newMember = db.prepare('SELECT * FROM ho_so WHERE id = ?').get(result.lastInsertRowid);
   ghi_audit_log(req, 'CREATE', 'ho_so', result.lastInsertRowid, null, { ho_ten, loai_ho_so: loai }, `Thêm hồ sơ ${loai} mới`);
+
+  // Chỉ sinh thông báo khi tạo hội viên mới (lễ tân tự tạo nên chỉ báo cho admin)
+  if (loai === 'hoi_vien') {
+    createNotification(
+      'ho_so_moi',
+      `Hồ sơ mới — ${ho_ten}`,
+      `Vừa tạo hồ sơ hội viên mới: ${ma_ho_so} ${ho_ten}`,
+      result.lastInsertRowid,
+      'ho_so',
+      'admin'
+    );
+  }
 
   return success(res, newMember, 'Thêm hồ sơ thành công', 201);
 };

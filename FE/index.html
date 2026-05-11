@@ -193,10 +193,23 @@
       <button id="theme-toggle" class="material-symbols-outlined text-on-surface-variant hover:text-brand-primary p-atom rounded-lg transition-all" title="Chuyển chế độ sáng/tối">
         <span id="theme-icon">dark_mode</span>
       </button>
-      <button class="material-symbols-outlined text-on-surface-variant hover:text-brand-primary p-atom rounded-lg transition-all relative">
-        notifications
-        <span class="absolute top-0.5 right-0.5 w-2 h-2 bg-brand-primary rounded-full" style="font-size:0"></span>
-      </button>
+      <!-- Bell Icon Notifications -->
+      <div class="relative" id="notif-wrapper">
+        <button id="btn-bell" class="material-symbols-outlined text-on-surface-variant hover:text-brand-primary p-atom rounded-lg transition-all relative" title="Thông báo">
+          notifications
+          <span id="notif-badge" class="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-0.5 bg-red-500 text-white rounded-full text-[10px] font-bold leading-4 text-center hidden">0</span>
+        </button>
+        <!-- Dropdown thông báo -->
+        <div id="notif-dropdown" class="hidden absolute right-0 top-full mt-1 w-80 bg-surface-container-lowest rounded-xl shadow-xl border border-outline-variant z-50 overflow-hidden" style="max-height:420px">
+          <div class="flex items-center justify-between px-4 py-2.5 border-b border-outline-variant">
+            <span class="font-bold text-body-md text-on-surface">Thông báo</span>
+            <button id="btn-notif-read-all" class="text-body-sm text-brand-primary hover:underline">Đánh dấu đã đọc</button>
+          </div>
+          <div id="notif-list" class="overflow-y-auto" style="max-height:340px">
+            <div class="text-center py-8 text-on-surface-variant text-body-sm">Đang tải...</div>
+          </div>
+        </div>
+      </div>
       <button class="material-symbols-outlined text-on-surface-variant hover:text-brand-primary p-atom rounded-lg transition-all">settings</button>
       <div class="flex items-center gap-compact ml-xs pl-standard border-l border-outline-variant">
         <div class="w-7 h-7 rounded-full bg-gradient-to-br from-brand-primary to-[#157a2a] flex items-center justify-center shadow-sm">

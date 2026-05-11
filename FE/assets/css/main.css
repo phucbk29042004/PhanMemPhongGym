@@ -218,6 +218,14 @@ input[type="date"], input[type="time"] { color-scheme: light; }
 /* ===== AVATAR IMAGE ===== */
 .avatar-img { object-fit: cover; flex-shrink: 0; }
 
+/* ===== NOTIFICATION DROPDOWN ===== */
+#notif-dropdown {
+  box-shadow: 0 8px 32px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.08);
+}
+#notif-list::-webkit-scrollbar { width: 4px; }
+#notif-list::-webkit-scrollbar-track { background: transparent; }
+#notif-list::-webkit-scrollbar-thumb { background: var(--outline-variant); border-radius: 4px; }
+
 /* ===== QR MODAL ===== */
 @keyframes spin {
   from { transform: rotate(0deg); }

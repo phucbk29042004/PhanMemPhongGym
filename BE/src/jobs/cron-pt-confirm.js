@@ -10,6 +10,7 @@
 
 import cron from 'node-cron';
 import db from '../config/db.js';
+import { createNotification } from '../utils/notifications.js';
 
 let scheduledTask = null;
 
@@ -43,6 +44,15 @@ function runConfirmJob() {
   try {
     confirmAll(pending);
     console.log(`[CRON] Đã xác nhận ${pending.length} buổi tập thành công.`);
+
+    createNotification(
+      'cron_tu_xac_nhan',
+      'Hệ thống tự xác nhận buổi tập',
+      `Hệ thống vừa tự xác nhận ${pending.length} buổi tập PT hôm nay (${today})`,
+      null,
+      null,
+      'ca_hai'
+    );
   } catch (err) {
     console.error('[CRON] Lỗi khi xác nhận buổi tập:', err.message);
   }

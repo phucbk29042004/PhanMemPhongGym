@@ -8,6 +8,7 @@ import jwt from 'jsonwebtoken';
 import db from '../config/db.js';
 import { success, error } from '../utils/response.js';
 import { ghi_audit_log } from '../utils/audit.js';
+import { createNotification } from '../utils/notifications.js';
 
 // ── GET /api/checkin/my-qr ────────────────────────────────
 // Chỉ hội viên đã đăng nhập mới gọi được (verifyToken đã chạy)
@@ -97,6 +98,16 @@ export const scanQr = (req, res) => {
 
   ghi_audit_log(req, 'CREATE', 'luot_vao_ra', result.lastInsertRowid, null,
     { ho_so_id, phuong_thuc: 'qr_code' }, 'QR Check-in');
+
+  const thoiGian = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  createNotification(
+    'check_in',
+    `Check-in — ${hoSo.ma_ho_so} ${hoSo.ho_ten}`,
+    `${hoSo.ma_ho_so} ${hoSo.ho_ten} vừa check-in lúc ${thoiGian}`,
+    hoSo.id,
+    'ho_so',
+    'ca_hai'
+  );
 
   return success(res, {
     ho_so_id:   hoSo.id,

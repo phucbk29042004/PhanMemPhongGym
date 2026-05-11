@@ -46,4 +46,27 @@ db.exec(`
 db.prepare(`INSERT OR IGNORE INTO cau_hinh (khoa, gia_tri, mo_ta) VALUES (?, ?, ?)`).run('gio_dong_cua', '22:00', 'Giờ cron job trừ buổi PT chạy');
 db.prepare(`INSERT OR IGNORE INTO cau_hinh (khoa, gia_tri, mo_ta) VALUES (?, ?, ?)`).run('qr_token_ttl_phut', '5', 'Thời gian hiệu lực QR Code (phút)');
 
+// Tạo bảng thong_bao nếu chưa có
+db.exec(`
+  CREATE TABLE IF NOT EXISTS thong_bao (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    loai          TEXT NOT NULL CHECK (loai IN (
+                      'sap_het_han_goi_tap','het_han_goi_tap','check_in',
+                      'chua_check_in_truoc_buoi_pt','cron_tu_xac_nhan',
+                      'sap_het_buoi_pt','ho_so_moi'
+                  )),
+    tieu_de       TEXT NOT NULL,
+    noi_dung      TEXT NOT NULL,
+    doi_tuong_id  INTEGER,
+    doi_tuong     TEXT,
+    danh_cho      TEXT NOT NULL CHECK (danh_cho IN ('admin','le_tan','ca_hai')),
+    da_doc        INTEGER NOT NULL DEFAULT 0 CHECK (da_doc IN (0,1)),
+    doc_boi_id    INTEGER REFERENCES tai_khoan(id),
+    ngay_doc      DATETIME,
+    ngay_tao      DATETIME NOT NULL DEFAULT (datetime('now','localtime'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_thongbao_danh_cho ON thong_bao(danh_cho, da_doc);
+  CREATE INDEX IF NOT EXISTS idx_thongbao_ngay ON thong_bao(ngay_tao);
+`);
+
 export default db;

@@ -6,11 +6,13 @@
 import 'dotenv/config';
 import app from './src/app.js';
 import { startCronJob } from './src/jobs/cron-pt-confirm.js';
+import { startDailyCronJobs } from './src/jobs/cron-daily.js';
 
 const PORT = process.env.PORT || 3000;
 
-// Khởi động cron job
+// Khởi động cron jobs
 startCronJob();
+startDailyCronJobs();
 
 app.listen(PORT, () => {
   console.log('');

@@ -1,6 +1,6 @@
 # 🏛️ Kiến Trúc Hệ Thống — Paradise GYM
 
-> Cập nhật lần cuối: 11/05/2026 — Redesign Member Portal theo mẫu FE_Hoivien; QR Check-in được gộp vào dashboard, các tab còn lại giữ luồng dữ liệu thật.
+> Cập nhật lần cuối: 11/05/2026 — Hệ thống thông báo Bell Icon hoàn chỉnh: bảng thong_bao, 5 API endpoint, 7 loại sự kiện cron + realtime, polling FE 30 giây.
 
 ---
 
@@ -70,6 +70,7 @@ graph TD
 | `doanh_thu` | Tổng hợp doanh thu tự động qua Triggers. |
 | `audit_log` | Nhật ký thay đổi dữ liệu nhạy cảm. |
 | `cau_hinh` | Cấu hình hệ thống (giờ cron, TTL QR, v.v.). |
+| `thong_bao` | Thông báo hệ thống: 7 loại, phân quyền admin/le_tan/ca_hai, tự động xóa sau 30 ngày. |
 
 ---
 
@@ -87,6 +88,7 @@ graph TD
 | **QR Check-in** | `/api/checkin/my-qr`, `/api/checkin/scan` | Hội viên lấy QR token; lễ tân quét xác nhận vào. |
 | **PT Schedules** (thêm) | `PATCH /api/pt/schedules/:id/hoan-tac` | Hoàn tác buổi do cron tự xác nhận. |
 | **Revenue** | `/api/revenue`, `/dashboard` | Thống kê doanh thu. |
+| **Notifications** | `GET /api/notifications`, `/unread-count`, `/summary`; `PATCH /:id/read`, `/read-all` | Bell icon: danh sách, badge polling, summary login, đánh dấu đã đọc. |
 
 ---
 
@@ -126,6 +128,7 @@ graph TD
 - [x] **Sinh nhật**: Lọc hội viên sinh nhật theo today/week/month.
 - [x] **My Profile**: Hội viên/PT tự xem hồ sơ + gói tập/lịch dạy hiện tại.
 - [x] **Hệ thống**: Middleware RBAC (quyen_json), Audit Logging (ghi vết hành động).
+- [x] **Hệ thống thông báo**: Bell icon dropdown trong header admin/lễ tân. Polling 30s. 7 loại sự kiện: sắp hết hạn gói tập, hết hạn, check-in, chưa check-in trước buổi PT, cron tự xác nhận, sắp hết buổi PT, hồ sơ mới. Cron 08:00 sáng + cron mỗi 5 phút + realtime sau các action. Toast tổng hợp khi login.
 
 ### Tích hợp Fullstack (Kết nối FE-BE)
 - [x] **API Wrapper**: Hoàn thiện `api.js` xử lý JWT tự động.
