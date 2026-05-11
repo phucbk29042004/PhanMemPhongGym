@@ -14,6 +14,14 @@
 
 ## 📋 Danh Sách Thay Đổi
 
+### 11/05/2026 14:24 — Redesign Member Portal theo mẫu FE_Hoivien
+- **Loại**: Chỉnh sửa giao diện (Frontend)
+- **File/Thành phần liên quan**:
+  - `FE/member-portal.html`
+  - `FE/assets/js/member-portal.js`
+- **Mô tả**: Thiết kế lại shell Member Portal theo mẫu `FE_Hoivien.txt.txt`: top bar, sidebar desktop, bottom nav mobile, layout dashboard dạng bento. Giữ dữ liệu thật từ API hiện có; không thêm các chỉ số demo không có backend như cân nặng/BMI/tỷ lệ mỡ/điểm thưởng. Gộp QR Check-in vào dashboard và bỏ tab QR riêng, vẫn dùng API `/checkin/my-qr`, countdown và nút làm mới mã.
+- **Kết quả**: Thành công
+
 ### 11/05/2026 13:57 — Chuẩn hóa nhãn enum trên giao diện
 - **Loại**: Sửa bug (Frontend)
 - **File/Thành phần liên quan**:

@@ -1,6 +1,6 @@
 # 🏛️ Kiến Trúc Hệ Thống — Paradise GYM
 
-> Cập nhật lần cuối: 11/05/2026 — Chuẩn hóa hiển thị enum trên giao diện, chuyển các giá trị như `da_tap`, `ca_nhan`, `qr_code` sang nhãn tiếng Việt.
+> Cập nhật lần cuối: 11/05/2026 — Redesign Member Portal theo mẫu FE_Hoivien; QR Check-in được gộp vào dashboard, các tab còn lại giữ luồng dữ liệu thật.
 
 ---
 
@@ -106,7 +106,7 @@ graph TD
 - [x] **Dashboard check-in gần nhất**: Hiển thị dữ liệu thực từ API (đã fix backend trả về `recent_checkins`).
 - [x] **Biểu đồ doanh thu 12 tháng**: Dùng dữ liệu thực từ `/api/revenue?days=365`, không còn mock data.
 - [x] **PT Portal** (`pt-portal.html`): Dashboard, Lịch tập của tôi, Học viên của tôi, Hồ sơ cá nhân.
-- [x] **Member Portal** (`member-portal.html`): Dashboard (gói tập + cảnh báo + PT + lịch sắp tới), Lịch tập, Lịch sử vào/ra, **QR Check-in** (tab mới, tự làm mới mỗi 5 phút), Hồ sơ cá nhân. Bottom tab bar mobile-friendly.
+- [x] **Member Portal** (`member-portal.html`): Dashboard dạng bento theo mẫu FE_Hoivien (gói tập + PT + lịch sắp tới + QR Check-in nhanh tự làm mới), Lịch tập, Lịch sử vào/ra, Hồ sơ cá nhân. Sidebar desktop và bottom tab bar mobile-friendly.
 - [x] **Scan QR** (`scan.html`): Trang standalone cho lễ tân quét QR bằng camera hoặc nhập thủ công, hiển thị thông tin hội viên sau khi check-in.
 - [x] **Redirect theo role** sau login: admin/le_tan → `index.html`, pt → `pt-portal.html`, hoi_vien → `member-portal.html`.
 
