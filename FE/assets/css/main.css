@@ -218,6 +218,14 @@ input[type="date"], input[type="time"] { color-scheme: light; }
 /* ===== AVATAR IMAGE ===== */
 .avatar-img { object-fit: cover; flex-shrink: 0; }
 
+/* ===== QR MODAL ===== */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+#qr-modal-reader video { border-radius: 10px; }
+#qr-modal-reader__scan_region { border-radius: 10px; overflow: hidden; }
+
 /* ===== DARK MODE ===== */
 html.dark { color-scheme: dark; }
 html.dark body { background-color: #111318; color: #dde1e7; }

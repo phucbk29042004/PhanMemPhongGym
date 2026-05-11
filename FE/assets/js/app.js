@@ -409,7 +409,7 @@
     });
 
     document.getElementById('btn-qr-scan')?.addEventListener('click', () => {
-      window.open('scan.html', '_blank');
+      window._openQrModal?.();
     });
 
     const logoutBtn = document.querySelector('button[title="Đăng xuất"]');
@@ -464,5 +464,212 @@
     console.log('Paradise GYM: Ready');
     window.GymApp.navigate('dashboard');
   });
+
+
+  // ===== QR SCAN MODAL =====
+  (function () {
+    let _scanner = null;
+    let _isScanning = false;
+    let _lastScanned = '';
+    let _lastScannedTime = 0;
+
+    function _openQrModal() {
+      const modal = document.getElementById('modal-qr-scan');
+      if (!modal) return;
+      // Reset kết quả cũ mỗi lần mở
+      document.getElementById('qr-modal-result').innerHTML = '';
+      document.getElementById('qr-modal-manual-token').value = '';
+      modal.style.display = 'flex';
+    }
+
+    function _closeQrModal() {
+      _stopScanner();
+      const modal = document.getElementById('modal-qr-scan');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function _startScanner() {
+      if (_isScanning) return;
+      _scanner = new Html5Qrcode('qr-modal-reader');
+      _scanner.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: { width: 220, height: 220 } },
+        (decodedText) => _handleScan(decodedText),
+        () => {}
+      ).then(() => {
+        _isScanning = true;
+        document.getElementById('qr-modal-btn-start').style.display = 'none';
+        document.getElementById('qr-modal-btn-stop').style.display = 'flex';
+      }).catch(err => {
+        _showResultError('Không thể mở camera: ' + err);
+      });
+    }
+
+    function _stopScanner() {
+      if (!_isScanning || !_scanner) return;
+      _scanner.stop().then(() => {
+        _isScanning = false;
+        _scanner = null;
+        const btnStart = document.getElementById('qr-modal-btn-start');
+        const btnStop  = document.getElementById('qr-modal-btn-stop');
+        if (btnStart) btnStart.style.display = 'flex';
+        if (btnStop)  btnStop.style.display  = 'none';
+      }).catch(() => {});
+    }
+
+    async function _handleScan(qrToken) {
+      const now = Date.now();
+      if (qrToken === _lastScanned && now - _lastScannedTime < 3000) return;
+      _lastScanned = qrToken;
+      _lastScannedTime = now;
+
+      _stopScanner();
+      _showLoading();
+
+      try {
+        const res = await window.GymApp.api.post('/checkin/scan', { qr_token: qrToken });
+        if (res?.success) {
+          _showSuccess(res.data, res.message);
+        } else {
+          _showResultError(res?.message || 'Check-in thất bại.');
+        }
+      } catch (e) {
+        _showResultError('Lỗi kết nối máy chủ.');
+      }
+    }
+
+    function _showLoading() {
+      document.getElementById('qr-modal-result').innerHTML = `
+        <div style="background:#fff;border:1px solid #e0e8dc;border-radius:12px;padding:16px;display:flex;align-items:center;gap:12px;">
+          <div style="width:36px;height:36px;border-radius:50%;background:#e8f4fd;display:flex;align-items:center;justify-content:center;">
+            <span class="material-symbols-outlined" style="color:#1565c0;font-size:20px;animation:spin 1s linear infinite">sync</span>
+          </div>
+          <p style="font-weight:700;color:#3f4a3c;font-size:13px">Đang xử lý...</p>
+        </div>`;
+    }
+
+    function _showSuccess(data, message) {
+      const area = document.getElementById('qr-modal-result');
+      area.innerHTML = `
+        <div style="border:2px solid #1D9336;border-radius:12px;overflow:hidden;animation:slideUp 0.25s ease;">
+          <div style="background:#e7f5e9;display:flex;align-items:center;gap:10px;padding:12px 14px;">
+            <span class="material-symbols-outlined" style="color:#1D9336;font-size:28px;font-variation-settings:'FILL' 1">check_circle</span>
+            <div>
+              <p style="font-weight:700;color:#1D9336;font-size:13px">Check-in thành công!</p>
+              <p style="color:#157a2a;font-size:11px">${new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:#fff;">
+            ${data.avatar_url
+              ? `<img src="${data.avatar_url}" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid #1D9336;flex-shrink:0;" />`
+              : `<div style="width:52px;height:52px;border-radius:50%;background:#1D9336;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="color:#fff;font-weight:700;font-size:20px">${(data.ho_ten || '?').charAt(0)}</span></div>`
+            }
+            <div>
+              <p style="font-weight:700;color:#181c20;font-size:14px">${data.ho_ten || '—'}</p>
+              <p style="color:#6e7a6b;font-size:11px">${data.ma_ho_so || ''}</p>
+              <p style="color:#1D9336;font-size:11px;margin-top:2px">Gói tập đến: ${data.ngay_ket_thuc ? new Date(data.ngay_ket_thuc).toLocaleDateString('vi-VN') : '—'}</p>
+            </div>
+          </div>
+          <div style="padding:0 14px 14px;background:#fff;">
+            <button id="qr-modal-btn-next" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border-radius:10px;background:#1D9336;color:#fff;font-weight:700;font-size:12px;border:none;cursor:pointer;">
+              <span class="material-symbols-outlined" style="font-size:15px">qr_code_scanner</span>Quét hội viên tiếp theo
+            </button>
+          </div>
+        </div>`;
+      document.getElementById('qr-modal-btn-next')?.addEventListener('click', () => {
+        document.getElementById('qr-modal-result').innerHTML = '';
+        _startScanner();
+      });
+      // Cập nhật dữ liệu check-in ở trang checkin nếu đang mở
+      if (window.GymApp.currentPage === 'checkin') {
+        window.GymApp.pages['checkin']?._fetchAndRefresh?.();
+      }
+    }
+
+    function _showResultError(msg) {
+      const area = document.getElementById('qr-modal-result');
+      area.innerHTML = `
+        <div style="border:2px solid #ba1a1a;border-radius:12px;overflow:hidden;">
+          <div style="background:#ffdad6;display:flex;align-items:center;gap:10px;padding:12px 14px;">
+            <span class="material-symbols-outlined" style="color:#ba1a1a;font-size:28px;font-variation-settings:'FILL' 1">error</span>
+            <div>
+              <p style="font-weight:700;color:#93000a;font-size:13px">Check-in thất bại</p>
+              <p style="color:#ba1a1a;font-size:11px">${msg}</p>
+            </div>
+          </div>
+          <div style="padding:10px 14px;background:#fff;">
+            <button id="qr-modal-btn-retry" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border-radius:10px;border:1px solid #cdd6ca;background:#fff;color:#3f4a3c;font-weight:700;font-size:12px;cursor:pointer;">
+              <span class="material-symbols-outlined" style="font-size:15px">refresh</span>Quét lại
+            </button>
+          </div>
+        </div>`;
+      document.getElementById('qr-modal-btn-retry')?.addEventListener('click', () => {
+        document.getElementById('qr-modal-result').innerHTML = '';
+        _startScanner();
+      });
+    }
+
+    // Bind sự kiện sau khi DOM ready
+    document.addEventListener('DOMContentLoaded', function () {
+      document.getElementById('btn-close-qr-modal')?.addEventListener('click', _closeQrModal);
+
+      // Click overlay để đóng
+      document.getElementById('modal-qr-scan')?.addEventListener('click', function (e) {
+        if (e.target === this) _closeQrModal();
+      });
+
+      // Phím Escape
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+          const modal = document.getElementById('modal-qr-scan');
+          if (modal && modal.style.display === 'flex') _closeQrModal();
+        }
+      });
+
+      document.getElementById('qr-modal-btn-start')?.addEventListener('click', _startScanner);
+      document.getElementById('qr-modal-btn-stop')?.addEventListener('click', _stopScanner);
+
+      document.getElementById('qr-modal-btn-manual')?.addEventListener('click', () => {
+        const t = document.getElementById('qr-modal-manual-token')?.value?.trim();
+        if (!t) { window.GymApp.toast('Vui lòng dán token QR vào ô nhập.', 'error'); return; }
+        _handleScan(t);
+        document.getElementById('qr-modal-manual-token').value = '';
+      });
+
+      document.getElementById('qr-modal-manual-token')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') document.getElementById('qr-modal-btn-manual')?.click();
+      });
+
+      document.getElementById('qr-modal-input-upload')?.addEventListener('change', async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const statusEl = document.getElementById('qr-modal-upload-status');
+        const labelEl  = document.getElementById('qr-modal-label-upload');
+        statusEl.style.display = 'block';
+        labelEl.style.opacity = '0.5';
+        labelEl.style.pointerEvents = 'none';
+
+        try {
+          const tempScanner = new Html5Qrcode('qr-modal-reader');
+          const decoded = await tempScanner.scanFile(file, false);
+          statusEl.style.display = 'none';
+          labelEl.style.opacity = '';
+          labelEl.style.pointerEvents = '';
+          e.target.value = '';
+          _handleScan(decoded);
+        } catch (err) {
+          statusEl.style.display = 'none';
+          labelEl.style.opacity = '';
+          labelEl.style.pointerEvents = '';
+          e.target.value = '';
+          _showResultError('Không tìm thấy mã QR trong ảnh. Hãy thử ảnh rõ hơn hoặc dùng camera trực tiếp.');
+        }
+      });
+    });
+
+    // Export để btn-qr-scan dùng được
+    window._openQrModal = _openQrModal;
+  })();
 
 })();

@@ -8,11 +8,20 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
-**✅ HOÀN THÀNH Batch 4**: Member Portal & Check-in stats. Stat cards Check-in hiển thị dữ liệu thật (người trong phòng, so sánh hôm qua). Lịch tập Member Portal fetch mới khi vào tab + nút Tải lại. Profile bổ sung CCCD, ngày tham gia, quê quán, địa chỉ đầy đủ. Số ngày còn lại dùng `Math.ceil` (chính xác hơn).
+**✅ Nút Quét QR thành modal**: Nút "Quét QR" trong header admin (`index.html`) giờ mở modal trực tiếp thay vì mở `scan.html` tab mới. Modal đầy đủ: camera scan, upload ảnh, nhập token thủ công, kết quả check-in.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
+
+### 11/05/2026 — Modal Quét QR Check-in (thay thế mở scan.html tab mới)
+- **Loại**: Cải thiện UX (Frontend)
+- **File chỉnh sửa**:
+  - `FE/index.html` — Thêm `#modal-qr-scan` (ẩn mặc định) với đầy đủ UI: camera scanner (`#qr-modal-reader`), upload ảnh QR, nhập token thủ công, vùng kết quả; import CDN `html5-qrcode@2.3.8`
+  - `FE/assets/js/app.js` — Thay `window.open('scan.html', '_blank')` bằng `window._openQrModal()`; thêm IIFE `QR SCAN MODAL` với toàn bộ logic: `_startScanner`, `_stopScanner`, `_handleScan`, `_showSuccess`, `_showResultError`, bind sự kiện (đóng modal, Escape, click overlay, upload ảnh, nhập thủ công); sau check-in thành công tự refresh trang checkin nếu đang mở
+  - `FE/assets/css/main.css` — Thêm `@keyframes spin` và style cho `#qr-modal-reader`
+- **Mô tả**: Trước đây click "Quét QR" mở tab `scan.html` riêng. Đã chuyển sang modal overlay ngay trong trang admin, giữ nguyên toàn bộ luồng và kết quả check-in. `scan.html` đã xóa vì không còn dùng.
+- **Kết quả**: Thành công
 
 ### 11/05/2026 14:24 — Redesign Member Portal theo mẫu FE_Hoivien
 - **Loại**: Chỉnh sửa giao diện (Frontend)
