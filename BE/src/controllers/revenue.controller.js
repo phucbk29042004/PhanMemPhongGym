@@ -128,5 +128,17 @@ export const getDashboard = (req, res) => {
     `).get(today),
   };
 
+  // Check-in gần nhất hôm nay (tối đa 8 lượt)
+  stats.recent_checkins = db.prepare(`
+    SELECT lv.id, lv.thoi_diem, lv.loai,
+           h.ma_ho_so, h.ho_ten, h.avatar_url,
+           strftime('%H:%M', lv.thoi_diem) AS gio_hien_thi
+    FROM luot_vao_ra lv
+    LEFT JOIN ho_so h ON h.id = lv.ho_so_id
+    WHERE date(lv.thoi_diem) = ? AND lv.loai = 'vao'
+    ORDER BY lv.thoi_diem DESC
+    LIMIT 8
+  `).all(today);
+
   return success(res, stats);
 };

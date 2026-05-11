@@ -14,6 +14,23 @@
 
 ## 📋 Danh Sách Thay Đổi
 
+### 11/05/2026 — Fix nút Sửa/Xóa hội viên + hiệu ứng nút Làm mới Dashboard
+- **Loại**: Sửa bug + Thêm tính năng (Frontend)
+- **File chỉnh sửa**:
+  - `FE/assets/js/pages/members-list.js` — Thêm `data-id`/class cho nút Sửa/Xóa, bind event, thêm `_showEditModal()` (modal chỉnh sửa inline), `_confirmDeleteMember()` (confirm dialog trước khi xóa)
+  - `FE/assets/js/pages/dashboard.js` — Đổi nút Làm mới thành có id, tách `_fetchAndRender()`, thêm hiệu ứng xoay icon + disable + text "Đang tải..." khi fetch
+- **Mô tả**: Nút Sửa/Xóa trên card hội viên trước đây không có `data-id` và không có event listener nên click không làm gì. Đã fix và thêm modal sửa thông tin (họ tên, SĐT, email, ngày sinh, giới tính, địa chỉ, ghi chú) + confirm dialog xóa. Nút Làm mới dashboard thêm hoạt ảnh xoay icon khi đang tải.
+- **Kết quả**: Thành công
+
+### 11/05/2026 — Fix Dashboard "Check-in gần nhất" + Biểu đồ doanh thu thật + Xóa mock code
+- **Loại**: Sửa bug + Refactor (Backend + Frontend)
+- **File chỉnh sửa**:
+  - `BE/src/controllers/revenue.controller.js` — Thêm query `recent_checkins` (8 lượt vào hôm nay) vào `/api/revenue/dashboard`
+  - `FE/assets/js/pages/dashboard.js` — Sửa parse giờ dùng `gio_hien_thi`, fetch `/revenue?days=365` song song, gộp theo tháng thay mock data
+  - `FE/assets/js/pages/members-list.js` — Xóa `_mockPkgHistory`, `_getPackagePrice`, `_getMemberPackageHistory` (dead code)
+  - `FE/assets/js/pages/packages.js` — Implement đầy đủ CRUD gói tập (modal Thêm/Sửa/Xóa)
+- **Kết quả**: Thành công
+
 ### 09/05/2026 — Bổ sung upload ảnh QR và hướng dẫn sử dụng trong scan.html
 - **Loại**: Chỉnh sửa (Frontend)
 - **File chỉnh sửa**: `FE/scan.html`

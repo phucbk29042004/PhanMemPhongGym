@@ -199,10 +199,10 @@ window.GymApp.pages['members-list'] = {
               <button class="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-container text-on-surface-variant hover:bg-brand-primary hover:text-white transition-all member-view-btn" data-id="${m.id}" title="Xem chi tiết">
                 <span class="material-symbols-outlined text-lg">visibility</span>
               </button>
-              <button class="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-container text-on-surface-variant hover:bg-brand-primary hover:text-white transition-all" title="Sửa">
+              <button class="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-container text-on-surface-variant hover:bg-brand-primary hover:text-white transition-all member-edit-btn" data-id="${m.id}" title="Chỉnh sửa">
                 <span class="material-symbols-outlined text-lg">edit</span>
               </button>
-              <button class="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-container text-on-surface-variant hover:bg-error hover:text-white transition-all" title="Xóa">
+              <button class="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-container text-on-surface-variant hover:bg-error hover:text-white transition-all member-delete-btn" data-id="${m.id}" data-name="${m.ho_ten || 'hội viên này'}" title="Xóa">
                 <span class="material-symbols-outlined text-lg">delete</span>
               </button>
             </div>
@@ -394,39 +394,6 @@ window.GymApp.pages['members-list'] = {
     overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
     const escH = e => { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', escH); } };
     document.addEventListener('keydown', escH);
-  },
-
-  _mockPkgHistory: function (m) {
-    return [
-      {
-        id: `${m.id}-current`,
-        name: m.ten_goi_tap || m.package || '—',
-        price: this._getPackagePrice(m.ten_goi_tap || m.package) || 0,
-        from: m.ngay_bat_dau || m.joinDate,
-        to: m.ngay_het_han || m.expireDate,
-        status: (m.trang_thai === 'active' || m.trang_thai === 'dang_hoat_dong') ? 'Đã thanh toán' : 'Hết hạn',
-        note: 'Gói hiện tại',
-      },
-      {
-        id: `${m.id}-previous`,
-        name: 'Gói 1 tháng',
-        price: this._getPackagePrice('Gói 1 tháng') || 300000,
-        from: '2024-01-01',
-        to: '2024-01-31',
-        status: 'Đã thanh toán',
-        note: 'Gói trước đó',
-      },
-    ];
-  },
-
-  _getPackagePrice: function (packageName) {
-    const pkg = (window.GymApp.data.packages || []).find(p => (p.ten_goi || p.name) === packageName);
-    return pkg ? (pkg.gia || pkg.price) : 0;
-  },
-
-  _getMemberPackageHistory: function (m) {
-    const added = this._memberPackageHistory[m.id] || [];
-    return [...added, ...this._mockPkgHistory(m)].sort((a, b) => new Date(b.from) - new Date(a.from));
   },
 
   _getUpcomingPackages: function (m) {
@@ -1694,12 +1661,189 @@ window.GymApp.pages['members-list'] = {
     document.querySelectorAll('.member-name-link, .member-view-btn').forEach(el => {
       el.addEventListener('click', () => self._showMemberModal(el.dataset.id));
     });
+    document.querySelectorAll('.member-edit-btn').forEach(el => {
+      el.addEventListener('click', () => self._showEditModal(el.dataset.id));
+    });
+    document.querySelectorAll('.member-delete-btn').forEach(el => {
+      el.addEventListener('click', () => self._confirmDeleteMember(el.dataset.id, el.dataset.name));
+    });
   },
 
   _bindPtCardEvents: function () {
     const self = this;
     document.querySelectorAll('.pt-view-btn').forEach(el => {
       el.addEventListener('click', () => self._showPtModal(el.dataset.id));
+    });
+  },
+
+  _showEditModal: async function (id) {
+    const self = this;
+    // Lấy thông tin mới nhất từ API
+    let m = null;
+    try {
+      const res = await window.GymApp.api.get(`/members/${id}`);
+      m = res?.data || null;
+    } catch (_) {}
+    if (!m) {
+      m = (window.GymApp.data.members || []).find(x => x.id == id);
+    }
+    if (!m) { window.GymApp.toast('Không tìm thấy thông tin hội viên!', 'error'); return; }
+
+    document.getElementById('gym-edit-member-modal')?.remove();
+    const overlay = document.createElement('div');
+    overlay.id = 'gym-edit-member-modal';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);backdrop-filter:blur(3px);padding:16px;';
+
+    const field = (label, id, type, value, required = false) => `
+      <div>
+        <label class="text-on-surface-variant text-body-sm font-bold block mb-xs">${label}${required ? ' <span class="text-error">*</span>' : ''}</label>
+        <input id="em-${id}" type="${type}" value="${value || ''}" class="w-full bg-surface-container border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none text-body-md transition-colors" />
+      </div>
+    `;
+
+    overlay.innerHTML = `
+      <div style="border-radius:16px;width:100%;max-width:520px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 25px 60px rgba(0,0,0,0.3);">
+        <div class="bg-surface-container-lowest px-loose py-standard border-b border-outline-variant flex items-center justify-between flex-shrink-0">
+          <div class="flex items-center gap-compact">
+            ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'sm')}
+            <div>
+              <h3 class="font-bold text-on-surface" style="font-size:17px">Chỉnh sửa hội viên</h3>
+              <p class="text-on-surface-variant text-body-sm">${m.ma_ho_so || ''}</p>
+            </div>
+          </div>
+          <button id="close-edit-member" style="background:transparent;border:none;cursor:pointer;">
+            <span class="material-symbols-outlined text-on-surface-variant text-xl">close</span>
+          </button>
+        </div>
+        <div class="bg-surface-container-lowest overflow-y-auto flex-1 p-loose flex flex-col gap-standard">
+          ${field('Họ và tên', 'ho_ten', 'text', m.ho_ten, true)}
+          ${field('Số điện thoại', 'so_dien_thoai', 'tel', m.so_dien_thoai)}
+          ${field('Email', 'email', 'email', m.email)}
+          ${field('Ngày sinh', 'ngay_sinh', 'date', m.ngay_sinh)}
+          <div>
+            <label class="text-on-surface-variant text-body-sm font-bold block mb-xs">Giới tính</label>
+            <select id="em-gioi_tinh" class="w-full bg-surface-container border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none text-body-md transition-colors">
+              <option value="">— Chọn giới tính —</option>
+              <option value="Nam" ${m.gioi_tinh === 'Nam' ? 'selected' : ''}>Nam</option>
+              <option value="Nữ" ${m.gioi_tinh === 'Nữ' ? 'selected' : ''}>Nữ</option>
+              <option value="Khác" ${m.gioi_tinh === 'Khác' ? 'selected' : ''}>Khác</option>
+            </select>
+          </div>
+          ${field('Địa chỉ', 'dia_chi_tam_tru', 'text', m.dia_chi_tam_tru)}
+          <div>
+            <label class="text-on-surface-variant text-body-sm font-bold block mb-xs">Ghi chú</label>
+            <textarea id="em-ghi_chu" rows="2" class="w-full bg-surface-container border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none text-body-md resize-none transition-colors">${m.ghi_chu || ''}</textarea>
+          </div>
+        </div>
+        <div class="bg-surface-container-lowest px-loose py-standard border-t border-outline-variant flex gap-standard justify-end flex-shrink-0">
+          <button id="cancel-edit-member" class="px-loose py-compact rounded-xl font-bold text-body-sm border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-all">Hủy</button>
+          <button id="save-edit-member" class="bg-brand-primary text-white px-loose py-compact rounded-xl font-bold text-body-sm hover:bg-primary-container transition-all flex items-center gap-xs">
+            <span class="material-symbols-outlined text-sm">save</span>Lưu thay đổi
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const close = () => overlay.remove();
+    document.getElementById('close-edit-member').addEventListener('click', close);
+    document.getElementById('cancel-edit-member').addEventListener('click', close);
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+    document.getElementById('save-edit-member').addEventListener('click', async () => {
+      const hoTen = document.getElementById('em-ho_ten').value.trim();
+      if (!hoTen) { window.GymApp.toast('Họ tên không được để trống!', 'error'); return; }
+
+      const btn = document.getElementById('save-edit-member');
+      btn.disabled = true; btn.classList.add('opacity-50');
+
+      try {
+        const body = {
+          ho_ten: hoTen,
+          so_dien_thoai: document.getElementById('em-so_dien_thoai').value.trim() || null,
+          email: document.getElementById('em-email').value.trim() || null,
+          ngay_sinh: document.getElementById('em-ngay_sinh').value || null,
+          gioi_tinh: document.getElementById('em-gioi_tinh').value || null,
+          dia_chi_tam_tru: document.getElementById('em-dia_chi_tam_tru').value.trim() || null,
+          ghi_chu: document.getElementById('em-ghi_chu').value.trim() || null,
+        };
+        const res = await window.GymApp.api.put(`/members/${id}`, body);
+        if (res?.success) {
+          window.GymApp.toast('Đã cập nhật thông tin hội viên!', 'success');
+          close();
+          // Cập nhật lại dữ liệu local
+          const membersRes = await window.GymApp.api.get('/members');
+          if (membersRes?.success) window.GymApp.data.members = membersRes.data || [];
+          self._memberFiltered = [...(window.GymApp.data.members || [])];
+          self._refreshMemberTable();
+        } else {
+          window.GymApp.toast(res?.message || 'Có lỗi xảy ra!', 'error');
+          btn.disabled = false; btn.classList.remove('opacity-50');
+        }
+      } catch (err) {
+        window.GymApp.toast('Lỗi kết nối máy chủ!', 'error');
+        btn.disabled = false; btn.classList.remove('opacity-50');
+      }
+    });
+  },
+
+  _confirmDeleteMember: function (id, name) {
+    const self = this;
+    document.getElementById('gym-del-member-modal')?.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'gym-del-member-modal';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9001;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);backdrop-filter:blur(3px);padding:16px;';
+    overlay.innerHTML = `
+      <div style="border-radius:16px;width:100%;max-width:400px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,0.3);" class="bg-surface-container-lowest">
+        <div class="px-loose py-standard border-b border-outline-variant flex items-center gap-compact">
+          <div class="w-10 h-10 rounded-xl bg-error/10 flex items-center justify-center flex-shrink-0">
+            <span class="material-symbols-outlined text-error text-xl" style="font-variation-settings:'FILL' 1">person_remove</span>
+          </div>
+          <h3 class="font-bold text-on-surface" style="font-size:17px">Xác nhận xóa hội viên</h3>
+        </div>
+        <div class="p-loose flex flex-col gap-standard">
+          <p class="text-on-surface text-body-md">Bạn có chắc chắn muốn xóa hội viên <strong class="text-error">${name}</strong> không?</p>
+          <p class="text-on-surface-variant text-body-sm bg-surface-container rounded-xl px-standard py-compact border border-outline-variant">
+            <span class="material-symbols-outlined text-sm align-middle text-[#e65100]">warning</span>
+            Hành động này không thể hoàn tác. Toàn bộ dữ liệu liên quan đến hội viên sẽ bị ẩn khỏi hệ thống.
+          </p>
+          <div class="flex gap-standard justify-end pt-xs">
+            <button id="cancel-del-member" class="px-loose py-compact rounded-xl font-bold text-body-sm border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-all">Hủy bỏ</button>
+            <button id="confirm-del-member" class="bg-error text-white px-loose py-compact rounded-xl font-bold text-body-sm hover:opacity-80 transition-all flex items-center gap-xs">
+              <span class="material-symbols-outlined text-sm">delete</span>Xóa hội viên
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const close = () => overlay.remove();
+    document.getElementById('cancel-del-member').addEventListener('click', close);
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+    document.getElementById('confirm-del-member').addEventListener('click', async () => {
+      const btn = document.getElementById('confirm-del-member');
+      btn.disabled = true; btn.classList.add('opacity-50');
+      try {
+        const res = await window.GymApp.api.delete(`/members/${id}`);
+        if (res?.success) {
+          window.GymApp.toast(`Đã xóa hội viên ${name}!`, 'success');
+          close();
+          const membersRes = await window.GymApp.api.get('/members');
+          if (membersRes?.success) window.GymApp.data.members = membersRes.data || [];
+          self._memberFiltered = [...(window.GymApp.data.members || [])];
+          self._refreshMemberTable();
+        } else {
+          window.GymApp.toast(res?.message || 'Có lỗi xảy ra!', 'error');
+          btn.disabled = false; btn.classList.remove('opacity-50');
+        }
+      } catch (err) {
+        window.GymApp.toast('Lỗi kết nối máy chủ!', 'error');
+        btn.disabled = false; btn.classList.remove('opacity-50');
+      }
     });
   },
 

@@ -14,7 +14,7 @@ window.GymApp.pages['dashboard'] = {
       id: c.id,
       memberId: c.ma_ho_so,
       name: c.ho_ten,
-      time: new Date(c.thoi_diem).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+      time: c.gio_hien_thi || c.thoi_diem.substring(11, 16),
       avatar: c.avatar_url
     }));
 
@@ -38,8 +38,9 @@ window.GymApp.pages['dashboard'] = {
             </p>
           </div>
           <div class="flex items-center gap-compact">
-             <button class="bg-brand-primary/10 text-brand-primary px-loose py-compact rounded-full font-bold text-body-sm hover:bg-brand-primary/20 transition-all flex items-center gap-xs" onclick="window.GymApp.fetchInitialData()">
-                <span class="material-symbols-outlined text-lg">refresh</span> Làm mới
+             <button id="btn-dashboard-refresh" class="bg-brand-primary/10 text-brand-primary px-loose py-compact rounded-full font-bold text-body-sm hover:bg-brand-primary/20 transition-all flex items-center gap-xs">
+                <span id="dashboard-refresh-icon" class="material-symbols-outlined text-lg" style="transition:transform 0.6s ease">refresh</span>
+                <span id="dashboard-refresh-text">Làm mới</span>
              </button>
           </div>
         </div>
@@ -207,19 +208,52 @@ window.GymApp.pages['dashboard'] = {
   },
 
   init: async function () {
+    const self = this;
+    await self._fetchAndRender();
+
+    // Bind nút Làm mới với hiệu ứng xoay icon
+    document.getElementById('btn-dashboard-refresh')?.addEventListener('click', async () => {
+      const btn = document.getElementById('btn-dashboard-refresh');
+      const icon = document.getElementById('dashboard-refresh-icon');
+      const text = document.getElementById('dashboard-refresh-text');
+      if (!btn || btn.disabled) return;
+
+      // Bắt đầu loading
+      btn.disabled = true;
+      btn.classList.add('opacity-70', 'cursor-not-allowed');
+      if (text) text.textContent = 'Đang tải...';
+      let angle = 0;
+      const spin = setInterval(() => {
+        angle += 30;
+        if (icon) icon.style.transform = `rotate(${angle}deg)`;
+      }, 50);
+
+      await self._fetchAndRender();
+
+      // Dừng loading
+      clearInterval(spin);
+      if (icon) icon.style.transform = 'rotate(0deg)';
+      if (text) text.textContent = 'Làm mới';
+      btn.disabled = false;
+      btn.classList.remove('opacity-70', 'cursor-not-allowed');
+      window.GymApp.toast('Đã cập nhật dữ liệu!', 'success');
+    });
+  },
+
+  _fetchAndRender: async function () {
     try {
-      const res = await window.GymApp.api.get('/revenue/dashboard');
-      if (res && res.success) {
-        window.GymApp.data.stats = res.data;
-        const contentArea = document.getElementById('content-area');
-        if (contentArea && window.GymApp.currentPage === 'dashboard') {
-          contentArea.innerHTML = this.render();
-          this._initCharts();
-          return;
-        }
-      }
+      const [statsRes, revRes] = await Promise.all([
+        window.GymApp.api.get('/revenue/dashboard'),
+        window.GymApp.api.get('/revenue?days=365'),
+      ]);
+      if (statsRes && statsRes.success) window.GymApp.data.stats = statsRes.data;
+      if (revRes && revRes.success) window.GymApp.data.revenueDaily = revRes.data.daily || [];
     } catch (err) {
       console.error('Failed to fetch dashboard stats', err);
+    }
+    const contentArea = document.getElementById('content-area');
+    if (contentArea && window.GymApp.currentPage === 'dashboard') {
+      contentArea.innerHTML = this.render();
     }
     this._initCharts();
   },
@@ -230,13 +264,23 @@ window.GymApp.pages['dashboard'] = {
 
     const ctxRev = document.getElementById('chart-revenue');
     if (ctxRev) {
+      // Gộp doanh thu theo tháng từ daily data (365 ngày)
+      const monthlyMap = {};
+      for (let m = 1; m <= 12; m++) monthlyMap[m] = 0;
+      (window.GymApp.data.revenueDaily || []).forEach(d => {
+        const month = parseInt(d.ngay.split('-')[1]);
+        monthlyMap[month] = (monthlyMap[month] || 0) + (d.tong_tien || 0);
+      });
+      const monthLabels = ['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'];
+      const monthData = Object.values(monthlyMap).map(v => Math.round(v / 1_000_000));
+
       window.GymApp._activeChart = new Chart(ctxRev, {
         type: 'bar',
         data: {
-          labels: ['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'],
+          labels: monthLabels,
           datasets: [{
             label: 'Doanh thu',
-            data: [12, 18, 21, 17, 23, 26, 19, 28, 31, 27, 32, 29],
+            data: monthData,
             backgroundColor: 'rgba(29,147,54,0.15)',
             borderColor: '#1D9336',
             borderWidth: 2,

@@ -1,6 +1,6 @@
 # 🏛️ Kiến Trúc Hệ Thống — Paradise GYM
 
-> Cập nhật lần cuối: 09/05/2026 — Thêm QR Check-in (endpoint, scan.html, member portal tab, cron job 22:00, hoàn tác buổi tập).
+> Cập nhật lần cuối: 11/05/2026 — Fix nút Sửa/Xóa hội viên (modal inline + confirm dialog), hiệu ứng nút Làm mới Dashboard, dashboard check-in gần nhất thật, biểu đồ doanh thu thật, CRUD gói tập hoàn chỉnh.
 
 ---
 
@@ -100,6 +100,11 @@ graph TD
 - [x] Bảng dữ liệu hỗ trợ Tìm kiếm không nháy (No-flicker).
 - [x] Màn Đăng ký lịch tập PT có layout 7:3, card hai bên bằng chiều cao và phân trang danh sách lịch đã đặt.
 - [x] 6 màn hình chức năng chính (Dashboard, Members, Checkin, Expired, PT, Packages).
+- [x] **Nút Sửa/Xóa trên card hội viên**: Modal chỉnh sửa thông tin inline (không redirect), confirm dialog xác nhận trước khi xóa.
+- [x] **Nút Làm mới Dashboard**: Hiệu ứng xoay icon + disable nút + đổi text "Đang tải..." trong lúc fetch.
+- [x] **CRUD Gói tập** (`packages.js`): Modal Thêm/Sửa/Xóa gói tập hoàn chỉnh, kết nối API.
+- [x] **Dashboard check-in gần nhất**: Hiển thị dữ liệu thực từ API (đã fix backend trả về `recent_checkins`).
+- [x] **Biểu đồ doanh thu 12 tháng**: Dùng dữ liệu thực từ `/api/revenue?days=365`, không còn mock data.
 - [x] **PT Portal** (`pt-portal.html`): Dashboard, Lịch tập của tôi, Học viên của tôi, Hồ sơ cá nhân.
 - [x] **Member Portal** (`member-portal.html`): Dashboard (gói tập + cảnh báo + PT + lịch sắp tới), Lịch tập, Lịch sử vào/ra, **QR Check-in** (tab mới, tự làm mới mỗi 5 phút), Hồ sơ cá nhân. Bottom tab bar mobile-friendly.
 - [x] **Scan QR** (`scan.html`): Trang standalone cho lễ tân quét QR bằng camera hoặc nhập thủ công, hiển thị thông tin hội viên sau khi check-in.
