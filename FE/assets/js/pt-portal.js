@@ -173,11 +173,11 @@
             </div>
             <div class="p-loose">
               ${todaySchedules.length === 0
-                ? `<div class="py-margin text-center text-on-surface-variant">
+          ? `<div class="py-margin text-center text-on-surface-variant">
                      <span class="material-symbols-outlined text-4xl text-outline block mb-standard">event_available</span>
                      <p class="font-bold">Không có lịch tập hôm nay</p>
                    </div>`
-                : `<div class="flex flex-col gap-standard">
+          : `<div class="flex flex-col gap-standard">
                     ${todaySchedules.map(s => `
                       <div class="flex items-center gap-compact p-standard rounded-xl bg-surface-container border border-outline-variant">
                         ${window.GymApp.avatarImg(s.avatar_hoi_vien, s.ten_hoi_vien, 'sm')}
@@ -189,7 +189,7 @@
                       </div>
                     `).join('')}
                    </div>`
-              }
+        }
             </div>
           </div>
 
@@ -204,11 +204,11 @@
             </div>
             <div class="p-loose grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-loose">
               ${students.length === 0
-                ? `<div class="col-span-4 py-margin text-center text-on-surface-variant">
+          ? `<div class="col-span-4 py-margin text-center text-on-surface-variant">
                      <span class="material-symbols-outlined text-4xl text-outline block mb-standard">person_off</span>
                      Chưa có học viên
                    </div>`
-                : students.map(sv => `
+          : students.map(sv => `
                     <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-loose shadow-sm flex flex-col items-center gap-standard">
                       ${window.GymApp.avatarImg(sv.avatar, sv.ten, 'lg')}
                       <div class="text-center">
@@ -217,13 +217,13 @@
                       </div>
                     </div>
                   `).join('')
-              }
+        }
             </div>
           </div>
         </div>
       `;
     },
-    init() {}
+    init() { }
   };
 
   // ── Lịch tập của tôi ──────────────────────────────────────
@@ -289,6 +289,7 @@
                 <th>Loại buổi</th>
                 <th>Trạng thái</th>
                 <th>Ghi chú</th>
+                <th class="text-center">Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -305,6 +306,19 @@
                   <td><span class="bg-surface-container px-compact py-xs rounded-full text-body-sm text-on-surface-variant font-bold">${s.loai_buoi === 'nhom' ? 'Nhóm' : 'Cá nhân'}</span></td>
                   <td>${window.GymApp.statusBadge(s.trang_thai)}</td>
                   <td class="text-on-surface-variant text-body-sm max-w-[160px] truncate">${s.ghi_chu || '—'}</td>
+                  <td class="text-center">
+                    ${s.trang_thai === 'cho_tap'
+          ? `<button
+                            class="btn-confirm-session inline-flex items-center gap-xs px-standard py-xs rounded-xl bg-brand-primary text-white font-bold text-body-sm hover:bg-brand-primary/80 active:scale-95 transition-all shadow-sm whitespace-nowrap"
+                            data-id="${s.id}"
+                            data-name="${s.ten_hoi_vien || 'học viên'}"
+                          >
+                            <span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL' 1"></span>
+                            Xác nhận đã tập
+                          </button>`
+          : `<span class="text-outline text-body-sm">—</span>`
+        }
+                  </td>
                 </tr>
               `).join('')}
             </tbody>
@@ -341,6 +355,43 @@
         self._applyFilter();
         window.GymApp.toast('Đã tải lại lịch tập!', 'success');
       });
+
+      // Xác nhận buổi tập — event delegation
+      document.getElementById('schedule-table-wrap')?.addEventListener('click', async (e) => {
+        const btn = e.target.closest('.btn-confirm-session');
+        if (!btn || btn.disabled) return;
+
+        const scheduleId = btn.dataset.id;
+        const studentName = btn.dataset.name;
+
+        if (!confirm(`Xác nhận buổi tập với ${studentName} đã hoàn thành?\n(Buổi này sẽ được trừ từ gói PT.)`)) return;
+
+        // Hiện trạng thái loading trên nút
+        btn.disabled = true;
+        btn.innerHTML = `<span class="material-symbols-outlined text-sm animate-spin">autorenew</span> Đang xử lý...`;
+
+        try {
+          const res = await window.GymApp.api.put(`/pt/schedules/${scheduleId}/confirm`, {});
+          if (res?.success) {
+            // Cập nhật dữ liệu cục bộ ngay không cần reload toàn bộ
+            window.GymApp.toast(`✅ Đã xác nhận buổi tập với ${studentName}!`, 'success');
+
+            // Reload lại dữ liệu từ server rồi render lại bảng
+            const fresh = await window.GymApp.api.get('/pt/schedules');
+            if (fresh?.success) window.GymApp.data.ptSchedules = fresh.data || [];
+            self._applyFilter();
+          } else {
+            window.GymApp.toast(res?.message || 'Xác nhận thất bại!', 'error');
+            btn.disabled = false;
+            btn.innerHTML = `<span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL' 1">check_circle</span> Xác nhận đã tập`;
+          }
+        } catch (err) {
+          console.error(err);
+          window.GymApp.toast('Lỗi kết nối, vui lòng thử lại.', 'error');
+          btn.disabled = false;
+          btn.innerHTML = `<span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL' 1">check_circle</span> Xác nhận đã tập`;
+        }
+      });
     }
   };
 
@@ -371,11 +422,11 @@
           </div>
 
           ${students.length === 0
-            ? `<div class="bg-surface-container-lowest rounded-2xl border border-outline-variant p-margin text-center text-on-surface-variant">
+          ? `<div class="bg-surface-container-lowest rounded-2xl border border-outline-variant p-margin text-center text-on-surface-variant">
                  <span class="material-symbols-outlined text-4xl text-outline block mb-standard">person_off</span>
                  <p class="font-bold">Chưa có học viên nào</p>
                </div>`
-            : `<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-loose">
+          : `<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-loose">
                 ${students.map(sv => `
                   <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-loose shadow-sm flex flex-col items-center gap-standard">
                     ${window.GymApp.avatarImg(sv.avatar, sv.ten, 'lg')}
@@ -395,11 +446,11 @@
                   </div>
                 `).join('')}
               </div>`
-          }
+        }
         </div>
       `;
     },
-    init() {}
+    init() { }
   };
 
   // ── Hồ sơ cá nhân ─────────────────────────────────────────
@@ -429,9 +480,9 @@
             <div class="section-header px-loose py-loose border-b border-outline-variant flex items-center gap-loose">
               <div style="width:72px;height:72px;border-radius:50%;overflow:hidden;flex-shrink:0;border:3px solid #1D9336;">
                 ${u.avatar_url
-                  ? `<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover;" />`
-                  : window.GymApp.avatarInitials(u.ho_ten, 'lg')
-                }
+          ? `<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover;" />`
+          : window.GymApp.avatarInitials(u.ho_ten, 'lg')
+        }
               </div>
               <div>
                 <p class="font-bold text-on-surface text-display-2xl">${u.ho_ten || '—'}</p>

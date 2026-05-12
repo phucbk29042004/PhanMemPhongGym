@@ -115,15 +115,15 @@ export const getDashboard = (req, res) => {
     // Lượt vào ra hôm nay
     luot_vao_ra_hom_nay: db.prepare(`
       SELECT COUNT(*) AS tong_luot,
-             SUM(CASE WHEN loai = 'vao' THEN 1 ELSE 0 END) AS luot_vao
+             COALESCE(SUM(CASE WHEN loai = 'vao' THEN 1 ELSE 0 END), 0) AS luot_vao
       FROM luot_vao_ra WHERE date(thoi_diem) = ?
     `).get(today),
 
     // Lịch tập hôm nay
     lich_tap_hom_nay: db.prepare(`
       SELECT COUNT(*) AS tong,
-             SUM(CASE WHEN trang_thai = 'cho_tap' THEN 1 ELSE 0 END) AS cho_tap,
-             SUM(CASE WHEN trang_thai = 'da_tap' THEN 1 ELSE 0 END) AS da_tap
+             COALESCE(SUM(CASE WHEN trang_thai = 'cho_tap' THEN 1 ELSE 0 END), 0) AS cho_tap,
+             COALESCE(SUM(CASE WHEN trang_thai = 'da_tap' THEN 1 ELSE 0 END), 0) AS da_tap
       FROM lich_tap WHERE ngay_tap = ?
     `).get(today),
   };

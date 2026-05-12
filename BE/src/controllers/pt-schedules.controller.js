@@ -91,16 +91,24 @@ export const createSchedule = (req, res) => {
 };
 
 // ── PUT /api/pt/schedules/:id/confirm ────────────────────
-// Xác nhận buổi đã tập (chỉ admin/lễ tân)
+// Xác nhận buổi đã tập (admin/lễ tân hoặc PT tự xác nhận lịch của mình)
 export const confirmSchedule = (req, res) => {
   const { id } = req.params;
   const schedule = db.prepare('SELECT * FROM lich_tap WHERE id = ?').get(id);
   if (!schedule) return error(res, 'Không tìm thấy lịch tập.', 404);
   if (schedule.trang_thai !== 'cho_tap') return error(res, `Buổi tập đang ở trạng thái: ${schedule.trang_thai}. Chỉ xác nhận được buổi "cho_tap".`, 400);
 
+  // Nếu là PT: chỉ được xác nhận lịch của chính mình
+  if (req.user.vai_tro === 'pt') {
+    const hoSoPt = db.prepare('SELECT id FROM ho_so WHERE tai_khoan_id = ?').get(req.user.id);
+    if (!hoSoPt || schedule.pt_id !== hoSoPt.id) {
+      return error(res, 'Bạn chỉ có thể xác nhận buổi tập do chính mình phụ trách.', 403);
+    }
+  }
+
   // Trigger trg_xac_nhan_buoi_tap sẽ tự động tăng so_buoi_da_tap
   db.prepare(`
-    UPDATE lich_tap SET trang_thai = 'da_tap', confirmed_by_id = ? WHERE id = ?
+    UPDATE lich_tap SET trang_thai = 'da_tap', confirmed_by_id = ?, ngay_xac_nhan = datetime('now','localtime') WHERE id = ?
   `).run(req.user.id, id);
 
   ghi_audit_log(req, 'UPDATE', 'lich_tap', parseInt(id), { trang_thai: 'cho_tap' }, { trang_thai: 'da_tap' }, 'Xác nhận buổi tập đã hoàn thành');

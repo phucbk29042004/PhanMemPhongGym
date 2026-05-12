@@ -19,9 +19,9 @@ window.GymApp.pages['dashboard'] = {
     }));
 
     const stats = [
-      { icon: 'people', label: 'Tổng hội viên', value: dbData.hoi_vien.tong, sub: `${dbData.hoi_vien.con_han} đang hoạt động`, iconBg: 'icon-bg-green', color: 'text-brand-primary' },
-      { icon: 'how_to_reg', label: 'Check-in hôm nay', value: dbData.luot_vao_ra_hom_nay.luot_vao, sub: 'Lượt vào tập', iconBg: 'icon-bg-green', color: 'text-brand-primary' },
-      { icon: 'warning_amber', label: 'Sắp hết hạn', value: dbData.hoi_vien.sap_het_han, sub: 'Cần gia hạn sớm', iconBg: 'icon-bg-orange', color: 'text-[#e65100]' },
+      { icon: 'people', label: 'Tổng hội viên', value: dbData.hoi_vien?.tong || 0, sub: `${dbData.hoi_vien?.con_han || 0} đang hoạt động`, iconBg: 'icon-bg-green', color: 'text-brand-primary' },
+      { icon: 'how_to_reg', label: 'Check-in hôm nay', value: dbData.luot_vao_ra_hom_nay?.luot_vao || 0, sub: 'Lượt vào tập', iconBg: 'icon-bg-green', color: 'text-brand-primary' },
+      { icon: 'warning_amber', label: 'Sắp hết hạn', value: dbData.hoi_vien?.sap_het_han || 0, sub: 'Cần gia hạn sớm', iconBg: 'icon-bg-orange', color: 'text-[#e65100]' },
       { icon: 'payments', label: 'Doanh thu hôm nay', value: window.GymApp.formatCurrency(dbData.doanh_thu_hom_nay?.tong_tien || 0), sub: `${dbData.doanh_thu_hom_nay?.tong_don || 0} giao dịch`, iconBg: 'icon-bg-green', color: 'text-brand-primary' },
     ];
 
@@ -193,8 +193,8 @@ window.GymApp.pages['dashboard'] = {
             <div>
               <p class="text-on-surface-variant text-body-sm font-bold uppercase tracking-wider leading-tight">Lịch tập hôm nay</p>
               <div class="flex items-baseline gap-xs mt-xs">
-                <p class="text-3xl font-bold text-on-surface tracking-tight">${dbData.lich_tap_hom_nay.tong}</p>
-                <p class="text-on-surface-variant text-body-sm font-medium">buổi <span class="text-brand-primary">(${dbData.lich_tap_hom_nay.da_tap} hoàn thành)</span></p>
+                <p class="text-3xl font-bold text-on-surface tracking-tight">${dbData.lich_tap_hom_nay?.tong || 0}</p>
+                <p class="text-on-surface-variant text-body-sm font-medium">buổi <span class="text-brand-primary">(${dbData.lich_tap_hom_nay?.da_tap || 0} hoàn thành)</span></p>
               </div>
             </div>
             <div class="ml-auto opacity-20 group-hover:opacity-40 transition-opacity">
