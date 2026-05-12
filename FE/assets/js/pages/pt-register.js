@@ -2,7 +2,7 @@ window.GymApp.pages['pt-register'] = {
   _selectedPT: null,
   _selectedMember: null,
   _bookingPage: 1,
-  _bookingPerPage: 3,
+  _bookingPerPage: 5,
 
   render: function () {
     const pts = Array.isArray(window.GymApp.data.pts) ? window.GymApp.data.pts : [];
@@ -146,7 +146,12 @@ window.GymApp.pages['pt-register'] = {
   _getAllBookings: function () {
     const schedules = Array.isArray(window.GymApp.data.ptSchedules) ? window.GymApp.data.ptSchedules : [];
     const bookings = Array.isArray(window.GymApp.data.ptBookings) ? window.GymApp.data.ptBookings : [];
-    return [...schedules, ...bookings];
+    const all = [...schedules, ...bookings];
+    // Sắp xếp mới nhất lên đầu (ngay_tap DESC, gio_bat_dau DESC)
+    return all.sort((a, b) => {
+      if (a.ngay_tap !== b.ngay_tap) return b.ngay_tap.localeCompare(a.ngay_tap);
+      return (b.gio_bat_dau || '').localeCompare(a.gio_bat_dau || '');
+    });
   },
 
   _renderBookingList: function () {

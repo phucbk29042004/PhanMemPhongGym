@@ -107,4 +107,55 @@ if (!migrated) {
   `);
 }
 
+// ── Migration v3: Cập nhật View v_trang_thai_hoi_vien để bao gồm cả gói PT ──────
+const migratedV3 = db.prepare(`SELECT gia_tri FROM cau_hinh WHERE khoa = 'db_migration_view_member_status_v3'`).get();
+if (!migratedV3) {
+  db.transaction(() => {
+    db.exec(`DROP VIEW IF EXISTS v_trang_thai_hoi_vien;`);
+    db.exec(`
+      CREATE VIEW v_trang_thai_hoi_vien AS
+      SELECT
+          h.id,
+          h.ma_ho_so,
+          h.ho_ten,
+          h.so_dien_thoai,
+          h.email,
+          h.avatar_url,
+          h.is_deleted,
+          (SELECT MAX(d_ngay) FROM (
+             SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+             UNION ALL
+             SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+          )) AS den_ngay_xa_nhat,
+          CASE
+              WHEN NOT EXISTS (SELECT 1 FROM dang_ky_goi_tap dk WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong')
+                   AND NOT EXISTS (SELECT 1 FROM dang_ky_pt dp WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong')
+                  THEN 'chua_dang_ky'
+              WHEN (SELECT MAX(d_ngay) FROM (
+                      SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+                      UNION ALL
+                      SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+                   )) < date('now','localtime')
+                  THEN 'het_han'
+              WHEN (SELECT MAX(d_ngay) FROM (
+                      SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+                      UNION ALL
+                      SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+                   )) <= date('now','localtime','+7 days')
+                  THEN 'sap_het_han'
+              ELSE 'con_han'
+          END AS trang_thai_mau,
+          (SELECT COUNT(*) FROM dang_ky_pt dp
+           WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS so_goi_pt_dang_tap,
+          (SELECT COUNT(*) FROM dang_ky_goi_tap dk
+           WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong') AS so_goi_tap_hien_tai
+      FROM ho_so h
+      WHERE h.loai_ho_so = 'hoi_vien'
+        AND h.is_deleted = 0;
+    `);
+  })();
+  db.prepare(`INSERT OR IGNORE INTO cau_hinh (khoa, gia_tri, mo_ta) VALUES ('db_migration_view_member_status_v3', '1', 'Cập nhật View trạng thái hội viên bao gồm cả PT')`).run();
+  console.log('[DB] ✅ Migration v_trang_thai_hoi_vien v3 hoàn thành.');
+}
+
 export default db;

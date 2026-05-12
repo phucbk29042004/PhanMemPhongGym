@@ -317,9 +317,8 @@ export const getExpiringMembers = (req, res) => {
   const rows = db.prepare(`
     SELECT * FROM v_trang_thai_hoi_vien
     WHERE trang_thai_mau = 'sap_het_han'
-      AND den_ngay_xa_nhat <= date('now','localtime','+' || ? || ' days')
     ORDER BY den_ngay_xa_nhat ASC
-  `).all(parseInt(days));
+  `).all();
   return success(res, rows);
 };
 
