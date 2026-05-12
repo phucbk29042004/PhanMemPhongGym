@@ -7,6 +7,7 @@ import jwt from 'jsonwebtoken';
 import db from '../config/db.js';
 import { success, error } from '../utils/response.js';
 import { ghi_audit_log } from '../utils/audit.js';
+import { createNotification } from '../utils/notifications.js';
 
 const findAccount = db.prepare(`
   SELECT t.id, t.ten_dang_nhap, t.mat_khau_hash, t.trang_thai,
@@ -53,6 +54,16 @@ export const login = (req, res) => {
     increaseLoginFail.run(account.id);
     if (account.so_lan_dang_nhap_sai + 1 >= 5) {
       lockAccount.run(account.id);
+      // Sinh thông báo tài khoản bị khóa cho admin
+      const ipAddress = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'Không xác định';
+      createNotification(
+        'tai_khoan_bi_khoa',
+        '⚠️ Tài khoản bị khóa',
+        `Tài khoản ${account.ten_dang_nhap} bị khóa do đăng nhập sai 5 lần liên tiếp — IP: ${ipAddress}`,
+        account.id,
+        'tai_khoan',
+        'admin'
+      );
       return error(res, 'Sai mật khẩu quá 5 lần. Tài khoản đã bị khoá.', 403);
     }
     return error(res, `Mật khẩu không đúng. Còn ${4 - account.so_lan_dang_nhap_sai} lần thử.`, 401);

@@ -8,12 +8,23 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
-**✅ Hệ thống thông báo (Bell Icon)** đã hoàn thành: bảng `thong_bao` trong DB, 5 API endpoint, 7 loại sự kiện tự động (cron + realtime), bell icon dropdown trong header Admin/Lễ tân với polling 30 giây.
+**✅ Hệ thống thông báo (Bell Icon)** đã hoàn thành đầy đủ 15 loại: bảng `thong_bao` trong DB (migration v2), 5 API endpoint, 15 loại sự kiện (6 cron + 9 realtime), bell icon dropdown trong header Admin/Lễ tân với polling 30 giây.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
 
+### 12/05/2026 08:35 — Bổ Sung 8 Loại Thông Báo Mới (Tổng 15 Loại)
+- **Loại**: Tính năng mới (Backend)
+- **File chỉnh sửa**:
+  - `BE/src/config/db.js` — Migration v2: tái tạo bảng `thong_bao` với CHECK constraint 15 loại; dùng flag `db_migration_thongbao_v2` trong `cau_hinh` để chỉ chạy 1 lần; giữ toàn bộ dữ liệu cũ qua rename→recreate→copy
+  - `BE/src/controllers/members.controller.js` — Thêm `createNotification('gia_han_goi_tap')` vào `registerPackage()` và `createNotification('tai_khoan_moi')` vào `createAccount()`
+  - `BE/src/controllers/pt-registrations.controller.js` — Import `createNotification`; thêm `createNotification('dang_ky_goi_pt_moi')` vào `createRegistration()`
+  - `BE/src/controllers/pt-schedules.controller.js` — Import `createNotification`; thêm `createNotification('huy_buoi_tap')` vào `cancelSchedule()` và `createNotification('hoan_tac_buoi_tap')` vào `revertSchedule()`
+  - `BE/src/controllers/auth.controller.js` — Import `createNotification`; thêm `createNotification('tai_khoan_bi_khoa')` ngay sau `lockAccount.run()` kèm IP address
+  - `BE/src/jobs/cron-daily.js` — Thêm job 4 `het_han_goi_pt_thang` (quét `dang_ky_pt` loai_goi='theo_thang' hết hạn hôm nay); thêm job 5 `tom_tat_buoi_sang` (1 thông báo tổng hợp duy nhất, số liệu lấy từ jobs 1-3); xóa thông báo cũ chuyển về cuối (job 6)
+- **Mô tả**: Nâng hệ thống thông báo từ 7 lên 15 loại. Không thay đổi FE vì bell icon và 5 endpoint đã hoạt động với mọi loại thông báo.
+- **Kết quả**: Thành công
 ### 11/05/2026 — Hệ Thống Thông Báo Bell Icon
 - **Loại**: Tính năng mới (Backend + Frontend)
 - **File tạo mới**:

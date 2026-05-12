@@ -82,7 +82,43 @@ function runDailyJob() {
   }
   if (sapHetBuoi.length > 0) console.log(`[CRON-DAILY] Đã tạo ${sapHetBuoi.length} thông báo sắp hết buổi PT.`);
 
-  // 4. Xóa thông báo cũ hơn 30 ngày
+  // 4. Gói PT theo tháng hết hạn hôm nay
+  const hetHanGoiPtThang = db.prepare(`
+    SELECT dp.id, dp.hoi_vien_id AS ho_so_id,
+           h.ho_ten, pt.ho_ten AS ten_pt
+    FROM dang_ky_pt dp
+    JOIN ho_so h  ON h.id  = dp.hoi_vien_id
+    JOIN ho_so pt ON pt.id = dp.pt_id
+    WHERE dp.loai_goi = 'theo_thang'
+      AND dp.den_ngay  = date('now','localtime')
+      AND dp.trang_thai = 'dang_hoat_dong'
+  `).all();
+
+  for (const row of hetHanGoiPtThang) {
+    createNotification(
+      'het_han_goi_pt_thang',
+      'Gói PT theo tháng hết hạn',
+      `${row.ho_ten} — gói PT theo tháng với ${row.ten_pt} đã hết hạn hôm nay`,
+      row.id,
+      'dang_ky_pt',
+      'ca_hai'
+    );
+  }
+  if (hetHanGoiPtThang.length > 0) console.log(`[CRON-DAILY] Đã tạo ${hetHanGoiPtThang.length} thông báo gói PT theo tháng hết hạn.`);
+
+  // 5. Tổng hợp buổi sáng — sinh 1 thông báo duy nhất
+  const ngayHienTai = new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  createNotification(
+    'tom_tat_buoi_sang',
+    `📋 Tổng hợp buổi sáng ${ngayHienTai}`,
+    `Sắp hết hạn gói tập: ${sapHetHan.length} hội viên | Hết hạn hôm nay: ${hetHan.length} | Sắp hết buổi PT: ${sapHetBuoi.length}`,
+    null,
+    null,
+    'ca_hai'
+  );
+  console.log(`[CRON-DAILY] Đã tạo 1 thông báo tổng hợp buổi sáng.`);
+
+  // 6. Xóa thông báo cũ hơn 30 ngày
   const deleted = db.prepare(`
     DELETE FROM thong_bao
     WHERE ngay_tao < datetime('now','localtime','-30 days')

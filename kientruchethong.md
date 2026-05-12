@@ -1,6 +1,6 @@
 # 🏛️ Kiến Trúc Hệ Thống — Paradise GYM
 
-> Cập nhật lần cuối: 11/05/2026 — Hệ thống thông báo Bell Icon hoàn chỉnh: bảng thong_bao, 5 API endpoint, 7 loại sự kiện cron + realtime, polling FE 30 giây.
+> Cập nhật lần cuối: 12/05/2026 — Bổ sung 8 loại thông báo mới, nâng tổng lên 15 loại; migration DB v2 (bảng thong_bao với CHECK constraint đầy đủ).
 
 ---
 
@@ -70,7 +70,7 @@ graph TD
 | `doanh_thu` | Tổng hợp doanh thu tự động qua Triggers. |
 | `audit_log` | Nhật ký thay đổi dữ liệu nhạy cảm. |
 | `cau_hinh` | Cấu hình hệ thống (giờ cron, TTL QR, v.v.). |
-| `thong_bao` | Thông báo hệ thống: 7 loại, phân quyền admin/le_tan/ca_hai, tự động xóa sau 30 ngày. |
+| `thong_bao` | Thông báo hệ thống: **15 loại** (6 cron + 9 realtime), phân quyền admin/le_tan/ca_hai, tự động xóa sau 30 ngày. Migration v2 dùng flag trong `cau_hinh`. |
 
 ---
 
@@ -128,7 +128,7 @@ graph TD
 - [x] **Sinh nhật**: Lọc hội viên sinh nhật theo today/week/month.
 - [x] **My Profile**: Hội viên/PT tự xem hồ sơ + gói tập/lịch dạy hiện tại.
 - [x] **Hệ thống**: Middleware RBAC (quyen_json), Audit Logging (ghi vết hành động).
-- [x] **Hệ thống thông báo**: Bell icon dropdown trong header admin/lễ tân. Polling 30s. 7 loại sự kiện: sắp hết hạn gói tập, hết hạn, check-in, chưa check-in trước buổi PT, cron tự xác nhận, sắp hết buổi PT, hồ sơ mới. Cron 08:00 sáng + cron mỗi 5 phút + realtime sau các action. Toast tổng hợp khi login.
+- [x] **Hệ thống thông báo (15 loại)**: Bell icon dropdown trong header admin/lễ tân. Polling 30s. **Cron 08:00**: sắp hết hạn gói tập, hết hạn hôm nay, sắp hết buổi PT, gói PT theo tháng hết hạn (`het_han_goi_pt_thang`), tổng hợp buổi sáng (`tom_tat_buoi_sang`). **Cron 5 phút**: chưa check-in trước buổi PT. **Realtime**: check-in, hồ sơ mới, gia hạn gói tập, đăng ký gói PT, hủy buổi tập, hoàn tác buổi tập, tài khoản bị khóa, tài khoản mới. Toast tổng hợp khi login.
 
 ### Tích hợp Fullstack (Kết nối FE-BE)
 - [x] **API Wrapper**: Hoàn thiện `api.js` xử lý JWT tự động.

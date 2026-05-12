@@ -6,6 +6,7 @@
 import db from '../config/db.js';
 import { success, error } from '../utils/response.js';
 import { ghi_audit_log } from '../utils/audit.js';
+import { createNotification } from '../utils/notifications.js';
 
 // ── GET /api/pt/registrations ─────────────────────────────
 // Danh sách đăng ký PT (admin/lễ tân xem tất cả, PT xem lịch của mình)
@@ -141,6 +142,18 @@ export const createRegistration = (req, res) => {
 
   ghi_audit_log(req, 'CREATE', 'dang_ky_pt', result.lastInsertRowid, null,
     { hoi_vien_id, pt_id, so_buoi_dang_ky }, 'Đăng ký gói PT');
+
+  // Sinh thông báo đăng ký gói PT mới cho admin
+  const hvInfo = db.prepare('SELECT ho_ten FROM ho_so WHERE id = ?').get(hoi_vien_id);
+  const ptInfo = db.prepare('SELECT ho_ten FROM ho_so WHERE id = ?').get(pt_id);
+  createNotification(
+    'dang_ky_goi_pt_moi',
+    'Đăng ký gói PT mới',
+    `${hvInfo?.ho_ten || `HV-${hoi_vien_id}`} vừa đăng ký ${goiPt.ten_goi} với PT ${ptInfo?.ho_ten || `PT-${pt_id}`} — ${Number(gia_thuc_te).toLocaleString('vi-VN')}đ`,
+    result.lastInsertRowid,
+    'dang_ky_pt',
+    'admin'
+  );
 
   return success(res, db.prepare('SELECT * FROM dang_ky_pt WHERE id = ?').get(result.lastInsertRowid),
     'Đăng ký PT thành công', 201);

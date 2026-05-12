@@ -443,6 +443,16 @@ export const registerPackage = (req, res) => {
   ghi_audit_log(req, 'CREATE', 'dang_ky_goi_tap', result.lastInsertRowid, null,
     { ho_so_id: id, goi_tap_id, gia: gia_thuc_te }, 'Đăng ký gói tập cho hội viên');
 
+  // Sinh thông báo gia hạn gói tập cho admin
+  createNotification(
+    'gia_han_goi_tap',
+    'Gia hạn gói tập',
+    `${member.ho_ten} vừa đăng ký ${goiTap.ten_goi} — ${Number(gia_thuc_te).toLocaleString('vi-VN')}đ`,
+    result.lastInsertRowid,
+    'dang_ky_goi_tap',
+    'admin'
+  );
+
   return success(res, { id: result.lastInsertRowid, den_ngay: denNgay }, 'Đăng ký gói tập thành công', 201);
 };
 
@@ -498,6 +508,19 @@ export const createAccount = async (req, res) => {
   ghi_audit_log(req, 'CREATE', 'tai_khoan', newTaiKhoanId, null,
     { ho_so_id: id, ten_dang_nhap: ten_dang_nhap.trim(), vai_tro: maVaiTro },
     `Tạo tài khoản đăng nhập cho hồ sơ ${hoSo.ho_ten}`);
+
+  // Sinh thông báo tài khoản mới cho admin
+  const nguoiTao = req.user.ten_dang_nhap ||
+    db.prepare('SELECT ten_dang_nhap FROM tai_khoan WHERE id = ?').get(req.user.id)?.ten_dang_nhap ||
+    `ID ${req.user.id}`;
+  createNotification(
+    'tai_khoan_moi',
+    'Tài khoản mới được tạo',
+    `${nguoiTao} vừa tạo tài khoản cho ${hoSo.ho_ten} (${maVaiTro})`,
+    newTaiKhoanId,
+    'tai_khoan',
+    'admin'
+  );
 
   return success(res, { tai_khoan_id: newTaiKhoanId, ten_dang_nhap: ten_dang_nhap.trim() },
     'Tạo tài khoản thành công', 201);

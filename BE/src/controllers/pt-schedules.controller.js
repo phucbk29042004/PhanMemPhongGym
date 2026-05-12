@@ -5,6 +5,7 @@
 import db from '../config/db.js';
 import { success, error } from '../utils/response.js';
 import { ghi_audit_log } from '../utils/audit.js';
+import { createNotification } from '../utils/notifications.js';
 
 // ── GET /api/pt/schedules ─────────────────────────────────
 // Xem lịch tập toàn phòng (admin) hoặc lịch cá nhân (PT/hội viên)
@@ -120,6 +121,27 @@ export const cancelSchedule = (req, res) => {
     UPDATE lich_tap SET trang_thai = 'da_huy', ly_do_huy = ?, nguoi_huy_id = ? WHERE id = ?
   `).run(ly_do || 'Không có lý do', req.user.id, id);
 
+  // Sinh thông báo hủy buổi tập cho ca hai
+  const schedInfo = db.prepare(`
+    SELECT lt.gio_bat_dau, lt.ngay_tap,
+           hv.ho_ten AS ho_ten_hoi_vien,
+           pt.ho_ten AS ho_ten_pt
+    FROM lich_tap lt
+    JOIN ho_so hv ON hv.id = lt.hoi_vien_id
+    JOIN ho_so pt ON pt.id = lt.pt_id
+    WHERE lt.id = ?
+  `).get(id);
+  if (schedInfo) {
+    createNotification(
+      'huy_buoi_tap',
+      'Buổi tập bị hủy',
+      `Buổi ${schedInfo.gio_bat_dau} ngày ${schedInfo.ngay_tap} của ${schedInfo.ho_ten_hoi_vien} với PT ${schedInfo.ho_ten_pt} đã bị hủy`,
+      parseInt(id),
+      'lich_tap',
+      'ca_hai'
+    );
+  }
+
   ghi_audit_log(req, 'UPDATE', 'lich_tap', parseInt(id), { trang_thai: schedule.trang_thai }, { trang_thai: 'da_huy', ly_do }, 'Hủy buổi tập');
   return success(res, null, 'Đã hủy buổi tập');
 };
@@ -170,6 +192,24 @@ export const revertSchedule = (req, res) => {
   revert();
   ghi_audit_log(req, 'UPDATE', 'lich_tap', parseInt(id),
     { trang_thai: 'da_tap' }, { trang_thai: 'cho_tap' }, `Hoàn tác xác nhận buổi tập: ${ly_do || ''}`);
+
+  // Sinh thông báo hoàn tác buổi tập cho admin
+  const tenDangNhap = db.prepare('SELECT ten_dang_nhap FROM tai_khoan WHERE id = ?').get(req.user.id)?.ten_dang_nhap || `ID ${req.user.id}`;
+  const hoantacInfo = db.prepare(`
+    SELECT lt.ngay_tap, hv.ho_ten AS ho_ten_hoi_vien
+    FROM lich_tap lt JOIN ho_so hv ON hv.id = lt.hoi_vien_id WHERE lt.id = ?
+  `).get(id);
+  if (hoantacInfo) {
+    createNotification(
+      'hoan_tac_buoi_tap',
+      'Hoàn tác buổi tập',
+      `${tenDangNhap} vừa hoàn tác buổi tập ${hoantacInfo.ngay_tap} của ${hoantacInfo.ho_ten_hoi_vien} — Lý do: ${ly_do || 'Không rõ'}`,
+      parseInt(id),
+      'lich_tap',
+      'admin'
+    );
+  }
+
   return success(res, null, 'Hoàn tác buổi tập thành công');
 };
 

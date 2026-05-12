@@ -46,27 +46,65 @@ db.exec(`
 db.prepare(`INSERT OR IGNORE INTO cau_hinh (khoa, gia_tri, mo_ta) VALUES (?, ?, ?)`).run('gio_dong_cua', '22:00', 'Giờ cron job trừ buổi PT chạy');
 db.prepare(`INSERT OR IGNORE INTO cau_hinh (khoa, gia_tri, mo_ta) VALUES (?, ?, ?)`).run('qr_token_ttl_phut', '5', 'Thời gian hiệu lực QR Code (phút)');
 
-// Tạo bảng thong_bao nếu chưa có
-db.exec(`
-  CREATE TABLE IF NOT EXISTS thong_bao (
-    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-    loai          TEXT NOT NULL CHECK (loai IN (
-                      'sap_het_han_goi_tap','het_han_goi_tap','check_in',
-                      'chua_check_in_truoc_buoi_pt','cron_tu_xac_nhan',
-                      'sap_het_buoi_pt','ho_so_moi'
-                  )),
-    tieu_de       TEXT NOT NULL,
-    noi_dung      TEXT NOT NULL,
-    doi_tuong_id  INTEGER,
-    doi_tuong     TEXT,
-    danh_cho      TEXT NOT NULL CHECK (danh_cho IN ('admin','le_tan','ca_hai')),
-    da_doc        INTEGER NOT NULL DEFAULT 0 CHECK (da_doc IN (0,1)),
-    doc_boi_id    INTEGER REFERENCES tai_khoan(id),
-    ngay_doc      DATETIME,
-    ngay_tao      DATETIME NOT NULL DEFAULT (datetime('now','localtime'))
-  );
-  CREATE INDEX IF NOT EXISTS idx_thongbao_danh_cho ON thong_bao(danh_cho, da_doc);
-  CREATE INDEX IF NOT EXISTS idx_thongbao_ngay ON thong_bao(ngay_tao);
-`);
+// ── Migration v2: Tạo / nâng cấp bảng thong_bao lên 15 loại ──────
+// Dùng flag trong cau_hinh để chỉ chạy migration 1 lần duy nhất
+const migrated = db.prepare(`SELECT gia_tri FROM cau_hinh WHERE khoa = 'db_migration_thongbao_v2'`).get();
+
+if (!migrated) {
+  // Nếu bảng cũ đã tồn tại → rename để giữ dữ liệu
+  const tableExists = db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='thong_bao'`).get();
+
+  db.transaction(() => {
+    if (tableExists) {
+      db.exec(`ALTER TABLE thong_bao RENAME TO thong_bao_old;`);
+    }
+
+    // Tạo bảng mới với đầy đủ 15 loại
+    db.exec(`
+      CREATE TABLE thong_bao (
+        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+        loai          TEXT NOT NULL CHECK (loai IN (
+                          'sap_het_han_goi_tap', 'het_han_goi_tap',
+                          'check_in', 'chua_check_in_truoc_buoi_pt',
+                          'cron_tu_xac_nhan', 'sap_het_buoi_pt',
+                          'ho_so_moi', 'gia_han_goi_tap',
+                          'dang_ky_goi_pt_moi', 'huy_buoi_tap',
+                          'hoan_tac_buoi_tap', 'tai_khoan_bi_khoa',
+                          'tai_khoan_moi', 'tom_tat_buoi_sang',
+                          'het_han_goi_pt_thang'
+                      )),
+        tieu_de       TEXT NOT NULL,
+        noi_dung      TEXT NOT NULL,
+        doi_tuong_id  INTEGER,
+        doi_tuong     TEXT,
+        danh_cho      TEXT NOT NULL CHECK (danh_cho IN ('admin','le_tan','ca_hai')),
+        da_doc        INTEGER NOT NULL DEFAULT 0 CHECK (da_doc IN (0,1)),
+        doc_boi_id    INTEGER REFERENCES tai_khoan(id),
+        ngay_doc      DATETIME,
+        ngay_tao      DATETIME NOT NULL DEFAULT (datetime('now','localtime'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_thongbao_danh_cho ON thong_bao(danh_cho, da_doc);
+      CREATE INDEX IF NOT EXISTS idx_thongbao_ngay ON thong_bao(ngay_tao);
+    `);
+
+    // Copy dữ liệu cũ sang (nếu có)
+    if (tableExists) {
+      db.exec(`INSERT INTO thong_bao SELECT * FROM thong_bao_old;`);
+      db.exec(`DROP TABLE thong_bao_old;`);
+    }
+
+    // Lưu ý: flag migration được đặt bên ngoài transaction (tránh nested prepare)
+  })();
+
+  // Gọi riêng bên ngoài transaction để tránh bị lock
+  db.prepare(`INSERT OR IGNORE INTO cau_hinh (khoa, gia_tri, mo_ta) VALUES ('db_migration_thongbao_v2', '1', 'Migration bảng thong_bao lên 15 loại')`).run();
+  console.log('[DB] ✅ Migration thong_bao v2 hoàn thành — 15 loại thông báo.');
+} else {
+  // Bảng đã tồn tại và đúng phiên bản — đảm bảo index vẫn có
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_thongbao_danh_cho ON thong_bao(danh_cho, da_doc);
+    CREATE INDEX IF NOT EXISTS idx_thongbao_ngay ON thong_bao(ngay_tao);
+  `);
+}
 
 export default db;
