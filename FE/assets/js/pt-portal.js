@@ -120,7 +120,7 @@
   pages['dashboard'] = {
     render() {
       const schedules = window.GymApp.data.ptSchedules || [];
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
       const todaySchedules = schedules.filter(s => s.ngay_tap === today);
       const monthStart = today.slice(0, 7);
       const doneThisMonth = schedules.filter(s => s.trang_thai === 'da_tap' && s.ngay_tap?.startsWith(monthStart)).length;
@@ -136,8 +136,8 @@
 
       const stats = [
         { label: 'Lịch hôm nay', value: todaySchedules.length, icon: 'today', color: 'text-brand-primary', bg: 'icon-bg-green' },
-        { label: 'Đã dạy tháng này', value: doneThisMonth, icon: 'check_circle', color: 'text-brand-primary', bg: 'icon-bg-green' },
-        { label: 'Chờ tập', value: schedules.filter(s => s.trang_thai === 'cho_tap').length, icon: 'pending', color: 'text-[#e65100]', bg: 'icon-bg-orange' },
+        { label: 'Đã tập hôm nay', value: todaySchedules.filter(s => s.trang_thai === 'da_tap').length, icon: 'check_circle', color: 'text-brand-primary', bg: 'icon-bg-green' },
+        { label: 'Chờ tập hôm nay', value: todaySchedules.filter(s => s.trang_thai === 'cho_tap').length, icon: 'pending', color: 'text-[#e65100]', bg: 'icon-bg-orange' },
         { label: 'Học viên', value: students.length, icon: 'group', color: 'text-secondary', bg: 'icon-bg-blue' },
       ];
 

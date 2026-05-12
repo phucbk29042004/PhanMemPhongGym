@@ -321,7 +321,7 @@ window.GymApp.pages['pt-register'] = {
       self._refreshBookingList();
     };
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
     const regDate = document.getElementById('reg-date');
     if (regDate) regDate.value = today;
 

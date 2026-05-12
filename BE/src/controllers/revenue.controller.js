@@ -47,7 +47,7 @@ export const getRevenue = (req, res) => {
 // ── GET /api/revenue/today ────────────────────────────────
 // Doanh thu hôm nay chi tiết
 export const getRevenueToday = (req, res) => {
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
 
   const todayRevenue = db.prepare('SELECT * FROM doanh_thu WHERE ngay = ?').get(today);
   const yesterdayRevenue = db.prepare(`SELECT tong_tien FROM doanh_thu WHERE ngay = date('now','localtime','-1 days')`).get();
@@ -92,7 +92,7 @@ export const getRevenueToday = (req, res) => {
 // ── GET /api/revenue/dashboard ────────────────────────────
 // Tổng quan dashboard (số liệu tổng hợp nhanh)
 export const getDashboard = (req, res) => {
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
 
   const stats = {
     // Tổng số hội viên (theo trạng thái)

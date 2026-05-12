@@ -10,7 +10,8 @@ import { createNotification } from '../utils/notifications.js';
 // Lịch sử vào/ra (mặc định hôm nay)
 export const getCheckins = (req, res) => {
   const { date, ho_so_id, loai, limit = 50 } = req.query;
-  const targetDate = date || new Date().toISOString().split('T')[0];
+  const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
+  const targetDate = date || today;
 
   let where = `WHERE date(lv.thoi_diem) = ?`;
   const params = [targetDate];
@@ -77,7 +78,8 @@ export const createCheckin = (req, res) => {
 // Thống kê mật độ khách theo khung giờ hôm nay (dùng vẽ biểu đồ)
 export const getCheckinStats = (req, res) => {
   const { date } = req.query;
-  const targetDate = date || new Date().toISOString().split('T')[0];
+  const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
+  const targetDate = date || today;
 
   // Mật độ theo từng giờ
   const byHour = db.prepare(`
@@ -91,7 +93,7 @@ export const getCheckinStats = (req, res) => {
   `).all(targetDate);
 
   // Tổng hôm nay
-  const today = db.prepare(`
+  const summary = db.prepare(`
     SELECT
       COUNT(*) AS tong_luot,
       SUM(CASE WHEN loai = 'vao' THEN 1 ELSE 0 END) AS luot_vao,
@@ -113,9 +115,9 @@ export const getCheckinStats = (req, res) => {
 
   return success(res, {
     ngay: targetDate,
-    tong_luot: today.tong_luot,
-    luot_vao: today.luot_vao,
-    luot_ra: today.luot_ra,
+    tong_luot: summary.tong_luot,
+    luot_vao: summary.luot_vao,
+    luot_ra: summary.luot_ra,
     dang_trong_phong: currentlyInside.so_nguoi_trong_phong,
     theo_gio: byHour,
   });

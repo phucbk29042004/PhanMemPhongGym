@@ -5,13 +5,14 @@ window.GymApp.pages['pt-training'] = {
   render: function () {
     const pts = window.GymApp.data.pts || [];
     const schedules = window.GymApp.data.ptSchedules || [];
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
+    const todaySchedules = schedules.filter(s => s.ngay_tap === today);
 
     const stats = [
       { label: 'Tổng PT', value: pts.length, icon: 'sports_gymnastics', iconBg: 'icon-bg-green', color: 'text-brand-primary' },
-      { label: 'Lịch hôm nay', value: schedules.filter(s => s.ngay_tap === today).length, icon: 'event_available', iconBg: 'icon-bg-green', color: 'text-brand-primary' },
-      { label: 'Đã tập', value: schedules.filter(s => s.trang_thai === 'da_tap').length, icon: 'check_circle', iconBg: 'icon-bg-green', color: 'text-brand-primary' },
-      { label: 'Chờ tập', value: schedules.filter(s => s.trang_thai === 'cho_tap' || s.trang_thai === 'pending').length, icon: 'pending', iconBg: 'icon-bg-orange', color: 'text-[#e65100]' },
+      { label: 'Lịch hôm nay', value: todaySchedules.length, icon: 'event_available', iconBg: 'icon-bg-green', color: 'text-brand-primary' },
+      { label: 'Đã tập', value: todaySchedules.filter(s => s.trang_thai === 'da_tap').length, icon: 'check_circle', iconBg: 'icon-bg-green', color: 'text-brand-primary' },
+      { label: 'Chờ tập', value: todaySchedules.filter(s => s.trang_thai === 'cho_tap' || s.trang_thai === 'pending').length, icon: 'pending', iconBg: 'icon-bg-orange', color: 'text-[#e65100]' },
     ];
 
     return `
@@ -246,22 +247,36 @@ window.GymApp.pages['pt-training'] = {
     document.getElementById('pt-schedule-container').innerHTML = this._renderCards(filtered);
   },
 
-  init: async function () {
+  init: async function (skipFetch = false) {
     const self = this;
 
-    // Fix bug: fetch ptSchedules nếu chưa có (tránh trang hiển thị rỗng khi vào thẳng)
-    if (!window.GymApp.data.ptSchedules || window.GymApp.data.ptSchedules.length === 0) {
+    if (!skipFetch) {
+      // Tải dữ liệu PT nếu chưa có
+      if (!window.GymApp.data.pts || window.GymApp.data.pts.length === 0) {
+        try {
+          const res = await window.GymApp.api.get('/members?loai=pt');
+          if (res?.success) window.GymApp.data.pts = res.data;
+        } catch (err) { console.error('Failed to fetch PTs', err); }
+      }
+
+      // Tải lịch tập mới nhất
       try {
         const res = await window.GymApp.api.get('/pt/schedules');
         if (res?.success) {
           window.GymApp.data.ptSchedules = Array.isArray(res.data) ? res.data : [];
-          document.getElementById('pt-schedule-container').innerHTML = self._renderCards(window.GymApp.data.ptSchedules);
+          
+          const contentArea = document.getElementById('content-area');
+          if (contentArea && window.GymApp.currentPage === 'pt-training') {
+            contentArea.innerHTML = self.render();
+            return self.init(true); // Gọi lại với skipFetch = true để bind sự kiện
+          }
         }
       } catch (err) {
         console.error('Failed to fetch pt schedules', err);
       }
     }
 
+    // Gán sự kiện (chỉ chạy khi skipFetch = true hoặc nếu fetch thất bại)
     document.getElementById('pt-search')?.addEventListener('input', () => self._applyFilter());
     document.getElementById('pt-filter-status')?.addEventListener('change', () => self._applyFilter());
     document.getElementById('pt-filter-pt')?.addEventListener('change', () => self._applyFilter());

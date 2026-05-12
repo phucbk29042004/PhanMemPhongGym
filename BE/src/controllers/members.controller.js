@@ -32,19 +32,30 @@ export const getMembers = (req, res) => {
       h.so_dien_thoai, h.email, h.avatar_url, h.ghi_chu, h.ngay_tao,
       h.chi_nhanh, h.phong_tap, h.noi_sinh, h.cccd, h.que_quan,
       h.tinh_thanh, h.quan_huyen, h.phuong_xa, h.loai_hv,
-      -- Tính trạng thái màu sắc (tương tự view v_trang_thai_hoi_vien)
+      -- Tính trạng thái màu sắc
       CASE
         WHEN NOT EXISTS (SELECT 1 FROM dang_ky_goi_tap dk WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong')
+             AND NOT EXISTS (SELECT 1 FROM dang_ky_pt dp WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong')
           THEN 'chua_dang_ky'
-        WHEN (SELECT MAX(den_ngay) FROM dang_ky_goi_tap dk WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong')
-             < date('now','localtime')
+        WHEN (SELECT MAX(d_ngay) FROM (
+                SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+                UNION ALL
+                SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+             )) < date('now','localtime')
           THEN 'het_han'
-        WHEN (SELECT MAX(den_ngay) FROM dang_ky_goi_tap dk WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong')
-             <= date('now','localtime','+7 days')
+        WHEN (SELECT MAX(d_ngay) FROM (
+                SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+                UNION ALL
+                SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+             )) <= date('now','localtime','+7 days')
           THEN 'sap_het_han'
         ELSE 'con_han'
       END AS trang_thai,
-      (SELECT MAX(den_ngay) FROM dang_ky_goi_tap dk WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong') AS ngay_het_han,
+      (SELECT MAX(d_ngay) FROM (
+         SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+         UNION ALL
+         SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+      )) AS ngay_het_han,
       (SELECT gt.ten_goi FROM dang_ky_goi_tap dk JOIN goi_tap gt ON gt.id = dk.goi_tap_id
        WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong' ORDER BY dk.den_ngay DESC LIMIT 1) AS ten_goi_tap,
       (SELECT COUNT(*) FROM dang_ky_pt dp WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS co_pt

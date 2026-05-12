@@ -15,7 +15,7 @@ import { createNotification } from '../utils/notifications.js';
 let scheduledTask = null;
 
 function runConfirmJob() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
   console.log(`[CRON] ${new Date().toLocaleTimeString('vi-VN')} — Đang xử lý xác nhận buổi tập ngày ${today}...`);
 
   const pending = db.prepare(`

@@ -2,6 +2,8 @@ window.GymApp.pages['member-add'] = {
   _activeTab: 'register',
   _provinces: [], _districts: [], _wards: [],
   _avatarFile: null,
+  _currentMemberId: null,
+  _currentMemberName: '',
 
   // Danh sách chuyên môn PT gợi ý
   _PT_SPECIALTIES: [
@@ -24,7 +26,7 @@ window.GymApp.pages['member-add'] = {
     return `
       ${provinceDatalist}
       ${specialtyDatalist}
-      <div class="flex flex-col gap-compact w-full xl:w-[90%] max-w-none mx-auto">
+      <div class="flex flex-col gap-compact w-full max-w-none mx-auto">
 
         <!-- Header -->
         <div class="flex items-center gap-standard">
@@ -84,7 +86,7 @@ window.GymApp.pages['member-add'] = {
             </div>
 
             <!-- Trường đặc thù theo loại -->
-            <div id="extra-fields" class="mb-compact grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-compact border-y border-outline-variant/30 py-compact hidden"></div>
+            <div id="extra-fields" class="mb-compact grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-compact border-y border-outline-variant/30 py-compact hidden"></div>
 
             <!-- Thông tin cá nhân -->
             <div class="mb-compact">
@@ -94,7 +96,7 @@ window.GymApp.pages['member-add'] = {
                 </div>
                 <h3 class="font-bold text-on-surface text-body-md">Thông tin cá nhân</h3>
               </div>
-              <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-compact">
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-compact">
                 <!-- Ngày sinh với min/max hợp lý -->
                 <div>
                   <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Ngày sinh</label>
@@ -144,7 +146,7 @@ window.GymApp.pages['member-add'] = {
                 </div>
                 <h3 class="font-bold text-on-surface text-body-md">Địa chỉ thường trú</h3>
               </div>
-              <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-compact">
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-compact">
                 ${this._select('Tỉnh / Thành phố', 'reg-tinh-thanh', [])}
                 ${this._select('Quận / Huyện', 'reg-quan-huyen', [])}
                 ${this._select('Phường / Xã', 'reg-phuong-xa', [])}
@@ -177,6 +179,16 @@ window.GymApp.pages['member-add'] = {
 
         <div id="form-package" class="hidden">
           <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm p-compact md:p-standard">
+            
+            <div id="selected-member-info" class="mb-compact p-standard bg-brand-primary/10 border border-brand-primary/20 rounded-xl hidden">
+              <div class="flex items-center gap-standard">
+                <div class="w-12 h-12 rounded-full bg-brand-primary text-white flex items-center justify-center font-bold text-xl" id="selected-member-avatar-text">?</div>
+                <div>
+                  <p class="text-body-sm text-brand-primary font-bold">Đang đăng ký gói cho hội viên:</p>
+                  <h4 class="text-on-surface font-bold text-display-xs" id="selected-member-name-display">Chưa chọn hội viên</h4>
+                </div>
+              </div>
+            </div>
 
             <!-- Chọn gói tập -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-compact mb-compact">
@@ -198,7 +210,7 @@ window.GymApp.pages['member-add'] = {
                 </div>
                 <h3 class="font-bold text-on-surface text-body-md">Thời hạn gói tập</h3>
               </div>
-              <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-compact">
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-compact">
                 ${this._field('Từ ngày', 'pkg-from', 'date')}
                 ${this._field('Đến ngày (tự tính)', 'pkg-to', 'date', '', true)}
                 ${this._select('Trạng thái', 'pkg-status', [{v:'dang_hoat_dong',t:'Kích hoạt ngay'},{v:'cho_kich_hoat',t:'Chờ kích hoạt'}])}
@@ -214,7 +226,7 @@ window.GymApp.pages['member-add'] = {
                 </div>
                 <h3 class="font-bold text-on-surface text-body-md">Thanh toán</h3>
               </div>
-              <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-compact">
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-compact">
                 ${this._field('Tổng tiền', 'pkg-total', 'text', '0', true)}
                 ${this._field('Tiền khách trả', 'pkg-paid', 'text', 'Nhập số tiền')}
                 ${this._field('Ngày thu', 'pkg-pay-date', 'date')}
@@ -582,6 +594,18 @@ window.GymApp.pages['member-add'] = {
         }
 
         const newId = res.data?.id;
+        self._currentMemberId = newId;
+        self._currentMemberName = ho_ten;
+
+        // Hiển thị thông tin hội viên ở tab gói tập
+        const infoBox = document.getElementById('selected-member-info');
+        const nameDisplay = document.getElementById('selected-member-name-display');
+        const avatarText = document.getElementById('selected-member-avatar-text');
+        if (infoBox && nameDisplay) {
+          infoBox.classList.remove('hidden');
+          nameDisplay.textContent = ho_ten;
+          avatarText.textContent = ho_ten.charAt(0).toUpperCase();
+        }
 
         // Tạo tài khoản nếu checkbox được tick
         const wantAccount = document.getElementById('chk-create-account')?.checked;
@@ -599,11 +623,33 @@ window.GymApp.pages['member-add'] = {
             }
           }
         } else {
-          window.GymApp.toast('Đã tạo hồ sơ thành công!', 'success');
+          window.GymApp.toast('Đã tạo hồ sơ thành công! Tiếp tục đăng ký gói tập.', 'success');
         }
 
         await window.GymApp.fetchInitialData();
-        window.GymApp.navigate('members-list');
+        
+        // Chuyển sang tab gói tập
+        const tabPkg = document.getElementById('tab-package');
+        if (tabPkg) tabPkg.click();
+        
+        // Clear form thông tin hồ sơ
+        const hoTenInput = document.getElementById('reg-ho-ten');
+        if (hoTenInput) hoTenInput.value = '';
+        const sdtInput = document.getElementById('reg-so-dien-thoai');
+        if (sdtInput) sdtInput.value = '';
+        const emailInput = document.getElementById('reg-email');
+        if (emailInput) emailInput.value = '';
+        const cccdInput = document.getElementById('reg-cccd');
+        if (cccdInput) cccdInput.value = '';
+        
+        if (avatarPreview) avatarPreview.classList.add('hidden');
+        if (avatarPlaceholder) avatarPlaceholder.classList.remove('hidden');
+        self._avatarFile = null;
+        
+        const chkAccount = document.getElementById('chk-create-account');
+        const accountFields = document.getElementById('account-fields');
+        if (chkAccount) chkAccount.checked = false;
+        if (accountFields) accountFields.classList.add('hidden');
       } catch(e) {
         console.error('Save member error:', e);
         window.GymApp.toast('Lỗi kết nối máy chủ', 'error');
@@ -615,9 +661,46 @@ window.GymApp.pages['member-add'] = {
 
     // 7. Lưu đăng ký gói tập
     document.getElementById('btn-save-package')?.addEventListener('click', async () => {
+      if (!self._currentMemberId) {
+        return window.GymApp.toast('Vui lòng lưu hồ sơ hội viên trước!', 'warning');
+      }
+
       const pkgId = document.getElementById('pkg-select').value;
-      if (!pkgId) return window.GymApp.toast('Vui lòng chọn gói tập!', 'error');
-      window.GymApp.toast('Vui lòng "Lưu hồ sơ" trước khi lưu gói tập!', 'info');
+      const tuNgay = document.getElementById('pkg-from').value;
+      const giaThucTe = document.getElementById('pkg-price').value;
+      const phuongThucTT = document.getElementById('pkg-method').value;
+
+      if (!pkgId || !tuNgay || !phuongThucTT) {
+        return window.GymApp.toast('Vui lòng điền đủ thông tin gói tập!', 'error');
+      }
+
+      const btn = document.getElementById('btn-save-package');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="animate-spin material-symbols-outlined text-sm">sync</span> Đang lưu...';
+
+      try {
+        const res = await window.GymApp.api.post(`/members/${self._currentMemberId}/package`, {
+          goi_tap_id: pkgId,
+          tu_ngay: tuNgay,
+          gia_thuc_te: giaThucTe,
+          phuong_thuc_tt: phuongThucTT,
+          ma_giao_dich: document.getElementById('pkg-coupon')?.value || ''
+        });
+
+        if (res.success) {
+          window.GymApp.toast('Đăng ký gói tập thành công!', 'success');
+          await window.GymApp.fetchInitialData();
+          window.GymApp.navigate('members-list');
+        } else {
+          window.GymApp.toast(res.message || 'Lỗi khi đăng ký gói tập', 'error');
+        }
+      } catch (err) {
+        console.error(err);
+        window.GymApp.toast('Lỗi kết nối máy chủ', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span class="material-symbols-outlined text-sm">save</span> Lưu đăng ký gói';
+      }
     });
   },
 };

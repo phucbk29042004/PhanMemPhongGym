@@ -63,24 +63,30 @@ export const scanQr = (req, res) => {
   // Kiểm tra hồ sơ còn tồn tại
   const hoSo = db.prepare(`
     SELECT h.id, h.ho_ten, h.ma_ho_so, h.avatar_url,
-           g.den_ngay AS ngay_ket_thuc, g.trang_thai AS trang_thai_goi
+           (
+             SELECT MAX(d_ngay) FROM (
+               SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+               UNION ALL
+               SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+             )
+           ) AS ngay_ket_thuc
     FROM ho_so h
-    LEFT JOIN dang_ky_goi_tap g ON g.ho_so_id = h.id AND g.trang_thai = 'dang_hoat_dong'
     WHERE h.id = ? AND h.loai_ho_so = 'hoi_vien' AND h.is_deleted = 0
   `).get(ho_so_id);
 
   if (!hoSo) return error(res, 'Hồ sơ hội viên không tồn tại.', 404);
 
-  // Kiểm tra gói tập còn hạn
+  // Kiểm tra gói tập hoặc gói PT còn hạn
   if (!hoSo.ngay_ket_thuc) {
-    return error(res, `Hội viên ${hoSo.ho_ten} không có gói tập đang hoạt động.`, 403);
+    return error(res, `Hội viên ${hoSo.ho_ten} không có gói tập hoặc gói PT đang hoạt động.`, 403);
   }
-  if (hoSo.ngay_ket_thuc < new Date().toISOString().slice(0, 10)) {
-    return error(res, `Gói tập của ${hoSo.ho_ten} đã hết hạn (${hoSo.ngay_ket_thuc}).`, 403);
+  const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
+  if (hoSo.ngay_ket_thuc < today) {
+    return error(res, `Gói dịch vụ của ${hoSo.ho_ten} đã hết hạn (${hoSo.ngay_ket_thuc}).`, 403);
   }
 
   // Kiểm tra hôm nay đã check-in chưa (tránh quét 2 lần)
-  const today = new Date().toISOString().slice(0, 10);
+  // today đã có ở trên
   const daCheckin = db.prepare(`
     SELECT id FROM luot_vao_ra
     WHERE ho_so_id = ? AND DATE(thoi_diem) = ? AND loai = 'vao' AND phuong_thuc = 'qr_code'
