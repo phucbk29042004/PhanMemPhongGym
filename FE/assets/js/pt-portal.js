@@ -65,12 +65,11 @@
     const sidebarName = document.getElementById('sidebar-name');
     if (sidebarName) sidebarName.textContent = name;
 
-    if (user.avatar_url) {
-      const headerAvatar = document.getElementById('header-avatar');
-      if (headerAvatar) headerAvatar.innerHTML = `<img src="${user.avatar_url}" class="w-full h-full rounded-full object-cover">`;
-      const sidebarAvatar = document.getElementById('sidebar-avatar');
-      if (sidebarAvatar) sidebarAvatar.innerHTML = `<img src="${user.avatar_url}" class="w-full h-full rounded-full object-cover">`;
-    }
+    const headerAvatar = document.getElementById('header-avatar');
+    if (headerAvatar) headerAvatar.innerHTML = window.GymApp.avatarImg(user.avatar_url, user.ho_ten, 'sm');
+    
+    const sidebarAvatar = document.getElementById('sidebar-avatar');
+    if (sidebarAvatar) sidebarAvatar.innerHTML = window.GymApp.avatarImg(user.avatar_url, user.ho_ten, 'sm');
   }
 
   async function _fetchData() {
@@ -478,11 +477,8 @@
           <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
             <!-- Avatar header -->
             <div class="section-header px-loose py-loose border-b border-outline-variant flex items-center gap-loose">
-              <div style="width:72px;height:72px;border-radius:50%;overflow:hidden;flex-shrink:0;border:3px solid #1D9336;">
-                ${u.avatar_url
-          ? `<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover;" />`
-          : window.GymApp.avatarInitials(u.ho_ten, 'lg')
-        }
+            <div class="flex-shrink-0">
+                ${window.GymApp.avatarImg(u.avatar_url, u.ho_ten, 'xl')}
               </div>
               <div>
                 <p class="font-bold text-on-surface text-display-2xl">${u.ho_ten || '—'}</p>

@@ -10,6 +10,12 @@ window.GymApp.pages['dashboard'] = {
       recent_checkins: []
     };
 
+    // Đảm bảo các thuộc tính con luôn tồn tại nếu d.stats có giá trị nhưng thiếu thuộc tính
+    if (!dbData.hoi_vien) dbData.hoi_vien = { tong: 0, con_han: 0, sap_het_han: 0, het_han: 0, chua_dang_ky: 0 };
+    if (!dbData.doanh_thu_hom_nay) dbData.doanh_thu_hom_nay = { tong_tien: 0, tong_don: 0 };
+    if (!dbData.luot_vao_ra_hom_nay) dbData.luot_vao_ra_hom_nay = { tong_luot: 0, luot_vao: 0 };
+    if (!dbData.lich_tap_hom_nay) dbData.lich_tap_hom_nay = { tong: 0, cho_tap: 0, da_tap: 0 };
+
     const recentCheckins = (dbData.recent_checkins || []).map(c => ({
       id: c.id,
       memberId: c.ma_ho_so,

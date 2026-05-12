@@ -82,9 +82,9 @@
             if (headerUser) headerUser.textContent = this.user.ho_ten || this.user.ten_dang_nhap;
 
             // Update Avatar if exists
-            const headerAvatar = document.querySelector('header .flex.items-center .w-7.h-7');
-            if (headerAvatar && this.user.avatar_url) {
-                headerAvatar.innerHTML = `<img src="${this.user.avatar_url}" class="w-full h-full rounded-full object-cover border border-outline-variant">`;
+            const headerAvatar = document.querySelector('header .flex.items-center .w-7.h-7, header .flex.items-center .w-10.h-10');
+            if (headerAvatar && window.GymApp.avatarImg) {
+                headerAvatar.innerHTML = window.GymApp.avatarImg(this.user.avatar_url, this.user.ho_ten, 'sm');
             }
         },
 

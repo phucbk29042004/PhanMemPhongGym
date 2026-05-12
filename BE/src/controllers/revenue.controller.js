@@ -110,7 +110,7 @@ export const getDashboard = (req, res) => {
     tong_pt: db.prepare(`SELECT COUNT(*) AS tong FROM ho_so WHERE loai_ho_so = 'pt' AND is_deleted = 0`).get().tong,
 
     // Doanh thu hôm nay
-    doanh_thu_hom_nay: db.prepare('SELECT tong_tien, tong_don FROM doanh_thu WHERE ngay = ?').get(today),
+    doanh_thu_hom_nay: db.prepare('SELECT tong_tien, tong_don FROM doanh_thu WHERE ngay = ?').get(today) || { tong_tien: 0, tong_don: 0 },
 
     // Lượt vào ra hôm nay
     luot_vao_ra_hom_nay: db.prepare(`

@@ -91,11 +91,8 @@
 
   function _updateHeaderUI(user) {
     const headerAvatar = document.getElementById('header-avatar');
-    if (!headerAvatar) return;
-    if (user.avatar_url) {
-      headerAvatar.innerHTML = `<img src="${user.avatar_url}" class="w-full h-full rounded-full object-cover" alt="${user.ho_ten || ''}">`;
-    } else {
-      headerAvatar.innerHTML = `<span class="material-symbols-outlined text-on-surface-variant" style="font-variation-settings:'FILL' 1">person</span>`;
+    if (headerAvatar) {
+      headerAvatar.innerHTML = window.GymApp.avatarImg(user.avatar_url, user.ho_ten, 'sm');
     }
   }
 
@@ -525,7 +522,7 @@
 
           <section class="member-card overflow-hidden">
             <div class="p-s6 border-b border-outline-variant flex items-center gap-s5">
-              ${avatarUrl ? `<img src="${avatarUrl}" class="w-[72px] h-[72px] rounded-full object-cover border-2 border-brand-primary" alt="${tenHV}">` : window.GymApp.avatarInitials(tenHV, 'xl')}
+              ${window.GymApp.avatarImg(avatarUrl, tenHV, 'xl')}
               <div class="min-w-0">
                 <p class="font-bold text-headline-sm text-on-surface truncate">${tenHV}</p>
                 <p class="text-on-surface-variant text-body-sm mt-s1">Hội viên | ${window.GymApp.formatEnumLabel(p.loai_hv || 'thuong')}</p>

@@ -5,7 +5,7 @@
 
 import db from '../config/db.js';
 import { success, error } from '../utils/response.js';
-import { uploadImage, deleteImage } from '../utils/cloudinary.js';
+import { uploadImage, deleteImage, isCloudinaryReady } from '../utils/cloudinary.js';
 import { ghi_audit_log } from '../utils/audit.js';
 import { createNotification } from '../utils/notifications.js';
 import bcrypt from 'bcryptjs';
@@ -124,6 +124,10 @@ export const createMember = async (req, res) => {
 
   // Upload ảnh nếu có
   if (req.file) {
+    if (!isCloudinaryReady) {
+      console.error('❌ Thất bại: Cố gắng upload ảnh nhưng Cloudinary chưa được cấu hình trong .env');
+      return error(res, 'Hệ thống chưa cấu hình lưu trữ ảnh (Cloudinary). Vui lòng kiểm tra file .env hoặc liên hệ admin.', 500);
+    }
     try {
       const result = await uploadImage(req.file.buffer, 'paradise-gym/profiles');
       avatar_url = result.url;
@@ -235,6 +239,9 @@ export const updateAvatar = async (req, res) => {
   if (!req.file) return error(res, 'Vui lòng chọn file ảnh.', 400);
 
   try {
+    if (!isCloudinaryReady) {
+      return error(res, 'Hệ thống chưa cấu hình lưu trữ ảnh (Cloudinary).', 500);
+    }
     // Xóa ảnh cũ trên Cloudinary
     if (member.cloudinary_public_id) await deleteImage(member.cloudinary_public_id);
 

@@ -5,11 +5,21 @@
 
 import { v2 as cloudinary } from 'cloudinary';
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key:    process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+const isConfigured = 
+  process.env.CLOUDINARY_CLOUD_NAME && 
+  process.env.CLOUDINARY_CLOUD_NAME !== 'your_cloud_name';
+
+if (isConfigured) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key:    process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+  });
+} else {
+  console.warn('⚠️ Cloudinary chưa được cấu hình đúng trong file .env (vẫn đang để placeholder). Tính năng upload ảnh sẽ bị lỗi.');
+}
+
+export const isCloudinaryReady = isConfigured;
 
 /**
  * Upload buffer ảnh lên Cloudinary
