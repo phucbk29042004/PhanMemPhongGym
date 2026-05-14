@@ -1,14 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Home, Calendar, Users, User } from 'lucide-react-native';
 import PTHomeScreen from '../screens/pt/PTHomeScreen';
-
-// Stub screens
-const ScheduleScreen = () => <View style={s.center}><Text>Lịch dạy</Text></View>;
-const MembersScreen = () => <View style={s.center}><Text>Danh sách học viên</Text></View>;
-const ProfileScreen = () => <View style={s.center}><Text>Cá nhân</Text></View>;
-
-const s = StyleSheet.create({ center: { flex: 1, justifyContent: 'center', alignItems: 'center' } });
+import PTScheduleScreen from '../screens/pt/PTScheduleScreen';
+import PTStudentsScreen from '../screens/pt/PTStudentsScreen';
+import PTProfileScreen from '../screens/pt/PTProfileScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -17,15 +13,59 @@ export default function PTNavigator() {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#2563EB',
+        tabBarActiveTintColor: '#1D9336', // Sync with FE Web green theme
         tabBarInactiveTintColor: '#9CA3AF',
-        tabBarStyle: { height: 60, paddingBottom: 8 },
+        tabBarStyle: { 
+          height: 65, 
+          paddingBottom: 10, 
+          paddingTop: 8,
+          backgroundColor: '#ffffff',
+          borderTopWidth: 1,
+          borderTopColor: '#ebeef3',
+          elevation: 10,
+          shadowColor: '#000',
+          shadowOpacity: 0.05,
+          shadowRadius: 10,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '600',
+          marginTop: 2
+        }
       }}
     >
-      <Tab.Screen name="Home" component={PTHomeScreen} options={{ tabBarLabel: 'Trang chủ' }} />
-      <Tab.Screen name="Schedule" component={ScheduleScreen} options={{ tabBarLabel: 'Lịch dạy' }} />
-      <Tab.Screen name="Members" component={MembersScreen} options={{ tabBarLabel: 'Học viên' }} />
-      <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarLabel: 'Cá nhân' }} />
+      <Tab.Screen 
+        name="Home" 
+        component={PTHomeScreen} 
+        options={{ 
+          tabBarLabel: 'Tổng quan',
+          tabBarIcon: ({ color, size }) => <Home color={color} size={22} />
+        }} 
+      />
+      <Tab.Screen 
+        name="Schedule" 
+        component={PTScheduleScreen} 
+        options={{ 
+          tabBarLabel: 'Lịch dạy',
+          tabBarIcon: ({ color, size }) => <Calendar color={color} size={22} />
+        }} 
+      />
+      <Tab.Screen 
+        name="Members" 
+        component={PTStudentsScreen} 
+        options={{ 
+          tabBarLabel: 'Học viên',
+          tabBarIcon: ({ color, size }) => <Users color={color} size={22} />
+        }} 
+      />
+      <Tab.Screen 
+        name="Profile" 
+        component={PTProfileScreen} 
+        options={{ 
+          tabBarLabel: 'Cá nhân',
+          tabBarIcon: ({ color, size }) => <User color={color} size={22} />
+        }} 
+      />
     </Tab.Navigator>
   );
 }
