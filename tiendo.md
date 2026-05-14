@@ -8,11 +8,30 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
-**✅ Hệ thống thông báo (Bell Icon)** đã hoàn thành đầy đủ 15 loại: bảng `thong_bao` trong DB (migration v2), 5 API endpoint, 15 loại sự kiện (6 cron + 9 realtime), bell icon dropdown trong header Admin/Lễ tân với polling 30 giây.
+**✅ Đồng bộ giao diện thông báo (3 Portal)** — Admin/Lễ tân nay dùng bảng màu M3 (danger/warning/info/success) giống PT và Hội viên; 16 loại sự kiện được ánh xạ sang 4 mức độ; Cả 3 portal đều có nút **X** xóa từng thông báo + nút **"Xóa tất cả"**; Dropdown Admin gọi API `/notifications/read-all`, PT và Hội viên xóa client-side (stateless, không gọi API thêm).
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
+
+### 14/05/2026 08:32 — Thông Báo Realtime Portal (Không Lưu DB)
+- **Loại**: Tính năng mới (Fullstack — Backend + Frontend)
+- **File chỉnh sửa**:
+  - `BE/src/controllers/members.controller.js` — Thêm hàm `getMyNotifications()`: tự động nhận diện role qua `req.user.vai_tro`; Hội viên: 6 nghiệp vụ (gói hết hạn, sắp hết hạn, buổi PT hôm nay, gói PT sắp hết buổi, check-in hôm nay, buổi PT bị hủy gần đây); PT: 5 nghiệp vụ (HV đã check-in hôm nay, HV chưa check-in ≤30 phút, lịch mới 24h, buổi bị hủy 7 ngày, HV mới đăng ký 7 ngày); Sắp xếp theo mức độ `danger > warning > info > success`; Trả thêm cờ `da_check_in_hom_nay`.
+  - `BE/src/routes/members.routes.js` — Đăng ký route `GET /api/members/me/notifications` (protected bởi `verifyToken` toàn router).
+  - `FE/assets/js/member-portal.js` — Thêm fetch `/members/me/notifications` vào `_fetchData()`; Thêm helper `renderNotificationBanners()` render Banner Card với 4 cấp màu M3; Chèn banners ngay đầu Dashboard `render()`.
+  - `FE/pt-portal.html` — Thêm Bell Icon + Dropdown HTML vào Header, đặt cạnh nút dark/light.
+  - `FE/assets/js/pt-portal.js` — Fetch notifications cùng `_fetchData()`; Thêm `_initNotifications()`: cập nhật badge số lượng, render dropdown, gắn sự kiện toggle/click-outside.
+- **Mô tả**: **✅ Bell Icon Thông Báo — Hội Viên & PT** — Cả hai portal đều có Bell Icon + Dropdown trên Header cạnh nút dark/light, kèm badge đỏ số lượng. Hội viên còn có thêm Banner Card ngay đầu Dashboard. Dữ liệu tính toán realtime từ DB qua endpoint `GET /api/me/notifications`, không lưu bảng `thong_bao`.
+**✅ Responsive Đặt Lịch PT** — Tối ưu hiển thị danh sách "Lịch đã đặt" trên màn hình nhỏ, thay đổi cách tính chiều cao (`h-full` -> `lg:h-full`) để danh sách tự giãn vừa đúng 5 item mà không bị cắt hoặc lộ khoảng trắng. Nâng cấp CSS Grid cho hai ô "Chọn PT" và "Chọn hội viên" để hiển thị ngang hàng nhau trên màn hình lớn.
+- **Kết quả**: Thành công
+- **Loại**: Tính năng mới (Fullstack — Backend + Frontend)
+- **File chỉnh sửa**:
+  - `BE/src/config/db.js` — Migration v4: Transaction-safe rename→recreate→copy→drop bảng `thong_bao`; thêm loại `cap_nhat_buoi_tap` vào CHECK constraint (tổng 16 loại); flag `db_migration_thongbao_v4` trong `cau_hinh` để chỉ chạy 1 lần.
+  - `BE/src/controllers/pt-schedules.controller.js` — Hàm `updateSchedule()`: sau khi `UPDATE lich_tap` thành công, query chi tiết buổi tập → gọi `createNotification('cap_nhat_buoi_tap', ...)` với `danh_cho='ca_hai'` để gửi đến cả hội viên và PT.
+  - `FE/assets/js/app.js` — Module Notifications: bổ sung ánh xạ icon+màu cho toàn bộ 16 loại (bao gồm 8 loại thiếu từ v2 và `cap_nhat_buoi_tap` mới với icon `edit_calendar`, màu `text-blue-600`).
+- **Mô tả**: Khi Lễ tân/Admin sửa ngày hoặc giờ của một buổi tập PT trạng thái `cho_tap`, hệ thống tự động sinh 1 thông báo realtime hiển thị ngay trên dropdown Bell Icon của Admin/Lễ tân, đồng thời hội viên và PT liên quan sẽ nhận được thông tin kịp thời khi truy cập Portal.
+- **Kết quả**: Thành công
 
 ### 12/05/2026 08:35 — Bổ Sung 8 Loại Thông Báo Mới (Tổng 15 Loại)
 - **Loại**: Tính năng mới (Backend)

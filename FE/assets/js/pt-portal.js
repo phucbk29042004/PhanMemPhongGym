@@ -29,6 +29,9 @@
     // Load dữ liệu ban đầu
     await _fetchData();
 
+    // Khởi tạo thông báo bell icon
+    _initNotifications();
+
     // Áp dụng theme
     _applyTheme(localStorage.getItem('gym-theme') || 'light');
 
@@ -67,22 +70,127 @@
 
     const headerAvatar = document.getElementById('header-avatar');
     if (headerAvatar) headerAvatar.innerHTML = window.GymApp.avatarImg(user.avatar_url, user.ho_ten, 'sm');
-    
+
     const sidebarAvatar = document.getElementById('sidebar-avatar');
     if (sidebarAvatar) sidebarAvatar.innerHTML = window.GymApp.avatarImg(user.avatar_url, user.ho_ten, 'sm');
   }
 
   async function _fetchData() {
     try {
-      const [schedulesRes, profileRes] = await Promise.all([
+      const [schedulesRes, profileRes, notifRes] = await Promise.all([
         window.GymApp.api.get('/pt/schedules'),
         window.GymApp.api.get('/auth/me'),
+        window.GymApp.api.get('/members/me/notifications'),
       ]);
       if (schedulesRes?.success) window.GymApp.data.ptSchedules = schedulesRes.data || [];
       if (profileRes?.success) window.GymApp.data.myProfile = profileRes.data;
+      if (notifRes?.success) window.GymApp.data.myNotifications = notifRes.data?.notifications || [];
     } catch (err) {
       console.error('PT Portal: fetch data failed', err);
     }
+  }
+
+  // ── Thông báo Bell Icon cho PT ──────────────────────
+
+  const PT_NOTIF_STYLE = {
+    danger: { bg: '#fff0f0', border: '#fca5a5', icon_color: '#dc2626', text_color: '#7f1d1d' },
+    warning: { bg: '#fffbeb', border: '#fcd34d', icon_color: '#d97706', text_color: '#78350f' },
+    info: { bg: '#eff6ff', border: '#93c5fd', icon_color: '#2563eb', text_color: '#1e3a5f' },
+    success: { bg: '#f0fdf4', border: '#86efac', icon_color: '#16a34a', text_color: '#14532d' },
+  };
+
+  function _renderPtDropdownList() {
+    const notifs = window.GymApp.data.myNotifications || [];
+    const list = document.getElementById('pt-notif-list');
+    if (!list) return;
+    if (!notifs.length) {
+      list.innerHTML = `
+        <div style="text-align:center;padding:24px 16px;color:var(--text-on-surface-variant)">
+          <span class="material-symbols-outlined" style="font-size:32px;display:block;margin-bottom:8px">notifications_none</span>
+          <p style="font-size:12px;margin:0">Không có thông báo nào</p>
+        </div>
+      `;
+      return;
+    }
+    list.innerHTML = notifs.map((n, idx) => {
+      const s = PT_NOTIF_STYLE[n.muc_do] || PT_NOTIF_STYLE.info;
+      return `
+        <div data-notif-idx="${idx}" style="
+          margin-bottom:6px;background:${s.bg};border:1px solid ${s.border};
+          border-radius:8px;padding:10px 12px;display:flex;align-items:flex-start;gap:10px;
+        ">
+          <span class="material-symbols-outlined" style="color:${s.icon_color};font-size:18px;flex-shrink:0;margin-top:1px;font-variation-settings:'FILL' 1">${n.icon}</span>
+          <div style="flex:1;min-width:0">
+            <p style="font-weight:700;font-size:12px;color:${s.text_color};margin:0 0 2px">${n.tieu_de}</p>
+            <p style="font-size:11px;color:${s.text_color};opacity:0.85;margin:0;line-height:1.5">${n.noi_dung}</p>
+          </div>
+          <button class="pt-notif-del" data-idx="${idx}" title="Xóa" style="
+            background:rgba(0,0,0,0.08);border:none;cursor:pointer;border-radius:6px;
+            padding:3px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+          " onmouseover="this.style.background='rgba(0,0,0,0.18)'" onmouseout="this.style.background='rgba(0,0,0,0.08)'">
+            <span class="material-symbols-outlined" style="font-size:14px;color:${s.text_color}">close</span>
+          </button>
+        </div>
+      `;
+    }).join('');
+
+    // Bind nút X
+    list.querySelectorAll('.pt-notif-del').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        _removePtNotif(parseInt(btn.dataset.idx));
+      });
+    });
+  }
+
+  function _removePtNotif(index) {
+    const notifs = window.GymApp.data.myNotifications || [];
+    notifs.splice(index, 1);
+    window.GymApp.data.myNotifications = notifs;
+    const badge = document.getElementById('pt-notif-badge');
+    if (badge) {
+      if (notifs.length > 0) { badge.textContent = notifs.length > 9 ? '9+' : notifs.length; badge.style.display = 'flex'; }
+      else { badge.style.display = 'none'; }
+    }
+    _renderPtDropdownList();
+  }
+
+  function _initNotifications() {
+    const notifs = window.GymApp.data.myNotifications || [];
+
+    // Cập nhật badge
+    const badge = document.getElementById('pt-notif-badge');
+    if (badge) {
+      if (notifs.length > 0) { badge.textContent = notifs.length > 9 ? '9+' : notifs.length; badge.style.display = 'flex'; }
+      else { badge.style.display = 'none'; }
+    }
+
+    _renderPtDropdownList();
+
+    // Toggle dropdown khi click chuông
+    const btn = document.getElementById('pt-notif-btn');
+    const dropdown = document.getElementById('pt-notif-dropdown');
+    if (btn && dropdown) {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdown.style.display = dropdown.style.display !== 'none' ? 'none' : 'block';
+      });
+      // Đóng dropdown khi click ra ngoài
+      document.addEventListener('click', (e) => {
+        if (!document.getElementById('pt-notif-wrapper')?.contains(e.target)) {
+          dropdown.style.display = 'none';
+        }
+      });
+    }
+
+    // Nút Xóa tất cả
+    document.getElementById('pt-notif-clear-all')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      window.GymApp.data.myNotifications = [];
+      const badge = document.getElementById('pt-notif-badge');
+      if (badge) badge.style.display = 'none';
+      _renderPtDropdownList();
+    });
   }
 
   function _applyTheme(t) {

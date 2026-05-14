@@ -158,4 +158,53 @@ if (!migratedV3) {
   console.log('[DB] ✅ Migration v_trang_thai_hoi_vien v3 hoàn thành.');
 }
 
+// ── Migration v4: Mở rộng bảng thong_bao lên 16 loại (thêm cap_nhat_buoi_tap) ──
+const migratedV4 = db.prepare(`SELECT gia_tri FROM cau_hinh WHERE khoa = 'db_migration_thongbao_v4'`).get();
+
+if (!migratedV4) {
+  db.transaction(() => {
+    // Đổi tên bảng cũ để giữ toàn bộ dữ liệu
+    db.exec(`ALTER TABLE thong_bao RENAME TO thong_bao_v3_backup;`);
+
+    // Tạo bảng mới với 16 loại (bổ sung 'cap_nhat_buoi_tap')
+    db.exec(`
+      CREATE TABLE thong_bao (
+        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+        loai          TEXT NOT NULL CHECK (loai IN (
+                          'sap_het_han_goi_tap', 'het_han_goi_tap',
+                          'check_in', 'chua_check_in_truoc_buoi_pt',
+                          'cron_tu_xac_nhan', 'sap_het_buoi_pt',
+                          'ho_so_moi', 'gia_han_goi_tap',
+                          'dang_ky_goi_pt_moi', 'huy_buoi_tap',
+                          'hoan_tac_buoi_tap', 'tai_khoan_bi_khoa',
+                          'tai_khoan_moi', 'tom_tat_buoi_sang',
+                          'het_han_goi_pt_thang', 'cap_nhat_buoi_tap'
+                      )),
+        tieu_de       TEXT NOT NULL,
+        noi_dung      TEXT NOT NULL,
+        doi_tuong_id  INTEGER,
+        doi_tuong     TEXT,
+        danh_cho      TEXT NOT NULL CHECK (danh_cho IN ('admin','le_tan','ca_hai')),
+        da_doc        INTEGER NOT NULL DEFAULT 0 CHECK (da_doc IN (0,1)),
+        doc_boi_id    INTEGER REFERENCES tai_khoan(id),
+        ngay_doc      DATETIME,
+        ngay_tao      DATETIME NOT NULL DEFAULT (datetime('now','localtime'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_thongbao_danh_cho ON thong_bao(danh_cho, da_doc);
+      CREATE INDEX IF NOT EXISTS idx_thongbao_ngay ON thong_bao(ngay_tao);
+    `);
+
+    // Copy toàn bộ dữ liệu thông báo cũ sang bảng mới
+    db.exec(`INSERT INTO thong_bao SELECT * FROM thong_bao_v3_backup;`);
+
+    // Xóa bảng backup
+    db.exec(`DROP TABLE thong_bao_v3_backup;`);
+  })();
+
+  // Lưu flag migration ngoài transaction để tránh nested prepare lock
+  db.prepare(`INSERT OR IGNORE INTO cau_hinh (khoa, gia_tri, mo_ta) VALUES ('db_migration_thongbao_v4', '1', 'Mở rộng bảng thong_bao lên 16 loại: thêm cap_nhat_buoi_tap')`).run();
+  console.log('[DB] ✅ Migration thong_bao v4 hoàn thành — 16 loại thông báo (bổ sung cap_nhat_buoi_tap).');
+}
+
 export default db;
+

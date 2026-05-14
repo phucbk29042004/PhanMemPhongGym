@@ -9,6 +9,7 @@ import {
   deleteMember, updateAvatar, getExpiringMembers,
   getExpiredMembers, getMemberHistory, registerPackage,
   getBirthday, getMyProfile, createAccount, checkDuplicate,
+  getMyNotifications,
 } from '../controllers/members.controller.js';
 import { verifyToken } from '../middlewares/auth.js';
 import { requireRole } from '../middlewares/role.js';
@@ -24,6 +25,7 @@ router.get('/expired',          requireRole('admin', 'le_tan'), getExpiredMember
 router.get('/birthday',         requireRole('admin', 'le_tan'), getBirthday);
 router.get('/check-duplicate',  requireRole('admin', 'le_tan'), checkDuplicate);
 router.get('/me/profile', verifyToken, getMyProfile);
+router.get('/me/notifications', getMyNotifications); // Thông báo realtime — không lưu DB
 
 // CRUD cơ bản
 router.get('/',    requireRole('admin', 'le_tan'), getMembers);

@@ -240,5 +240,29 @@ export const updateSchedule = (req, res) => {
   `).run(ngay_tap || null, gio_bat_dau || null, gio_ket_thuc || null, ghi_chu || null, id);
 
   ghi_audit_log(req, 'UPDATE', 'lich_tap', parseInt(id), schedule, req.body, 'Cập nhật lịch tập');
+
+  // Sinh thông báo realtime cho hội viên và PT khi giờ/ngày tập bị thay đổi
+  const updated = db.prepare(`
+    SELECT lt.ngay_tap, lt.gio_bat_dau, lt.gio_ket_thuc,
+           hv.ho_ten AS ho_ten_hoi_vien,
+           pt.ho_ten AS ho_ten_pt
+    FROM lich_tap lt
+    JOIN ho_so hv ON hv.id = lt.hoi_vien_id
+    JOIN ho_so pt ON pt.id = lt.pt_id
+    WHERE lt.id = ?
+  `).get(id);
+
+  if (updated) {
+    const noiDung = `Buổi tập của ${updated.ho_ten_hoi_vien} với PT ${updated.ho_ten_pt} đã được dời sang ${updated.ngay_tap} lúc ${updated.gio_bat_dau}–${updated.gio_ket_thuc}`;
+    createNotification(
+      'cap_nhat_buoi_tap',
+      'Lịch tập đã thay đổi',
+      noiDung,
+      parseInt(id),
+      'lich_tap',
+      'ca_hai'
+    );
+  }
+
   return success(res, db.prepare('SELECT * FROM lich_tap WHERE id = ?').get(id), 'Cập nhật lịch thành công');
 };

@@ -32,46 +32,49 @@ window.GymApp.pages['pt-register'] = {
 
             <div class="p-loose flex flex-col gap-margin">
 
-              <!-- Chọn PT -->
-              <div>
-                <label class="block text-body-sm text-on-surface-variant font-bold mb-xs flex items-center gap-xs">
-                  <span class="material-symbols-outlined text-brand-primary text-sm" style="font-variation-settings:'FILL' 1">sports_gymnastics</span>
-                  Chọn huấn luyện viên (PT)
-                </label>
-                <div id="pt-selection-area" class="space-y-xs">
-                  <div class="relative mb-standard">
-                    <span class="material-symbols-outlined absolute left-standard top-1/2 -translate-y-1/2 text-outline text-sm">search</span>
-                    <input id="search-pt" type="text" placeholder="Tìm kiếm PT..." class="w-full bg-surface-container-low border border-outline-variant text-on-surface pl-8 pr-standard py-compact rounded-xl focus:border-brand-primary outline-none font-body-md text-body-md transition-colors" />
+              <!-- Khối chọn người -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-standard">
+                <!-- Chọn PT -->
+                <div>
+                  <label class="block text-body-sm text-on-surface-variant font-bold mb-xs flex items-center gap-xs">
+                    <span class="material-symbols-outlined text-brand-primary text-sm" style="font-variation-settings:'FILL' 1">sports_gymnastics</span>
+                    Chọn huấn luyện viên (PT)
+                  </label>
+                  <div id="pt-selection-area" class="space-y-xs">
+                    <div class="relative mb-standard">
+                      <span class="material-symbols-outlined absolute left-standard top-1/2 -translate-y-1/2 text-outline text-sm">search</span>
+                      <input id="search-pt" type="text" placeholder="Tìm kiếm PT..." class="w-full bg-surface-container-low border border-outline-variant text-on-surface pl-8 pr-standard py-compact rounded-xl focus:border-brand-primary outline-none font-body-md text-body-md transition-colors" />
+                    </div>
+                    <div id="pt-list" class="flex flex-col gap-xs max-h-64 overflow-y-auto pr-xs border border-outline-variant rounded-xl p-xs">
+                      <p class="text-center py-4 text-on-surface-variant text-body-sm">Đang tải danh sách PT...</p>
+                    </div>
                   </div>
-                  <div id="pt-list" class="flex flex-col gap-xs max-h-64 overflow-y-auto pr-xs border border-outline-variant rounded-xl p-xs">
-                    <p class="text-center py-4 text-on-surface-variant text-body-sm">Đang tải danh sách PT...</p>
+                  <div id="selected-pt-display" class="hidden p-compact bg-[#e7f5e9] rounded-xl border border-brand-primary flex items-center gap-compact mt-xs">
+                    <div id="selected-pt-info" class="flex items-center gap-compact flex-1"></div>
+                    <button id="clear-pt" class="material-symbols-outlined text-xl text-on-surface-variant hover:text-error transition-colors">close</button>
                   </div>
                 </div>
-                <div id="selected-pt-display" class="hidden p-compact bg-[#e7f5e9] rounded-xl border border-brand-primary flex items-center gap-compact mt-xs">
-                  <div id="selected-pt-info" class="flex items-center gap-compact flex-1"></div>
-                  <button id="clear-pt" class="material-symbols-outlined text-xl text-on-surface-variant hover:text-error transition-colors">close</button>
-                </div>
-              </div>
 
-              <!-- Chọn Hội viên -->
-              <div>
-                <label class="block text-body-sm text-on-surface-variant font-bold mb-xs flex items-center gap-xs">
-                  <span class="material-symbols-outlined text-brand-primary text-sm" style="font-variation-settings:'FILL' 1">person</span>
-                  Chọn hội viên
-                  <span id="member-list-hint" class="text-on-surface-variant font-normal italic">(chọn PT trước)</span>
-                </label>
-                <div id="member-selection-area" class="space-y-xs">
-                  <div class="relative mb-standard">
-                    <span class="material-symbols-outlined absolute left-standard top-1/2 -translate-y-1/2 text-outline text-sm">search</span>
-                    <input id="search-member" type="text" placeholder="Tìm kiếm hội viên..." class="w-full bg-surface-container-low border border-outline-variant text-on-surface pl-8 pr-standard py-compact rounded-xl focus:border-brand-primary outline-none font-body-md text-body-md transition-colors" />
+                <!-- Chọn Hội viên -->
+                <div>
+                  <label class="block text-body-sm text-on-surface-variant font-bold mb-xs flex items-center gap-xs">
+                    <span class="material-symbols-outlined text-brand-primary text-sm" style="font-variation-settings:'FILL' 1">person</span>
+                    Chọn hội viên
+                    <span id="member-list-hint" class="text-on-surface-variant font-normal italic">(chọn PT trước)</span>
+                  </label>
+                  <div id="member-selection-area" class="space-y-xs">
+                    <div class="relative mb-standard">
+                      <span class="material-symbols-outlined absolute left-standard top-1/2 -translate-y-1/2 text-outline text-sm">search</span>
+                      <input id="search-member" type="text" placeholder="Tìm kiếm hội viên..." class="w-full bg-surface-container-low border border-outline-variant text-on-surface pl-8 pr-standard py-compact rounded-xl focus:border-brand-primary outline-none font-body-md text-body-md transition-colors" />
+                    </div>
+                    <div id="member-list" class="flex flex-col gap-xs max-h-64 overflow-y-auto pr-xs border border-outline-variant rounded-xl p-xs">
+                      <p class="text-center py-4 text-on-surface-variant text-body-sm">Vui lòng chọn PT trước</p>
+                    </div>
                   </div>
-                  <div id="member-list" class="flex flex-col gap-xs max-h-64 overflow-y-auto pr-xs border border-outline-variant rounded-xl p-xs">
-                    <p class="text-center py-4 text-on-surface-variant text-body-sm">Vui lòng chọn PT trước</p>
+                  <div id="selected-member-display" class="hidden p-compact bg-[#e7f5e9] rounded-xl border border-brand-primary flex items-center gap-compact mt-xs">
+                    <div id="selected-member-info" class="flex items-center gap-compact flex-1"></div>
+                    <button id="clear-member" class="material-symbols-outlined text-xl text-on-surface-variant hover:text-error transition-colors">close</button>
                   </div>
-                </div>
-                <div id="selected-member-display" class="hidden p-compact bg-[#e7f5e9] rounded-xl border border-brand-primary flex items-center gap-compact mt-xs">
-                  <div id="selected-member-info" class="flex items-center gap-compact flex-1"></div>
-                  <button id="clear-member" class="material-symbols-outlined text-xl text-on-surface-variant hover:text-error transition-colors">close</button>
                 </div>
               </div>
 
@@ -123,7 +126,7 @@ window.GymApp.pages['pt-register'] = {
           </div>
 
           <!-- ===== CARD 2: Danh sách đã đặt ===== -->
-          <div class="lg:col-span-3 bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden flex flex-col h-full min-h-0">
+          <div class="lg:col-span-3 bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden flex flex-col lg:h-full lg:min-h-0">
             <div class="section-header px-loose py-standard border-b border-outline-variant flex items-center gap-compact">
               <div class="icon-bg icon-bg-green">
                 <span class="material-symbols-outlined text-brand-primary text-lg" style="font-variation-settings:'FILL' 1">calendar_month</span>
@@ -132,7 +135,7 @@ window.GymApp.pages['pt-register'] = {
               <span id="booking-count" class="ml-auto bg-brand-primary text-white px-compact py-xs rounded-full text-label-xs font-bold">${totalBookings}</span>
             </div>
 
-            <div id="booking-list" class="p-standard flex flex-col gap-standard flex-1 min-h-0 overflow-y-auto">
+            <div id="booking-list" class="p-standard flex flex-col gap-standard flex-1 lg:min-h-0 overflow-y-auto" style="min-height:400px">
               ${this._renderBookingList()}
             </div>
             <div id="booking-pagination"></div>

@@ -678,22 +678,49 @@
     let _dropdownOpen = false;
 
     const LOAI_ICON = {
-      sap_het_han_goi_tap:       'schedule',
-      het_han_goi_tap:           'event_busy',
-      check_in:                  'how_to_reg',
-      chua_check_in_truoc_buoi_pt: 'warning',
-      cron_tu_xac_nhan:          'smart_toy',
-      sap_het_buoi_pt:           'fitness_center',
-      ho_so_moi:                 'person_add',
+      sap_het_han_goi_tap:          'schedule',
+      het_han_goi_tap:              'event_busy',
+      check_in:                     'how_to_reg',
+      chua_check_in_truoc_buoi_pt:  'warning',
+      cron_tu_xac_nhan:             'smart_toy',
+      sap_het_buoi_pt:              'fitness_center',
+      ho_so_moi:                    'person_add',
+      gia_han_goi_tap:              'card_membership',
+      dang_ky_goi_pt_moi:           'assignment_turned_in',
+      huy_buoi_tap:                 'event_busy',
+      hoan_tac_buoi_tap:            'undo',
+      tai_khoan_bi_khoa:            'lock',
+      tai_khoan_moi:                'manage_accounts',
+      tom_tat_buoi_sang:            'wb_sunny',
+      het_han_goi_pt_thang:         'timer_off',
+      cap_nhat_buoi_tap:            'edit_calendar',
     };
-    const LOAI_COLOR = {
-      sap_het_han_goi_tap:       'text-amber-500',
-      het_han_goi_tap:           'text-red-500',
-      check_in:                  'text-green-600',
-      chua_check_in_truoc_buoi_pt:'text-orange-500',
-      cron_tu_xac_nhan:          'text-blue-500',
-      sap_het_buoi_pt:           'text-orange-400',
-      ho_so_moi:                 'text-purple-500',
+    // Ánh xạ loại sự kiện → mức độ (dùng để chọn màu M3)
+    const LOAI_MUC_DO = {
+      het_han_goi_tap:              'danger',
+      huy_buoi_tap:                 'danger',
+      tai_khoan_bi_khoa:            'danger',
+      sap_het_han_goi_tap:          'warning',
+      chua_check_in_truoc_buoi_pt:  'warning',
+      sap_het_buoi_pt:              'warning',
+      het_han_goi_pt_thang:         'warning',
+      hoan_tac_buoi_tap:            'warning',
+      check_in:                     'success',
+      ho_so_moi:                    'success',
+      gia_han_goi_tap:              'success',
+      dang_ky_goi_pt_moi:           'success',
+      tai_khoan_moi:                'success',
+      cron_tu_xac_nhan:             'info',
+      tom_tat_buoi_sang:            'info',
+      cap_nhat_buoi_tap:            'info',
+    };
+
+    // Bảng màu M3 cho từng mức độ (inline style để tránh purge Tailwind)
+    const STYLE_MUC_DO = {
+      danger:  { bg: '#fff0f0', border: '#fca5a5', icon: '#dc2626', text: '#7f1d1d' },
+      warning: { bg: '#fffbeb', border: '#fcd34d', icon: '#d97706', text: '#78350f' },
+      info:    { bg: '#eff6ff', border: '#93c5fd', icon: '#2563eb', text: '#1e3a5f' },
+      success: { bg: '#f0fdf4', border: '#86efac', icon: '#16a34a', text: '#14532d' },
     };
 
     function _timeAgo(dateStr) {
@@ -743,19 +770,44 @@
         }
 
         listEl.innerHTML = items.map(n => {
-          const icon = LOAI_ICON[n.loai] || 'notifications';
-          const color = LOAI_COLOR[n.loai] || 'text-on-surface-variant';
-          const bg = n.da_doc === 0 ? 'bg-[#e7f5e9] dark:bg-[#0d2b14]' : '';
+          const icon   = LOAI_ICON[n.loai] || 'notifications';
+          const mucDo  = LOAI_MUC_DO[n.loai] || 'info';
+          const s      = STYLE_MUC_DO[mucDo];
+          const unread = n.da_doc === 0;
           return `
-            <div class="notif-item flex items-start gap-3 px-4 py-3 border-b border-outline-variant cursor-pointer hover:bg-surface-container transition-colors ${bg}"
-                 data-notif-id="${n.id}" data-da-doc="${n.da_doc}">
-              <span class="material-symbols-outlined ${color} flex-shrink-0 mt-0.5" style="font-size:20px;font-variation-settings:'FILL' 1">${icon}</span>
-              <div class="flex-1 min-w-0">
-                <p class="text-body-sm font-semibold text-on-surface leading-snug">${n.tieu_de}</p>
-                <p class="text-body-sm text-on-surface-variant mt-0.5 leading-snug">${n.noi_dung}</p>
-                <p class="text-[10px] text-on-surface-variant mt-1">${_timeAgo(n.ngay_tao)}</p>
+            <div class="notif-item" data-notif-id="${n.id}" data-da-doc="${n.da_doc}" style="
+              margin-bottom:6px;
+              background:${s.bg};
+              border:1px solid ${s.border};
+              border-radius:10px;
+              padding:10px 12px;
+              display:flex;
+              align-items:flex-start;
+              gap:10px;
+              position:relative;
+              transition:opacity .25s,transform .25s;
+            ">
+              <span class="material-symbols-outlined" style="color:${s.icon};font-size:20px;flex-shrink:0;margin-top:1px;font-variation-settings:'FILL' 1">${icon}</span>
+              <div style="flex:1;min-width:0;cursor:pointer" class="notif-body">
+                <div style="display:flex;align-items:center;gap:5px;margin-bottom:2px">
+                  ${unread ? `<span style="width:7px;height:7px;background:#1D9336;border-radius:50%;flex-shrink:0;display:inline-block"></span>` : ''}
+                  <p style="font-weight:700;font-size:12px;color:${s.text};margin:0">${n.tieu_de}</p>
+                </div>
+                <p style="font-size:11px;color:${s.text};opacity:0.85;margin:0;line-height:1.5">${n.noi_dung}</p>
+                <p style="font-size:10px;color:${s.text};opacity:0.6;margin:4px 0 0">${_timeAgo(n.ngay_tao)}</p>
               </div>
-              ${n.da_doc === 0 ? '<span class="w-2 h-2 bg-brand-primary rounded-full flex-shrink-0 mt-1.5"></span>' : ''}
+              <!-- Nút xóa item -->
+              <button class="notif-del-btn" data-notif-id="${n.id}" title="Xóa thông báo" style="
+                background:rgba(0,0,0,0.08);
+                border:none;cursor:pointer;
+                border-radius:6px;
+                padding:3px;
+                display:flex;align-items:center;justify-content:center;
+                flex-shrink:0;
+                transition:background .15s;
+              " onmouseover="this.style.background='rgba(0,0,0,0.18)'" onmouseout="this.style.background='rgba(0,0,0,0.08)'">
+                <span class="material-symbols-outlined" style="font-size:14px;color:${s.text}">close</span>
+              </button>
             </div>`;
         }).join('');
       } catch (_) {
@@ -768,25 +820,55 @@
       _dropdownOpen = false;
     }
 
-    async function _markOneRead(id, itemEl) {
+    // Xóa 1 thông báo: đánh dấu đã đọc phía DB rồi fade-out DOM
+    async function _deleteOne(id, itemEl) {
       try {
         await window.GymApp.api.patch(`/notifications/${id}/read`);
-        itemEl.classList.remove('bg-[#e7f5e9]', 'dark:bg-[#0d2b14]');
-        itemEl.dataset.daDoe = '1';
-        itemEl.querySelector('.w-2.h-2.bg-brand-primary')?.remove();
-        _fetchUnreadCount();
       } catch (_) {}
+      // Fade-out mượt
+      itemEl.style.transition = 'opacity .25s, max-height .3s, margin .3s, padding .3s';
+      itemEl.style.opacity = '0';
+      itemEl.style.maxHeight = itemEl.offsetHeight + 'px';
+      setTimeout(() => {
+        itemEl.style.maxHeight = '0';
+        itemEl.style.marginBottom = '0';
+        itemEl.style.padding = '0';
+      }, 50);
+      setTimeout(() => {
+        itemEl.remove();
+        _fetchUnreadCount();
+        // Nếu danh sách trống → hiện empty state
+        const listEl = document.getElementById('notif-list');
+        if (listEl && !listEl.querySelector('.notif-item')) {
+          listEl.innerHTML = `<div style="text-align:center;padding:32px 16px;color:var(--text-on-surface-variant)">
+            <span class="material-symbols-outlined" style="font-size:36px;display:block;margin-bottom:8px">notifications_none</span>
+            <p style="font-size:12px;margin:0">Không có thông báo nào</p>
+          </div>`;
+        }
+      }, 350);
     }
 
+    // Xóa / đánh dấu tất cả đã đọc
     async function _markAllRead() {
       try {
         await window.GymApp.api.patch('/notifications/read-all');
-        document.querySelectorAll('.notif-item').forEach(el => {
-          el.classList.remove('bg-[#e7f5e9]', 'dark:bg-[#0d2b14]');
-          el.querySelector('.w-2.h-2.bg-brand-primary')?.remove();
-        });
-        _updateBadge(0);
       } catch (_) {}
+      const listEl = document.getElementById('notif-list');
+      const items  = listEl?.querySelectorAll('.notif-item') || [];
+      items.forEach((el, i) => {
+        setTimeout(() => {
+          el.style.transition = 'opacity .2s';
+          el.style.opacity = '0';
+          setTimeout(() => el.remove(), 220);
+        }, i * 40);
+      });
+      setTimeout(() => {
+        if (listEl) listEl.innerHTML = `<div style="text-align:center;padding:32px 16px;color:var(--text-on-surface-variant)">
+          <span class="material-symbols-outlined" style="font-size:36px;display:block;margin-bottom:8px">notifications_none</span>
+          <p style="font-size:12px;margin:0">Không có thông báo nào</p>
+        </div>`;
+        _updateBadge(0);
+      }, items.length * 40 + 250);
     }
 
     async function _showLoginSummary() {
@@ -835,13 +917,25 @@
         _markAllRead();
       });
 
-      // Click vào item → đánh dấu đã đọc
+      // Click nút X xóa từng item
       document.getElementById('notif-list')?.addEventListener('click', function (e) {
-        const item = e.target.closest('.notif-item');
-        if (!item) return;
-        const id = item.dataset.notifId;
-        const daDoc = item.dataset.daDoc;
-        if (id && daDoc === '0') _markOneRead(id, item);
+        // Nút X
+        const delBtn = e.target.closest('.notif-del-btn');
+        if (delBtn) {
+          e.stopPropagation();
+          const item = delBtn.closest('.notif-item');
+          const id   = delBtn.dataset.notifId;
+          if (item && id) _deleteOne(id, item);
+          return;
+        }
+        // Click vào body item → đánh dấu đã đọc (không xóa DOM)
+        const body = e.target.closest('.notif-body');
+        if (body) {
+          const item  = body.closest('.notif-item');
+          const id    = item?.dataset.notifId;
+          const daDoc = item?.dataset.daDoc;
+          if (id && daDoc === '0') _deleteOne(id, item);
+        }
       });
 
       // Polling mỗi 30 giây

@@ -580,3 +580,247 @@ export const createAccount = async (req, res) => {
   return success(res, { tai_khoan_id: newTaiKhoanId, ten_dang_nhap: ten_dang_nhap.trim() },
     'Tạo tài khoản thành công', 201);
 };
+
+// ── GET /api/me/notifications ─────────────────────────────
+// Tính toán thông báo realtime từ DB, KHÔNG lưu vào bảng thong_bao
+// Tự động phân biệt role từ req.user.vai_tro
+export const getMyNotifications = (req, res) => {
+  const { vai_tro, id: tai_khoan_id } = req.user;
+
+  // Lấy hồ sơ liên kết với tài khoản
+  const hoSo = db.prepare(`
+    SELECT id, ho_ten, loai_ho_so FROM ho_so
+    WHERE tai_khoan_id = ? AND is_deleted = 0
+  `).get(tai_khoan_id);
+
+  // Nếu không có hồ sơ → trả về rỗng (admin/le_tan không dùng endpoint này)
+  if (!hoSo || (vai_tro !== 'hoi_vien' && vai_tro !== 'pt')) {
+    return success(res, { notifications: [], da_check_in_hom_nay: false });
+  }
+
+  const ho_so_id = hoSo.id;
+  const notifications = [];
+  let da_check_in_hom_nay = false;
+
+  // ── HÀNH TRÌNH HỘI VIÊN ─────────────────────────────────
+  if (vai_tro === 'hoi_vien') {
+
+    // 1. Gói tập ĐÃ HẾT HẠN (den_ngay < today, trang_thai = 'dang_hoat_dong')
+    const goiHetHan = db.prepare(`
+      SELECT dk.id, gt.ten_goi, dk.den_ngay
+      FROM dang_ky_goi_tap dk
+      JOIN goi_tap gt ON gt.id = dk.goi_tap_id
+      WHERE dk.ho_so_id = ? AND dk.trang_thai = 'dang_hoat_dong'
+        AND dk.den_ngay < date('now','localtime')
+      ORDER BY dk.den_ngay DESC LIMIT 1
+    `).get(ho_so_id);
+
+    if (goiHetHan) {
+      notifications.push({
+        muc_do: 'danger',
+        icon: 'warning',
+        tieu_de: 'Gói tập đã hết hạn',
+        noi_dung: `Gói "${goiHetHan.ten_goi}" của bạn đã hết hạn từ ${new Date(goiHetHan.den_ngay).toLocaleDateString('vi-VN')}. Liên hệ lễ tân để gia hạn ngay!`,
+      });
+    }
+
+    // 2. Gói tập SẮP HẾT HẠN (den_ngay trong 7 ngày tới)
+    const goiSapHet = db.prepare(`
+      SELECT dk.id, gt.ten_goi, dk.den_ngay,
+        CAST(julianday(dk.den_ngay) - julianday(date('now','localtime')) AS INTEGER) AS so_ngay_con
+      FROM dang_ky_goi_tap dk
+      JOIN goi_tap gt ON gt.id = dk.goi_tap_id
+      WHERE dk.ho_so_id = ? AND dk.trang_thai = 'dang_hoat_dong'
+        AND dk.den_ngay >= date('now','localtime')
+        AND dk.den_ngay <= date('now','localtime','+7 days')
+      ORDER BY dk.den_ngay ASC LIMIT 1
+    `).get(ho_so_id);
+
+    if (goiSapHet) {
+      notifications.push({
+        muc_do: goiSapHet.so_ngay_con <= 2 ? 'danger' : 'warning',
+        icon: 'hourglass_top',
+        tieu_de: 'Gói tập sắp hết hạn',
+        noi_dung: `Gói "${goiSapHet.ten_goi}" còn ${goiSapHet.so_ngay_con} ngày (${new Date(goiSapHet.den_ngay).toLocaleDateString('vi-VN')}). Hãy gia hạn sớm để không gián đoạn!`,
+      });
+    }
+
+    // 3. Gói PT SẮP HẾT BUỔI (so_buoi_dang_ky - so_buoi_da_tap <= 2)
+    const goiPtSapHet = db.prepare(`
+      SELECT dp.id, pt.ho_ten AS ten_pt,
+        (dp.so_buoi_dang_ky - dp.so_buoi_da_tap) AS buoi_con_lai
+      FROM dang_ky_pt dp
+      JOIN ho_so pt ON pt.id = dp.pt_id
+      WHERE dp.hoi_vien_id = ? AND dp.trang_thai = 'dang_hoat_dong'
+        AND dp.so_buoi_dang_ky IS NOT NULL
+        AND (dp.so_buoi_dang_ky - dp.so_buoi_da_tap) <= 2
+        AND (dp.so_buoi_dang_ky - dp.so_buoi_da_tap) >= 0
+      ORDER BY buoi_con_lai ASC LIMIT 1
+    `).get(ho_so_id);
+
+    if (goiPtSapHet) {
+      notifications.push({
+        muc_do: goiPtSapHet.buoi_con_lai === 0 ? 'danger' : 'warning',
+        icon: 'sports_gymnastics',
+        tieu_de: goiPtSapHet.buoi_con_lai === 0 ? 'Gói PT đã dùng hết buổi' : 'Gói PT sắp hết buổi',
+        noi_dung: goiPtSapHet.buoi_con_lai === 0
+          ? `Bạn đã dùng hết toàn bộ buổi tập với PT ${goiPtSapHet.ten_pt}. Đăng ký thêm để tiếp tục luyện tập!`
+          : `Gói PT với ${goiPtSapHet.ten_pt} còn ${goiPtSapHet.buoi_con_lai} buổi. Liên hệ lễ tân để đăng ký thêm.`,
+      });
+    }
+
+    // 4. Buổi PT HÔM NAY (lich_tap.ngay_tap = today AND trang_thai = 'cho_tap')
+    const buoiHomNay = db.prepare(`
+      SELECT lt.id, lt.gio_bat_dau, lt.gio_ket_thuc, lt.loai_buoi, lt.da_checkin,
+             pt.ho_ten AS ten_pt
+      FROM lich_tap lt
+      JOIN ho_so pt ON pt.id = lt.pt_id
+      WHERE lt.hoi_vien_id = ? AND lt.ngay_tap = date('now','localtime')
+        AND lt.trang_thai = 'cho_tap'
+      ORDER BY lt.gio_bat_dau ASC LIMIT 1
+    `).get(ho_so_id);
+
+    if (buoiHomNay) {
+      const daCheckin = buoiHomNay.da_checkin === 1;
+      notifications.push({
+        muc_do: daCheckin ? 'success' : 'info',
+        icon: daCheckin ? 'check_circle' : 'fitness_center',
+        tieu_de: daCheckin ? 'Đã check-in — sẵn sàng tập' : 'Có buổi PT hôm nay',
+        noi_dung: daCheckin
+          ? `Bạn đã check-in thành công. Buổi tập với PT ${buoiHomNay.ten_pt} lúc ${buoiHomNay.gio_bat_dau} đang chờ bạn!`
+          : `Buổi tập với PT ${buoiHomNay.ten_pt} vào lúc ${buoiHomNay.gio_bat_dau}–${buoiHomNay.gio_ket_thuc}. Nhớ check-in trước khi vào tập nhé!`,
+      });
+    }
+
+    // 5. Check-in hôm nay — lấy lượt vào đầu tiên trong ngày
+    const checkInHomNay = db.prepare(`
+      SELECT id FROM luot_vao_ra
+      WHERE ho_so_id = ? AND loai = 'vao'
+        AND date(thoi_diem) = date('now','localtime')
+      LIMIT 1
+    `).get(ho_so_id);
+
+    da_check_in_hom_nay = !!checkInHomNay;
+
+    if (!checkInHomNay && !buoiHomNay) {
+      // Chỉ nhắc check-in nếu chưa vào và không có thông báo buổi tập
+      // (tránh thông báo trùng lặp)
+    }
+
+    // 6. Buổi PT bị HỦY trong 7 ngày qua
+    const buoiHuy = db.prepare(`
+      SELECT COUNT(*) AS so_buoi_huy
+      FROM lich_tap
+      WHERE hoi_vien_id = ? AND trang_thai = 'da_huy'
+        AND ngay_huy >= date('now','localtime','-7 days')
+    `).get(ho_so_id);
+
+    if (buoiHuy && buoiHuy.so_buoi_huy > 0) {
+      notifications.push({
+        muc_do: 'warning',
+        icon: 'event_busy',
+        tieu_de: 'Buổi tập bị hủy gần đây',
+        noi_dung: `Có ${buoiHuy.so_buoi_huy} buổi tập bị hủy trong 7 ngày qua. Liên hệ lễ tân để sắp xếp lại lịch tập.`,
+      });
+    }
+  }
+
+  // ── HÀNH TRÌNH PT ────────────────────────────────────────
+  if (vai_tro === 'pt') {
+
+    // 1. Học viên vừa CHECK-IN có lịch hôm nay (nhắc PT chuẩn bị)
+    const hvCheckinHomNay = db.prepare(`
+      SELECT COUNT(DISTINCT lt.hoi_vien_id) AS so_hv
+      FROM lich_tap lt
+      WHERE lt.pt_id = ? AND lt.ngay_tap = date('now','localtime')
+        AND lt.trang_thai = 'cho_tap' AND lt.da_checkin = 1
+    `).get(ho_so_id);
+
+    if (hvCheckinHomNay && hvCheckinHomNay.so_hv > 0) {
+      notifications.push({
+        muc_do: 'info',
+        icon: 'how_to_reg',
+        tieu_de: 'Học viên đã vào phòng tập',
+        noi_dung: `${hvCheckinHomNay.so_hv} học viên đã check-in và có lịch tập với bạn hôm nay. Hãy chuẩn bị!`,
+      });
+    }
+
+    // 2. Buổi tập HÔM NAY chưa check-in và còn ≤ 30 phút đến giờ tập
+    const buoiSapToi = db.prepare(`
+      SELECT lt.id, lt.gio_bat_dau, hv.ho_ten AS ten_hv
+      FROM lich_tap lt
+      JOIN ho_so hv ON hv.id = lt.hoi_vien_id
+      WHERE lt.pt_id = ? AND lt.ngay_tap = date('now','localtime')
+        AND lt.trang_thai = 'cho_tap' AND lt.da_checkin = 0
+        AND time(lt.gio_bat_dau) <= time('now','localtime','+30 minutes')
+        AND time(lt.gio_bat_dau) >= time('now','localtime')
+      ORDER BY lt.gio_bat_dau ASC LIMIT 1
+    `).get(ho_so_id);
+
+    if (buoiSapToi) {
+      notifications.push({
+        muc_do: 'warning',
+        icon: 'schedule',
+        tieu_de: 'Học viên chưa check-in',
+        noi_dung: `${buoiSapToi.ten_hv} chưa check-in nhưng lịch tập bắt đầu lúc ${buoiSapToi.gio_bat_dau}. Vui lòng xác nhận với lễ tân.`,
+      });
+    }
+
+    // 3. Lịch tập MỚI được đặt trong 24h qua
+    const lichMoi = db.prepare(`
+      SELECT COUNT(*) AS so_lich
+      FROM lich_tap
+      WHERE pt_id = ? AND trang_thai = 'cho_tap'
+        AND ngay_tao >= datetime('now','localtime','-24 hours')
+    `).get(ho_so_id);
+
+    if (lichMoi && lichMoi.so_lich > 0) {
+      notifications.push({
+        muc_do: 'success',
+        icon: 'event_available',
+        tieu_de: 'Lịch tập mới',
+        noi_dung: `Có ${lichMoi.so_lich} buổi tập mới vừa được đặt trong 24 giờ qua. Kiểm tra lịch của bạn!`,
+      });
+    }
+
+    // 4. Buổi tập bị HỦY trong 7 ngày qua
+    const buoiHuyPt = db.prepare(`
+      SELECT COUNT(*) AS so_huy
+      FROM lich_tap
+      WHERE pt_id = ? AND trang_thai = 'da_huy'
+        AND ngay_huy >= date('now','localtime','-7 days')
+    `).get(ho_so_id);
+
+    if (buoiHuyPt && buoiHuyPt.so_huy > 0) {
+      notifications.push({
+        muc_do: 'warning',
+        icon: 'event_busy',
+        tieu_de: 'Buổi tập bị hủy gần đây',
+        noi_dung: `${buoiHuyPt.so_huy} buổi tập bị hủy trong 7 ngày qua. Xem lại lịch để cập nhật kế hoạch.`,
+      });
+    }
+
+    // 5. Học viên MỚI đăng ký gói PT trong 7 ngày qua
+    const hvMoi = db.prepare(`
+      SELECT COUNT(*) AS so_hv
+      FROM dang_ky_pt
+      WHERE pt_id = ? AND trang_thai = 'dang_hoat_dong'
+        AND ngay_tao >= date('now','localtime','-7 days')
+    `).get(ho_so_id);
+
+    if (hvMoi && hvMoi.so_hv > 0) {
+      notifications.push({
+        muc_do: 'success',
+        icon: 'person_add',
+        tieu_de: 'Học viên mới đăng ký',
+        noi_dung: `${hvMoi.so_hv} học viên vừa đăng ký gói PT với bạn trong 7 ngày qua. Hãy liên hệ để lên kế hoạch tập luyện!`,
+      });
+    }
+  }
+
+  // Sắp xếp theo mức độ ưu tiên: danger(1) > warning(2) > info(3) > success(4)
+  const MUC_DO_ORDER = { danger: 1, warning: 2, info: 3, success: 4 };
+  notifications.sort((a, b) => (MUC_DO_ORDER[a.muc_do] || 5) - (MUC_DO_ORDER[b.muc_do] || 5));
+
+  return success(res, { notifications, da_check_in_hom_nay });
+};
