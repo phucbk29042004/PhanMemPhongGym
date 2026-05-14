@@ -43,7 +43,7 @@ window.GymApp.pages['revenue'] = {
               <div class="icon-bg icon-bg-green">
                 <span class="material-symbols-outlined text-brand-primary text-lg" style="font-variation-settings:'FILL' 1">bar_chart</span>
               </div>
-              <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface">Doanh thu theo ngày</h3>
+              <h3 id="rev-chart-title" class="font-display-2xl text-display-2xl font-bold text-on-surface">So sánh doanh thu tháng này / tháng trước</h3>
             </div>
             <div class="p-loose" style="height:280px">
               <canvas id="rev-chart"></canvas>
@@ -109,9 +109,18 @@ window.GymApp.pages['revenue'] = {
     return new Intl.NumberFormat('vi-VN').format(amount) + ' đ';
   },
 
-  _renderStats: function (summary, todayData) {
+  _renderStats: function (summary, todayData, monthComparison) {
     const grid = document.getElementById('rev-stats-grid');
     if (!grid) return;
+
+    const monthSummary = monthComparison?.summary || {};
+    const previousTotal = monthSummary.previous_total || 0;
+    const currentTotal = monthSummary.current_total || 0;
+    const diff = currentTotal - previousTotal;
+    const pct = previousTotal > 0 ? Math.round((diff / previousTotal) * 100) : null;
+    const compareText = previousTotal > 0
+      ? `${diff >= 0 ? '+' : ''}${pct}% so với tháng trước (${this._formatMoney(previousTotal)})`
+      : `Tháng trước: ${this._formatMoney(previousTotal)}`;
 
     const cards = [
       {
@@ -120,7 +129,7 @@ window.GymApp.pages['revenue'] = {
         icon: 'payments',
         iconBg: 'icon-bg-green',
         color: 'text-brand-primary',
-        sub: `${summary?.tong_don || 0} giao dịch`,
+        sub: compareText,
       },
       {
         label: 'Doanh thu hôm nay',
@@ -162,7 +171,7 @@ window.GymApp.pages['revenue'] = {
     `).join('');
   },
 
-  _renderChart: function (daily) {
+  _renderChart: function (daily, monthComparison) {
     const canvas = document.getElementById('rev-chart');
     if (!canvas) return;
 
@@ -171,12 +180,15 @@ window.GymApp.pages['revenue'] = {
       this._chart = null;
     }
 
-    const labels = (daily || []).map(d => {
-      const dt = new Date(d.ngay);
-      return `${dt.getDate()}/${dt.getMonth() + 1}`;
-    });
-    const dataGoi = (daily || []).map(d => d.tien_goi_tap || 0);
-    const dataPT  = (daily || []).map(d => d.tien_goi_pt || 0);
+    const monthData = monthComparison || {};
+    const labels = (monthData.labels || []).map(day => `${day}`);
+    const currentMonthLabel = monthData.current_month ? `Tháng ${parseInt(monthData.current_month.slice(5, 7), 10)}` : 'Tháng này';
+    const previousMonthLabel = monthData.previous_month ? `Tháng ${parseInt(monthData.previous_month.slice(5, 7), 10)}` : 'Tháng trước';
+    const currentData = (monthData.current || []).map(d => d.tong_tien);
+    const previousData = (monthData.previous || []).map(d => d.tong_tien || 0);
+
+    const title = document.getElementById('rev-chart-title');
+    if (title) title.textContent = `So sánh doanh thu ${currentMonthLabel} / ${previousMonthLabel}`;
 
     const isDark = document.documentElement.classList.contains('dark');
     const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
@@ -189,17 +201,26 @@ window.GymApp.pages['revenue'] = {
         datasets: [
           {
             label: 'Gói tập',
-            data: dataGoi,
+            type: 'bar',
+            label: currentMonthLabel,
+            data: currentData,
+            borderColor: '#1D9336',
             backgroundColor: '#1D9336cc',
             borderRadius: 4,
             borderSkipped: false,
           },
           {
             label: 'Gói PT',
-            data: dataPT,
-            backgroundColor: '#575f67cc',
-            borderRadius: 4,
-            borderSkipped: false,
+            type: 'line',
+            label: previousMonthLabel,
+            data: previousData,
+            borderColor: '#575f67',
+            backgroundColor: '#575f6722',
+            borderWidth: 2,
+            pointRadius: 2,
+            pointHoverRadius: 4,
+            tension: 0.35,
+            fill: false,
           },
         ],
       },
@@ -216,12 +237,13 @@ window.GymApp.pages['revenue'] = {
         },
         scales: {
           x: {
-            stacked: true,
+            stacked: false,
             ticks: { color: labelColor, font: { size: 10 } },
             grid: { color: gridColor },
+            title: { display: true, text: 'Ngày trong tháng', color: labelColor, font: { size: 10 } },
           },
           y: {
-            stacked: true,
+            stacked: false,
             ticks: {
               color: labelColor,
               font: { size: 10 },
@@ -311,8 +333,8 @@ window.GymApp.pages['revenue'] = {
       const revData = revRes?.data || {};
       const todayData = todayRes?.data || {};
 
-      this._renderStats(revData.summary, todayData);
-      this._renderChart(revData.daily);
+      this._renderStats(revData.summary, todayData, revData.monthComparison);
+      this._renderChart(revData.daily, revData.monthComparison);
       this._renderPackageStats(revData.packageStats);
       this._renderTodayTable(todayData.giao_dich);
     } catch (err) {

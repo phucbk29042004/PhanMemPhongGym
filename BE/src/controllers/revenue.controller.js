@@ -9,6 +9,11 @@ import { success } from '../utils/response.js';
 // Doanh thu 30 ngày + tổng hợp
 export const getRevenue = (req, res) => {
   const { days = 30 } = req.query;
+  const currentMonthStart = db.prepare(`SELECT date('now','localtime','start of month') AS d`).get().d;
+  const nextMonthStart = db.prepare(`SELECT date('now','localtime','start of month','+1 month') AS d`).get().d;
+  const previousMonthStart = db.prepare(`SELECT date('now','localtime','start of month','-1 month') AS d`).get().d;
+  const todayDay = db.prepare(`SELECT CAST(strftime('%d', date('now','localtime')) AS INTEGER) AS d`).get().d;
+  const previousMonthDays = db.prepare(`SELECT CAST(strftime('%d', date('now','localtime','start of month','-1 day')) AS INTEGER) AS d`).get().d;
 
   // Dữ liệu theo ngày
   const daily = db.prepare(`
@@ -41,7 +46,55 @@ export const getRevenue = (req, res) => {
     ORDER BY so_dang_ky DESC
   `).all(parseInt(days));
 
-  return success(res, { daily, summary, packageStats });
+  const currentMonthRows = db.prepare(`
+    SELECT CAST(strftime('%d', ngay) AS INTEGER) AS ngay_trong_thang,
+           tong_tien, tong_don, tien_goi_tap, tien_goi_pt
+    FROM doanh_thu
+    WHERE ngay >= ? AND ngay < ?
+    ORDER BY ngay ASC
+  `).all(currentMonthStart, nextMonthStart);
+
+  const previousMonthRows = db.prepare(`
+    SELECT CAST(strftime('%d', ngay) AS INTEGER) AS ngay_trong_thang,
+           tong_tien, tong_don, tien_goi_tap, tien_goi_pt
+    FROM doanh_thu
+    WHERE ngay >= ? AND ngay < ?
+    ORDER BY ngay ASC
+  `).all(previousMonthStart, currentMonthStart);
+
+  const currentByDay = new Map(currentMonthRows.map(row => [row.ngay_trong_thang, row]));
+  const previousByDay = new Map(previousMonthRows.map(row => [row.ngay_trong_thang, row]));
+  const maxDay = Math.max(todayDay, previousMonthDays);
+  const labels = Array.from({ length: maxDay }, (_, index) => index + 1);
+
+  const monthComparison = {
+    current_month: currentMonthStart.slice(0, 7),
+    previous_month: previousMonthStart.slice(0, 7),
+    labels,
+    current: labels.map(day => ({
+      ngay_trong_thang: day,
+      tong_tien: day <= todayDay ? (currentByDay.get(day)?.tong_tien || 0) : null,
+      tong_don: day <= todayDay ? (currentByDay.get(day)?.tong_don || 0) : null,
+      tien_goi_tap: day <= todayDay ? (currentByDay.get(day)?.tien_goi_tap || 0) : null,
+      tien_goi_pt: day <= todayDay ? (currentByDay.get(day)?.tien_goi_pt || 0) : null,
+    })),
+    previous: labels.map(day => ({
+      ngay_trong_thang: day,
+      tong_tien: previousByDay.get(day)?.tong_tien || 0,
+      tong_don: previousByDay.get(day)?.tong_don || 0,
+      tien_goi_tap: previousByDay.get(day)?.tien_goi_tap || 0,
+      tien_goi_pt: previousByDay.get(day)?.tien_goi_pt || 0,
+    })),
+  };
+
+  monthComparison.summary = {
+    current_total: currentMonthRows.reduce((sum, row) => sum + (row.tong_tien || 0), 0),
+    previous_total: previousMonthRows.reduce((sum, row) => sum + (row.tong_tien || 0), 0),
+    current_orders: currentMonthRows.reduce((sum, row) => sum + (row.tong_don || 0), 0),
+    previous_orders: previousMonthRows.reduce((sum, row) => sum + (row.tong_don || 0), 0),
+  };
+
+  return success(res, { daily, summary, packageStats, monthComparison });
 };
 
 // ── GET /api/revenue/today ────────────────────────────────

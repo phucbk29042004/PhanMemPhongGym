@@ -472,10 +472,16 @@ export const getMyProfile = (req, res) => {
 
     hoSo.dang_ky_pt = db.prepare(`
       SELECT dp.id, dp.so_buoi_dang_ky, dp.so_buoi_da_tap, dp.tu_ngay, dp.den_ngay,
-             dp.trang_thai, pt.ho_ten AS ten_pt, pt.avatar_url AS avatar_pt, pt.chuyen_mon
+             dp.trang_thai, pt.ho_ten AS ten_pt, pt.avatar_url AS avatar_pt, pt.chuyen_mon,
+             gp.ten_goi AS ten_goi_pt
       FROM dang_ky_pt dp
       JOIN ho_so pt ON pt.id = dp.pt_id
+      LEFT JOIN goi_pt gp ON gp.id = dp.goi_pt_id
       WHERE dp.hoi_vien_id = ? AND dp.trang_thai = 'dang_hoat_dong'
+      ORDER BY
+        CASE WHEN dp.den_ngay IS NULL THEN 1 ELSE 0 END,
+        dp.den_ngay DESC,
+        dp.ngay_tao DESC
     `).all(hoSo.id);
   }
 
@@ -711,19 +717,25 @@ export const getMyNotifications = (req, res) => {
       });
     }
 
-    // 5. Check-in hôm nay — lấy lượt vào đầu tiên trong ngày
+    // 5. Check-in hôm nay — lấy lượt vào gần nhất trong ngày
     const checkInHomNay = db.prepare(`
-      SELECT id FROM luot_vao_ra
+      SELECT id, phuong_thuc, strftime('%H:%M', thoi_diem) AS gio_hien_thi
+      FROM luot_vao_ra
       WHERE ho_so_id = ? AND loai = 'vao'
         AND date(thoi_diem) = date('now','localtime')
+      ORDER BY thoi_diem DESC
       LIMIT 1
     `).get(ho_so_id);
 
     da_check_in_hom_nay = !!checkInHomNay;
 
-    if (!checkInHomNay && !buoiHomNay) {
-      // Chỉ nhắc check-in nếu chưa vào và không có thông báo buổi tập
-      // (tránh thông báo trùng lặp)
+    if (checkInHomNay) {
+      notifications.push({
+        muc_do: 'success',
+        icon: 'check_circle',
+        tieu_de: 'Check-in thành công',
+        noi_dung: `Bạn đã check-in thành công lúc ${checkInHomNay.gio_hien_thi || 'hôm nay'}${checkInHomNay.phuong_thuc === 'qr_code' ? ' bằng mã QR' : ''}. Chúc bạn có một buổi tập hiệu quả!`,
+      });
     }
 
     // 6. Buổi PT bị HỦY trong 7 ngày qua

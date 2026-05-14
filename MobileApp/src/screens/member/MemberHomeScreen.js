@@ -1,539 +1,674 @@
-import React, { useEffect, useState } from 'react';
-import { 
-  View, Text, TouchableOpacity, ScrollView, 
-  StyleSheet, StatusBar, ActivityIndicator, RefreshControl 
+import React, { useCallback, useState } from 'react';
+import {
+  ActivityIndicator, FlatList, RefreshControl, ScrollView,
+  StatusBar, StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
+import {
+  Award, CalendarCheck, ChevronRight, Clock,
+  CreditCard, Dumbbell, QrCode, ShieldCheck,
+  TrendingUp, Users, Zap,
+} from 'lucide-react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import ProfileAvatar from '../../components/ProfileAvatar';
 import { useAuthStore } from '../../store/useAuthStore';
 import { api } from '../../services/api';
-import ProfileAvatar from '../../components/ProfileAvatar';
 import { formatDate } from '../../utils/data';
 
-export default function MemberHomeScreen() {
+// ── Hằng số màu sắc Paradise Gym ─────────────────────────
+const G = {
+  primary: '#1D9336',
+  primaryDark: '#155f27',
+  primaryLight: '#e6f4ea',
+  primaryMid: '#4db870',
+  white: '#ffffff',
+  gray50: '#f8faf8',
+  gray100: '#f0f4f0',
+  gray200: '#e4ebe4',
+  gray400: '#9cad9c',
+  gray500: '#6b7c6b',
+  gray700: '#2d3c2d',
+  gray900: '#141c14',
+  danger: '#dc2626',
+  dangerLight: '#fef2f2',
+  warning: '#f59e0b',
+  warningLight: '#fffbeb',
+  shadow: '#1D9336',
+};
+
+// ── Helper: số ngày còn lại ───────────────────────────────
+function daysLeft(den_ngay) {
+  if (!den_ngay) return null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const end = new Date(den_ngay); end.setHours(0, 0, 0, 0);
+  return Math.max(0, Math.ceil((end - today) / 86400000));
+}
+
+// ── Helper: format giá tiền ───────────────────────────────
+function formatPrice(val) {
+  if (val == null) return '—';
+  return Number(val).toLocaleString('vi-VN') + 'đ';
+}
+
+// ── Component: Card Gói Hội Viên ──────────────────────────
+function PackageCard({ item, index }) {
+  const isPT = item.loai_goi === 'pt' || item.loai_goi === 'theo_buoi';
+  const colors = [
+    { bg: G.primaryLight, accent: G.primary },
+    { bg: '#e8f4fd', accent: '#1565c0' },
+    { bg: '#fef9e7', accent: '#b7791f' },
+    { bg: '#f3e8ff', accent: '#7c3aed' },
+  ];
+  const c = colors[index % colors.length];
+
+  return (
+    <View style={[styles.packageCard, { backgroundColor: c.bg }]}>
+      <View style={[styles.packageIconBox, { backgroundColor: c.accent + '22' }]}>
+        {isPT ? <Users color={c.accent} size={22} strokeWidth={2} /> : <Award color={c.accent} size={22} strokeWidth={2} />}
+      </View>
+      <Text style={[styles.packageName, { color: c.accent }]} numberOfLines={2}>{item.ten_goi}</Text>
+      <Text style={[styles.packagePrice, { color: G.gray900 }]}>{formatPrice(item.gia)}</Text>
+      {item.so_thang ? (
+        <Text style={styles.packageSub}>{item.so_thang} tháng{item.so_ngay_them > 0 ? ` +${item.so_ngay_them} ngày` : ''}</Text>
+      ) : item.so_buoi ? (
+        <Text style={styles.packageSub}>{item.so_buoi} buổi</Text>
+      ) : null}
+    </View>
+  );
+}
+
+// ── Component: Chip Tiện Ích ──────────────────────────────
+function UtilityChip({ icon: Icon, label, onPress, accent = G.primary }) {
+  return (
+    <TouchableOpacity style={styles.utilChip} onPress={onPress} activeOpacity={0.75}>
+      <View style={[styles.utilIcon, { backgroundColor: accent + '18' }]}>
+        <Icon color={accent} size={22} strokeWidth={2} />
+      </View>
+      <Text style={[styles.utilLabel, { color: G.gray700 }]} numberOfLines={2}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+// ── Component: Alert Banner ───────────────────────────────
+function AlertBanner({ item }) {
+  const cfg = {
+    danger: { bg: G.dangerLight, border: G.danger, text: '#7f1d1d' },
+    warning: { bg: G.warningLight, border: G.warning, text: '#78350f' },
+    info: { bg: '#eff6ff', border: '#3b82f6', text: '#1e3a5f' },
+    success: { bg: G.primaryLight, border: G.primary, text: '#14532d' },
+  }[item.muc_do] || { bg: G.primaryLight, border: G.primary, text: '#14532d' };
+
+  return (
+    <View style={[styles.alertBanner, { backgroundColor: cfg.bg, borderLeftColor: cfg.border }]}>
+      <Zap color={cfg.border} size={16} strokeWidth={2.5} style={{ marginRight: 8, flexShrink: 0 }} />
+      <View style={{ flex: 1 }}>
+        <Text style={[styles.alertTitle, { color: cfg.text }]}>{item.tieu_de}</Text>
+        <Text style={[styles.alertBody, { color: cfg.text }]}>{item.noi_dung}</Text>
+      </View>
+    </View>
+  );
+}
+
+// ── Màn hình chính ────────────────────────────────────────
+export default function MemberHomeScreen({ navigation }) {
   const { user, logout } = useAuthStore();
-  const [profileData, setProfileData] = useState(null);
-  const [notificationsData, setNotificationsData] = useState(null);
-  const [schedules, setSchedules] = useState([]);
+  const [profile, setProfile] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [gymPackages, setGymPackages] = useState([]);
+  const [ptPackages, setPtPackages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchMemberData = async () => {
+  // ── Fetch dữ liệu thực tế từ API ─────────────────────────
+  const fetchAll = useCallback(async () => {
     try {
-      // Tải song song dữ liệu Hồ sơ thực tế, Thông báo động và Lịch tập từ DB SQLite
-      const [profileRes, notiRes, schedRes] = await Promise.all([
+      const [profileRes, notiRes, pkgRes, ptPkgRes] = await Promise.all([
         api.get('/members/me/profile'),
         api.get('/members/me/notifications'),
-        api.get('/pt/schedules') // BE tự động filter lịch của hội viên đang đăng nhập
+        api.get('/packages'),          // Gói gym
+        api.get('/packages/pt'),       // Gói PT
       ]);
 
-      if (profileRes.data?.success) {
-        setProfileData(profileRes.data.data);
-      }
-      if (notiRes.data?.success) {
-        setNotificationsData(notiRes.data.data);
-      }
-      if (schedRes.data?.success) {
-        setSchedules(schedRes.data.data || []);
-      }
-    } catch (error) {
-      console.error('Lỗi tải dữ liệu hội viên từ DB:', error);
+      if (profileRes.data?.success) setProfile(profileRes.data.data);
+      if (notiRes.data?.success) setNotifications(notiRes.data.data?.notifications || []);
+      if (pkgRes.data?.success) setGymPackages(pkgRes.data.data || []);
+      if (ptPkgRes.data?.success) setPtPackages(ptPkgRes.data.data || []);
+    } catch (err) {
+      console.error('[HomeScreen] fetchAll error:', err?.message);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  };
-
-  useEffect(() => {
-    fetchMemberData();
   }, []);
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchMemberData();
-  };
+  useFocusEffect(
+    useCallback(() => {
+      fetchAll();
+    }, [fetchAll])
+  );
 
-  // Trích xuất thông tin Gói tập & Gói PT đang hoạt động từ DB thực tế
-  const activePlan = profileData?.goi_tap?.[0] || null;
-  const activePTPlan = profileData?.dang_ky_pt?.[0] || null;
+  const onRefresh = () => { setRefreshing(true); fetchAll(); };
 
-  // Lấy danh sách thông báo nhắc nhở động từ hệ thống
-  const alerts = notificationsData?.notifications || [];
-  const checkedInToday = notificationsData?.da_check_in_hom_nay || false;
+  // ── Dữ liệu đã xử lý ─────────────────────────────────────
+  const activePlan = profile?.goi_tap?.[0] || null;
+  const activePT = profile?.dang_ky_pt?.[0] || null;
+  const remaining = daysLeft(activePlan?.den_ngay);
+  const ptRemaining = activePT ? Math.max(0, (activePT.so_buoi_dang_ky || 0) - (activePT.so_buoi_da_tap || 0)) : null;
+  // Thêm prefix 'gym-' / 'pt-' vào id để tránh key trùng khi render
+  const allPackages = [
+    ...gymPackages.map(p => ({ ...p, _key: `gym-${p.id}` })),
+    ...ptPackages.map(p => ({ ...p, _key: `pt-${p.id}` })),
+  ];
+  const urgentAlerts = notifications.filter(n => n.muc_do === 'danger' || n.muc_do === 'warning');
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f7f9ff" />
-      
-      <ScrollView 
-        contentContainerStyle={styles.content} 
+      <StatusBar barStyle="light-content" backgroundColor={G.primaryDark} />
+
+      <ScrollView
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#1D9336']} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[G.primary]} tintColor={G.primary} />}
+        contentContainerStyle={styles.scrollContent}
       >
-        {/* Header với thông tin cá nhân DB và nút Đăng xuất */}
-        <View style={styles.header}>
-          <View style={styles.profileArea}>
-            <ProfileAvatar uri={profileData?.avatar_url || user?.avatar_url} name={profileData?.ho_ten || user?.name} size={48} />
-            <View>
-              <Text style={styles.greeting}>Xin chào hội viên 👋</Text>
-              <Text style={styles.name}>{profileData?.ho_ten || user?.name}</Text>
+        {/* ──────────────────────────────────────────────── */}
+        {/* TOP BANNER — Paradise Gym với hiệu ứng tia nắng  */}
+        {/* ──────────────────────────────────────────────── */}
+        <View style={styles.banner}>
+          {/* Tia nắng tỏa ra bằng View xoay — hiệu ứng thuần RN */}
+          {Array.from({ length: 12 }).map((_, i) => (
+            <View
+              key={i}
+              style={[
+                styles.sunRay,
+                { transform: [{ rotate: `${i * 30}deg` }] },
+              ]}
+            />
+          ))}
+          {/* Header: avatar + tên người dùng */}
+          <View style={styles.bannerHeader}>
+            <View style={styles.bannerLeft}>
+              <View style={styles.bannerAvatar}>
+                <ProfileAvatar
+                  uri={profile?.avatar_url || user?.avatar_url}
+                  name={profile?.ho_ten || user?.name}
+                  size={42}
+                />
+              </View>
+              <View>
+                <Text style={styles.bannerGreeting}>Xin chào 👋</Text>
+                <Text style={styles.bannerName} numberOfLines={1}>
+                  {profile?.ho_ten || user?.name || 'Hội viên'}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.bannerBadge}>
+              <ShieldCheck color={G.white} size={14} strokeWidth={2} />
+              <Text style={styles.bannerBadgeText}>
+                {profile?.loai_hv === 'vip' ? 'VIP' : profile?.loai_hv === 'premium' ? 'Premium' : 'Standard'}
+              </Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.logoutBtn} onPress={logout} activeOpacity={0.8}>
-            <Text style={styles.logoutText}>Đăng xuất</Text>
-          </TouchableOpacity>
+
+          {/* Tiêu đề lớn */}
+          <View style={styles.bannerBody}>
+            <Text style={styles.bannerTitle}>Paradise GYM</Text>
+            <Text style={styles.bannerSubtitle}>
+              {profile?.chi_nhanh || 'Chăm sóc sức khỏe mỗi ngày'}
+            </Text>
+          </View>
         </View>
 
-        {/* Trạng thái Loading ban đầu */}
-        {loading ? (
-          <View style={styles.loadingBox}>
-            <ActivityIndicator size="large" color="#1D9336" />
-            <Text style={styles.loadingText}>Đang đồng bộ dữ liệu với CSDL SQLite...</Text>
+        {/* ── Cảnh báo quan trọng (nếu có) ─────────────────── */}
+        {!loading && urgentAlerts.length > 0 && (
+          <View style={styles.alertSection}>
+            {urgentAlerts.map((n, i) => <AlertBanner key={i} item={n} />)}
           </View>
-        ) : (
-          <>
-            {/* Hiển thị các thông báo/cảnh báo hệ thống (Gói sắp hết hạn, hết buổi,...) */}
-            {alerts.map((alertItem, idx) => (
-              <View 
-                key={idx} 
-                style={[
-                  styles.alertBox, 
-                  alertItem.muc_do === 'danger' ? styles.alertDanger : styles.alertWarning
-                ]}
-              >
-                <Text style={styles.alertTitle}>⚠️ {alertItem.tieu_de}</Text>
-                <Text style={styles.alertDesc}>{alertItem.noi_dung}</Text>
-              </View>
-            ))}
+        )}
 
-            {/* Thẻ Gói Tập (Membership Card) - Đồng bộ dữ liệu thực tế SQLite */}
-            <View style={styles.memberCardInner}>
-              <View style={styles.cardTopRow}>
-                <View style={styles.chipTag}>
-                  <Text style={styles.chipText}>🌟 Gói Đăng Ký DB</Text>
+        {/* ────────────────────────────────────── */}
+        {/* CARD HỢP ĐỒNG / GÓI TẬP ĐANG HOẠT ĐỘNG */}
+        {/* ────────────────────────────────────── */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionIconBox}>
+              <CreditCard color={G.primary} size={18} strokeWidth={2} />
+            </View>
+            <Text style={styles.sectionTitle}>Hợp đồng</Text>
+          </View>
+
+          {loading ? (
+            <View style={styles.loadingBox}>
+              <ActivityIndicator color={G.primary} size="small" />
+            </View>
+          ) : activePlan ? (
+            <View style={styles.contractCard}>
+              {/* Trạng thái + tên gói */}
+              <View style={styles.contractTop}>
+                <View style={styles.contractBadge}>
+                  <ShieldCheck color={G.primary} size={12} strokeWidth={2.5} />
+                  <Text style={styles.contractBadgeText}>Đang hoạt động</Text>
                 </View>
-                <View style={styles.activeBadge}>
-                  <Text style={styles.activeText}>
-                    {activePlan ? 'Đang hoạt động' : 'Chưa có gói tập'}
+                {remaining !== null && remaining <= 7 && (
+                  <View style={[styles.contractBadge, { backgroundColor: G.dangerLight }]}>
+                    <Clock color={G.danger} size={12} strokeWidth={2.5} />
+                    <Text style={[styles.contractBadgeText, { color: G.danger }]}>Sắp hết hạn</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.contractPackageName}>{activePlan.ten_goi}</Text>
+
+              {/* Thông số grid */}
+              <View style={styles.contractGrid}>
+                <View style={styles.contractGridItem}>
+                  <CalendarCheck color={G.gray400} size={14} strokeWidth={2} />
+                  <Text style={styles.contractGridLabel}>Từ ngày</Text>
+                  <Text style={styles.contractGridValue}>{formatDate(activePlan.tu_ngay)}</Text>
+                </View>
+                <View style={styles.contractDivider} />
+                <View style={styles.contractGridItem}>
+                  <Clock color={remaining !== null && remaining <= 7 ? G.danger : G.gray400} size={14} strokeWidth={2} />
+                  <Text style={styles.contractGridLabel}>Hết hạn</Text>
+                  <Text style={[styles.contractGridValue, remaining !== null && remaining <= 7 && { color: G.danger }]}>
+                    {formatDate(activePlan.den_ngay)}
+                  </Text>
+                </View>
+                <View style={styles.contractDivider} />
+                <View style={styles.contractGridItem}>
+                  <TrendingUp color={G.primary} size={14} strokeWidth={2} />
+                  <Text style={styles.contractGridLabel}>Còn lại</Text>
+                  <Text style={[styles.contractGridValue, { color: remaining !== null && remaining <= 7 ? G.danger : G.primary }]}>
+                    {remaining !== null ? `${remaining} ngày` : '—'}
                   </Text>
                 </View>
               </View>
 
-              <Text style={styles.cardPlan}>
-                {activePlan ? activePlan.ten_goi : 'Chưa có gói tập đang hoạt động'}
-              </Text>
-              
-              {activePTPlan ? (
-                <Text style={styles.ptNameInfo}>👤 Huấn luyện viên: {activePTPlan.ten_pt}</Text>
-              ) : (
-                <Text style={styles.ptNameInfo}>💡 Chưa đăng ký kèm Huấn luyện viên cá nhân</Text>
-              )}
-
-              {/* Thanh tiến trình số buổi PT thực tế (nếu có) */}
-              {activePTPlan && activePTPlan.so_buoi_dang_ky ? (
-                <View style={styles.progressContainer}>
-                  <View style={styles.progressLabels}>
-                    <Text style={styles.progressText}>
-                      Đã tập: {activePTPlan.so_buoi_da_tap}/{activePTPlan.so_buoi_dang_ky} buổi
-                    </Text>
-                    <Text style={styles.progressTextBold}>
-                      Còn lại: {activePTPlan.so_buoi_dang_ky - activePTPlan.so_buoi_da_tap} buổi
-                    </Text>
-                  </View>
-                  <View style={styles.progressBarBg}>
-                    <View 
-                      style={[
-                        styles.progressBarFill, 
-                        { width: `${(activePTPlan.so_buoi_da_tap / activePTPlan.so_buoi_dang_ky) * 100}%` }
-                      ]} 
-                    />
-                  </View>
+              {/* HLV PT (nếu có) */}
+              {activePT ? (
+                <View style={styles.ptRow}>
+                  <Dumbbell color={G.primary} size={14} strokeWidth={2} />
+                  <Text style={styles.ptRowText}>
+                    {activePT.ten_goi_pt ? (
+                      <>
+                        Gói PT: <Text style={{ fontWeight: '700', color: G.gray900 }}>{activePT.ten_goi_pt}</Text>
+                        {'  •  '}
+                      </>
+                    ) : null}
+                    HLV: <Text style={{ fontWeight: '700', color: G.gray900 }}>{activePT.ten_pt}</Text>
+                    {'  •  '}Còn <Text style={{ fontWeight: '700', color: G.primary }}>{ptRemaining} buổi</Text>
+                  </Text>
                 </View>
               ) : null}
+            </View>
+          ) : (
+            <View style={styles.emptyContract}>
+              <CreditCard color={G.gray400} size={32} strokeWidth={1.5} />
+              <Text style={styles.emptyContractText}>Không có dữ liệu</Text>
+              <Text style={styles.emptyContractSub}>Liên hệ lễ tân để đăng ký gói tập</Text>
+            </View>
+          )}
+        </View>
 
-              <View style={styles.divider} />
+        {/* ──────────────────── */}
+        {/* TIỆN ÍCH NHANH      */}
+        {/* ──────────────────── */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionIconBox}>
+              <Zap color={G.primary} size={18} strokeWidth={2} />
+            </View>
+            <Text style={styles.sectionTitle}>Tiện ích</Text>
+            {profile?.chi_nhanh ? (
+              <Text style={styles.branchLabel} numberOfLines={1}>{profile.chi_nhanh}</Text>
+            ) : null}
+          </View>
 
-              <View style={styles.cardBottomRow}>
-                <View>
-                  <Text style={styles.cardMeta}>Hạn sử dụng gói</Text>
-                  <Text style={styles.cardValue}>
-                    📅 {activePlan ? formatDate(activePlan.den_ngay) : 'Chưa có'}
-                  </Text>
-                </View>
-                <View style={styles.cardRightInfo}>
-                  <Text style={styles.cardMeta}>Mã Hồ Sơ</Text>
-                  <Text style={styles.cardValue}>{profileData?.ma_ho_so || 'Chưa có'}</Text>
-                </View>
+          <View style={styles.utilGrid}>
+            <UtilityChip
+              icon={QrCode}
+              label={'Quét QR\nCheck-in'}
+              accent="#7c3aed"
+              onPress={() => navigation?.navigate?.('QRCode')}
+            />
+            <UtilityChip
+              icon={CalendarCheck}
+              label={'Lịch tập\ntiếp theo'}
+              accent={G.primary}
+              onPress={() => navigation?.navigate?.('Schedule')}
+            />
+            <UtilityChip
+              icon={TrendingUp}
+              label={'Thống kê\ntập luyện'}
+              accent="#0891b2"
+              onPress={() => navigation?.navigate?.('Checkins')}
+            />
+            <UtilityChip
+              icon={Award}
+              label={'Buổi PT\ncòn lại'}
+              accent="#b7791f"
+              onPress={() => navigation?.navigate?.('Schedule')}
+            />
+          </View>
+        </View>
+
+        {/* ──────────────────── */}
+        {/* GÓI HỘI VIÊN THỰC TẾ */}
+        {/* ──────────────────── */}
+        {!loading && allPackages.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionIconBox}>
+                <Award color={G.primary} size={18} strokeWidth={2} />
               </View>
+              <Text style={styles.sectionTitle}>Gói Hội Viên</Text>
             </View>
 
-            {/* Chỉ số theo dõi & trạng thái check-in thực tế */}
-            <Text style={styles.sectionTitle}>📊 Trạng thái & Lượt vào ra</Text>
-            <View style={styles.statsRow}>
-              <View style={[styles.statCard, { borderLeftColor: checkedInToday ? '#1D9336' : '#ff9040' }]}>
-                <Text style={[styles.statValue, { fontSize: 16, color: checkedInToday ? '#1D9336' : '#ff9040' }]}>
-                  {checkedInToday ? 'Đã Vào Phòng' : 'Chưa Check-in'}
-                </Text>
-                <Text style={styles.statLabel}>Hôm nay</Text>
-              </View>
-              <View style={[styles.statCard, { borderLeftColor: '#1D9336' }]}>
-                <Text style={styles.statValue}>
-                  {activePTPlan ? activePTPlan.so_buoi_da_tap : 0}
-                </Text>
-                <Text style={styles.statLabel}>Buổi PT hoàn thành</Text>
-              </View>
-            </View>
-
-            {/* Lịch tập cùng PT trích xuất từ bảng lich_tap trong SQLite */}
-            <View style={styles.sectionTitleRow}>
-              <Text style={styles.sectionTitle}>📅 Lịch tập cùng PT của bạn (SQLite)</Text>
-              <Text style={styles.seeAllText}>Làm mới</Text>
-            </View>
-
-            {schedules.length === 0 ? (
-              <View style={styles.emptyBox}>
-                <Text style={styles.emptyText}>Bạn chưa có lịch tập nào được lên lịch sắp tới.</Text>
-              </View>
-            ) : (
-              schedules.map((item) => (
-                <View 
-                  key={item.id} 
-                  style={[
-                    styles.scheduleCard, 
-                    { borderLeftColor: item.trang_thai === 'da_tap' ? '#becab9' : '#1D9336' }
-                  ]}
-                >
-                  <View style={styles.scheduleLeft}>
-                    <Text style={styles.scheduleTime}>
-                      {item.ngay_tap} • {item.gio_bat_dau} - {item.gio_ket_thuc}
-                    </Text>
-                    <Text style={styles.scheduleTitle}>
-                      Loại buổi: {item.loai_buoi === 'ca_nhan' ? 'Tập cá nhân 1 kèm 1' : 'Tập nhóm'}
-                    </Text>
-                    <Text style={styles.schedulePt}>HLV hướng dẫn: {item.ten_pt}</Text>
-                  </View>
-                  <View style={[styles.badgeSlot, item.trang_thai === 'da_tap' ? styles.badgeScheduled : styles.badgeSoon]}>
-                    <Text style={[styles.badgeSlotText, item.trang_thai !== 'da_tap' && { color: '#1D9336' }]}>
-                      {item.trang_thai === 'da_tap' ? 'Đã hoàn thành' : item.trang_thai === 'cho_tap' ? 'Sắp diễn ra' : item.trang_thai}
-                    </Text>
-                  </View>
-                </View>
-              ))
-            )}
-          </>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.packageScroll}
+            >
+              {allPackages.map((item, i) => (
+                <PackageCard key={item._key} item={item} index={i} />
+              ))}
+            </ScrollView>
+          </View>
         )}
+
+        {/* ──────────────────────────── */}
+        {/* PANEL PARADISE GYM          */}
+        {/* ──────────────────────────── */}
+        <View style={styles.paradisePanel}>
+          <View style={styles.paradisePanelInner}>
+            <View style={styles.paradiseBadge}>
+              <ShieldCheck color={G.white} size={12} strokeWidth={2} />
+              <Text style={styles.paradiseBadgeText}>PREMIUM GYM</Text>
+            </View>
+            <Text style={styles.paradiseTitle}>Paradise GYM</Text>
+            <Text style={styles.paradiseDesc}>
+              Không gian hiện đại · Huấn luyện viên chuyên nghiệp · Thiết bị cao cấp
+            </Text>
+            <View style={styles.paradiseStats}>
+              {[
+                { icon: Users, label: 'Hội viên', value: '500+' },
+                { icon: Dumbbell, label: 'Huấn luyện viên', value: '20+' },
+                { icon: Award, label: 'Năm hoạt động', value: '5+' },
+              ].map(({ icon: Icon, label, value }) => (
+                <View key={label} style={styles.paradiseStat}>
+                  <Icon color={G.primaryMid} size={18} strokeWidth={2} />
+                  <Text style={styles.paradiseStatValue}>{value}</Text>
+                  <Text style={styles.paradiseStatLabel}>{label}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        </View>
+
+        <View style={{ height: 16 }} />
       </ScrollView>
     </View>
   );
 }
 
+// ── StyleSheet ────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#f7f9ff' 
+  container: { flex: 1, backgroundColor: G.gray50 },
+  scrollContent: { paddingBottom: 24 },
+
+  // Banner
+  banner: {
+    backgroundColor: G.primaryDark,
+    paddingTop: 52,
+    paddingBottom: 24,
+    paddingHorizontal: 20,
+    overflow: 'hidden',
+    position: 'relative',
   },
-  content: { 
-    padding: 20, 
-    paddingTop: 10,
-    paddingBottom: 32 
+  sunRay: {
+    position: 'absolute',
+    width: 2,
+    height: 280,
+    backgroundColor: 'rgba(255,255,255,0.045)',
+    top: -40,
+    left: '50%',
+    transformOrigin: 'bottom center',
   },
-  header: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
+  bannerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 20,
-    backgroundColor: '#ffffff',
-    padding: 14,
+  },
+  bannerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  bannerAvatar: {
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.4)',
+    borderRadius: 24,
+    overflow: 'hidden',
+  },
+  bannerGreeting: { fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: '500' },
+  bannerName: { fontSize: 15, color: G.white, fontWeight: '700', maxWidth: 160 },
+  bannerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#ebeef3',
-    shadowColor: '#181c20', 
-    shadowOpacity: 0.04, 
-    shadowRadius: 10, 
-    elevation: 3,
+    borderColor: 'rgba(255,255,255,0.2)',
   },
-  profileArea: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12
+  bannerBadgeText: { color: G.white, fontSize: 11, fontWeight: '700' },
+  bannerBody: { alignItems: 'center' },
+  bannerTitle: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: G.white,
+    letterSpacing: 0.5,
+    textAlign: 'center',
   },
-  greeting: { 
-    fontSize: 12, 
-    color: '#3f4a3c', 
-    fontWeight: '500' 
-  },
-  name: { 
-    fontSize: 17, 
-    fontWeight: '700', 
-    color: '#181c20' 
-  },
-  logoutBtn: { 
-    backgroundColor: '#fef2f2', 
-    paddingHorizontal: 14, 
-    paddingVertical: 8, 
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#fee2e2'
-  },
-  logoutText: { 
-    color: '#dc2626', 
-    fontWeight: '700', 
-    fontSize: 12 
-  },
-  loadingBox: {
-    paddingVertical: 40,
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: '#3f4a3c',
-    fontWeight: '500'
-  },
-  alertBox: {
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 16,
-    borderLeftWidth: 4
-  },
-  alertDanger: {
-    backgroundColor: '#fef2f2',
-    borderLeftColor: '#dc2626'
-  },
-  alertWarning: {
-    backgroundColor: '#fffbeb',
-    borderLeftColor: '#f59e0b'
-  },
-  alertTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#181c20',
-    marginBottom: 4
-  },
-  alertDesc: {
+  bannerSubtitle: {
     fontSize: 12,
-    color: '#3f4a3c',
-    lineHeight: 18
-  },
-  memberCardInner: {
-    backgroundColor: '#1D9336', 
-    borderRadius: 24, 
-    padding: 24,
-    shadowColor: '#1D9336', 
-    shadowOpacity: 0.35, 
-    shadowRadius: 16, 
-    elevation: 8,
-    marginBottom: 24,
-  },
-  cardTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16
-  },
-  chipTag: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 20
-  },
-  chipText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '700'
-  },
-  activeBadge: { 
-    backgroundColor: '#ffffff', 
-    paddingHorizontal: 12, 
-    paddingVertical: 5, 
-    borderRadius: 20 
-  },
-  activeText: { 
-    color: '#1D9336', 
-    fontSize: 11, 
-    fontWeight: '800' 
-  },
-  cardPlan: { 
-    color: '#ffffff', 
-    fontSize: 22, 
-    fontWeight: '800', 
-    marginBottom: 6,
-    letterSpacing: -0.3
-  },
-  ptNameInfo: {
-    color: '#e7f5e9', 
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 18
-  },
-  progressContainer: {
-    marginBottom: 16
-  },
-  progressLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 6
-  },
-  progressText: {
-    color: '#e7f5e9',
-    fontSize: 12,
-    fontWeight: '500'
-  },
-  progressTextBold: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '700'
-  },
-  progressBarBg: {
-    height: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    borderRadius: 4,
-    overflow: 'hidden'
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: '#ffffff',
-    borderRadius: 4
-  },
-  divider: {
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    marginBottom: 16
-  },
-  cardBottomRow: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center' 
-  },
-  cardMeta: { 
-    color: '#e7f5e9', 
-    fontSize: 11, 
-    marginBottom: 4,
-    fontWeight: '500'
-  },
-  cardValue: { 
-    color: '#ffffff', 
-    fontWeight: '700', 
-    fontSize: 14 
-  },
-  cardRightInfo: {
-    alignItems: 'flex-end'
-  },
-  sectionTitleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 14
-  },
-  sectionTitle: { 
-    fontSize: 17, 
-    fontWeight: '700', 
-    color: '#181c20', 
-    marginBottom: 12 
-  },
-  seeAllText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#1D9336',
-    marginBottom: 12 
-  },
-  statsRow: { 
-    flexDirection: 'row', 
-    gap: 12, 
-    marginBottom: 24 
-  },
-  statCard: {
-    flex: 1, 
-    backgroundColor: '#ffffff', 
-    borderRadius: 16, 
-    padding: 14,
-    borderLeftWidth: 4.5, 
-    borderWidth: 1,
-    borderColor: '#ebeef3',
-    shadowColor: '#181c20', 
-    shadowOpacity: 0.04, 
-    shadowRadius: 10, 
-    elevation: 3,
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  statValue: { 
-    fontSize: 20, 
-    fontWeight: '800', 
-    color: '#181c20' 
-  },
-  statLabel: { 
-    fontSize: 11, 
-    color: '#3f4a3c', 
+    color: 'rgba(255,255,255,0.7)',
     marginTop: 4,
+    textAlign: 'center',
     fontWeight: '500',
-    textAlign: 'center'
   },
-  emptyBox: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: '#ebeef3',
-    alignItems: 'center'
-  },
-  emptyText: {
-    fontSize: 13,
-    color: '#7a8775',
-    textAlign: 'center'
-  },
-  scheduleCard: {
-    backgroundColor: '#ffffff', 
-    borderRadius: 18, 
-    padding: 16, 
-    marginBottom: 12,
-    borderLeftWidth: 5, 
-    borderWidth: 1,
-    borderColor: '#ebeef3',
-    shadowColor: '#181c20', 
-    shadowOpacity: 0.04, 
-    shadowRadius: 10, 
-    elevation: 3,
+
+  // Alerts
+  alertSection: { paddingHorizontal: 16, paddingTop: 14, gap: 8 },
+  alertBanner: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  },
-  scheduleLeft: {
-    flex: 1,
-    paddingRight: 10
-  },
-  scheduleTime: { 
-    fontSize: 13, 
-    fontWeight: '700', 
-    color: '#1D9336', 
-    marginBottom: 4 
-  },
-  scheduleTitle: { 
-    fontSize: 15, 
-    fontWeight: '700', 
-    color: '#181c20',
-    marginBottom: 4 
-  },
-  schedulePt: { 
-    fontSize: 12, 
-    color: '#3f4a3c',
-    fontWeight: '500'
-  },
-  badgeSlot: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    alignItems: 'flex-start',
+    padding: 12,
     borderRadius: 12,
+    borderLeftWidth: 3,
   },
-  badgeSoon: {
-    backgroundColor: '#e7f5e9', 
+  alertTitle: { fontSize: 13, fontWeight: '700', marginBottom: 2 },
+  alertBody: { fontSize: 12, lineHeight: 17, opacity: 0.85 },
+
+  // Section
+  section: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    backgroundColor: G.white,
+    borderRadius: 18,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
   },
-  badgeScheduled: {
-    backgroundColor: '#f1f4f9',
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+    gap: 8,
   },
-  badgeSlotText: {
-    fontSize: 11,
+  sectionIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: G.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionTitle: { fontSize: 16, fontWeight: '800', color: G.gray900, flex: 1 },
+  branchLabel: { fontSize: 11, color: G.gray400, maxWidth: 130, textAlign: 'right' },
+
+  // Contract card
+  loadingBox: { paddingVertical: 20, alignItems: 'center' },
+  contractCard: {
+    backgroundColor: G.primaryLight,
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: G.gray200,
+  },
+  contractTop: { flexDirection: 'row', gap: 6, marginBottom: 8 },
+  contractBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#dcfce7',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 20,
+  },
+  contractBadgeText: { fontSize: 10, fontWeight: '700', color: G.primary },
+  contractPackageName: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: G.gray900,
+    marginBottom: 12,
+  },
+  contractGrid: {
+    flexDirection: 'row',
+    backgroundColor: G.white,
+    borderRadius: 10,
+    overflow: 'hidden',
+    marginBottom: 10,
+  },
+  contractGridItem: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 10,
+    gap: 3,
+  },
+  contractDivider: { width: 1, backgroundColor: G.gray200 },
+  contractGridLabel: { fontSize: 10, color: G.gray400, fontWeight: '500' },
+  contractGridValue: { fontSize: 12, fontWeight: '700', color: G.gray700 },
+  ptRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: G.white,
+    borderRadius: 10,
+    padding: 10,
+  },
+  ptRowText: { fontSize: 13, color: G.gray500, flex: 1 },
+  emptyContract: {
+    alignItems: 'center',
+    paddingVertical: 24,
+    gap: 6,
+  },
+  emptyContractText: { fontSize: 15, fontWeight: '700', color: G.gray500 },
+  emptyContractSub: { fontSize: 12, color: G.gray400 },
+
+  // Utility chips
+  utilGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  utilChip: {
+    width: '22%',
+    flex: 1,
+    alignItems: 'center',
+    gap: 6,
+    minWidth: 72,
+  },
+  utilIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  utilLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 14,
+  },
+
+  // Package cards
+  packageScroll: { paddingRight: 4, gap: 10 },
+  packageCard: {
+    width: 140,
+    padding: 14,
+    borderRadius: 16,
+    gap: 6,
+  },
+  packageIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  packageName: {
+    fontSize: 13,
     fontWeight: '700',
-    color: '#3f4a3c'
-  }
+    lineHeight: 18,
+  },
+  packagePrice: { fontSize: 16, fontWeight: '800' },
+  packageSub: { fontSize: 11, color: G.gray400, fontWeight: '500' },
+
+  // Paradise panel
+  paradisePanel: {
+    marginHorizontal: 16,
+    marginTop: 16,
+  },
+  paradisePanelInner: {
+    backgroundColor: G.primaryDark,
+    borderRadius: 20,
+    padding: 20,
+    overflow: 'hidden',
+  },
+  paradiseBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    marginBottom: 10,
+  },
+  paradiseBadgeText: { color: G.white, fontSize: 10, fontWeight: '800', letterSpacing: 1 },
+  paradiseTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: G.white,
+    marginBottom: 6,
+  },
+  paradiseDesc: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.7)',
+    lineHeight: 18,
+    marginBottom: 18,
+  },
+  paradiseStats: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  paradiseStat: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 14,
+    gap: 4,
+  },
+  paradiseStatValue: { fontSize: 18, fontWeight: '800', color: G.white },
+  paradiseStatLabel: { fontSize: 10, color: 'rgba(255,255,255,0.6)', textAlign: 'center' },
 });

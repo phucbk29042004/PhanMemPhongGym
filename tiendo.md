@@ -8,13 +8,25 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
-**✅ Cải thiện UI modal chi tiết hội viên & date picker ngày sinh** — Modal chi tiết hội viên có header banner gradient xanh lá với quick stats (gói tập, hết hạn, giới tính); tab info được thiết kế lại với layout nhóm thông tin có icon; ô ngày sinh form thêm mới dùng 3 dropdown Ngày/Tháng/Năm thay vì input date thô.
+**✅ Redesign toàn bộ giao diện Mobile App (Hội viên)** — Tái thiết kế 5 màn hình theo bố cục hình ảnh mẫu với bộ icon lucide-react-native cao cấp, tông màu Paradise Gym nhất quán, đúng nghiệp vụ và dữ liệu API thực tế. Không có mock data. Tab Bar 5 tabs mới.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
 
-### 14/05/2026 09:50 — Cải Thiện UI Modal Chi Tiết Hội Viên & Date Picker Ngày Sinh
+### 14/05/2026 13:58 — Redesign Toàn Bộ Giao Diện Mobile App (Hội Viên)
+- **Loại**: Tái thiết kế giao diện (Frontend — React Native)
+- **File chỉnh sửa / tạo mới**:
+  - `MobileApp/src/navigation/MemberNavigator.js` — Cấu hình lại Tab Bar 5 tabs (Trang chủ / Vào Ra / Tập luyện / Thông báo / Tài khoản); icon container có nền khi active; tab "Tập luyện" ở giữa nổi bật với background xanh lá khi focus.
+  - `MobileApp/src/screens/member/MemberHomeScreen.js` — Viết lại hoàn toàn: banner Paradise Gym với tia nắng, card hợp đồng hiển thị gói tập đang hoạt động từ API, tiện ích nhanh 4 nút bo góc, danh sách gói hội viên từ `GET /api/packages` + `GET /api/packages/pt`, panel Paradise Gym tổng quan cuối trang. Cảnh báo realtime từ `GET /api/members/me/notifications`.
+  - `MobileApp/src/screens/member/MemberScheduleScreen.js` — Viết lại: header chuẩn, thống kê tháng (đã tập / chưa tập tự tính từ API), mini-calendar lưới 7 cột bôi màu ngày đã tập, danh sách lịch sử tập luyện với card chi tiết (ngày, giờ, HLV, địa điểm, trạng thái).
+  - `MobileApp/src/screens/member/MemberNotificationScreen.js` — Tạo mới: header với nút refresh, banner check-in hôm nay, danh sách thông báo phân nhóm 4 mức (danger/warning/info/success) với icon tương ứng. Gọi `GET /api/members/me/notifications`.
+  - `MobileApp/src/screens/member/MemberProfileScreen.js` — Viết lại: card profile premium với avatar, tên, SĐT, badge hạng hội viên, quick stats (gói tập / hết hạn / buổi PT); menu thông tin định danh, gói tập & hợp đồng, cài đặt (switch dark mode), nút đăng xuất. Gọi `GET /api/members/me/profile`.
+  - `MobileApp/src/screens/member/MemberCheckinsScreen.js` — Tạo mới: thống kê lượt vào/ra, bộ lọc (Tất cả/Vào/Ra), danh sách card vào/ra với icon màu sắc phân biệt. Gọi `GET /api/checkins/me`.
+- **Mô tả**: Tái thiết kế toàn diện theo bố cục hình ảnh mẫu mà người dùng cung cấp. Bố cục và đồ họa theo ảnh mẫu, nội dung nghiệp vụ theo đúng hệ thống Paradise Gym. Tông màu xanh lá `#1D9336` nhất quán. 100% dữ liệu từ API thực tế, không có mock data.
+- **Kết quả**: Thành công
+
+
 - **Loại**: Cải thiện giao diện (Frontend)
 - **File chỉnh sửa**:
   - `FE/assets/js/pages/members-list.js` — (1) Thiết kế lại header modal với banner gradient xanh lá (`#1a5e2a → #22c55e`), avatar 72px có ring trắng + dot trạng thái, quick stats bar 3 ô (Gói tập / Hết hạn / Giới tính) nằm cuối banner; (2) Tab bar mới dùng `border-bottom` active thay vì sliding indicator; (3) Tab "Thông tin" thiết kế lại với 3 nhóm (Cá nhân / Liên hệ / Tập luyện), mỗi trường có icon badge vuông xanh lá, divider mỏng giữa các dòng, sectionTitle có gradient line; (4) Phần tài khoản đăng nhập có header riêng nổi bật hơn.
