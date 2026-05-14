@@ -58,7 +58,8 @@ export const getMembers = (req, res) => {
       )) AS ngay_het_han,
       (SELECT gt.ten_goi FROM dang_ky_goi_tap dk JOIN goi_tap gt ON gt.id = dk.goi_tap_id
        WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong' ORDER BY dk.den_ngay DESC LIMIT 1) AS ten_goi_tap,
-      (SELECT COUNT(*) FROM dang_ky_pt dp WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS co_pt
+      (SELECT COUNT(*) FROM dang_ky_pt dp WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS co_pt,
+      ((SELECT loai FROM luot_vao_ra WHERE ho_so_id = h.id AND date(thoi_diem) = date('now','localtime') ORDER BY id DESC LIMIT 1) = 'vao') AS da_check_in_hom_nay
     FROM ho_so h
     ${where}
     ORDER BY h.ngay_tao DESC
@@ -103,7 +104,8 @@ export const getMemberById = (req, res) => {
         'tu_ngay', dp.tu_ngay, 'den_ngay', dp.den_ngay,
         'trang_thai', dp.trang_thai
       )) FROM dang_ky_pt dp JOIN ho_so pt ON pt.id = dp.pt_id
-       WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS pt_hien_tai
+       WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS pt_hien_tai,
+      ((SELECT loai FROM luot_vao_ra WHERE ho_so_id = h.id AND date(thoi_diem) = date('now','localtime') ORDER BY id DESC LIMIT 1) = 'vao') AS da_check_in_hom_nay
     FROM ho_so h
     LEFT JOIN tai_khoan tk ON tk.id = h.tai_khoan_id
     WHERE h.id = ? AND h.loai_ho_so = 'hoi_vien' AND h.is_deleted = 0

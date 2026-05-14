@@ -8,11 +8,19 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
-**✅ Đồng bộ giao diện thông báo (3 Portal)** — Admin/Lễ tân nay dùng bảng màu M3 (danger/warning/info/success) giống PT và Hội viên; 16 loại sự kiện được ánh xạ sang 4 mức độ; Cả 3 portal đều có nút **X** xóa từng thông báo + nút **"Xóa tất cả"**; Dropdown Admin gọi API `/notifications/read-all`, PT và Hội viên xóa client-side (stateless, không gọi API thêm).
+**✅ Cải thiện UI modal chi tiết hội viên & date picker ngày sinh** — Modal chi tiết hội viên có header banner gradient xanh lá với quick stats (gói tập, hết hạn, giới tính); tab info được thiết kế lại với layout nhóm thông tin có icon; ô ngày sinh form thêm mới dùng 3 dropdown Ngày/Tháng/Năm thay vì input date thô.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
+
+### 14/05/2026 09:50 — Cải Thiện UI Modal Chi Tiết Hội Viên & Date Picker Ngày Sinh
+- **Loại**: Cải thiện giao diện (Frontend)
+- **File chỉnh sửa**:
+  - `FE/assets/js/pages/members-list.js` — (1) Thiết kế lại header modal với banner gradient xanh lá (`#1a5e2a → #22c55e`), avatar 72px có ring trắng + dot trạng thái, quick stats bar 3 ô (Gói tập / Hết hạn / Giới tính) nằm cuối banner; (2) Tab bar mới dùng `border-bottom` active thay vì sliding indicator; (3) Tab "Thông tin" thiết kế lại với 3 nhóm (Cá nhân / Liên hệ / Tập luyện), mỗi trường có icon badge vuông xanh lá, divider mỏng giữa các dòng, sectionTitle có gradient line; (4) Phần tài khoản đăng nhập có header riêng nổi bật hơn.
+  - `FE/assets/js/pages/member-add.js` — Thay `<input type="date">` ngày sinh bằng 3 `<select>` Ngày / Tháng / Năm, sync giá trị vào hidden input `reg-ngay-sinh` theo format `YYYY-MM-DD`; event listener `syncNgaySinh` cập nhật mỗi khi 1 trong 3 dropdown thay đổi.
+- **Mô tả**: Modal chi tiết hội viên trước đây có header đơn giản và tab info hiển thị grid ô xám đơn điệu. Đã thiết kế lại với banner gradient premium và layout thông tin theo nhóm có icon. Ô ngày sinh dùng input date thô của trình duyệt, đã thay bằng 3 dropdown thống nhất giao diện với toàn bộ form.
+- **Kết quả**: Thành công
 
 ### 14/05/2026 08:32 — Thông Báo Realtime Portal (Không Lưu DB)
 - **Loại**: Tính năng mới (Fullstack — Backend + Frontend)
@@ -23,7 +31,7 @@
   - `FE/pt-portal.html` — Thêm Bell Icon + Dropdown HTML vào Header, đặt cạnh nút dark/light.
   - `FE/assets/js/pt-portal.js` — Fetch notifications cùng `_fetchData()`; Thêm `_initNotifications()`: cập nhật badge số lượng, render dropdown, gắn sự kiện toggle/click-outside.
 - **Mô tả**: **✅ Bell Icon Thông Báo — Hội Viên & PT** — Cả hai portal đều có Bell Icon + Dropdown trên Header cạnh nút dark/light, kèm badge đỏ số lượng. Hội viên còn có thêm Banner Card ngay đầu Dashboard. Dữ liệu tính toán realtime từ DB qua endpoint `GET /api/me/notifications`, không lưu bảng `thong_bao`.
-**✅ Responsive Đặt Lịch PT** — Tối ưu hiển thị danh sách "Lịch đã đặt" trên màn hình nhỏ, thay đổi cách tính chiều cao (`h-full` -> `lg:h-full`) để danh sách tự giãn vừa đúng 5 item mà không bị cắt hoặc lộ khoảng trắng. Nâng cấp CSS Grid cho hai ô "Chọn PT" và "Chọn hội viên" để hiển thị ngang hàng nhau trên màn hình lớn.
+**✅ Responsive Đặt Lịch PT** — Tối ưu hiển thị danh sách "Lịch đã đặt" trên màn hình nhỏ, thay đổi cách tính chiều cao (`h-full` -> `lg:h-full`) để danh sách tự giãn vừa đúng 5 item mà không bị cắt hoặc lộ khoảng trắng. Nâng cấp CSS Grid cho hai ô "Chọn PT" và "Chọn hội viên" để hiển thị ngang hàng nhau trên màn hình lớn. Nâng cấp Premium Dashboard UI cho khối chọn thời gian và thao tác: Hàng trên gộp 3 trường (Loại, Ngày, Thời lượng) thành 3 cột cân đối (`grid-cols-3`); Hàng dưới tạo dải thời gian ngang liên hoàn `Từ: [Giờ:Phút] → Đến: [Giờ kết thúc]` giúp triệt tiêu hoàn toàn tình trạng ô Select bị kéo giãn quá dài. Nút bấm đặt lịch được tinh gọn lề phải sang trọng kèm đổ bóng nổi bật.
 - **Kết quả**: Thành công
 - **Loại**: Tính năng mới (Fullstack — Backend + Frontend)
 - **File chỉnh sửa**:

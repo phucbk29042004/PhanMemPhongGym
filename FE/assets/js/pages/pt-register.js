@@ -79,35 +79,86 @@ window.GymApp.pages['pt-register'] = {
               </div>
 
               <!-- Ngày, giờ, loại, thời lượng -->
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-standard">
+              <div class="bg-surface-container-lowest p-standard rounded-2xl border border-outline-variant/80 grid grid-cols-1 md:grid-cols-2 gap-standard shadow-2xs">
                 <div>
-                  <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Loại đăng ký</label>
-                  <select id="reg-type" class="w-full bg-surface-container-low border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none font-body-md text-body-md transition-colors">
+                  <label class="block text-body-sm text-on-surface-variant font-bold mb-xs flex items-center gap-xs">
+                    <span class="material-symbols-outlined text-brand-primary text-sm" style="font-variation-settings:'FILL' 1">category</span>
+                    Loại đăng ký
+                  </label>
+                  <select id="reg-type" class="w-full bg-surface-container-low border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none font-body-md text-body-md transition-all hover:border-outline">
                     <option value="Cá nhân">Cá nhân (1-1)</option>
                     <option value="Nhóm">Nhóm (2-5 người)</option>
                     <option value="Online">Online</option>
                   </select>
                 </div>
                 <div>
-                  <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Ngày tập</label>
-                  <input id="reg-date" type="date" class="w-full bg-surface-container-low border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none font-body-md text-body-md transition-colors" />
+                  <label class="block text-body-sm text-on-surface-variant font-bold mb-xs flex items-center gap-xs">
+                    <span class="material-symbols-outlined text-brand-primary text-sm" style="font-variation-settings:'FILL' 1">event</span>
+                    Ngày tập
+                  </label>
+                  <input id="reg-date" type="date" class="w-full bg-surface-container-low border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none font-body-md text-body-md transition-all hover:border-outline" />
                 </div>
                 <div>
-                  <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Giờ bắt đầu</label>
-                  <input id="reg-start" type="time" class="w-full bg-surface-container-low border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none font-body-md text-body-md transition-colors" />
+                  <label class="block text-body-sm text-on-surface-variant font-bold mb-xs flex items-center gap-xs">
+                    <span class="material-symbols-outlined text-brand-primary text-sm" style="font-variation-settings:'FILL' 1">schedule</span>
+                    Giờ bắt đầu
+                  </label>
+                  <input id="reg-start" type="hidden" value="06:00" />
+                  <div class="flex items-center gap-xs">
+                    <select id="reg-start-hour" class="flex-1 bg-surface-container-low border border-outline-variant text-on-surface px-2 py-compact rounded-xl focus:border-brand-primary outline-none font-body-md text-body-md transition-all hover:border-outline text-center font-medium cursor-pointer">
+                      <option value="05">05</option>
+                      <option value="06" selected>06</option>
+                      <option value="07">07</option>
+                      <option value="08">08</option>
+                      <option value="09">09</option>
+                      <option value="10">10</option>
+                      <option value="11">11</option>
+                      <option value="12">12</option>
+                      <option value="13">13</option>
+                      <option value="14">14</option>
+                      <option value="15">15</option>
+                      <option value="16">16</option>
+                      <option value="17">17</option>
+                      <option value="18">18</option>
+                      <option value="19">19</option>
+                      <option value="20">20</option>
+                      <option value="21">21</option>
+                      <option value="22">22</option>
+                    </select>
+                    <span class="text-on-surface-variant font-bold">:</span>
+                    <select id="reg-start-minute" class="flex-1 bg-surface-container-low border border-outline-variant text-on-surface px-2 py-compact rounded-xl focus:border-brand-primary outline-none font-body-md text-body-md transition-all hover:border-outline text-center font-medium cursor-pointer">
+                      <option value="00" selected>00</option>
+                      <option value="10">10</option>
+                      <option value="15">15</option>
+                      <option value="20">20</option>
+                      <option value="30">30</option>
+                      <option value="40">40</option>
+                      <option value="45">45</option>
+                      <option value="50">50</option>
+                    </select>
+                  </div>
                 </div>
                 <div>
-                  <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Thời lượng</label>
-                  <select id="reg-duration" class="w-full bg-surface-container-low border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none font-body-md text-body-md transition-colors">
+                  <label class="block text-body-sm text-on-surface-variant font-bold mb-xs flex items-center gap-xs">
+                    <span class="material-symbols-outlined text-brand-primary text-sm" style="font-variation-settings:'FILL' 1">timer</span>
+                    Thời lượng
+                  </label>
+                  <select id="reg-duration" class="w-full bg-surface-container-low border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none font-body-md text-body-md transition-all hover:border-outline">
                     <option value="30">30 phút</option>
                     <option value="60" selected>1 giờ</option>
                     <option value="90">1.5 giờ</option>
                     <option value="120">2 giờ</option>
                   </select>
                 </div>
-                <div class="md:col-span-2">
-                  <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Giờ kết thúc (tự tính)</label>
-                  <input id="reg-end" type="time" readonly class="w-full bg-surface-container border border-outline-variant text-on-surface-variant px-standard py-compact rounded-xl outline-none font-body-md text-body-md cursor-not-allowed" placeholder="Chọn giờ bắt đầu và thời lượng" />
+                <div class="md:col-span-2 pt-xs border-t border-outline-variant/40">
+                  <label class="block text-body-sm text-on-surface-variant font-bold mb-xs flex items-center justify-between">
+                    <span class="flex items-center gap-xs">
+                      <span class="material-symbols-outlined text-outline text-sm">update</span>
+                      Giờ kết thúc (tự động tính)
+                    </span>
+                    <span class="text-label-xs font-medium text-brand-primary bg-brand-primary/10 px-2 py-0.5 rounded-md">Tự động</span>
+                  </label>
+                  <input id="reg-end" type="time" readonly class="w-full bg-surface-container border border-outline-variant/60 text-on-surface-variant px-standard py-compact rounded-xl outline-none font-body-md text-body-md cursor-not-allowed opacity-80" placeholder="Chọn giờ bắt đầu và thời lượng" />
                 </div>
               </div>
 
@@ -334,8 +385,21 @@ window.GymApp.pages['pt-register'] = {
     if (regDate) regDate.value = today;
 
     // Tự tính giờ kết thúc khi đổi giờ bắt đầu hoặc thời lượng
-    document.getElementById('reg-start')?.addEventListener('change', () => self._calcEndTime());
+    const updateStartTime = () => {
+      const h = document.getElementById('reg-start-hour')?.value || '06';
+      const m = document.getElementById('reg-start-minute')?.value || '00';
+      const startInput = document.getElementById('reg-start');
+      if (startInput) {
+        startInput.value = `${h}:${m}`;
+        self._calcEndTime();
+      }
+    };
+    document.getElementById('reg-start-hour')?.addEventListener('change', updateStartTime);
+    document.getElementById('reg-start-minute')?.addEventListener('change', updateStartTime);
     document.getElementById('reg-duration')?.addEventListener('change', () => self._calcEndTime());
+
+    // Khởi tạo giờ kết thúc mặc định lúc load trang
+    updateStartTime();
 
     // Search PT
     document.getElementById('search-pt')?.addEventListener('input', e => {
@@ -408,8 +472,10 @@ window.GymApp.pages['pt-register'] = {
           self._refreshBookingList();
 
           document.getElementById('clear-pt').click();
-          document.getElementById('reg-start').value = '';
-          document.getElementById('reg-end').value = '';
+          if (document.getElementById('reg-start-hour')) document.getElementById('reg-start-hour').value = '06';
+          if (document.getElementById('reg-start-minute')) document.getElementById('reg-start-minute').value = '00';
+          const st = document.getElementById('reg-start');
+          if (st) { st.value = '06:00'; self._calcEndTime(); }
           document.getElementById('reg-notes').value = '';
         } else {
           window.GymApp.toast(res?.message || 'Đặt lịch thất bại!', 'error');

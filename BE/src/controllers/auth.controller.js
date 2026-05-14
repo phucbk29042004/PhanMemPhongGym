@@ -8,6 +8,7 @@ import db from '../config/db.js';
 import { success, error } from '../utils/response.js';
 import { ghi_audit_log } from '../utils/audit.js';
 import { createNotification } from '../utils/notifications.js';
+import { uploadImage, deleteImage, isCloudinaryReady } from '../utils/cloudinary.js';
 
 const findAccount = db.prepare(`
   SELECT t.id, t.ten_dang_nhap, t.mat_khau_hash, t.trang_thai,
@@ -80,15 +81,15 @@ export const login = (req, res) => {
   return success(res, {
     token,
     user: {
-      id:          account.id,
+      id: account.id,
       ten_dang_nhap: account.ten_dang_nhap,
-      vai_tro:     account.vai_tro,
+      vai_tro: account.vai_tro,
       ten_vai_tro: account.ten_vai_tro,
-      ho_so_id:    account.ho_so_id,
-      ho_ten:      account.ho_ten,
-      avatar_url:  account.avatar_url,
-      loai_ho_so:  account.loai_ho_so,
-      quyen:       JSON.parse(account.quyen_json || '{}'),
+      ho_so_id: account.ho_so_id,
+      ho_ten: account.ho_ten,
+      avatar_url: account.avatar_url,
+      loai_ho_so: account.loai_ho_so,
+      quyen: JSON.parse(account.quyen_json || '{}'),
     },
   }, 'Đăng nhập thành công');
 };
@@ -130,4 +131,75 @@ export const getMe = (req, res) => {
     ...account,
     quyen: JSON.parse(account?.quyen_json || '{}'),
   });
+};
+
+// ── PUT /api/auth/me ──────────────────────────────────────
+export const updateMe = (req, res) => {
+  const { ho_ten, so_dien_thoai, email, avatar_url } = req.body;
+  const userId = req.user.id;
+
+  // Tìm hồ sơ gắn với tài khoản này
+  let hoSo = db.prepare('SELECT id FROM ho_so WHERE tai_khoan_id = ? AND is_deleted = 0').get(userId);
+
+  if (hoSo) {
+    db.prepare(`
+      UPDATE ho_so SET
+        ho_ten = COALESCE(?, ho_ten),
+        so_dien_thoai = COALESCE(?, so_dien_thoai),
+        email = COALESCE(?, email),
+        avatar_url = COALESCE(?, avatar_url)
+      WHERE id = ?
+    `).run(ho_ten || null, so_dien_thoai || null, email || null, avatar_url || null, hoSo.id);
+  } else {
+    // Nếu chưa có hồ sơ (ví dụ admin mặc định), tạo mới hồ sơ loại 'nhan_vien' hoặc 'admin'
+    // Để an toàn, chỉ tạo hồ sơ tối thiểu
+    const result = db.prepare(`
+      INSERT INTO ho_so (loai_ho_so, ho_ten, so_dien_thoai, email, avatar_url, tai_khoan_id)
+      VALUES ('nhan_vien', ?, ?, ?, ?, ?)
+    `).run(ho_ten || 'Admin', so_dien_thoai || null, email || null, avatar_url || null, userId);
+    hoSo = { id: result.lastInsertRowid };
+  }
+
+  ghi_audit_log(req, 'UPDATE', 'ho_so', hoSo.id, null, { action: 'update_me' }, 'Cập nhật thông tin cá nhân');
+  return success(res, null, 'Cập nhật thông tin cá nhân thành công');
+};
+
+// ── PUT /api/auth/me/avatar ───────────────────────────────
+export const updateAvatarMe = async (req, res) => {
+  const userId = req.user.id;
+  if (!req.file) return error(res, 'Vui lòng chọn file ảnh.', 400);
+
+  try {
+    if (!isCloudinaryReady) {
+      return error(res, 'Hệ thống chưa cấu hình lưu trữ ảnh (Cloudinary).', 500);
+    }
+
+    let hoSo = db.prepare('SELECT id, ma_ho_so, cloudinary_public_id, avatar_url FROM ho_so WHERE tai_khoan_id = ? AND is_deleted = 0').get(userId);
+
+    // Xóa ảnh cũ nếu có
+    if (hoSo && hoSo.cloudinary_public_id) {
+      await deleteImage(hoSo.cloudinary_public_id);
+    }
+
+    const maHoSo = hoSo ? hoSo.ma_ho_so : `ADMIN_${userId}`;
+    const result = await uploadImage(req.file.buffer, 'paradise-gym/profiles', maHoSo);
+
+    if (hoSo) {
+      db.prepare(`
+        UPDATE ho_so SET avatar_url = ?, cloudinary_public_id = ? WHERE id = ?
+      `).run(result.url, result.publicId, hoSo.id);
+    } else {
+      // Create minimum record if doesn't exist
+      const insertRes = db.prepare(`
+        INSERT INTO ho_so (loai_ho_so, ho_ten, avatar_url, cloudinary_public_id, tai_khoan_id)
+        VALUES ('nhan_vien', 'Admin', ?, ?, ?)
+      `).run(result.url, result.publicId, userId);
+      hoSo = { id: insertRes.lastInsertRowid };
+    }
+
+    ghi_audit_log(req, 'UPDATE', 'ho_so', hoSo.id, { avatar_url: hoSo?.avatar_url }, { avatar_url: result.url }, 'Cập nhật ảnh đại diện cá nhân');
+    return success(res, { avatar_url: result.url }, 'Cập nhật ảnh thành công');
+  } catch (err) {
+    return error(res, `Lỗi upload ảnh: ${err.message}`, 500);
+  }
 };

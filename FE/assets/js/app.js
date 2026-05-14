@@ -412,12 +412,121 @@
       window._openQrModal?.();
     });
 
-    const logoutBtn = document.querySelector('button[title="Đăng xuất"]');
-    if (logoutBtn) {
-      logoutBtn.addEventListener('click', () => {
+    const logoutBtns = document.querySelectorAll('button[title="Đăng xuất"], #btn-admin-logout');
+    logoutBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
         if (confirm('Bạn có chắc chắn muốn đăng xuất?')) window.GymApp.auth.logout();
       });
-    }
+    });
+
+    // Profile Modal
+    let _adminAvatarFile = null;
+    document.getElementById('btn-admin-profile')?.addEventListener('click', () => {
+      document.getElementById('modal-admin-profile').style.display = 'flex';
+      const u = window.GymApp.auth.user;
+      if (u) {
+        document.getElementById('profile-ho-ten').value = u.ho_ten || u.ten_dang_nhap || '';
+        document.getElementById('profile-so-dien-thoai').value = u.so_dien_thoai || '';
+        document.getElementById('profile-email').value = u.email || '';
+        if (u.avatar_url && window.GymApp.avatarImg) {
+          document.getElementById('admin-profile-avatar-preview').innerHTML = window.GymApp.avatarImg(u.avatar_url, u.ho_ten, 'lg', 'width:100%;height:100%;object-fit:cover;');
+        } else {
+          document.getElementById('admin-profile-avatar-preview').innerHTML = '<span class="material-symbols-outlined" style="font-size:40px;color:#94a3b8;position:absolute;top:50%;left:50%;transform:translate(-50%, -50%);font-variation-settings:\'FILL\' 1;">person</span>';
+        }
+      }
+      _adminAvatarFile = null;
+      const fileInput = document.getElementById('admin-profile-avatar-input');
+      if (fileInput) fileInput.value = '';
+    });
+
+    document.getElementById('admin-profile-avatar-input')?.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        return window.GymApp.toast('Ảnh vượt quá 5MB!', 'error');
+      }
+      _adminAvatarFile = file;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        document.getElementById('admin-profile-avatar-preview').innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;" />`;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById('btn-close-profile')?.addEventListener('click', () => {
+      document.getElementById('modal-admin-profile').style.display = 'none';
+      _adminAvatarFile = null;
+    });
+
+    document.getElementById('btn-save-profile')?.addEventListener('click', async () => {
+      const data = {
+        ho_ten: document.getElementById('profile-ho-ten').value.trim(),
+        so_dien_thoai: document.getElementById('profile-so-dien-thoai').value.trim(),
+        email: document.getElementById('profile-email').value.trim()
+      };
+      if (!data.ho_ten) return window.GymApp.toast('Họ tên không được để trống!', 'error');
+
+      const btn = document.getElementById('btn-save-profile');
+      btn.innerHTML = '<span class="material-symbols-outlined animate-spin" style="font-size:16px;">autorenew</span> Đang lưu...';
+      btn.disabled = true;
+
+      try {
+        // Upload ảnh trước nếu có
+        if (_adminAvatarFile) {
+          const fd = new FormData();
+          fd.append('avatar', _adminAvatarFile);
+          const uploadRes = await window.GymApp.api.upload('/auth/me/avatar', fd);
+          if (uploadRes && uploadRes.success && uploadRes.data?.avatar_url) {
+            window.GymApp.auth.user.avatar_url = uploadRes.data.avatar_url;
+          }
+        }
+
+        const res = await window.GymApp.api.put('/auth/me', data);
+        if (res?.success) {
+          window.GymApp.toast('Cập nhật thông tin thành công!', 'success');
+          document.getElementById('modal-admin-profile').style.display = 'none';
+          
+          window.GymApp.auth.user.ho_ten = data.ho_ten;
+          window.GymApp.auth.user.so_dien_thoai = data.so_dien_thoai;
+          window.GymApp.auth.user.email = data.email;
+          window.GymApp.auth.updateUI();
+          _adminAvatarFile = null;
+        }
+      } catch (err) {
+        window.GymApp.toast('Lỗi cập nhật: ' + (err.message || ''), 'error');
+      } finally {
+        btn.innerHTML = 'Lưu thay đổi';
+        btn.disabled = false;
+      }
+    });
+
+    // Change Password Modal
+    document.getElementById('btn-admin-change-password')?.addEventListener('click', () => {
+      document.getElementById('modal-admin-change-password').style.display = 'flex';
+      document.getElementById('pwd-old').value = '';
+      document.getElementById('pwd-new').value = '';
+      document.getElementById('pwd-confirm').value = '';
+    });
+    document.getElementById('btn-close-password')?.addEventListener('click', () => {
+      document.getElementById('modal-admin-change-password').style.display = 'none';
+    });
+    document.getElementById('btn-save-password')?.addEventListener('click', async () => {
+      const pwdOld = document.getElementById('pwd-old').value;
+      const pwdNew = document.getElementById('pwd-new').value;
+      const pwdConfirm = document.getElementById('pwd-confirm').value;
+      if (!pwdOld || !pwdNew || !pwdConfirm) return window.GymApp.toast('Vui lòng nhập đầy đủ thông tin!', 'error');
+      if (pwdNew.length < 6) return window.GymApp.toast('Mật khẩu mới phải có ít nhất 6 ký tự!', 'error');
+      if (pwdNew !== pwdConfirm) return window.GymApp.toast('Mật khẩu xác nhận không khớp!', 'error');
+      try {
+        const res = await window.GymApp.api.post('/auth/doi-mat-khau', { mat_khau_cu: pwdOld, mat_khau_moi: pwdNew });
+        if (res?.success) {
+          window.GymApp.toast('Đổi mật khẩu thành công!', 'success');
+          document.getElementById('modal-admin-change-password').style.display = 'none';
+        }
+      } catch (err) {
+        window.GymApp.toast(err.message || 'Lỗi đổi mật khẩu', 'error');
+      }
+    });
 
     // 5. Click delegation (Cực kỳ quan trọng)
     document.addEventListener('click', function (e) {

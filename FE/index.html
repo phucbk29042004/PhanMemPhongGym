@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Paradise GYM - Quản lý</title>
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+    rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script id="tailwind-config">
     tailwind.config = {
@@ -61,266 +63,415 @@
   </script>
   <link rel="stylesheet" href="assets/css/main.css" />
 </head>
+
 <body class="font-body-md text-body-md overflow-hidden bg-background text-on-surface">
 
-<script>
-  window.GymApp = { 
-    data: { 
-      members: [], pts: [], packages: [], checkins: [], ptSchedules: [], ptBookings: [], stats: null 
-    }, 
-    pages: {}, 
-    currentPage: null 
-  };
-</script>
+  <script>
+    window.GymApp = {
+      data: {
+        members: [], pts: [], packages: [], checkins: [], ptSchedules: [], ptBookings: [], stats: null
+      },
+      pages: {},
+      currentPage: null
+    };
+  </script>
 
-<div class="flex h-screen w-full overflow-hidden">
+  <div class="flex h-screen w-full overflow-hidden">
 
-  <!-- ===== SIDEBAR ===== -->
-  <aside id="sidebar" class="flex flex-col h-full bg-surface-container-low border-r border-outline-variant w-64 flex-shrink-0" style="box-shadow:2px 0 12px rgba(0,0,0,0.06)">
+    <!-- ===== SIDEBAR ===== -->
+    <aside id="sidebar"
+      class="flex flex-col h-full bg-surface-container-low border-r border-outline-variant w-64 flex-shrink-0"
+      style="box-shadow:2px 0 12px rgba(0,0,0,0.06)">
 
-    <!-- Toggle + Logo -->
-    <div class="sidebar-toggle-area sidebar-logo-area flex items-center border-b border-outline-variant px-compact py-standard gap-compact flex-shrink-0">
-      <button id="sidebar-toggle" class="p-atom rounded-xl hover:bg-surface-container transition-colors flex-shrink-0" title="Thu gọn / Mở rộng">
-        <span class="material-symbols-outlined text-on-surface-variant text-xl">menu</span>
-      </button>
-      <div class="sidebar-label flex items-center gap-compact overflow-hidden flex-1">
-        <div class="w-8 h-8 bg-brand-primary rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
-          <span class="material-symbols-outlined text-white" style="font-size:16px;font-variation-settings:'FILL' 1,'wght' 500">fitness_center</span>
-        </div>
-        <div class="min-w-0">
-          <h1 class="font-display-xl text-display-xl text-brand-primary font-bold leading-tight whitespace-nowrap">Paradise GYM</h1>
-          <p class="text-on-surface-variant font-body-sm text-body-sm" style="font-size:10px">Quản lý phòng tập</p>
+      <!-- Toggle + Logo -->
+      <div
+        class="sidebar-toggle-area sidebar-logo-area flex items-center border-b border-outline-variant px-compact py-standard gap-compact flex-shrink-0">
+        <button id="sidebar-toggle" class="p-atom rounded-xl hover:bg-surface-container transition-colors flex-shrink-0"
+          title="Thu gọn / Mở rộng">
+          <span class="material-symbols-outlined text-on-surface-variant text-xl">menu</span>
+        </button>
+        <div class="sidebar-label flex items-center gap-compact overflow-hidden flex-1">
+          <div class="w-8 h-8 bg-brand-primary rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+            <span class="material-symbols-outlined text-white"
+              style="font-size:16px;font-variation-settings:'FILL' 1,'wght' 500">fitness_center</span>
+          </div>
+          <div class="min-w-0">
+            <h1 class="font-display-xl text-display-xl text-brand-primary font-bold leading-tight whitespace-nowrap">
+              Paradise GYM</h1>
+            <p class="text-on-surface-variant font-body-sm text-body-sm" style="font-size:10px">Quản lý phòng tập</p>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Navigation -->
-    <nav class="flex-grow overflow-y-auto px-compact py-standard space-y-atom overflow-x-hidden">
+      <!-- Navigation -->
+      <nav class="flex-grow overflow-y-auto px-compact py-standard space-y-atom overflow-x-hidden">
 
-      <!-- Tổng quan -->
-      <button
-        class="nav-item flex items-center gap-standard w-full px-standard py-compact rounded-xl text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150"
-        data-page="dashboard" title="Tổng quan"
-      >
-        <span class="material-symbols-outlined text-xl flex-shrink-0">dashboard</span>
-        <span class="sidebar-label font-body-md text-body-md font-medium">Tổng quan</span>
-      </button>
-
-      <!-- Quản lý hội viên (Accordion) -->
-      <div class="accordion-group">
+        <!-- Tổng quan -->
         <button
-          class="accordion-trigger flex items-center gap-standard w-full px-standard py-compact rounded-xl text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150"
-          data-accordion="hoi-vien" title="Quản lý hội viên"
-        >
-          <span class="material-symbols-outlined text-xl flex-shrink-0">manage_accounts</span>
-          <span class="sidebar-label font-body-md text-body-md font-medium flex-1 text-left">Quản lý</span>
-          <span class="material-symbols-outlined text-sm arrow-icon transition-transform duration-200 sidebar-label flex-shrink-0">chevron_right</span>
+          class="nav-item flex items-center gap-standard w-full px-standard py-compact rounded-xl text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150"
+          data-page="dashboard" title="Tổng quan">
+          <span class="material-symbols-outlined text-xl flex-shrink-0">dashboard</span>
+          <span class="sidebar-label font-body-md text-body-md font-medium">Tổng quan</span>
         </button>
 
-        <div class="accordion-content overflow-hidden" id="accordion-hoi-vien" style="max-height:0; transition: max-height 0.25s ease;">
-          <div class="pl-6 py-atom space-y-atom">
+        <!-- Quản lý hội viên (Accordion) -->
+        <div class="accordion-group">
+          <button
+            class="accordion-trigger flex items-center gap-standard w-full px-standard py-compact rounded-xl text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150"
+            data-accordion="hoi-vien" title="Quản lý hội viên">
+            <span class="material-symbols-outlined text-xl flex-shrink-0">manage_accounts</span>
+            <span class="sidebar-label font-body-md text-body-md font-medium flex-1 text-left">Quản lý</span>
+            <span
+              class="material-symbols-outlined text-sm arrow-icon transition-transform duration-200 sidebar-label flex-shrink-0">chevron_right</span>
+          </button>
 
-            <button class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150" data-page="members-list" title="Danh sách hội viên">
-              <span class="material-symbols-outlined text-sm flex-shrink-0">people</span>
-              <span class="sidebar-label">Danh sách hội viên</span>
-            </button>
+          <div class="accordion-content overflow-hidden" id="accordion-hoi-vien"
+            style="max-height:0; transition: max-height 0.25s ease;">
+            <div class="pl-6 py-atom space-y-atom">
 
-            <button class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150" data-page="member-add" title="Thêm mới hội viên">
-              <span class="material-symbols-outlined text-sm flex-shrink-0">person_add</span>
-              <span class="sidebar-label">Thêm hội viên mới</span>
-            </button>
+              <button
+                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150"
+                data-page="members-list" title="Danh sách hội viên">
+                <span class="material-symbols-outlined text-sm flex-shrink-0">people</span>
+                <span class="sidebar-label">Danh sách hội viên</span>
+              </button>
 
-            <button class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150" data-page="checkin" title="Vào - Ra">
-              <span class="material-symbols-outlined text-sm flex-shrink-0">how_to_reg</span>
-              <span class="sidebar-label">Check-in / Ra</span>
-            </button>
+              <button
+                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150"
+                data-page="member-add" title="Thêm mới hội viên">
+                <span class="material-symbols-outlined text-sm flex-shrink-0">person_add</span>
+                <span class="sidebar-label">Thêm hội viên mới</span>
+              </button>
 
-            <button class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150" data-page="revenue" title="Doanh thu">
-              <span class="material-symbols-outlined text-sm flex-shrink-0">payments</span>
-              <span class="sidebar-label">Doanh thu</span>
-            </button>
+              <button
+                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150"
+                data-page="checkin" title="Vào - Ra">
+                <span class="material-symbols-outlined text-sm flex-shrink-0">how_to_reg</span>
+                <span class="sidebar-label">Check-in / Ra</span>
+              </button>
 
-            <button class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150" data-page="expired" title="Danh sách hết hạn">
-              <span class="material-symbols-outlined text-sm flex-shrink-0">event_busy</span>
-              <span class="sidebar-label">Hết hạn / Sắp hết hạn</span>
-            </button>
+              <button
+                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150"
+                data-page="revenue" title="Doanh thu">
+                <span class="material-symbols-outlined text-sm flex-shrink-0">payments</span>
+                <span class="sidebar-label">Doanh thu</span>
+              </button>
 
-            <button class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150" data-page="pt-training" title="Lịch đào tạo PT">
-              <span class="material-symbols-outlined text-sm flex-shrink-0">sports_gymnastics</span>
-              <span class="sidebar-label">Lịch đào tạo PT</span>
-            </button>
+              <button
+                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150"
+                data-page="expired" title="Danh sách hết hạn">
+                <span class="material-symbols-outlined text-sm flex-shrink-0">event_busy</span>
+                <span class="sidebar-label">Hết hạn / Sắp hết hạn</span>
+              </button>
 
-            <button class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150" data-page="pt-register" title="Đăng ký lịch tập PT">
-              <span class="material-symbols-outlined text-sm flex-shrink-0">edit_calendar</span>
-              <span class="sidebar-label">Đặt lịch PT</span>
-            </button>
+              <button
+                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150"
+                data-page="pt-training" title="Lịch đào tạo PT">
+                <span class="material-symbols-outlined text-sm flex-shrink-0">sports_gymnastics</span>
+                <span class="sidebar-label">Lịch đào tạo PT</span>
+              </button>
+
+              <button
+                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150"
+                data-page="pt-register" title="Đăng ký lịch tập PT">
+                <span class="material-symbols-outlined text-sm flex-shrink-0">edit_calendar</span>
+                <span class="sidebar-label">Đặt lịch PT</span>
+              </button>
 
 
-             <button class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150" data-page="packages" title="Gói tập">
-              <span class="material-symbols-outlined text-sm flex-shrink-0">card_membership</span>
-              <span class="sidebar-label">Gói tập</span>
-            </button>
+              <button
+                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150"
+                data-page="packages" title="Gói tập">
+                <span class="material-symbols-outlined text-sm flex-shrink-0">card_membership</span>
+                <span class="sidebar-label">Gói tập</span>
+              </button>
 
-            <button class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150" data-page="birthday" title="Sinh nhật">
-              <span class="material-symbols-outlined text-sm flex-shrink-0">cake</span>
-              <span class="sidebar-label">Sinh nhật hội viên</span>
-            </button>
+              <button
+                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150"
+                data-page="birthday" title="Sinh nhật">
+                <span class="material-symbols-outlined text-sm flex-shrink-0">cake</span>
+                <span class="sidebar-label">Sinh nhật hội viên</span>
+              </button>
 
-            
+
+            </div>
           </div>
         </div>
-      </div>
-    </nav>
+      </nav>
 
-    <!-- Đăng xuất -->
-    <div class="border-t border-outline-variant px-compact py-standard flex-shrink-0">
-      <button id="btn-logout" class="flex items-center gap-standard w-full px-standard py-compact rounded-xl text-on-surface-variant hover:text-error hover:bg-error-container transition-all duration-150" title="Đăng xuất">
-        <span class="material-symbols-outlined text-xl flex-shrink-0">logout</span>
-        <span class="sidebar-label font-body-md text-body-md">Đăng xuất</span>
-      </button>
+      <!-- Đăng xuất -->
+      <div class="border-t border-outline-variant px-compact py-standard flex-shrink-0">
+        <button id="btn-logout"
+          class="flex items-center gap-standard w-full px-standard py-compact rounded-xl text-on-surface-variant hover:text-error hover:bg-error-container transition-all duration-150"
+          title="Đăng xuất">
+          <span class="material-symbols-outlined text-xl flex-shrink-0">logout</span>
+          <span class="sidebar-label font-body-md text-body-md">Đăng xuất</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ===== MAIN ===== -->
+    <div class="flex flex-col flex-1 min-w-0 overflow-hidden">
+
+      <!-- Header -->
+      <header
+        class="gym-header flex justify-end items-center px-loose w-full h-12 flex-shrink-0 gap-standard sticky top-0 z-10">
+        <button id="btn-qr-scan"
+          class="flex items-center gap-xs px-compact py-xs rounded-lg bg-brand-primary text-white hover:bg-[#157a2a] transition-all font-bold text-body-sm"
+          title="Quét QR Check-in hội viên" style="font-size:13px">
+          <span class="material-symbols-outlined text-white"
+            style="font-size:16px;font-variation-settings:'FILL' 1">qr_code_scanner</span>
+          Quét QR
+        </button>
+
+        <!-- Bell Icon Notifications -->
+        <div class="relative" id="notif-wrapper">
+          <button id="btn-bell"
+            class="material-symbols-outlined text-on-surface-variant hover:text-brand-primary p-atom rounded-lg transition-all relative"
+            title="Thông báo">
+            notifications
+            <span id="notif-badge"
+              class="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-0.5 bg-red-500 text-white rounded-full text-[10px] font-bold leading-4 text-center hidden">0</span>
+          </button>
+          <!-- Dropdown thông báo -->
+          <div id="notif-dropdown"
+            class="hidden absolute right-0 top-full mt-1 w-[340px] bg-surface-container-lowest rounded-xl shadow-xl border border-outline-variant z-50 overflow-hidden"
+            style="max-height:460px">
+            <div class="flex items-center justify-between px-4 py-2.5 border-b border-outline-variant">
+              <span class="font-bold text-body-md text-on-surface">Thông báo</span>
+              <button id="btn-notif-read-all"
+                class="flex items-center gap-1 text-body-sm text-red-500 hover:text-red-700 font-semibold transition-colors"
+                title="Xóa tất cả thông báo">
+                <span class="material-symbols-outlined" style="font-size:14px">delete_sweep</span>Xóa tất cả
+              </button>
+            </div>
+            <div id="notif-list" class="overflow-y-auto" style="max-height:380px;padding:8px">
+              <div class="text-center py-8 text-on-surface-variant text-body-sm">Đang tải...</div>
+            </div>
+          </div>
+        </div>
+        <button id="theme-toggle"
+          class="material-symbols-outlined text-on-surface-variant hover:text-brand-primary p-atom rounded-lg transition-all"
+          title="Chuyển chế độ sáng/tối">
+          <span id="theme-icon">dark_mode</span>
+        </button>
+        <button
+          class="material-symbols-outlined text-on-surface-variant hover:text-brand-primary p-atom rounded-lg transition-all">settings</button>
+        <div class="relative group cursor-pointer flex items-center gap-compact ml-xs pl-standard border-l border-outline-variant">
+          <div
+            class="w-7 h-7 rounded-full bg-gradient-to-br from-brand-primary to-[#157a2a] flex items-center justify-center shadow-sm">
+            <span class="material-symbols-outlined text-white text-sm"
+              style="font-variation-settings:'FILL' 1">person</span>
+          </div>
+          <div class="flex flex-col leading-none">
+            <span class="text-body-sm text-on-surface font-bold" id="header-user-name">Admin</span>
+            <span class="text-on-surface-variant" style="font-size:10px" id="header-user-role">Quản trị viên</span>
+          </div>
+          
+          <!-- Dropdown menu -->
+          <div class="absolute right-0 top-full mt-2 w-56 bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+            <div class="p-2 space-y-1">
+              <button id="btn-admin-profile" class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container rounded-lg transition-colors">
+                <span class="material-symbols-outlined text-lg">person</span>
+                Thông tin cá nhân
+              </button>
+              <button id="btn-admin-change-password" class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container rounded-lg transition-colors">
+                <span class="material-symbols-outlined text-lg">key</span>
+                Đổi mật khẩu
+              </button>
+              <div class="h-px bg-outline-variant/50 my-1"></div>
+              <button id="btn-admin-logout" class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-error hover:text-error hover:bg-error-container rounded-lg transition-colors">
+                <span class="material-symbols-outlined text-lg">logout</span>
+                Đăng xuất
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Content Area -->
+      <main id="content-area" class="flex-grow overflow-y-auto bg-background p-loose">
+        <div class="flex items-center justify-center h-full">
+          <div class="text-center">
+            <div class="w-16 h-16 bg-brand-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-standard">
+              <span class="material-symbols-outlined text-brand-primary"
+                style="font-size:32px;font-variation-settings:'FILL' 1">fitness_center</span>
+            </div>
+            <p class="text-on-surface font-bold">Paradise GYM</p>
+            <p class="text-on-surface-variant mt-xs text-body-sm">Đang tải dữ liệu...</p>
+          </div>
+        </div>
+      </main>
     </div>
-  </aside>
-
-  <!-- ===== MAIN ===== -->
-  <div class="flex flex-col flex-1 min-w-0 overflow-hidden">
-
-    <!-- Header -->
-    <header class="gym-header flex justify-end items-center px-loose w-full h-12 flex-shrink-0 gap-standard sticky top-0 z-10">
-      <button id="btn-qr-scan" class="flex items-center gap-xs px-compact py-xs rounded-lg bg-brand-primary text-white hover:bg-[#157a2a] transition-all font-bold text-body-sm" title="Quét QR Check-in hội viên" style="font-size:13px">
-        <span class="material-symbols-outlined text-white" style="font-size:16px;font-variation-settings:'FILL' 1">qr_code_scanner</span>
-        Quét QR
-      </button>
-      <button id="theme-toggle" class="material-symbols-outlined text-on-surface-variant hover:text-brand-primary p-atom rounded-lg transition-all" title="Chuyển chế độ sáng/tối">
-        <span id="theme-icon">dark_mode</span>
-      </button>
-      <!-- Bell Icon Notifications -->
-      <div class="relative" id="notif-wrapper">
-        <button id="btn-bell" class="material-symbols-outlined text-on-surface-variant hover:text-brand-primary p-atom rounded-lg transition-all relative" title="Thông báo">
-          notifications
-          <span id="notif-badge" class="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-0.5 bg-red-500 text-white rounded-full text-[10px] font-bold leading-4 text-center hidden">0</span>
-        </button>
-        <!-- Dropdown thông báo -->
-        <div id="notif-dropdown" class="hidden absolute right-0 top-full mt-1 w-[340px] bg-surface-container-lowest rounded-xl shadow-xl border border-outline-variant z-50 overflow-hidden" style="max-height:460px">
-          <div class="flex items-center justify-between px-4 py-2.5 border-b border-outline-variant">
-            <span class="font-bold text-body-md text-on-surface">Thông báo</span>
-            <button id="btn-notif-read-all" class="flex items-center gap-1 text-body-sm text-red-500 hover:text-red-700 font-semibold transition-colors" title="Xóa tất cả thông báo">
-              <span class="material-symbols-outlined" style="font-size:14px">delete_sweep</span>Xóa tất cả
-            </button>
-          </div>
-          <div id="notif-list" class="overflow-y-auto" style="max-height:380px;padding:8px">
-            <div class="text-center py-8 text-on-surface-variant text-body-sm">Đang tải...</div>
-          </div>
-        </div>
-      </div>
-      <button class="material-symbols-outlined text-on-surface-variant hover:text-brand-primary p-atom rounded-lg transition-all">settings</button>
-      <div class="flex items-center gap-compact ml-xs pl-standard border-l border-outline-variant">
-        <div class="w-7 h-7 rounded-full bg-gradient-to-br from-brand-primary to-[#157a2a] flex items-center justify-center shadow-sm">
-          <span class="material-symbols-outlined text-white text-sm" style="font-variation-settings:'FILL' 1">person</span>
-        </div>
-        <div class="flex flex-col leading-none">
-          <span class="text-body-sm text-on-surface font-bold">Admin</span>
-          <span class="text-on-surface-variant" style="font-size:10px">Quản trị viên</span>
-        </div>
-      </div>
-    </header>
-
-    <!-- Content Area -->
-    <main id="content-area" class="flex-grow overflow-y-auto bg-background p-loose">
-      <div class="flex items-center justify-center h-full">
-        <div class="text-center">
-          <div class="w-16 h-16 bg-brand-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-standard">
-            <span class="material-symbols-outlined text-brand-primary" style="font-size:32px;font-variation-settings:'FILL' 1">fitness_center</span>
-          </div>
-          <p class="text-on-surface font-bold">Paradise GYM</p>
-          <p class="text-on-surface-variant mt-xs text-body-sm">Đang tải dữ liệu...</p>
-        </div>
-      </div>
-    </main>
   </div>
-</div>
 
-<!-- Global Data synced via app.js -->
-<script src="assets/js/api.js"></script>
-<script src="assets/js/auth.js"></script>
-<script src="assets/js/pages/dashboard.js"></script>
-<script src="assets/js/pages/members-list.js"></script>
-<script src="assets/js/pages/member-add.js"></script>
-<script src="assets/js/pages/checkin.js"></script>
-<script src="assets/js/pages/expired.js"></script>
-<script src="assets/js/pages/pt-training.js"></script>
-<script src="assets/js/pages/pt-register.js"></script>
-<script src="assets/js/pages/packages.js"></script>
-<script src="assets/js/pages/birthday.js"></script>
-<script src="assets/js/pages/revenue.js"></script>
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script src="assets/js/app.js"></script>
+  <!-- Global Data synced via app.js -->
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/pages/dashboard.js"></script>
+  <script src="assets/js/pages/members-list.js"></script>
+  <script src="assets/js/pages/member-add.js"></script>
+  <script src="assets/js/pages/checkin.js"></script>
+  <script src="assets/js/pages/expired.js"></script>
+  <script src="assets/js/pages/pt-training.js"></script>
+  <script src="assets/js/pages/pt-register.js"></script>
+  <script src="assets/js/pages/packages.js"></script>
+  <script src="assets/js/pages/birthday.js"></script>
+  <script src="assets/js/pages/revenue.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="assets/js/app.js"></script>
 
-<!-- Modal Quét QR Check-in -->
-<div id="modal-qr-scan" style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px;">
-  <div style="background:#fff;border-radius:20px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,0.28);position:relative;">
+  <!-- Modal Quét QR Check-in -->
+  <div id="modal-qr-scan"
+    style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px;">
+    <div
+      style="background:#fff;border-radius:20px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,0.28);position:relative;">
 
-    <!-- Header -->
-    <div style="display:flex;align-items:center;gap:12px;padding:18px 20px 14px;border-bottom:1px solid #e8ede6;">
-      <div style="width:34px;height:34px;background:#1D9336;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-        <span class="material-symbols-outlined" style="color:#fff;font-size:18px;font-variation-settings:'FILL' 1">qr_code_scanner</span>
-      </div>
-      <div style="flex:1;min-width:0;">
-        <p style="font-weight:700;color:#181c20;font-size:15px;line-height:1.3">Quét mã QR Check-in</p>
-        <p style="color:#6e7a6b;font-size:11px">Hội viên giơ điện thoại, lễ tân bấm Bắt đầu quét</p>
-      </div>
-      <button id="btn-close-qr-modal" style="background:none;border:none;cursor:pointer;padding:4px;border-radius:8px;display:flex;align-items:center;" title="Đóng">
-        <span class="material-symbols-outlined" style="font-size:20px;color:#6e7a6b">close</span>
-      </button>
-    </div>
-
-    <!-- Body -->
-    <div style="padding:16px;display:flex;flex-direction:column;gap:12px;">
-
-      <!-- Camera scanner -->
-      <div style="background:#f7f9f7;border:1px solid #e0e8dc;border-radius:14px;overflow:hidden;">
-        <div style="padding:12px 14px;">
-          <div id="qr-modal-reader" style="width:100%;max-width:360px;margin:0 auto;"></div>
-          <button id="qr-modal-btn-start" style="width:100%;margin-top:12px;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px 0;border-radius:10px;background:#1D9336;color:#fff;font-weight:700;font-size:13px;border:none;cursor:pointer;">
-            <span class="material-symbols-outlined" style="font-size:16px">qr_code_scanner</span>Bắt đầu quét
-          </button>
-          <button id="qr-modal-btn-stop" style="width:100%;margin-top:12px;display:none;align-items:center;justify-content:center;gap:8px;padding:11px 0;border-radius:10px;border:1px solid #cdd6ca;background:#fff;color:#3f4a3c;font-weight:700;font-size:13px;cursor:pointer;">
-            <span class="material-symbols-outlined" style="font-size:16px">stop_circle</span>Dừng quét
-          </button>
+      <!-- Header -->
+      <div style="display:flex;align-items:center;gap:12px;padding:18px 20px 14px;border-bottom:1px solid #e8ede6;">
+        <div
+          style="width:34px;height:34px;background:#1D9336;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <span class="material-symbols-outlined"
+            style="color:#fff;font-size:18px;font-variation-settings:'FILL' 1">qr_code_scanner</span>
         </div>
+        <div style="flex:1;min-width:0;">
+          <p style="font-weight:700;color:#181c20;font-size:15px;line-height:1.3">Quét mã QR Check-in</p>
+          <p style="color:#6e7a6b;font-size:11px">Hội viên giơ điện thoại, lễ tân bấm Bắt đầu quét</p>
+        </div>
+        <button id="btn-close-qr-modal"
+          style="background:none;border:none;cursor:pointer;padding:4px;border-radius:8px;display:flex;align-items:center;"
+          title="Đóng">
+          <span class="material-symbols-outlined" style="font-size:20px;color:#6e7a6b">close</span>
+        </button>
       </div>
 
-      <!-- Hướng dẫn -->
-      <div style="background:#e8f4fd;border:1px solid #b3d8f0;border-radius:12px;padding:12px 14px;display:flex;gap:10px;">
-        <span class="material-symbols-outlined" style="color:#1565c0;font-size:18px;flex-shrink:0;margin-top:2px;font-variation-settings:'FILL' 1">info</span>
+      <!-- Body -->
+      <div style="padding:16px;display:flex;flex-direction:column;gap:12px;">
+
+        <!-- Camera scanner -->
+        <div style="background:#f7f9f7;border:1px solid #e0e8dc;border-radius:14px;overflow:hidden;">
+          <div style="padding:12px 14px;">
+            <div id="qr-modal-reader" style="width:100%;max-width:360px;margin:0 auto;"></div>
+            <button id="qr-modal-btn-start"
+              style="width:100%;margin-top:12px;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px 0;border-radius:10px;background:#1D9336;color:#fff;font-weight:700;font-size:13px;border:none;cursor:pointer;">
+              <span class="material-symbols-outlined" style="font-size:16px">qr_code_scanner</span>Bắt đầu quét
+            </button>
+            <button id="qr-modal-btn-stop"
+              style="width:100%;margin-top:12px;display:none;align-items:center;justify-content:center;gap:8px;padding:11px 0;border-radius:10px;border:1px solid #cdd6ca;background:#fff;color:#3f4a3c;font-weight:700;font-size:13px;cursor:pointer;">
+              <span class="material-symbols-outlined" style="font-size:16px">stop_circle</span>Dừng quét
+            </button>
+          </div>
+        </div>
+
+        <!-- Hướng dẫn -->
+        <div
+          style="background:#e8f4fd;border:1px solid #b3d8f0;border-radius:12px;padding:12px 14px;display:flex;gap:10px;">
+          <span class="material-symbols-outlined"
+            style="color:#1565c0;font-size:18px;flex-shrink:0;margin-top:2px;font-variation-settings:'FILL' 1">info</span>
+          <div>
+            <p style="font-weight:700;color:#1565c0;font-size:12px;margin-bottom:4px">Cách quét đúng</p>
+            <p style="color:#1976d2;font-size:11px;line-height:1.6">Hội viên mở <strong>QR Check-in</strong> trên cổng
+              hội viên → giơ điện thoại → lễ tân bấm <strong>"Bắt đầu quét"</strong>.</p>
+          </div>
+        </div>
+
+        <!-- Upload ảnh QR -->
+        <div style="background:#fff;border:1px solid #e0e8dc;border-radius:12px;padding:12px 14px;">
+          <p style="font-weight:700;color:#3f4a3c;font-size:12px;margin-bottom:6px">Tải ảnh QR lên để quét</p>
+          <label id="qr-modal-label-upload"
+            style="display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border-radius:10px;border:2px dashed #cdd6ca;color:#6e7a6b;font-weight:700;font-size:12px;cursor:pointer;transition:border-color 0.2s;">
+            <span class="material-symbols-outlined" style="font-size:16px">upload_file</span>Chọn ảnh QR
+            <input id="qr-modal-input-upload" type="file" accept="image/*" style="display:none" />
+          </label>
+          <p id="qr-modal-upload-status"
+            style="display:none;font-size:11px;color:#6e7a6b;margin-top:6px;text-align:center">Đang xử lý ảnh...</p>
+        </div>
+
+        <!-- Nhập token thủ công -->
+        <div style="background:#fff;border:1px solid #e0e8dc;border-radius:12px;padding:12px 14px;">
+          <p style="font-weight:700;color:#3f4a3c;font-size:12px;margin-bottom:8px">Nhập token thủ công</p>
+          <div style="display:flex;gap:8px;">
+            <input id="qr-modal-manual-token" type="text" placeholder="Dán token QR vào đây..."
+              style="flex:1;border:1px solid #cdd6ca;border-radius:8px;padding:8px 12px;font-size:12px;outline:none;" />
+            <button id="qr-modal-btn-manual"
+              style="padding:8px 14px;border-radius:8px;background:#1D9336;color:#fff;font-weight:700;font-size:12px;border:none;cursor:pointer;white-space:nowrap;">Xác
+              nhận</button>
+          </div>
+        </div>
+
+        <!-- Kết quả -->
+        <div id="qr-modal-result"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Thông tin cá nhân -->
+  <div id="modal-admin-profile" style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px;">
+    <div style="background:#fff;border-radius:20px;width:100%;max-width:480px;box-shadow:0 24px 60px rgba(0,0,0,0.28);position:relative;overflow:hidden;">
+      <div style="background:linear-gradient(135deg,#1a5e2a 0%,#1D9336 60%,#22c55e 100%);padding:20px;text-align:center;">
+        <h3 style="color:#fff;font-weight:700;font-size:18px;">Thông tin cá nhân</h3>
+        <p style="color:rgba(255,255,255,0.8);font-size:12px;margin-top:4px;">Cập nhật hồ sơ của bạn</p>
+      </div>
+      <div style="padding:24px;display:flex;flex-direction:column;gap:16px;">
+        
+        <!-- Avatar Preview & Upload -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:-48px;position:relative;z-index:10;">
+          <div style="position:relative;width:80px;height:80px;border-radius:50%;border:4px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,0.15);background:#e0e8dc;overflow:hidden;" id="admin-profile-avatar-preview">
+            <span class="material-symbols-outlined" style="font-size:40px;color:#94a3b8;position:absolute;top:50%;left:50%;transform:translate(-50%, -50%);font-variation-settings:'FILL' 1;">person</span>
+          </div>
+          <label style="cursor:pointer;background:#e8f4fd;color:#1565c0;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px;transition:background 0.2s;">
+            <span class="material-symbols-outlined" style="font-size:16px;">upload</span> Đổi ảnh
+            <input type="file" id="admin-profile-avatar-input" accept="image/jpeg, image/png, image/webp" style="display:none;" />
+          </label>
+        </div>
+
         <div>
-          <p style="font-weight:700;color:#1565c0;font-size:12px;margin-bottom:4px">Cách quét đúng</p>
-          <p style="color:#1976d2;font-size:11px;line-height:1.6">Hội viên mở <strong>QR Check-in</strong> trên cổng hội viên → giơ điện thoại → lễ tân bấm <strong>"Bắt đầu quét"</strong>.</p>
+          <label style="font-size:12px;font-weight:700;color:#6e7a6b;margin-bottom:6px;display:block;">Họ và tên</label>
+          <input id="profile-ho-ten" type="text" style="width:100%;border:1px solid #cdd6ca;border-radius:10px;padding:10px 14px;font-size:14px;outline:none;" />
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#6e7a6b;margin-bottom:6px;display:block;">Số điện thoại</label>
+          <input id="profile-so-dien-thoai" type="tel" style="width:100%;border:1px solid #cdd6ca;border-radius:10px;padding:10px 14px;font-size:14px;outline:none;" />
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#6e7a6b;margin-bottom:6px;display:block;">Email</label>
+          <input id="profile-email" type="email" style="width:100%;border:1px solid #cdd6ca;border-radius:10px;padding:10px 14px;font-size:14px;outline:none;" />
+        </div>
+        <div style="display:flex;gap:12px;margin-top:8px;">
+          <button id="btn-close-profile" style="flex:1;padding:12px;border-radius:10px;background:#f0f2f0;color:#3f4a3c;font-weight:700;border:none;cursor:pointer;">Hủy</button>
+          <button id="btn-save-profile" style="flex:1;padding:12px;border-radius:10px;background:#1D9336;color:#fff;font-weight:700;border:none;cursor:pointer;">Lưu thay đổi</button>
         </div>
       </div>
-
-      <!-- Upload ảnh QR -->
-      <div style="background:#fff;border:1px solid #e0e8dc;border-radius:12px;padding:12px 14px;">
-        <p style="font-weight:700;color:#3f4a3c;font-size:12px;margin-bottom:6px">Tải ảnh QR lên để quét</p>
-        <label id="qr-modal-label-upload" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border-radius:10px;border:2px dashed #cdd6ca;color:#6e7a6b;font-weight:700;font-size:12px;cursor:pointer;transition:border-color 0.2s;">
-          <span class="material-symbols-outlined" style="font-size:16px">upload_file</span>Chọn ảnh QR
-          <input id="qr-modal-input-upload" type="file" accept="image/*" style="display:none" />
-        </label>
-        <p id="qr-modal-upload-status" style="display:none;font-size:11px;color:#6e7a6b;margin-top:6px;text-align:center">Đang xử lý ảnh...</p>
-      </div>
-
-      <!-- Nhập token thủ công -->
-      <div style="background:#fff;border:1px solid #e0e8dc;border-radius:12px;padding:12px 14px;">
-        <p style="font-weight:700;color:#3f4a3c;font-size:12px;margin-bottom:8px">Nhập token thủ công</p>
-        <div style="display:flex;gap:8px;">
-          <input id="qr-modal-manual-token" type="text" placeholder="Dán token QR vào đây..." style="flex:1;border:1px solid #cdd6ca;border-radius:8px;padding:8px 12px;font-size:12px;outline:none;" />
-          <button id="qr-modal-btn-manual" style="padding:8px 14px;border-radius:8px;background:#1D9336;color:#fff;font-weight:700;font-size:12px;border:none;cursor:pointer;white-space:nowrap;">Xác nhận</button>
-        </div>
-      </div>
-
-      <!-- Kết quả -->
-      <div id="qr-modal-result"></div>
     </div>
   </div>
-</div>
+
+  <!-- Modal Đổi mật khẩu -->
+  <div id="modal-admin-change-password" style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px;">
+    <div style="background:#fff;border-radius:20px;width:100%;max-width:400px;box-shadow:0 24px 60px rgba(0,0,0,0.28);position:relative;overflow:hidden;">
+      <div style="padding:20px 24px;border-bottom:1px solid #e8ede6;">
+        <h3 style="color:#181c20;font-weight:700;font-size:18px;">Đổi mật khẩu</h3>
+      </div>
+      <div style="padding:24px;display:flex;flex-direction:column;gap:16px;">
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#6e7a6b;margin-bottom:6px;display:block;">Mật khẩu hiện tại</label>
+          <input id="pwd-old" type="password" style="width:100%;border:1px solid #cdd6ca;border-radius:10px;padding:10px 14px;font-size:14px;outline:none;" />
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#6e7a6b;margin-bottom:6px;display:block;">Mật khẩu mới</label>
+          <input id="pwd-new" type="password" style="width:100%;border:1px solid #cdd6ca;border-radius:10px;padding:10px 14px;font-size:14px;outline:none;" />
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#6e7a6b;margin-bottom:6px;display:block;">Nhập lại mật khẩu mới</label>
+          <input id="pwd-confirm" type="password" style="width:100%;border:1px solid #cdd6ca;border-radius:10px;padding:10px 14px;font-size:14px;outline:none;" />
+        </div>
+        <div style="display:flex;gap:12px;margin-top:8px;">
+          <button id="btn-close-password" style="flex:1;padding:12px;border-radius:10px;background:#f0f2f0;color:#3f4a3c;font-weight:700;border:none;cursor:pointer;">Hủy</button>
+          <button id="btn-save-password" style="flex:1;padding:12px;border-radius:10px;background:#ba1a1a;color:#fff;font-weight:700;border:none;cursor:pointer;">Đổi mật khẩu</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </body>
+
 </html>

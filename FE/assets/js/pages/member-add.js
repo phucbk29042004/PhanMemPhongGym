@@ -100,10 +100,13 @@ window.GymApp.pages['member-add'] = {
                 <!-- Ngày sinh với min/max hợp lý -->
                 <div>
                   <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Ngày sinh</label>
-                  <input id="reg-ngay-sinh" type="date"
-                    min="${new Date(new Date().setFullYear(new Date().getFullYear()-100)).toISOString().split('T')[0]}"
-                    max="${new Date(new Date().setFullYear(new Date().getFullYear()-10)).toISOString().split('T')[0]}"
-                    class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none transition-colors" />
+                  <div class="relative group">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors text-[18px]">cake</span>
+                    <input id="reg-ngay-sinh" type="date"
+                      min="${new Date(new Date().setFullYear(new Date().getFullYear()-100)).toISOString().split('T')[0]}"
+                      max="${new Date(new Date().setFullYear(new Date().getFullYear()-10)).toISOString().split('T')[0]}"
+                      class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-4 py-2 rounded-xl focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none transition-colors" style="color-scheme: var(--md-sys-color-scheme, light);" />
+                  </div>
                 </div>
                 ${this._select('Giới tính', 'reg-gioi-tinh', [{v:'nam',t:'Nam'},{v:'nu',t:'Nữ'},{v:'khac',t:'Khác'}])}
                 <!-- SĐT với inline error -->

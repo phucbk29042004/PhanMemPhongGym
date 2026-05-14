@@ -161,13 +161,14 @@ window.GymApp.pages['members-list'] = {
 
     const cards = paginated.map(m => {
       const isActive = m.trang_thai === 'active' || m.trang_thai === 'dang_tap';
+      const isCheckedIn = m.da_check_in_hom_nay == 1;
       const packageName = m.ten_goi_tap || 'Chưa ĐK';
       return `
         <div class="gym-card bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl border border-outline-variant p-loose shadow-sm flex flex-col gap-standard transition-all hover:-translate-y-1 hover:shadow-xl hover:border-brand-primary/50 group min-w-0">
           <div class="flex items-center gap-loose min-w-0">
             <div class="relative group-hover:scale-110 transition-transform duration-500 flex-shrink-0">
               ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'lg')}
-              <span class="absolute bottom-0 right-0 w-3.5 h-3.5 border-2 border-white rounded-full ${isActive ? 'bg-green-500 shadow-sm shadow-green-200' : 'bg-outline'}"></span>
+              <span class="absolute bottom-0 right-0 w-3.5 h-3.5 border-2 border-white rounded-full ${isCheckedIn ? 'bg-green-500 shadow-sm shadow-green-200' : 'bg-outline'}"></span>
             </div>
             <div class="flex flex-col min-w-0">
               <button class="member-name-link text-left font-bold text-on-surface text-body-md truncate group-hover:text-brand-primary transition-colors cursor-pointer" data-id="${m.id}" title="${m.ho_ten || 'Không rõ'}" style="background:transparent;border:none;padding:0;">
@@ -312,7 +313,8 @@ window.GymApp.pages['members-list'] = {
         window.GymApp.api.get(`/members/${id}/history`),
         window.GymApp.api.get(`/pt/schedules?hoi_vien_id=${id}`),
       ]);
-      m = memberRes.data;
+      const listMember = (window.GymApp.data.members || []).find(x => (x.id || x.ho_so_id) == id) || {};
+      m = { ...listMember, ...(memberRes.data || {}) };
       pkgHistory = Array.isArray(historyRes.data) ? historyRes.data : [];
       memberSchedules = Array.isArray(schedRes.data) ? schedRes.data : [];
     };
@@ -330,31 +332,81 @@ window.GymApp.pages['members-list'] = {
     overlay.id = 'gym-member-modal';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);backdrop-filter:blur(3px);padding:16px;';
 
+    // Tính toán thông tin quick stats
+    const isActive = m.trang_thai === 'con_han' || m.trang_thai === 'sap_het_han' || m.trang_thai === 'active' || m.trang_thai === 'dang_tap';
+    const isCheckedIn = m.da_check_in_hom_nay == 1;
+    const activePkg = m.goi_tap_hien_tai && m.goi_tap_hien_tai.length > 0 ? m.goi_tap_hien_tai[0] : null;
+    const pkgName = activePkg ? (activePkg.ten_goi || activePkg.ten_goi_tap) : (m.ten_goi_tap || 'Chưa đăng ký');
+    const hetHanVal = activePkg ? activePkg.den_ngay : m.ngay_het_han;
+    const expDate = hetHanVal ? window.GymApp.formatDate(hetHanVal) : '—';
+    const genderLabel = m.gioi_tinh === 'nam' || m.gioi_tinh === 'male' ? 'Nam' : m.gioi_tinh === 'nu' || m.gioi_tinh === 'female' ? 'Nữ' : (m.gioi_tinh || '—');
+
+    let statusText = '○ Hết hạn';
+    if (isActive) statusText = '● Đang hoạt động';
+    else if (m.trang_thai === 'chua_dang_ky') statusText = '○ Chưa đăng ký';
+
     overlay.innerHTML = `
-      <div class="modal-card" style="border-radius:16px;width:100%;max-width:740px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:0 25px 60px rgba(0,0,0,0.3);">
-        <!-- Header -->
-        <div class="bg-surface-container-lowest px-loose py-standard border-b border-outline-variant flex-shrink-0">
-          <button id="close-member-modal" style="position:absolute;top:12px;right:12px;background:transparent;border:none;cursor:pointer;" title="Đóng">
-            <span class="material-symbols-outlined text-on-surface-variant text-xl">close</span>
+      <div class="modal-card" style="border-radius:20px;width:100%;max-width:780px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:0 32px 80px rgba(0,0,0,0.35);">
+
+        <!-- Banner Header với gradient -->
+        <div style="background:linear-gradient(135deg,#1a5e2a 0%,#1D9336 60%,#22c55e 100%);padding:20px 24px 0;flex-shrink:0;position:relative;overflow:hidden;">
+          <!-- Decorative circles -->
+          <div style="position:absolute;top:-30px;right:-30px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,0.07);"></div>
+          <div style="position:absolute;top:20px;right:60px;width:70px;height:70px;border-radius:50%;background:rgba(255,255,255,0.05);"></div>
+
+          <!-- Nút đóng -->
+          <button id="close-member-modal" style="position:absolute;top:12px;right:12px;background:rgba(255,255,255,0.15);border:none;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'" title="Đóng">
+            <span class="material-symbols-outlined" style="color:#fff;font-size:18px;">close</span>
           </button>
-          <div class="flex items-center gap-loose mb-standard">
-            ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'lg')}
-            <div>
-              <h3 class="font-bold text-on-surface" style="font-size:18px;">${m.ho_ten}</h3>
-              <p class="text-on-surface-variant text-body-sm">${m.ma_ho_so} · ${window.GymApp.formatEnumLabel(m.loai_ho_so || 'hoi_vien')}</p>
-              <div class="mt-atom">${window.GymApp.statusBadge(m.trang_thai)}</div>
+
+          <!-- Avatar + Thông tin chính -->
+          <div style="display:flex;align-items:flex-end;gap:16px;margin-bottom:16px;">
+            <!-- Avatar với ring -->
+            <div style="position:relative;flex-shrink:0;">
+              <div style="width:72px;height:72px;border-radius:50%;border:3px solid rgba(255,255,255,0.6);overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.25);">
+                ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'lg')}
+              </div>
+              <span style="position:absolute;bottom:2px;right:2px;width:14px;height:14px;border-radius:50%;background:${isCheckedIn ? '#4ade80' : '#94a3b8'};border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.2);"></span>
+            </div>
+
+            <!-- Tên + Mã + Badge -->
+            <div style="flex:1;min-width:0;padding-bottom:4px;">
+              <h3 style="font-size:20px;font-weight:800;color:#fff;line-height:1.2;margin:0 0 4px;text-shadow:0 1px 4px rgba(0,0,0,0.2);">${m.ho_ten || '—'}</h3>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <span style="font-size:12px;color:rgba(255,255,255,0.8);font-weight:600;">${m.ma_ho_so || '—'}</span>
+                <span style="width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,0.5);"></span>
+                <span style="font-size:12px;color:rgba(255,255,255,0.8);">${window.GymApp.formatEnumLabel(m.loai_ho_so || 'hoi_vien')}</span>
+                <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:${isActive ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'};color:#fff;border:1px solid rgba(255,255,255,0.3);">${statusText}</span>
+              </div>
             </div>
           </div>
-          <!-- Tabs with Indicator -->
-          <div class="relative bg-surface-container p-1 rounded-2xl border border-outline-variant w-fit flex gap-1">
-            <div id="mtab-indicator" class="absolute h-[calc(100%-8px)] top-1 left-1 bg-brand-primary rounded-xl transition-all duration-300 ease-out z-0"></div>
-            ${[['info', 'Thông tin', 'info'], ['package', 'Gói tập', 'fitness_center'], ['schedule', 'Lịch PT', 'event_note']].map(([t, l, ic]) => `
-              <button class="member-detail-tab relative px-loose py-compact rounded-xl font-bold text-body-sm transition-all flex items-center gap-xs z-10" data-mtab="${t}" style="background:transparent;border:none;cursor:pointer;">
-                <span class="material-symbols-outlined text-sm">${ic}</span><span class="tab-text">${l}</span>
-              </button>
-            `).join('')}
+
+          <!-- Quick Stats Bar -->
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(255,255,255,0.15);border-radius:12px 12px 0 0;overflow:hidden;">
+            <div style="background:rgba(0,0,0,0.15);padding:10px 14px;backdrop-filter:blur(4px);">
+              <div style="font-size:10px;color:rgba(255,255,255,0.65);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Gói tập</div>
+              <div style="font-size:13px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${pkgName}">${pkgName}</div>
+            </div>
+            <div style="background:rgba(0,0,0,0.15);padding:10px 14px;backdrop-filter:blur(4px);">
+              <div style="font-size:10px;color:rgba(255,255,255,0.65);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Hết hạn</div>
+              <div style="font-size:13px;font-weight:800;color:#fff;">${expDate}</div>
+            </div>
+            <div style="background:rgba(0,0,0,0.15);padding:10px 14px;backdrop-filter:blur(4px);">
+              <div style="font-size:10px;color:rgba(255,255,255,0.65);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Giới tính</div>
+              <div style="font-size:13px;font-weight:800;color:#fff;">${genderLabel}</div>
+            </div>
           </div>
         </div>
+
+        <!-- Tab Bar -->
+        <div style="display:flex;background:var(--md-sys-color-surface-container-lowest,#f8faf8);border-bottom:1px solid var(--md-sys-color-outline-variant,#cdd8cb);flex-shrink:0;padding:0 16px;">
+          ${[['info','Thông tin','info'],['package','Gói tập','fitness_center'],['schedule','Lịch PT','event_note']].map(([t,l,ic]) => `
+            <button class="member-detail-tab" data-mtab="${t}" style="display:flex;align-items:center;gap:6px;padding:12px 16px;font-size:13px;font-weight:700;border:none;background:transparent;cursor:pointer;border-bottom:2.5px solid transparent;transition:all 0.2s;color:var(--md-sys-color-on-surface-variant,#3f4a3c);white-space:nowrap;">
+              <span class="material-symbols-outlined" style="font-size:16px;">${ic}</span>${l}
+            </button>
+          `).join('')}
+        </div>
+
         <!-- Body -->
         <div id="member-modal-body" style="overflow-y:auto;flex:1;padding:20px 24px;" class="bg-surface-container-lowest">
         </div>
@@ -379,20 +431,11 @@ window.GymApp.pages['members-list'] = {
 
     const setTab = (t) => {
       const tabs = overlay.querySelectorAll('.member-detail-tab');
-      const indicator = document.getElementById('mtab-indicator');
-      
       tabs.forEach(btn => {
         const active = btn.dataset.mtab === t;
-        btn.style.color = active ? '#fff' : '#3f4a3c';
-        if (active) {
-          // Cập nhật vị trí indicator
-          const rect = btn.getBoundingClientRect();
-          const parentRect = btn.parentElement.getBoundingClientRect();
-          if (indicator) {
-            indicator.style.width = btn.offsetWidth + 'px';
-            indicator.style.left = (btn.offsetLeft) + 'px';
-          }
-        }
+        btn.style.color = active ? '#1D9336' : 'var(--md-sys-color-on-surface-variant,#3f4a3c)';
+        btn.style.borderBottomColor = active ? '#1D9336' : 'transparent';
+        btn.style.fontWeight = active ? '800' : '700';
       });
       document.getElementById('member-modal-body').innerHTML = self._renderMemberTab(t, m, pkgHistory, memberSchedules);
       self._bindMemberTabEvents(t, m, () => refreshAndSetTab(t));
@@ -453,41 +496,70 @@ window.GymApp.pages['members-list'] = {
   _renderMemberTab: function (tab, m, pkgHistory, memberSchedules) {
     if (tab === 'info') {
       const hasAccount = !!m.tai_khoan_id;
+      const genderLabel = m.gioi_tinh === 'nam' || m.gioi_tinh === 'male' ? 'Nam' : m.gioi_tinh === 'nu' || m.gioi_tinh === 'female' ? 'Nữ' : (m.gioi_tinh || '—');
+      const diaChiFull = [m.dia_chi_tam_tru, m.phuong_xa, m.quan_huyen, m.tinh_thanh].filter(Boolean).join(', ') || '—';
+      
+      const activePkg = m.goi_tap_hien_tai && m.goi_tap_hien_tai.length > 0 ? m.goi_tap_hien_tai[0] : null;
+      const pkgName = activePkg ? (activePkg.ten_goi || activePkg.ten_goi_tap) : (m.ten_goi_tap || 'Chưa đăng ký');
+      const hetHanVal = activePkg ? activePkg.den_ngay : m.ngay_het_han;
+      const expDate = hetHanVal ? window.GymApp.formatDate(hetHanVal) : '—';
+
+      const infoRow = (icon, label, value, accent, wrap=false) => `
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fff;">
+          <div style="width:32px;height:32px;border-radius:8px;background:${accent || '#f0f7f1'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <span class="material-symbols-outlined" style="font-size:16px;color:${accent ? '#fff' : '#1D9336'};font-variation-settings:'FILL' 1;">${icon}</span>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--md-sys-color-on-surface-variant,#3f4a3c);opacity:0.6;margin-bottom:2px;">${label}</div>
+            <div style="font-size:13px;font-weight:700;color:var(--md-sys-color-on-surface,#1a2018);line-height:1.4;${wrap ? '' : 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'}" title="${value || '—'}">${value || '—'}</div>
+          </div>
+        </div>`;
+
+      const sectionTitle = (icon, title) => `
+        <div style="display:flex;align-items:center;gap:8px;margin:16px 0 6px;">
+          <span class="material-symbols-outlined" style="font-size:15px;color:#1D9336;font-variation-settings:'FILL' 1;">${icon}</span>
+          <span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#1D9336;">${title}</span>
+          <div style="flex:1;height:1px;background:linear-gradient(to right,#1D933630,transparent);margin-left:4px;"></div>
+        </div>`;
+
       return `
-        <div class="grid grid-cols-2 gap-standard">
-          ${[
-          ['Giới tính', m.gioi_tinh === 'nam' ? 'Nam' : m.gioi_tinh === 'nu' ? 'Nữ' : m.gioi_tinh === 'male' ? 'Nam' : m.gioi_tinh === 'female' ? 'Nữ' : (m.gioi_tinh || '—')],
-          ['Ngày sinh', window.GymApp.formatDate(m.ngay_sinh)],
-          ['Số điện thoại', m.so_dien_thoai],
-          ['Email', m.email],
-          ['CCCD / CMND', m.cccd || '—'],
-          ['Quê quán', m.que_quan || '—'],
-          ['Gói tập hiện tại', m.ten_goi_tap || 'Chưa đăng ký'],
-          ['Ngày tham gia', window.GymApp.formatDate(m.ngay_tao)],
-          ['Ngày hết hạn', window.GymApp.formatDate(m.ngay_het_han)],
-          ['Địa chỉ thường trú', [m.dia_chi_tam_tru, m.phuong_xa, m.quan_huyen, m.tinh_thanh].filter(Boolean).join(', ') || '—'],
-        ].map(([label, val]) => `
-              <div class="bg-surface-container p-standard rounded-lg">
-                <p class="text-on-surface-variant text-body-sm font-bold uppercase tracking-wider mb-atom">${label}</p>
-                <p class="text-on-surface text-body-md font-bold">${val || '—'}</p>
-              </div>
-            `).join('')
-        }
+        ${sectionTitle('badge', 'Thông tin cá nhân')}
+        <div style="border-radius:12px;border:1px solid var(--md-sys-color-outline-variant,#e0e5de);overflow:hidden;display:grid;grid-template-columns:1fr 1fr;gap:1px;background-color:var(--md-sys-color-outline-variant,#e0e5de);">
+          ${infoRow('cake', 'Ngày sinh', window.GymApp.formatDate(m.ngay_sinh))}
+          ${infoRow('wc', 'Giới tính', genderLabel)}
+          ${infoRow('badge', 'CCCD / CMND', m.cccd || '—')}
+          ${infoRow('home_pin', 'Quê quán', m.que_quan || '—')}
+          <div style="grid-column:1/-1;">${infoRow('location_on', 'Địa chỉ', diaChiFull, null, true)}</div>
         </div>
+
+        ${sectionTitle('contact_page', 'Liên hệ & Tài khoản')}
+        <div style="border-radius:12px;border:1px solid var(--md-sys-color-outline-variant,#e0e5de);overflow:hidden;display:grid;grid-template-columns:1fr 1fr;gap:1px;background-color:var(--md-sys-color-outline-variant,#e0e5de);">
+          ${infoRow('call', 'Số điện thoại', m.so_dien_thoai)}
+          ${infoRow('mail', 'Email', m.email)}
+        </div>
+
+        ${sectionTitle('fitness_center', 'Thông tin tập luyện')}
+        <div style="border-radius:12px;border:1px solid var(--md-sys-color-outline-variant,#e0e5de);overflow:hidden;display:grid;grid-template-columns:1fr 1fr;gap:1px;background-color:var(--md-sys-color-outline-variant,#e0e5de);">
+          <div style="grid-column:1/-1;">${infoRow('card_membership', 'Gói tập hiện tại', pkgName, null, true)}</div>
+          ${infoRow('calendar_today', 'Tham gia', window.GymApp.formatDate(m.ngay_tao))}
+          ${infoRow('event_busy', 'Hết hạn', expDate)}
+        </div>
+
         <!-- Tài khoản đăng nhập -->
-        <div class="mt-standard border border-outline-variant rounded-xl p-standard bg-surface-container">
-          <div class="flex items-center justify-between mb-standard">
-            <div class="flex items-center gap-compact">
-              <span class="material-symbols-outlined text-brand-primary text-base" style="font-variation-settings:'FILL' 1">manage_accounts</span>
-              <span class="font-bold text-on-surface text-body-md">Tài khoản đăng nhập</span>
+        <div style="margin-top:16px;border:1px solid var(--md-sys-color-outline-variant,#e0e5de);border-radius:12px;overflow:hidden;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--md-sys-color-surface-container,#eff2ef);">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="material-symbols-outlined" style="font-size:16px;color:#1D9336;font-variation-settings:'FILL' 1;">manage_accounts</span>
+              <span style="font-size:13px;font-weight:700;color:var(--md-sys-color-on-surface,#1a2018);">Tài khoản đăng nhập</span>
             </div>
             ${hasAccount
-              ? `<span style="padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;background:#e7f5e9;color:#1D9336;">Đã có tài khoản</span>`
+              ? `<span style="padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;background:#e7f5e9;color:#1D9336;">✓ Đã có tài khoản</span>`
               : `<span style="padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;background:#fff3e0;color:#e65100;">Chưa có tài khoản</span>`
             }
           </div>
+          <div style="padding:12px 16px;background:var(--md-sys-color-surface-container-lowest,#fff);">
           ${hasAccount
-            ? `<p class="text-on-surface-variant text-body-sm">Hồ sơ này đã được liên kết với tài khoản đăng nhập.</p>`
+            ? `<p style="font-size:13px;color:var(--md-sys-color-on-surface-variant,#3f4a3c);">Hồ sơ này đã được liên kết với tài khoản đăng nhập.</p>`
             : `<div class="grid grid-cols-2 gap-compact" id="modal-account-form">
                 <div>
                   <label class="block text-body-sm font-bold text-on-surface-variant mb-xs">Tên đăng nhập *</label>
@@ -509,6 +581,7 @@ window.GymApp.pages['members-list'] = {
                 </div>
               </div>`
           }
+          </div>
         </div>
       `;
     }
@@ -519,103 +592,105 @@ window.GymApp.pages['members-list'] = {
         const from = new Date(p.tu_ngay || p.from);
         return from > today;
       });
-      const upcomingRows = upcomingPackages.length === 0
-        ? `<tr><td colspan="5" class="px-standard py-standard text-center text-on-surface-variant text-body-sm">Chưa có gói sắp tới</td></tr>`
-        : upcomingPackages.map(p => `
-          <tr class="h-11 border-t border-outline-variant hover:bg-surface-container-low transition-colors">
-            <td class="px-standard text-body-md font-bold text-on-surface">${p.ten_goi || p.name || '—'}</td>
-            <td class="px-standard text-body-sm text-on-surface-variant">${window.GymApp.formatCurrency(p.gia_thuc_te || p.gia || p.price || 0)}</td>
-            <td class="px-standard text-body-sm text-on-surface-variant">${window.GymApp.formatDate(p.tu_ngay || p.from)}</td>
-            <td class="px-standard text-body-sm text-on-surface-variant">${window.GymApp.formatDate(p.den_ngay || p.to)}</td>
-            <td class="px-standard">${this._packageStatusBadge(p.trang_thai || 'Sắp tới')}</td>
-          </tr>
-        `).join('');
+      const pastPackages = pkgHistory.filter(p => {
+        const from = new Date(p.tu_ngay || p.from);
+        return from <= today;
+      });
+
+      const renderPkgCard = (p, type) => {
+        const isUpcoming = type === 'upcoming';
+        const icon = isUpcoming ? 'schedule' : 'history';
+        const color = isUpcoming ? '#d97706' : '#64748b';
+        const bg = isUpcoming ? '#fef3c7' : '#f1f5f9';
+        const border = isUpcoming ? '#fde68a' : '#e2e8f0';
+        
+        return `
+          <div style="display:flex; align-items:center; gap:16px; padding:16px; background:#fff; border:1px solid ${border}; border-radius:12px; margin-bottom:12px; box-shadow:0 2px 8px rgba(0,0,0,0.02);">
+            <div style="width:44px; height:44px; border-radius:12px; background:${bg}; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+              <span class="material-symbols-outlined" style="color:${color}; font-size:24px;">${icon}</span>
+            </div>
+            <div style="flex:1; min-width:0;">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
+                <h5 style="font-size:15px; font-weight:800; color:var(--md-sys-color-on-surface,#1a2018); margin:0;">${p.ten_goi || p.name || '—'}</h5>
+                ${this._packageStatusBadge(p.trang_thai || p.status || (isUpcoming ? 'Sắp tới' : 'Lịch sử'))}
+              </div>
+              <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap; font-size:12px; color:var(--md-sys-color-on-surface-variant,#3f4a3c);">
+                <span style="display:flex; align-items:center; gap:4px; font-weight:600;"><span class="material-symbols-outlined" style="font-size:14px; opacity:0.7;">payments</span>${window.GymApp.formatCurrency(p.gia_thuc_te || p.gia || p.price || 0)}</span>
+                <span style="display:flex; align-items:center; gap:4px;"><span class="material-symbols-outlined" style="font-size:14px; opacity:0.7;">event</span>${window.GymApp.formatDate(p.tu_ngay || p.from)} ➔ ${window.GymApp.formatDate(p.den_ngay || p.to)}</span>
+              </div>
+              ${p.ghi_chu_tt || p.ghi_chu || p.note ? `<div style="margin-top:6px; font-size:12px; color:#64748b; font-style:italic;">📝 ${p.ghi_chu_tt || p.ghi_chu || p.note}</div>` : ''}
+            </div>
+          </div>
+        `;
+      };
+
+      const upcomingHTML = upcomingPackages.length === 0
+        ? `<div style="text-align:center; padding:24px; color:var(--md-sys-color-on-surface-variant); font-size:13px; background:#f8fafc; border-radius:12px; border:1px dashed #cbd5e1; margin-bottom:16px;">Không có gói tập sắp tới</div>`
+        : upcomingPackages.map(p => renderPkgCard(p, 'upcoming')).join('');
+
+      const pastHTML = pastPackages.length === 0
+        ? `<div style="text-align:center; padding:24px; color:var(--md-sys-color-on-surface-variant); font-size:13px; background:#f8fafc; border-radius:12px; border:1px dashed #cbd5e1;">Chưa có lịch sử gói tập</div>`
+        : pastPackages.map(p => renderPkgCard(p, 'history')).join('');
+
       const activePkg = Array.isArray(m.goi_tap_hien_tai) && m.goi_tap_hien_tai.length > 0 ? m.goi_tap_hien_tai[0] : null;
+
       return `
-        <div class="bg-surface-container rounded-xl border border-outline-variant p-standard mb-standard">
-          <div class="flex items-center justify-between mb-standard">
-            <h4 class="font-bold text-on-surface text-body-md flex items-center gap-xs">
-              <span class="material-symbols-outlined text-sm text-brand-primary">fitness_center</span>
-              Gói đang sử dụng
-            </h4>
-            ${window.GymApp.statusBadge(m.trang_thai)}
-          </div>
-          ${activePkg ? `
-          <div class="grid grid-cols-4 gap-standard">
-            <div>
-              <p class="text-on-surface-variant text-body-sm mb-atom">Tên gói</p>
-              <p class="font-bold text-on-surface text-body-md">${activePkg.ten_goi || '—'}</p>
-            </div>
-            <div>
-              <p class="text-on-surface-variant text-body-sm mb-atom">Giá gói</p>
-              <p class="font-bold text-on-surface text-body-md">${window.GymApp.formatCurrency(activePkg.gia_thuc_te || 0)}</p>
-            </div>
-            <div>
-              <p class="text-on-surface-variant text-body-sm mb-atom">Từ ngày</p>
-              <p class="font-bold text-on-surface text-body-md">${window.GymApp.formatDate(activePkg.tu_ngay)}</p>
-            </div>
-            <div>
-              <p class="text-on-surface-variant text-body-sm mb-atom">Đến ngày</p>
-              <p class="font-bold text-on-surface text-body-md">${window.GymApp.formatDate(activePkg.den_ngay)}</p>
-            </div>
-          </div>
-          ` : `<p class="text-on-surface-variant text-body-sm">Hội viên chưa đăng ký gói tập nào.</p>`}
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <h4 style="font-size:16px; font-weight:800; color:var(--md-sys-color-on-surface);">Gói Tập Của Hội Viên</h4>
+          <button id="btn-add-package" style="display:flex; align-items:center; gap:6px; padding:8px 16px; border-radius:8px; background:linear-gradient(135deg, #1D9336, #22c55e); color:#fff; font-weight:700; font-size:13px; border:none; cursor:pointer; box-shadow:0 4px 12px rgba(29,147,54,0.2); transition:transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 6px 16px rgba(29,147,54,0.3)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 4px 12px rgba(29,147,54,0.2)';">
+            <span class="material-symbols-outlined" style="font-size:18px;">add_circle</span> Đăng ký gói
+          </button>
         </div>
-        <!-- Nút thêm gói -->
-        <div class="flex justify-end mb-standard">
-          <button id="btn-add-package" class="flex items-center gap-xs px-standard py-compact rounded-lg text-white font-bold text-body-sm hover:opacity-90 transition-all" style="background:#1D9336;">
-            <span class="material-symbols-outlined text-sm">add</span>Thêm gói
-            </button>
+
+        ${activePkg ? `
+        <div style="background:linear-gradient(135deg, #1a5e2a 0%, #1D9336 60%, #22c55e 100%); border-radius:16px; padding:20px; color:#fff; position:relative; overflow:hidden; box-shadow:0 10px 25px rgba(29,147,54,0.3); margin-bottom:24px;">
+          <div style="position:absolute; top:-20px; right:-20px; width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,0.1);"></div>
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; position:relative; z-index:1;">
+            <div>
+              <span style="font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.1em; background:rgba(255,255,255,0.2); padding:4px 10px; border-radius:999px; backdrop-filter:blur(4px); box-shadow:0 2px 4px rgba(0,0,0,0.1);">ĐANG SỬ DỤNG</span>
+              <h4 style="font-size:24px; font-weight:800; margin:10px 0 0; text-shadow:0 2px 4px rgba(0,0,0,0.2);">${activePkg.ten_goi || '—'}</h4>
+            </div>
+            <span class="material-symbols-outlined" style="font-size:48px; opacity:0.9; text-shadow:0 4px 12px rgba(0,0,0,0.2);">card_membership</span>
           </div>
-        <!-- Gói sắp tới -->
-        <div class="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden mb-standard">
-          <div class="bg-surface-container-high px-standard py-compact">
-            <p class="font-bold text-on-surface text-body-sm uppercase tracking-wider">Gói sắp tới</p>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; position:relative; z-index:1; background:rgba(0,0,0,0.15); padding:16px; border-radius:12px; backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.1);">
+            <div>
+              <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; opacity:0.8; margin-bottom:4px;">Thời hạn</div>
+              <div style="font-size:14px; font-weight:700; display:flex; align-items:center; gap:6px;">
+                <span class="material-symbols-outlined" style="font-size:16px;">calendar_month</span>
+                ${window.GymApp.formatDate(activePkg.tu_ngay)} ➔ ${window.GymApp.formatDate(activePkg.den_ngay)}
+              </div>
+            </div>
+            <div>
+              <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; opacity:0.8; margin-bottom:4px;">Giá trị gói</div>
+              <div style="font-size:14px; font-weight:700; display:flex; align-items:center; gap:6px;">
+                <span class="material-symbols-outlined" style="font-size:16px;">payments</span>
+                ${window.GymApp.formatCurrency(activePkg.gia_thuc_te)}
+              </div>
+            </div>
           </div>
-          <table class="w-full text-left border-collapse">
-            <thead class="bg-surface-container">
-              <tr class="h-10">
-                <th class="px-standard font-bold text-body-sm text-on-surface">Gói tập</th>
-                <th class="px-standard font-bold text-body-sm text-on-surface">Giá</th>
-                <th class="px-standard font-bold text-body-sm text-on-surface">Từ ngày</th>
-                <th class="px-standard font-bold text-body-sm text-on-surface">Đến ngày</th>
-                <th class="px-standard font-bold text-body-sm text-on-surface">Trạng thái</th>
-              </tr>
-            </thead>
-            <tbody>${upcomingRows}</tbody>
-          </table>
         </div>
-        <!-- Lịch sử gói -->
-        <div class="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden">
-          <div class="bg-surface-container-high px-standard py-compact">
-            <p class="font-bold text-on-surface text-body-sm uppercase tracking-wider">Lịch sử đăng ký gói tập</p>
+        ` : `
+        <div style="background:#f8fafc; border:1px dashed #cbd5e1; border-radius:16px; padding:32px 20px; text-align:center; margin-bottom:24px;">
+          <div style="width:48px; height:48px; background:#f1f5f9; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 12px;">
+            <span class="material-symbols-outlined" style="font-size:24px; color:#94a3b8;">card_membership</span>
           </div>
-          <table class="w-full text-left border-collapse">
-            <thead class="bg-surface-container">
-              <tr class="h-10">
-                <th class="px-standard font-bold text-body-sm text-on-surface">Gói tập</th>
-                <th class="px-standard font-bold text-body-sm text-on-surface">Giá</th>
-                <th class="px-standard font-bold text-body-sm text-on-surface">Từ ngày</th>
-                <th class="px-standard font-bold text-body-sm text-on-surface">Đến ngày</th>
-                <th class="px-standard font-bold text-body-sm text-on-surface">Trạng thái</th>
-                <th class="px-standard font-bold text-body-sm text-on-surface">Ghi chú</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${pkgHistory.length === 0
-          ? `<tr><td colspan="6" class="px-standard py-loose text-center text-on-surface-variant text-body-sm">Chưa có lịch sử đăng ký gói tập</td></tr>`
-          : pkgHistory.map(p => `
-                <tr class="h-11 border-t border-outline-variant hover:bg-surface-container-low transition-colors">
-                  <td class="px-standard text-body-md font-bold text-on-surface">${p.ten_goi || p.name || '—'}</td>
-                  <td class="px-standard text-body-sm text-on-surface-variant">${window.GymApp.formatCurrency(p.gia_thuc_te || p.gia || p.price || 0)}</td>
-                  <td class="px-standard text-body-sm text-on-surface-variant">${window.GymApp.formatDate(p.tu_ngay || p.from)}</td>
-                  <td class="px-standard text-body-sm text-on-surface-variant">${window.GymApp.formatDate(p.den_ngay || p.to)}</td>
-                  <td class="px-standard">${this._packageStatusBadge(p.trang_thai || p.status)}</td>
-                  <td class="px-standard text-body-sm text-on-surface-variant">${p.ghi_chu_tt || p.ghi_chu || p.note || '—'}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
+          <p style="font-size:14px; font-weight:700; color:#475569; margin:0 0 4px;">Chưa đăng ký gói tập</p>
+          <p style="font-size:12px; color:#64748b; margin:0;">Hội viên hiện không có gói tập nào đang hoạt động.</p>
+        </div>
+        `}
+
+        <div style="margin-bottom:24px;">
+          <h5 style="font-size:13px; font-weight:800; text-transform:uppercase; letter-spacing:0.08em; color:var(--md-sys-color-on-surface-variant); margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+            <span class="material-symbols-outlined" style="font-size:18px; color:#d97706;">event_upcoming</span> Gói sắp kích hoạt
+          </h5>
+          ${upcomingHTML}
+        </div>
+
+        <div>
+          <h5 style="font-size:13px; font-weight:800; text-transform:uppercase; letter-spacing:0.08em; color:var(--md-sys-color-on-surface-variant); margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+            <span class="material-symbols-outlined" style="font-size:18px; color:#64748b;">history</span> Lịch sử gói tập
+          </h5>
+          ${pastHTML}
         </div>
       `;
     }
@@ -629,94 +704,114 @@ window.GymApp.pages['members-list'] = {
         return buoiConLai > 0 && conHan;
       });
 
-      const ptRows = ptContracts.length === 0
-        ? `<tr><td colspan="5" class="px-standard py-loose text-center text-on-surface-variant text-body-sm">Chưa có gói PT nào được đăng ký</td></tr>`
+      const ptContractsHTML = ptContracts.length === 0
+        ? `<div style="text-align:center; padding:24px; color:var(--md-sys-color-on-surface-variant); font-size:13px; background:#f8fafc; border-radius:12px; border:1px dashed #cbd5e1; margin-bottom:16px;">Hội viên chưa đăng ký gói PT nào.</div>`
         : ptContracts.map(c => {
           const buoiConLai = (c.buoi_dang_ky || 0) - (c.buoi_da_tap || 0);
           const conHan = !c.den_ngay || new Date(c.den_ngay) >= today;
           const statusLabel = (!conHan) ? 'Hết hạn' : (buoiConLai <= 0 ? 'Hết buổi' : 'Đang hoạt động');
-          const statusColor = statusLabel === 'Đang hoạt động' ? '#1D9336' : '#ba1a1a';
+          const statusColor = statusLabel === 'Đang hoạt động' ? '#1D9336' : (statusLabel === 'Hết buổi' ? '#f59e0b' : '#ba1a1a');
+          const bgStatus = statusLabel === 'Đang hoạt động' ? '#f0fdf4' : (statusLabel === 'Hết buổi' ? '#fffbeb' : '#fef2f2');
+          
           return `
-            <tr class="h-11 border-t border-outline-variant hover:bg-surface-container-low transition-colors">
-              <td class="px-standard text-body-sm font-bold text-on-surface">${c.ten_pt || '—'}</td>
-              <td class="px-standard text-body-sm text-on-surface-variant">${c.chuyen_mon || '—'}</td>
-              <td class="px-standard text-body-sm text-on-surface-variant">
-                <span style="font-weight:700;color:${buoiConLai > 0 ? '#1D9336' : '#ba1a1a'}">${buoiConLai}</span>
-                <span style="color:#6e7a6b;">/ ${c.buoi_dang_ky || 0} buổi</span>
-              </td>
-              <td class="px-standard text-body-sm text-on-surface-variant">${c.den_ngay ? window.GymApp.formatDate(c.den_ngay) : '—'}</td>
-              <td class="px-standard">
-                <span style="padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;background:${statusColor}20;color:${statusColor};">${statusLabel}</span>
-              </td>
-            </tr>`;
+            <div style="display:flex; flex-direction:column; background:#fff; border:1px solid #e2e8f0; border-radius:12px; margin-bottom:16px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.02);">
+              <div style="padding:16px; display:flex; justify-content:space-between; align-items:flex-start; border-bottom:1px solid #e2e8f0; background:${bgStatus};">
+                <div style="display:flex; align-items:center; gap:12px;">
+                  <div style="width:40px; height:40px; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 4px rgba(0,0,0,0.05); border:1px solid ${statusColor}30;">
+                    <span class="material-symbols-outlined" style="color:${statusColor};">sports_gymnastics</span>
+                  </div>
+                  <div>
+                    <h5 style="font-size:15px; font-weight:800; color:var(--md-sys-color-on-surface); margin:0 0 2px;">PT: ${c.ten_pt || '—'}</h5>
+                    <div style="font-size:12px; color:var(--md-sys-color-on-surface-variant);">${c.chuyen_mon || 'Huấn luyện viên cá nhân'}</div>
+                  </div>
+                </div>
+                <span style="padding:4px 10px; border-radius:999px; font-size:11px; font-weight:800; background:${statusColor}20; color:${statusColor}; border:1px solid ${statusColor}40;">${statusLabel}</span>
+              </div>
+              <div style="padding:16px; display:grid; grid-template-columns:1fr 1fr; gap:16px; background:#fff;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <div style="width:32px; height:32px; border-radius:8px; background:#f1f5f9; display:flex; align-items:center; justify-content:center;">
+                    <span class="material-symbols-outlined" style="font-size:16px; color:#64748b;">event</span>
+                  </div>
+                  <div>
+                    <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#64748b; margin-bottom:2px;">Thời hạn</div>
+                    <div style="font-size:13px; font-weight:700; color:#1e293b;">${c.den_ngay ? window.GymApp.formatDate(c.den_ngay) : 'Không giới hạn'}</div>
+                  </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <div style="width:32px; height:32px; border-radius:8px; background:#f1f5f9; display:flex; align-items:center; justify-content:center;">
+                    <span class="material-symbols-outlined" style="font-size:16px; color:#64748b;">play_lesson</span>
+                  </div>
+                  <div>
+                    <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#64748b; margin-bottom:2px;">Số buổi</div>
+                    <div style="font-size:13px; font-weight:800; color:#1e293b;">
+                      <span style="color:${buoiConLai > 0 ? '#1D9336' : '#ba1a1a'}; font-size:15px;">${buoiConLai}</span> / ${c.buoi_dang_ky || 0}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
         }).join('');
 
+      const renderScheduleItem = (s) => {
+        const dateObj = new Date(s.ngay_tap || s.date);
+        const isPast = dateObj < today;
+        const statusStr = s.trang_thai || s.status || 'Chờ tập';
+        const isDone = statusStr === 'Hoàn thành' || statusStr === 'hoan_thanh';
+        const isCancel = statusStr === 'Hủy' || statusStr === 'huy';
+        
+        return `
+          <div style="display:flex; align-items:stretch; gap:16px; background:#fff; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; margin-bottom:12px; box-shadow:0 2px 8px rgba(0,0,0,0.02);">
+            <div style="background:${isPast ? '#f1f5f9' : '#f0fdf4'}; width:80px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:12px 8px; border-right:1px dashed #cbd5e1;">
+              <span style="font-size:11px; font-weight:800; text-transform:uppercase; color:${isPast ? '#64748b' : '#166534'}; margin-bottom:4px;">Tháng ${dateObj.getMonth() + 1}</span>
+              <span style="font-size:24px; font-weight:800; color:${isPast ? '#475569' : '#1D9336'}; line-height:1;">${dateObj.getDate()}</span>
+            </div>
+            <div style="flex:1; padding:12px; display:flex; flex-direction:column; justify-content:center;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span class="material-symbols-outlined" style="font-size:16px; color:#64748b;">schedule</span>
+                  <span style="font-size:13px; font-weight:800; color:#1e293b;">${s.gio_bat_dau || s.startTime} — ${s.gio_ket_thuc || s.endTime}</span>
+                </div>
+                ${window.GymApp.statusBadge(statusStr)}
+              </div>
+              <div style="display:flex; align-items:center; gap:12px; font-size:12px; color:#475569;">
+                <span style="display:flex; align-items:center; gap:4px;"><span class="material-symbols-outlined" style="font-size:14px; opacity:0.7;">person</span> PT: <b>${s.ten_pt || '—'}</b></span>
+              </div>
+              ${s.ghi_chu ? `<div style="margin-top:6px; font-size:12px; color:#64748b; font-style:italic;">📝 ${s.ghi_chu}</div>` : ''}
+            </div>
+          </div>
+        `;
+      };
+
       const scheduleRows = memberSchedules.length === 0
-        ? `<tr><td colspan="5" class="px-standard py-loose text-center text-on-surface-variant text-body-sm">Chưa có lịch tập nào được đặt</td></tr>`
-        : memberSchedules.map(s => `
-          <tr class="h-11 border-t border-outline-variant hover:bg-surface-container-low transition-colors">
-            <td class="px-standard text-body-sm font-bold text-on-surface">${s.ten_pt || '—'}</td>
-            <td class="px-standard text-body-sm text-on-surface-variant">${window.GymApp.formatDate(s.ngay_tap || s.date)}</td>
-            <td class="px-standard text-body-sm text-on-surface-variant">${s.gio_bat_dau || s.startTime} — ${s.gio_ket_thuc || s.endTime}</td>
-            <td class="px-standard">${window.GymApp.statusBadge(s.trang_thai || s.status)}</td>
-            <td class="px-standard text-body-sm text-on-surface-variant">${s.ghi_chu || '—'}</td>
-          </tr>`).join('');
+        ? `<div style="text-align:center; padding:24px; color:var(--md-sys-color-on-surface-variant); font-size:13px; background:#f8fafc; border-radius:12px; border:1px dashed #cbd5e1;">Chưa có lịch tập nào được đặt</div>`
+        : memberSchedules.map(renderScheduleItem).join('');
 
       const scheduleWarning = !canSchedule && ptContracts.length > 0
-        ? `<div style="padding:8px 14px;border-radius:8px;background:#fff3cd;border:1px solid #ffc107;color:#856404;font-size:12px;font-weight:600;margin-bottom:8px;">
-             ⚠️ Không thể đặt lịch — tất cả gói PT đã hết buổi hoặc hết hạn.
+        ? `<div style="padding:12px 16px; border-radius:8px; background:#fff3cd; border:1px solid #ffc107; color:#856404; font-size:13px; font-weight:700; display:flex; align-items:center; gap:8px; margin-bottom:16px;">
+             <span class="material-symbols-outlined" style="font-size:20px; color:#d97706;">warning</span>
+             Không thể đặt lịch — tất cả gói PT đã hết buổi hoặc hết hạn.
            </div>` : '';
 
       return `
-        <!-- SECTION 1: Gói PT -->
-        <div class="bg-surface-container rounded-xl border border-outline-variant overflow-hidden mb-standard">
-          <div class="bg-surface-container-high px-standard py-compact flex items-center justify-between">
-            <p class="font-bold text-on-surface text-body-sm uppercase tracking-wider">Gói PT đã đăng ký</p>
-            <button id="btn-add-pt-reg" class="flex items-center gap-xs px-standard py-xs rounded-lg text-white font-bold text-body-sm hover:opacity-90 transition-all" style="background:#1D9336;font-size:12px;">
-              <span class="material-symbols-outlined" style="font-size:14px;">add</span>Đăng ký gói PT
-            </button>
-          </div>
-          <table class="w-full text-left border-collapse">
-            <thead class="bg-surface-container">
-              <tr class="h-10">
-                <th class="px-standard font-bold text-body-sm text-on-surface">Huấn luyện viên</th>
-                <th class="px-standard font-bold text-body-sm text-on-surface">Chuyên môn</th>
-                <th class="px-standard font-bold text-body-sm text-on-surface">Buổi còn lại</th>
-                <th class="px-standard font-bold text-body-sm text-on-surface">Hết hạn</th>
-                <th class="px-standard font-bold text-body-sm text-on-surface">Trạng thái</th>
-              </tr>
-            </thead>
-            <tbody>${ptRows}</tbody>
-          </table>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <h4 style="font-size:16px; font-weight:800; color:var(--md-sys-color-on-surface);">Thông Tin Gói PT</h4>
+          <button id="btn-add-pt-reg" style="display:flex; align-items:center; gap:6px; padding:8px 16px; border-radius:8px; background:linear-gradient(135deg, #1D9336, #22c55e); color:#fff; font-weight:700; font-size:13px; border:none; cursor:pointer; box-shadow:0 4px 12px rgba(29,147,54,0.2); transition:transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 6px 16px rgba(29,147,54,0.3)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 4px 12px rgba(29,147,54,0.2)';">
+            <span class="material-symbols-outlined" style="font-size:18px;">add_circle</span> Đăng ký PT
+          </button>
         </div>
 
-        <!-- SECTION 2: Lịch tập -->
-        <div class="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden">
-          <div class="bg-surface-container-high px-standard py-compact flex items-center justify-between">
-            <p class="font-bold text-on-surface text-body-sm uppercase tracking-wider">Lịch tập đã đặt</p>
-            ${canSchedule
-          ? `<button id="btn-add-schedule" class="flex items-center gap-xs px-standard py-xs rounded-lg text-white font-bold text-body-sm hover:opacity-90 transition-all" style="background:#1D9336;font-size:12px;">
-                   <span class="material-symbols-outlined" style="font-size:14px;">add</span>Đặt lịch mới
-                 </button>`
-          : `<span style="font-size:11px;color:#6e7a6b;font-style:italic;">Cần có gói PT hợp lệ để đặt lịch</span>`
-        }
-          </div>
-          ${scheduleWarning}
-          <div style="max-height:320px;overflow-y:auto;">
-            <table class="w-full text-left border-collapse">
-              <thead class="bg-surface-container" style="position:sticky;top:0;z-index:1;">
-                <tr class="h-10">
-                  <th class="px-standard font-bold text-body-sm text-on-surface">Huấn luyện viên</th>
-                  <th class="px-standard font-bold text-body-sm text-on-surface">Ngày</th>
-                  <th class="px-standard font-bold text-body-sm text-on-surface">Giờ</th>
-                  <th class="px-standard font-bold text-body-sm text-on-surface">Trạng thái</th>
-                  <th class="px-standard font-bold text-body-sm text-on-surface">Ghi chú</th>
-                </tr>
-              </thead>
-              <tbody>${scheduleRows}</tbody>
-            </table>
-          </div>
+        ${ptContractsHTML}
+
+        <div style="margin-top:32px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
+          <h4 style="font-size:16px; font-weight:800; color:var(--md-sys-color-on-surface);">Lịch Tập Gần Đây</h4>
+          <button id="btn-add-schedule" ${(!canSchedule) ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : 'style="cursor:pointer;"'} class="flex items-center gap-xs px-standard py-compact rounded-lg font-bold text-body-sm bg-surface-container hover:bg-surface-container-high transition-all border border-outline-variant text-on-surface">
+            <span class="material-symbols-outlined text-sm">calendar_add_on</span> Đặt lịch mới
+          </button>
         </div>
+        
+        ${scheduleWarning}
+        ${scheduleRows}
       `;
     }
     return '';
@@ -1860,51 +1955,104 @@ window.GymApp.pages['members-list'] = {
     overlay.id = 'gym-edit-member-modal';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);backdrop-filter:blur(3px);padding:16px;';
 
-    const field = (label, id, type, value, required = false) => `
-      <div>
-        <label class="text-on-surface-variant text-body-sm font-bold block mb-xs">${label}${required ? ' <span class="text-error">*</span>' : ''}</label>
-        <input id="em-${id}" type="${type}" value="${value || ''}" class="w-full bg-surface-container border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none text-body-md transition-colors" />
+    const field = (icon, label, id, type, value, required = false, isFull = false) => `
+      <div class="${isFull ? 'col-span-full' : ''}">
+        <label class="text-on-surface-variant text-[11px] uppercase font-bold tracking-wider block mb-1 opacity-80">${label}${required ? ' <span class="text-error">*</span>' : ''}</label>
+        <div class="relative group">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors text-[18px]">${icon}</span>
+          <input id="em-${id}" type="${type}" value="${value || ''}" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-4 py-2.5 rounded-xl focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none text-[14px] font-medium transition-all" />
+        </div>
       </div>
     `;
 
+    const selectField = (icon, label, id, options, selectedValue, isFull = false) => `
+      <div class="${isFull ? 'col-span-full' : ''}">
+        <label class="text-on-surface-variant text-[11px] uppercase font-bold tracking-wider block mb-1 opacity-80">${label}</label>
+        <div class="relative group">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors text-[18px] z-10">${icon}</span>
+          <select id="em-${id}" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-10 py-2.5 rounded-xl focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none text-[14px] font-medium transition-all appearance-none cursor-pointer relative z-0">
+            ${options.map(o => `<option value="${o.v}" ${o.v === selectedValue ? 'selected' : ''}>${o.l}</option>`).join('')}
+          </select>
+          <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none z-10">expand_more</span>
+        </div>
+      </div>
+    `;
+    
     overlay.innerHTML = `
-      <div style="border-radius:16px;width:100%;max-width:520px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 25px 60px rgba(0,0,0,0.3);">
-        <div class="bg-surface-container-lowest px-loose py-standard border-b border-outline-variant flex items-center justify-between flex-shrink-0">
-          <div class="flex items-center gap-compact">
-            ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'sm')}
+      <div style="border-radius:24px;width:100%;max-width:560px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,0.4);background:var(--md-sys-color-surface-container-lowest,#fff);position:relative;">
+        
+        <!-- Header -->
+        <div style="background:linear-gradient(135deg, #1a5e2a 0%, #1D9336 60%, #22c55e 100%); padding:24px 24px 20px; flex-shrink:0; position:relative; overflow:hidden;">
+          <div style="position:absolute; top:-30px; right:-30px; width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,0.07);"></div>
+          <div style="position:absolute; top:20px; right:60px; width:60px; height:60px; border-radius:50%; background:rgba(255,255,255,0.05);"></div>
+          
+          <button id="close-edit-member" style="position:absolute; top:16px; right:16px; background:rgba(255,255,255,0.15); border:none; cursor:pointer; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px); transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">
+            <span class="material-symbols-outlined" style="color:#fff;font-size:18px;">close</span>
+          </button>
+
+          <div style="display:flex; align-items:center; gap:16px; position:relative; z-index:1;">
+            <div style="width:64px; height:64px; border-radius:50%; border:3px solid rgba(255,255,255,0.5); overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,0.2);">
+              ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'lg')}
+            </div>
             <div>
-              <h3 class="font-bold text-on-surface" style="font-size:17px">Chỉnh sửa hội viên</h3>
-              <p class="text-on-surface-variant text-body-sm">${m.ma_ho_so || ''}</p>
+              <span style="font-size:11px; font-weight:800; color:rgba(255,255,255,0.8); text-transform:uppercase; letter-spacing:0.1em; background:rgba(0,0,0,0.2); padding:3px 8px; border-radius:999px;">Chỉnh sửa hồ sơ</span>
+              <h3 style="font-size:22px; font-weight:800; color:#fff; margin:6px 0 2px; text-shadow:0 1px 3px rgba(0,0,0,0.2); line-height:1.2;">${m.ho_ten || '—'}</h3>
+              <p style="font-size:13px; color:rgba(255,255,255,0.9); font-weight:600; margin:0;">${m.ma_ho_so || ''}</p>
             </div>
           </div>
-          <button id="close-edit-member" style="background:transparent;border:none;cursor:pointer;">
-            <span class="material-symbols-outlined text-on-surface-variant text-xl">close</span>
-          </button>
         </div>
-        <div class="bg-surface-container-lowest overflow-y-auto flex-1 p-loose flex flex-col gap-standard">
-          ${field('Họ và tên', 'ho_ten', 'text', m.ho_ten, true)}
-          ${field('Số điện thoại', 'so_dien_thoai', 'tel', m.so_dien_thoai)}
-          ${field('Email', 'email', 'email', m.email)}
-          ${field('Ngày sinh', 'ngay_sinh', 'date', m.ngay_sinh)}
-          <div>
-            <label class="text-on-surface-variant text-body-sm font-bold block mb-xs">Giới tính</label>
-            <select id="em-gioi_tinh" class="w-full bg-surface-container border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none text-body-md transition-colors">
-              <option value="">— Chọn giới tính —</option>
-              <option value="nam" ${(m.gioi_tinh === 'nam' || m.gioi_tinh === 'male') ? 'selected' : ''}>Nam</option>
-              <option value="nu" ${(m.gioi_tinh === 'nu' || m.gioi_tinh === 'female') ? 'selected' : ''}>Nữ</option>
-              <option value="khac" ${m.gioi_tinh === 'khac' ? 'selected' : ''}>Khác</option>
-            </select>
+
+        <!-- Form Body -->
+        <div style="overflow-y:auto; flex-1; padding:24px; display:flex; flex-direction:column; gap:20px; background:var(--md-sys-color-surface-container-lowest,#fff);">
+          
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="material-symbols-outlined" style="color:#1D9336; font-size:18px;">person</span>
+            <h4 style="font-size:14px; font-weight:800; color:var(--md-sys-color-on-surface); text-transform:uppercase; letter-spacing:0.05em; margin:0;">Thông tin cá nhân</h4>
+            <div style="flex:1; height:1px; background:linear-gradient(to right, #1D933640, transparent);"></div>
           </div>
-          ${field('Địa chỉ', 'dia_chi_tam_tru', 'text', m.dia_chi_tam_tru)}
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            ${field('badge', 'Họ và tên', 'ho_ten', 'text', m.ho_ten, true, true)}
+            ${field('cake', 'Ngày sinh', 'ngay_sinh', 'date', m.ngay_sinh, false, false)}
+            ${selectField('wc', 'Giới tính', 'gioi_tinh', [
+              {v:'', l:'— Chọn giới tính —'},
+              {v:'nam', l:'Nam'},
+              {v:'nu', l:'Nữ'},
+              {v:'khac', l:'Khác'}
+            ], m.gioi_tinh === 'male' ? 'nam' : (m.gioi_tinh === 'female' ? 'nu' : m.gioi_tinh), false)}
+          </div>
+
+          <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+            <span class="material-symbols-outlined" style="color:#1D9336; font-size:18px;">contact_page</span>
+            <h4 style="font-size:14px; font-weight:800; color:var(--md-sys-color-on-surface); text-transform:uppercase; letter-spacing:0.05em; margin:0;">Liên hệ</h4>
+            <div style="flex:1; height:1px; background:linear-gradient(to right, #1D933640, transparent);"></div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            ${field('call', 'Số điện thoại', 'so_dien_thoai', 'tel', m.so_dien_thoai, false, false)}
+            ${field('mail', 'Email', 'email', 'email', m.email, false, false)}
+            ${field('location_on', 'Địa chỉ', 'dia_chi_tam_tru', 'text', m.dia_chi_tam_tru, false, true)}
+          </div>
+
+          <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+            <span class="material-symbols-outlined" style="color:#1D9336; font-size:18px;">note</span>
+            <h4 style="font-size:14px; font-weight:800; color:var(--md-sys-color-on-surface); text-transform:uppercase; letter-spacing:0.05em; margin:0;">Ghi chú</h4>
+            <div style="flex:1; height:1px; background:linear-gradient(to right, #1D933640, transparent);"></div>
+          </div>
+
           <div>
-            <label class="text-on-surface-variant text-body-sm font-bold block mb-xs">Ghi chú</label>
-            <textarea id="em-ghi_chu" rows="2" class="w-full bg-surface-container border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none text-body-md resize-none transition-colors">${m.ghi_chu || ''}</textarea>
+            <div class="relative group">
+              <span class="material-symbols-outlined absolute left-3 top-3 text-outline group-focus-within:text-brand-primary transition-colors text-[18px]">edit_note</span>
+              <textarea id="em-ghi_chu" rows="3" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-4 py-2.5 rounded-xl focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none text-[14px] font-medium resize-none transition-all" placeholder="Ghi chú thêm về hội viên này...">${m.ghi_chu || ''}</textarea>
+            </div>
           </div>
         </div>
-        <div class="bg-surface-container-lowest px-loose py-standard border-t border-outline-variant flex gap-standard justify-end flex-shrink-0">
-          <button id="cancel-edit-member" class="px-loose py-compact rounded-xl font-bold text-body-sm border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-all">Hủy</button>
-          <button id="save-edit-member" class="bg-brand-primary text-white px-loose py-compact rounded-xl font-bold text-body-sm hover:bg-primary-container transition-all flex items-center gap-xs">
-            <span class="material-symbols-outlined text-sm">save</span>Lưu thay đổi
+
+        <!-- Footer -->
+        <div style="padding:16px 24px; border-top:1px solid var(--md-sys-color-outline-variant,#e2e8f0); display:flex; gap:12px; justify-content:flex-end; background:var(--md-sys-color-surface-container-lowest,#fff); flex-shrink:0;">
+          <button id="cancel-edit-member" style="padding:10px 20px; border-radius:12px; font-weight:700; font-size:14px; border:1px solid var(--md-sys-color-outline-variant); color:var(--md-sys-color-on-surface-variant); background:transparent; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.background='var(--md-sys-color-surface-container)'" onmouseout="this.style.background='transparent'">Hủy</button>
+          <button id="save-edit-member" style="padding:10px 24px; border-radius:12px; font-weight:700; font-size:14px; border:none; color:#fff; background:linear-gradient(135deg, #1D9336, #22c55e); cursor:pointer; display:flex; align-items:center; gap:8px; box-shadow:0 4px 12px rgba(29,147,54,0.3); transition:transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 6px 16px rgba(29,147,54,0.4)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 4px 12px rgba(29,147,54,0.3)';">
+            <span class="material-symbols-outlined" style="font-size:18px;">save</span>Lưu thay đổi
           </button>
         </div>
       </div>
