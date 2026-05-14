@@ -60,6 +60,8 @@
       }
     }
   </script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/air-datepicker@3/air-datepicker.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/air-datepicker@3/air-datepicker.min.js"></script>
   <link rel="stylesheet" href="assets/css/main.css" />
   <style>
     body {
@@ -321,6 +323,98 @@
       const s = map[status] || { bg: '#ebeef3', color: '#181c20', label: window.GymApp.formatEnumLabel(status) };
       return `<span style="padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;background:${s.bg};color:${s.color};white-space:nowrap">${s.label}</span>`;
     };
+
+    window.GymApp.localeVi = {
+      days: ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'],
+      daysShort: ['CN', 'Th 2', 'Th 3', 'Th 4', 'Th 5', 'Th 6', 'Th 7'],
+      daysMin: ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'],
+      months: ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'],
+      monthsShort: ['Th 1', 'Th 2', 'Th 3', 'Th 4', 'Th 5', 'Th 6', 'Th 7', 'Th 8', 'Th 9', 'Th 10', 'Th 11', 'Th 12'],
+      today: 'Hôm nay',
+      clear: 'Xóa',
+      dateFormat: 'yyyy-MM-dd',
+      firstDay: 1
+    };
+
+    window.GymApp.initDatePickers = function (container) {
+      if (typeof AirDatepicker !== 'undefined') {
+        const inputs = container.querySelectorAll('input[type="date"]:not([data-airpicker])');
+        inputs.forEach(originalInput => {
+          originalInput.setAttribute('data-airpicker', 'true');
+          originalInput.style.display = 'none';
+
+          const visibleInput = document.createElement('input');
+          visibleInput.type = 'text';
+          visibleInput.className = originalInput.className;
+          visibleInput.placeholder = 'dd/mm/yyyy';
+          originalInput.parentNode.insertBefore(visibleInput, originalInput);
+
+          const baseDescriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+
+          const adp = new AirDatepicker(visibleInput, {
+            locale: window.GymApp.localeVi,
+            dateFormat: 'dd/MM/yyyy',
+            autoClose: true,
+            onSelect: function ({ date }) {
+              if (date && !Array.isArray(date)) {
+                const y = date.getFullYear();
+                const m = String(date.getMonth() + 1).padStart(2, '0');
+                const d = String(date.getDate()).padStart(2, '0');
+                baseDescriptor.set.call(originalInput, `${y}-${m}-${d}`);
+                originalInput.dispatchEvent(new Event('change', { bubbles: true }));
+              } else {
+                baseDescriptor.set.call(originalInput, '');
+                originalInput.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+            }
+          });
+
+          Object.defineProperty(originalInput, 'value', {
+            get: function() {
+              return baseDescriptor.get.call(originalInput);
+            },
+            set: function(val) {
+              baseDescriptor.set.call(originalInput, val);
+              if (val) {
+                const parts = val.split('-');
+                if (parts.length === 3) {
+                  adp.selectDate(new Date(parts[0], parts[1] - 1, parts[2]), { silent: true });
+                }
+              } else { adp.clear({ silent: true }); }
+            }
+          });
+
+          const initialVal = baseDescriptor.get.call(originalInput);
+          if (initialVal) {
+            const parts = initialVal.split('-');
+            if (parts.length === 3) {
+              adp.selectDate(new Date(parts[0], parts[1] - 1, parts[2]), { silent: true });
+            }
+          }
+        });
+      }
+    };
+
+    // Auto initialize Air-datepicker for dynamically added elements
+    document.addEventListener('DOMContentLoaded', () => {
+      window.GymApp.initDatePickers(document.body);
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach(mutation => {
+          if (mutation.addedNodes.length) {
+            mutation.addedNodes.forEach(node => {
+              if (node.nodeType === 1) { // ELEMENT_NODE
+                if (node.tagName === 'INPUT' && node.type === 'date') {
+                  window.GymApp.initDatePickers(node.parentElement);
+                } else if (node.querySelectorAll) {
+                  window.GymApp.initDatePickers(node);
+                }
+              }
+            });
+          }
+        });
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    });
   </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="assets/js/api.js"></script>

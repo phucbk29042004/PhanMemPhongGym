@@ -20,7 +20,7 @@ export const getNotifications = (req, res) => {
     SELECT id, loai, tieu_de, noi_dung, doi_tuong_id, doi_tuong,
            danh_cho, da_doc, ngay_tao
     FROM thong_bao
-    WHERE ${filter}
+    WHERE ${filter} AND da_doc = 0
     ORDER BY ngay_tao DESC
     LIMIT 20
   `).all();
@@ -108,4 +108,31 @@ export const markAllAsRead = (req, res) => {
   `).run(req.user.id);
 
   return success(res, { updated: result.changes }, `Đã đánh dấu ${result.changes} thông báo đã đọc.`);
+};
+
+// ── DELETE /api/notifications/:id ────────────────────────
+// Xóa 1 thông báo khỏi cơ sở dữ liệu
+export const deleteNotification = (req, res) => {
+  const { id } = req.params;
+  const filter = buildRoleFilter(req.user.vai_tro);
+
+  const notif = db.prepare(`
+    SELECT id FROM thong_bao WHERE id = ? AND ${filter}
+  `).get(id);
+
+  if (!notif) return error(res, 'Thông báo không tồn tại.', 404);
+
+  db.prepare(`DELETE FROM thong_bao WHERE id = ?`).run(id);
+
+  return success(res, null, 'Đã xóa thông báo thành công.');
+};
+
+// ── DELETE /api/notifications ────────────────────────────
+// Xóa tất cả thông báo của role hiện tại
+export const deleteAllNotifications = (req, res) => {
+  const filter = buildRoleFilter(req.user.vai_tro);
+
+  const result = db.prepare(`DELETE FROM thong_bao WHERE ${filter}`).run();
+
+  return success(res, { deleted: result.changes }, `Đã xóa ${result.changes} thông báo.`);
 };

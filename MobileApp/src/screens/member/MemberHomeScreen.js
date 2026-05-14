@@ -193,7 +193,7 @@ export default function MemberHomeScreen({ navigation }) {
                   size={42}
                 />
               </View>
-              <View>
+              <View style={{ flex: 1 }}>
                 <Text style={styles.bannerGreeting}>Xin chào 👋</Text>
                 <Text style={styles.bannerName} numberOfLines={1}>
                   {profile?.ho_ten || user?.name || 'Hội viên'}
@@ -576,26 +576,25 @@ const styles = StyleSheet.create({
   emptyContractSub: { fontSize: 12, color: G.gray400 },
 
   // Utility chips
-  utilGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  utilGrid: { flexDirection: 'row', justifyContent: 'space-between', gap: 4 },
   utilChip: {
-    width: '22%',
     flex: 1,
     alignItems: 'center',
     gap: 6,
-    minWidth: 72,
+    minWidth: 55,
   },
   utilIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
+    width: 48,
+    height: 48,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   utilLabel: {
-    fontSize: 10,
+    fontSize: 9.5,
     fontWeight: '600',
     textAlign: 'center',
-    lineHeight: 14,
+    lineHeight: 13,
   },
 
   // Package cards

@@ -96,18 +96,8 @@ window.GymApp.pages['member-add'] = {
                 </div>
                 <h3 class="font-bold text-on-surface text-body-md">Thông tin cá nhân</h3>
               </div>
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-compact">
-                <!-- Ngày sinh với min/max hợp lý -->
-                <div>
-                  <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Ngày sinh</label>
-                  <div class="relative group">
-                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors text-[18px]">cake</span>
-                    <input id="reg-ngay-sinh" type="date"
-                      min="${new Date(new Date().setFullYear(new Date().getFullYear()-100)).toISOString().split('T')[0]}"
-                      max="${new Date(new Date().setFullYear(new Date().getFullYear()-10)).toISOString().split('T')[0]}"
-                      class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-4 py-2 rounded-xl focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none transition-colors" style="color-scheme: var(--md-sys-color-scheme, light);" />
-                  </div>
-                </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-compact">
+                ${this._field('Ngày sinh', 'reg-ngay-sinh', 'date')}
                 ${this._select('Giới tính', 'reg-gioi-tinh', [{v:'nam',t:'Nam'},{v:'nu',t:'Nữ'},{v:'khac',t:'Khác'}])}
                 <!-- SĐT với inline error -->
                 <div>

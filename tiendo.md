@@ -8,11 +8,19 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
-**✅ Redesign toàn bộ giao diện Mobile App (Hội viên)** — Tái thiết kế 5 màn hình theo bố cục hình ảnh mẫu với bộ icon lucide-react-native cao cấp, tông màu Paradise Gym nhất quán, đúng nghiệp vụ và dữ liệu API thực tế. Không có mock data. Tab Bar 5 tabs mới.
+**✅ Chuẩn hóa & nâng cấp hệ thống bộ lọc dữ liệu Hội viên (Admin Portal)** — Viết lại modal lọc đa tiêu chí chuẩn M3 Premium Dashboard, đồng bộ hoàn hảo các trạng thái thực tế từ Backend và tự động lấy danh sách gói tập động, hỗ trợ tra cứu chéo theo Dịch vụ PT và Check-in trong ngày.
+
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
+
+### 14/05/2026 17:09 — Chuẩn Hóa & Nâng Cấp Giao Diện Bộ Lọc Dữ Liệu Hội Viên
+- **Loại**: Cải thiện tính năng & giao diện (Frontend)
+- **File chỉnh sửa**:
+  - `FE/assets/js/pages/members-list.js` — (1) Mở rộng `_filterState` hỗ trợ 5 tiêu chí lọc (`status`, `pkg`, `gender`, `hasPt`, `checkinToday`); (2) Viết lại giao diện overlay `_showFilterModal` sang phong cách M3 Premium Dashboard chia section với đầy đủ icon trực quan; (3) Cập nhật thuật toán `_applyMemberFilter` ánh xạ chính xác 4 trạng thái từ Backend (`con_han`, `sap_het_han`, `het_han`, `chua_dang_ky`), trích xuất linh hoạt gói tập đang dùng (`m.ten_goi_tap`) và hỗ trợ lọc chéo đa tiêu chí reactive; (4) Đồng bộ bộ đếm badge và cơ chế reset nút "Xóa lọc".
+- **Mô tả**: Giải quyết triệt để lỗi bộ lọc hội viên cũ không hoạt động do gán sai trạng thái tĩnh so với API và dữ liệu gói tập bị undefined. Bổ sung các bộ lọc giá trị cao cho Admin/Lễ tân: Lọc hội viên đang có PT/Tự tập và trạng thái Check-in trong ngày.
+- **Kết quả**: Thành công
 
 ### 14/05/2026 13:58 — Redesign Toàn Bộ Giao Diện Mobile App (Hội Viên)
 - **Loại**: Tái thiết kế giao diện (Frontend — React Native)

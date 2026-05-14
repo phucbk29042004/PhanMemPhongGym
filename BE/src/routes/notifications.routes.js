@@ -6,6 +6,8 @@ import {
   getSummary,
   markAsRead,
   markAllAsRead,
+  deleteNotification,
+  deleteAllNotifications,
 } from '../controllers/notifications.controller.js';
 
 const router = Router();
@@ -17,5 +19,7 @@ router.get('/unread-count',  getUnreadCount);
 router.get('/summary',       getSummary);
 router.patch('/read-all',    markAllAsRead);
 router.patch('/:id/read',    markAsRead);
+router.delete('/',           deleteAllNotifications);
+router.delete('/:id',        deleteNotification);
 
 export default router;

@@ -3,7 +3,7 @@ window.GymApp.pages['members-list'] = {
   _memberPage: 1, _memberFiltered: [],
   _ptPage: 1, _ptFiltered: [],
   _perPage: 10,
-  _filterState: { status: '', pkg: '', gender: '' },
+  _filterState: { status: '', pkg: '', gender: '', hasPt: '', checkinToday: '' },
   _ptFilterState: { specialty: '', status: '' },
   _ptSortState: '',
   _memberPackageHistory: {},
@@ -238,7 +238,7 @@ window.GymApp.pages['members-list'] = {
     const self = this;
     const start = (self._ptPage - 1) * self._perPage;
     const paginated = self._ptFiltered.slice(start, start + self._perPage);
-    
+
     if (paginated.length === 0) {
       return `
         <div class="col-span-full py-20 text-center text-on-surface-variant bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl border border-outline-variant shadow-sm">
@@ -400,7 +400,7 @@ window.GymApp.pages['members-list'] = {
 
         <!-- Tab Bar -->
         <div style="display:flex;background:var(--md-sys-color-surface-container-lowest,#f8faf8);border-bottom:1px solid var(--md-sys-color-outline-variant,#cdd8cb);flex-shrink:0;padding:0 16px;">
-          ${[['info','Thông tin','info'],['package','Gói tập','fitness_center'],['schedule','Lịch PT','event_note']].map(([t,l,ic]) => `
+          ${[['info', 'Thông tin', 'info'], ['package', 'Gói tập', 'fitness_center'], ['schedule', 'Lịch PT', 'event_note']].map(([t, l, ic]) => `
             <button class="member-detail-tab" data-mtab="${t}" style="display:flex;align-items:center;gap:6px;padding:12px 16px;font-size:13px;font-weight:700;border:none;background:transparent;cursor:pointer;border-bottom:2.5px solid transparent;transition:all 0.2s;color:var(--md-sys-color-on-surface-variant,#3f4a3c);white-space:nowrap;">
               <span class="material-symbols-outlined" style="font-size:16px;">${ic}</span>${l}
             </button>
@@ -498,13 +498,13 @@ window.GymApp.pages['members-list'] = {
       const hasAccount = !!m.tai_khoan_id;
       const genderLabel = m.gioi_tinh === 'nam' || m.gioi_tinh === 'male' ? 'Nam' : m.gioi_tinh === 'nu' || m.gioi_tinh === 'female' ? 'Nữ' : (m.gioi_tinh || '—');
       const diaChiFull = [m.dia_chi_tam_tru, m.phuong_xa, m.quan_huyen, m.tinh_thanh].filter(Boolean).join(', ') || '—';
-      
+
       const activePkg = m.goi_tap_hien_tai && m.goi_tap_hien_tai.length > 0 ? m.goi_tap_hien_tai[0] : null;
       const pkgName = activePkg ? (activePkg.ten_goi || activePkg.ten_goi_tap) : (m.ten_goi_tap || 'Chưa đăng ký');
       const hetHanVal = activePkg ? activePkg.den_ngay : m.ngay_het_han;
       const expDate = hetHanVal ? window.GymApp.formatDate(hetHanVal) : '—';
 
-      const infoRow = (icon, label, value, accent, wrap=false) => `
+      const infoRow = (icon, label, value, accent, wrap = false) => `
         <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fff;">
           <div style="width:32px;height:32px;border-radius:8px;background:${accent || '#f0f7f1'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
             <span class="material-symbols-outlined" style="font-size:16px;color:${accent ? '#fff' : '#1D9336'};font-variation-settings:'FILL' 1;">${icon}</span>
@@ -553,14 +553,14 @@ window.GymApp.pages['members-list'] = {
               <span style="font-size:13px;font-weight:700;color:var(--md-sys-color-on-surface,#1a2018);">Tài khoản đăng nhập</span>
             </div>
             ${hasAccount
-              ? `<span style="padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;background:#e7f5e9;color:#1D9336;">✓ Đã có tài khoản</span>`
-              : `<span style="padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;background:#fff3e0;color:#e65100;">Chưa có tài khoản</span>`
-            }
+          ? `<span style="padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;background:#e7f5e9;color:#1D9336;">✓ Đã có tài khoản</span>`
+          : `<span style="padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;background:#fff3e0;color:#e65100;">Chưa có tài khoản</span>`
+        }
           </div>
           <div style="padding:12px 16px;background:var(--md-sys-color-surface-container-lowest,#fff);">
           ${hasAccount
-            ? `<p style="font-size:13px;color:var(--md-sys-color-on-surface-variant,#3f4a3c);">Hồ sơ này đã được liên kết với tài khoản đăng nhập.</p>`
-            : `<div class="grid grid-cols-2 gap-compact" id="modal-account-form">
+          ? `<p style="font-size:13px;color:var(--md-sys-color-on-surface-variant,#3f4a3c);">Hồ sơ này đã được liên kết với tài khoản đăng nhập.</p>`
+          : `<div class="grid grid-cols-2 gap-compact" id="modal-account-form">
                 <div>
                   <label class="block text-body-sm font-bold text-on-surface-variant mb-xs">Tên đăng nhập *</label>
                   <input id="modal-username" type="text" value="${m.so_dien_thoai || ''}" placeholder="Số điện thoại hoặc tên đăng nhập"
@@ -580,7 +580,7 @@ window.GymApp.pages['members-list'] = {
                   </button>
                 </div>
               </div>`
-          }
+        }
           </div>
         </div>
       `;
@@ -603,7 +603,7 @@ window.GymApp.pages['members-list'] = {
         const color = isUpcoming ? '#d97706' : '#64748b';
         const bg = isUpcoming ? '#fef3c7' : '#f1f5f9';
         const border = isUpcoming ? '#fde68a' : '#e2e8f0';
-        
+
         return `
           <div style="display:flex; align-items:center; gap:16px; padding:16px; background:#fff; border:1px solid ${border}; border-radius:12px; margin-bottom:12px; box-shadow:0 2px 8px rgba(0,0,0,0.02);">
             <div style="width:44px; height:44px; border-radius:12px; background:${bg}; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
@@ -712,7 +712,7 @@ window.GymApp.pages['members-list'] = {
           const statusLabel = (!conHan) ? 'Hết hạn' : (buoiConLai <= 0 ? 'Hết buổi' : 'Đang hoạt động');
           const statusColor = statusLabel === 'Đang hoạt động' ? '#1D9336' : (statusLabel === 'Hết buổi' ? '#f59e0b' : '#ba1a1a');
           const bgStatus = statusLabel === 'Đang hoạt động' ? '#f0fdf4' : (statusLabel === 'Hết buổi' ? '#fffbeb' : '#fef2f2');
-          
+
           return `
             <div style="display:flex; flex-direction:column; background:#fff; border:1px solid #e2e8f0; border-radius:12px; margin-bottom:16px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.02);">
               <div style="padding:16px; display:flex; justify-content:space-between; align-items:flex-start; border-bottom:1px solid #e2e8f0; background:${bgStatus};">
@@ -759,7 +759,7 @@ window.GymApp.pages['members-list'] = {
         const statusStr = s.trang_thai || s.status || 'Chờ tập';
         const isDone = statusStr === 'Hoàn thành' || statusStr === 'hoan_thanh';
         const isCancel = statusStr === 'Hủy' || statusStr === 'huy';
-        
+
         return `
           <div style="display:flex; align-items:stretch; gap:16px; background:#fff; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; margin-bottom:12px; box-shadow:0 2px 8px rgba(0,0,0,0.02);">
             <div style="background:${isPast ? '#f1f5f9' : '#f0fdf4'}; width:80px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:12px 8px; border-right:1px dashed #cbd5e1;">
@@ -1456,13 +1456,13 @@ window.GymApp.pages['members-list'] = {
               <span class="font-bold text-on-surface text-body-md">Tài khoản đăng nhập</span>
             </div>
             ${hasAccount
-              ? `<span style="padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;background:#e7f5e9;color:#1D9336;">Đã có tài khoản</span>`
-              : `<span style="padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;background:#fff3e0;color:#e65100;">Chưa có tài khoản</span>`
-            }
+        ? `<span style="padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;background:#e7f5e9;color:#1D9336;">Đã có tài khoản</span>`
+        : `<span style="padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;background:#fff3e0;color:#e65100;">Chưa có tài khoản</span>`
+      }
           </div>
           ${hasAccount
-            ? `<p class="text-on-surface-variant text-body-sm">PT này đã được liên kết với tài khoản đăng nhập.</p>`
-            : `<div class="grid grid-cols-2 gap-compact">
+        ? `<p class="text-on-surface-variant text-body-sm">PT này đã được liên kết với tài khoản đăng nhập.</p>`
+        : `<div class="grid grid-cols-2 gap-compact">
                 <div>
                   <label class="block text-body-sm font-bold text-on-surface-variant mb-xs">Tên đăng nhập *</label>
                   <input id="pt-modal-username" type="text" value="${pt.so_dien_thoai || ''}" placeholder="Số điện thoại hoặc tên đăng nhập"
@@ -1482,7 +1482,7 @@ window.GymApp.pages['members-list'] = {
                   </button>
                 </div>
               </div>`
-          }
+      }
         </div>
       </div>
     `);
@@ -1522,7 +1522,7 @@ window.GymApp.pages['members-list'] = {
     try {
       const res = await window.GymApp.api.get(`/trainers/${id}`);
       pt = res?.data || null;
-    } catch (_) {}
+    } catch (_) { }
     if (!pt) {
       pt = (window.GymApp.data.pts || []).find(x => x.id === id);
     }
@@ -1614,47 +1614,110 @@ window.GymApp.pages['members-list'] = {
     const self = this;
     document.getElementById('gym-filter-modal')?.remove();
 
-    const packages = [...new Set(window.GymApp.data.members.map(m => m.package))];
+    // Lấy danh sách gói tập thực tế đang kích hoạt từ danh sách hội viên
+    const packages = [...new Set(window.GymApp.data.members.map(m => m.ten_goi_tap).filter(Boolean))];
 
     const radioGroup = (name, options, currentVal) =>
       options.map(([v, l]) => `
-        <label class="flex items-center gap-compact cursor-pointer py-xs">
+        <label class="flex items-center gap-compact cursor-pointer py-xs px-compact rounded-lg hover:bg-surface-container-low transition-colors">
           <input type="radio" name="${name}" value="${v}" style="accent-color:#1D9336;width:16px;height:16px;" ${currentVal === v ? 'checked' : ''} />
-          <span class="text-body-md text-on-surface" style="font-size:13px;">${l}</span>
+          <span class="text-body-md text-on-surface font-medium" style="font-size:13px;">${l}</span>
         </label>
       `).join('');
 
     const overlay = document.createElement('div');
     overlay.id = 'gym-filter-modal';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:9100;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);padding:20px;';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9100;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);padding:20px;';
 
     overlay.innerHTML = `
-      <div class="bg-surface-container-lowest rounded-2xl shadow-xl" style="width:360px;max-width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 25px 60px rgba(0,0,0,0.35);">
-        <div class="flex items-center justify-between px-loose py-standard border-b border-outline-variant">
-          <h3 class="text-on-surface font-bold" style="font-size:16px;">Bộ lọc — Hội viên</h3>
-          <button id="close-filter-modal" class="material-symbols-outlined text-on-surface-variant hover:text-on-surface text-xl p-atom rounded hover:bg-surface-container transition-colors" style="background:transparent;border:none;cursor:pointer;">close</button>
-        </div>
-        <div class="px-loose py-standard border-b border-outline-variant">
-          <h4 class="text-on-surface font-bold mb-compact" style="font-size:14px;">Gói tập</h4>
-          <div class="grid grid-cols-2 gap-xs">
-            ${radioGroup('f-pkg', [['', 'Tất cả'], ...packages.map(p => [p, p])], self._filterState.pkg)}
+      <div class="modal-card bg-surface-container-lowest rounded-2xl shadow-xl flex flex-col" style="width:420px;max-width:100%;max-height:88vh;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,0.35);">
+        <!-- Header -->
+        <div class="flex items-center justify-between px-loose py-standard border-b border-outline-variant flex-shrink-0" style="background:linear-gradient(135deg, #1a5e2a, #1D9336);">
+          <div class="flex items-center gap-compact">
+            <span class="material-symbols-outlined text-white text-lg">tune</span>
+            <h3 class="text-white font-bold" style="font-size:16px;">Bộ lọc dữ liệu — Hội viên</h3>
           </div>
+          <button id="close-filter-modal" class="material-symbols-outlined text-white/80 hover:text-white text-xl p-atom rounded hover:bg-white/10 transition-colors" style="background:transparent;border:none;cursor:pointer;">close</button>
         </div>
-        <div class="px-loose py-standard border-b border-outline-variant">
-          <h4 class="text-on-surface font-bold mb-compact" style="font-size:14px;">Trạng thái</h4>
-          <div class="grid grid-cols-2 gap-xs">
-            ${radioGroup('f-status', [['', 'Tất cả'], ['active', 'Đang hoạt động'], ['inactive', 'Không hoạt động'], ['expired', 'Hết hạn']], self._filterState.status)}
+
+        <!-- Body -->
+        <div class="overflow-y-auto flex-1 px-loose py-standard flex flex-col gap-standard">
+          
+          <!-- Trạng thái -->
+          <div class="border-b border-outline-variant/60 pb-standard">
+            <div class="flex items-center gap-xs mb-compact">
+              <span class="material-symbols-outlined text-brand-primary text-base">donut_large</span>
+              <h4 class="text-on-surface font-bold text-body-sm uppercase tracking-wider">Trạng thái hội viên</h4>
+            </div>
+            <div class="grid grid-cols-2 gap-xs bg-surface-container-lowest p-compact rounded-xl border border-outline-variant/40">
+              ${radioGroup('f-status', [
+                ['', 'Tất cả'],
+                ['con_han', 'Còn hạn'],
+                ['sap_het_han', 'Sắp hết hạn'],
+                ['het_han', 'Đã hết hạn'],
+                ['chua_dang_ky', 'Chưa đăng ký']
+              ], self._filterState.status)}
+            </div>
           </div>
-        </div>
-        <div class="px-loose py-standard border-b border-outline-variant">
-          <h4 class="text-on-surface font-bold mb-compact" style="font-size:14px;">Giới tính</h4>
-          <div class="flex gap-loose">
-            ${radioGroup('f-gender', [['', 'Tất cả'], ['Nam', 'Nam'], ['Nữ', 'Nữ']], self._filterState.gender)}
+
+          <!-- Gói tập -->
+          <div class="border-b border-outline-variant/60 pb-standard">
+            <div class="flex items-center gap-xs mb-compact">
+              <span class="material-symbols-outlined text-brand-primary text-base">card_membership</span>
+              <h4 class="text-on-surface font-bold text-body-sm uppercase tracking-wider">Gói tập kích hoạt</h4>
+            </div>
+            <div class="grid grid-cols-2 gap-xs bg-surface-container-lowest p-compact rounded-xl border border-outline-variant/40 max-h-40 overflow-y-auto">
+              ${radioGroup('f-pkg', [['', 'Tất cả'], ...packages.map(p => [p, p])], self._filterState.pkg)}
+            </div>
           </div>
+
+          <!-- Dịch vụ PT -->
+          <div class="border-b border-outline-variant/60 pb-standard">
+            <div class="flex items-center gap-xs mb-compact">
+              <span class="material-symbols-outlined text-brand-primary text-base">sports_gymnastics</span>
+              <h4 class="text-on-surface font-bold text-body-sm uppercase tracking-wider">Dịch vụ Huấn luyện viên</h4>
+            </div>
+            <div class="grid grid-cols-2 gap-xs bg-surface-container-lowest p-compact rounded-xl border border-outline-variant/40">
+              ${radioGroup('f-hasPt', [
+                ['', 'Tất cả'],
+                ['yes', 'Đang có PT'],
+                ['no', 'Tự tập (Không PT)']
+              ], self._filterState.hasPt)}
+            </div>
+          </div>
+
+          <!-- Check-in hôm nay -->
+          <div class="border-b border-outline-variant/60 pb-standard">
+            <div class="flex items-center gap-xs mb-compact">
+              <span class="material-symbols-outlined text-brand-primary text-base">how_to_reg</span>
+              <h4 class="text-on-surface font-bold text-body-sm uppercase tracking-wider">Check-in hôm nay</h4>
+            </div>
+            <div class="grid grid-cols-2 gap-xs bg-surface-container-lowest p-compact rounded-xl border border-outline-variant/40">
+              ${radioGroup('f-checkinToday', [
+                ['', 'Tất cả'],
+                ['yes', 'Đã Check-in'],
+                ['no', 'Chưa Check-in']
+              ], self._filterState.checkinToday)}
+            </div>
+          </div>
+
+          <!-- Giới tính -->
+          <div>
+            <div class="flex items-center gap-xs mb-compact">
+              <span class="material-symbols-outlined text-brand-primary text-base">wc</span>
+              <h4 class="text-on-surface font-bold text-body-sm uppercase tracking-wider">Giới tính</h4>
+            </div>
+            <div class="flex gap-standard bg-surface-container-lowest p-compact rounded-xl border border-outline-variant/40">
+              ${radioGroup('f-gender', [['', 'Tất cả'], ['Nam', 'Nam'], ['Nữ', 'Nữ']], self._filterState.gender)}
+            </div>
+          </div>
+
         </div>
-        <div class="flex gap-standard px-loose py-standard">
-          <button id="filter-reset-btn" class="flex-1 py-compact rounded-xl border border-outline-variant text-on-surface-variant font-bold hover:bg-surface-container transition-colors text-body-md">Đặt lại</button>
-          <button id="filter-apply-btn" class="flex-1 py-compact rounded-xl font-bold text-white text-body-md transition-all hover:opacity-90" style="background:#1D9336;">Áp dụng</button>
+
+        <!-- Footer -->
+        <div class="flex gap-standard px-loose py-standard border-t border-outline-variant bg-surface-container-lowest flex-shrink-0">
+          <button id="filter-reset-btn" class="flex-1 py-compact rounded-xl border border-outline-variant text-on-surface-variant font-bold hover:bg-surface-container transition-colors text-body-md cursor-pointer">Đặt lại</button>
+          <button id="filter-apply-btn" class="flex-1 py-compact rounded-xl font-bold text-white text-body-md transition-all hover:opacity-90 cursor-pointer shadow-md" style="background:#1D9336;">Áp dụng bộ lọc</button>
         </div>
       </div>
     `;
@@ -1676,6 +1739,8 @@ window.GymApp.pages['members-list'] = {
       self._filterState.pkg = overlay.querySelector('input[name="f-pkg"]:checked')?.value || '';
       self._filterState.status = overlay.querySelector('input[name="f-status"]:checked')?.value || '';
       self._filterState.gender = overlay.querySelector('input[name="f-gender"]:checked')?.value || '';
+      self._filterState.hasPt = overlay.querySelector('input[name="f-hasPt"]:checked')?.value || '';
+      self._filterState.checkinToday = overlay.querySelector('input[name="f-checkinToday"]:checked')?.value || '';
       self._memberPage = 1;
       self._applyMemberFilter();
       close();
@@ -1814,7 +1879,11 @@ window.GymApp.pages['members-list'] = {
 
   // ===== UI HELPERS =====
   _updateFilterUI: function () {
-    const count = (this._filterState.status ? 1 : 0) + (this._filterState.pkg ? 1 : 0) + (this._filterState.gender ? 1 : 0);
+    const count = (this._filterState.status ? 1 : 0) +
+                  (this._filterState.pkg ? 1 : 0) +
+                  (this._filterState.gender ? 1 : 0) +
+                  (this._filterState.hasPt ? 1 : 0) +
+                  (this._filterState.checkinToday ? 1 : 0);
     const badge = document.getElementById('filter-badge');
     const showAll = document.getElementById('btn-show-all');
     if (badge) { badge.textContent = count; badge.style.display = count > 0 ? 'flex' : 'none'; }
@@ -1848,12 +1917,27 @@ window.GymApp.pages['members-list'] = {
   // ===== FILTER LOGIC =====
   _applyMemberFilter: function () {
     const q = document.getElementById('member-search')?.value.toLowerCase() || '';
-    const { status, pkg, gender } = this._filterState;
+    const { status, pkg, gender, hasPt, checkinToday } = this._filterState;
     const rawMembers = window.GymApp.data.members;
     const members = Array.isArray(rawMembers) ? rawMembers : [];
     this._memberFiltered = members.filter(m => {
       const matchQ = !q || (m.ho_ten || '').toLowerCase().includes(q) || (m.ma_ho_so || '').toLowerCase().includes(q) || (m.so_dien_thoai || '').includes(q);
-      return matchQ && (!status || m.trang_thai === status) && (!pkg || m.ten_goi_tap === pkg) && (!gender || m.gioi_tinh === gender);
+      const matchStatus = !status || m.trang_thai === status;
+      const matchPkg = !pkg || m.ten_goi_tap === pkg;
+      
+      // Giới tính ánh xạ linh hoạt hỗ trợ cả DB tiếng Anh và Việt
+      let mGender = m.gioi_tinh;
+      if (mGender === 'male' || mGender === 'nam') mGender = 'Nam';
+      if (mGender === 'female' || mGender === 'nu') mGender = 'Nữ';
+      const matchGender = !gender || mGender === gender;
+
+      // Đang có PT
+      const matchHasPt = !hasPt || (hasPt === 'yes' ? (m.co_pt > 0) : (m.co_pt == 0));
+
+      // Check-in hôm nay
+      const matchCheckinToday = !checkinToday || (checkinToday === 'yes' ? (m.da_check_in_hom_nay == 1) : (!m.da_check_in_hom_nay));
+
+      return matchQ && matchStatus && matchPkg && matchGender && matchHasPt && matchCheckinToday;
     });
     this._memberPage = 1;
     this._refreshMemberTable();
@@ -1944,7 +2028,7 @@ window.GymApp.pages['members-list'] = {
     try {
       const res = await window.GymApp.api.get(`/members/${id}`);
       m = res?.data || null;
-    } catch (_) {}
+    } catch (_) { }
     if (!m) {
       m = (window.GymApp.data.members || []).find(x => x.id == id);
     }
@@ -1977,7 +2061,7 @@ window.GymApp.pages['members-list'] = {
         </div>
       </div>
     `;
-    
+
     overlay.innerHTML = `
       <div style="border-radius:24px;width:100%;max-width:560px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,0.4);background:var(--md-sys-color-surface-container-lowest,#fff);position:relative;">
         
@@ -2015,11 +2099,11 @@ window.GymApp.pages['members-list'] = {
             ${field('badge', 'Họ và tên', 'ho_ten', 'text', m.ho_ten, true, true)}
             ${field('cake', 'Ngày sinh', 'ngay_sinh', 'date', m.ngay_sinh, false, false)}
             ${selectField('wc', 'Giới tính', 'gioi_tinh', [
-              {v:'', l:'— Chọn giới tính —'},
-              {v:'nam', l:'Nam'},
-              {v:'nu', l:'Nữ'},
-              {v:'khac', l:'Khác'}
-            ], m.gioi_tinh === 'male' ? 'nam' : (m.gioi_tinh === 'female' ? 'nu' : m.gioi_tinh), false)}
+      { v: '', l: '— Chọn giới tính —' },
+      { v: 'nam', l: 'Nam' },
+      { v: 'nu', l: 'Nữ' },
+      { v: 'khac', l: 'Khác' }
+    ], m.gioi_tinh === 'male' ? 'nam' : (m.gioi_tinh === 'female' ? 'nu' : m.gioi_tinh), false)}
           </div>
 
           <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
@@ -2197,7 +2281,7 @@ window.GymApp.pages['members-list'] = {
 
     // --- Hội viên buttons ---
     document.getElementById('btn-view-all-members')?.addEventListener('click', () => {
-      self._filterState = { status: '', pkg: '', gender: '' };
+      self._filterState = { status: '', pkg: '', gender: '', hasPt: '', checkinToday: '' };
       const s = document.getElementById('member-search');
       if (s) s.value = '';
       self._memberFiltered = [...window.GymApp.data.members];
@@ -2208,7 +2292,7 @@ window.GymApp.pages['members-list'] = {
     });
 
     document.getElementById('btn-show-all')?.addEventListener('click', () => {
-      self._filterState = { status: '', pkg: '', gender: '' };
+      self._filterState = { status: '', pkg: '', gender: '', hasPt: '', checkinToday: '' };
       const s = document.getElementById('member-search');
       if (s) s.value = '';
       self._memberFiltered = [...window.GymApp.data.members];

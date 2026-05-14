@@ -202,6 +202,9 @@
 
   // ── Navigate ───────────────────────────────────────────────
   function navigate(pageName) {
+    if (window.GymApp.currentPage && pages[window.GymApp.currentPage]?.destroy) {
+      pages[window.GymApp.currentPage].destroy();
+    }
     const page = pages[pageName];
     if (!page) return;
 
@@ -226,6 +229,9 @@
 
   // ── Dashboard ──────────────────────────────────────────────
   pages['dashboard'] = {
+    _refreshTimer: null,
+    _TTL_PHUT: 5,
+
     render() {
       const schedules = window.GymApp.data.ptSchedules || [];
       const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
@@ -269,68 +275,166 @@
             `).join('')}
           </div>
 
-          <!-- Lịch hôm nay -->
-          <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
-            <div class="section-header px-loose py-standard border-b border-outline-variant flex items-center gap-compact">
-              <div class="icon-bg icon-bg-green">
-                <span class="material-symbols-outlined text-brand-primary text-lg" style="font-variation-settings:'FILL' 1">today</span>
+          <!-- Main Layout Grid -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-loose">
+            
+            <!-- Cột trái/giữa: Lịch hôm nay & Danh sách học viên -->
+            <div class="lg:col-span-2 flex flex-col gap-loose">
+              <!-- Lịch hôm nay -->
+              <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
+                <div class="section-header px-loose py-standard border-b border-outline-variant flex items-center gap-compact">
+                  <div class="icon-bg icon-bg-green">
+                    <span class="material-symbols-outlined text-brand-primary text-lg" style="font-variation-settings:'FILL' 1">today</span>
+                  </div>
+                  <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface">Lịch tập hôm nay</h3>
+                  <span class="ml-auto bg-brand-primary text-white px-compact py-xs rounded-full text-label-xs font-bold">${todaySchedules.length} buổi</span>
+                </div>
+                <div class="p-loose">
+                  ${todaySchedules.length === 0
+              ? `<div class="py-margin text-center text-on-surface-variant">
+                         <span class="material-symbols-outlined text-4xl text-outline block mb-standard">event_available</span>
+                         <p class="font-bold">Không có lịch tập hôm nay</p>
+                       </div>`
+              : `<div class="flex flex-col gap-standard">
+                        ${todaySchedules.map(s => `
+                          <div class="flex items-center gap-compact p-standard rounded-xl bg-surface-container border border-outline-variant">
+                            ${window.GymApp.avatarImg(s.avatar_hoi_vien, s.ten_hoi_vien, 'sm')}
+                            <div class="flex-1 min-w-0">
+                              <p class="font-bold text-on-surface text-body-md truncate">${s.ten_hoi_vien || '—'}</p>
+                              <p class="text-on-surface-variant text-body-sm">${s.gio_bat_dau} — ${s.gio_ket_thuc} · ${s.loai_buoi === 'nhom' ? 'Nhóm' : 'Cá nhân'}</p>
+                            </div>
+                            ${window.GymApp.statusBadge(s.trang_thai)}
+                          </div>
+                        `).join('')}
+                       </div>`
+            }
+                </div>
               </div>
-              <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface">Lịch tập hôm nay</h3>
-              <span class="ml-auto bg-brand-primary text-white px-compact py-xs rounded-full text-label-xs font-bold">${todaySchedules.length} buổi</span>
-            </div>
-            <div class="p-loose">
-              ${todaySchedules.length === 0
-          ? `<div class="py-margin text-center text-on-surface-variant">
-                     <span class="material-symbols-outlined text-4xl text-outline block mb-standard">event_available</span>
-                     <p class="font-bold">Không có lịch tập hôm nay</p>
-                   </div>`
-          : `<div class="flex flex-col gap-standard">
-                    ${todaySchedules.map(s => `
-                      <div class="flex items-center gap-compact p-standard rounded-xl bg-surface-container border border-outline-variant">
-                        ${window.GymApp.avatarImg(s.avatar_hoi_vien, s.ten_hoi_vien, 'sm')}
-                        <div class="flex-1 min-w-0">
-                          <p class="font-bold text-on-surface text-body-md truncate">${s.ten_hoi_vien || '—'}</p>
-                          <p class="text-on-surface-variant text-body-sm">${s.gio_bat_dau} — ${s.gio_ket_thuc} · ${s.loai_buoi === 'nhom' ? 'Nhóm' : 'Cá nhân'}</p>
-                        </div>
-                        ${window.GymApp.statusBadge(s.trang_thai)}
-                      </div>
-                    `).join('')}
-                   </div>`
-        }
-            </div>
-          </div>
 
-          <!-- Danh sách học viên -->
-          <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
-            <div class="section-header px-loose py-standard border-b border-outline-variant flex items-center gap-compact">
-              <div class="icon-bg icon-bg-blue">
-                <span class="material-symbols-outlined text-secondary text-lg" style="font-variation-settings:'FILL' 1">group</span>
+              <!-- Danh sách học viên -->
+              <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
+                <div class="section-header px-loose py-standard border-b border-outline-variant flex items-center gap-compact">
+                  <div class="icon-bg icon-bg-blue">
+                    <span class="material-symbols-outlined text-secondary text-lg" style="font-variation-settings:'FILL' 1">group</span>
+                  </div>
+                  <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface">Học viên của tôi</h3>
+                  <span class="ml-auto bg-secondary text-white px-compact py-xs rounded-full text-label-xs font-bold">${students.length} HV</span>
+                </div>
+                <div class="p-loose grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-loose">
+                  ${students.length === 0
+              ? `<div class="col-span-3 py-margin text-center text-on-surface-variant">
+                         <span class="material-symbols-outlined text-4xl text-outline block mb-standard">person_off</span>
+                         Chưa có học viên
+                       </div>`
+              : students.map(sv => `
+                        <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-loose shadow-sm flex flex-col items-center gap-standard">
+                          ${window.GymApp.avatarImg(sv.avatar, sv.ten, 'lg')}
+                          <div class="text-center">
+                            <p class="font-bold text-on-surface text-body-md">${sv.ten || '—'}</p>
+                            <p class="text-on-surface-variant text-body-sm">${sv.buoi_con_lai != null ? sv.buoi_con_lai + ' buổi còn lại' : ''}</p>
+                          </div>
+                        </div>
+                      `).join('')
+            }
+                </div>
               </div>
-              <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface">Học viên của tôi</h3>
-              <span class="ml-auto bg-secondary text-white px-compact py-xs rounded-full text-label-xs font-bold">${students.length} HV</span>
             </div>
-            <div class="p-loose grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-loose">
-              ${students.length === 0
-          ? `<div class="col-span-4 py-margin text-center text-on-surface-variant">
-                     <span class="material-symbols-outlined text-4xl text-outline block mb-standard">person_off</span>
-                     Chưa có học viên
-                   </div>`
-          : students.map(sv => `
-                    <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-loose shadow-sm flex flex-col items-center gap-standard">
-                      ${window.GymApp.avatarImg(sv.avatar, sv.ten, 'lg')}
-                      <div class="text-center">
-                        <p class="font-bold text-on-surface text-body-md">${sv.ten || '—'}</p>
-                        <p class="text-on-surface-variant text-body-sm">${sv.buoi_con_lai != null ? sv.buoi_con_lai + ' buổi còn lại' : ''}</p>
-                      </div>
-                    </div>
-                  `).join('')
-        }
+
+            <!-- Cột phải: Check-in nhanh bằng QR Code -->
+            <div class="flex flex-col gap-loose">
+              <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-loose shadow-sm flex flex-col items-center justify-center text-center">
+                <div class="icon-bg icon-bg-green mb-standard" style="width:48px;height:48px;border-radius:12px">
+                  <span class="material-symbols-outlined text-brand-primary text-2xl" style="font-variation-settings:'FILL' 1">qr_code_scanner</span>
+                </div>
+                <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface mb-xs">Check-in ca làm việc</h3>
+                <p class="text-on-surface-variant text-body-sm mb-standard">Quét mã QR này tại quầy lễ tân để ghi nhận giờ vào/ra ca dạy.</p>
+                
+                <div id="qr-wrapper" class="bg-white p-standard rounded-2xl border border-outline-variant shadow-inner mb-standard flex items-center justify-center" style="width:168px;height:168px">
+                  <div class="flex flex-col items-center gap-xs text-on-surface-variant">
+                    <span class="material-symbols-outlined text-3xl animate-pulse">qr_code_2</span>
+                    <p class="text-body-sm">Đang tạo mã...</p>
+                  </div>
+                </div>
+                
+                <p id="qr-countdown" class="text-on-surface-variant text-body-sm">Mã hết hạn sau <strong id="qr-seconds" class="text-brand-primary font-bold">—</strong> giây</p>
+                
+                <button id="btn-refresh-qr" class="mt-standard w-full border border-brand-primary text-brand-primary py-compact rounded-xl font-bold text-body-md hover:bg-brand-primary hover:text-white transition-all">
+                  Làm mới mã QR
+                </button>
+              </div>
             </div>
+
           </div>
         </div>
       `;
     },
-    init() { }
+
+    async _loadQr() {
+      try {
+        const res = await window.GymApp.api.get('/checkin/my-qr');
+        if (!res?.success) {
+          const wrapper = document.getElementById('qr-wrapper');
+          if (wrapper) wrapper.innerHTML = `<p class="text-error text-body-sm text-center">Không thể tải mã QR.</p>`;
+          return;
+        }
+
+        const { token, het_han_sau_phut } = res.data;
+        this._TTL_PHUT = het_han_sau_phut || 5;
+        const wrapper = document.getElementById('qr-wrapper');
+        if (!wrapper) return;
+        wrapper.innerHTML = '';
+
+        if (typeof QRCode !== 'undefined') {
+          new QRCode(wrapper, {
+            text: token,
+            width: 136,
+            height: 136,
+            colorDark: '#0a2e13',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.M,
+          });
+        } else {
+          wrapper.innerHTML = `<p class="text-body-sm text-on-surface-variant text-center">Lỗi tải thư viện QR.</p>`;
+        }
+
+        this._startCountdown((het_han_sau_phut || 5) * 60);
+      } catch (err) {
+        console.error('QR load error:', err);
+        const wrapper = document.getElementById('qr-wrapper');
+        if (wrapper) wrapper.innerHTML = `<p class="text-error text-body-sm text-center">Lỗi kết nối máy chủ.</p>`;
+      }
+    },
+
+    _startCountdown(seconds) {
+      clearInterval(this._refreshTimer);
+      let remaining = seconds;
+      const el = document.getElementById('qr-seconds');
+      const updateEl = () => { if (el) el.textContent = remaining; };
+      updateEl();
+
+      this._refreshTimer = setInterval(() => {
+        remaining -= 1;
+        updateEl();
+        if (remaining <= 0) {
+          clearInterval(this._refreshTimer);
+          this._loadQr();
+        }
+      }, 1000);
+    },
+
+    init() {
+      this._loadQr();
+      document.getElementById('btn-refresh-qr')?.addEventListener('click', () => {
+        clearInterval(this._refreshTimer);
+        this._loadQr();
+        window.GymApp.toast('Đang làm mới mã QR...', 'info');
+      });
+    },
+
+    destroy() {
+      clearInterval(this._refreshTimer);
+      this._refreshTimer = null;
+    }
   };
 
   // ── Lịch tập của tôi ──────────────────────────────────────

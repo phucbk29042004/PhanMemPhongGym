@@ -24,6 +24,11 @@
 
     // Render content
     document.getElementById('content-area').innerHTML = page.render();
+    
+    // Initialize datepickers
+    if (window.GymApp.initDatePickers) {
+      window.GymApp.initDatePickers(document.getElementById('content-area'));
+    }
 
     // Update nav active state
     document.querySelectorAll('[data-page]').forEach(btn => {
@@ -180,6 +185,10 @@
       </div>`;
     document.body.appendChild(overlay);
 
+    if (window.GymApp.initDatePickers) {
+      window.GymApp.initDatePickers(overlay);
+    }
+
     const close = () => overlay.remove();
     document.getElementById('close-modal').addEventListener('click', close);
     overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
@@ -211,6 +220,80 @@
 
   window.GymApp.formatCurrency = n => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
   window.GymApp.formatDate = d => d ? new Date(d).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—';
+
+  window.GymApp.localeVi = {
+    days: ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'],
+    daysShort: ['CN', 'Th 2', 'Th 3', 'Th 4', 'Th 5', 'Th 6', 'Th 7'],
+    daysMin: ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'],
+    months: ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'],
+    monthsShort: ['Th 1', 'Th 2', 'Th 3', 'Th 4', 'Th 5', 'Th 6', 'Th 7', 'Th 8', 'Th 9', 'Th 10', 'Th 11', 'Th 12'],
+    today: 'Hôm nay',
+    clear: 'Xóa',
+    dateFormat: 'yyyy-MM-dd',
+    firstDay: 1
+  };
+
+  // Air-datepicker Initializer (với cơ chế altInput ngầm đồng bộ hoàn hảo)
+  window.GymApp.initDatePickers = function (container) {
+    if (typeof AirDatepicker !== 'undefined') {
+      const inputs = container.querySelectorAll('input[type="date"]:not([data-airpicker])');
+      inputs.forEach(originalInput => {
+        originalInput.setAttribute('data-airpicker', 'true');
+        originalInput.style.display = 'none';
+
+        const visibleInput = document.createElement('input');
+        visibleInput.type = 'text';
+        visibleInput.className = originalInput.className;
+        visibleInput.placeholder = 'dd/mm/yyyy';
+        originalInput.parentNode.insertBefore(visibleInput, originalInput);
+
+        const baseDescriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+
+        const adp = new AirDatepicker(visibleInput, {
+          locale: window.GymApp.localeVi,
+          dateFormat: 'dd/MM/yyyy',
+          autoClose: true,
+          onSelect: function ({ date }) {
+            if (date && !Array.isArray(date)) {
+              const y = date.getFullYear();
+              const m = String(date.getMonth() + 1).padStart(2, '0');
+              const d = String(date.getDate()).padStart(2, '0');
+              baseDescriptor.set.call(originalInput, `${y}-${m}-${d}`);
+              originalInput.dispatchEvent(new Event('change', { bubbles: true }));
+            } else {
+              baseDescriptor.set.call(originalInput, '');
+              originalInput.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+          }
+        });
+
+        // Định nghĩa custom setter/getter để đồng bộ ngược nếu code JS gán originalInput.value
+        Object.defineProperty(originalInput, 'value', {
+          get: function() {
+            return baseDescriptor.get.call(originalInput);
+          },
+          set: function(val) {
+            baseDescriptor.set.call(originalInput, val);
+            if (val) {
+              const parts = val.split('-');
+              if (parts.length === 3) {
+                adp.selectDate(new Date(parts[0], parts[1] - 1, parts[2]), { silent: true });
+              }
+            } else { adp.clear({ silent: true }); }
+          }
+        });
+
+        // Tự động prefill dữ liệu ban đầu
+        const initialVal = baseDescriptor.get.call(originalInput);
+        if (initialVal) {
+          const parts = initialVal.split('-');
+          if (parts.length === 3) {
+            adp.selectDate(new Date(parts[0], parts[1] - 1, parts[2]), { silent: true });
+          }
+        }
+      });
+    }
+  };
 
   window.GymApp.formatEnumLabel = function (value) {
     const map = {
@@ -401,6 +484,27 @@
 
     // 3. Áp dụng Theme
     _applyTheme(localStorage.getItem('gym-theme') || 'light');
+
+    // Khởi tạo Flatpickr cho toàn trang và auto-init
+    if (window.GymApp.initDatePickers) {
+      window.GymApp.initDatePickers(document.body);
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach(mutation => {
+          if (mutation.addedNodes.length) {
+            mutation.addedNodes.forEach(node => {
+              if (node.nodeType === 1) { // ELEMENT_NODE
+                if (node.tagName === 'INPUT' && node.type === 'date') {
+                  window.GymApp.initDatePickers(node.parentElement);
+                } else if (node.querySelectorAll) {
+                  window.GymApp.initDatePickers(node);
+                }
+              }
+            });
+          }
+        });
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    }
 
     // 4. Các sự kiện cố định
     document.getElementById('theme-toggle')?.addEventListener('click', () => {
@@ -929,10 +1033,14 @@
       _dropdownOpen = false;
     }
 
-    // Xóa 1 thông báo: đánh dấu đã đọc phía DB rồi fade-out DOM
-    async function _deleteOne(id, itemEl) {
+    // Xóa 1 thông báo khỏi DB và DOM
+    async function _deleteOne(id, itemEl, isActualDelete = true) {
       try {
-        await window.GymApp.api.patch(`/notifications/${id}/read`);
+        if (isActualDelete) {
+          await window.GymApp.api.delete(`/notifications/${id}`);
+        } else {
+          await window.GymApp.api.patch(`/notifications/${id}/read`);
+        }
       } catch (_) {}
       // Fade-out mượt
       itemEl.style.transition = 'opacity .25s, max-height .3s, margin .3s, padding .3s';
@@ -957,10 +1065,10 @@
       }, 350);
     }
 
-    // Xóa / đánh dấu tất cả đã đọc
+    // Xóa tất cả thông báo
     async function _markAllRead() {
       try {
-        await window.GymApp.api.patch('/notifications/read-all');
+        await window.GymApp.api.delete('/notifications');
       } catch (_) {}
       const listEl = document.getElementById('notif-list');
       const items  = listEl?.querySelectorAll('.notif-item') || [];
@@ -1034,16 +1142,16 @@
           e.stopPropagation();
           const item = delBtn.closest('.notif-item');
           const id   = delBtn.dataset.notifId;
-          if (item && id) _deleteOne(id, item);
+          if (item && id) _deleteOne(id, item, true); // actual delete
           return;
         }
-        // Click vào body item → đánh dấu đã đọc (không xóa DOM)
+        // Click vào body item → đánh dấu đã đọc
         const body = e.target.closest('.notif-body');
         if (body) {
           const item  = body.closest('.notif-item');
           const id    = item?.dataset.notifId;
           const daDoc = item?.dataset.daDoc;
-          if (id && daDoc === '0') _deleteOne(id, item);
+          if (id && daDoc === '0') _deleteOne(id, item, false); // mark read
         }
       });
 
