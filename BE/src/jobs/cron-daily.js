@@ -134,7 +134,7 @@ function checkPtCheckinWarning() {
   const now = new Date();
   // Tìm buổi tập bắt đầu trong 25–35 phút tới (khoảng ±5 phút quanh mốc 30 phút)
   const fromTime = new Date(now.getTime() + 25 * 60 * 1000).toTimeString().slice(0, 5); // HH:MM
-  const toTime   = new Date(now.getTime() + 35 * 60 * 1000).toTimeString().slice(0, 5);
+  const toTime = new Date(now.getTime() + 35 * 60 * 1000).toTimeString().slice(0, 5);
 
   const upcoming = db.prepare(`
     SELECT lt.id, lt.dang_ky_pt_id, lt.gio_bat_dau, h.ho_ten, h.id AS ho_so_id
