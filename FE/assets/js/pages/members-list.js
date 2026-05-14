@@ -61,7 +61,7 @@ window.GymApp.pages['members-list'] = {
                   <span class="material-symbols-outlined text-sm">filter_alt_off</span>Xóa lọc
                 </button>
                 <button id="btn-filter" class="relative flex items-center gap-xs px-standard py-compact rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all flex-shrink-0">
-                  <span class="material-symbols-outlined text-sm">tune</span>
+                  <span class="material-symbols-outlined text-sm">filter_alt</span>
                   <span class="text-body-sm font-bold">Lọc dữ liệu</span>
                   <span id="filter-badge" style="display:none;position:absolute;top:-6px;right:-6px;width:20px;height:20px;background:#1D9336;color:#fff;border-radius:50%;font-size:10px;align-items:center;justify-content:center;font-weight:700;box-shadow:0 2px 4px rgba(29,147,54,0.3)"></span>
                 </button>
@@ -87,7 +87,7 @@ window.GymApp.pages['members-list'] = {
                   <span class="material-symbols-outlined text-sm">filter_alt_off</span>Xóa lọc
                 </button>
                 <button id="btn-filter-pt" class="relative flex items-center gap-xs px-standard py-compact rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all flex-shrink-0">
-                  <span class="material-symbols-outlined text-sm">tune</span>
+                  <span class="material-symbols-outlined text-sm">filter_alt</span>
                   <span class="text-body-sm font-bold">Lọc</span>
                   <span id="pt-filter-badge" style="display:none;position:absolute;top:-6px;right:-6px;width:20px;height:20px;background:#1D9336;color:#fff;border-radius:50%;font-size:10px;align-items:center;justify-content:center;font-weight:700;box-shadow:0 2px 4px rgba(29,147,54,0.3)"></span>
                 </button>
@@ -1634,7 +1634,7 @@ window.GymApp.pages['members-list'] = {
         <!-- Header -->
         <div class="flex items-center justify-between px-loose py-standard border-b border-outline-variant flex-shrink-0" style="background:linear-gradient(135deg, #1a5e2a, #1D9336);">
           <div class="flex items-center gap-compact">
-            <span class="material-symbols-outlined text-white text-lg">tune</span>
+            <span class="material-symbols-outlined text-white text-lg">filter_alt</span>
             <h3 class="text-white font-bold" style="font-size:16px;">Bộ lọc dữ liệu — Hội viên</h3>
           </div>
           <button id="close-filter-modal" class="material-symbols-outlined text-white/80 hover:text-white text-xl p-atom rounded hover:bg-white/10 transition-colors" style="background:transparent;border:none;cursor:pointer;">close</button>

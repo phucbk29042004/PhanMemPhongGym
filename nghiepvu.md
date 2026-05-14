@@ -1,10 +1,8 @@
 # 📋 NGHIỆP VỤ HỆ THỐNG — PARADISE GYM
 
 > **Tài liệu này mô tả chi tiết nghiệp vụ của từng vai trò người dùng trong hệ thống Paradise GYM**
-> Được phân tích dựa trên file: *Hướng dẫn sử dụng phần mềm GYM Web*
-
 ---
-                                                                                            
+
 ## 👑 1. QUẢN TRỊ VIÊN (ADMIN)
 
 Người có **quyền cao nhất**, truy cập và thao tác được toàn bộ hệ thống.

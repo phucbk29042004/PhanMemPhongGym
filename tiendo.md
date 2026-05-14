@@ -8,12 +8,22 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
-**✅ Chuẩn hóa & nâng cấp hệ thống bộ lọc dữ liệu Hội viên (Admin Portal)** — Viết lại modal lọc đa tiêu chí chuẩn M3 Premium Dashboard, đồng bộ hoàn hảo các trạng thái thực tế từ Backend và tự động lấy danh sách gói tập động, hỗ trợ tra cứu chéo theo Dịch vụ PT và Check-in trong ngày.
+**✅ Tối giản hóa thanh Header trên Web & Chuẩn hóa icon phễu lọc** — Ẩn các nhãn chữ hiển thị ở khu vực tài khoản trên header của Admin và PT portal, giữ nguyên nhãn nút "Quét QR", đồng bộ hóa toàn bộ icon lọc sang dạng chiếc phễu chuyên nghiệp (`filter_alt`).
+
 
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
+
+### 14/05/2026 17:15 — Tối Giản Hóa Thanh Header Web & Chuẩn Hóa Icon Phễu Lọc
+- **Loại**: Cải thiện giao diện (Frontend)
+- **File chỉnh sửa**:
+  - `FE/index.html` — Ẩn các nhãn chữ hiển thị của tài khoản Admin góc phải, giữ nguyên dòng chữ "Quét QR" theo đúng yêu cầu bổ sung của người dùng.
+  - `FE/pt-portal.html` — Ẩn các nhãn chữ hiển thị của tài khoản PT góc phải thanh Header, tối ưu không gian hiển thị thuần khối tròn avatar sang trọng.
+  - `FE/assets/js/pages/members-list.js` — Thay thế toàn bộ icon `tune` tại các nút Lọc dữ liệu và header của Modal Lọc sang icon chiếc phễu chuyên nghiệp `filter_alt`.
+- **Mô tả**: Chuyển đổi thiết kế khu vực người dùng trên thanh Header sang dạng thuần đồ họa (icon-only dashboard) giúp không gian thanh thoát hơn; chuẩn hóa toàn diện nhận diện tính năng lọc dữ liệu với icon chiếc phễu đồng nhất.
+- **Kết quả**: Thành công
 
 ### 14/05/2026 17:09 — Chuẩn Hóa & Nâng Cấp Giao Diện Bộ Lọc Dữ Liệu Hội Viên
 - **Loại**: Cải thiện tính năng & giao diện (Frontend)
