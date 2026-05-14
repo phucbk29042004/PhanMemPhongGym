@@ -19,7 +19,7 @@ const SQL_PATH = path.join(__dirname, '..', 'paradise_gym_v2.sql');
 // Tạo thư mục database nếu chưa có
 if (!fs.existsSync(DB_DIR)) {
   fs.mkdirSync(DB_DIR, { recursive: true });
-  console.log('✅ Đã tạo thư mục database/');
+  console.log('Đã tạo thư mục database/');
 }
 
 // Kiểm tra file SQL tồn tại
@@ -43,7 +43,7 @@ try {
 
   // Thực thi schema
   db.exec(schemaSql);
-  console.log('✅ Đã tạo xong bảng, view, trigger, index');
+  console.log('Đã tạo xong bảng, view, trigger, index');
 
   // Tạo bcrypt hash thật cho mật khẩu "123456"
   const password = '123456';

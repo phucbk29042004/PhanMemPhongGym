@@ -128,12 +128,11 @@ export const createMember = async (req, res) => {
   } = req.body;
 
   if (!ho_ten) return error(res, 'Họ tên là bắt buộc.', 400);
-  const loai = loai_ho_so || 'hoi_vien'; // Mặc định là hội viên
+  const loai = loai_ho_so || 'hoi_vien';
 
   let avatar_url = null;
   let cloudinary_public_id = null;
 
-  // Upload ảnh nếu có
   if (req.file) {
     if (!isCloudinaryReady) {
       console.error('❌ Thất bại: Cố gắng upload ảnh nhưng Cloudinary chưa được cấu hình trong .env');
@@ -148,7 +147,6 @@ export const createMember = async (req, res) => {
     }
   }
 
-  // Tạo mã hồ sơ tự động theo loại: HV, PT, NV
   const prefixes = { 'hoi_vien': 'HV', 'pt': 'PT', 'nhan_vien': 'NV', 'le_tan': 'LT' };
   const prefix = prefixes[loai] || 'HS';
 
@@ -181,7 +179,6 @@ export const createMember = async (req, res) => {
   const newMember = db.prepare('SELECT * FROM ho_so WHERE id = ?').get(result.lastInsertRowid);
   ghi_audit_log(req, 'CREATE', 'ho_so', result.lastInsertRowid, null, { ho_ten, loai_ho_so: loai }, `Thêm hồ sơ ${loai} mới`);
 
-  // Chỉ sinh thông báo khi tạo hội viên mới (lễ tân tự tạo nên chỉ báo cho admin)
   if (loai === 'hoi_vien') {
     createNotification(
       'ho_so_moi',
@@ -253,10 +250,8 @@ export const updateAvatar = async (req, res) => {
     if (!isCloudinaryReady) {
       return error(res, 'Hệ thống chưa cấu hình lưu trữ ảnh (Cloudinary).', 500);
     }
-    // Xóa ảnh cũ trên Cloudinary
     if (member.cloudinary_public_id) await deleteImage(member.cloudinary_public_id);
 
-    // Upload ảnh mới
     const result = await uploadImage(req.file.buffer, 'paradise-gym/profiles', member.ma_ho_so);
     db.prepare(`
       UPDATE ho_so SET avatar_url = ?, cloudinary_public_id = ?, nguoi_cap_nhat_id = ? WHERE id = ?
@@ -270,7 +265,6 @@ export const updateAvatar = async (req, res) => {
 };
 
 // ── DELETE /api/members/:id ───────────────────────────────
-// Soft Delete (KHÔNG xóa thật theo nghiệp vụ)
 export const deleteMember = (req, res) => {
   const { id } = req.params;
   const { ly_do } = req.body;
@@ -296,7 +290,6 @@ export const deleteMember = (req, res) => {
 };
 
 // ── GET /api/members/check-duplicate ─────────────────────
-// Kiểm tra SĐT hoặc CCCD đã tồn tại chưa
 export const checkDuplicate = (req, res) => {
   const { field, value, exclude_id } = req.query;
   const allowed = ['so_dien_thoai', 'cccd', 'email'];
@@ -312,28 +305,87 @@ export const checkDuplicate = (req, res) => {
 };
 
 // ── GET /api/members/expiring ─────────────────────────────
+// 🔧 ĐÃ SỬA: dùng query trực tiếp thay vì view để hỗ trợ days động
+// và trả về đủ fields mà FE cần (ten_goi_tap, ngay_het_han, so_dien_thoai)
 export const getExpiringMembers = (req, res) => {
-  const { days = 7 } = req.query;
+  const days = parseInt(req.query.days) || 30; // ← mặc định 30 ngày cho trang danh sách
+
   const rows = db.prepare(`
-    SELECT * FROM v_trang_thai_hoi_vien
-    WHERE trang_thai_mau = 'sap_het_han'
-    ORDER BY den_ngay_xa_nhat ASC
-  `).all();
+    SELECT
+      h.id, h.ma_ho_so, h.ho_ten, h.so_dien_thoai, h.email, h.avatar_url,
+      'sap_het_han' AS trang_thai,
+      (SELECT MAX(d_ngay) FROM (
+         SELECT den_ngay as d_ngay FROM dang_ky_goi_tap
+         WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+         UNION ALL
+         SELECT den_ngay as d_ngay FROM dang_ky_pt
+         WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+      )) AS ngay_het_han,
+      (SELECT gt.ten_goi FROM dang_ky_goi_tap dk
+       JOIN goi_tap gt ON gt.id = dk.goi_tap_id
+       WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong'
+       ORDER BY dk.den_ngay DESC LIMIT 1) AS ten_goi_tap
+    FROM ho_so h
+    WHERE h.loai_ho_so = 'hoi_vien'
+      AND h.is_deleted = 0
+      AND (
+        SELECT MAX(d_ngay) FROM (
+          SELECT den_ngay as d_ngay FROM dang_ky_goi_tap
+          WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+          UNION ALL
+          SELECT den_ngay as d_ngay FROM dang_ky_pt
+          WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+        )
+      ) BETWEEN date('now','localtime') AND date('now','localtime', '+' || ? || ' days')
+    ORDER BY ngay_het_han ASC
+  `).all(days);
+
   return success(res, rows);
 };
 
 // ── GET /api/members/expired ──────────────────────────────
+// 🔧 ĐÃ SỬA: query trực tiếp để trả về đủ fields FE cần
 export const getExpiredMembers = (req, res) => {
   const rows = db.prepare(`
-    SELECT * FROM v_trang_thai_hoi_vien
-    WHERE trang_thai_mau = 'het_han'
-    ORDER BY den_ngay_xa_nhat DESC
+    SELECT
+      h.id, h.ma_ho_so, h.ho_ten, h.so_dien_thoai, h.email, h.avatar_url,
+      'het_han' AS trang_thai,
+      (SELECT MAX(d_ngay) FROM (
+         SELECT den_ngay as d_ngay FROM dang_ky_goi_tap
+         WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+         UNION ALL
+         SELECT den_ngay as d_ngay FROM dang_ky_pt
+         WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+      )) AS ngay_het_han,
+      (SELECT gt.ten_goi FROM dang_ky_goi_tap dk
+       JOIN goi_tap gt ON gt.id = dk.goi_tap_id
+       WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong'
+       ORDER BY dk.den_ngay DESC LIMIT 1) AS ten_goi_tap
+    FROM ho_so h
+    WHERE h.loai_ho_so = 'hoi_vien'
+      AND h.is_deleted = 0
+      AND NOT EXISTS (
+        SELECT 1 FROM dang_ky_goi_tap dk
+        WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong'
+          AND dk.den_ngay >= date('now','localtime')
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM dang_ky_pt dp
+        WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong'
+          AND (dp.den_ngay IS NULL OR dp.den_ngay >= date('now','localtime'))
+          AND (dp.so_buoi_dang_ky IS NULL OR dp.so_buoi_dang_ky > dp.so_buoi_da_tap)
+      )
+      AND EXISTS (
+        SELECT 1 FROM dang_ky_goi_tap dk2
+        WHERE dk2.ho_so_id = h.id
+      )
+    ORDER BY ngay_het_han DESC
   `).all();
+
   return success(res, rows);
 };
 
 // ── GET /api/members/:id/history ─────────────────────────
-// Lịch sử đăng ký gói tập của hội viên
 export const getMemberHistory = (req, res) => {
   const { id } = req.params;
   const rows = db.prepare(`
@@ -349,7 +401,6 @@ export const getMemberHistory = (req, res) => {
 };
 
 // ── GET /api/members/birthday ────────────────────────────
-// Sinh nhật hội viên trong khoảng thời gian
 export const getBirthday = (req, res) => {
   const { period = 'week' } = req.query;
 
@@ -359,7 +410,6 @@ export const getBirthday = (req, res) => {
   } else if (period === 'month') {
     condition = `strftime('%m', h.ngay_sinh) = strftime('%m', 'now', 'localtime')`;
   } else {
-    // week: 7 ngày tới (so sánh MM-DD)
     condition = `strftime('%m-%d', h.ngay_sinh) BETWEEN
       strftime('%m-%d', 'now', 'localtime') AND
       strftime('%m-%d', 'now', 'localtime', '+7 days')`;
@@ -380,7 +430,6 @@ export const getBirthday = (req, res) => {
 };
 
 // ── GET /api/me/profile ───────────────────────────────────
-// Hội viên / PT tự xem hồ sơ và lịch của mình
 export const getMyProfile = (req, res) => {
   const hoSo = db.prepare(`
     SELECT h.*, tk.ten_dang_nhap
@@ -392,7 +441,6 @@ export const getMyProfile = (req, res) => {
   if (!hoSo) return error(res, 'Không tìm thấy hồ sơ.', 404);
   delete hoSo.mat_khau_hash;
 
-  // Nếu là hội viên: gắn gói tập và đăng ký PT đang hoạt động
   if (hoSo.loai_ho_so === 'hoi_vien') {
     hoSo.goi_tap = db.prepare(`
       SELECT dk.id, dk.tu_ngay, dk.den_ngay, dk.gia_thuc_te, dk.trang_thai,
@@ -412,7 +460,6 @@ export const getMyProfile = (req, res) => {
     `).all(hoSo.id);
   }
 
-  // Nếu là PT: gắn lịch dạy sắp tới
   if (hoSo.loai_ho_so === 'pt') {
     hoSo.lich_day_sap_toi = db.prepare(`
       SELECT lt.id, lt.ngay_tap, lt.gio_bat_dau, lt.gio_ket_thuc,
@@ -430,7 +477,6 @@ export const getMyProfile = (req, res) => {
 };
 
 // ── POST /api/members/:id/package ────────────────────────
-// Đăng ký gói tập cho hội viên
 export const registerPackage = (req, res) => {
   const { id } = req.params;
   const { goi_tap_id, tu_ngay, gia_thuc_te, phuong_thuc_tt, ma_giao_dich, ghi_chu_tt, ghi_chu_gia } = req.body;
@@ -445,7 +491,6 @@ export const registerPackage = (req, res) => {
   const goiTap = db.prepare('SELECT * FROM goi_tap WHERE id = ? AND is_deleted = 0').get(goi_tap_id);
   if (!goiTap) return error(res, 'Gói tập không tồn tại.', 404);
 
-  // Tính ngày kết thúc = tu_ngay + so_thang tháng + so_ngay_them ngày
   const denNgay = db.prepare(`
     SELECT date(?, '+' || ? || ' months', '+' || ? || ' days') AS den_ngay
   `).get(tu_ngay, goiTap.so_thang, goiTap.so_ngay_them).den_ngay;
@@ -460,7 +505,6 @@ export const registerPackage = (req, res) => {
   ghi_audit_log(req, 'CREATE', 'dang_ky_goi_tap', result.lastInsertRowid, null,
     { ho_so_id: id, goi_tap_id, gia: gia_thuc_te }, 'Đăng ký gói tập cho hội viên');
 
-  // Sinh thông báo gia hạn gói tập cho admin
   createNotification(
     'gia_han_goi_tap',
     'Gia hạn gói tập',
@@ -474,7 +518,6 @@ export const registerPackage = (req, res) => {
 };
 
 // ── POST /api/members/:id/create-account ─────────────────
-// Admin/lễ tân tạo tài khoản đăng nhập cho hồ sơ bất kỳ
 export const createAccount = async (req, res) => {
   const { id } = req.params;
   const { ten_dang_nhap, mat_khau } = req.body;
@@ -486,22 +529,18 @@ export const createAccount = async (req, res) => {
     return error(res, 'Mật khẩu phải có ít nhất 6 ký tự.', 400);
   }
 
-  // Kiểm tra hồ sơ tồn tại
   const hoSo = db.prepare('SELECT id, ho_ten, loai_ho_so, tai_khoan_id FROM ho_so WHERE id = ? AND is_deleted = 0').get(id);
   if (!hoSo) return error(res, 'Không tìm thấy hồ sơ.', 404);
 
-  // Kiểm tra hồ sơ đã có tài khoản chưa
   if (hoSo.tai_khoan_id) {
     return error(res, 'Hồ sơ này đã có tài khoản đăng nhập.', 409);
   }
 
-  // Kiểm tra tên đăng nhập trùng
   const existing = db.prepare('SELECT id FROM tai_khoan WHERE ten_dang_nhap = ?').get(ten_dang_nhap.trim());
   if (existing) {
     return error(res, 'Tên đăng nhập đã được sử dụng.', 409);
   }
 
-  // Map loai_ho_so → ma_vai_tro
   const roleMap = { hoi_vien: 'hoi_vien', pt: 'pt', le_tan: 'le_tan', nhan_vien: 'le_tan' };
   const maVaiTro = roleMap[hoSo.loai_ho_so] || 'hoi_vien';
   const vaiTro = db.prepare('SELECT id FROM vai_tro WHERE ma_vai_tro = ?').get(maVaiTro);
@@ -509,7 +548,6 @@ export const createAccount = async (req, res) => {
 
   const hash = await bcrypt.hash(mat_khau, 12);
 
-  // Transaction: tạo tài khoản → cập nhật hồ sơ
   const createTx = db.transaction(() => {
     const ins = db.prepare(`
       INSERT INTO tai_khoan (ten_dang_nhap, mat_khau_hash, vai_tro_id, nguoi_tao_id)
@@ -526,10 +564,10 @@ export const createAccount = async (req, res) => {
     { ho_so_id: id, ten_dang_nhap: ten_dang_nhap.trim(), vai_tro: maVaiTro },
     `Tạo tài khoản đăng nhập cho hồ sơ ${hoSo.ho_ten}`);
 
-  // Sinh thông báo tài khoản mới cho admin
   const nguoiTao = req.user.ten_dang_nhap ||
     db.prepare('SELECT ten_dang_nhap FROM tai_khoan WHERE id = ?').get(req.user.id)?.ten_dang_nhap ||
     `ID ${req.user.id}`;
+
   createNotification(
     'tai_khoan_moi',
     'Tài khoản mới được tạo',

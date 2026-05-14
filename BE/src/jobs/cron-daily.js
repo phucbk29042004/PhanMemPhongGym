@@ -110,7 +110,7 @@ function runDailyJob() {
   const ngayHienTai = new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
   createNotification(
     'tom_tat_buoi_sang',
-    `📋 Tổng hợp buổi sáng ${ngayHienTai}`,
+    `Tổng hợp buổi sáng ${ngayHienTai}`,
     `Sắp hết hạn gói tập: ${sapHetHan.length} hội viên | Hết hạn hôm nay: ${hetHan.length} | Sắp hết buổi PT: ${sapHetBuoi.length}`,
     null,
     null,
