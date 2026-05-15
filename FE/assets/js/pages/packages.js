@@ -10,7 +10,7 @@ window.GymApp.pages['packages'] = {
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-standard">
           <div class="page-title-bar">
             <h2 class="font-display-lg text-display-lg text-on-surface font-bold">Gói tập</h2>
-            <p class="text-on-surface-variant font-body-sm text-body-sm mt-xs">Quản lý các gói tập của phòng gym</p>
+            
           </div>
           <button id="btn-add-pkg" class="btn-primary text-white px-loose py-compact rounded-xl font-bold flex items-center gap-compact">
             <span class="material-symbols-outlined text-sm">add</span>
@@ -21,10 +21,10 @@ window.GymApp.pages['packages'] = {
         <!-- Stats -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-loose">
           ${[
-            { label: 'Tổng gói tập', value: packages.length, icon: 'card_membership', iconBg: 'icon-bg-green', color: 'text-brand-primary' },
-            { label: 'Đang hoạt động', value: packages.filter(p => p.trang_thai === 'dang_ban' || p.trang_thai === 'active').length, icon: 'check_circle', iconBg: 'icon-bg-green', color: 'text-brand-primary' },
-            { label: 'Tổng hội viên đăng ký', value: total, icon: 'groups', iconBg: 'icon-bg-orange', color: 'text-[#e65100]' },
-          ].map(s => `
+        { label: 'Tổng gói tập', value: packages.length, icon: 'card_membership', iconBg: 'icon-bg-green', color: 'text-brand-primary' },
+        { label: 'Đang hoạt động', value: packages.filter(p => p.trang_thai === 'dang_ban' || p.trang_thai === 'active').length, icon: 'check_circle', iconBg: 'icon-bg-green', color: 'text-brand-primary' },
+        { label: 'Tổng hội viên đăng ký', value: total, icon: 'groups', iconBg: 'icon-bg-orange', color: 'text-[#e65100]' },
+      ].map(s => `
             <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-loose shadow-sm flex items-center gap-loose">
               <div class="icon-bg ${s.iconBg}" style="width:48px;height:48px;border-radius:14px">
                 <span class="material-symbols-outlined ${s.color} text-2xl" style="font-variation-settings:'FILL' 1">${s.icon}</span>
@@ -40,8 +40,8 @@ window.GymApp.pages['packages'] = {
         <!-- Cards gói tập -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-loose">
           ${packages.map(p => {
-            const popularity = total > 0 ? Math.round(((p.so_nguoi_dang_ky || 0) / total) * 100) : 0;
-            return `
+        const popularity = total > 0 ? Math.round(((p.so_nguoi_dang_ky || 0) / total) * 100) : 0;
+        return `
               <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden flex flex-col">
                 <!-- Header card -->
                 <div class="p-loose text-white relative overflow-hidden" style="background: linear-gradient(135deg, #1D9336 0%, #157a2a 100%)">
@@ -90,7 +90,7 @@ window.GymApp.pages['packages'] = {
                 </div>
               </div>
             `;
-          }).join('')}
+      }).join('')}
         </div>
 
         <!-- Bảng so sánh gói tập -->

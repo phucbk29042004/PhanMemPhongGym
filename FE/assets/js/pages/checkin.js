@@ -36,10 +36,10 @@ window.GymApp.pages['checkin'] = {
     const dangTrong = s.dang_trong_phong ?? '—';
 
     return [
-      { icon: 'how_to_reg',  label: 'Check-in hôm nay',      value: luotVaoHomNay, iconBg: 'icon-bg-green', color: 'text-brand-primary' },
-      { icon: 'groups',      label: 'Đang trong phòng',       value: dangTrong,     iconBg: 'icon-bg-blue',  color: 'text-secondary' },
-      { icon: 'schedule',    label: 'Giờ cao điểm',           value: peakEntry[0] + ':00', iconBg: 'icon-bg-orange', color: 'text-[#e65100]' },
-      { icon: 'trending_up', label: 'So với hôm qua',         value: soSanh,        iconBg: 'icon-bg-green', color: 'text-brand-primary' },
+      { icon: 'how_to_reg', label: 'Check-in hôm nay', value: luotVaoHomNay, iconBg: 'icon-bg-green', color: 'text-brand-primary' },
+      { icon: 'groups', label: 'Đang trong phòng', value: dangTrong, iconBg: 'icon-bg-blue', color: 'text-secondary' },
+      { icon: 'schedule', label: 'Giờ cao điểm', value: peakEntry[0] + ':00', iconBg: 'icon-bg-orange', color: 'text-[#e65100]' },
+      { icon: 'trending_up', label: 'So với hôm qua', value: soSanh, iconBg: 'icon-bg-green', color: 'text-brand-primary' },
     ];
   },
 
@@ -49,12 +49,6 @@ window.GymApp.pages['checkin'] = {
 
     return `
       <div class="flex flex-col gap-margin">
-
-        <!-- Page Title -->
-        <div class="page-title-bar">
-          <h2 class="font-display-lg text-display-lg text-on-surface font-bold">Check-in / Ra</h2>
-          <p class="text-on-surface-variant font-body-sm text-body-sm mt-xs">Theo dõi lượt vào ra và mật độ check-in theo giờ</p>
-        </div>
 
         <!-- Stats -->
         <div id="checkin-stats-grid" class="grid grid-cols-2 md:grid-cols-4 gap-loose">
@@ -100,7 +94,7 @@ window.GymApp.pages['checkin'] = {
                 <span id="checkin-count-badge" class="bg-brand-primary text-white px-compact py-xs rounded-full text-label-xs font-bold ml-xs">${checkins.length}</span>
               </div>
               <div class="flex items-center gap-standard">
-                <span class="text-on-surface-variant text-body-sm">${new Date().toLocaleDateString('vi-VN', { weekday:'long', day:'numeric', month:'numeric' })}</span>
+                <span class="text-on-surface-variant text-body-sm">${new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'numeric' })}</span>
                 <button id="btn-checkin-reload" class="flex items-center gap-xs px-compact py-xs rounded-lg border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary transition-all text-body-sm font-bold">
                   <span class="material-symbols-outlined text-sm">refresh</span>Tải lại
                 </button>
@@ -108,11 +102,11 @@ window.GymApp.pages['checkin'] = {
             </div>
             <div id="checkin-cards-grid" class="grid grid-cols-2 md:grid-cols-3 gap-standard max-h-80 overflow-y-auto pr-xs">
               ${checkins.length === 0
-                ? `<div class="col-span-3 flex flex-col items-center justify-center py-margin text-center">
+        ? `<div class="col-span-3 flex flex-col items-center justify-center py-margin text-center">
                      <span class="material-symbols-outlined text-4xl text-outline">person_off</span>
                      <p class="text-on-surface-variant text-body-sm mt-standard">Chưa có check-in hôm nay</p>
                    </div>`
-                : checkins.map(c => `
+        : checkins.map(c => `
                     <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-standard shadow-sm flex flex-col items-center gap-sm">
                       ${window.GymApp.avatarImg(c.avatar_url, c.ho_ten, 'lg')}
                       <div class="text-center">
@@ -125,7 +119,7 @@ window.GymApp.pages['checkin'] = {
                       </div>
                     </div>
                   `).join('')
-              }
+      }
             </div>
           </div>
         </div>

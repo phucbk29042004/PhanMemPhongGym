@@ -44,26 +44,13 @@ window.GymApp.pages['birthday'] = {
 
     return `
       <div class="flex flex-col gap-margin">
-
-        <!-- Header -->
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-standard">
-          <div class="page-title-bar">
-            <h2 class="font-display-lg text-display-lg text-on-surface font-bold">Sinh nhật hội viên</h2>
-            <p class="text-on-surface-variant font-body-sm text-body-sm mt-xs">Lịch sinh nhật theo 12 tháng</p>
-          </div>
-          <button id="btn-birthday-celebrate-all" class="btn-primary text-white px-loose py-compact rounded-xl font-bold flex items-center gap-compact">
-            <span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL' 1">celebration</span>
-            Chúc mừng tất cả
-          </button>
-        </div>
-
         <!-- Stats -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-loose">
           ${[
-            { label: 'Sinh nhật hôm nay', value: todayBirthdays.length, icon: 'cake', iconBg: 'icon-bg-pink', color: 'text-[#a52d59]' },
-            { label: 'Tháng có dữ liệu', value: groups.length, icon: 'calendar_month', iconBg: 'icon-bg-green', color: 'text-brand-primary' },
-            { label: busiestGroup ? `Đông nhất: ${busiestGroup.label}` : 'Đông nhất', value: busiestGroup ? busiestGroup.members.length : 0, icon: 'groups', iconBg: 'icon-bg-orange', color: 'text-[#e65100]' },
-          ].map(s => `
+        { label: 'Sinh nhật hôm nay', value: todayBirthdays.length, icon: 'cake', iconBg: 'icon-bg-pink', color: 'text-[#a52d59]' },
+        { label: 'Tháng có dữ liệu', value: groups.length, icon: 'calendar_month', iconBg: 'icon-bg-green', color: 'text-brand-primary' },
+        { label: busiestGroup ? `Đông nhất: ${busiestGroup.label}` : 'Đông nhất', value: busiestGroup ? busiestGroup.members.length : 0, icon: 'groups', iconBg: 'icon-bg-orange', color: 'text-[#e65100]' },
+      ].map(s => `
             <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-loose shadow-sm flex items-center gap-loose">
               <div class="icon-bg ${s.iconBg}" style="width:48px;height:48px;border-radius:14px">
                 <span class="material-symbols-outlined ${s.color} text-2xl" style="font-variation-settings:'FILL' 1">${s.icon}</span>
@@ -124,8 +111,8 @@ window.GymApp.pages['birthday'] = {
               </thead>
               <tbody>
                 ${groups.length === 0
-                  ? `<tr><td colspan="4" class="px-loose py-margin text-center text-on-surface-variant">Không có dữ liệu sinh nhật</td></tr>`
-                  : groups.map(group => `
+        ? `<tr><td colspan="4" class="px-loose py-margin text-center text-on-surface-variant">Không có dữ liệu sinh nhật</td></tr>`
+        : groups.map(group => `
                     <tr class="birthday-month-row border-b border-outline-variant hover:bg-surface-container-low transition-colors cursor-pointer" data-month="${group.month}" data-label="${group.label}" data-count="${group.members.length}">
                       <td class="px-loose py-standard align-top">
                         <div class="flex items-center gap-compact">
@@ -164,7 +151,7 @@ window.GymApp.pages['birthday'] = {
                       </td>
                     </tr>
                   `).join('')
-                }
+      }
               </tbody>
             </table>
           </div>

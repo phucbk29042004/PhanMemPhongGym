@@ -17,13 +17,6 @@ window.GymApp.pages['pt-training'] = {
 
     return `
       <div class="flex flex-col gap-margin">
-
-        <!-- Page Title -->
-        <div class="page-title-bar">
-          <h2 class="font-display-lg text-display-lg text-on-surface font-bold">Lịch đào tạo PT</h2>
-          <p class="text-on-surface-variant font-body-sm text-body-sm mt-xs">Quản lý lịch tập của các huấn luyện viên cá nhân</p>
-        </div>
-
         <!-- Stats -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-loose">
           ${stats.map(s => `
@@ -86,11 +79,11 @@ window.GymApp.pages['pt-training'] = {
           </div>
           <div class="p-loose grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-loose">
             ${pts.length === 0
-              ? `<div class="col-span-5 py-margin text-center text-on-surface-variant">
+        ? `<div class="col-span-5 py-margin text-center text-on-surface-variant">
                    <span class="material-symbols-outlined text-4xl text-outline block mb-standard">person_off</span>
                    Chưa có huấn luyện viên nào
                  </div>`
-              : pts.map(pt => `
+        : pts.map(pt => `
                 <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-loose shadow-sm flex flex-col items-center gap-standard">
                   ${window.GymApp.avatarImg(pt.avatar_url, pt.ho_ten, 'lg')}
                   <div class="text-center">
@@ -108,7 +101,7 @@ window.GymApp.pages['pt-training'] = {
                   </div>
                 </div>
               `).join('')
-            }
+      }
           </div>
         </div>
 
@@ -222,11 +215,11 @@ window.GymApp.pages['pt-training'] = {
               data-id="${s.id}" title="Hủy lịch">event_busy</button>
           ` : ''}
           ${s.trang_thai === 'da_tap' && s.ghi_chu === 'auto_cron'
-            ? `<button class="btn-hoan-tac flex items-center gap-xs px-compact py-xs rounded-lg bg-orange-50 border border-orange-200 text-[#e65100] hover:bg-orange-100 transition-all text-body-sm font-bold" data-id="${s.id}" title="Hoàn tác xác nhận (buổi do hệ thống tự xác nhận)">
+        ? `<button class="btn-hoan-tac flex items-center gap-xs px-compact py-xs rounded-lg bg-orange-50 border border-orange-200 text-[#e65100] hover:bg-orange-100 transition-all text-body-sm font-bold" data-id="${s.id}" title="Hoàn tác xác nhận (buổi do hệ thống tự xác nhận)">
                  <span class="material-symbols-outlined text-sm">undo</span>Hoàn tác
                </button>`
-            : ''
-          }
+        : ''
+      }
         </div>
       </div>
     `).join('');
@@ -264,7 +257,7 @@ window.GymApp.pages['pt-training'] = {
         const res = await window.GymApp.api.get('/pt/schedules');
         if (res?.success) {
           window.GymApp.data.ptSchedules = Array.isArray(res.data) ? res.data : [];
-          
+
           const contentArea = document.getElementById('content-area');
           if (contentArea && window.GymApp.currentPage === 'pt-training') {
             contentArea.innerHTML = self.render();

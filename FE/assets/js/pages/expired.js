@@ -8,19 +8,6 @@ window.GymApp.pages['expired'] = {
 
     return `
       <div class="flex flex-col gap-margin">
-
-        <!-- Header -->
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-standard">
-          <div class="page-title-bar">
-            <h2 class="font-display-lg text-display-lg text-on-surface font-bold">Hết hạn & Sắp hết hạn</h2>
-            <p class="text-on-surface-variant font-body-sm text-body-sm mt-xs">Theo dõi và gia hạn gói tập cho hội viên</p>
-          </div>
-          <button class="btn-primary text-white px-loose py-compact rounded-xl font-bold flex items-center gap-compact">
-            <span class="material-symbols-outlined text-sm">send</span>
-            Gửi thông báo gia hạn
-          </button>
-        </div>
-
         <!-- Stats -->
         <div id="expired-stats" class="grid grid-cols-1 md:grid-cols-3 gap-loose">
           ${this._renderStats(0, 0)}
@@ -228,9 +215,9 @@ window.GymApp.pages['expired'] = {
             </thead>
             <tbody>
               ${paginated.map(m => {
-                const urgency = m.daysLeft <= 7 ? 'text-error' : m.daysLeft <= 15 ? 'text-[#e65100]' : 'text-[#f59e0b]';
-                const urgencyBg = m.daysLeft <= 7 ? 'bg-error-container' : m.daysLeft <= 15 ? 'bg-[#fff3e0]' : 'bg-[#fffde7]';
-                return `
+      const urgency = m.daysLeft <= 7 ? 'text-error' : m.daysLeft <= 15 ? 'text-[#e65100]' : 'text-[#f59e0b]';
+      const urgencyBg = m.daysLeft <= 7 ? 'bg-error-container' : m.daysLeft <= 15 ? 'bg-[#fff3e0]' : 'bg-[#fffde7]';
+      return `
                   <tr class="h-12 border-b border-outline-variant hover:bg-surface-container-low transition-colors">
                     <td class="px-loose">
                       <div class="flex items-center gap-compact">
@@ -257,7 +244,7 @@ window.GymApp.pages['expired'] = {
                     </td>
                   </tr>
                 `;
-              }).join('')}
+    }).join('')}
             </tbody>
           </table>
         </div>

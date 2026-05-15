@@ -12,13 +12,6 @@ window.GymApp.pages['pt-register'] = {
 
     return `
       <div class="flex flex-col gap-margin">
-
-        <!-- Page Title -->
-        <div class="page-title-bar">
-          <h2 class="font-display-lg text-display-lg text-on-surface font-bold">Đăng ký lịch tập PT</h2>
-          <p class="text-on-surface-variant font-body-sm text-body-sm mt-xs">Đặt lịch tập giữa hội viên và huấn luyện viên cá nhân</p>
-        </div>
-
         <div class="grid grid-cols-1 lg:grid-cols-10 items-stretch gap-loose">
 
           <!-- ===== CARD 1: Form đặt lịch ===== -->
