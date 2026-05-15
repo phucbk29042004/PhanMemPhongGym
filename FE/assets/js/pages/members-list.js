@@ -18,86 +18,100 @@ window.GymApp.pages['members-list'] = {
     return `
         <div class="flex flex-col gap-standard animate-in fade-in duration-500">
 
-        <!-- Top Controls (Tabs + Action) -->
-        <div class="flex flex-wrap items-center justify-between gap-compact">
+        <!-- Top Header: Tabs & Add Action -->
+        <div class="flex flex-wrap items-center justify-between gap-standard">
           <!-- Tab Bar -->
-          <div class="flex gap-atom bg-surface-container-low/60 backdrop-blur-sm p-1.5 rounded-2xl border border-outline-variant w-fit shadow-sm">
-            <button id="tab-members" class="tab-btn px-loose py-compact rounded-xl font-bold text-body-md transition-all duration-300" data-tab="members">
-              <span class="flex items-center gap-compact">
-                <span class="material-symbols-outlined text-lg">people</span>Hội viên
-              </span>
+          <div class="flex p-1 bg-surface-container-low/50 backdrop-blur-sm rounded-2xl border border-outline-variant w-fit shadow-sm group">
+            <button id="tab-members" class="tab-btn flex items-center gap-compact px-loose py-standard rounded-xl font-bold text-body-md transition-all duration-300 relative overflow-hidden" data-tab="members">
+              <span class="material-symbols-outlined text-lg">groups</span>
+              <span>Hội viên</span>
             </button>
-            <button id="tab-pts" class="tab-btn px-loose py-compact rounded-xl font-bold text-body-md transition-all duration-300" data-tab="pts">
-              <span class="flex items-center gap-compact">
-                <span class="material-symbols-outlined text-lg">sports_gymnastics</span>Huấn luyện viên (PT)
-              </span>
+            <button id="tab-pts" class="tab-btn flex items-center gap-compact px-loose py-standard rounded-xl font-bold text-body-md transition-all duration-300 relative overflow-hidden" data-tab="pts">
+              <span class="material-symbols-outlined text-lg">sports_gymnastics</span>
+              <span>Huấn luyện viên</span>
             </button>
           </div>
 
-          <!-- Add Button (Aligned with Tabs) -->
-          <button class="bg-brand-primary text-white px-loose py-compact rounded-2xl font-bold hover:bg-[#187a2d] transition-all flex items-center gap-compact shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0" style="height: 52px;" data-page="member-add">
-            <span class="material-symbols-outlined text-lg">person_add</span>
-            Thêm hội viên mới
+          <!-- Add Action -->
+          <button class="bg-brand-primary text-white px-loose py-standard rounded-2xl font-bold hover:bg-[#187a2d] transition-all flex items-center gap-compact shadow-lg hover:shadow-brand-primary/20 hover:-translate-y-1 active:translate-y-0 active:shadow-sm" data-page="member-add">
+            <span class="material-symbols-outlined text-xl">person_add</span>
+            <span>Thêm hội viên mới</span>
           </button>
         </div>
 
-        <!-- Tab Content Wrapper -->
-        <div class="relative min-h-[400px]">
+        <!-- Main Content Area -->
+        <div class="relative min-h-[500px]">
           
           <!-- Tab: Hội viên -->
-          <div id="tab-content-members" class="tab-content animate-in slide-in-from-left-4 duration-300">
-            <div class="flex flex-wrap items-center gap-compact bg-surface-container-lowest/80 backdrop-blur-md p-compact rounded-2xl border border-outline-variant shadow-sm mb-compact transition-all hover:shadow-md">
-              <div class="relative flex-1 group" style="min-width:240px;">
+          <div id="tab-content-members" class="tab-content animate-in slide-in-from-left-4 duration-500">
+            <!-- Filter Bar -->
+            <div class="flex flex-wrap items-center gap-standard bg-surface-container-lowest/90 backdrop-blur-xl p-standard rounded-2xl border border-outline-variant shadow-sm mb-standard transition-all hover:shadow-md">
+              <!-- Search Box -->
+              <div class="relative flex-1 group" style="min-width:300px;">
                 <span class="material-symbols-outlined absolute left-standard top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors">search</span>
-                <input id="member-search" class="w-full bg-surface-container/40 border border-outline-variant text-on-surface pl-10 pr-standard py-compact rounded-xl focus:border-brand-primary focus:bg-surface-container-lowest outline-none placeholder-outline-variant font-body-md text-body-md transition-all" placeholder="Tìm theo tên, mã HV, số điện thoại..." type="text" />
+                <input id="member-search" class="w-full bg-surface-container/30 border border-outline-variant text-on-surface pl-11 pr-standard py-standard rounded-xl focus:border-brand-primary focus:bg-surface-container-lowest outline-none placeholder-outline-variant/60 font-body-md text-body-md transition-all shadow-inner focus:shadow-none" placeholder="Tìm theo tên, mã HV, số điện thoại..." type="text" />
               </div>
+              
+              <!-- Filter Actions -->
               <div class="flex items-center gap-compact">
-                <button id="btn-view-all-members" class="flex items-center gap-xs px-standard py-compact rounded-xl border border-outline-variant text-on-surface-variant text-body-sm font-bold flex-shrink-0 hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all">
-                  <span class="material-symbols-outlined text-sm">format_list_bulleted</span>Xem tất cả
+                <button id="btn-view-all-members" class="group flex items-center gap-xs px-standard py-standard rounded-xl border border-outline-variant text-on-surface-variant text-body-sm font-bold hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all">
+                  <span class="material-symbols-outlined text-sm transition-transform group-hover:rotate-12">format_list_bulleted</span>
+                  <span>Xem tất cả</span>
                 </button>
-                <button id="btn-show-all" class="hidden items-center gap-xs px-standard py-compact rounded-xl border border-error/30 text-error text-body-sm font-bold flex-shrink-0 hover:bg-error/5 transition-all">
-                  <span class="material-symbols-outlined text-sm">filter_alt_off</span>Xóa lọc
+                
+                <button id="btn-show-all" class="hidden items-center gap-xs px-standard py-standard rounded-xl border border-error/30 text-error text-body-sm font-bold hover:bg-error/5 transition-all">
+                  <span class="material-symbols-outlined text-sm">filter_alt_off</span>
+                  <span>Xóa lọc</span>
                 </button>
-                <button id="btn-filter" class="relative flex items-center gap-xs px-standard py-compact rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all flex-shrink-0">
-                  <span class="material-symbols-outlined text-sm">filter_alt</span>
+                
+                <button id="btn-filter" class="relative flex items-center gap-xs px-standard py-standard rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all group">
+                  <span class="material-symbols-outlined text-sm transition-transform group-hover:scale-110">filter_alt</span>
                   <span class="text-body-sm font-bold">Lọc dữ liệu</span>
-                  <span id="filter-badge" style="display:none;position:absolute;top:-6px;right:-6px;width:20px;height:20px;background:#1D9336;color:#fff;border-radius:50%;font-size:10px;align-items:center;justify-content:center;font-weight:700;box-shadow:0 2px 4px rgba(29,147,54,0.3)"></span>
+                  <span id="filter-badge" style="display:none;position:absolute;top:-8px;right:-8px;width:22px;height:22px;background:#1D9336;color:#fff;border-radius:50%;font-size:11px;align-items:center;justify-content:center;font-weight:800;box-shadow:0 2px 8px rgba(29,147,54,0.4);border:2px solid #fff;"></span>
                 </button>
-                <button id="btn-sort-member" class="relative flex items-center gap-xs px-standard py-compact rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all flex-shrink-0">
-                  <span class="material-symbols-outlined text-sm">sort</span>
+                
+                <button id="btn-sort-member" class="relative flex items-center gap-xs px-standard py-standard rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all group">
+                  <span class="material-symbols-outlined text-sm transition-transform group-hover:rotate-180 duration-500">sort</span>
                   <span class="text-body-sm font-bold">Sắp xếp</span>
-                  <span id="member-sort-badge" style="display:none;position:absolute;top:-6px;right:-6px;width:20px;height:20px;background:#1D9336;color:#fff;border-radius:50%;font-size:10px;align-items:center;justify-content:center;font-weight:700;box-shadow:0 2px 4px rgba(29,147,54,0.3)">1</span>
+                  <span id="member-sort-badge" style="display:none;position:absolute;top:-8px;right:-8px;width:22px;height:22px;background:#1D9336;color:#fff;border-radius:50%;font-size:11px;align-items:center;justify-content:center;font-weight:800;box-shadow:0 2px 8px rgba(29,147,54,0.4);border:2px solid #fff;">1</span>
                 </button>
               </div>
             </div>
+
             <div id="members-table-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-standard">
               ${this._renderMemberTable()}
             </div>
           </div>
 
           <!-- Tab: PT / HLV -->
-          <div id="tab-content-pts" class="tab-content hidden animate-in slide-in-from-right-4 duration-300">
-            <div class="flex flex-wrap items-center gap-compact bg-surface-container-lowest/80 backdrop-blur-md p-compact rounded-2xl border border-outline-variant shadow-sm mb-compact transition-all hover:shadow-md">
-              <div class="relative flex-1 group" style="min-width:240px;">
+          <div id="tab-content-pts" class="tab-content hidden animate-in slide-in-from-right-4 duration-500">
+            <div class="flex flex-wrap items-center gap-standard bg-surface-container-lowest/90 backdrop-blur-xl p-standard rounded-2xl border border-outline-variant shadow-sm mb-standard transition-all hover:shadow-md">
+              <div class="relative flex-1 group" style="min-width:300px;">
                 <span class="material-symbols-outlined absolute left-standard top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors">search</span>
-                <input id="pt-search" class="w-full bg-surface-container/40 border border-outline-variant text-on-surface pl-10 pr-standard py-compact rounded-xl focus:border-brand-primary focus:bg-surface-container-lowest outline-none placeholder-outline-variant font-body-md text-body-md transition-all" placeholder="Tìm theo tên, chuyên môn..." type="text" />
+                <input id="pt-search" class="w-full bg-surface-container/30 border border-outline-variant text-on-surface pl-11 pr-standard py-standard rounded-xl focus:border-brand-primary focus:bg-surface-container-lowest outline-none placeholder-outline-variant/60 font-body-md text-body-md transition-all shadow-inner focus:shadow-none" placeholder="Tìm theo tên, chuyên môn..." type="text" />
               </div>
+              
               <div class="flex items-center gap-compact">
-                <button id="btn-view-all-pts" class="flex items-center gap-xs px-standard py-compact rounded-xl border border-outline-variant text-on-surface-variant text-body-sm font-bold flex-shrink-0 hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all">
-                  <span class="material-symbols-outlined text-sm">format_list_bulleted</span>Xem tất cả
+                <button id="btn-view-all-pts" class="group flex items-center gap-xs px-standard py-standard rounded-xl border border-outline-variant text-on-surface-variant text-body-sm font-bold hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all">
+                  <span class="material-symbols-outlined text-sm transition-transform group-hover:rotate-12">format_list_bulleted</span>
+                  <span>Xem tất cả</span>
                 </button>
-                <button id="btn-show-all-pt" class="hidden items-center gap-xs px-standard py-compact rounded-xl border border-error/30 text-error text-body-sm font-bold flex-shrink-0 hover:bg-error/5 transition-all">
-                  <span class="material-symbols-outlined text-sm">filter_alt_off</span>Xóa lọc
+                
+                <button id="btn-show-all-pt" class="hidden items-center gap-xs px-standard py-standard rounded-xl border border-error/30 text-error text-body-sm font-bold hover:bg-error/5 transition-all">
+                  <span class="material-symbols-outlined text-sm">filter_alt_off</span>
+                  <span>Xóa lọc</span>
                 </button>
-                <button id="btn-filter-pt" class="relative flex items-center gap-xs px-standard py-compact rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all flex-shrink-0">
-                  <span class="material-symbols-outlined text-sm">filter_alt</span>
+                
+                <button id="btn-filter-pt" class="relative flex items-center gap-xs px-standard py-standard rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all group">
+                  <span class="material-symbols-outlined text-sm transition-transform group-hover:scale-110">filter_alt</span>
                   <span class="text-body-sm font-bold">Lọc</span>
-                  <span id="pt-filter-badge" style="display:none;position:absolute;top:-6px;right:-6px;width:20px;height:20px;background:#1D9336;color:#fff;border-radius:50%;font-size:10px;align-items:center;justify-content:center;font-weight:700;box-shadow:0 2px 4px rgba(29,147,54,0.3)"></span>
+                  <span id="pt-filter-badge" style="display:none;position:absolute;top:-8px;right:-8px;width:22px;height:22px;background:#1D9336;color:#fff;border-radius:50%;font-size:11px;align-items:center;justify-content:center;font-weight:800;box-shadow:0 2px 8px rgba(29,147,54,0.4);border:2px solid #fff;"></span>
                 </button>
-                <button id="btn-sort-pt" class="relative flex items-center gap-xs px-standard py-compact rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all flex-shrink-0">
-                  <span class="material-symbols-outlined text-sm">sort</span>
+                
+                <button id="btn-sort-pt" class="relative flex items-center gap-xs px-standard py-standard rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all group">
+                  <span class="material-symbols-outlined text-sm transition-transform group-hover:rotate-180 duration-500">sort</span>
                   <span class="text-body-sm font-bold">Sắp xếp</span>
-                  <span id="pt-sort-badge" style="display:none;position:absolute;top:-6px;right:-6px;width:20px;height:20px;background:#1D9336;color:#fff;border-radius:50%;font-size:10px;align-items:center;justify-content:center;font-weight:700;box-shadow:0 2px 4px rgba(29,147,54,0.3)">1</span>
+                  <span id="pt-sort-badge" style="display:none;position:absolute;top:-8px;right:-8px;width:22px;height:22px;background:#1D9336;color:#fff;border-radius:50%;font-size:11px;align-items:center;justify-content:center;font-weight:800;box-shadow:0 2px 8px rgba(29,147,54,0.4);border:2px solid #fff;">1</span>
                 </button>
               </div>
             </div>
@@ -112,17 +126,17 @@ window.GymApp.pages['members-list'] = {
           ${(function () {
         const stats = window.GymApp.data.stats?.hoi_vien || { tong: 0, con_han: 0, het_han: 0 };
         return [
-          { label: 'Tổng số hội viên', value: stats.tong, color: 'text-on-surface', icon: 'groups', bg: 'bg-surface-container' },
-          { label: 'Đang hoạt động', value: stats.con_han, color: 'text-brand-primary', icon: 'check_circle', bg: 'bg-brand-primary/10' },
-          { label: 'Đã hết hạn', value: stats.het_han, color: 'text-error', icon: 'error', bg: 'bg-error/10' },
+          { label: 'Tổng số hội viên', value: stats.tong, color: 'text-on-surface', icon: 'groups', bg: 'bg-surface-container-low', border: 'border-outline-variant/50' },
+          { label: 'Đang hoạt động', value: stats.con_han, color: 'text-brand-primary', icon: 'check_circle', bg: 'bg-brand-primary/10', border: 'border-brand-primary/20' },
+          { label: 'Đã hết hạn', value: stats.het_han, color: 'text-error', icon: 'error', bg: 'bg-error/10', border: 'border-error/20' },
         ].map(s => `
-              <div class="bg-surface-container-lowest/80 backdrop-blur-md p-standard rounded-2xl border border-outline-variant shadow-sm flex items-center gap-standard transition-all hover:-translate-y-1 hover:shadow-md group">
-                <div class="w-12 h-12 rounded-xl ${s.bg} flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <span class="material-symbols-outlined ${s.color} text-2xl">${s.icon}</span>
+              <div class="bg-surface-container-lowest/90 backdrop-blur-md p-standard rounded-3xl border ${s.border} shadow-sm flex items-center gap-standard transition-all hover:-translate-y-1 hover:shadow-xl group relative overflow-hidden">
+                <div class="w-14 h-14 rounded-2xl ${s.bg} flex items-center justify-center group-hover:scale-110 transition-transform duration-500 z-10">
+                  <span class="material-symbols-outlined ${s.color} text-3xl">${s.icon}</span>
                 </div>
-                <div class="flex flex-col">
-                  <span class="text-on-surface-variant font-body-sm text-body-sm uppercase tracking-wider font-bold">${s.label}</span>
-                  <span class="${s.color} font-display-2xl text-display-2xl font-bold tracking-tight">${s.value}</span>
+                <div class="flex flex-col z-10">
+                  <span class="text-on-surface-variant text-[11px] uppercase tracking-[0.1em] font-bold opacity-70">${s.label}</span>
+                  <span class="${s.color} text-display-md font-black tracking-tight">${s.value}</span>
                 </div>
               </div>
             `).join('');
@@ -163,62 +177,69 @@ window.GymApp.pages['members-list'] = {
 
     const cards = paginated.map(m => {
       const isCheckedIn = m.da_check_in_hom_nay == 1;
-      const packageName = m.ten_goi_tap || 'Chưa ĐK';
+      const packageName = m.ten_goi_tap || 'Chưa đăng ký';
+      const isExpired = m.trang_thai === 'het_han';
+      
       return `
-        <div class="gym-card bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl border border-outline-variant p-loose shadow-sm flex flex-col gap-standard transition-all hover:-translate-y-1 hover:shadow-xl hover:border-brand-primary/50 group min-w-0">
-          <div class="flex items-center gap-loose min-w-0">
-            <div class="relative group-hover:scale-110 transition-transform duration-500 flex-shrink-0">
-              ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'lg')}
-              <span class="absolute bottom-0 right-0 w-3.5 h-3.5 border-2 border-white rounded-full ${isCheckedIn ? 'bg-green-500 shadow-sm shadow-green-200' : 'bg-outline'}"></span>
+        <div class="group bg-surface-container-lowest/90 backdrop-blur-md rounded-3xl border border-outline-variant p-standard shadow-sm hover:shadow-2xl hover:shadow-brand-primary/10 hover:-translate-y-1.5 transition-all duration-500 flex flex-col gap-standard relative overflow-hidden">
+          <!-- Card Header: Avatar & Quick Info -->
+          <div class="flex items-start gap-standard">
+            <div class="relative flex-shrink-0">
+              <div class="p-1 rounded-2xl bg-surface-container-low border border-outline-variant/50 group-hover:border-brand-primary/30 transition-colors duration-500">
+                ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'lg')}
+              </div>
+              <span class="absolute -bottom-1 -right-1 w-5 h-5 border-4 border-white rounded-full ${isCheckedIn ? 'bg-green-500 animate-pulse' : 'bg-outline'} shadow-sm"></span>
             </div>
-            <div class="flex flex-col min-w-0">
-              <button class="member-name-link text-left font-bold text-on-surface text-body-md truncate group-hover:text-brand-primary transition-colors cursor-pointer" data-id="${m.id}" title="${m.ho_ten || 'Không rõ'}" style="background:transparent;border:none;padding:0;">
+            
+            <div class="flex flex-col min-w-0 pt-1">
+              <button class="member-name-link text-left font-bold text-on-surface text-body-lg truncate group-hover:text-brand-primary transition-colors cursor-pointer block leading-tight" data-id="${m.id}" title="${m.ho_ten || 'Không rõ'}">
                 ${m.ho_ten || 'Không rõ'}
               </button>
-              <p class="text-on-surface-variant text-body-sm font-medium flex items-center gap-xs min-w-0">
-                <span class="material-symbols-outlined text-xs flex-shrink-0">call</span>
-                <span class="truncate">${m.so_dien_thoai || '—'}</span>
-              </p>
+              <div class="flex items-center gap-1 mt-1">
+                <span class="text-on-surface-variant text-[11px] font-mono tracking-tight bg-surface-container px-1.5 py-0.5 rounded-md border border-outline-variant/30">ID: ${m.ma_ho_so || '—'}</span>
+              </div>
             </div>
           </div>
 
-          <div class="h-px bg-outline-variant/30 w-full my-xs"></div>
-
-          <div class="grid grid-cols-2 gap-compact min-w-0">
-            <div class="flex flex-col bg-surface-container-low/50 p-compact rounded-xl border border-outline-variant/20 min-w-0">
-              <span class="text-on-surface-variant text-[10px] uppercase font-bold tracking-widest opacity-60">Mã HV</span>
-              <span class="text-on-surface font-bold text-body-sm truncate" title="${m.ma_ho_so || '—'}">${m.ma_ho_so || '—'}</span>
-            </div>
-            <div class="flex flex-col bg-surface-container-low/50 p-compact rounded-xl border border-outline-variant/20 min-w-0">
-              <span class="text-on-surface-variant text-[10px] uppercase font-bold tracking-widest opacity-60">Trạng thái</span>
-              <span class="mt-xs">${window.GymApp.statusBadge(m.trang_thai)}</span>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-compact min-w-0">
-            <div class="flex flex-col bg-surface-container-low/50 p-compact rounded-xl border border-outline-variant/20 min-w-0">
-              <span class="text-on-surface-variant text-[10px] uppercase font-bold tracking-widest opacity-60">Gói tập</span>
+          <!-- Info Grid -->
+          <div class="grid grid-cols-2 gap-2">
+            <div class="flex flex-col bg-surface-container-low/40 p-2.5 rounded-2xl border border-outline-variant/20 group-hover:bg-brand-primary/5 transition-colors duration-500">
+              <span class="text-[9px] uppercase font-bold tracking-widest text-on-surface-variant opacity-50 mb-1">Gói tập</span>
               <span class="text-on-surface font-bold text-body-sm truncate" title="${packageName}">${packageName}</span>
             </div>
-            <div class="flex flex-col bg-surface-container-low/50 p-compact rounded-xl border border-outline-variant/20 min-w-0">
-              <span class="text-on-surface-variant text-[10px] uppercase font-bold tracking-widest opacity-60">Hết hạn</span>
-              <span class="text-on-surface font-bold text-body-sm truncate">${window.GymApp.formatDate(m.ngay_het_han)}</span>
+            <div class="flex flex-col bg-surface-container-low/40 p-2.5 rounded-2xl border border-outline-variant/20 group-hover:bg-brand-primary/5 transition-colors duration-500">
+              <span class="text-[9px] uppercase font-bold tracking-widest text-on-surface-variant opacity-50 mb-1">Trạng thái</span>
+              <div class="flex">${window.GymApp.statusBadge(m.trang_thai)}</div>
             </div>
           </div>
 
-          <div class="flex items-center justify-between gap-compact mt-auto pt-xs min-w-0">
-            <div class="flex items-center gap-xs text-on-surface-variant text-body-sm font-medium min-w-0">
-              <span class="material-symbols-outlined text-sm flex-shrink-0">location_on</span>
-              <span class="truncate">Paradise Gym</span>
+          <div class="flex items-center gap-standard px-1">
+            <div class="flex flex-col">
+              <span class="text-[9px] uppercase font-bold tracking-widest text-on-surface-variant opacity-50">Ngày hết hạn</span>
+              <span class="text-body-sm font-bold ${isExpired ? 'text-error' : 'text-on-surface-variant'}">${window.GymApp.formatDate(m.ngay_het_han)}</span>
             </div>
-            <div class="flex gap-xs flex-shrink-0">
-              <button class="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-container text-on-surface-variant hover:bg-brand-primary hover:text-white transition-all member-view-btn" data-id="${m.id}" title="Xem chi tiết">
+            <div class="h-8 w-px bg-outline-variant/50 ml-auto"></div>
+            <div class="flex flex-col items-end">
+              <span class="text-[9px] uppercase font-bold tracking-widest text-on-surface-variant opacity-50">Liên hệ</span>
+              <span class="text-body-sm font-bold text-on-surface-variant truncate max-w-[100px]">${m.so_dien_thoai || '—'}</span>
+            </div>
+          </div>
+
+          <!-- Actions Overlay/Footer -->
+          <div class="mt-auto pt-standard border-t border-outline-variant/30 flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-sm text-outline">badge</span>
+              <span class="text-[11px] font-bold text-on-surface-variant/70 uppercase tracking-wider">${window.GymApp.formatEnumLabel(m.loai_ho_so || 'hoi_vien')}</span>
+            </div>
+            
+            <div class="flex gap-1">
+              <button class="w-9 h-9 flex items-center justify-center rounded-xl bg-surface-container-low text-on-surface-variant hover:bg-brand-primary hover:text-white transition-all duration-300 member-view-btn shadow-sm" data-id="${m.id}" title="Xem chi tiết">
                 <span class="material-symbols-outlined text-lg">visibility</span>
               </button>
-              <button class="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-container text-on-surface-variant hover:bg-brand-primary hover:text-white transition-all member-edit-btn" data-id="${m.id}" title="Chỉnh sửa">
+              <button class="w-9 h-9 flex items-center justify-center rounded-xl bg-surface-container-low text-on-surface-variant hover:bg-brand-primary hover:text-white transition-all duration-300 member-edit-btn shadow-sm" data-id="${m.id}" title="Chỉnh sửa">
                 <span class="material-symbols-outlined text-lg">edit</span>
               </button>
-              <button class="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-container text-on-surface-variant hover:bg-error hover:text-white transition-all member-delete-btn" data-id="${m.id}" data-name="${m.ho_ten || 'hội viên này'}" title="Xóa">
+              <button class="w-9 h-9 flex items-center justify-center rounded-xl bg-surface-container-low text-on-surface-variant hover:bg-error hover:text-white transition-all duration-300 member-delete-btn shadow-sm" data-id="${m.id}" data-name="${m.ho_ten || 'hội viên này'}" title="Xóa">
                 <span class="material-symbols-outlined text-lg">delete</span>
               </button>
             </div>
@@ -254,47 +275,66 @@ window.GymApp.pages['members-list'] = {
       const rating = pt.danh_gia || pt.rating || 0;
       const ratingDisplay = rating ? rating.toFixed(1) : '—';
       const isActive = pt.trang_thai === 'hoat_dong' || pt.trang_thai === 'active';
+      
       return `
-        <div class="gym-card bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl border border-outline-variant p-loose shadow-sm flex flex-col gap-standard transition-all hover:-translate-y-1 hover:shadow-xl hover:border-brand-primary/50 group min-w-0">
-          <div class="flex items-center gap-loose min-w-0">
-            <div class="relative group-hover:scale-110 transition-transform duration-500 flex-shrink-0">
-              ${window.GymApp.avatarImg(pt.avatar_url, pt.ho_ten, 'lg')}
-              <span class="absolute bottom-0 right-0 w-3.5 h-3.5 border-2 border-white rounded-full ${isActive ? 'bg-green-500 shadow-sm shadow-green-200' : 'bg-outline'}"></span>
+        <div class="group bg-surface-container-lowest/90 backdrop-blur-md rounded-3xl border border-outline-variant p-standard shadow-sm hover:shadow-2xl hover:shadow-brand-primary/10 hover:-translate-y-1.5 transition-all duration-500 flex flex-col gap-standard relative overflow-hidden">
+          <!-- Card Header: Avatar & Quick Info -->
+          <div class="flex items-start gap-standard">
+            <div class="relative flex-shrink-0">
+              <div class="p-1 rounded-2xl bg-surface-container-low border border-outline-variant/50 group-hover:border-brand-primary/30 transition-colors duration-500">
+                ${window.GymApp.avatarImg(pt.avatar_url, pt.ho_ten, 'lg')}
+              </div>
+              <span class="absolute -bottom-1 -right-1 w-5 h-5 border-4 border-white rounded-full ${isActive ? 'bg-green-500 shadow-sm shadow-green-200' : 'bg-outline'} shadow-sm"></span>
             </div>
-            <div class="flex flex-col min-w-0">
-              <button class="pt-name-link text-left font-bold text-on-surface text-body-md truncate group-hover:text-brand-primary transition-colors cursor-pointer" data-id="${pt.id}" title="${pt.ho_ten}" style="background:transparent;border:none;padding:0;">
+            
+            <div class="flex flex-col min-w-0 pt-1">
+              <button class="pt-name-link text-left font-bold text-on-surface text-body-lg truncate group-hover:text-brand-primary transition-colors cursor-pointer block leading-tight" data-id="${pt.id}" title="${pt.ho_ten}">
                 ${pt.ho_ten}
               </button>
-              <p class="text-on-surface-variant text-body-sm font-medium tracking-tight truncate">${pt.ma_ho_so || ''}</p>
+              <div class="flex items-center gap-1 mt-1">
+                <span class="text-on-surface-variant text-[11px] font-mono tracking-tight bg-surface-container px-1.5 py-0.5 rounded-md border border-outline-variant/30">${pt.ma_ho_so || 'PT-XXXX'}</span>
+              </div>
             </div>
           </div>
 
-          <div class="h-px bg-outline-variant/30 w-full my-xs"></div>
-
-          <div class="grid grid-cols-2 gap-compact min-w-0">
-            <div class="flex flex-col bg-surface-container-low/50 p-compact rounded-xl border border-outline-variant/20 min-w-0">
-              <span class="text-on-surface-variant text-[10px] uppercase font-bold tracking-widest opacity-60">Chuyên môn</span>
-              <span class="text-on-surface font-bold text-body-sm truncate">${pt.chuyen_mon || pt.specialty || 'HLV'}</span>
+          <!-- Info Grid -->
+          <div class="grid grid-cols-2 gap-2">
+            <div class="flex flex-col bg-surface-container-low/40 p-2.5 rounded-2xl border border-outline-variant/20 group-hover:bg-brand-primary/5 transition-colors duration-500">
+              <span class="text-[9px] uppercase font-bold tracking-widest text-on-surface-variant opacity-50 mb-1">Chuyên môn</span>
+              <span class="text-on-surface font-bold text-body-sm truncate">${pt.chuyen_mon || pt.specialty || 'Huấn luyện viên'}</span>
             </div>
-            <div class="flex flex-col bg-surface-container-low/50 p-compact rounded-xl border border-outline-variant/20 min-w-0">
-              <span class="text-on-surface-variant text-[10px] uppercase font-bold tracking-widest opacity-60">Kinh nghiệm</span>
+            <div class="flex flex-col bg-surface-container-low/40 p-2.5 rounded-2xl border border-outline-variant/20 group-hover:bg-brand-primary/5 transition-colors duration-500">
+              <span class="text-[9px] uppercase font-bold tracking-widest text-on-surface-variant opacity-50 mb-1">Kinh nghiệm</span>
               <span class="text-on-surface font-bold text-body-sm">${pt.kinh_nghiem || 0} năm</span>
             </div>
           </div>
 
-          <div class="flex items-center justify-between mt-xs">
-            <div class="flex items-center gap-xs bg-brand-primary/10 px-compact py-xs rounded-lg border border-brand-primary/20">
+          <div class="flex items-center justify-between px-1">
+            <div class="flex items-center gap-2 bg-brand-primary/10 px-3 py-1.5 rounded-xl border border-brand-primary/20">
               <span class="material-symbols-outlined text-sm text-brand-primary" style="font-variation-settings:'FILL' 1">star</span>
               <span class="font-bold text-body-sm text-brand-primary">${ratingDisplay}</span>
             </div>
-            <div class="flex gap-xs">
-              <button class="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-container text-on-surface-variant hover:bg-brand-primary hover:text-white transition-all pt-view-btn" data-id="${pt.id}" title="Xem chi tiết">
+            <div class="flex flex-col items-end">
+              <span class="text-[9px] uppercase font-bold tracking-widest text-on-surface-variant opacity-50">SĐT</span>
+              <span class="text-body-sm font-bold text-on-surface-variant">${pt.so_dien_thoai || pt.phone || '—'}</span>
+            </div>
+          </div>
+
+          <!-- Actions Overlay/Footer -->
+          <div class="mt-auto pt-standard border-t border-outline-variant/30 flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-sm text-outline">verified</span>
+              <span class="text-[11px] font-bold text-on-surface-variant/70 uppercase tracking-wider">${window.GymApp.formatEnumLabel(pt.loai_ho_so || 'pt')}</span>
+            </div>
+            
+            <div class="flex gap-1">
+              <button class="w-9 h-9 flex items-center justify-center rounded-xl bg-surface-container-low text-on-surface-variant hover:bg-brand-primary hover:text-white transition-all duration-300 pt-view-btn shadow-sm" data-id="${pt.id}" title="Xem chi tiết">
                 <span class="material-symbols-outlined text-lg">visibility</span>
               </button>
-              <button class="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-container text-on-surface-variant hover:bg-brand-primary hover:text-white transition-all pt-edit-btn" data-id="${pt.id}" title="Chỉnh sửa">
+              <button class="w-9 h-9 flex items-center justify-center rounded-xl bg-surface-container-low text-on-surface-variant hover:bg-brand-primary hover:text-white transition-all duration-300 pt-edit-btn shadow-sm" data-id="${pt.id}" title="Chỉnh sửa">
                 <span class="material-symbols-outlined text-lg">edit</span>
               </button>
-              <button class="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-container text-on-surface-variant hover:bg-error hover:text-white transition-all pt-delete-btn" data-id="${pt.id}" data-name="${pt.ho_ten}" title="Xóa">
+              <button class="w-9 h-9 flex items-center justify-center rounded-xl bg-surface-container-low text-on-surface-variant hover:bg-error hover:text-white transition-all duration-300 pt-delete-btn shadow-sm" data-id="${pt.id}" data-name="${pt.ho_ten}" title="Xóa">
                 <span class="material-symbols-outlined text-lg">delete</span>
               </button>
             </div>
@@ -311,9 +351,6 @@ window.GymApp.pages['members-list'] = {
     `;
   },
 
-  // =====================================================================
-  // TASK 1 — MODAL CHI TIẾT PT MỚI (3 TAB: Thông tin / Học viên / Lịch dạy)
-  // =====================================================================
   _showPtModal: async function (id) {
     const self = this;
     let pt = null;
@@ -465,7 +502,6 @@ window.GymApp.pages['members-list'] = {
         </div>
       </div>`;
 
-    // ---- TAB THÔNG TIN ----
     if (tab === 'info') {
       const hasAccount = !!pt.tai_khoan_id;
       return `
@@ -484,7 +520,7 @@ window.GymApp.pages['members-list'] = {
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">
           ${[
           { icon: 'people', label: 'Học viên hiện tại', value: pt.so_hoc_vien || 0, color: '#0ea5e9', bg: '#eff8ff' },
-          { icon: 'star', label: 'Đánh giá trung bình', value: (pt.danh_gia || pt.rating || 0).toFixed(1) + ' ⭐', color: '#f59e0b', bg: '#fffbeb' },
+          { icon: 'star', label: 'Đánh giá trung bình', value: (pt.danh_gia || pt.rating || 0).toFixed(1) + ' ★', color: '#f59e0b', bg: '#fffbeb' },
           { icon: 'play_lesson', label: 'Tổng buổi dạy', value: pt.tong_buoi_da_day || pt.sessions || 0, color: '#10b981', bg: '#f0fdf4' },
         ].map(s => `
             <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px;text-align:center;">
@@ -497,7 +533,6 @@ window.GymApp.pages['members-list'] = {
           `).join('')}
         </div>
 
-        <!-- Tài khoản đăng nhập -->
         <div style="margin-top:16px;border:1px solid var(--md-sys-color-outline-variant,#e0e5de);border-radius:12px;overflow:hidden;">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--md-sys-color-surface-container,#eff2ef);">
             <div style="display:flex;align-items:center;gap:8px;">
@@ -535,7 +570,6 @@ window.GymApp.pages['members-list'] = {
       `;
     }
 
-    // ---- TAB HỌC VIÊN ----
     if (tab === 'members') {
       if (ptMembers.length === 0) {
         return `
@@ -572,7 +606,6 @@ window.GymApp.pages['members-list'] = {
       `;
     }
 
-    // ---- TAB LỊCH DẠY ----
     if (tab === 'schedule') {
       const today = new Date(); today.setHours(0, 0, 0, 0);
 
@@ -584,7 +617,6 @@ window.GymApp.pages['members-list'] = {
           </div>`;
       }
 
-      // Group by date
       const grouped = {};
       ptSchedules.forEach(s => {
         const dateKey = s.ngay_tap || s.date || '';
@@ -671,7 +703,6 @@ window.GymApp.pages['members-list'] = {
     if (tab === 'members') {
       document.querySelectorAll('.pt-member-link').forEach(el => {
         el.addEventListener('click', () => {
-          // Task 3: Close PT modal and open Member modal
           document.getElementById('gym-pt-modal')?.remove();
           this._showMemberModal(el.dataset.mid);
         });
@@ -679,9 +710,6 @@ window.GymApp.pages['members-list'] = {
     }
   },
 
-  // =====================================================================
-  // TASK 2 — MODAL CHỈNH SỬA PT (sửa flow refresh data cache)
-  // =====================================================================
   _showPtEditModal: async function (id) {
     const self = this;
     let pt = null;
@@ -813,17 +841,14 @@ window.GymApp.pages['members-list'] = {
         await window.GymApp.api.put(`/trainers/${id}`, updatePayload);
         window.GymApp.toast('Đã cập nhật thông tin PT thành công!', 'success');
 
-        // FIX TASK 2: Refresh data cache từ API thay vì chỉ re-render card
         if (window.GymApp.fetchInitialData) {
           await window.GymApp.fetchInitialData();
         } else {
-          // Fallback: cập nhật trực tiếp vào cache
           const idx = (window.GymApp.data.pts || []).findIndex(x => x.id == id);
           if (idx !== -1) {
             window.GymApp.data.pts[idx] = { ...window.GymApp.data.pts[idx], ...updatePayload };
           }
         }
-        // Re-apply filter để refresh list với data mới
         self._ptFiltered = [...(window.GymApp.data.pts || [])];
         self._applyPtFilter();
 
@@ -836,7 +861,6 @@ window.GymApp.pages['members-list'] = {
     });
   },
 
-  // ===== MODAL CHI TIẾT HỘI VIÊN (giữ nguyên) =====
   _showMemberModal: async function (id) {
     const self = this;
     let m = null;
@@ -972,14 +996,6 @@ window.GymApp.pages['members-list'] = {
     overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
     const escH = e => { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', escH); } };
     document.addEventListener('keydown', escH);
-  },
-
-  _getUpcomingPackages: function (m) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return (this._memberPackageHistory[m.id] || [])
-      .filter(p => new Date(p.from) > today)
-      .sort((a, b) => new Date(a.from) - new Date(b.from));
   },
 
   _packageStatusBadge: function (status) {
@@ -1144,7 +1160,7 @@ window.GymApp.pages['members-list'] = {
             <p style="font-size:14px;font-weight:700;color:#475569;margin:0 0 4px;">Chưa đăng ký gói tập</p>
           </div>`}
         <div style="margin-bottom:24px;">
-          <h5 style="font-size:13px;font-weight:800;text-transform:uppercase;color:var(--md-sys-color-on-surface-variant);margin-bottom:12px;">🗓 Gói sắp kích hoạt</h5>
+          <h5 style="font-size:13px;font-weight:800;text-transform:uppercase;color:var(--md-sys-color-on-surface-variant);margin-bottom:12px;">📅 Gói sắp kích hoạt</h5>
           ${upcomingPackages.length === 0
           ? `<div style="text-align:center;padding:24px;background:#f8fafc;border-radius:12px;border:1px dashed #cbd5e1;font-size:13px;color:var(--md-sys-color-on-surface-variant);">Không có gói tập sắp tới</div>`
           : upcomingPackages.map(p => renderPkgCard(p, 'upcoming')).join('')}
@@ -1204,7 +1220,7 @@ window.GymApp.pages['members-list'] = {
                       <span class="material-symbols-outlined" style="font-size:16px;color:#64748b;">play_lesson</span>
                     </div>
                     <div>
-                      <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;margin-bottom:2px;">Số buổi</div>
+                      <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;margin-bottom:2px;">Số buổi tập</div>
                       <div style="font-size:13px;font-weight:800;color:#1e293b;">
                         <span style="color:${buoiConLai > 0 ? '#1D9336' : '#ba1a1a'};font-size:15px;">${buoiConLai}</span> / ${c.buoi_dang_ky || 0}
                       </div>
@@ -1269,7 +1285,7 @@ window.GymApp.pages['members-list'] = {
         const password = document.getElementById('modal-password')?.value;
         if (!username || !password) return window.GymApp.toast('Vui lòng nhập đủ tên đăng nhập và mật khẩu.', 'error');
         btn.disabled = true;
-        btn.innerHTML = '<span class="animate-spin material-symbols-outlined text-sm">sync</span> Đang tạo...';
+        btn.innerHTML = '<span class="animate-spin material-symbols-outlined" style="font-size:16px;">sync</span> Đang tạo...';
         try {
           const res = await window.GymApp.api.post(`/members/${m.id}/create-account`, { ten_dang_nhap: username, mat_khau: password });
           if (res.success) {
@@ -1278,12 +1294,12 @@ window.GymApp.pages['members-list'] = {
           } else {
             window.GymApp.toast(res.message || 'Không thể tạo tài khoản.', 'error');
             btn.disabled = false;
-            btn.innerHTML = '<span class="material-symbols-outlined text-sm">person_add</span> Tạo tài khoản';
+            btn.innerHTML = '<span class="material-symbols-outlined text-lg">person_add</span> Cấp tài khoản mới';
           }
-        } catch (e) {
-          window.GymApp.toast('Lỗi kết nối máy chủ.', 'error');
+        } catch (err) {
+          window.GymApp.toast('Lỗi khi tạo tài khoản.', 'error');
           btn.disabled = false;
-          btn.innerHTML = '<span class="material-symbols-outlined text-sm">person_add</span> Tạo tài khoản';
+          btn.innerHTML = '<span class="material-symbols-outlined text-lg">person_add</span> Cấp tài khoản mới';
         }
       });
     }
