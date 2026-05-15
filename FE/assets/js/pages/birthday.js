@@ -43,15 +43,15 @@ window.GymApp.pages['birthday'] = {
     const busiestGroup = groups.reduce((best, g) => !best || g.members.length > best.members.length ? g : best, null);
 
     return `
-      <div class="flex flex-col gap-margin">
+      <div class="flex flex-col gap-lg">
         <!-- Stats -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-loose">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-standard">
           ${[
         { label: 'Sinh nhật hôm nay', value: todayBirthdays.length, icon: 'cake', iconBg: 'icon-bg-pink', color: 'text-[#a52d59]' },
         { label: 'Tháng có dữ liệu', value: groups.length, icon: 'calendar_month', iconBg: 'icon-bg-green', color: 'text-brand-primary' },
         { label: busiestGroup ? `Đông nhất: ${busiestGroup.label}` : 'Đông nhất', value: busiestGroup ? busiestGroup.members.length : 0, icon: 'groups', iconBg: 'icon-bg-orange', color: 'text-[#e65100]' },
       ].map(s => `
-            <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-loose shadow-sm flex items-center gap-loose">
+            <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-standard shadow-sm flex items-center gap-standard">
               <div class="icon-bg ${s.iconBg}" style="width:48px;height:48px;border-radius:14px">
                 <span class="material-symbols-outlined ${s.color} text-2xl" style="font-variation-settings:'FILL' 1">${s.icon}</span>
               </div>
@@ -89,7 +89,7 @@ window.GymApp.pages['birthday'] = {
 
         <!-- Lịch sinh nhật 12 tháng -->
         <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
-          <div class="section-header px-loose py-standard border-b border-outline-variant flex flex-col md:flex-row md:items-center gap-xs md:gap-compact">
+          <div class="section-header px-standard py-compact border-b border-outline-variant flex flex-col md:flex-row md:items-center gap-xs md:gap-compact">
             <div class="flex items-center gap-compact">
               <div class="icon-bg icon-bg-pink">
                 <span class="material-symbols-outlined text-[#a52d59] text-lg" style="font-variation-settings:'FILL' 1">featured_seasonal_and_gifts</span>
@@ -103,18 +103,18 @@ window.GymApp.pages['birthday'] = {
             <table class="w-full text-left border-collapse gym-table">
               <thead>
                 <tr class="h-10">
-                  <th class="px-loose font-bold text-body-sm text-on-surface-variant uppercase tracking-wider" style="width:150px">Tháng</th>
-                  <th class="px-loose font-bold text-body-sm text-on-surface-variant uppercase tracking-wider" style="width:110px">Số lượng</th>
-                  <th class="px-loose font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Hội viên sinh nhật</th>
-                  <th class="px-loose font-bold text-body-sm text-on-surface-variant uppercase tracking-wider text-right" style="width:120px">Hiệu ứng</th>
+                  <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider" style="width:150px">Tháng</th>
+                  <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider" style="width:110px">Số lượng</th>
+                  <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Hội viên sinh nhật</th>
+                  <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider text-right" style="width:120px">Hiệu ứng</th>
                 </tr>
               </thead>
               <tbody>
                 ${groups.length === 0
-        ? `<tr><td colspan="4" class="px-loose py-margin text-center text-on-surface-variant">Không có dữ liệu sinh nhật</td></tr>`
+        ? `<tr><td colspan="4" class="px-standard py-standard text-center text-on-surface-variant">Không có dữ liệu sinh nhật</td></tr>`
         : groups.map(group => `
                     <tr class="birthday-month-row border-b border-outline-variant hover:bg-surface-container-low transition-colors cursor-pointer" data-month="${group.month}" data-label="${group.label}" data-count="${group.members.length}">
-                      <td class="px-loose py-standard align-top">
+                      <td class="px-standard py-compact align-top">
                         <div class="flex items-center gap-compact">
                           <div class="icon-bg icon-bg-pink" style="border-radius:10px">
                             <span class="material-symbols-outlined text-[#a52d59] text-sm" style="font-variation-settings:'FILL' 1">cake</span>
@@ -125,12 +125,12 @@ window.GymApp.pages['birthday'] = {
                           </div>
                         </div>
                       </td>
-                      <td class="px-loose py-standard align-top">
+                      <td class="px-standard py-compact align-top">
                         <span class="inline-flex items-center justify-center px-compact py-xs rounded-full font-bold text-body-sm bg-[#fff3e0] text-[#e65100]">
                           ${group.members.length} người
                         </span>
                       </td>
-                      <td class="px-loose py-standard">
+                      <td class="px-standard py-compact">
                         <div class="flex flex-wrap gap-compact">
                           ${group.members.map(m => `
                             <div class="birthday-member-chip gym-card flex items-center gap-compact bg-surface-container border border-outline-variant rounded-xl px-compact py-xs">
@@ -143,7 +143,7 @@ window.GymApp.pages['birthday'] = {
                           `).join('')}
                         </div>
                       </td>
-                      <td class="px-loose py-standard align-middle text-right">
+                      <td class="px-standard py-compact align-middle text-right">
                         <button class="birthday-burst-btn inline-flex items-center gap-xs px-standard py-compact rounded-xl border border-outline-variant text-on-surface-variant hover:text-[#a52d59] hover:border-[#a52d59]/40 transition-colors font-bold text-body-sm" data-month="${group.month}" data-label="${group.label}" data-count="${group.members.length}">
                           <span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL' 1">auto_awesome</span>
                           Bắn

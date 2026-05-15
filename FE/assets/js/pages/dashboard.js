@@ -32,7 +32,7 @@ window.GymApp.pages['dashboard'] = {
     ];
 
     return `
-      <div class="flex flex-col gap-margin animate-in fade-in duration-500">
+      <div class="flex flex-col gap-lg animate-in fade-in duration-500">
 
         <!-- Page Title -->
         <div class="page-title-bar flex flex-col md:flex-row md:items-center justify-between gap-compact">
@@ -52,9 +52,9 @@ window.GymApp.pages['dashboard'] = {
         </div>
 
         <!-- Stat Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-loose">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-standard">
           ${stats.map(c => `
-            <div class="gym-card bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl border border-outline-variant p-loose shadow-sm flex flex-col gap-standard transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-brand-primary/40 group relative overflow-hidden">
+            <div class="gym-card bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl border border-outline-variant p-standard shadow-sm flex flex-col gap-standard transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-brand-primary/40 group relative overflow-hidden">
               <div class="absolute inset-0 bg-gradient-to-br from-brand-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <div class="flex items-center justify-between relative z-10">
                 <span class="text-on-surface-variant font-body-sm text-body-sm font-bold uppercase tracking-wider leading-tight" style="max-width:calc(100% - 52px)">${c.label}</span>
@@ -74,42 +74,42 @@ window.GymApp.pages['dashboard'] = {
         </div>
 
         <!-- Charts Row -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-loose">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-standard">
 
           <!-- Biểu đồ doanh thu -->
           <div class="lg:col-span-2 gym-card bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl border border-outline-variant shadow-sm overflow-hidden transition-all hover:shadow-lg">
-            <div class="section-header px-loose py-standard border-b border-outline-variant flex items-center gap-compact bg-surface-container-lowest/40">
+            <div class="section-header px-standard py-compact border-b border-outline-variant flex items-center gap-compact bg-surface-container-lowest/40">
               <div class="w-8 h-8 rounded-lg bg-brand-primary/10 flex items-center justify-center">
                 <span class="material-symbols-outlined text-brand-primary text-lg" style="font-variation-settings:'FILL' 1">bar_chart</span>
               </div>
               <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface flex-1">Doanh thu 12 tháng</h3>
               <span class="text-on-surface-variant text-body-sm italic">triệu VNĐ</span>
             </div>
-            <div class="p-loose" style="height:280px">
+            <div class="p-standard" style="height:280px">
               <canvas id="chart-revenue"></canvas>
             </div>
           </div>
 
           <!-- Biểu đồ gói tập -->
           <div class="gym-card bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl border border-outline-variant shadow-sm overflow-hidden transition-all hover:shadow-lg">
-            <div class="section-header px-loose py-standard border-b border-outline-variant flex items-center gap-compact bg-surface-container-lowest/40">
+            <div class="section-header px-standard py-compact border-b border-outline-variant flex items-center gap-compact bg-surface-container-lowest/40">
               <div class="icon-bg icon-bg-blue">
                 <span class="material-symbols-outlined text-blue-600 dark:text-blue-400 text-lg" style="font-variation-settings:'FILL' 1">donut_large</span>
               </div>
               <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface">Phân bố hội viên</h3>
             </div>
-            <div class="p-loose flex flex-col items-center justify-center" style="height:280px">
+            <div class="p-standard flex flex-col items-center justify-center" style="height:280px">
               <canvas id="chart-packages"></canvas>
             </div>
           </div>
         </div>
 
         <!-- Bottom Row -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-loose">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-standard">
 
           <!-- Check-in gần nhất -->
           <div class="bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl border border-outline-variant shadow-sm overflow-hidden transition-all hover:shadow-lg">
-            <div class="section-header px-loose py-standard border-b border-outline-variant flex items-center justify-between bg-surface-container-lowest/40">
+            <div class="section-header px-standard py-compact border-b border-outline-variant flex items-center justify-between bg-surface-container-lowest/40">
               <div class="flex items-center gap-compact">
                 <div class="w-8 h-8 rounded-lg bg-brand-primary/10 flex items-center justify-center">
                   <span class="material-symbols-outlined text-brand-primary text-lg" style="font-variation-settings:'FILL' 1">how_to_reg</span>
@@ -122,12 +122,12 @@ window.GymApp.pages['dashboard'] = {
             </div>
             <div class="divide-y divide-outline-variant">
               ${recentCheckins.length === 0
-                ? `<div class="flex flex-col items-center justify-center py-loose text-center opacity-60">
+                ? `<div class="flex flex-col items-center justify-center py-standard text-center opacity-60">
                      <span class="material-symbols-outlined text-4xl mb-xs">person_off</span>
                      <p class="text-on-surface-variant text-body-sm font-medium">Chưa có check-in hôm nay</p>
                    </div>`
                 : recentCheckins.map(c => `
-                    <div class="flex items-center gap-compact px-loose py-compact hover:bg-brand-primary/5 transition-all group cursor-default">
+                    <div class="flex items-center gap-compact px-standard py-compact hover:bg-brand-primary/5 transition-all group cursor-default">
                       <div class="relative">
                         ${window.GymApp.avatarImg(c.avatar, c.name, 'sm')}
                         <span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
@@ -148,7 +148,7 @@ window.GymApp.pages['dashboard'] = {
 
           <!-- Tình trạng hội viên -->
           <div class="bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl border border-outline-variant shadow-sm overflow-hidden transition-all hover:shadow-lg">
-            <div class="section-header px-loose py-standard border-b border-outline-variant flex items-center justify-between bg-surface-container-lowest/40">
+            <div class="section-header px-standard py-compact border-b border-outline-variant flex items-center justify-between bg-surface-container-lowest/40">
               <div class="flex items-center gap-compact">
                 <div class="icon-bg icon-bg-pink">
                   <span class="material-symbols-outlined text-tertiary text-lg" style="font-variation-settings:'FILL' 1">analytics</span>
@@ -166,7 +166,7 @@ window.GymApp.pages['dashboard'] = {
                 { label: 'Đã hết hạn', value: dbData.hoi_vien.het_han, color: 'text-error', dot: 'bg-error', glow: 'shadow-[0_0_8px_rgba(186,26,26,0.4)]' },
                 { label: 'Chưa đăng ký gói', value: dbData.hoi_vien.chua_dang_ky, color: 'text-on-surface-variant', dot: 'bg-outline', glow: '' },
               ].map(r => `
-                <div class="flex items-center justify-between px-loose py-compact hover:bg-surface-container-low transition-all group cursor-default">
+                <div class="flex items-center justify-between px-standard py-compact hover:bg-surface-container-low transition-all group cursor-default">
                   <div class="flex items-center gap-compact">
                     <span class="w-2 h-2 rounded-full ${r.dot} ${r.glow} group-hover:scale-150 transition-transform"></span>
                     <span class="text-on-surface text-body-md font-medium">${r.label}</span>
@@ -179,8 +179,8 @@ window.GymApp.pages['dashboard'] = {
         </div>
 
         <!-- Footer Info -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-loose">
-          <div class="gym-card bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl border border-outline-variant p-loose shadow-sm flex items-center gap-loose transition-all hover:shadow-lg hover:border-brand-primary/30 group">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-standard">
+          <div class="gym-card bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl border border-outline-variant p-standard shadow-sm flex items-center gap-standard transition-all hover:shadow-lg hover:border-brand-primary/30 group">
             <div class="w-14 h-14 bg-brand-primary rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
               <span class="material-symbols-outlined text-white text-3xl" style="font-variation-settings:'FILL' 1">sports_gymnastics</span>
             </div>
@@ -192,7 +192,7 @@ window.GymApp.pages['dashboard'] = {
                <span class="material-symbols-outlined text-5xl">diversity_3</span>
             </div>
           </div>
-          <div class="gym-card bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl border border-outline-variant p-loose shadow-sm flex items-center gap-loose transition-all hover:shadow-lg hover:border-secondary/30 group">
+          <div class="gym-card bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl border border-outline-variant p-standard shadow-sm flex items-center gap-standard transition-all hover:shadow-lg hover:border-secondary/30 group">
             <div class="w-14 h-14 bg-secondary-container rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
               <span class="material-symbols-outlined text-secondary text-3xl" style="font-variation-settings:'FILL' 1">calendar_today</span>
             </div>

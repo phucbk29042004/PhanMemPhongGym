@@ -196,6 +196,45 @@
     document.addEventListener('keydown', escHandler);
   };
 
+  // ===== CONFIRM MODAL =====
+  window.GymApp.confirm = function (message, title = 'Xác nhận') {
+    return new Promise((resolve) => {
+      const html = `
+        <div class="p-loose">
+          <div class="flex items-center gap-standard mb-standard">
+            <div class="w-12 h-12 rounded-2xl bg-brand-primary/10 flex items-center justify-center">
+              <span class="material-symbols-outlined text-brand-primary text-3xl">help_outline</span>
+            </div>
+            <h3 class="text-headline-sm font-black text-on-surface tracking-tight">${title}</h3>
+          </div>
+          <p class="text-body-md text-on-surface-variant mb-loose leading-relaxed font-medium">${message}</p>
+          <div class="flex justify-end gap-standard mt-loose">
+            <button id="confirm-cancel" class="px-loose py-compact rounded-xl font-bold text-on-surface-variant hover:bg-surface-container transition-all">Hủy bỏ</button>
+            <button id="confirm-ok" class="px-loose py-compact rounded-xl font-bold bg-brand-primary text-white shadow-lg shadow-brand-primary/20 hover:scale-[1.02] transition-all">Đồng ý</button>
+          </div>
+        </div>
+      `;
+      window.GymApp.showModal(html);
+      
+      const modal = document.getElementById('gym-modal');
+      const close = (val) => {
+        modal?.remove();
+        resolve(val);
+      };
+
+      document.getElementById('confirm-cancel')?.addEventListener('click', () => close(false));
+      document.getElementById('confirm-ok')?.addEventListener('click', () => close(true));
+      
+      // Ghi đè nút X của modal để trả về false
+      const closeBtn = document.getElementById('close-modal');
+      if (closeBtn) {
+        const newBtn = closeBtn.cloneNode(true);
+        closeBtn.parentNode.replaceChild(newBtn, closeBtn);
+        newBtn.addEventListener('click', () => close(false));
+      }
+    });
+  };
+
   window.GymApp.avatarImg = function (avatarUrl, name, size = 'md', extraStyle = '') {
     const dim = size === 'sm' ? 32 : size === 'lg' ? 48 : 36;
     const defaultStyle = `width:${dim}px;height:${dim}px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid #becab9;`;

@@ -48,12 +48,12 @@ window.GymApp.pages['checkin'] = {
     const stats = this._buildStats(checkins);
 
     return `
-      <div class="flex flex-col gap-margin">
+      <div class="flex flex-col gap-lg">
 
         <!-- Stats -->
-        <div id="checkin-stats-grid" class="grid grid-cols-2 md:grid-cols-4 gap-loose">
+        <div id="checkin-stats-grid" class="grid grid-cols-2 md:grid-cols-4 gap-standard">
           ${stats.map(s => `
-            <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-loose shadow-sm flex flex-col gap-standard">
+            <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-standard shadow-sm flex flex-col gap-standard">
               <div class="flex items-center justify-between">
                 <span class="text-on-surface-variant font-body-sm text-body-sm font-bold uppercase tracking-wider leading-tight" style="max-width:calc(100% - 52px)">${s.label}</span>
                 <div class="icon-bg ${s.iconBg}">
@@ -65,11 +65,11 @@ window.GymApp.pages['checkin'] = {
           `).join('')}
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-loose">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-standard">
 
           <!-- Biểu đồ check-in theo giờ -->
           <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
-            <div class="section-header px-loose py-standard border-b border-outline-variant flex items-center gap-compact">
+            <div class="section-header px-standard py-compact border-b border-outline-variant flex items-center gap-compact">
               <div class="icon-bg icon-bg-green">
                 <span class="material-symbols-outlined text-brand-primary text-lg" style="font-variation-settings:'FILL' 1">bar_chart_4_bars</span>
               </div>
@@ -102,7 +102,7 @@ window.GymApp.pages['checkin'] = {
             </div>
             <div id="checkin-cards-grid" class="grid grid-cols-2 md:grid-cols-3 gap-standard max-h-80 overflow-y-auto pr-xs">
               ${checkins.length === 0
-        ? `<div class="col-span-3 flex flex-col items-center justify-center py-margin text-center">
+        ? `<div class="col-span-3 flex flex-col items-center justify-center py-standard text-center">
                      <span class="material-symbols-outlined text-4xl text-outline">person_off</span>
                      <p class="text-on-surface-variant text-body-sm mt-standard">Chưa có check-in hôm nay</p>
                    </div>`
@@ -126,11 +126,11 @@ window.GymApp.pages['checkin'] = {
 
         <!-- Bảng chi tiết -->
         <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
-          <div class="section-header px-loose py-standard border-b border-outline-variant flex items-center gap-compact">
-            <div class="icon-bg icon-bg-blue">
-              <span class="material-symbols-outlined text-secondary text-lg" style="font-variation-settings:'FILL' 1">table_rows</span>
+          <div class="section-header px-standard py-compact border-b border-outline-variant flex items-center gap-compact">
+            <div class="icon-bg icon-bg-blue" style="width:32px;height:32px;border-radius:8px">
+              <span class="material-symbols-outlined text-secondary text-base" style="font-variation-settings:'FILL' 1">table_rows</span>
             </div>
-            <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface">Chi tiết lượt vào</h3>
+            <h3 class="font-display-xl text-display-xl font-bold text-on-surface">Chi tiết lượt vào</h3>
           </div>
           <div id="checkin-table-container">
             ${this._renderDetailTable()}
@@ -148,7 +148,7 @@ window.GymApp.pages['checkin'] = {
 
     const rows = paginated.map(c => `
       <tr class="h-11 border-b border-outline-variant hover:bg-surface-container-low transition-colors">
-        <td class="px-loose">
+        <td class="px-standard">
           <div class="flex items-center gap-compact">
             ${window.GymApp.avatarImg(c.avatar_url, c.ho_ten, 'sm')}
             <div>
@@ -157,13 +157,13 @@ window.GymApp.pages['checkin'] = {
             </div>
           </div>
         </td>
-        <td class="px-loose">
+        <td class="px-standard">
           <div class="flex items-center gap-xs text-on-surface text-body-md">
             <span class="material-symbols-outlined text-brand-primary" style="font-size:14px">schedule</span>
             ${c.gio_hien_thi || c.thoi_diem.substring(11, 16)}
           </div>
         </td>
-        <td class="px-loose">${window.GymApp.statusBadge(c.loai === 'vao' ? 'active' : 'inactive')}</td>
+        <td class="px-standard">${window.GymApp.statusBadge(c.loai === 'vao' ? 'active' : 'inactive')}</td>
       </tr>
     `).join('');
 
@@ -172,12 +172,12 @@ window.GymApp.pages['checkin'] = {
         <table class="w-full text-left border-collapse gym-table">
           <thead>
             <tr class="h-10">
-              <th class="px-loose font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Hội viên</th>
-              <th class="px-loose font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Giờ vào</th>
-              <th class="px-loose font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Trạng thái</th>
+              <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Hội viên</th>
+              <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Giờ vào</th>
+              <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Trạng thái</th>
             </tr>
           </thead>
-          <tbody>${rows || `<tr><td colspan="3" class="px-loose py-margin text-center text-on-surface-variant">Không có dữ liệu</td></tr>`}</tbody>
+          <tbody>${rows || `<tr><td colspan="3" class="px-standard py-standard text-center text-on-surface-variant">Không có dữ liệu</td></tr>`}</tbody>
         </table>
       </div>
       ${window.GymApp.renderPagination(this._page, checkins.length, this._perPage)}
@@ -211,7 +211,7 @@ window.GymApp.pages['checkin'] = {
     if (statsGrid) {
       const stats = this._buildStats(checkins);
       statsGrid.innerHTML = stats.map(s => `
-        <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-loose shadow-sm flex flex-col gap-standard">
+        <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-standard shadow-sm flex flex-col gap-standard">
           <div class="flex items-center justify-between">
             <span class="text-on-surface-variant font-body-sm text-body-sm font-bold uppercase tracking-wider leading-tight" style="max-width:calc(100% - 52px)">${s.label}</span>
             <div class="icon-bg ${s.iconBg}">
@@ -231,7 +231,7 @@ window.GymApp.pages['checkin'] = {
     const grid = document.getElementById('checkin-cards-grid');
     if (grid) {
       grid.innerHTML = checkins.length === 0
-        ? `<div class="col-span-3 flex flex-col items-center justify-center py-margin text-center">
+        ? `<div class="col-span-3 flex flex-col items-center justify-center py-standard text-center">
              <span class="material-symbols-outlined text-4xl text-outline">person_off</span>
              <p class="text-on-surface-variant text-body-sm mt-standard">Chưa có check-in hôm nay</p>
            </div>`

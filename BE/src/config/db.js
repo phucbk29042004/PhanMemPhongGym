@@ -206,5 +206,159 @@ if (!migratedV4) {
   console.log('[DB] ✅ Migration thong_bao v4 hoàn thành — 16 loại thông báo (bổ sung cap_nhat_buoi_tap).');
 }
 
+// ── Migration v5: Tạo bảng thong_bao_user cho hội viên/PT (thông báo cá nhân) ──
+const migratedV5 = db.prepare(`SELECT gia_tri FROM cau_hinh WHERE khoa = 'db_migration_thongbao_user_v5'`).get();
+if (!migratedV5) {
+  db.exec(`
+    CREATE TABLE thong_bao_user (
+      id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      ho_so_id      INTEGER REFERENCES ho_so(id),
+      loai          TEXT DEFAULT 'thong_bao_chung',
+      tieu_de       TEXT NOT NULL,
+      noi_dung      TEXT NOT NULL,
+      da_doc        INTEGER NOT NULL DEFAULT 0 CHECK (da_doc IN (0,1)),
+      ngay_tao      DATETIME NOT NULL DEFAULT (datetime('now','localtime'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_tbu_hoso ON thong_bao_user(ho_so_id, da_doc);
+  `);
+  db.prepare(`INSERT OR IGNORE INTO cau_hinh (khoa, gia_tri, mo_ta) VALUES ('db_migration_thongbao_user_v5', '1', 'Tạo bảng thong_bao_user cho hội viên/PT')`).run();
+  console.log('[DB] ✅ Migration thong_bao_user v5 hoàn thành.');
+}
+
+// ── Migration v6: Nâng cấp bảng dang_ky_goi_tap (thêm cho_duyet, audit) ────
+// Kiểm tra xem đã migrate chưa thông qua config hoặc cấu trúc bảng
+const migratedV6 = db.prepare(`SELECT gia_tri FROM cau_hinh WHERE khoa = 'db_migration_package_reg_v6'`).get();
+const hasAuditCol = db.prepare(`PRAGMA table_info(dang_ky_goi_tap)`).all().some(c => c.name === 'nguoi_cap_nhat_id');
+
+if (!migratedV6 || !hasAuditCol) {
+  try {
+    db.transaction(() => {
+      // Kiểm tra nếu bảng old đã tồn tại từ lần trước lỗi thì xóa đi
+      db.exec(`DROP TABLE IF EXISTS dang_ky_goi_tap_old;`);
+      
+      // 1. Backup dữ liệu cũ (chỉ rename nếu bảng hiện tại chưa có audit col)
+      if (!hasAuditCol) {
+        db.exec(`ALTER TABLE dang_ky_goi_tap RENAME TO dang_ky_goi_tap_old;`);
+      } else {
+        // Nếu đã có audit col nhưng chưa có config, có thể do lần trước lỗi ở bước cuối
+        // Ta rename bảng hiện tại (đã mới) để copy lại cho chắc hoặc skip
+        // Ở đây để an toàn ta cứ rename để migrate lại từ đầu nếu có 'old'
+        // Nhưng nếu 'old' không có thì ta không thể migrate.
+        // Thực tế: Nếu đã có audit col thì bảng đã mới rồi.
+        console.log('[DB] Table dang_ky_goi_tap already has new schema.');
+      }
+
+      // 2. Tạo bảng mới (nếu chưa tồn tại - trường hợp đã rename)
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS dang_ky_goi_tap (
+          id              INTEGER PRIMARY KEY AUTOINCREMENT,
+          ho_so_id        INTEGER NOT NULL REFERENCES ho_so(id),
+          goi_tap_id      INTEGER NOT NULL REFERENCES goi_tap(id),
+          tu_ngay         DATE    NOT NULL,
+          den_ngay        DATE    NOT NULL,
+          gia_thuc_te     DECIMAL(15,2) NOT NULL,
+          ghi_chu_gia     TEXT,
+          trang_thai      TEXT    NOT NULL DEFAULT 'dang_hoat_dong'
+                                  CHECK (trang_thai IN ('cho_duyet','dang_hoat_dong','het_han','huy','tam_dung')),
+          phuong_thuc_tt  TEXT    CHECK (phuong_thuc_tt IN ('tien_mat','chuyen_khoan','the','momo','zalopay','khac')),
+          nguoi_thu_id    INTEGER REFERENCES ho_so(id),
+          ma_giao_dich    TEXT,
+          ghi_chu_tt      TEXT,
+          ngay_thanh_toan DATETIME,
+          nguoi_tao_id    INTEGER REFERENCES tai_khoan(id),
+          nguoi_cap_nhat_id INTEGER REFERENCES tai_khoan(id),
+          ngay_tao        DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
+          ngay_cap_nhat   DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
+          CHECK (den_ngay > tu_ngay)
+        );
+      `);
+
+      // 3. Nếu có bảng old thì mới copy dữ liệu
+      const hasOldTable = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='dang_ky_goi_tap_old'").get();
+      if (hasOldTable) {
+        db.exec(`
+          INSERT INTO dang_ky_goi_tap (
+            id, ho_so_id, goi_tap_id, tu_ngay, den_ngay, gia_thuc_te, ghi_chu_gia,
+            trang_thai, phuong_thuc_tt, nguoi_thu_id, ma_giao_dich, ghi_chu_tt,
+            ngay_thanh_toan, nguoi_tao_id, nguoi_cap_nhat_id, ngay_tao, ngay_cap_nhat
+          )
+          SELECT 
+            id, ho_so_id, goi_tap_id, tu_ngay, den_ngay, gia_thuc_te, ghi_chu_gia,
+            trang_thai, phuong_thuc_tt, nguoi_thu_id, ma_giao_dich, ghi_chu_tt,
+            ngay_thanh_toan, nguoi_tao_id, nguoi_tao_id, ngay_tao, ngay_cap_nhat
+          FROM dang_ky_goi_tap_old;
+        `);
+        // 4. Xóa backup
+        db.exec(`DROP TABLE dang_ky_goi_tap_old;`);
+      }
+
+      // 5. Cập nhật config trong cùng transaction
+      db.prepare(`INSERT OR REPLACE INTO cau_hinh (khoa, gia_tri, mo_ta) VALUES ('db_migration_package_reg_v6', '1', 'Nâng cấp bảng dang_ky_goi_tap cho App request')`).run();
+    })();
+    console.log('[DB] ✅ Migration dang_ky_goi_tap v6 hoàn thành.');
+  } catch (err) {
+    console.error('[DB] ❌ Migration v6 thất bại:', err.message);
+    // Nếu lỗi "no such table ... old" thì có thể do bảng đã được migrate rồi nhưng config chưa lưu
+    if (err.message.includes('no such table') && err.message.includes('old') && hasAuditCol) {
+       console.log('[DB] Table already migrated, updating config...');
+       db.prepare(`INSERT OR REPLACE INTO cau_hinh (khoa, gia_tri, mo_ta) VALUES ('db_migration_package_reg_v6', '1', 'Nâng cấp bảng dang_ky_goi_tap cho App request')`).run();
+    } else {
+       throw err; // Re-throw if it's a real issue
+    }
+  }
+}
+
+// ── Sửa lỗi View bị hỏng sau khi migrate (SQLite tự động đổi tên ref sang _old) ──
+const checkView = db.prepare("SELECT sql FROM sqlite_master WHERE type='view' AND name='v_trang_thai_hoi_vien'").get();
+if (checkView && checkView.sql.includes('dang_ky_goi_tap_old')) {
+  console.log('[DB] 🛠️ Phát hiện View v_trang_thai_hoi_vien bị hỏng (ref sang _old), đang tái tạo...');
+  db.transaction(() => {
+    db.exec(`DROP VIEW IF EXISTS v_trang_thai_hoi_vien;`);
+    db.exec(`
+      CREATE VIEW v_trang_thai_hoi_vien AS
+      SELECT
+          h.id,
+          h.ma_ho_so,
+          h.ho_ten,
+          h.so_dien_thoai,
+          h.email,
+          h.avatar_url,
+          h.is_deleted,
+          (SELECT MAX(d_ngay) FROM (
+             SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+             UNION ALL
+             SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+          )) AS den_ngay_xa_nhat,
+          CASE
+              WHEN NOT EXISTS (SELECT 1 FROM dang_ky_goi_tap dk WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong')
+                   AND NOT EXISTS (SELECT 1 FROM dang_ky_pt dp WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong')
+                  THEN 'chua_dang_ky'
+              WHEN (SELECT MAX(d_ngay) FROM (
+                      SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+                      UNION ALL
+                      SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+                   )) < date('now','localtime')
+                  THEN 'het_han'
+              WHEN (SELECT MAX(d_ngay) FROM (
+                      SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+                      UNION ALL
+                      SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+                   )) <= date('now','localtime','+7 days')
+                  THEN 'sap_het_han'
+              ELSE 'con_han'
+          END AS trang_thai_mau,
+          (SELECT COUNT(*) FROM dang_ky_pt dp
+           WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS so_goi_pt_dang_tap,
+          (SELECT COUNT(*) FROM dang_ky_goi_tap dk
+           WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong') AS so_goi_tap_hien_tai
+      FROM ho_so h
+      WHERE h.loai_ho_so = 'hoi_vien'
+        AND h.is_deleted = 0;
+    `);
+  })();
+  console.log('[DB] ✅ Tái tạo View v_trang_thai_hoi_vien thành công.');
+}
+
 export default db;
+
 

@@ -10,6 +10,7 @@ import MemberScheduleScreen from '../screens/member/MemberScheduleScreen';
 import MemberNotificationScreen from '../screens/member/MemberNotificationScreen';
 import MemberProfileScreen from '../screens/member/MemberProfileScreen';
 import MemberCheckinsScreen from '../screens/member/MemberCheckinsScreen';
+import { useNotificationStore } from '../store/useNotificationStore';
 
 const Tab = createBottomTabNavigator();
 
@@ -35,6 +36,8 @@ function TabLabel({ label, color, focused }) {
 }
 
 export default function MemberNavigator() {
+  const unreadCount = useNotificationStore(state => state.unreadCount);
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -94,6 +97,12 @@ export default function MemberNavigator() {
         options={{
           tabBarLabel: ({ color, focused }) => <TabLabel label="Thông báo" color={color} focused={focused} />,
           tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={Bell} color={color} focused={focused} />,
+          tabBarBadge: unreadCount > 0 ? unreadCount : null,
+          tabBarBadgeStyle: {
+            backgroundColor: '#dc2626',
+            fontSize: 10,
+            lineHeight: 14,
+          }
         }}
       />
 

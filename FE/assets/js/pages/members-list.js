@@ -119,6 +119,8 @@ window.GymApp.pages['members-list'] = {
               ${this._renderPtCards()}
             </div>
           </div>
+
+          </div>
         </div>
 
         <!-- Quick Stats -->
@@ -192,9 +194,17 @@ window.GymApp.pages['members-list'] = {
             </div>
             
             <div class="flex flex-col min-w-0 pt-1">
-              <button class="member-name-link text-left font-bold text-on-surface text-body-lg truncate group-hover:text-brand-primary transition-colors cursor-pointer block leading-tight" data-id="${m.id}" title="${m.ho_ten || 'Không rõ'}">
-                ${m.ho_ten || 'Không rõ'}
-              </button>
+              <div class="flex items-center gap-xs">
+                <button class="member-name-link text-left font-bold text-on-surface text-body-lg truncate group-hover:text-brand-primary transition-colors cursor-pointer block leading-tight" data-id="${m.id}" title="${m.ho_ten || 'Không rõ'}">
+                  ${m.ho_ten || 'Không rõ'}
+                </button>
+                ${m.co_yeu_cau_gia_han ? `
+                  <span class="flex items-center gap-[2px] bg-warning-container text-warning text-[9px] px-1 rounded font-bold animate-pulse" title="Có yêu cầu gia hạn từ App">
+                    <span class="material-symbols-outlined text-[12px]">app_registration</span>
+                    APP
+                  </span>
+                ` : ''}
+              </div>
               <div class="flex items-center gap-1 mt-1">
                 <span class="text-on-surface-variant text-[11px] font-mono tracking-tight bg-surface-container px-1.5 py-0.5 rounded-md border border-outline-variant/30">ID: ${m.ma_ho_so || '—'}</span>
               </div>
@@ -923,7 +933,14 @@ window.GymApp.pages['members-list'] = {
               <span style="position:absolute;bottom:2px;right:2px;width:14px;height:14px;border-radius:50%;background:${isCheckedIn ? '#4ade80' : '#94a3b8'};border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.2);"></span>
             </div>
             <div style="flex:1;min-width:0;padding-bottom:4px;">
-              <h3 style="font-size:20px;font-weight:800;color:#fff;line-height:1.2;margin:0 0 4px;text-shadow:0 1px 4px rgba(0,0,0,0.2);">${m.ho_ten || '—'}</h3>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <h3 style="font-size:20px;font-weight:800;color:#fff;line-height:1.2;margin:0 0 4px;text-shadow:0 1px 4px rgba(0,0,0,0.2);">${m.ho_ten || '—'}</h3>
+                ${m.co_yeu_cau_gia_han ? `
+                  <span style="display:flex;align-items:center;gap:2px;background:rgba(255,193,7,0.3);color:#ffc107;font-size:10px;padding:2px 6px;border-radius:6px;font-weight:800;backdrop-filter:blur(4px);border:1px solid rgba(255,193,7,0.5);margin-bottom:4px;" class="animate-pulse">
+                    <span class="material-symbols-outlined" style="font-size:12px;">app_registration</span>APP
+                  </span>
+                ` : ''}
+              </div>
               <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                 <span style="font-size:12px;color:rgba(255,255,255,0.8);font-weight:600;">${m.ma_ho_so || '—'}</span>
                 <span style="width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,0.5);"></span>
@@ -1867,16 +1884,6 @@ window.GymApp.pages['members-list'] = {
     if (badge) badge.style.display = this._memberSortState ? 'flex' : 'none';
   },
 
-  _switchTab: function (tab) {
-    this._tab = tab;
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-      const active = btn.dataset.tab === tab;
-      btn.style.background = active ? '#1D9336' : 'transparent';
-      btn.style.color = active ? '#fff' : '#3f4a3c';
-    });
-    document.getElementById('tab-content-members').classList.toggle('hidden', tab !== 'members');
-    document.getElementById('tab-content-pts').classList.toggle('hidden', tab !== 'pts');
-  },
 
   _showLoadingOverlay: function (text = 'Đang xử lý...') {
     this._hideLoadingOverlay();
@@ -2268,13 +2275,47 @@ window.GymApp.pages['members-list'] = {
     });
   },
 
+  _switchTab: function (tab) {
+    this._tab = tab;
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      const isActive = btn.dataset.tab === tab;
+      btn.classList.toggle('bg-brand-primary', isActive);
+      btn.classList.toggle('text-white', isActive);
+      btn.classList.toggle('shadow-md', isActive);
+      btn.classList.toggle('text-on-surface-variant', !isActive);
+    });
+
+    document.querySelectorAll('.tab-content').forEach(content => {
+      content.classList.toggle('hidden', content.id !== `tab-content-${tab}`);
+    });
+  },
+
   _setupPgHandler: function () {
     const self = this;
-    window.GymApp._pgHandler = function (pg) {
-      if (self._tab === 'members') { self._memberPage = pg; self._refreshMemberTable(); }
-      else { self._ptPage = pg; self._refreshPtCards(); }
-    };
+    // Use event delegation for pagination buttons to ensure they work after re-renders
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('.pagination-btn');
+      if (!btn) return;
+      
+      const page = parseInt(btn.dataset.page);
+      if (isNaN(page)) return;
+
+      // Identify which section we are paginating
+      const membersContainer = btn.closest('#members-table-container');
+      const ptsContainer = btn.closest('#pt-cards-container');
+
+      if (membersContainer) {
+        self._memberPage = page;
+        self._refreshMemberTable();
+        membersContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else if (ptsContainer) {
+        self._ptPage = page;
+        self._refreshPtCards();
+        ptsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
   },
+
 
   init: function () {
     const self = this;

@@ -16,11 +16,11 @@ window.GymApp.pages['pt-training'] = {
     ];
 
     return `
-      <div class="flex flex-col gap-margin">
+      <div class="flex flex-col gap-lg">
         <!-- Stats -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-loose">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-standard">
           ${stats.map(s => `
-            <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-loose shadow-sm flex flex-col gap-standard">
+            <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-standard shadow-sm flex flex-col gap-standard">
               <div class="flex items-center justify-between">
                 <span class="text-on-surface-variant font-body-sm text-body-sm font-bold uppercase tracking-wider leading-tight" style="max-width:calc(100% - 48px)">${s.label}</span>
                 <div class="icon-bg ${s.iconBg}">
@@ -56,7 +56,7 @@ window.GymApp.pages['pt-training'] = {
               ${pts.map(p => `<option value="${p.id}">${p.ho_ten || p.name}</option>`).join('')}
             </select>
 
-            <button id="pt-reload" class="flex items-center gap-xs px-loose py-compact rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary transition-all font-body-md whitespace-nowrap">
+            <button id="pt-reload" class="flex items-center gap-xs px-standard py-compact rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary transition-all font-body-md whitespace-nowrap">
               <span class="material-symbols-outlined text-sm">refresh</span>
               Tải lại
             </button>
@@ -64,27 +64,27 @@ window.GymApp.pages['pt-training'] = {
         </div>
 
         <!-- Cards lịch đào tạo -->
-        <div id="pt-schedule-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-loose">
+        <div id="pt-schedule-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-standard">
           ${this._renderCards(schedules)}
         </div>
 
         <!-- Danh sách PT -->
         <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
-          <div class="section-header px-loose py-standard border-b border-outline-variant flex items-center gap-compact">
-            <div class="icon-bg icon-bg-green">
-              <span class="material-symbols-outlined text-brand-primary text-lg" style="font-variation-settings:'FILL' 1">sports_gymnastics</span>
+          <div class="section-header px-standard py-compact border-b border-outline-variant flex items-center gap-compact">
+            <div class="icon-bg icon-bg-green" style="width:32px;height:32px;border-radius:8px">
+              <span class="material-symbols-outlined text-brand-primary text-base" style="font-variation-settings:'FILL' 1">sports_gymnastics</span>
             </div>
-            <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface">Huấn luyện viên</h3>
+            <h3 class="font-display-xl text-display-xl font-bold text-on-surface">Huấn luyện viên</h3>
             <span class="ml-auto bg-brand-primary text-white px-compact py-xs rounded-full text-label-xs font-bold">${pts.length} PT</span>
           </div>
-          <div class="p-loose grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-loose">
+          <div class="p-standard grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-standard">
             ${pts.length === 0
         ? `<div class="col-span-5 py-margin text-center text-on-surface-variant">
                    <span class="material-symbols-outlined text-4xl text-outline block mb-standard">person_off</span>
                    Chưa có huấn luyện viên nào
                  </div>`
         : pts.map(pt => `
-                <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-loose shadow-sm flex flex-col items-center gap-standard">
+                <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-standard shadow-sm flex flex-col items-center gap-standard">
                   ${window.GymApp.avatarImg(pt.avatar_url, pt.ho_ten, 'lg')}
                   <div class="text-center">
                     <p class="font-bold text-on-surface text-body-md">${pt.ho_ten}</p>
@@ -109,7 +109,7 @@ window.GymApp.pages['pt-training'] = {
 
       <!-- Modal Sửa lịch -->
       <div id="modal-edit-schedule" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-xl w-full max-w-md mx-loose p-loose flex flex-col gap-margin">
+        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-xl w-full max-w-md mx-loose p-standard flex flex-col gap-lg">
           <div class="flex items-center justify-between">
             <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface">Sửa lịch tập</h3>
             <button id="close-edit-schedule" class="material-symbols-outlined text-on-surface-variant hover:text-error transition-colors">close</button>
@@ -136,8 +136,8 @@ window.GymApp.pages['pt-training'] = {
             </div>
           </div>
           <div class="flex gap-standard justify-end pt-xs border-t border-outline-variant">
-            <button id="cancel-edit-schedule" class="px-loose py-compact rounded-xl border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-all font-bold text-body-md">Hủy bỏ</button>
-            <button id="save-edit-schedule" class="px-loose py-compact rounded-xl btn-primary text-white font-bold text-body-md flex items-center gap-xs">
+            <button id="cancel-edit-schedule" class="px-standard py-compact rounded-xl border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-all font-bold text-body-md">Hủy bỏ</button>
+            <button id="save-edit-schedule" class="px-standard py-compact rounded-xl btn-primary text-white font-bold text-body-md flex items-center gap-xs">
               <span class="material-symbols-outlined text-sm">save</span>Lưu thay đổi
             </button>
           </div>
@@ -150,7 +150,7 @@ window.GymApp.pages['pt-training'] = {
     const list = Array.isArray(schedules) ? schedules : [];
     if (list.length === 0) {
       return `
-        <div class="md:col-span-3 bg-surface-container-lowest rounded-2xl border border-outline-variant p-margin text-center">
+        <div class="md:col-span-3 bg-surface-container-lowest rounded-2xl border border-outline-variant p-standard text-center">
           <div class="icon-bg icon-bg-orange mx-auto mb-standard" style="width:56px;height:56px;border-radius:16px">
             <span class="material-symbols-outlined text-[#e65100] text-2xl">event_busy</span>
           </div>
@@ -162,13 +162,13 @@ window.GymApp.pages['pt-training'] = {
     return list.map(s => `
       <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden flex flex-col">
         <!-- Card header -->
-        <div class="px-loose py-standard border-b border-outline-variant flex items-center justify-between section-header">
+        <div class="px-standard py-compact border-b border-outline-variant flex items-center justify-between section-header">
           <span class="text-on-surface-variant text-body-sm font-bold">#${s.id}</span>
           ${window.GymApp.statusBadge(s.trang_thai || s.status)}
         </div>
 
         <!-- Card body -->
-        <div class="p-loose flex flex-col gap-standard flex-1">
+        <div class="p-standard flex flex-col gap-standard flex-1">
           <div class="flex items-center gap-compact">
             <div class="icon-bg icon-bg-green" style="width:32px;height:32px;border-radius:8px">
               <span class="material-symbols-outlined text-brand-primary text-sm" style="font-variation-settings:'FILL' 1">sports_gymnastics</span>
@@ -206,7 +206,7 @@ window.GymApp.pages['pt-training'] = {
         </div>
 
         <!-- Card footer -->
-        <div class="px-loose py-compact border-t border-outline-variant flex items-center justify-end gap-atom bg-surface-container-low">
+        <div class="px-standard py-compact border-t border-outline-variant flex items-center justify-end gap-atom bg-surface-container-low">
           ${s.trang_thai === 'cho_tap' ? `
             <button class="btn-edit-schedule material-symbols-outlined text-outline hover:text-brand-primary text-xl p-atom rounded-lg hover:bg-surface-container transition-colors"
               data-id="${s.id}" data-ngay="${s.ngay_tap || ''}" data-start="${s.gio_bat_dau || ''}" data-end="${s.gio_ket_thuc || ''}" data-ghi-chu="${(s.ghi_chu || '').replace(/"/g, '&quot;')}"

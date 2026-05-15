@@ -9,7 +9,8 @@ import {
   deleteMember, updateAvatar, getExpiringMembers,
   getExpiredMembers, getMemberHistory, registerPackage,
   getBirthday, getMyProfile, createAccount, checkDuplicate,
-  getMyNotifications,
+  getMyNotifications, requestPackageRenewal, getPackageRequests, approvePackageRequest,
+  notifyMember, markMyNotificationsRead
 } from '../controllers/members.controller.js';
 import { verifyToken } from '../middlewares/auth.js';
 import { requireRole } from '../middlewares/role.js';
@@ -24,8 +25,12 @@ router.get('/expiring',         requireRole('admin', 'le_tan'), getExpiringMembe
 router.get('/expired',          requireRole('admin', 'le_tan'), getExpiredMembers);
 router.get('/birthday',         requireRole('admin', 'le_tan'), getBirthday);
 router.get('/check-duplicate',  requireRole('admin', 'le_tan'), checkDuplicate);
+router.get('/package-requests', requireRole('admin', 'le_tan'), getPackageRequests); // Xem các yêu cầu chờ duyệt
 router.get('/me/profile', verifyToken, getMyProfile);
 router.get('/me/notifications', getMyNotifications); // Thông báo realtime — không lưu DB
+router.post('/me/notifications/read', markMyNotificationsRead); // Đánh dấu đã đọc
+router.post('/me/package-request', requestPackageRenewal); // Yêu cầu gia hạn từ App
+router.put('/package-requests/:id/approve', requireRole('admin', 'le_tan'), approvePackageRequest); // Duyệt/Từ chối yêu cầu
 
 // CRUD cơ bản
 router.get('/',    requireRole('admin', 'le_tan'), getMembers);
@@ -43,5 +48,8 @@ router.post('/:id/package', requireRole('admin', 'le_tan'), registerPackage);
 
 // Tạo tài khoản đăng nhập cho hồ sơ
 router.post('/:id/create-account', requireRole('admin', 'le_tan'), createAccount);
+
+// Gửi thông báo cá nhân cho hội viên
+router.post('/:id/notify', requireRole('admin', 'le_tan'), notifyMember);
 
 export default router;

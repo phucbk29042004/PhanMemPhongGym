@@ -372,9 +372,25 @@
       const ptRemain = activePt ? Math.max(0, (activePt.so_buoi_dang_ky || 0) - (activePt.so_buoi_da_tap || 0)) : null;
       const checkins = window.GymApp.data.myCheckins || [];
 
+      const isExpired = activePackage?.trang_thai === 'het_han' || !activePackage;
+
       return `
         <div class="space-y-s6">
           ${renderNotificationBanners()}
+
+          ${isExpired ? `
+            <div class="bg-error-container text-white p-s5 rounded-2xl flex flex-col sm:flex-row items-center gap-s4 shadow-lg border border-white/20">
+              <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-white text-3xl">error</span>
+              </div>
+              <div class="flex-1 text-center sm:text-left">
+                <p class="font-bold text-headline-sm">Gói tập đã hết hạn!</p>
+                <p class="text-body-md opacity-90">Bạn cần gia hạn để tiếp tục sử dụng các dịch vụ của phòng tập.</p>
+              </div>
+              <button id="btn-dashboard-renew" class="bg-white text-error-container px-s6 py-s3 rounded-full font-bold text-label-md hover:bg-surface-container-low transition-all shadow-md active:scale-95">Gia hạn ngay</button>
+            </div>
+          ` : ''}
+
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-s6">
             <section class="lg:col-span-2 relative overflow-hidden rounded-xl bg-primary-container text-white p-s6 min-h-[240px] flex flex-col justify-between">
               <div class="absolute inset-0 opacity-15 pointer-events-none" style="background:radial-gradient(circle at 20% 20%,#ffffff 0,transparent 28%),linear-gradient(135deg,#004d2a,#0c6c40 60%,#84d8a2)"></div>
@@ -454,7 +470,7 @@
               </div>
               <div class="bg-surface-container rounded-xl p-s4">
                 <p class="text-on-surface-variant text-label-md">Ghi chú</p>
-                <p class="text-body-md text-on-surface mt-s2">${isExpiringSoon ? `Gói tập còn ${daysLeft} ngày. Bạn nên liên hệ lễ tân để gia hạn.` : 'Tất cả dữ liệu trên được lấy từ hệ thống hiện tại.'}</p>
+                <p class="text-body-md text-on-surface mt-s2">${isExpiringSoon ? `Gói tập còn ${daysLeft} ngày. Bạn có thể gia hạn ngay trên App hoặc liên hệ lễ tân.` : 'Tất cả dữ liệu trên được lấy từ hệ thống hiện tại.'}</p>
               </div>
             </section>
           </div>
@@ -520,6 +536,10 @@
         clearInterval(this._refreshTimer);
         this._loadQr();
         window.GymApp.toast('Đang làm mới mã QR...', 'info');
+      });
+
+      document.getElementById('btn-dashboard-renew')?.addEventListener('click', () => {
+        _showMemberRenewalModal();
       });
     },
 
@@ -742,6 +762,91 @@
       }
     }
   };
+
+  async function _showMemberRenewalModal() {
+    const activePackage = getActivePackage();
+    const today = todayKey();
+    let defaultStart = today;
+    
+    if (activePackage && activePackage.den_ngay >= today) {
+      const d = new Date(activePackage.den_ngay);
+      d.setDate(d.getDate() + 1);
+      defaultStart = d.toISOString().split('T')[0];
+    }
+
+    let packages = [];
+    try {
+      const res = await window.GymApp.api.get('/packages');
+      if (res?.success) packages = res.data || [];
+    } catch (e) { console.error(e); }
+
+    const modalHtml = `
+      <div id="modal-member-renewal" class="fixed inset-0 z-[100] flex items-center justify-center p-standard bg-black/60 backdrop-blur-sm animate-fade-in">
+        <div class="bg-surface-container-lowest w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-scale-in">
+          <div class="px-s6 py-s5 bg-primary-container text-white">
+            <h3 class="text-headline-sm font-bold">Gia hạn gói tập</h3>
+            <p class="text-body-sm opacity-90 mt-s1">Chọn gói tập và ngày bắt đầu để tiếp tục tập luyện</p>
+          </div>
+          
+          <div class="p-s6 space-y-s5">
+            <div>
+              <label class="block text-label-sm text-on-surface-variant font-bold mb-s2">Chọn gói tập</label>
+              <select id="renew-pkg-id" class="w-full bg-surface-container-low border border-outline-variant px-s4 py-s3 rounded-xl outline-none focus:border-brand-primary text-body-md">
+                ${packages.map(p => `<option value="${p.id}" ${p.id === activePackage?.goi_tap_id ? 'selected' : ''}>${p.ten_goi} — ${Number(p.gia).toLocaleString('vi-VN')}đ</option>`).join('')}
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-label-sm text-on-surface-variant font-bold mb-s2">Ngày bắt đầu</label>
+              <input type="date" id="renew-start-date" value="${defaultStart}" class="w-full bg-surface-container-low border border-outline-variant px-s4 py-s3 rounded-xl outline-none focus:border-brand-primary text-body-md" />
+              <p class="text-label-xs text-brand-primary mt-s2">Mặc định: ${activePackage && activePackage.den_ngay >= today ? 'Nối tiếp gói cũ' : 'Hôm nay'}</p>
+            </div>
+
+            <div class="bg-surface-container rounded-xl p-s4">
+              <p class="text-label-xs text-on-surface-variant font-bold uppercase tracking-wider">Lưu ý</p>
+              <p class="text-body-sm text-on-surface mt-s1">Yêu cầu của bạn sẽ được gửi đến lễ tân. Vui lòng thanh toán tại quầy hoặc chuyển khoản để kích hoạt gói.</p>
+            </div>
+          </div>
+
+          <div class="px-s6 py-s5 bg-surface-container border-t border-outline-variant flex gap-s3">
+            <button id="btn-renew-cancel" class="flex-1 px-s4 py-s3 rounded-xl font-bold text-label-md text-on-surface-variant hover:bg-surface-container-high transition-colors">Hủy bỏ</button>
+            <button id="btn-renew-submit" class="flex-1 px-s4 py-s3 rounded-xl font-bold text-label-md bg-brand-primary text-white hover:opacity-90 transition-all shadow-md active:scale-95">Gửi yêu cầu</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    const closeModal = () => document.getElementById('modal-member-renewal')?.remove();
+    document.getElementById('btn-renew-cancel').onclick = closeModal;
+    document.getElementById('btn-renew-submit').onclick = async () => {
+      const goi_tap_id = document.getElementById('renew-pkg-id').value;
+      const tu_ngay = document.getElementById('renew-start-date').value;
+      
+      const btn = document.getElementById('btn-renew-submit');
+      btn.disabled = true;
+      btn.textContent = 'Đang gửi...';
+
+      try {
+        const res = await window.GymApp.api.post('/members/me/package-request', { goi_tap_id, tu_ngay });
+        if (res?.success) {
+          window.GymApp.toast('Đã gửi yêu cầu gia hạn!', 'success');
+          closeModal();
+          // Reload dashboard
+          await _fetchData();
+          navigate('dashboard');
+        } else {
+          window.GymApp.toast(res?.message || 'Lỗi khi gửi yêu cầu.', 'error');
+        }
+      } catch (e) {
+        window.GymApp.toast('Lỗi kết nối máy chủ.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Gửi yêu cầu';
+      }
+    };
+  }
 
   document.addEventListener('DOMContentLoaded', initPortal);
 })();

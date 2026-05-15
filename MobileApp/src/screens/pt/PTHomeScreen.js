@@ -1,11 +1,11 @@
 import React, { useCallback, useState } from 'react';
 import {
-  ActivityIndicator, Alert, FlatList, RefreshControl, ScrollView,
+  ActivityIndicator, Alert, RefreshControl, ScrollView,
   StatusBar, StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
 import {
   Award, CalendarCheck, CheckCircle2, ChevronRight, Clock,
-  Dumbbell, QrCode, ShieldCheck, TrendingUp, UserCheck, Users, Zap,
+  CreditCard, Dumbbell, MapPin, QrCode, ShieldCheck, TrendingUp, UserCheck, Users, Zap,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import ProfileAvatar from '../../components/ProfileAvatar';
@@ -31,6 +31,7 @@ const G = {
   dangerLight: '#fef2f2',
   warning: '#f59e0b',
   warningLight: '#fffbeb',
+  shadow: '#1D9336',
 };
 
 // ── Component: Chip Tiện Ích ──────────────────────────────
@@ -124,7 +125,7 @@ export default function PTHomeScreen({ navigation }) {
         contentContainerStyle={styles.scrollContent}
       >
         {/* ──────────────────────────────────────────────── */}
-        {/* TOP BANNER — Hiệu ứng tia nắng & Nhận diện HLV   */}
+        {/* TOP BANNER — Paradise Gym với hiệu ứng tia nắng  */}
         {/* ──────────────────────────────────────────────── */}
         <View style={styles.banner}>
           {Array.from({ length: 12 }).map((_, i) => (
@@ -140,7 +141,7 @@ export default function PTHomeScreen({ navigation }) {
                 <ProfileAvatar
                   uri={profile?.avatar_url || user?.avatar_url}
                   name={profile?.ho_ten || user?.name}
-                  size={46}
+                  size={42}
                 />
               </View>
               <View style={{ flex: 1 }}>
@@ -151,18 +152,14 @@ export default function PTHomeScreen({ navigation }) {
               </View>
             </View>
 
-            <TouchableOpacity style={styles.bannerLogout} onPress={logout} activeOpacity={0.8}>
-              <Text style={styles.bannerLogoutText}>Đăng xuất</Text>
-            </TouchableOpacity>
+            <View style={styles.bannerBadge}>
+              <Award color={G.white} size={14} strokeWidth={2} />
+              <Text style={styles.bannerBadgeText}>HLV CHUYÊN NGHIỆP</Text>
+            </View>
           </View>
 
           <View style={styles.bannerBody}>
-            <View style={styles.specBadge}>
-              <Award color={G.white} size={14} strokeWidth={2.5} />
-              <Text style={styles.specBadgeText}>
-                {profile?.chuyen_mon || 'Fitness & Bodybuilding'}
-              </Text>
-            </View>
+            <Text style={styles.bannerTitle}>Paradise GYM</Text>
             <Text style={styles.bannerSubtitle}>
               {profile?.chi_nhanh || 'Hệ thống Paradise GYM Premium'}
             </Text>
@@ -183,11 +180,95 @@ export default function PTHomeScreen({ navigation }) {
             <Text style={styles.statNum}>{pendingSchedules.length}</Text>
             <Text style={styles.statLabel}>Ca chờ tập</Text>
           </View>
-          <View style={[styles.statCard, { backgroundColor: G.white, borderWidth: 1, borderColor: G.gray200 }]}>
+          <View style={[styles.statCard, { backgroundColor: G.white, shadowColor: G.shadow }]}>
             <CheckCircle2 color={G.primaryLight} size={42} style={styles.statBgIcon} />
             <Text style={[styles.statNum, { color: G.gray900 }]}>{completedCount}</Text>
             <Text style={[styles.statLabel, { color: G.gray500 }]}>Đã dạy</Text>
           </View>
+        </View>
+
+        {/* ────────────────────────────────────── */}
+        {/* TIÊU ĐIỂM: BUỔI TẬP SẮP TỚI            */}
+        {/* ────────────────────────────────────── */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionIconBox}>
+              <CalendarCheck color={G.primary} size={18} strokeWidth={2} />
+            </View>
+            <Text style={styles.sectionTitle}>Buổi tập tiếp theo</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Lịch dạy')}>
+              <Text style={styles.viewAllText}>Tất cả</Text>
+            </TouchableOpacity>
+          </View>
+
+          {loading ? (
+            <View style={styles.loadingBox}>
+              <ActivityIndicator color={G.primary} size="small" />
+            </View>
+          ) : pendingSchedules.length > 0 ? (
+            (() => {
+              const next = pendingSchedules[0];
+              return (
+                <View style={styles.contractCard}>
+                  <View style={styles.contractTop}>
+                    <View style={styles.contractBadge}>
+                      <Clock color={G.primary} size={12} strokeWidth={2.5} />
+                      <Text style={styles.contractBadgeText}>Sắp diễn ra</Text>
+                    </View>
+                    <Text style={styles.contractDateText}>{formatDate(next.ngay_tap)}</Text>
+                  </View>
+                  
+                  <View style={styles.memberRowMain}>
+                    <ProfileAvatar uri={next.avatar_hoi_vien} name={next.ten_hoi_vien} size={50} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.contractPackageName}>{next.ten_hoi_vien || 'Học viên'}</Text>
+                      <Text style={styles.contractSubText}>{next.ten_goi_pt || 'Gói tập PT'}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.contractGrid}>
+                    <View style={styles.contractGridItem}>
+                      <Clock color={G.gray400} size={14} strokeWidth={2} />
+                      <Text style={styles.contractGridLabel}>Bắt đầu</Text>
+                      <Text style={styles.contractGridValue}>{next.gio_bat_dau}</Text>
+                    </View>
+                    <View style={styles.contractDivider} />
+                    <View style={styles.contractGridItem}>
+                      <Dumbbell color={G.gray400} size={14} strokeWidth={2} />
+                      <Text style={styles.contractGridLabel}>Buổi thứ</Text>
+                      <Text style={styles.contractGridValue}>{(next.so_buoi_da_tap || 0) + 1}</Text>
+                    </View>
+                    <View style={styles.contractDivider} />
+                    <View style={styles.contractGridItem}>
+                      <MapPin color={G.gray400} size={14} strokeWidth={2} />
+                      <Text style={styles.contractGridLabel}>Địa điểm</Text>
+                      <Text style={styles.contractGridValue} numberOfLines={1}>{next.chi_nhanh || 'Paradise'}</Text>
+                    </View>
+                  </View>
+
+                  <TouchableOpacity 
+                    style={styles.confirmBtnMain}
+                    onPress={() => handleConfirmSchedule(next.id)}
+                    disabled={actionLoadingId === next.id}
+                  >
+                    {actionLoadingId === next.id ? (
+                      <ActivityIndicator color={G.white} size="small" />
+                    ) : (
+                      <>
+                        <CheckCircle2 color={G.white} size={16} strokeWidth={2.5} />
+                        <Text style={styles.confirmBtnTextMain}>Xác nhận hoàn thành</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              );
+            })()
+          ) : (
+            <View style={styles.emptyBox}>
+              <CalendarCheck color={G.gray300} size={48} strokeWidth={1} />
+              <Text style={styles.emptyText}>Hôm nay bạn không có lịch dạy nào sắp tới.</Text>
+            </View>
+          )}
         </View>
 
         {/* ──────────────────────────────────────────────── */}
@@ -290,11 +371,15 @@ export default function PTHomeScreen({ navigation }) {
                       style={styles.confirmActionBtn}
                       onPress={() => handleConfirmSchedule(item.id)}
                       disabled={actionLoadingId === item.id}
+                      activeOpacity={0.8}
                     >
                       {actionLoadingId === item.id ? (
                         <ActivityIndicator size="small" color={G.white} />
                       ) : (
-                        <Text style={styles.confirmActionBtnText}>✓ Hoàn thành</Text>
+                        <>
+                          <Zap color={G.white} size={14} strokeWidth={2.5} />
+                          <Text style={styles.confirmActionBtnText}>Hoàn thành</Text>
+                        </>
                       )}
                     </TouchableOpacity>
                   </View>
@@ -376,30 +461,21 @@ const styles = StyleSheet.create({
   },
   bannerGreeting: { fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: '500' },
   bannerName: { fontSize: 16, color: G.white, fontWeight: '700', maxWidth: 170 },
-  bannerLogout: {
-    backgroundColor: 'rgba(220, 38, 38, 0.15)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(220, 38, 38, 0.3)',
-  },
-  bannerLogoutText: { color: '#fca5a5', fontSize: 11, fontWeight: '700' },
-  bannerBody: { alignItems: 'flex-start', marginTop: 4 },
-  specBadge: {
+  bannerBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
     backgroundColor: 'rgba(255,255,255,0.15)',
     paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingVertical: 4,
     borderRadius: 20,
-    marginBottom: 6,
   },
-  specBadgeText: { color: G.white, fontSize: 12, fontWeight: '700' },
+  bannerBadgeText: { color: G.white, fontSize: 9, fontWeight: '800', letterSpacing: 0.5 },
+  bannerBody: { alignItems: 'flex-start', marginTop: 4 },
+  bannerTitle: { fontSize: 24, fontWeight: '800', color: G.white, marginBottom: 2 },
   bannerSubtitle: { fontSize: 12, color: 'rgba(255,255,255,0.75)', fontWeight: '500' },
 
-  // Stats Wrapper (Nằm đè lên viền banner dưới)
+  // Stats Wrapper
   statsWrapper: {
     flexDirection: 'row',
     marginHorizontal: 16,
@@ -416,6 +492,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     position: 'relative',
     overflow: 'hidden',
+    backgroundColor: G.white,
     shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowRadius: 10,
@@ -430,6 +507,63 @@ const styles = StyleSheet.create({
   },
   statNum: { fontSize: 18, fontWeight: '800', color: G.white, marginBottom: 2 },
   statLabel: { fontSize: 10, fontWeight: '600', color: G.white, opacity: 0.9, textAlign: 'center' },
+
+  // Contract Card (Styled like Member App)
+  contractCard: {
+    backgroundColor: G.gray50,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: G.gray100,
+  },
+  contractTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  contractBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: G.primaryLight,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  contractBadgeText: { fontSize: 10, fontWeight: '800', color: G.primary },
+  contractDateText: { fontSize: 11, fontWeight: '600', color: G.gray400 },
+  memberRowMain: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
+  contractPackageName: { fontSize: 17, fontWeight: '800', color: G.gray900 },
+  contractSubText: { fontSize: 12, color: G.gray500, fontWeight: '500' },
+  contractGrid: {
+    flexDirection: 'row',
+    backgroundColor: G.white,
+    borderRadius: 12,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: G.gray100,
+  },
+  contractGridItem: { flex: 1, alignItems: 'center', gap: 2, paddingHorizontal: 4 },
+  contractGridLabel: { fontSize: 9, color: G.gray400, fontWeight: '600', textTransform: 'uppercase' },
+  contractGridValue: { fontSize: 12, fontWeight: '800', color: G.gray900 },
+  contractDivider: { width: 1, height: '60%', backgroundColor: G.gray100, alignSelf: 'center' },
+  confirmBtnMain: {
+    backgroundColor: G.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginTop: 16,
+    shadowColor: G.primary,
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+  confirmBtnTextMain: { color: G.white, fontWeight: '800', fontSize: 14 },
 
   // Section
   section: {
@@ -492,9 +626,7 @@ const styles = StyleSheet.create({
     backgroundColor: G.gray50,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: G.gray200,
-    borderLeftWidth: 4,
-    borderLeftColor: G.primary,
+    borderColor: G.gray100,
     overflow: 'hidden',
   },
   schedHeader: {
@@ -536,7 +668,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderTopWidth: 1,
-    borderTopColor: G.gray200,
+    borderTopColor: G.gray100,
   },
   statusPill: {
     backgroundColor: '#fef9c3',
@@ -546,14 +678,22 @@ const styles = StyleSheet.create({
   },
   statusPillText: { fontSize: 10, fontWeight: '700', color: '#a16207' },
   confirmActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     backgroundColor: G.primary,
     paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 10,
-    minWidth: 90,
-    alignItems: 'center',
+    paddingVertical: 8,
+    borderRadius: 12,
+    minWidth: 100,
+    justifyContent: 'center',
+    shadowColor: G.primary,
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
-  confirmActionBtnText: { color: G.white, fontSize: 11, fontWeight: '700' },
+  confirmActionBtnText: { color: G.white, fontSize: 11, fontWeight: '800' },
 
   // Paradise panel
   paradisePanel: { marginHorizontal: 16, marginTop: 16 },

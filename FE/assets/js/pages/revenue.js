@@ -4,25 +4,19 @@ window.GymApp.pages['revenue'] = {
 
   render: function () {
     return `
-      <div class="flex flex-col gap-margin">
-
-        <!-- Page Title -->
-        <div class="page-title-bar">
-          <h2 class="font-display-lg text-display-lg text-on-surface font-bold">Doanh thu</h2>
-          <p class="text-on-surface-variant font-body-sm text-body-sm mt-xs">Thống kê doanh thu và giao dịch của phòng tập</p>
-        </div>
+      <div class="flex flex-col gap-lg">
 
         <!-- Bộ lọc khoảng thời gian -->
         <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant p-standard shadow-sm">
           <div class="flex flex-wrap items-center gap-standard">
             <span class="text-on-surface-variant font-bold text-body-sm">Khoảng thời gian:</span>
             <div class="flex gap-xs">
-              <button class="rev-range-btn px-loose py-xs rounded-xl border border-outline-variant text-body-sm font-bold text-on-surface-variant hover:text-brand-primary hover:border-brand-primary transition-all" data-days="7">7 ngày</button>
-              <button class="rev-range-btn px-loose py-xs rounded-xl border border-outline-variant text-body-sm font-bold text-on-surface-variant hover:text-brand-primary hover:border-brand-primary transition-all active-range" data-days="30">30 ngày</button>
-              <button class="rev-range-btn px-loose py-xs rounded-xl border border-outline-variant text-body-sm font-bold text-on-surface-variant hover:text-brand-primary hover:border-brand-primary transition-all" data-days="90">3 tháng</button>
-              <button class="rev-range-btn px-loose py-xs rounded-xl border border-outline-variant text-body-sm font-bold text-on-surface-variant hover:text-brand-primary hover:border-brand-primary transition-all" data-days="365">1 năm</button>
+              <button class="rev-range-btn px-standard py-xs rounded-xl border border-outline-variant text-body-sm font-bold text-on-surface-variant hover:text-brand-primary hover:border-brand-primary transition-all" data-days="7">7 ngày</button>
+              <button class="rev-range-btn px-standard py-xs rounded-xl border border-outline-variant text-body-sm font-bold text-on-surface-variant hover:text-brand-primary hover:border-brand-primary transition-all active-range" data-days="30">30 ngày</button>
+              <button class="rev-range-btn px-standard py-xs rounded-xl border border-outline-variant text-body-sm font-bold text-on-surface-variant hover:text-brand-primary hover:border-brand-primary transition-all" data-days="90">3 tháng</button>
+              <button class="rev-range-btn px-standard py-xs rounded-xl border border-outline-variant text-body-sm font-bold text-on-surface-variant hover:text-brand-primary hover:border-brand-primary transition-all" data-days="365">1 năm</button>
             </div>
-            <button id="rev-reload" class="ml-auto flex items-center gap-xs px-loose py-compact rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary transition-all font-body-md whitespace-nowrap">
+            <button id="rev-reload" class="ml-auto flex items-center gap-xs px-standard py-compact rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary transition-all font-body-md whitespace-nowrap">
               <span class="material-symbols-outlined text-sm">refresh</span>
               Tải lại
             </button>
@@ -30,35 +24,35 @@ window.GymApp.pages['revenue'] = {
         </div>
 
         <!-- 4 Stat Cards -->
-        <div id="rev-stats-grid" class="grid grid-cols-2 md:grid-cols-4 gap-loose">
+        <div id="rev-stats-grid" class="grid grid-cols-2 md:grid-cols-4 gap-standard">
           ${this._renderStatsSkeleton()}
         </div>
 
         <!-- Biểu đồ + Gói tập bán chạy -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-loose">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-standard">
 
           <!-- Biểu đồ cột doanh thu theo ngày/tháng -->
           <div class="lg:col-span-2 bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
-            <div class="section-header px-loose py-standard border-b border-outline-variant flex items-center gap-compact">
-              <div class="icon-bg icon-bg-green">
-                <span class="material-symbols-outlined text-brand-primary text-lg" style="font-variation-settings:'FILL' 1">bar_chart</span>
+            <div class="section-header px-standard py-compact border-b border-outline-variant flex items-center gap-compact">
+              <div class="icon-bg icon-bg-green" style="width:32px;height:32px;border-radius:8px">
+                <span class="material-symbols-outlined text-brand-primary text-base" style="font-variation-settings:'FILL' 1">bar_chart</span>
               </div>
-              <h3 id="rev-chart-title" class="font-display-2xl text-display-2xl font-bold text-on-surface">So sánh doanh thu tháng này / tháng trước</h3>
+              <h3 id="rev-chart-title" class="font-display-xl text-display-xl font-bold text-on-surface">So sánh doanh thu tháng này / tháng trước</h3>
             </div>
-            <div class="p-loose" style="height:280px">
+            <div class="p-standard" style="height:280px">
               <canvas id="rev-chart"></canvas>
             </div>
           </div>
 
           <!-- Gói tập bán chạy -->
           <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
-            <div class="section-header px-loose py-standard border-b border-outline-variant flex items-center gap-compact">
-              <div class="icon-bg icon-bg-green">
-                <span class="material-symbols-outlined text-brand-primary text-lg" style="font-variation-settings:'FILL' 1">card_membership</span>
+            <div class="section-header px-standard py-compact border-b border-outline-variant flex items-center gap-compact">
+              <div class="icon-bg icon-bg-green" style="width:32px;height:32px;border-radius:8px">
+                <span class="material-symbols-outlined text-brand-primary text-base" style="font-variation-settings:'FILL' 1">card_membership</span>
               </div>
-              <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface">Gói tập bán chạy</h3>
+              <h3 class="font-display-xl text-display-xl font-bold text-on-surface">Gói tập bán chạy</h3>
             </div>
-            <div id="rev-package-stats" class="p-loose flex flex-col gap-standard">
+            <div id="rev-package-stats" class="p-standard flex flex-col gap-standard">
               <p class="text-center text-on-surface-variant text-body-sm py-margin">Đang tải...</p>
             </div>
           </div>
@@ -66,22 +60,22 @@ window.GymApp.pages['revenue'] = {
 
         <!-- Bảng giao dịch hôm nay -->
         <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
-          <div class="section-header px-loose py-standard border-b border-outline-variant flex items-center gap-compact">
-            <div class="icon-bg icon-bg-green">
-              <span class="material-symbols-outlined text-brand-primary text-lg" style="font-variation-settings:'FILL' 1">receipt_long</span>
+          <div class="section-header px-standard py-compact border-b border-outline-variant flex items-center gap-compact">
+            <div class="icon-bg icon-bg-green" style="width:32px;height:32px;border-radius:8px">
+              <span class="material-symbols-outlined text-brand-primary text-base" style="font-variation-settings:'FILL' 1">receipt_long</span>
             </div>
-            <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface">Giao dịch hôm nay</h3>
+            <h3 class="font-display-xl text-display-xl font-bold text-on-surface">Giao dịch hôm nay</h3>
             <span id="rev-today-count" class="ml-auto bg-brand-primary text-white px-compact py-xs rounded-full text-label-xs font-bold">0</span>
           </div>
           <div id="rev-today-table" class="overflow-x-auto">
             <table class="w-full text-body-sm">
               <thead>
                 <tr class="border-b border-outline-variant bg-surface-container-low">
-                  <th class="text-left px-loose py-compact text-on-surface-variant font-bold">Khách hàng</th>
-                  <th class="text-left px-loose py-compact text-on-surface-variant font-bold">Sản phẩm</th>
-                  <th class="text-left px-loose py-compact text-on-surface-variant font-bold">Loại</th>
-                  <th class="text-right px-loose py-compact text-on-surface-variant font-bold">Số tiền</th>
-                  <th class="text-left px-loose py-compact text-on-surface-variant font-bold">Thời gian</th>
+                  <th class="text-left px-standard py-compact text-on-surface-variant font-bold">Khách hàng</th>
+                  <th class="text-left px-standard py-compact text-on-surface-variant font-bold">Sản phẩm</th>
+                  <th class="text-left px-standard py-compact text-on-surface-variant font-bold">Loại</th>
+                  <th class="text-right px-standard py-compact text-on-surface-variant font-bold">Số tiền</th>
+                  <th class="text-left px-standard py-compact text-on-surface-variant font-bold">Thời gian</th>
                 </tr>
               </thead>
               <tbody id="rev-today-tbody">
@@ -97,7 +91,7 @@ window.GymApp.pages['revenue'] = {
 
   _renderStatsSkeleton: function () {
     return Array(4).fill(0).map(() => `
-      <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-loose shadow-sm animate-pulse">
+      <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-standard shadow-sm animate-pulse">
         <div class="h-4 bg-outline-variant rounded w-2/3 mb-standard"></div>
         <div class="h-8 bg-outline-variant rounded w-1/2"></div>
       </div>
@@ -158,7 +152,7 @@ window.GymApp.pages['revenue'] = {
     ];
 
     grid.innerHTML = cards.map(c => `
-      <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-loose shadow-sm flex flex-col gap-standard">
+      <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-standard shadow-sm flex flex-col gap-standard">
         <div class="flex items-center justify-between">
           <span class="text-on-surface-variant font-body-sm text-body-sm font-bold uppercase tracking-wider leading-tight" style="max-width:calc(100% - 48px)">${c.label}</span>
           <div class="icon-bg ${c.iconBg}">
@@ -302,11 +296,11 @@ window.GymApp.pages['revenue'] = {
       const loaiLabel = t.loai === 'goi_tap' ? `<span class="bg-[#e7f5e9] text-[#1D9336] px-compact py-xs rounded-full text-label-xs font-bold">Gói tập</span>` : `<span class="bg-[#e8def8] text-[#6750a4] px-compact py-xs rounded-full text-label-xs font-bold">Gói PT</span>`;
       return `
         <tr class="border-b border-outline-variant hover:bg-surface-container transition-colors">
-          <td class="px-loose py-compact font-bold text-on-surface">${t.khach_hang || '—'}</td>
-          <td class="px-loose py-compact text-on-surface-variant">${t.san_pham || '—'}</td>
-          <td class="px-loose py-compact">${loaiLabel}</td>
-          <td class="px-loose py-compact text-right font-bold text-brand-primary">${this._formatMoney(t.gia_thuc_te)}</td>
-          <td class="px-loose py-compact text-on-surface-variant">${time}</td>
+          <td class="px-standard py-compact font-bold text-on-surface">${t.khach_hang || '—'}</td>
+          <td class="px-standard py-compact text-on-surface-variant">${t.san_pham || '—'}</td>
+          <td class="px-standard py-compact">${loaiLabel}</td>
+          <td class="px-standard py-compact text-right font-bold text-brand-primary">${this._formatMoney(t.gia_thuc_te)}</td>
+          <td class="px-standard py-compact text-on-surface-variant">${time}</td>
         </tr>
       `;
     }).join('');

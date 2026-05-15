@@ -11,19 +11,19 @@ window.GymApp.pages['pt-register'] = {
     const totalBookings = schedules.length + bookings.length;
 
     return `
-      <div class="flex flex-col gap-margin">
-        <div class="grid grid-cols-1 lg:grid-cols-10 items-stretch gap-loose">
+      <div class="flex flex-col gap-lg">
+        <div class="grid grid-cols-1 lg:grid-cols-10 items-stretch gap-standard">
 
           <!-- ===== CARD 1: Form đặt lịch ===== -->
           <div class="lg:col-span-7 bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
-            <div class="section-header px-loose py-standard border-b border-outline-variant flex items-center gap-compact">
-              <div class="icon-bg icon-bg-green">
-                <span class="material-symbols-outlined text-brand-primary text-lg" style="font-variation-settings:'FILL' 1">edit_calendar</span>
+            <div class="section-header px-standard py-compact border-b border-outline-variant flex items-center gap-compact">
+              <div class="icon-bg icon-bg-green" style="width:32px;height:32px;border-radius:8px">
+                <span class="material-symbols-outlined text-brand-primary text-base" style="font-variation-settings:'FILL' 1">edit_calendar</span>
               </div>
-              <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface">Thông tin đặt lịch</h3>
+              <h3 class="font-display-xl text-display-xl font-bold text-on-surface">Thông tin đặt lịch</h3>
             </div>
 
-            <div class="p-loose flex flex-col gap-margin">
+            <div class="p-standard flex flex-col gap-lg">
 
               <!-- Khối chọn người -->
               <div class="grid grid-cols-1 md:grid-cols-2 gap-standard">
@@ -171,11 +171,11 @@ window.GymApp.pages['pt-register'] = {
 
           <!-- ===== CARD 2: Danh sách đã đặt ===== -->
           <div class="lg:col-span-3 bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden flex flex-col lg:h-full lg:min-h-0">
-            <div class="section-header px-loose py-standard border-b border-outline-variant flex items-center gap-compact">
-              <div class="icon-bg icon-bg-green">
-                <span class="material-symbols-outlined text-brand-primary text-lg" style="font-variation-settings:'FILL' 1">calendar_month</span>
+            <div class="section-header px-standard py-compact border-b border-outline-variant flex items-center gap-compact">
+              <div class="icon-bg icon-bg-green" style="width:32px;height:32px;border-radius:8px">
+                <span class="material-symbols-outlined text-brand-primary text-base" style="font-variation-settings:'FILL' 1">calendar_month</span>
               </div>
-              <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface">Lịch đã đặt</h3>
+              <h3 class="font-display-xl text-display-xl font-bold text-on-surface">Lịch đã đặt</h3>
               <span id="booking-count" class="ml-auto bg-brand-primary text-white px-compact py-xs rounded-full text-label-xs font-bold">${totalBookings}</span>
             </div>
 
@@ -205,9 +205,9 @@ window.GymApp.pages['pt-register'] = {
     const all = this._getAllBookings();
     if (all.length === 0) {
       return `
-        <div class="flex flex-col items-center justify-center py-margin text-center">
-          <div class="icon-bg icon-bg-green mx-auto mb-standard" style="width:56px;height:56px;border-radius:16px">
-            <span class="material-symbols-outlined text-brand-primary text-2xl">event_note</span>
+        <div class="flex flex-col items-center justify-center py-standard text-center">
+          <div class="icon-bg icon-bg-green mx-auto mb-compact" style="width:48px;height:48px;border-radius:14px">
+            <span class="material-symbols-outlined text-brand-primary text-xl">event_note</span>
           </div>
           <p class="text-on-surface font-bold text-body-md">Chưa có lịch đặt nào</p>
           <p class="text-on-surface-variant text-body-sm mt-xs">Đặt lịch bên trái để bắt đầu</p>

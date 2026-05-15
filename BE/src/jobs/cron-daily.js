@@ -28,8 +28,8 @@ function runDailyJob() {
   for (const row of sapHetHan) {
     createNotification(
       'sap_het_han_goi_tap',
-      `Sắp hết hạn — ${row.ho_ten}`,
-      `${row.ho_ten} — gói ${row.ten_goi_tap} còn ${row.so_ngay_con} ngày (hết hạn ${row.den_ngay})`,
+      `Gói tập sắp hết hạn — ${row.ho_ten}`,
+      `Gói ${row.ten_goi_tap} của bạn chỉ còn ${row.so_ngay_con} ngày. Hãy gia hạn ngay trên App hoặc tại quầy lễ tân.`,
       row.ho_so_id,
       'ho_so',
       'ca_hai'
@@ -50,8 +50,8 @@ function runDailyJob() {
   for (const row of hetHan) {
     createNotification(
       'het_han_goi_tap',
-      `Hết hạn hôm nay — ${row.ho_ten}`,
-      `${row.ho_ten} — gói ${row.ten_goi_tap} đã hết hạn hôm nay`,
+      `Gói tập đã hết hạn — ${row.ho_ten}`,
+      `Gói ${row.ten_goi_tap} đã hết hạn. Vui lòng gia hạn để tiếp tục sử dụng dịch vụ của phòng tập.`,
       row.ho_so_id,
       'ho_so',
       'ca_hai'

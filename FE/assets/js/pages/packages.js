@@ -10,7 +10,6 @@ window.GymApp.pages['packages'] = {
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-standard">
           <div class="page-title-bar">
             <h2 class="font-display-lg text-display-lg text-on-surface font-bold">Gói tập</h2>
-            
           </div>
           <button id="btn-add-pkg" class="btn-primary text-white px-loose py-compact rounded-xl font-bold flex items-center gap-compact">
             <span class="material-symbols-outlined text-sm">add</span>

@@ -9,6 +9,7 @@ import {
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../services/api';
+import { useNotificationStore } from '../../store/useNotificationStore';
 
 // ── Màu sắc ────────────────────────────────────────────────
 const G = {
@@ -151,35 +152,39 @@ const notifStyles = StyleSheet.create({
 
 // ── Màn hình chính ─────────────────────────────────────────
 export default function MemberNotificationScreen() {
-  const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { notifications, loading, fetchNotifications, markAsRead } = useNotificationStore();
   const [refreshing, setRefreshing] = useState(false);
   const [checkedIn, setCheckedIn] = useState(false);
 
-  const fetchNotifications = useCallback(async () => {
+  const syncNotifications = useCallback(async () => {
     try {
+      // Fetch thông báo mới
+      await fetchNotifications();
+      
+      // Lấy trạng thái checkin riêng lẻ nếu cần (hoặc gộp vào store sau)
       const res = await api.get('/members/me/notifications');
       if (res.data?.success) {
-        setNotifications(res.data.data?.notifications || []);
         setCheckedIn(res.data.data?.da_check_in_hom_nay || false);
       }
+      
+      // Đánh dấu đã đọc ngay khi mở tab
+      await markAsRead();
     } catch (err) {
-      console.error('[NotificationScreen] fetch error:', err?.message);
+      console.error('[NotificationScreen] sync error:', err?.message);
     } finally {
-      setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [fetchNotifications, markAsRead]);
 
   useFocusEffect(
     useCallback(() => {
-      fetchNotifications();
+      syncNotifications();
       const intervalId = setInterval(fetchNotifications, 15000);
       return () => clearInterval(intervalId);
-    }, [fetchNotifications])
+    }, [syncNotifications, fetchNotifications])
   );
 
-  const onRefresh = () => { setRefreshing(true); fetchNotifications(); };
+  const onRefresh = () => { setRefreshing(true); syncNotifications(); };
 
   // Phân nhóm theo mức độ
   const dangerItems = notifications.filter(n => n.muc_do === 'danger');

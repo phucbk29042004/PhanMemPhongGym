@@ -8,11 +8,27 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
-**✅ Redesign Modal Chi tiết PT & Fix Lọc/Sửa PT** — Nâng cấp giao diện xem chi tiết Huấn luyện viên sang dạng 3 Tab cao cấp (Thông tin, Lịch dạy, Học viên); sửa lỗi bộ lọc không hoạt động và lỗi chức năng cập nhật thông tin PT.
+**✅ Tối ưu hóa mật độ thông tin Dashboard (Toàn diện)** — Đã chuẩn hóa toàn bộ giao diện quản trị sang chuẩn High-Density bằng cách giảm whitespace, thay thế `loose/margin` bằng `standard/compact` trên tất cả các module chính, đảm bảo tối đa hóa diện tích hiển thị dữ liệu mà vẫn giữ được tính thẩm mỹ và responsive.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
+
+### 15/05/2026 09:30 — Tối Ưu Hóa Mật Độ Thông Tin Dashboard (Toàn Diện)
+- **Loại**: Cải thiện UI/UX (Frontend)
+- **File chỉnh sửa**:
+  - `FE/assets/js/pages/expired.js`, `FE/assets/js/pages/birthday.js`, `FE/assets/js/pages/pt-register.js`, `FE/assets/js/pages/pt-training.js` — Đồng bộ hóa việc giảm khoảng trắng bằng cách thay thế các class utility `gap-loose/margin` và `p-loose/margin` sang `gap-standard/lg` và `p-standard/compact`. 
+  - Tinh gọn Section Headers, Card padding, và Table cell padding trên toàn bộ các module còn lại.
+  - Đảm bảo tính tương thích đa thiết bị (Responsive) sau khi thu hẹp khoảng cách spacing.
+- **Mô tả**: Hoàn tất chiến dịch chuẩn hóa mật độ thông tin cho toàn bộ Dashboard Admin, giúp giao diện chuyên nghiệp hơn và hiển thị được nhiều dữ liệu hơn trên cùng một khung hình.
+- **Kết quả**: Thành công
+
+### 15/05/2026 08:45 — Tối Ưu Spacing Dashboard, Doanh Thu & Check-in
+- **Loại**: Cải thiện UI/UX (Frontend)
+- **File chỉnh sửa**:
+  - `FE/assets/js/pages/dashboard.js`, `FE/assets/js/pages/revenue.js`, `FE/assets/js/pages/checkin.js`, `FE/assets/js/pages/packages.js` — Bắt đầu lộ trình tối ưu mật độ thông tin; tinh gọn khoảng cách giữa các stat cards, charts và rows trong bảng dữ liệu.
+- **Mô tả**: Áp dụng các spacing tokens `standard` và `compact` mới thay cho các giá trị `loose` cũ để tăng hiệu quả sử dụng không gian màn hình.
+- **Kết quả**: Thành công
 
 ### 15/05/2026 08:25 — Redesign Modal Chi Tiết PT & Fix Chức Năng Lọc/Sửa
 - **Loại**: Cải thiện tính năng & giao diện (Frontend)

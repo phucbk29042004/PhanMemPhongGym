@@ -7,7 +7,7 @@ import db from '../config/db.js';
 import { success, error } from '../utils/response.js';
 import { uploadImage, deleteImage, isCloudinaryReady } from '../utils/cloudinary.js';
 import { ghi_audit_log } from '../utils/audit.js';
-import { createNotification } from '../utils/notifications.js';
+import { createNotification, createUserNotification } from '../utils/notifications.js';
 import bcrypt from 'bcryptjs';
 
 // ── GET /api/members ──────────────────────────────────────
@@ -59,7 +59,8 @@ export const getMembers = (req, res) => {
       (SELECT gt.ten_goi FROM dang_ky_goi_tap dk JOIN goi_tap gt ON gt.id = dk.goi_tap_id
        WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong' ORDER BY dk.den_ngay DESC LIMIT 1) AS ten_goi_tap,
       (SELECT COUNT(*) FROM dang_ky_pt dp WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS co_pt,
-      ((SELECT loai FROM luot_vao_ra WHERE ho_so_id = h.id AND date(thoi_diem) = date('now','localtime') ORDER BY id DESC LIMIT 1) = 'vao') AS da_check_in_hom_nay
+      ((SELECT loai FROM luot_vao_ra WHERE ho_so_id = h.id AND date(thoi_diem) = date('now','localtime') ORDER BY id DESC LIMIT 1) = 'vao') AS da_check_in_hom_nay,
+      EXISTS (SELECT 1 FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'cho_duyet') AS co_yeu_cau_gia_han
     FROM ho_so h
     ${where}
     ORDER BY h.ngay_tao DESC
@@ -326,7 +327,8 @@ export const getExpiringMembers = (req, res) => {
       (SELECT gt.ten_goi FROM dang_ky_goi_tap dk
        JOIN goi_tap gt ON gt.id = dk.goi_tap_id
        WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong'
-       ORDER BY dk.den_ngay DESC LIMIT 1) AS ten_goi_tap
+       ORDER BY dk.den_ngay DESC LIMIT 1) AS ten_goi_tap,
+      EXISTS (SELECT 1 FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'cho_duyet') AS co_yeu_cau_gia_han
     FROM ho_so h
     WHERE h.loai_ho_so = 'hoi_vien'
       AND h.is_deleted = 0
@@ -362,7 +364,8 @@ export const getExpiredMembers = (req, res) => {
       (SELECT gt.ten_goi FROM dang_ky_goi_tap dk
        JOIN goi_tap gt ON gt.id = dk.goi_tap_id
        WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong'
-       ORDER BY dk.den_ngay DESC LIMIT 1) AS ten_goi_tap
+       ORDER BY dk.den_ngay DESC LIMIT 1) AS ten_goi_tap,
+      EXISTS (SELECT 1 FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'cho_duyet') AS co_yeu_cau_gia_han
     FROM ho_so h
     WHERE h.loai_ho_so = 'hoi_vien'
       AND h.is_deleted = 0
@@ -466,8 +469,10 @@ export const getMyProfile = (req, res) => {
              gt.ten_goi, gt.so_thang
       FROM dang_ky_goi_tap dk
       JOIN goi_tap gt ON gt.id = dk.goi_tap_id
-      WHERE dk.ho_so_id = ? AND dk.trang_thai = 'dang_hoat_dong'
-      ORDER BY dk.den_ngay DESC
+      WHERE dk.ho_so_id = ? AND dk.trang_thai IN ('dang_hoat_dong', 'cho_duyet')
+      ORDER BY 
+        CASE WHEN dk.trang_thai = 'dang_hoat_dong' THEN 0 ELSE 1 END,
+        dk.den_ngay DESC
     `).all(hoSo.id);
 
     hoSo.dang_ky_pt = db.prepare(`
@@ -522,10 +527,10 @@ export const registerPackage = (req, res) => {
 
   const result = db.prepare(`
     INSERT INTO dang_ky_goi_tap
-      (ho_so_id, goi_tap_id, tu_ngay, den_ngay, gia_thuc_te, ghi_chu_gia, phuong_thuc_tt, nguoi_thu_id, ma_giao_dich, ghi_chu_tt, nguoi_tao_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (ho_so_id, goi_tap_id, tu_ngay, den_ngay, gia_thuc_te, ghi_chu_gia, phuong_thuc_tt, nguoi_thu_id, ma_giao_dich, ghi_chu_tt, nguoi_tao_id, nguoi_cap_nhat_id, trang_thai, ngay_thanh_toan)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'dang_hoat_dong', datetime('now','localtime'))
   `).run(id, goi_tap_id, tu_ngay, denNgay, gia_thuc_te, ghi_chu_gia || null,
-    phuong_thuc_tt, req.user.id, ma_giao_dich || null, ghi_chu_tt || null, req.user.id);
+    phuong_thuc_tt, req.user.id, ma_giao_dich || null, ghi_chu_tt || null, req.user.id, req.user.id);
 
   ghi_audit_log(req, 'CREATE', 'dang_ky_goi_tap', result.lastInsertRowid, null,
     { ho_so_id: id, goi_tap_id, gia: gia_thuc_te }, 'Đăng ký gói tập cho hội viên');
@@ -540,6 +545,123 @@ export const registerPackage = (req, res) => {
   );
 
   return success(res, { id: result.lastInsertRowid, den_ngay: denNgay }, 'Đăng ký gói tập thành công', 201);
+};
+
+// ── POST /api/members/me/package-request ──────────────────
+export const requestPackageRenewal = (req, res) => {
+  try {
+    const { goi_tap_id, tu_ngay, ghi_chu } = req.body;
+
+    if (!goi_tap_id || !tu_ngay) {
+      return error(res, 'Thiếu thông tin: goi_tap_id, tu_ngay', 400);
+    }
+
+    // Lấy id hồ sơ từ user (hoi_vien)
+    const hoSo = db.prepare('SELECT id, ho_ten FROM ho_so WHERE tai_khoan_id = ?').get(req.user.id);
+    if (!hoSo) return error(res, 'Không tìm thấy hồ sơ hội viên gắn với tài khoản này.', 404);
+
+    const goiTap = db.prepare('SELECT * FROM goi_tap WHERE id = ? AND is_deleted = 0').get(goi_tap_id);
+    if (!goiTap) return error(res, 'Gói tập không tồn tại.', 404);
+
+    const dateResult = db.prepare(`
+      SELECT date(?, '+' || ? || ' months', '+' || ? || ' days') AS den_ngay
+    `).get(tu_ngay, goiTap.so_thang || 0, goiTap.so_ngay_them || 0);
+
+    const denNgay = dateResult ? dateResult.den_ngay : null;
+    if (!denNgay) return error(res, 'Không thể tính toán ngày hết hạn. Vui lòng kiểm tra lại ngày bắt đầu.', 400);
+
+    const result = db.prepare(`
+      INSERT INTO dang_ky_goi_tap
+        (ho_so_id, goi_tap_id, tu_ngay, den_ngay, gia_thuc_te, ghi_chu_gia, trang_thai, nguoi_tao_id, nguoi_cap_nhat_id)
+      VALUES (?, ?, ?, ?, ?, ?, 'cho_duyet', ?, ?)
+    `).run(hoSo.id, goi_tap_id, tu_ngay, denNgay, goiTap.gia, ghi_chu || 'Yêu cầu gia hạn từ App', req.user.id, req.user.id);
+
+    createNotification(
+      'gia_han_goi_tap',
+      'Yêu cầu gia hạn mới',
+      `${hoSo.ho_ten} vừa gửi yêu cầu gia hạn gói ${goiTap.ten_goi}. Vui lòng kiểm tra và duyệt.`,
+      result.lastInsertRowid,
+      'dang_ky_goi_tap',
+      'admin'
+    );
+
+    return success(res, { id: result.lastInsertRowid }, 'Gửi yêu cầu gia hạn thành công. Vui lòng đến quầy lễ tân để hoàn tất thanh toán.', 201);
+  } catch (err) {
+    console.error('[BACKEND] Lỗi requestPackageRenewal:', err);
+    return error(res, `Lỗi hệ thống: ${err.message}`, 500);
+  }
+};
+
+// ── GET /api/members/package-requests ─────────────────────
+export const getPackageRequests = (req, res) => {
+  const requests = db.prepare(`
+    SELECT
+      dk.id, dk.ho_so_id, dk.goi_tap_id as goi_tap_id, dk.tu_ngay, dk.den_ngay,
+      dk.gia_thuc_te, dk.ghi_chu_gia, dk.trang_thai, dk.ngay_tao,
+      h.ho_ten, h.ma_ho_so, gt.ten_goi as ten_goi_tap
+    FROM dang_ky_goi_tap dk
+    JOIN ho_so h ON h.id = dk.ho_so_id
+    JOIN goi_tap gt ON gt.id = dk.goi_tap_id
+    WHERE dk.trang_thai = 'cho_duyet'
+    ORDER BY dk.ngay_tao DESC
+  `).all();
+
+  return success(res, requests);
+};
+
+// ── PUT /api/members/package-requests/:id/approve ─────────
+export const approvePackageRequest = (req, res) => {
+  const { id } = req.params;
+  const { action, gia_thuc_te, phuong_thuc_tt, ghi_chu_tt } = req.body; // action: 'approve' or 'reject'
+
+  const request = db.prepare(`
+    SELECT dk.*, gt.ten_goi
+    FROM dang_ky_goi_tap dk
+    LEFT JOIN goi_tap gt ON gt.id = dk.goi_tap_id
+    WHERE dk.id = ?
+  `).get(id);
+  if (!request) return error(res, 'Không tìm thấy yêu cầu.', 404);
+  if (request.trang_thai !== 'cho_duyet') return error(res, 'Yêu cầu này đã được xử lý.', 400);
+
+  const member = db.prepare('SELECT ho_ten FROM ho_so WHERE id = ?').get(request.ho_so_id);
+
+  if (action === 'reject') {
+    db.prepare('UPDATE dang_ky_goi_tap SET trang_thai = ?, nguoi_cap_nhat_id = ? WHERE id = ?')
+      .run('huy', req.user.id, id);
+
+    createUserNotification(
+      request.ho_so_id,
+      'Yêu cầu bị từ chối ❌',
+      `Yêu cầu gia hạn gói "${request.ten_goi || 'Hội viên'}" của bạn đã bị từ chối. Vui lòng liên hệ lễ tân để biết thêm chi tiết.`,
+      'nhac_nho_gia_han'
+    );
+
+    return success(res, null, 'Đã từ chối yêu cầu gia hạn.');
+  }
+
+  // Approve: Chuyển sang dang_hoat_dong và cập nhật thông tin thanh toán
+  db.prepare(`
+    UPDATE dang_ky_goi_tap SET
+      trang_thai = 'dang_hoat_dong',
+      gia_thuc_te = COALESCE(?, gia_thuc_te),
+      phuong_thuc_tt = ?,
+      nguoi_thu_id = ?,
+      ghi_chu_tt = ?,
+      nguoi_cap_nhat_id = ?,
+      ngay_thanh_toan = datetime('now','localtime')
+    WHERE id = ?
+  `).run(gia_thuc_te, phuong_thuc_tt || 'tien_mat', req.user.id, ghi_chu_tt || 'Duyệt từ App', req.user.id, id);
+
+  ghi_audit_log(req, 'UPDATE', 'dang_ky_goi_tap', id, request, { trang_thai: 'dang_hoat_dong' }, `Duyệt gia hạn gói tập cho ${member.ho_ten}`);
+
+  createUserNotification(
+    request.ho_so_id,
+    'Gia hạn thành công 🎉',
+    `Gói tập "${request.ten_goi}" của bạn đã được kích hoạt thành công. Chúc bạn có những buổi tập hiệu quả!`,
+    'thong_bao_chung'
+  );
+
+  return success(res, null, 'Duyệt gia hạn gói tập thành công.');
 };
 
 // ── POST /api/members/:id/create-account ─────────────────
@@ -669,6 +791,27 @@ export const getMyNotifications = (req, res) => {
         noi_dung: `Gói "${goiSapHet.ten_goi}" còn ${goiSapHet.so_ngay_con} ngày (${new Date(goiSapHet.den_ngay).toLocaleDateString('vi-VN')}). Hãy gia hạn sớm để không gián đoạn!`,
       });
     }
+
+    // NEW: Lấy thông báo từ bảng thong_bao_user
+    const userNotifs = db.prepare(`
+      SELECT id, loai, tieu_de, noi_dung, da_doc, ngay_tao
+      FROM thong_bao_user
+      WHERE ho_so_id = ?
+      ORDER BY ngay_tao DESC LIMIT 10
+    `).all(ho_so_id);
+
+    userNotifs.forEach(un => {
+      notifications.push({
+        id: un.id,
+        muc_do: un.loai === 'nhac_nho_gia_han' ? 'warning' : 'info',
+        icon: un.loai === 'nhac_nho_gia_han' ? 'notification_important' : 'chat',
+        tieu_de: un.tieu_de,
+        noi_dung: un.noi_dung,
+        ngay_tao: un.ngay_tao,
+        is_custom: true,
+        da_doc: un.da_doc
+      });
+    });
 
     // 3. Gói PT SẮP HẾT BUỔI (so_buoi_dang_ky - so_buoi_da_tap <= 2)
     const goiPtSapHet = db.prepare(`
@@ -854,4 +997,38 @@ export const getMyNotifications = (req, res) => {
   notifications.sort((a, b) => (MUC_DO_ORDER[a.muc_do] || 5) - (MUC_DO_ORDER[b.muc_do] || 5));
 
   return success(res, { notifications, da_check_in_hom_nay });
+};
+
+// ── POST /api/members/:id/notify ───────────────────────────
+export const notifyMember = (req, res) => {
+  const { id } = req.params;
+  const { tieu_de, noi_dung, loai } = req.body;
+
+  if (!tieu_de || !noi_dung) return error(res, 'Thiếu tiêu đề hoặc nội dung.', 400);
+
+  const hoSo = db.prepare('SELECT id FROM ho_so WHERE id = ? AND is_deleted = 0').get(id);
+  if (!hoSo) return error(res, 'Không tìm thấy hồ sơ hội viên.', 404);
+
+  db.prepare(`
+    INSERT INTO thong_bao_user (ho_so_id, loai, tieu_de, noi_dung)
+    VALUES (?, ?, ?, ?)
+  `).run(id, loai || 'thong_bao_chung', tieu_de, noi_dung);
+
+  return success(res, null, 'Đã gửi thông báo thành công.');
+};
+
+// ── POST /api/members/me/notifications/read ──────────────────
+export const markMyNotificationsRead = (req, res) => {
+  const userId = req.user.id;
+
+  // Lấy ho_so_id gắn với user
+  const hoSo = db.prepare('SELECT id FROM ho_so WHERE tai_khoan_id = ?').get(userId);
+  if (!hoSo) return error(res, 'Không tìm thấy hồ sơ hội viên.', 404);
+
+  db.prepare(`
+    UPDATE thong_bao_user SET da_doc = 1 
+    WHERE ho_so_id = ? AND da_doc = 0
+  `).run(hoSo.id);
+
+  return success(res, null, 'Đã đánh dấu tất cả thông báo là đã đọc.');
 };

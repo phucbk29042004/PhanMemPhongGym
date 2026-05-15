@@ -1,33 +1,61 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import {
+  ActivityIndicator, RefreshControl, ScrollView,
+  StatusBar, StyleSheet, Text, TouchableOpacity, View,
+} from 'react-native';
+import {
+  CalendarCheck, ChevronRight, Filter, Search,
+  TrendingUp, User, Users,
+} from 'lucide-react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../services/api';
-import ProfileAvatar from '../../components/ProfileAvatar';
 import { formatDate, unwrapData } from '../../utils/data';
+import ProfileAvatar from '../../components/ProfileAvatar';
 
-export default function PTStudentsScreen() {
+// ── Màu sắc ────────────────────────────────────────────────
+const G = {
+  primary: '#1D9336',
+  primaryDark: '#155f27',
+  primaryLight: '#e6f4ea',
+  white: '#ffffff',
+  gray50: '#f8faf8',
+  gray100: '#f0f4f0',
+  gray200: '#e4ebe4',
+  gray300: '#cdd8cd',
+  gray400: '#9cad9c',
+  gray500: '#6b7c6b',
+  gray700: '#2d3c2d',
+  gray900: '#141c14',
+  danger: '#dc2626',
+};
+
+export default function PTStudentsScreen({ navigation }) {
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [errorText, setErrorText] = useState('');
 
-  const fetchSchedules = async () => {
+  const fetchSchedules = useCallback(async () => {
     try {
-      setErrorText('');
       const res = await api.get('/pt/schedules');
       setSchedules(unwrapData(res, []));
-    } catch (error) {
-      setErrorText(error.response?.data?.message || 'Không tải được học viên từ backend.');
+    } catch (err) {
+      console.error('[PTStudentsScreen] fetch error:', err?.message);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  };
-
-  useEffect(() => {
-    fetchSchedules();
   }, []);
 
-  const students = useMemo(() => {
+  useFocusEffect(
+    useCallback(() => {
+      fetchSchedules();
+    }, [fetchSchedules])
+  );
+
+  const onRefresh = () => { setRefreshing(true); fetchSchedules(); };
+
+  // Nhóm dữ liệu theo học viên
+  const students = React.useMemo(() => {
     const map = new Map();
     schedules.forEach((item) => {
       if (!item.hoi_vien_id) return;
@@ -45,50 +73,188 @@ export default function PTStudentsScreen() {
       if (item.trang_thai === 'cho_tap' && (!current.nextDate || item.ngay_tap < current.nextDate)) {
         current.nextDate = item.ngay_tap;
       }
+      // Lấy số buổi còn lại mới nhất
       current.remaining = item.buoi_con_lai;
       map.set(item.hoi_vien_id, current);
     });
-    return Array.from(map.values());
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [schedules]);
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchSchedules(); }} colors={['#1D9336']} />}
-    >
-      <Text style={styles.title}>Học viên của tôi</Text>
-      <Text style={styles.subtitle}>Danh sách được tổng hợp từ lịch dạy thực tế của API /pt/schedules.</Text>
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={G.white} />
 
-      {loading ? <ActivityIndicator color="#1D9336" size="large" /> : null}
-      {errorText ? <Text style={styles.error}>{errorText}</Text> : null}
-
-      {!loading && students.length === 0 ? (
-        <View style={styles.empty}><Text style={styles.emptyText}>Chưa có học viên nào trong lịch dạy.</Text></View>
-      ) : students.map((student) => (
-        <View key={student.id} style={styles.card}>
-          <ProfileAvatar uri={student.avatar} name={student.name} size={48} />
-          <View style={styles.info}>
-            <Text style={styles.name}>{student.name || 'Chưa có tên'}</Text>
-            <Text style={styles.meta}>Tổng lịch: {student.total} • Đã tập: {student.completed}</Text>
-            <Text style={styles.meta}>Buổi còn lại: {student.remaining ?? 'Chưa rõ'}</Text>
-            <Text style={styles.next}>Buổi kế tiếp: {formatDate(student.nextDate)}</Text>
-          </View>
+      {/* ── Header ────────────────────────────── */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <Text style={styles.headerTitle}>Học viên của tôi</Text>
+          <Text style={styles.headerSubtitle}>Bạn đang hướng dẫn {students.length} học viên</Text>
         </View>
-      ))}
-    </ScrollView>
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={styles.actionBtn}>
+            <Search color={G.primary} size={20} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[G.primary]} tintColor={G.primary} />}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {loading ? (
+          <View style={styles.center}>
+            <ActivityIndicator color={G.primary} size="large" />
+          </View>
+        ) : students.length === 0 ? (
+          <View style={styles.emptyBox}>
+            <Users color={G.gray300} size={64} strokeWidth={1} />
+            <Text style={styles.emptyTitle}>Chưa có học viên</Text>
+            <Text style={styles.emptyDesc}>Danh sách học viên sẽ tự động hiển thị khi có ca dạy được phân công.</Text>
+          </View>
+        ) : (
+          students.map((student) => (
+            <TouchableOpacity
+              key={student.id}
+              style={styles.card}
+              activeOpacity={0.7}
+              onPress={() => {}} // Có thể mở chi tiết học viên sau này
+            >
+              <View style={styles.cardTop}>
+                <View style={styles.avatarBox}>
+                  <ProfileAvatar uri={student.avatar} name={student.name} size={54} />
+                  <View style={styles.statusDot} />
+                </View>
+                <View style={styles.infoBox}>
+                  <Text style={styles.name}>{student.name || 'Hội viên'}</Text>
+                  <View style={styles.idRow}>
+                    <User color={G.primary} size={11} strokeWidth={2.5} />
+                    <Text style={styles.idText}>Hội viên chính thức</Text>
+                  </View>
+                </View>
+                <ChevronRight color={G.gray300} size={18} strokeWidth={2} />
+              </View>
+
+              <View style={styles.divider} />
+
+              <View style={styles.statsRow}>
+                <View style={styles.statItem}>
+                  <TrendingUp color={G.primary} size={14} strokeWidth={2} />
+                  <Text style={styles.statVal}>{student.completed}/{student.total}</Text>
+                  <Text style={styles.statLabel}>Buổi dạy</Text>
+                </View>
+                <View style={styles.statDivider} />
+                <View style={styles.statItem}>
+                  <CalendarCheck color={G.primary} size={14} strokeWidth={2} />
+                  <Text style={styles.statVal}>{student.remaining ?? '—'}</Text>
+                  <Text style={styles.statLabel}>Còn lại</Text>
+                </View>
+                <View style={styles.statDivider} />
+                <View style={styles.statItem}>
+                  <Text style={[styles.statVal, { color: G.gray900 }]}>
+                    {student.nextDate ? formatDate(student.nextDate) : '—'}
+                  </Text>
+                  <Text style={styles.statLabel}>Tiếp theo</Text>
+                </View>
+              </View>
+
+              {student.completed / student.total >= 0.8 && student.total > 0 && (
+                <View style={styles.alertBox}>
+                  <Text style={styles.alertText}>Sắp hoàn thành gói tập ({Math.round(student.completed/student.total*100)}%)</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          ))
+        )}
+        <View style={{ height: 20 }} />
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { flexGrow: 1, backgroundColor: '#f7f9ff', padding: 20, paddingBottom: 32 },
-  title: { fontSize: 24, fontWeight: '800', color: '#181c20', marginBottom: 4 },
-  subtitle: { fontSize: 13, color: '#5c6758', marginBottom: 18 },
-  error: { color: '#dc2626', fontWeight: '600', marginBottom: 12 },
-  empty: { backgroundColor: '#fff', padding: 24, borderRadius: 16, borderWidth: 1, borderColor: '#ebeef3' },
-  emptyText: { color: '#7a8775', textAlign: 'center' },
-  card: { backgroundColor: '#fff', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#ebeef3', marginBottom: 12, flexDirection: 'row', gap: 12 },
-  info: { flex: 1 },
-  name: { color: '#181c20', fontSize: 16, fontWeight: '800', marginBottom: 5 },
-  meta: { color: '#3f4a3c', fontWeight: '600', marginBottom: 3 },
-  next: { color: '#1D9336', fontWeight: '800', marginTop: 4 },
+  container: { flex: 1, backgroundColor: G.gray50 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 52,
+    paddingBottom: 16,
+    paddingHorizontal: 20,
+    backgroundColor: G.white,
+    borderBottomWidth: 1,
+    borderBottomColor: G.gray100,
+  },
+  headerLeft: { flex: 1 },
+  headerTitle: { fontSize: 20, fontWeight: '800', color: G.gray900 },
+  headerSubtitle: { fontSize: 12, color: G.gray400, fontWeight: '500', marginTop: 2 },
+  headerActions: { flexDirection: 'row', gap: 10 },
+  actionBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: G.gray50,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  scrollContent: { padding: 16, gap: 14 },
+  center: { paddingVertical: 100, alignItems: 'center' },
+
+  emptyBox: { alignItems: 'center', paddingVertical: 80, gap: 12 },
+  emptyTitle: { fontSize: 18, fontWeight: '800', color: G.gray900 },
+  emptyDesc: { fontSize: 13, color: G.gray400, textAlign: 'center', paddingHorizontal: 40, lineHeight: 20 },
+
+  card: {
+    backgroundColor: G.white,
+    borderRadius: 20,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  cardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  avatarBox: { position: 'relative' },
+  statusDot: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: G.primary,
+    borderWidth: 2,
+    borderColor: G.white,
+  },
+  infoBox: { flex: 1 },
+  name: { fontSize: 17, fontWeight: '800', color: G.gray900, marginBottom: 2 },
+  idRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  idText: { fontSize: 11, fontWeight: '700', color: G.primary },
+  
+  divider: { height: 1, backgroundColor: G.gray100, marginVertical: 16 },
+
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statItem: { flex: 1, alignItems: 'center', gap: 2 },
+  statDivider: { width: 1, height: 24, backgroundColor: G.gray100 },
+  statVal: { fontSize: 13, fontWeight: '800', color: G.primary },
+  statLabel: { fontSize: 10, color: G.gray400, fontWeight: '600' },
+
+  alertBox: {
+    marginTop: 14,
+    backgroundColor: '#fffbeb',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  alertText: { fontSize: 10, fontWeight: '700', color: '#a16207' },
 });

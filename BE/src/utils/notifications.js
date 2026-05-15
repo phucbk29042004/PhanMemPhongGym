@@ -25,3 +25,20 @@ export function createNotification(loai, tieu_de, noi_dung, doi_tuong_id = null,
     console.error(`[NOTIFICATION] Lỗi tạo thông báo loại "${loai}":`, err.message);
   }
 }
+/**
+ * Tạo thông báo riêng cho 1 người dùng (Hội viên/PT) — Hiện thị trên Mobile App
+ * @param {number} hoSoId    - ID hồ sơ nhận thông báo
+ * @param {string} tieu_de   - Tiêu đề
+ * @param {string} noi_dung  - Nội dung
+ * @param {string} loai      - Loại ('thong_bao_chung', 'nhac_nho_gia_han', ...)
+ */
+export function createUserNotification(hoSoId, tieu_de, noi_dung, loai = 'thong_bao_chung') {
+  try {
+    db.prepare(`
+      INSERT INTO thong_bao_user (ho_so_id, loai, tieu_de, noi_dung)
+      VALUES (?, ?, ?, ?)
+    `).run(hoSoId, loai, tieu_de, noi_dung);
+  } catch (err) {
+    console.error(`[USER_NOTIFICATION] Lỗi tạo thông báo cho hồ sơ ${hoSoId}:`, err.message);
+  }
+}
