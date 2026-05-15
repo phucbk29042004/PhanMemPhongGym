@@ -801,10 +801,14 @@ export const getMyNotifications = (req, res) => {
     `).all(ho_so_id);
 
     userNotifs.forEach(un => {
+      let muc_do = 'info';
+      if (un.loai === 'nhac_nho_gia_han' || un.loai === 'broadcast_danger') muc_do = 'danger';
+      else if (un.loai === 'broadcast_warning') muc_do = 'warning';
+
       notifications.push({
         id: un.id,
-        muc_do: un.loai === 'nhac_nho_gia_han' ? 'warning' : 'info',
-        icon: un.loai === 'nhac_nho_gia_han' ? 'notification_important' : 'chat',
+        muc_do: muc_do,
+        icon: un.loai === 'nhac_nho_gia_han' ? 'notification_important' : (un.loai.startsWith('broadcast') ? 'campaign' : 'chat'),
         tieu_de: un.tieu_de,
         noi_dung: un.noi_dung,
         ngay_tao: un.ngay_tao,
@@ -990,6 +994,31 @@ export const getMyNotifications = (req, res) => {
         noi_dung: `${hvMoi.so_hv} học viên vừa đăng ký gói PT với bạn trong 7 ngày qua. Hãy liên hệ để lên kế hoạch tập luyện!`,
       });
     }
+
+    // ── THÔNG BÁO TỪ BẢNG thong_bao_user (Cho cả HV và PT) ─────
+    const ptNotifs = db.prepare(`
+      SELECT id, loai, tieu_de, noi_dung, da_doc, ngay_tao
+      FROM thong_bao_user
+      WHERE ho_so_id = ?
+      ORDER BY ngay_tao DESC LIMIT 10
+    `).all(ho_so_id);
+
+    ptNotifs.forEach(un => {
+      let muc_do = 'info';
+      if (un.loai === 'broadcast_danger') muc_do = 'danger';
+      else if (un.loai === 'broadcast_warning') muc_do = 'warning';
+
+      notifications.push({
+        id: un.id,
+        muc_do: muc_do,
+        icon: un.loai.startsWith('broadcast') ? 'campaign' : 'chat',
+        tieu_de: un.tieu_de,
+        noi_dung: un.noi_dung,
+        ngay_tao: un.ngay_tao,
+        is_custom: true,
+        da_doc: un.da_doc
+      });
+    });
   }
 
   // Sắp xếp theo mức độ ưu tiên: danger(1) > warning(2) > info(3) > success(4)
@@ -1031,4 +1060,14 @@ export const markMyNotificationsRead = (req, res) => {
   `).run(hoSo.id);
 
   return success(res, null, 'Đã đánh dấu tất cả thông báo là đã đọc.');
+};
+
+// ── DELETE /api/members/me/notifications ──────────────────────
+export const clearMyNotifications = (req, res) => {
+  const userId = req.user.id;
+  const hoSo = db.prepare('SELECT id FROM ho_so WHERE tai_khoan_id = ?').get(userId);
+  if (!hoSo) return error(res, 'Không tìm thấy hồ sơ hội viên.', 404);
+
+  db.prepare('DELETE FROM thong_bao_user WHERE ho_so_id = ?').run(hoSo.id);
+  return success(res, null, 'Đã xoá sạch thông báo cá nhân.');
 };

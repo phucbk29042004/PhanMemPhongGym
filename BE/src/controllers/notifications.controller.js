@@ -136,3 +136,53 @@ export const deleteAllNotifications = (req, res) => {
 
   return success(res, { deleted: result.changes }, `Đã xóa ${result.changes} thông báo.`);
 };
+
+// ── POST /api/notifications/broadcast ────────────────────
+// Gửi thông báo hàng loạt cho HV/PT/Tất cả
+export const broadcastNotification = (req, res) => {
+  const { tieu_de, noi_dung, doi_tuong = 'all', muc_do = 'info' } = req.body;
+
+  if (!tieu_de || !noi_dung) {
+    return error(res, 'Thiếu tiêu đề hoặc nội dung thông báo.', 400);
+  }
+
+  // loai sẽ lưu dưới dạng broadcast_info hoặc broadcast_danger
+  const loai = `broadcast_${muc_do}`;
+
+  // Xác định query lấy danh sách ID ho_so
+  let query = "SELECT id FROM ho_so WHERE is_deleted = 0";
+  if (doi_tuong === 'members') {
+    query += " AND loai_ho_so = 'hoi_vien'";
+  } else if (doi_tuong === 'pt') {
+    query += " AND loai_ho_so = 'pt'";
+  } else {
+    query += " AND (loai_ho_so = 'hoi_vien' OR loai_ho_so = 'pt')";
+  }
+
+  const ids = db.prepare(query).all();
+
+  if (ids.length === 0) {
+    return success(res, { count: 0 }, 'Không có đối tượng nào để gửi thông báo.');
+  }
+
+  // Thực hiện insert hàng loạt bằng Transaction
+  const insertStmt = db.prepare(`
+    INSERT INTO thong_bao_user (ho_so_id, loai, tieu_de, noi_dung)
+    VALUES (?, ?, ?, ?)
+  `);
+
+  const broadcastTx = db.transaction((targets) => {
+    for (const t of targets) {
+      insertStmt.run(t.id, loai, tieu_de, noi_dung);
+    }
+    return targets.length;
+  });
+
+  try {
+    const count = broadcastTx(ids);
+    return success(res, { count }, `Đã gửi thông báo thành công tới ${count} đối tượng.`);
+  } catch (err) {
+    console.error('[Broadcast] error:', err);
+    return error(res, 'Lỗi khi gửi thông báo hàng loạt.', 500);
+  }
+};

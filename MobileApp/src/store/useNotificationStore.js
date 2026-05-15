@@ -42,5 +42,19 @@ export const useNotificationStore = create((set, get) => ({
     } catch (e) {
       console.error('[NotificationStore] markAsRead error:', e?.message);
     }
+  },
+  
+  clearNotifications: async () => {
+    try {
+      await api.delete('/members/me/notifications');
+      // Sau khi xoá trên server, xoá sạch custom notifs ở local
+      set((state) => ({
+        notifications: state.notifications.filter(n => !n.is_custom),
+        unreadCount: 0
+      }));
+    } catch (e) {
+      console.error('[NotificationStore] clearNotifications error:', e?.message);
+      throw e;
+    }
   }
 }));

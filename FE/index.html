@@ -68,6 +68,7 @@
     input[type="date"] {
       position: relative;
     }
+
     input[type="date"]::-webkit-calendar-picker-indicator {
       background: transparent !important;
       bottom: 0 !important;
@@ -81,6 +82,7 @@
       width: auto !important;
       z-index: 10 !important;
     }
+
     /* AirDatepicker Anchoring Fix */
     .air-datepicker {
       z-index: 9999 !important;
@@ -282,7 +284,9 @@
         </button>
         <button
           class="material-symbols-outlined text-on-surface-variant hover:text-brand-primary p-atom rounded-lg transition-all">settings</button>
-        <div class="relative group cursor-pointer flex items-center gap-compact ml-xs pl-standard border-l border-outline-variant" title="Tài khoản Quản trị" id="admin-account-dropdown">
+        <div
+          class="relative group cursor-pointer flex items-center gap-compact ml-xs pl-standard border-l border-outline-variant"
+          title="Tài khoản Quản trị" id="admin-account-dropdown">
           <div id="header-avatar-container"
             class="w-8 h-8 rounded-full bg-gradient-to-br from-brand-primary to-[#157a2a] flex items-center justify-center shadow-sm hover:opacity-90 transition-opacity overflow-hidden">
             <span class="material-symbols-outlined text-white text-base"
@@ -292,20 +296,29 @@
             <span class="text-body-sm text-on-surface font-bold" id="header-user-name"></span>
             <span class="text-on-surface-variant" style="font-size:10px" id="header-user-role"></span>
           </div>
-          
+
           <!-- Dropdown menu -->
-          <div class="absolute right-0 top-full mt-2 w-56 bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+          <div
+            class="absolute right-0 top-full mt-2 w-56 bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
             <div class="p-2 space-y-1">
-              <button id="btn-admin-profile" class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container rounded-lg transition-colors">
+              <button id="btn-admin-profile"
+                class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container rounded-lg transition-colors">
                 <span class="material-symbols-outlined text-lg">person</span>
                 Thông tin cá nhân
               </button>
-              <button id="btn-admin-change-password" class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container rounded-lg transition-colors">
+              <button id="btn-admin-change-password"
+                class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container rounded-lg transition-colors">
                 <span class="material-symbols-outlined text-lg">key</span>
                 Đổi mật khẩu
               </button>
+              <button id="btn-broadcast-modal-trigger"
+                class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container rounded-lg transition-colors">
+                <span class="material-symbols-outlined text-lg">campaign</span>
+                Thông báo tổng (Broadcast)
+              </button>
               <div class="h-px bg-outline-variant/50 my-1"></div>
-              <button id="btn-admin-logout" class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-error hover:text-error hover:bg-error-container rounded-lg transition-colors">
+              <button id="btn-admin-logout"
+                class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-error hover:text-error hover:bg-error-container rounded-lg transition-colors">
                 <span class="material-symbols-outlined text-lg">logout</span>
                 Đăng xuất
               </button>
@@ -342,6 +355,7 @@
   <script src="assets/js/pages/pt-register.js"></script>
   <script src="assets/js/pages/packages.js"></script>
   <script src="assets/js/pages/birthday.js"></script>
+  <script src="assets/js/pages/broadcast.js"></script>
   <script src="assets/js/pages/revenue.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script src="assets/js/app.js"></script>
@@ -431,67 +445,164 @@
   </div>
 
   <!-- Modal Thông tin cá nhân -->
-  <div id="modal-admin-profile" style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px;">
-    <div style="background:#fff;border-radius:20px;width:100%;max-width:480px;box-shadow:0 24px 60px rgba(0,0,0,0.28);position:relative;overflow:hidden;">
-      <div style="background:linear-gradient(135deg,#1a5e2a 0%,#1D9336 60%,#22c55e 100%);padding:20px;text-align:center;">
+  <div id="modal-admin-profile"
+    style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px;">
+    <div
+      style="background:#fff;border-radius:20px;width:100%;max-width:480px;box-shadow:0 24px 60px rgba(0,0,0,0.28);position:relative;overflow:hidden;">
+      <div
+        style="background:linear-gradient(135deg,#1a5e2a 0%,#1D9336 60%,#22c55e 100%);padding:20px;text-align:center;">
         <h3 style="color:#fff;font-weight:700;font-size:18px;">Thông tin cá nhân</h3>
         <p style="color:rgba(255,255,255,0.8);font-size:12px;margin-top:4px;">Cập nhật hồ sơ của bạn</p>
       </div>
       <div style="padding:24px;display:flex;flex-direction:column;gap:16px;">
-        
+
         <!-- Avatar Preview & Upload -->
-        <div style="display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:-48px;position:relative;z-index:10;">
-          <div style="position:relative;width:80px;height:80px;border-radius:50%;border:4px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,0.15);background:#e0e8dc;overflow:hidden;" id="admin-profile-avatar-preview">
-            <span class="material-symbols-outlined" style="font-size:40px;color:#94a3b8;position:absolute;top:50%;left:50%;transform:translate(-50%, -50%);font-variation-settings:'FILL' 1;">person</span>
+        <div
+          style="display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:-48px;position:relative;z-index:10;">
+          <div
+            style="position:relative;width:80px;height:80px;border-radius:50%;border:4px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,0.15);background:#e0e8dc;overflow:hidden;"
+            id="admin-profile-avatar-preview">
+            <span class="material-symbols-outlined"
+              style="font-size:40px;color:#94a3b8;position:absolute;top:50%;left:50%;transform:translate(-50%, -50%);font-variation-settings:'FILL' 1;">person</span>
           </div>
-          <label style="cursor:pointer;background:#e8f4fd;color:#1565c0;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px;transition:background 0.2s;">
+          <label
+            style="cursor:pointer;background:#e8f4fd;color:#1565c0;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px;transition:background 0.2s;">
             <span class="material-symbols-outlined" style="font-size:16px;">upload</span> Đổi ảnh
-            <input type="file" id="admin-profile-avatar-input" accept="image/jpeg, image/png, image/webp" style="display:none;" />
+            <input type="file" id="admin-profile-avatar-input" accept="image/jpeg, image/png, image/webp"
+              style="display:none;" />
           </label>
         </div>
 
         <div>
           <label style="font-size:12px;font-weight:700;color:#6e7a6b;margin-bottom:6px;display:block;">Họ và tên</label>
-          <input id="profile-ho-ten" type="text" style="width:100%;border:1px solid #cdd6ca;border-radius:10px;padding:10px 14px;font-size:14px;outline:none;" />
+          <input id="profile-ho-ten" type="text"
+            style="width:100%;border:1px solid #cdd6ca;border-radius:10px;padding:10px 14px;font-size:14px;outline:none;" />
         </div>
         <div>
-          <label style="font-size:12px;font-weight:700;color:#6e7a6b;margin-bottom:6px;display:block;">Số điện thoại</label>
-          <input id="profile-so-dien-thoai" type="tel" style="width:100%;border:1px solid #cdd6ca;border-radius:10px;padding:10px 14px;font-size:14px;outline:none;" />
+          <label style="font-size:12px;font-weight:700;color:#6e7a6b;margin-bottom:6px;display:block;">Số điện
+            thoại</label>
+          <input id="profile-so-dien-thoai" type="tel"
+            style="width:100%;border:1px solid #cdd6ca;border-radius:10px;padding:10px 14px;font-size:14px;outline:none;" />
         </div>
         <div>
           <label style="font-size:12px;font-weight:700;color:#6e7a6b;margin-bottom:6px;display:block;">Email</label>
-          <input id="profile-email" type="email" style="width:100%;border:1px solid #cdd6ca;border-radius:10px;padding:10px 14px;font-size:14px;outline:none;" />
+          <input id="profile-email" type="email"
+            style="width:100%;border:1px solid #cdd6ca;border-radius:10px;padding:10px 14px;font-size:14px;outline:none;" />
         </div>
         <div style="display:flex;gap:12px;margin-top:8px;">
-          <button id="btn-close-profile" style="flex:1;padding:12px;border-radius:10px;background:#f0f2f0;color:#3f4a3c;font-weight:700;border:none;cursor:pointer;">Hủy</button>
-          <button id="btn-save-profile" style="flex:1;padding:12px;border-radius:10px;background:#1D9336;color:#fff;font-weight:700;border:none;cursor:pointer;">Lưu thay đổi</button>
+          <button id="btn-close-profile"
+            style="flex:1;padding:12px;border-radius:10px;background:#f0f2f0;color:#3f4a3c;font-weight:700;border:none;cursor:pointer;">Hủy</button>
+          <button id="btn-save-profile"
+            style="flex:1;padding:12px;border-radius:10px;background:#1D9336;color:#fff;font-weight:700;border:none;cursor:pointer;">Lưu
+            thay đổi</button>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Modal Đổi mật khẩu -->
-  <div id="modal-admin-change-password" style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px;">
-    <div style="background:#fff;border-radius:20px;width:100%;max-width:400px;box-shadow:0 24px 60px rgba(0,0,0,0.28);position:relative;overflow:hidden;">
+  <div id="modal-admin-change-password"
+    style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px;">
+    <div
+      style="background:#fff;border-radius:20px;width:100%;max-width:400px;box-shadow:0 24px 60px rgba(0,0,0,0.28);position:relative;overflow:hidden;">
       <div style="padding:20px 24px;border-bottom:1px solid #e8ede6;">
         <h3 style="color:#181c20;font-weight:700;font-size:18px;">Đổi mật khẩu</h3>
       </div>
       <div style="padding:24px;display:flex;flex-direction:column;gap:16px;">
         <div>
-          <label style="font-size:12px;font-weight:700;color:#6e7a6b;margin-bottom:6px;display:block;">Mật khẩu hiện tại</label>
-          <input id="pwd-old" type="password" style="width:100%;border:1px solid #cdd6ca;border-radius:10px;padding:10px 14px;font-size:14px;outline:none;" />
+          <label style="font-size:12px;font-weight:700;color:#6e7a6b;margin-bottom:6px;display:block;">Mật khẩu hiện
+            tại</label>
+          <input id="pwd-old" type="password"
+            style="width:100%;border:1px solid #cdd6ca;border-radius:10px;padding:10px 14px;font-size:14px;outline:none;" />
         </div>
         <div>
-          <label style="font-size:12px;font-weight:700;color:#6e7a6b;margin-bottom:6px;display:block;">Mật khẩu mới</label>
-          <input id="pwd-new" type="password" style="width:100%;border:1px solid #cdd6ca;border-radius:10px;padding:10px 14px;font-size:14px;outline:none;" />
+          <label style="font-size:12px;font-weight:700;color:#6e7a6b;margin-bottom:6px;display:block;">Mật khẩu
+            mới</label>
+          <input id="pwd-new" type="password"
+            style="width:100%;border:1px solid #cdd6ca;border-radius:10px;padding:10px 14px;font-size:14px;outline:none;" />
         </div>
         <div>
-          <label style="font-size:12px;font-weight:700;color:#6e7a6b;margin-bottom:6px;display:block;">Nhập lại mật khẩu mới</label>
-          <input id="pwd-confirm" type="password" style="width:100%;border:1px solid #cdd6ca;border-radius:10px;padding:10px 14px;font-size:14px;outline:none;" />
+          <label style="font-size:12px;font-weight:700;color:#6e7a6b;margin-bottom:6px;display:block;">Nhập lại mật khẩu
+            mới</label>
+          <input id="pwd-confirm" type="password"
+            style="width:100%;border:1px solid #cdd6ca;border-radius:10px;padding:10px 14px;font-size:14px;outline:none;" />
         </div>
         <div style="display:flex;gap:12px;margin-top:8px;">
-          <button id="btn-close-password" style="flex:1;padding:12px;border-radius:10px;background:#f0f2f0;color:#3f4a3c;font-weight:700;border:none;cursor:pointer;">Hủy</button>
-          <button id="btn-save-password" style="flex:1;padding:12px;border-radius:10px;background:#ba1a1a;color:#fff;font-weight:700;border:none;cursor:pointer;">Đổi mật khẩu</button>
+          <button id="btn-close-password"
+            style="flex:1;padding:12px;border-radius:10px;background:#f0f2f0;color:#3f4a3c;font-weight:700;border:none;cursor:pointer;">Hủy</button>
+          <button id="btn-save-password"
+            style="flex:1;padding:12px;border-radius:10px;background:#ba1a1a;color:#fff;font-weight:700;border:none;cursor:pointer;">Đổi
+            mật khẩu</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Thông báo tổng (Broadcast) -->
+  <div id="modal-broadcast"
+    style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(0,0,0,0.4);backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:12px;">
+    <div
+      style="background:#fff;border-radius:16px;width:100%;max-width:440px;box-shadow:0 20px 40px rgba(0,0,0,0.15);position:relative;overflow:hidden;border:1px solid #e2e8f0;">
+
+      <!-- Compact Header -->
+      <div
+        style="padding:16px 20px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;background:#fcfdfc;">
+        <div>
+          <h3 style="color:#1a2e1a;font-weight:700;font-size:16px;margin:0;">Gửi thông báo tổng</h3>
+          <p style="color:#64748b;font-size:11px;margin:2px 0 0;">Phát tin nhắn tới toàn hệ thống</p>
+        </div>
+        <button id="btn-close-broadcast"
+          style="background:none;border:none;color:#94a3b8;cursor:pointer;padding:4px;display:flex;transition:color 0.2s;">
+          <span class="material-symbols-outlined" style="font-size:20px;">close</span>
+        </button>
+      </div>
+
+      <div style="padding:20px;display:flex;flex-direction:column;gap:16px;">
+        <!-- Selection Row -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <label style="font-size:11px;font-weight:700;color:#334155;margin-bottom:6px;display:block;">Đối
+              tượng</label>
+            <select id="bc-target"
+              style="width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:8px 10px;font-size:13px;outline:none;background:#fff;color:#1e293b;cursor:pointer;">
+              <option value="all">Tất cả</option>
+              <option value="members">Hội viên</option>
+              <option value="pt">HLV / PT</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:700;color:#334155;margin-bottom:6px;display:block;">Mức độ</label>
+            <select id="bc-level"
+              style="width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:8px 10px;font-size:13px;outline:none;background:#fff;color:#1e293b;cursor:pointer;">
+              <option value="info">Thông báo</option>
+              <option value="danger">Quan trọng</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Title Input -->
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#334155;margin-bottom:6px;display:block;">Tiêu đề</label>
+          <input id="bc-title" type="text" placeholder="Nhập tiêu đề..."
+            style="width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:10px 12px;font-size:14px;outline:none;font-weight:600;color:#0f172a;transition:border-color 0.2s;" />
+        </div>
+
+        <!-- Content Area -->
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#334155;margin-bottom:6px;display:block;">Nội dung chi
+            tiết</label>
+          <textarea id="bc-content" rows="4" placeholder="Viết nội dung tại đây..."
+            style="width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:10px 12px;font-size:13px;outline:none;line-height:1.5;color:#334155;resize:none;"></textarea>
+        </div>
+
+        <!-- Footer Actions -->
+        <div style="display:flex;gap:10px;margin-top:4px;">
+          <button id="btn-close-broadcast-2"
+            style="flex:1;padding:10px;border-radius:8px;background:#f1f5f9;color:#475569;font-weight:600;border:none;cursor:pointer;font-size:13px;">Hủy</button>
+          <button id="btn-save-broadcast"
+            style="flex:2;padding:10px;border-radius:8px;background:#1D9336;color:#fff;font-weight:700;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;box-shadow:0 4px 12px rgba(29,147,54,0.15);">
+            <span class="material-symbols-outlined" style="font-size:18px">send</span> Gửi ngay
+          </button>
         </div>
       </div>
     </div>

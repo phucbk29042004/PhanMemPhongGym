@@ -10,7 +10,7 @@ import {
   getExpiredMembers, getMemberHistory, registerPackage,
   getBirthday, getMyProfile, createAccount, checkDuplicate,
   getMyNotifications, requestPackageRenewal, getPackageRequests, approvePackageRequest,
-  notifyMember, markMyNotificationsRead
+  notifyMember, markMyNotificationsRead, clearMyNotifications
 } from '../controllers/members.controller.js';
 import { verifyToken } from '../middlewares/auth.js';
 import { requireRole } from '../middlewares/role.js';
@@ -27,8 +27,9 @@ router.get('/birthday',         requireRole('admin', 'le_tan'), getBirthday);
 router.get('/check-duplicate',  requireRole('admin', 'le_tan'), checkDuplicate);
 router.get('/package-requests', requireRole('admin', 'le_tan'), getPackageRequests); // Xem các yêu cầu chờ duyệt
 router.get('/me/profile', verifyToken, getMyProfile);
-router.get('/me/notifications', getMyNotifications); // Thông báo realtime — không lưu DB
+router.get('/me/notifications', getMyNotifications); // Thông báo realtime + inbox
 router.post('/me/notifications/read', markMyNotificationsRead); // Đánh dấu đã đọc
+router.delete('/me/notifications', clearMyNotifications); // Xoá sạch thông báo inbox
 router.post('/me/package-request', requestPackageRenewal); // Yêu cầu gia hạn từ App
 router.put('/package-requests/:id/approve', requireRole('admin', 'le_tan'), approvePackageRequest); // Duyệt/Từ chối yêu cầu
 

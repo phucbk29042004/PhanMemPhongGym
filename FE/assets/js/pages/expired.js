@@ -137,13 +137,13 @@ window.GymApp.pages['expired'] = {
     }
   },
 
-  _refreshView: function() {
+  _refreshView: function () {
     const self = this;
     const query = (this._searchQuery || '').toLowerCase().trim();
-    
-    const filterFn = m => !query || 
-      (m.ho_ten && m.ho_ten.toLowerCase().includes(query)) || 
-      (m.ma_ho_so && m.ma_ho_so.toLowerCase().includes(query)) || 
+
+    const filterFn = m => !query ||
+      (m.ho_ten && m.ho_ten.toLowerCase().includes(query)) ||
+      (m.ma_ho_so && m.ma_ho_so.toLowerCase().includes(query)) ||
       (m.so_dien_thoai && m.so_dien_thoai.includes(query));
 
     if (this._tab === 'expired') {
@@ -185,13 +185,19 @@ window.GymApp.pages['expired'] = {
     ];
 
     return stats.map(s => `
-      <div class="bg-surface-container-lowest p-loose rounded-[28px] border ${s.border} shadow-sm flex items-center gap-loose transition-all hover:-translate-y-1 hover:shadow-lg group">
-        <div class="w-[60px] h-[60px] rounded-2xl ${s.bg} flex items-center justify-center group-hover:scale-105 transition-transform duration-500">
-          <span class="material-symbols-outlined ${s.color} text-[32px]" style="font-variation-settings:'FILL' 1">${s.icon}</span>
+      <div class="bg-surface-container-lowest/80 backdrop-blur-xl p-loose rounded-[32px] border ${s.border} shadow-sm flex items-center gap-loose transition-all hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-brand-primary/10 group relative overflow-hidden">
+        <div class="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-700 group-hover:scale-150 group-hover:-rotate-12 transform">
+          <span class="material-symbols-outlined text-[120px]">${s.icon}</span>
         </div>
-        <div class="flex flex-col">
-          <span class="text-on-surface-variant text-[12px] uppercase tracking-widest font-black opacity-50">${s.label}</span>
-          <span class="${s.color} text-headline-lg font-black tracking-tighter leading-none mt-1">${s.value}</span>
+        <div class="w-16 h-16 rounded-2xl ${s.bg} flex items-center justify-center group-hover:scale-110 transition-all duration-500 shadow-inner">
+          <span class="material-symbols-outlined ${s.color} text-[36px]" style="font-variation-settings:'FILL' 1">${s.icon}</span>
+        </div>
+        <div class="flex flex-col relative z-10">
+          <span class="text-on-surface-variant text-[11px] uppercase tracking-[0.2em] font-black opacity-40">${s.label}</span>
+          <div class="flex items-baseline gap-1">
+            <span class="${s.color} text-display-sm font-black tracking-tighter leading-none mt-1">${s.value}</span>
+            <span class="text-on-surface-variant text-[12px] font-bold opacity-30">hv</span>
+          </div>
         </div>
       </div>
     `).join('');
@@ -199,7 +205,7 @@ window.GymApp.pages['expired'] = {
 
   _renderExpiredTable: function (list) {
     if (list.length === 0) return this._renderEmptyState('Không có hội viên hết hạn');
-    
+
     const start = (this._expiredPage - 1) * this._perPage;
     const paginated = list.slice(start, start + this._perPage);
 
@@ -225,12 +231,14 @@ window.GymApp.pages['expired'] = {
           <span class="text-on-surface-variant text-[11px] font-mono font-black bg-surface-container px-2.5 py-1 rounded-xl border border-outline-variant/30">${m.ma_ho_so}</span>
         </td>
         <td class="px-standard py-3">
-          <div class="flex flex-col">
-            <span class="text-on-surface font-black text-body-sm truncate max-w-[180px]">${m.ten_goi_tap || 'N/A'}</span>
-            <span class="text-error text-[11px] font-black mt-1 flex items-center gap-1">
-              <span class="material-symbols-outlined text-[14px]">event_busy</span>
-              Hết hạn: ${window.GymApp.formatDate(m.ngay_het_han)}
-            </span>
+          <div class="flex flex-col gap-1">
+            <div class="inline-flex items-center px-2 py-0.5 rounded-lg bg-surface-container text-on-surface text-[11px] font-black border border-outline-variant/50 w-fit">
+              ${m.ten_goi_tap || 'N/A'}
+            </div>
+            <div class="flex items-center gap-1.5 text-error">
+              <span class="material-symbols-outlined text-[16px]">event_busy</span>
+              <span class="text-[11px] font-black">Hết hạn: ${window.GymApp.formatDate(m.ngay_het_han)}</span>
+            </div>
           </div>
         </td>
         <td class="px-standard py-3 text-center">
@@ -271,7 +279,7 @@ window.GymApp.pages['expired'] = {
 
   _renderExpiringTable: function (list) {
     if (list.length === 0) return this._renderEmptyState('Không có hội viên sắp hết hạn');
-    
+
     const sorted = [...list].sort((a, b) => a.daysLeft - b.daysLeft);
     const start = (this._expiringPage - 1) * this._perPage;
     const paginated = sorted.slice(start, start + this._perPage);
@@ -279,7 +287,7 @@ window.GymApp.pages['expired'] = {
     const rows = paginated.map(m => {
       const urgency = m.daysLeft <= 3 ? 'text-error' : m.daysLeft <= 7 ? 'text-[#e65100]' : 'text-[#f59e0b]';
       const urgencyBg = m.daysLeft <= 3 ? 'bg-error/10' : m.daysLeft <= 7 ? 'bg-[#e65100]/10' : 'bg-[#f59e0b]/10';
-      
+
       return `
         <tr class="group hover:bg-surface-container-low transition-colors border-b border-outline-variant/30">
           <td class="px-standard py-3">
@@ -297,11 +305,19 @@ window.GymApp.pages['expired'] = {
             <span class="text-on-surface-variant text-[11px] font-mono font-black bg-surface-container px-2.5 py-1 rounded-xl border border-outline-variant/30">${m.ma_ho_so}</span>
           </td>
           <td class="px-standard py-3">
-            <div class="flex flex-col">
-              <span class="text-on-surface font-black text-body-sm truncate max-w-[180px]">${m.ten_goi_tap || 'N/A'}</span>
-              <div class="flex items-center gap-xs mt-1">
-                 <span class="text-on-surface-variant text-[11px] font-bold opacity-50">Hạn: ${window.GymApp.formatDate(m.ngay_het_han)}</span>
-                 <span class="${urgency} ${urgencyBg} text-[9px] font-black px-1.5 py-0.5 rounded-lg border border-current/20">Còn ${m.daysLeft} ngày</span>
+            <div class="flex flex-col gap-1">
+              <div class="inline-flex items-center px-2 py-0.5 rounded-lg bg-surface-container text-on-surface text-[11px] font-black border border-outline-variant/50 w-fit">
+                ${m.ten_goi_tap || 'N/A'}
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-on-surface-variant text-[11px] font-bold opacity-50 flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[14px]">event</span>
+                  ${window.GymApp.formatDate(m.ngay_het_han)}
+                </span>
+                <span class="${urgency} ${urgencyBg} text-[10px] font-black px-2 py-0.5 rounded-full border border-current/20 flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[12px]">schedule</span>
+                  ${m.daysLeft} ngày
+                </span>
               </div>
             </div>
           </td>
@@ -354,6 +370,7 @@ window.GymApp.pages['expired'] = {
     const self = this;
     this._expiredPage = 1;
     this._expiringPage = 1;
+    this._requestsPage = 1;
 
     // Load data after DOM is ready
     setTimeout(() => self._loadData(), 50);
@@ -362,6 +379,7 @@ window.GymApp.pages['expired'] = {
       self._searchQuery = e.target.value;
       self._expiredPage = 1;
       self._expiringPage = 1;
+      self._requestsPage = 1;
       self._refreshView();
     });
 
@@ -370,8 +388,10 @@ window.GymApp.pages['expired'] = {
     window.GymApp._pgHandler = function (pg) {
       if (self._tab === 'expired') {
         self._expiredPage = pg;
-      } else {
+      } else if (self._tab === 'expiring') {
         self._expiringPage = pg;
+      } else {
+        self._requestsPage = pg;
       }
       self._refreshView();
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -396,13 +416,13 @@ window.GymApp.pages['expired'] = {
     });
   },
 
-  _updateTabStyles: function() {
+  _updateTabStyles: function () {
     const tabs = ['expired', 'expiring', 'requests'];
     tabs.forEach(t => {
       const btn = document.getElementById(`tab-${t}-list`);
       if (!btn) return;
       const isActive = this._tab === t;
-      btn.className = isActive 
+      btn.className = isActive
         ? 'px-loose py-2.5 rounded-xl font-bold text-body-sm bg-brand-primary text-white shadow-lg shadow-brand-primary/20 transition-all duration-300 flex items-center gap-xs whitespace-nowrap'
         : 'px-loose py-2.5 rounded-xl font-bold text-body-sm text-on-surface-variant hover:text-brand-primary transition-all duration-300 flex items-center gap-xs whitespace-nowrap';
     });
@@ -410,12 +430,12 @@ window.GymApp.pages['expired'] = {
 
   _renderRequestsTable: function (list) {
     if (list.length === 0) return this._renderEmptyState('Không có yêu cầu gia hạn nào');
-    
+
     const start = (this._requestsPage - 1) * this._perPage;
     const paginated = list.slice(start, start + this._perPage);
 
     const rows = paginated.map(req => `
-      <tr class="group hover:bg-surface-container-low transition-colors border-b border-outline-variant/30">
+      <tr class="group hover:bg-surface-container-low transition -colors border-b border-outline-variant/30">
         <td class="px-standard py-3">
           <div class="flex items-center gap-standard">
             ${window.GymApp.avatarImg(null, req.ho_ten, 'lg', 'width:48px;height:48px;border-radius:16px;')}
@@ -426,15 +446,26 @@ window.GymApp.pages['expired'] = {
           </div>
         </td>
         <td class="px-standard py-3">
-          <div class="flex flex-col">
-            <span class="text-on-surface font-black text-body-sm">${req.ten_goi_tap}</span>
-            <span class="text-on-surface-variant text-[11px] font-bold opacity-50">Từ: ${window.GymApp.formatDate(req.tu_ngay)}</span>
+          <div class="flex flex-col gap-1">
+            <div class="inline-flex items-center px-2 py-0.5 rounded-lg bg-brand-primary/10 text-brand-primary text-[11px] font-black border border-brand-primary/20 w-fit">
+              ${req.ten_goi_tap}
+            </div>
+            <div class="flex items-center gap-1 text-on-surface-variant text-[11px] font-bold opacity-50">
+              <span class="material-symbols-outlined text-[14px]">calendar_today</span>
+              Từ: ${window.GymApp.formatDate(req.tu_ngay)}
+            </div>
           </div>
         </td>
         <td class="px-standard py-3">
-          <div class="flex flex-col">
-             <span class="text-brand-primary font-black text-body-md">${Number(req.gia_thuc_te).toLocaleString('vi-VN')}đ</span>
-             <span class="text-on-surface-variant text-[11px] font-bold opacity-50">Hạn: ${window.GymApp.formatDate(req.den_ngay)}</span>
+          <div class="flex flex-col gap-1">
+             <div class="flex items-center gap-1.5">
+               <span class="text-brand-primary font-black text-body-lg">${Number(req.gia_thuc_te).toLocaleString('vi-VN')}</span>
+               <span class="text-brand-primary/60 text-[10px] font-black uppercase">VND</span>
+             </div>
+             <div class="flex items-center gap-1 text-on-surface-variant text-[11px] font-bold opacity-50">
+               <span class="material-symbols-outlined text-[14px]">event_repeat</span>
+               Hạn: ${window.GymApp.formatDate(req.den_ngay)}
+             </div>
           </div>
         </td>
         <td class="px-standard py-3 text-center">
@@ -473,7 +504,7 @@ window.GymApp.pages['expired'] = {
 
   _bindTableEvents: function () {
     const self = this;
-    
+
     // Notify
     document.querySelectorAll('.notify-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -525,7 +556,7 @@ window.GymApp.pages['expired'] = {
     if (action === 'reject') {
       const confirm = await window.GymApp.confirm(`Bạn có chắc muốn từ chối yêu cầu gia hạn của <strong>${req.ho_ten}</strong>?`, 'Cảnh báo');
       if (!confirm) return;
-      
+
       try {
         const res = await window.GymApp.api.put(`/members/package-requests/${id}/approve`, { action: 'reject' });
         if (res?.success) {
@@ -612,7 +643,7 @@ window.GymApp.pages['expired'] = {
   _handleNotify: async function (member) {
     const isExpired = this._tab === 'expired';
     const title = isExpired ? 'Gói tập đã hết hạn' : 'Gói tập sắp hết hạn';
-    const content = isExpired 
+    const content = isExpired
       ? `Chào ${member.ho_ten}, gói tập của bạn đã hết hạn ngày ${window.GymApp.formatDate(member.ngay_het_han)}. Hãy gia hạn ngay nhé!`
       : `Chào ${member.ho_ten}, gói tập của bạn sẽ hết hạn vào ngày ${window.GymApp.formatDate(member.ngay_het_han)}. Gia hạn sớm để nhận ưu đãi nhé!`;
 

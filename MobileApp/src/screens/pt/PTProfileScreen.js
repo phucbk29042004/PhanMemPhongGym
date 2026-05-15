@@ -1,13 +1,13 @@
 import React, { useCallback, useState } from 'react';
 import {
-  ActivityIndicator, RefreshControl, ScrollView,
+  ActivityIndicator, Alert, RefreshControl, ScrollView,
   StatusBar, StyleSheet, Switch, Text,
   TouchableOpacity, View,
 } from 'react-native';
 import {
-  Award, Badge, Building2, Calendar, ChevronRight,
-  Clock, Dumbbell, KeyRound, LogOut,
-  Moon, Phone, ShieldCheck, Star, Sun, User, UserCheck,
+  Award, Badge, Bell, Building2, Calendar, ChevronRight,
+  Clock, Dumbbell, Info, KeyRound, LogOut,
+  Moon, Phone, ShieldCheck, Star, Sun, Trash2, User, UserCheck,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import ProfileAvatar from '../../components/ProfileAvatar';
@@ -132,6 +132,33 @@ export default function PTProfileScreen() {
 
   const handleLogout = () => { logout?.(); };
 
+  const handleClearNotifications = () => {
+    if (notifications.filter(n => n.is_custom).length === 0) {
+      Alert.alert('Thông báo', 'Bạn không có thông báo nào để xoá.');
+      return;
+    }
+
+    Alert.alert(
+      'Xoá thông báo',
+      'Bạn có chắc chắn muốn xoá sạch các thông báo cá nhân?',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Xoá',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await api.delete('/members/me/notifications');
+              setNotifications(prev => prev.filter(n => !n.is_custom));
+            } catch (err) {
+              Alert.alert('Lỗi', 'Không thể xoá thông báo.');
+            }
+          }
+        }
+      ]
+    );
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={G.white} />
@@ -205,6 +232,38 @@ export default function PTProfileScreen() {
               </View>
             </View>
           )}
+        </View>
+
+        {/* ── THÔNG BÁO ────────────────────────── */}
+        <View style={secStyles.wrapper}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+            <Text style={secStyles.title}>Thông báo cá nhân</Text>
+            {notifications.filter(n => n.is_custom).length > 0 && (
+              <TouchableOpacity onPress={handleClearNotifications}>
+                <Text style={{ fontSize: 11, color: G.danger, fontWeight: '700' }}>Xoá sạch</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          <View style={secStyles.card}>
+            {notifications.length === 0 ? (
+              <View style={{ paddingVertical: 16, alignItems: 'center' }}>
+                <Text style={{ fontSize: 12, color: G.gray400 }}>Không có thông báo mới</Text>
+              </View>
+            ) : (
+              notifications.map((n, idx) => (
+                <MenuRow
+                  key={idx}
+                  icon={n.muc_do === 'danger' || n.muc_do === 'warning' ? Bell : Info}
+                  iconBg={n.muc_do === 'danger' ? G.dangerLight : (n.muc_do === 'warning' ? '#fffbeb' : G.primaryLight)}
+                  iconColor={n.muc_do === 'danger' ? G.danger : (n.muc_do === 'warning' ? '#d97706' : G.primary)}
+                  label={n.tieu_de}
+                  sublabel={n.noi_dung}
+                  onPress={() => {}}
+                  rightEl={null}
+                />
+              ))
+            )}
+          </View>
         </View>
 
         {/* ── THÔNG TIN CHUYÊN MÔN ──────────────── */}

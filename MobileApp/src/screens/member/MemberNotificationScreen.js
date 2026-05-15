@@ -1,11 +1,11 @@
 import React, { useCallback, useState } from 'react';
 import {
-  ActivityIndicator, RefreshControl, ScrollView,
+  ActivityIndicator, Alert, RefreshControl, ScrollView,
   StatusBar, StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
 import {
   AlertCircle, AlertTriangle, Bell, BellOff,
-  CheckCircle, Info, RefreshCw,
+  CheckCircle, Info, RefreshCw, Trash2,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../services/api';
@@ -152,7 +152,7 @@ const notifStyles = StyleSheet.create({
 
 // ── Màn hình chính ─────────────────────────────────────────
 export default function MemberNotificationScreen() {
-  const { notifications, loading, fetchNotifications, markAsRead } = useNotificationStore();
+  const { notifications, loading, fetchNotifications, markAsRead, clearNotifications } = useNotificationStore();
   const [refreshing, setRefreshing] = useState(false);
   const [checkedIn, setCheckedIn] = useState(false);
 
@@ -186,6 +186,32 @@ export default function MemberNotificationScreen() {
 
   const onRefresh = () => { setRefreshing(true); syncNotifications(); };
 
+  const handleClearAll = () => {
+    if (notifications.filter(n => n.is_custom).length === 0) {
+      Alert.alert('Thông báo', 'Bạn không có thông báo cá nhân nào để xoá.');
+      return;
+    }
+
+    Alert.alert(
+      'Xoá thông báo',
+      'Bạn có chắc chắn muốn xoá tất cả thông báo cá nhân? Hành động này không thể hoàn tác.',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        { 
+          text: 'Xoá sạch', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await clearNotifications();
+            } catch (err) {
+              Alert.alert('Lỗi', 'Không thể xoá thông báo. Vui lòng thử lại.');
+            }
+          }
+        }
+      ]
+    );
+  };
+
   // Phân nhóm theo mức độ
   const dangerItems = notifications.filter(n => n.muc_do === 'danger');
   const warningItems = notifications.filter(n => n.muc_do === 'warning');
@@ -204,13 +230,22 @@ export default function MemberNotificationScreen() {
           </View>
           <Text style={styles.headerTitle}>Thông báo</Text>
         </View>
-        <TouchableOpacity
-          style={styles.refreshBtn}
-          onPress={onRefresh}
-          activeOpacity={0.7}
-        >
-          <RefreshCw color={G.primary} size={16} strokeWidth={2} />
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          <TouchableOpacity
+            style={[styles.refreshBtn, { marginRight: 8 }]}
+            onPress={handleClearAll}
+            activeOpacity={0.7}
+          >
+            <Trash2 color={G.danger} size={16} strokeWidth={2} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.refreshBtn}
+            onPress={onRefresh}
+            activeOpacity={0.7}
+          >
+            <RefreshCw color={G.primary} size={16} strokeWidth={2} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* ── Check-in banner ────────────────────── */}
@@ -299,6 +334,7 @@ export default function MemberNotificationScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: G.gray50 },
+  headerRight: { flexDirection: 'row', alignItems: 'center' },
 
   // Header
   header: {

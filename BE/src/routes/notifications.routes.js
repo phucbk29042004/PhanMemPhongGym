@@ -8,7 +8,9 @@ import {
   markAllAsRead,
   deleteNotification,
   deleteAllNotifications,
+  broadcastNotification
 } from '../controllers/notifications.controller.js';
+import { requireRole } from '../middlewares/role.js';
 
 const router = Router();
 
@@ -21,5 +23,8 @@ router.patch('/read-all',    markAllAsRead);
 router.patch('/:id/read',    markAsRead);
 router.delete('/',           deleteAllNotifications);
 router.delete('/:id',        deleteNotification);
+
+// Broadcast cho Hội viên & PT
+router.post('/broadcast',    requireRole('admin'), broadcastNotification);
 
 export default router;
