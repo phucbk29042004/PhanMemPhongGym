@@ -8,7 +8,18 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
-**✅ Tối giản hóa thanh Header trên Web & Chuẩn hóa icon phễu lọc** — Ẩn các nhãn chữ hiển thị ở khu vực tài khoản trên header của Admin và PT portal, giữ nguyên nhãn nút "Quét QR", đồng bộ hóa toàn bộ icon lọc sang dạng chiếc phễu chuyên nghiệp (`filter_alt`).
+**✅ Redesign Modal Chi tiết PT & Fix Lọc/Sửa PT** — Nâng cấp giao diện xem chi tiết Huấn luyện viên sang dạng 3 Tab cao cấp (Thông tin, Lịch dạy, Học viên); sửa lỗi bộ lọc không hoạt động và lỗi chức năng cập nhật thông tin PT.
+
+---
+
+## 📋 Danh Sách Thay Đổi
+
+### 15/05/2026 08:25 — Redesign Modal Chi Tiết PT & Fix Chức Năng Lọc/Sửa
+- **Loại**: Cải thiện tính năng & giao diện (Frontend)
+- **File chỉnh sửa**:
+  - `FE/assets/js/pages/members-list.js` — (1) Thiết kế lại `_showPtModal` theo layout 3 tab (Thông tin / Lịch dạy / Học viên) với banner gradient và quick stats bar; (2) Viết lại `_applyPtFilter` hỗ trợ mapping linh hoạt thuộc tính `chuyen_mon/specialty` và `trang_thai/status` giúp bộ lọc hoạt động chính xác; (3) Sửa lỗi `_showPtEditModal` chuyển sang dùng endpoint chuẩn `/members/:id` và fix payload gửi lên backend; (4) Tối ưu hóa việc thu thập danh sách chuyên môn (unique specialties) trong modal lọc.
+- **Mô tả**: Đồng nhất trải nghiệm quản lý PT với quản lý Hội viên. Giải quyết các lỗi tồn đọng về logic lọc dữ liệu và lưu thông tin hồ sơ PT.
+- **Kết quả**: Thành công
 
 
 

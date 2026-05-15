@@ -251,3 +251,51 @@ Người **quản lý lịch dạy và học viên** của mình. Quyền hạn 
 
 ---
 
+## 🛠️ 9. CHI TIẾT CÁC API HỆ THỐNG (BACKEND)
+
+Tài liệu này liệt kê chi tiết các điểm cuối (endpoints) API và logic nghiệp vụ tương ứng trong mã nguồn Backend.
+
+### 9.1 Hệ Thống Xác Thực & Tài Khoản (`auth.controller.js`)
+- **`POST /api/auth/login`**:
+    - Xác thực tên đăng nhập và mật khẩu (dùng `bcrypt`).
+    - **Logic khóa tài khoản**: Nếu sai quá 5 lần, tài khoản sẽ chuyển sang trạng thái `khoa` và gửi thông báo đến Admin kèm địa chỉ IP.
+    - Trả về JWT token và thông tin người dùng kèm quyền hạn (`quyen_json`).
+- **`POST /api/auth/doi-mat-khau`**: Cho phép người dùng tự đổi mật khẩu cá nhân.
+- **`GET /api/auth/me`**: Lấy thông tin chi tiết của tài khoản đang đăng nhập.
+- **`PUT /api/auth/me`**: Cập nhật thông tin cá nhân (họ tên, email, SĐT).
+- **`PUT /api/auth/me/avatar`**: Cập nhật ảnh đại diện cá nhân, tích hợp **Cloudinary** để lưu trữ.
+
+### 9.2 Quản Lý Hồ Sơ Hội Viên & Nhân Sự (`members.controller.js`, `staff.controller.js`, `trainers.controller.js`)
+- **`GET /api/members`**: Danh sách hội viên kèm trạng thái thông minh (Màu sắc: `het_han`, `sap_het_han`, `con_han`, `chua_dang_ky`).
+- **`POST /api/members`**: Thêm mới hồ sơ. Tự động sinh mã hồ sơ theo tiền tố (`HV`, `PT`, `NV`, `LT`).
+- **`GET /api/members/expiring`**: Danh sách hội viên sắp hết hạn gói tập hoặc gói PT (mặc định trong 30 ngày tới).
+- **`GET /api/members/birthday`**: Danh sách hội viên có sinh nhật (hôm nay, trong tuần, hoặc trong tháng).
+- **`POST /api/members/:id/package`**: Đăng ký gói tập mới cho hội viên, tự động tính ngày kết thúc dựa trên số tháng và số ngày tặng thêm.
+- **`POST /api/members/:id/create-account`**: Tạo tài khoản đăng nhập cho một hồ sơ đã tồn tại, phân vai trò tự động theo loại hồ sơ.
+- **`GET /api/me/profile`**: Endpoint dành cho Mobile App để lấy toàn bộ Profile, gói tập, và lịch tập PT hiện tại.
+
+### 9.3 Quản Lý Lịch Tập & PT (`pt-registrations.controller.js`, `pt-schedules.controller.js`)
+- **`POST /api/pt-registrations`**: Đăng ký hợp đồng PT cho hội viên (số buổi, PT đảm nhận, giá tiền).
+- **`POST /api/pt-schedules`**: Đăng ký khung giờ tập cụ thể cho học viên.
+- **`GET /api/pt-schedules/me`**: PT xem danh sách học viên và lịch dạy của riêng mình.
+- **`PUT /api/pt-schedules/:id`**: Cập nhật trạng thái buổi tập (`da_tap`, `huy_buoi`, `cho_tap`). Khi `da_tap`, hệ thống sẽ tự động trừ 1 buổi trong gói PT của hội viên.
+- **`POST /api/pt-schedules/undo-auto-confirm`**: Cho phép Admin/Lễ tân hoàn tác (Undo) các buổi tập được hệ thống tự động xác nhận qua Cron Job.
+
+### 9.4 Hệ Thống Check-in & QR Code (`qr-checkin.controller.js`, `checkins.controller.js`)
+- **`GET /api/checkin/my-qr`**: Sinh mã QR code (JWT token) có hiệu lực ngắn cho Hội viên/PT.
+- **`POST /api/checkin/scan`**: Lễ tân quét mã QR. 
+    - Kiểm tra tính hợp lệ của token.
+    - Với Hội viên: Kiểm tra hạn gói tập/PT.
+    - Với PT: Ghi nhận vào ca/tan ca.
+- **`GET /api/checkins/stats`**: Trả về dữ liệu thống kê mật độ khách theo giờ để vẽ biểu đồ Dashboard.
+
+### 9.5 Quản Lý Gói Tập & Doanh Thu (`packages.controller.js`, `revenue.controller.js`)
+- **`GET /api/packages`**: Quản lý danh mục gói tập (Gym, Yoga, v.v.).
+- **`GET /api/revenue/today`**: Báo cáo nhanh doanh thu trong ngày, danh sách các giao dịch đăng ký gói tập.
+- **`GET /api/revenue/chart`**: Dữ liệu doanh thu theo tháng/năm để phân tích tăng trưởng.
+
+### 9.6 Thông Báo Hệ Thống (`notifications.controller.js`)
+- **`GET /api/notifications`**: Lấy danh sách thông báo chưa đọc theo vai trò (Admin thấy thông báo hệ thống, PT thấy thông báo học viên check-in).
+- **`GET /api/me/notifications`**: (Real-time Calculation) Tính toán trực tiếp các cảnh báo cho Hội viên (Gói sắp hết hạn, lịch tập hôm nay) mà không cần lưu DB, đảm bảo dữ liệu luôn mới nhất.
+
+---

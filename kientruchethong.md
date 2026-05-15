@@ -112,6 +112,7 @@ graph TD
 - [x] **Member Portal** (`member-portal.html`): Dashboard dạng bento theo mẫu FE_Hoivien (gói tập + PT + lịch sắp tới + QR Check-in nhanh tự làm mới), Lịch tập, Lịch sử vào/ra, Hồ sơ cá nhân. Sidebar desktop và bottom tab bar mobile-friendly.
 - [x] **Scan QR** (`scan.html`): Trang standalone cho lễ tân quét QR bằng camera hoặc nhập thủ công, hiển thị thông tin hội viên sau khi check-in.
 - [x] **Redirect theo role** sau login: admin/le_tan → `index.html`, pt → `pt-portal.html`, hoi_vien → `member-portal.html`.
+- [x] **Redesign Modal Chi tiết PT**: Giao diện 3 tab chuyên sâu (Thông tin, Lịch dạy, Học viên) đồng bộ với Hội viên, tích hợp quản lý tài khoản và thống kê học viên realtime.
 
 ### Backend (Logic & Security)
 - [x] **Xác thực & Bảo mật**: JWT (7 ngày), Hash bcrypt, Khóa tài khoản sau 5 lần sai.

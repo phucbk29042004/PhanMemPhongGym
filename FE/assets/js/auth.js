@@ -77,12 +77,19 @@
         updateUI: function() {
             if (!this.user) return;
             
-            // Update User Name and Role in Header
-            const headerUser = document.querySelector('header .flex.items-center span.font-bold');
-            if (headerUser) headerUser.textContent = this.user.ho_ten || this.user.ten_dang_nhap;
+            // Update User Name in Header
+            const headerUserName = document.getElementById('header-user-name');
+            if (headerUserName) headerUserName.textContent = this.user.ho_ten || this.user.ten_dang_nhap;
+
+            // Update User Role in Header
+            const headerUserRole = document.getElementById('header-user-role');
+            if (headerUserRole) {
+                const roles = { admin: 'Quản trị viên', pt: 'Huấn luyện viên', hoi_vien: 'Hội viên' };
+                headerUserRole.textContent = roles[this.user.vai_tro] || 'Nhân viên';
+            }
 
             // Update Avatar if exists
-            const headerAvatar = document.querySelector('header .flex.items-center .w-7.h-7, header .flex.items-center .w-10.h-10');
+            const headerAvatar = document.getElementById('header-avatar-container');
             if (headerAvatar && window.GymApp.avatarImg) {
                 headerAvatar.innerHTML = window.GymApp.avatarImg(this.user.avatar_url, this.user.ho_ten, 'sm');
             }

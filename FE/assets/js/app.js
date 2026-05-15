@@ -196,14 +196,17 @@
     document.addEventListener('keydown', escHandler);
   };
 
-  // ===== AVATAR WITH IMAGE =====
-  window.GymApp.avatarImg = function (avatarUrl, name, size = 'md') {
+  window.GymApp.avatarImg = function (avatarUrl, name, size = 'md', extraStyle = '') {
     const dim = size === 'sm' ? 32 : size === 'lg' ? 48 : 36;
-    const cls = `border border-outline-variant flex-shrink-0 avatar-img`;
+    const defaultStyle = `width:${dim}px;height:${dim}px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid #becab9;`;
+    const finalStyle = extraStyle ? `${defaultStyle}${extraStyle}` : defaultStyle;
+    
     if (avatarUrl) {
-      return `<img src="${avatarUrl}" alt="${name}" width="${dim}" height="${dim}" style="width:${dim}px;height:${dim}px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid #becab9;" loading="lazy">`;
+      // Add timestamp to avatar URL to bypass browser cache
+      const cacheBuster = avatarUrl.includes('?') ? `&t=${Date.now()}` : `?t=${Date.now()}`;
+      return `<img src="${avatarUrl}${cacheBuster}" alt="${name}" style="${finalStyle}" loading="lazy">`;
     }
-    return window.GymApp.avatarInitials(name, size);
+    return window.GymApp.avatarInitials(name, size, extraStyle);
   };
 
   // ===== UTILITIES =====
@@ -381,14 +384,16 @@
     return `<span style="padding:2px 8px;border-radius:999px;font-size:9.6px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;${s.cls}">${s.label}</span>`;
   };
 
-  window.GymApp.avatarInitials = function (name, size = 'md') {
+  window.GymApp.avatarInitials = function (name, size = 'md', extraStyle = '') {
     const parts = (name || '').trim().split(' ');
     const initials = parts.length >= 2 ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase() : (name || '??').slice(0, 2).toUpperCase();
     const bgColors = ['#006b20', '#a52d59', '#575f67', '#03872c', '#005317', '#1D9336'];
     const bg = bgColors[((name || '').charCodeAt(0) || 0) % bgColors.length];
     const dim = size === 'sm' ? 32 : size === 'lg' ? 48 : 36;
-    const fs = size === 'sm' ? 12 : size === 'lg' ? 16 : 14;
-    return `<div style="width:${dim}px;height:${dim}px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:${fs}px;flex-shrink:0;">${initials}</div>`;
+    const fs = size === 'sm' ? 12 : size === 'lg' ? 18 : 14;
+    const defaultStyle = `width:${dim}px;height:${dim}px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:${fs}px;flex-shrink:0;`;
+    const finalStyle = extraStyle ? `${defaultStyle}${extraStyle}` : defaultStyle;
+    return `<div style="${finalStyle}">${initials}</div>`;
   };
 
   // Phân trang helper
@@ -533,9 +538,9 @@
         document.getElementById('profile-so-dien-thoai').value = u.so_dien_thoai || '';
         document.getElementById('profile-email').value = u.email || '';
         if (u.avatar_url && window.GymApp.avatarImg) {
-          document.getElementById('admin-profile-avatar-preview').innerHTML = window.GymApp.avatarImg(u.avatar_url, u.ho_ten, 'lg', 'width:100%;height:100%;object-fit:cover;');
+          document.getElementById('admin-profile-avatar-preview').innerHTML = window.GymApp.avatarImg(u.avatar_url, u.ho_ten, 'lg', 'width:100%;height:100%;');
         } else {
-          document.getElementById('admin-profile-avatar-preview').innerHTML = '<span class="material-symbols-outlined" style="font-size:40px;color:#94a3b8;position:absolute;top:50%;left:50%;transform:translate(-50%, -50%);font-variation-settings:\'FILL\' 1;">person</span>';
+          document.getElementById('admin-profile-avatar-preview').innerHTML = window.GymApp.avatarInitials(u.ho_ten || u.ten_dang_nhap, 'lg', 'width:100%;height:100%;font-size:32px;');
         }
       }
       _adminAvatarFile = null;

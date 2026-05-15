@@ -1651,12 +1651,12 @@ window.GymApp.pages['members-list'] = {
             </div>
             <div class="grid grid-cols-2 gap-xs bg-surface-container-lowest p-compact rounded-xl border border-outline-variant/40">
               ${radioGroup('f-status', [
-                ['', 'Tất cả'],
-                ['con_han', 'Còn hạn'],
-                ['sap_het_han', 'Sắp hết hạn'],
-                ['het_han', 'Đã hết hạn'],
-                ['chua_dang_ky', 'Chưa đăng ký']
-              ], self._filterState.status)}
+      ['', 'Tất cả'],
+      ['con_han', 'Còn hạn'],
+      ['sap_het_han', 'Sắp hết hạn'],
+      ['het_han', 'Đã hết hạn'],
+      ['chua_dang_ky', 'Chưa đăng ký']
+    ], self._filterState.status)}
             </div>
           </div>
 
@@ -1679,10 +1679,10 @@ window.GymApp.pages['members-list'] = {
             </div>
             <div class="grid grid-cols-2 gap-xs bg-surface-container-lowest p-compact rounded-xl border border-outline-variant/40">
               ${radioGroup('f-hasPt', [
-                ['', 'Tất cả'],
-                ['yes', 'Đang có PT'],
-                ['no', 'Tự tập (Không PT)']
-              ], self._filterState.hasPt)}
+      ['', 'Tất cả'],
+      ['yes', 'Đang có PT'],
+      ['no', 'Tự tập (Không PT)']
+    ], self._filterState.hasPt)}
             </div>
           </div>
 
@@ -1694,10 +1694,10 @@ window.GymApp.pages['members-list'] = {
             </div>
             <div class="grid grid-cols-2 gap-xs bg-surface-container-lowest p-compact rounded-xl border border-outline-variant/40">
               ${radioGroup('f-checkinToday', [
-                ['', 'Tất cả'],
-                ['yes', 'Đã Check-in'],
-                ['no', 'Chưa Check-in']
-              ], self._filterState.checkinToday)}
+      ['', 'Tất cả'],
+      ['yes', 'Đã Check-in'],
+      ['no', 'Chưa Check-in']
+    ], self._filterState.checkinToday)}
             </div>
           </div>
 
@@ -1880,10 +1880,10 @@ window.GymApp.pages['members-list'] = {
   // ===== UI HELPERS =====
   _updateFilterUI: function () {
     const count = (this._filterState.status ? 1 : 0) +
-                  (this._filterState.pkg ? 1 : 0) +
-                  (this._filterState.gender ? 1 : 0) +
-                  (this._filterState.hasPt ? 1 : 0) +
-                  (this._filterState.checkinToday ? 1 : 0);
+      (this._filterState.pkg ? 1 : 0) +
+      (this._filterState.gender ? 1 : 0) +
+      (this._filterState.hasPt ? 1 : 0) +
+      (this._filterState.checkinToday ? 1 : 0);
     const badge = document.getElementById('filter-badge');
     const showAll = document.getElementById('btn-show-all');
     if (badge) { badge.textContent = count; badge.style.display = count > 0 ? 'flex' : 'none'; }
@@ -1924,7 +1924,7 @@ window.GymApp.pages['members-list'] = {
       const matchQ = !q || (m.ho_ten || '').toLowerCase().includes(q) || (m.ma_ho_so || '').toLowerCase().includes(q) || (m.so_dien_thoai || '').includes(q);
       const matchStatus = !status || m.trang_thai === status;
       const matchPkg = !pkg || m.ten_goi_tap === pkg;
-      
+
       // Giới tính ánh xạ linh hoạt hỗ trợ cả DB tiếng Anh và Việt
       let mGender = m.gioi_tinh;
       if (mGender === 'male' || mGender === 'nam') mGender = 'Nam';
