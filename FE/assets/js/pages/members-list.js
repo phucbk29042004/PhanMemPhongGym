@@ -16,31 +16,28 @@ window.GymApp.pages['members-list'] = {
     this._ptFiltered = Array.isArray(rawPts) ? [...rawPts] : [];
     this._ptSortState = '';
     return `
-      <div class="flex flex-col gap-margin animate-in fade-in duration-500">
+        <div class="flex flex-col gap-standard animate-in fade-in duration-500">
 
-        <!-- Action Bar -->
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-standard">
-          <div>
-            <h2 class="font-display-lg text-display-lg text-on-surface font-bold tracking-tight">Danh sách hội viên</h2>
-            <p class="text-on-surface-variant font-body-sm text-body-sm mt-xs">Quản lý toàn bộ hội viên và huấn luyện viên trong hệ thống</p>
+        <!-- Top Controls (Tabs + Action) -->
+        <div class="flex flex-wrap items-center justify-between gap-compact">
+          <!-- Tab Bar -->
+          <div class="flex gap-atom bg-surface-container-low/60 backdrop-blur-sm p-1.5 rounded-2xl border border-outline-variant w-fit shadow-sm">
+            <button id="tab-members" class="tab-btn px-loose py-compact rounded-xl font-bold text-body-md transition-all duration-300" data-tab="members">
+              <span class="flex items-center gap-compact">
+                <span class="material-symbols-outlined text-lg">people</span>Hội viên
+              </span>
+            </button>
+            <button id="tab-pts" class="tab-btn px-loose py-compact rounded-xl font-bold text-body-md transition-all duration-300" data-tab="pts">
+              <span class="flex items-center gap-compact">
+                <span class="material-symbols-outlined text-lg">sports_gymnastics</span>Huấn luyện viên (PT)
+              </span>
+            </button>
           </div>
-          <button class="bg-brand-primary text-white px-loose py-compact rounded-2xl font-bold hover:bg-[#187a2d] transition-all flex items-center gap-compact shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0" data-page="member-add">
+
+          <!-- Add Button (Aligned with Tabs) -->
+          <button class="bg-brand-primary text-white px-loose py-compact rounded-2xl font-bold hover:bg-[#187a2d] transition-all flex items-center gap-compact shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0" style="height: 52px;" data-page="member-add">
             <span class="material-symbols-outlined text-lg">person_add</span>
             Thêm hội viên mới
-          </button>
-        </div>
-
-        <!-- Tab Bar -->
-        <div class="flex gap-atom bg-surface-container-low/60 backdrop-blur-sm p-1 rounded-2xl border border-outline-variant w-fit shadow-sm">
-          <button id="tab-members" class="tab-btn px-loose py-compact rounded-xl font-bold text-body-md transition-all duration-300" data-tab="members">
-            <span class="flex items-center gap-compact">
-              <span class="material-symbols-outlined text-lg">people</span>Hội viên
-            </span>
-          </button>
-          <button id="tab-pts" class="tab-btn px-loose py-compact rounded-xl font-bold text-body-md transition-all duration-300" data-tab="pts">
-            <span class="flex items-center gap-compact">
-              <span class="material-symbols-outlined text-lg">sports_gymnastics</span>Huấn luyện viên (PT)
-            </span>
           </button>
         </div>
 
@@ -49,7 +46,7 @@ window.GymApp.pages['members-list'] = {
           
           <!-- Tab: Hội viên -->
           <div id="tab-content-members" class="tab-content animate-in slide-in-from-left-4 duration-300">
-            <div class="flex flex-wrap items-center gap-standard bg-surface-container-lowest/80 backdrop-blur-md p-standard rounded-2xl border border-outline-variant shadow-sm mb-standard transition-all hover:shadow-md">
+            <div class="flex flex-wrap items-center gap-compact bg-surface-container-lowest/80 backdrop-blur-md p-compact rounded-2xl border border-outline-variant shadow-sm mb-compact transition-all hover:shadow-md">
               <div class="relative flex-1 group" style="min-width:240px;">
                 <span class="material-symbols-outlined absolute left-standard top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors">search</span>
                 <input id="member-search" class="w-full bg-surface-container/40 border border-outline-variant text-on-surface pl-10 pr-standard py-compact rounded-xl focus:border-brand-primary focus:bg-surface-container-lowest outline-none placeholder-outline-variant font-body-md text-body-md transition-all" placeholder="Tìm theo tên, mã HV, số điện thoại..." type="text" />
@@ -73,14 +70,14 @@ window.GymApp.pages['members-list'] = {
                 </button>
               </div>
             </div>
-            <div id="members-table-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-loose">
+            <div id="members-table-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-standard">
               ${this._renderMemberTable()}
             </div>
           </div>
 
           <!-- Tab: PT / HLV -->
           <div id="tab-content-pts" class="tab-content hidden animate-in slide-in-from-right-4 duration-300">
-            <div class="flex flex-wrap items-center gap-standard bg-surface-container-lowest/80 backdrop-blur-md p-standard rounded-2xl border border-outline-variant shadow-sm mb-standard transition-all hover:shadow-md">
+            <div class="flex flex-wrap items-center gap-compact bg-surface-container-lowest/80 backdrop-blur-md p-compact rounded-2xl border border-outline-variant shadow-sm mb-compact transition-all hover:shadow-md">
               <div class="relative flex-1 group" style="min-width:240px;">
                 <span class="material-symbols-outlined absolute left-standard top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors">search</span>
                 <input id="pt-search" class="w-full bg-surface-container/40 border border-outline-variant text-on-surface pl-10 pr-standard py-compact rounded-xl focus:border-brand-primary focus:bg-surface-container-lowest outline-none placeholder-outline-variant font-body-md text-body-md transition-all" placeholder="Tìm theo tên, chuyên môn..." type="text" />
@@ -104,14 +101,14 @@ window.GymApp.pages['members-list'] = {
                 </button>
               </div>
             </div>
-            <div id="pt-cards-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-loose">
+            <div id="pt-cards-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-standard">
               ${this._renderPtCards()}
             </div>
           </div>
         </div>
 
         <!-- Quick Stats -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-loose mt-standard">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-standard mt-standard">
           ${(function () {
         const stats = window.GymApp.data.stats?.hoi_vien || { tong: 0, con_han: 0, het_han: 0 };
         return [
@@ -119,7 +116,7 @@ window.GymApp.pages['members-list'] = {
           { label: 'Đang hoạt động', value: stats.con_han, color: 'text-brand-primary', icon: 'check_circle', bg: 'bg-brand-primary/10' },
           { label: 'Đã hết hạn', value: stats.het_han, color: 'text-error', icon: 'error', bg: 'bg-error/10' },
         ].map(s => `
-              <div class="bg-surface-container-lowest/80 backdrop-blur-md p-loose rounded-2xl border border-outline-variant shadow-sm flex items-center gap-loose transition-all hover:-translate-y-1 hover:shadow-md group">
+              <div class="bg-surface-container-lowest/80 backdrop-blur-md p-standard rounded-2xl border border-outline-variant shadow-sm flex items-center gap-standard transition-all hover:-translate-y-1 hover:shadow-md group">
                 <div class="w-12 h-12 rounded-xl ${s.bg} flex items-center justify-center group-hover:scale-110 transition-transform">
                   <span class="material-symbols-outlined ${s.color} text-2xl">${s.icon}</span>
                 </div>

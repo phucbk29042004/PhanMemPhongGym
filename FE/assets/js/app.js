@@ -256,6 +256,8 @@
           locale: window.GymApp.localeVi,
           dateFormat: 'dd/MM/yyyy',
           autoClose: true,
+          container: originalInput.parentElement,
+          position: 'bottom left',
           onSelect: function ({ date }) {
             if (date && !Array.isArray(date)) {
               const y = date.getFullYear();

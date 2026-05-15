@@ -63,6 +63,29 @@
   </script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/air-datepicker@3/air-datepicker.min.css">
   <script src="https://cdn.jsdelivr.net/npm/air-datepicker@3/air-datepicker.min.js"></script>
+  <style>
+    /* Global Date Input Fixes */
+    input[type="date"] {
+      position: relative;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      background: transparent !important;
+      bottom: 0 !important;
+      color: transparent !important;
+      cursor: pointer !important;
+      height: auto !important;
+      left: 0 !important;
+      position: absolute !important;
+      right: 0 !important;
+      top: 0 !important;
+      width: auto !important;
+      z-index: 10 !important;
+    }
+    /* AirDatepicker Anchoring Fix */
+    .air-datepicker {
+      z-index: 9999 !important;
+    }
+  </style>
   <link rel="stylesheet" href="assets/css/main.css" />
 </head>
 

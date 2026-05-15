@@ -15,7 +15,7 @@ window.GymApp.pages['member-add'] = {
   render: function () {
     const provinceDatalist = `
       <datalist id="dl-que-quan">
-        ${['Hà Nội','TP. Hồ Chí Minh','Đà Nẵng','Hải Phòng','Cần Thơ','An Giang','Bà Rịa - Vũng Tàu','Bắc Giang','Bắc Kạn','Bạc Liêu','Bắc Ninh','Bến Tre','Bình Định','Bình Dương','Bình Phước','Bình Thuận','Cà Mau','Cao Bằng','Đắk Lắk','Đắk Nông','Điện Biên','Đồng Nai','Đồng Tháp','Gia Lai','Hà Giang','Hà Nam','Hà Tĩnh','Hải Dương','Hậu Giang','Hòa Bình','Hưng Yên','Khánh Hòa','Kiên Giang','Kon Tum','Lai Châu','Lâm Đồng','Lạng Sơn','Lào Cai','Long An','Nam Định','Nghệ An','Ninh Bình','Ninh Thuận','Phú Thọ','Phú Yên','Quảng Bình','Quảng Nam','Quảng Ngãi','Quảng Ninh','Quảng Trị','Sóc Trăng','Sơn La','Tây Ninh','Thái Bình','Thái Nguyên','Thanh Hóa','Thừa Thiên Huế','Tiền Giang','Trà Vinh','Tuyên Quang','Vĩnh Long','Vĩnh Phúc','Yên Bái'].map(t => `<option value="${t}">`).join('')}
+        ${['Hà Nội', 'TP. Hồ Chí Minh', 'Đà Nẵng', 'Hải Phòng', 'Cần Thơ', 'An Giang', 'Bà Rịa - Vũng Tàu', 'Bắc Giang', 'Bắc Kạn', 'Bạc Liêu', 'Bắc Ninh', 'Bến Tre', 'Bình Định', 'Bình Dương', 'Bình Phước', 'Bình Thuận', 'Cà Mau', 'Cao Bằng', 'Đắk Lắk', 'Đắk Nông', 'Điện Biên', 'Đồng Nai', 'Đồng Tháp', 'Gia Lai', 'Hà Giang', 'Hà Nam', 'Hà Tĩnh', 'Hải Dương', 'Hậu Giang', 'Hòa Bình', 'Hưng Yên', 'Khánh Hòa', 'Kiên Giang', 'Kon Tum', 'Lai Châu', 'Lâm Đồng', 'Lạng Sơn', 'Lào Cai', 'Long An', 'Nam Định', 'Nghệ An', 'Ninh Bình', 'Ninh Thuận', 'Phú Thọ', 'Phú Yên', 'Quảng Bình', 'Quảng Nam', 'Quảng Ngãi', 'Quảng Ninh', 'Quảng Trị', 'Sóc Trăng', 'Sơn La', 'Tây Ninh', 'Thái Bình', 'Thái Nguyên', 'Thanh Hóa', 'Thừa Thiên Huế', 'Tiền Giang', 'Trà Vinh', 'Tuyên Quang', 'Vĩnh Long', 'Vĩnh Phúc', 'Yên Bái'].map(t => `<option value="${t}">`).join('')}
       </datalist>`;
 
     const specialtyDatalist = `
@@ -26,40 +26,35 @@ window.GymApp.pages['member-add'] = {
     return `
       ${provinceDatalist}
       ${specialtyDatalist}
-      <div class="flex flex-col gap-compact w-full max-w-none mx-auto">
+      <div class="flex flex-col gap-standard w-full max-w-none mx-auto animate-in fade-in duration-500">
 
-        <!-- Header -->
-        <div class="flex items-center gap-standard">
-          <button class="flex items-center justify-center w-9 h-9 rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-surface-container transition-all" data-page="members-list">
-            <span class="material-symbols-outlined text-xl">arrow_back</span>
-          </button>
-          <div class="page-title-bar">
-            <h2 class="font-display-2xl text-display-2xl text-on-surface font-bold">Quản lý Hồ sơ mới</h2>
-            <p class="text-on-surface-variant font-body-sm text-body-sm">Đăng ký Hội viên, PT hoặc Nhân viên mới</p>
+        <div class="bg-surface-container-lowest rounded-3xl border border-outline-variant shadow-lg overflow-hidden flex flex-col">
+          
+          <!-- Unified Header & Tab Navigation -->
+          <div class="bg-surface-container-low/40 px-standard py-compact border-b border-outline-variant flex flex-wrap items-center justify-between gap-compact">
+            <div class="flex items-center gap-standard">
+              <button class="flex items-center justify-center w-10 h-10 rounded-2xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-surface-container-lowest transition-all shadow-sm bg-surface-container-lowest" data-page="members-list">
+                <span class="material-symbols-outlined text-xl">arrow_back</span>
+              </button>
+              <div class="flex gap-xs p-1 bg-surface-container-low rounded-2xl border border-outline-variant/30">
+                <button id="tab-register" class="tab-btn px-loose py-compact rounded-xl font-bold text-body-md transition-all bg-surface-container-lowest text-brand-primary shadow-sm flex items-center gap-xs">
+                  <span class="material-symbols-outlined text-lg">person_add</span>
+                  Thông tin hồ sơ
+                </button>
+                <button id="tab-package" class="tab-btn px-loose py-compact rounded-xl font-bold text-body-md transition-all text-on-surface-variant hover:text-brand-primary flex items-center gap-xs">
+                  <span class="material-symbols-outlined text-lg">card_membership</span>
+                  Gói tập (Hội viên)
+                </button>
+              </div>
+            </div>
+
           </div>
-        </div>
 
-        <!-- Tab Switcher -->
-        <div class="flex gap-xs bg-surface-container p-xs rounded-2xl border border-outline-variant w-fit shadow-sm">
-          <button id="tab-register" class="tab-btn px-loose py-compact rounded-xl font-bold text-body-md transition-all bg-surface-container-lowest text-brand-primary shadow-sm">
-            <span class="flex items-center gap-xs">
-              <span class="material-symbols-outlined text-sm">person_add</span>
-              Thông tin hồ sơ
-            </span>
-          </button>
-          <button id="tab-package" class="tab-btn px-loose py-compact rounded-xl font-bold text-body-md transition-all text-on-surface-variant hover:text-brand-primary">
-            <span class="flex items-center gap-xs">
-              <span class="material-symbols-outlined text-sm">card_membership</span>
-              Gói tập (Hội viên)
-            </span>
-          </button>
-        </div>
-
-        <div id="form-register">
-          <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm p-compact md:p-standard">
+          <!-- Content Areas -->
+          <div id="form-register" class="p-compact">
 
             <!-- Avatar + Mã/Tên/Loại -->
-            <div class="flex items-start gap-compact mb-compact">
+            <div class="flex items-start gap-compact mb-2">
               <div class="flex flex-col items-center gap-xs flex-shrink-0">
                 <div class="relative">
                   <div id="avatar-area-reg" class="w-20 h-20 md:w-24 md:h-24 bg-surface-container-low border-2 border-dashed border-outline-variant rounded-2xl flex items-center justify-center cursor-pointer overflow-hidden transition-all hover:border-brand-primary">
@@ -71,51 +66,44 @@ window.GymApp.pages['member-add'] = {
                   </button>
                   <input type="file" id="avatar-input-reg" class="hidden" accept="image/jpeg,image/png,image/webp" />
                 </div>
-                <p class="text-[10px] text-on-surface-variant text-center" style="max-width:80px;">JPG/PNG, tối đa 5MB</p>
               </div>
 
-              <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-compact">
+              <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
                 ${this._field('Mã số hồ sơ', 'reg-ma-ho-so', 'text', 'Tự động...', true)}
                 ${this._field('Họ và tên *', 'reg-ho-ten', 'text', 'Nhập họ và tên đầy đủ')}
                 ${this._select('Loại hồ sơ *', 'reg-loai-ho-so', [
-                  {v:'hoi_vien', t:'Hội viên'},
-                  {v:'pt', t:'Huấn luyện viên (PT)'},
-                  {v:'nhan_vien', t:'Nhân viên'}
-                ])}
+      { v: 'hoi_vien', t: 'Hội viên' },
+      { v: 'pt', t: 'Huấn luyện viên (PT)' },
+      { v: 'nhan_vien', t: 'Nhân viên' }
+    ])}
               </div>
             </div>
 
             <!-- Trường đặc thù theo loại -->
-            <div id="extra-fields" class="mb-compact grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-compact border-y border-outline-variant/30 py-compact hidden"></div>
+            <div id="extra-fields" class="mb-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 border-y border-outline-variant/30 py-2 hidden"></div>
 
             <!-- Thông tin cá nhân -->
-            <div class="mb-compact">
-              <div class="flex items-center gap-compact mb-standard">
-                <div class="icon-bg icon-bg-green" style="width:32px;height:32px;border-radius:8px">
-                  <span class="material-symbols-outlined text-brand-primary text-sm" style="font-variation-settings:'FILL' 1">badge</span>
-                </div>
-                <h3 class="font-bold text-on-surface text-body-md">Thông tin cá nhân</h3>
-              </div>
-              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-compact">
+            <div class="mb-3">
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 ${this._field('Ngày sinh', 'reg-ngay-sinh', 'date')}
-                ${this._select('Giới tính', 'reg-gioi-tinh', [{v:'nam',t:'Nam'},{v:'nu',t:'Nữ'},{v:'khac',t:'Khác'}])}
+                ${this._select('Giới tính', 'reg-gioi-tinh', [{ v: 'nam', t: 'Nam' }, { v: 'nu', t: 'Nữ' }, { v: 'khac', t: 'Khác' }])}
                 <!-- SĐT với inline error -->
                 <div>
-                  <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Số điện thoại *</label>
+                  <label class="block text-body-sm text-on-surface-variant font-bold mb-1">Số điện thoại *</label>
                   <input id="reg-so-dien-thoai" type="tel" placeholder="0912345678" maxlength="10"
                     class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none transition-colors" />
                   <p id="err-sdt" class="hidden text-error text-[11px] mt-xs font-medium"></p>
                 </div>
                 <!-- Email với inline error -->
                 <div>
-                  <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Email</label>
+                  <label class="block text-body-sm text-on-surface-variant font-bold mb-1">Email</label>
                   <input id="reg-email" type="email" placeholder="example@email.com"
                     class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none transition-colors" />
                   <p id="err-email" class="hidden text-error text-[11px] mt-xs font-medium"></p>
                 </div>
                 <!-- CCCD với inline error -->
                 <div>
-                  <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">CCCD / CMND</label>
+                  <label class="block text-body-sm text-on-surface-variant font-bold mb-1">CCCD / CMND</label>
                   <input id="reg-cccd" type="text" placeholder="012345678901" maxlength="12"
                     class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none transition-colors" />
                   <p id="err-cccd" class="hidden text-error text-[11px] mt-xs font-medium"></p>
@@ -123,23 +111,17 @@ window.GymApp.pages['member-add'] = {
                 ${this._field('Nơi sinh', 'reg-noi-sinh', 'text', 'VD: Hà Nội')}
                 <!-- Quê quán với datalist 63 tỉnh -->
                 <div>
-                  <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Quê quán</label>
+                  <label class="block text-body-sm text-on-surface-variant font-bold mb-1">Quê quán</label>
                   <input id="reg-que-quan" type="text" list="dl-que-quan" placeholder="Chọn hoặc nhập tỉnh/thành..."
                     class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none transition-colors" />
                 </div>
-                ${this._select('Chi nhánh', 'reg-chi-nhanh', [{v:'CN1',t:'Chi nhánh 1'},{v:'CN2',t:'Chi nhánh 2'}])}
+                ${this._select('Chi nhánh', 'reg-chi-nhanh', [{ v: 'CN1', t: 'Chi nhánh 1' }, { v: 'CN2', t: 'Chi nhánh 2' }])}
               </div>
             </div>
 
             <!-- Địa chỉ -->
-            <div class="mb-compact">
-              <div class="flex items-center gap-compact mb-standard">
-                <div class="icon-bg icon-bg-orange" style="width:32px;height:32px;border-radius:8px">
-                  <span class="material-symbols-outlined text-[#e65100] text-sm" style="font-variation-settings:'FILL' 1">location_on</span>
-                </div>
-                <h3 class="font-bold text-on-surface text-body-md">Địa chỉ thường trú</h3>
-              </div>
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-compact">
+            <div class="mb-3">
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                 ${this._select('Tỉnh / Thành phố', 'reg-tinh-thanh', [])}
                 ${this._select('Quận / Huyện', 'reg-quan-huyen', [])}
                 ${this._select('Phường / Xã', 'reg-phuong-xa', [])}
@@ -148,7 +130,7 @@ window.GymApp.pages['member-add'] = {
             </div>
 
             <!-- Tạo tài khoản đăng nhập -->
-            <div class="mb-compact border border-outline-variant rounded-xl p-compact bg-surface-container">
+            <div class="mb-3 border border-outline-variant rounded-xl p-3 bg-surface-container">
               <label class="flex items-center gap-compact cursor-pointer select-none mb-0" id="label-create-account">
                 <input type="checkbox" id="chk-create-account" class="w-4 h-4 rounded accent-brand-primary cursor-pointer" />
                 <span class="material-symbols-outlined text-brand-primary text-base" style="font-variation-settings:'FILL' 1">manage_accounts</span>
@@ -160,18 +142,16 @@ window.GymApp.pages['member-add'] = {
               </div>
             </div>
 
-            <div class="flex justify-end gap-compact pt-compact border-t border-outline-variant">
+            <div class="flex justify-end gap-compact pt-standard border-t border-outline-variant">
               <button type="button" class="px-loose py-compact rounded-xl border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-colors font-bold" data-page="members-list">Hủy</button>
               <button type="button" id="btn-save-member" class="btn-primary text-white px-loose py-compact rounded-xl font-bold flex items-center gap-compact">
                 <span class="material-symbols-outlined text-sm">save</span>
                 Lưu hồ sơ
               </button>
             </div>
-          </div>
-        </div>
+          </div> <!-- End form-register -->
 
-        <div id="form-package" class="hidden">
-          <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm p-compact md:p-standard">
+          <div id="form-package" class="hidden p-standard">
             
             <div id="selected-member-info" class="mb-compact p-standard bg-brand-primary/10 border border-brand-primary/20 rounded-xl hidden">
               <div class="flex items-center gap-standard">
@@ -184,7 +164,7 @@ window.GymApp.pages['member-add'] = {
             </div>
 
             <!-- Chọn gói tập -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-compact mb-compact">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
               <div>
                 <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Chọn gói tập</label>
                 <select id="pkg-select" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none transition-colors">
@@ -196,61 +176,48 @@ window.GymApp.pages['member-add'] = {
             </div>
 
             <!-- Thời hạn -->
-            <div class="mb-compact">
-              <div class="flex items-center gap-compact mb-standard">
-                <div class="icon-bg icon-bg-green" style="width:32px;height:32px;border-radius:8px">
-                  <span class="material-symbols-outlined text-brand-primary text-sm" style="font-variation-settings:'FILL' 1">event</span>
-                </div>
-                <h3 class="font-bold text-on-surface text-body-md">Thời hạn gói tập</h3>
-              </div>
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-compact">
+            <div class="mb-5">
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 ${this._field('Từ ngày', 'pkg-from', 'date')}
                 ${this._field('Đến ngày (tự tính)', 'pkg-to', 'date', '', true)}
-                ${this._select('Trạng thái', 'pkg-status', [{v:'dang_hoat_dong',t:'Kích hoạt ngay'},{v:'cho_kich_hoat',t:'Chờ kích hoạt'}])}
+                ${this._select('Trạng thái', 'pkg-status', [{ v: 'dang_hoat_dong', t: 'Kích hoạt ngay' }, { v: 'cho_kich_hoat', t: 'Chờ kích hoạt' }])}
                 ${this._field('Mã giảm giá', 'pkg-coupon', 'text', 'GYM2026')}
               </div>
             </div>
 
             <!-- Thanh toán -->
-            <div class="mb-compact">
-              <div class="flex items-center gap-compact mb-standard">
-                <div class="icon-bg icon-bg-orange" style="width:32px;height:32px;border-radius:8px">
-                  <span class="material-symbols-outlined text-[#e65100] text-sm" style="font-variation-settings:'FILL' 1">payments</span>
-                </div>
-                <h3 class="font-bold text-on-surface text-body-md">Thanh toán</h3>
-              </div>
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-compact">
+            <div class="mb-5">
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 ${this._field('Tổng tiền', 'pkg-total', 'text', '0', true)}
                 ${this._field('Tiền khách trả', 'pkg-paid', 'text', 'Nhập số tiền')}
                 ${this._field('Ngày thu', 'pkg-pay-date', 'date')}
-                ${this._select('Phương thức', 'pkg-method', [{v:'tien_mat',t:'Tiền mặt'},{v:'chuyen_khoan',t:'Chuyển khoản'}])}
+                ${this._select('Phương thức', 'pkg-method', [{ v: 'tien_mat', t: 'Tiền mặt' }, { v: 'chuyen_khoan', t: 'Chuyển khoản' }])}
               </div>
             </div>
 
-            <div class="flex justify-end gap-compact pt-compact border-t border-outline-variant">
+            <div class="flex justify-end gap-compact pt-standard border-t border-outline-variant">
               <button type="button" class="px-loose py-compact rounded-xl border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-colors font-bold" data-page="members-list">Hủy</button>
               <button type="button" id="btn-save-package" class="btn-primary text-white px-loose py-compact rounded-xl font-bold flex items-center gap-compact">
                 <span class="material-symbols-outlined text-sm">save</span>
                 Lưu đăng ký gói
               </button>
             </div>
-          </div>
-        </div>
+        </div> <!-- End Main Container -->
       </div>
     `;
   },
 
   _field: function (label, id, type, placeholder = '', readonly = false) {
-    const base = 'w-full border border-outline-variant text-on-surface px-standard py-compact rounded-xl outline-none transition-colors';
+    const base = 'w-full border border-outline-variant text-on-surface px-standard py-compact rounded-xl outline-none transition-colors appearance-none';
     if (readonly) {
       return `<div>
-        <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">${label}</label>
+        <label class="block text-body-sm text-on-surface-variant font-bold mb-1">${label}</label>
         <input id="${id}" type="${type}" placeholder="${placeholder}" readonly
           class="${base} bg-surface-container text-on-surface-variant cursor-not-allowed" />
       </div>`;
     }
     return `<div>
-      <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">${label}</label>
+      <label class="block text-body-sm text-on-surface-variant font-bold mb-1">${label}</label>
       <input id="${id}" type="${type}" placeholder="${placeholder}"
         class="${base} bg-surface-container-lowest focus:border-brand-primary" />
     </div>`;
@@ -258,7 +225,7 @@ window.GymApp.pages['member-add'] = {
 
   _select: function (label, id, options) {
     return `<div>
-      <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">${label}</label>
+      <label class="block text-body-sm text-on-surface-variant font-bold mb-1">${label}</label>
       <select id="${id}" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none transition-colors">
         <option value="">— ${label} —</option>
         ${options.map(o => `<option value="${o.v}">${o.t}</option>`).join('')}
@@ -317,7 +284,7 @@ window.GymApp.pages['member-add'] = {
           this._setFieldError('err-sdt', 'Số điện thoại này đã được đăng ký trong hệ thống');
           hasError = true;
         }
-      } catch (_) {}
+      } catch (_) { }
     }
     if (cccd && /^\d{9}$|^\d{12}$/.test(cccd)) {
       try {
@@ -326,7 +293,7 @@ window.GymApp.pages['member-add'] = {
           this._setFieldError('err-cccd', 'CCCD/CMND này đã tồn tại trong hệ thống');
           hasError = true;
         }
-      } catch (_) {}
+      } catch (_) { }
     }
     return !hasError;
   },
@@ -364,15 +331,15 @@ window.GymApp.pages['member-add'] = {
         document.getElementById('reg-phuong-xa').innerHTML = '<option value="">— Chọn Phường/Xã —</option>' +
           filtered.map(w => `<option value="${w.code}">${w.name}</option>`).join('');
       });
-    } catch(e) { console.error('Address load error:', e); }
+    } catch (e) { console.error('Address load error:', e); }
 
     // 2. Tab Switcher
     const tabReg = document.getElementById('tab-register');
     const tabPkg = document.getElementById('tab-package');
     const formReg = document.getElementById('form-register');
     const formPkg = document.getElementById('form-package');
-    const clsActive = 'tab-btn px-loose py-compact rounded-xl font-bold text-body-md transition-all bg-surface-container-lowest text-brand-primary shadow-sm';
-    const clsInactive = 'tab-btn px-loose py-compact rounded-xl font-bold text-body-md transition-all text-on-surface-variant hover:text-brand-primary';
+    const clsActive = 'tab-btn px-loose py-compact rounded-xl font-bold text-body-md transition-all bg-surface-container-lowest text-brand-primary shadow-sm flex items-center gap-xs';
+    const clsInactive = 'tab-btn px-loose py-compact rounded-xl font-bold text-body-md transition-all text-on-surface-variant hover:text-brand-primary flex items-center gap-xs';
 
     tabReg?.addEventListener('click', () => {
       formReg.classList.remove('hidden'); formPkg.classList.add('hidden');
@@ -620,11 +587,11 @@ window.GymApp.pages['member-add'] = {
         }
 
         await window.GymApp.fetchInitialData();
-        
+
         // Chuyển sang tab gói tập
         const tabPkg = document.getElementById('tab-package');
         if (tabPkg) tabPkg.click();
-        
+
         // Clear form thông tin hồ sơ
         const hoTenInput = document.getElementById('reg-ho-ten');
         if (hoTenInput) hoTenInput.value = '';
@@ -634,16 +601,16 @@ window.GymApp.pages['member-add'] = {
         if (emailInput) emailInput.value = '';
         const cccdInput = document.getElementById('reg-cccd');
         if (cccdInput) cccdInput.value = '';
-        
+
         if (avatarPreview) avatarPreview.classList.add('hidden');
         if (avatarPlaceholder) avatarPlaceholder.classList.remove('hidden');
         self._avatarFile = null;
-        
+
         const chkAccount = document.getElementById('chk-create-account');
         const accountFields = document.getElementById('account-fields');
         if (chkAccount) chkAccount.checked = false;
         if (accountFields) accountFields.classList.add('hidden');
-      } catch(e) {
+      } catch (e) {
         console.error('Save member error:', e);
         window.GymApp.toast('Lỗi kết nối máy chủ', 'error');
       } finally {
