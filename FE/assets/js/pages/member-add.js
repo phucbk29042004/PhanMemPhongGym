@@ -189,7 +189,12 @@ window.GymApp.pages['member-add'] = {
             <div class="mb-5">
               <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 ${this._field('Tổng tiền', 'pkg-total', 'text', '0', true)}
-                ${this._field('Tiền khách trả', 'pkg-paid', 'text', 'Nhập số tiền')}
+                <div>
+                  <label class="block text-body-sm text-on-surface-variant font-bold mb-1">Tiền khách trả *</label>
+                  <input id="pkg-paid" type="text" inputmode="numeric" placeholder="VD: 1.500.000"
+                    class="w-full border border-outline-variant text-on-surface px-standard py-compact rounded-xl outline-none transition-colors appearance-none bg-surface-container-lowest focus:border-brand-primary" />
+                  <p id="err-pkg-paid" class="hidden text-error text-[11px] mt-xs font-medium"></p>
+                </div>
                 ${this._field('Ngày thu', 'pkg-pay-date', 'date')}
                 ${this._select('Phương thức', 'pkg-method', [{ v: 'tien_mat', t: 'Tiền mặt' }, { v: 'chuyen_khoan', t: 'Chuyển khoản' }])}
               </div>
@@ -368,17 +373,37 @@ window.GymApp.pages['member-add'] = {
       }
     };
 
+    // Format VNĐ helper — dùng cho các field giá
+    const fmtVND = n => n > 0 ? new Intl.NumberFormat('vi-VN').format(n) : '';
+    const parseVND = s => parseInt((s || '').replace(/\./g, '').replace(/,/g, '')) || 0;
+
     pkgSelect?.addEventListener('change', () => {
       const opt = pkgSelect.options[pkgSelect.selectedIndex];
       if (!opt) return;
       const gia = parseFloat(opt.dataset.gia) || 0;
       if (gia > 0) {
-        document.getElementById('pkg-price').value = gia;
-        document.getElementById('pkg-total').value = gia;
+        document.getElementById('pkg-price').value = fmtVND(gia);
+        document.getElementById('pkg-total').value = fmtVND(gia);
       }
       calcPkgEndDate();
     });
     pkgFrom?.addEventListener('change', calcPkgEndDate);
+
+    // Format tiền khách trả khi blur
+    document.getElementById('pkg-paid')?.addEventListener('blur', function () {
+      const raw = parseVND(this.value);
+      this.value = raw > 0 ? fmtVND(raw) : '';
+    });
+    document.getElementById('pkg-paid')?.addEventListener('focus', function () {
+      const raw = parseVND(this.value);
+      this.value = raw > 0 ? String(raw) : '';
+    });
+    document.getElementById('pkg-paid')?.addEventListener('input', function () {
+      const errEl = document.getElementById('err-pkg-paid');
+      if (errEl) errEl.classList.add('hidden');
+      // Xóa highlight lỗi khi người dùng nhập
+      this.classList.remove('border-error');
+    });
 
     const today = new Date().toISOString().split('T')[0];
     if (pkgFrom) pkgFrom.value = today;
@@ -619,6 +644,19 @@ window.GymApp.pages['member-add'] = {
       }
     });
 
+    // Helper highlight field lỗi
+    const highlightField = (id, hasError) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (hasError) {
+        el.classList.add('border-error');
+        el.classList.remove('border-outline-variant');
+      } else {
+        el.classList.remove('border-error');
+        el.classList.add('border-outline-variant');
+      }
+    };
+
     // 7. Lưu đăng ký gói tập
     document.getElementById('btn-save-package')?.addEventListener('click', async () => {
       if (!self._currentMemberId) {
@@ -627,12 +665,30 @@ window.GymApp.pages['member-add'] = {
 
       const pkgId = document.getElementById('pkg-select').value;
       const tuNgay = document.getElementById('pkg-from').value;
-      const giaThucTe = document.getElementById('pkg-price').value;
       const phuongThucTT = document.getElementById('pkg-method').value;
+      const paidRaw = parseVND(document.getElementById('pkg-paid')?.value);
+      const priceRaw = parseVND(document.getElementById('pkg-price')?.value);
 
-      if (!pkgId || !tuNgay || !phuongThucTT) {
-        return window.GymApp.toast('Vui lòng điền đủ thông tin gói tập!', 'error');
+      // Highlight các trường bắt buộc chưa điền
+      highlightField('pkg-select', !pkgId);
+      highlightField('pkg-from', !tuNgay);
+      highlightField('pkg-method', !phuongThucTT);
+      const paidErrEl = document.getElementById('err-pkg-paid');
+      const paidInput = document.getElementById('pkg-paid');
+      const paidMissing = !document.getElementById('pkg-paid')?.value?.trim();
+      if (paidMissing) {
+        if (paidErrEl) { paidErrEl.textContent = 'Vui lòng nhập số tiền khách trả'; paidErrEl.classList.remove('hidden'); }
+        if (paidInput) paidInput.classList.add('border-error');
+      } else {
+        if (paidErrEl) paidErrEl.classList.add('hidden');
+        if (paidInput) paidInput.classList.remove('border-error');
       }
+
+      if (!pkgId || !tuNgay || !phuongThucTT || paidMissing) {
+        return window.GymApp.toast('Vui lòng điền đủ các trường bắt buộc (*)', 'error');
+      }
+
+      const giaThucTe = priceRaw || undefined;
 
       const btn = document.getElementById('btn-save-package');
       btn.disabled = true;

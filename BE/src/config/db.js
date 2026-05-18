@@ -308,6 +308,11 @@ if (!migratedV6 || !hasAuditCol) {
   }
 }
 
+// ── Migration v7: Thêm cột ly_do_huy + so_tien_hoan vào dang_ky_goi_tap ──────
+try { db.exec(`ALTER TABLE dang_ky_goi_tap ADD COLUMN ly_do_huy TEXT;`); } catch (_) {}
+try { db.exec(`ALTER TABLE dang_ky_goi_tap ADD COLUMN so_tien_hoan REAL DEFAULT 0;`); } catch (_) {}
+try { db.exec(`ALTER TABLE dang_ky_goi_tap ADD COLUMN ngay_huy DATETIME;`); } catch (_) {}
+
 // ── Sửa lỗi View bị hỏng sau khi migrate (SQLite tự động đổi tên ref sang _old) ──
 const checkView = db.prepare("SELECT sql FROM sqlite_master WHERE type='view' AND name='v_trang_thai_hoi_vien'").get();
 if (checkView && checkView.sql.includes('dang_ky_goi_tap_old')) {
@@ -359,6 +364,53 @@ if (checkView && checkView.sql.includes('dang_ky_goi_tap_old')) {
   console.log('[DB] ✅ Tái tạo View v_trang_thai_hoi_vien thành công.');
 }
 
+// ── Migration v8: Tạo bảng noi_quy (nội quy phòng tập) ───────────────────────
+db.exec(`
+  CREATE TABLE IF NOT EXISTS noi_quy (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    tieu_de      TEXT NOT NULL,
+    noi_dung     TEXT NOT NULL,
+    thu_tu       INTEGER NOT NULL DEFAULT 0,
+    ap_dung_cho  TEXT NOT NULL DEFAULT 'tat_ca' CHECK (ap_dung_cho IN ('tat_ca','hoi_vien','pt','nhan_vien')),
+    is_active    INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0,1)),
+    nguoi_tao_id INTEGER REFERENCES tai_khoan(id),
+    ngay_cap_nhat DATETIME DEFAULT (datetime('now','localtime'))
+  );
+`);
+
+// Seed nội quy mẫu nếu bảng trống
+const soNoiQuy = db.prepare(`SELECT COUNT(*) as cnt FROM noi_quy`).get()?.cnt ?? 0;
+if (soNoiQuy === 0) {
+  const insNQ = db.prepare(`INSERT INTO noi_quy (tieu_de, noi_dung, thu_tu, ap_dung_cho) VALUES (?, ?, ?, ?)`);
+  db.transaction(() => {
+    insNQ.run('Giờ hoạt động', 'Phòng tập mở cửa từ 05:30 đến 22:00 các ngày trong tuần. Thứ 7 và Chủ nhật từ 06:00 đến 21:00.', 1, 'tat_ca');
+    insNQ.run('Trang phục tập luyện', 'Hội viên phải mặc trang phục thể thao phù hợp: áo có cổ hoặc áo thể thao, quần short/quần dài thể thao. Không mặc jeans, dép lê khi tập.', 2, 'hoi_vien');
+    insNQ.run('Vệ sinh thiết bị', 'Lau sạch thiết bị sau khi sử dụng. Đặt tạ và dụng cụ về đúng vị trí sau khi dùng xong.', 3, 'tat_ca');
+    insNQ.run('Điện thoại và tiếng ồn', 'Hạn chế nghe điện thoại trong phòng tập. Không phát nhạc lớn khi không có tai nghe.', 4, 'tat_ca');
+    insNQ.run('Quy định về thẻ thành viên', 'Thẻ thành viên chỉ dành cho cá nhân đã đăng ký. Không được cho mượn, chuyển nhượng thẻ cho người khác.', 5, 'hoi_vien');
+    insNQ.run('Trách nhiệm của PT', 'PT có trách nhiệm hướng dẫn đúng kỹ thuật, đảm bảo an toàn cho học viên. Phải có mặt đúng giờ và thông báo khi cần hủy lịch trước ít nhất 2 tiếng.', 6, 'pt');
+    insNQ.run('Quy định thanh toán', 'Phí tập phải được thanh toán đầy đủ trước khi bắt đầu sử dụng dịch vụ. Không hoàn tiền đối với gói tập đã kích hoạt, trừ trường hợp đặc biệt do ban quản lý xét duyệt.', 7, 'hoi_vien');
+    insNQ.run('An toàn và bảo mật', 'Phòng tập không chịu trách nhiệm về mất mát tài sản cá nhân. Hội viên tự bảo quản đồ dùng cá nhân trong tủ khóa được cung cấp.', 8, 'tat_ca');
+  })();
+  console.log('[DB] ✅ Seed nội quy mẫu hoàn thành (8 quy tắc).');
+}
+
+// ── Migration v9: Tạo bảng yeu_cau_goi_tap (HV yêu cầu tạm dừng / gia hạn) ─────
+db.exec(`
+  CREATE TABLE IF NOT EXISTS yeu_cau_goi_tap (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    ho_so_id     INTEGER NOT NULL REFERENCES ho_so(id),
+    dang_ky_id   INTEGER REFERENCES dang_ky_goi_tap(id),
+    loai_yeu_cau TEXT NOT NULL DEFAULT 'gia_han'
+                 CHECK (loai_yeu_cau IN ('gia_han','tam_dung','huy')),
+    ly_do        TEXT,
+    trang_thai   TEXT NOT NULL DEFAULT 'cho_duyet'
+                 CHECK (trang_thai IN ('cho_duyet','da_duyet','tu_choi')),
+    nguoi_duyet_id INTEGER REFERENCES tai_khoan(id),
+    ghi_chu_duyet  TEXT,
+    ngay_tao     DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
+    ngay_duyet   DATETIME
+  );
+`);
+
 export default db;
-
-

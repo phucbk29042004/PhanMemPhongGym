@@ -33,10 +33,12 @@
     // Update nav active state
     document.querySelectorAll('[data-page]').forEach(btn => {
       btn.classList.remove('nav-active', 'text-brand-primary', 'font-bold', 'bg-[#e7f5e9]');
-      btn.classList.add('text-on-surface-variant');
+      btn.style.background = '';
+      btn.style.color = '#166534';
       if (btn.dataset.page === pageName) {
-        btn.classList.remove('text-on-surface-variant');
-        btn.classList.add('nav-active', 'text-brand-primary', 'font-bold');
+        btn.classList.add('nav-active', 'font-bold');
+        btn.style.background = '#1D9336';
+        btn.style.color = '#ffffff';
       }
     });
 
@@ -463,6 +465,38 @@
   };
 
   // ===== THEME =====
+  function _applySidebarDarkMode(isDark) {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+    const navColor    = isDark ? 'rgba(255,255,255,0.75)' : '#166534';
+    const hoverBg     = isDark ? 'rgba(255,255,255,0.12)' : '#bbf7d0';
+    const hoverColor  = isDark ? '#ffffff' : '#14532d';
+
+    sidebar.querySelectorAll('.nav-item, .accordion-trigger, .sub-nav-item').forEach(btn => {
+      if (!btn.classList.contains('nav-active')) btn.style.color = navColor;
+      btn.onmouseover = () => {
+        if (!btn.classList.contains('nav-active')) {
+          btn.style.background = hoverBg;
+          btn.style.color = hoverColor;
+        }
+      };
+      btn.onmouseout = () => {
+        if (!btn.classList.contains('nav-active')) {
+          btn.style.background = '';
+          btn.style.color = navColor;
+        }
+      };
+    });
+
+    // Toggle button
+    const toggleBtn = document.getElementById('sidebar-toggle');
+    if (toggleBtn) {
+      toggleBtn.style.color = isDark ? 'rgba(255,255,255,0.75)' : '#166534';
+      toggleBtn.onmouseover = () => { toggleBtn.style.background = hoverBg; };
+      toggleBtn.onmouseout  = () => { toggleBtn.style.background = ''; };
+    }
+  }
+
   function _applyTheme(t) {
     if (t === 'dark') {
       document.documentElement.classList.add('dark');
@@ -472,6 +506,8 @@
     localStorage.setItem('gym-theme', t);
     const icon = document.getElementById('theme-icon');
     if (icon) icon.textContent = t === 'dark' ? 'light_mode' : 'dark_mode';
+
+    _applySidebarDarkMode(t === 'dark');
 
     // Re-render dashboard charts if active
     if (window.GymApp.currentPage === 'dashboard') {
@@ -530,6 +566,8 @@
 
     // 3. Áp dụng Theme
     _applyTheme(localStorage.getItem('gym-theme') || 'light');
+    // Sidebar dark-mode handlers cần DOM sẵn
+    setTimeout(() => _applySidebarDarkMode(document.documentElement.classList.contains('dark')), 0);
 
     // Khởi tạo Flatpickr cho toàn trang và auto-init
     if (window.GymApp.initDatePickers) {

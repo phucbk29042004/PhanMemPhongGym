@@ -434,6 +434,40 @@ export const getBirthday = (req, res) => {
   return success(res, rows);
 };
 
+// ── POST /api/members/:id/birthday-wish ──────────────────
+// Gửi lời chúc sinh nhật thủ công cho 1 hội viên (admin, le_tan)
+export const sendBirthdayWish = (req, res) => {
+  const { id } = req.params;
+  const hoSo = db.prepare('SELECT id, ho_ten FROM ho_so WHERE id = ? AND loai_ho_so = \'hoi_vien\' AND is_deleted = 0').get(id);
+  if (!hoSo) return error(res, 'Không tìm thấy hội viên.', 404);
+
+  const msg = `🎂 Chúc mừng sinh nhật ${hoSo.ho_ten}! Paradise GYM chúc bạn một ngày thật vui vẻ và tràn đầy năng lượng!`;
+  createUserNotification(hoSo.id, '🎂 Chúc mừng sinh nhật!', msg, 'sinh_nhat');
+
+  ghi_audit_log(req, 'NOTIFY', 'ho_so', hoSo.id, null, { loai: 'sinh_nhat' }, `Gửi lời chúc sinh nhật cho ${hoSo.ho_ten}`);
+  return success(res, null, `Đã gửi lời chúc sinh nhật đến ${hoSo.ho_ten}.`);
+};
+
+// ── POST /api/members/birthday-wish-all ──────────────────
+// Gửi lời chúc sinh nhật hàng loạt cho tất cả HV sinh nhật hôm nay (admin, le_tan)
+export const sendBirthdayWishAll = (req, res) => {
+  const todayBirthdays = db.prepare(`
+    SELECT id, ho_ten FROM ho_so
+    WHERE loai_ho_so = 'hoi_vien' AND is_deleted = 0
+      AND strftime('%m-%d', ngay_sinh) = strftime('%m-%d', 'now', 'localtime')
+  `).all();
+
+  if (todayBirthdays.length === 0) return error(res, 'Hôm nay không có hội viên nào sinh nhật.', 404);
+
+  for (const hv of todayBirthdays) {
+    const msg = `🎂 Chúc mừng sinh nhật ${hv.ho_ten}! Paradise GYM chúc bạn một ngày thật vui vẻ và tràn đầy năng lượng!`;
+    createUserNotification(hv.id, '🎂 Chúc mừng sinh nhật!', msg, 'sinh_nhat');
+  }
+
+  ghi_audit_log(req, 'NOTIFY', 'ho_so', null, null, { loai: 'sinh_nhat_hang_loat', so_luong: todayBirthdays.length }, `Gửi lời chúc sinh nhật hàng loạt cho ${todayBirthdays.length} hội viên`);
+  return success(res, { so_luong: todayBirthdays.length }, `Đã gửi lời chúc đến ${todayBirthdays.length} hội viên sinh nhật hôm nay.`);
+};
+
 // ── GET /api/me/profile ───────────────────────────────────
 export const getMyProfile = (req, res) => {
   let hoSo = db.prepare(`
@@ -1070,4 +1104,313 @@ export const clearMyNotifications = (req, res) => {
 
   db.prepare('DELETE FROM thong_bao_user WHERE ho_so_id = ?').run(hoSo.id);
   return success(res, null, 'Đã xoá sạch thông báo cá nhân.');
+};
+
+// ── PATCH /api/members/:id/package/:pkgId/cancel ──────────────
+export const cancelPackage = (req, res) => {
+  const { id, pkgId } = req.params;
+  const { ly_do_huy, so_tien_hoan = 0 } = req.body;
+
+  const hoSo = db.prepare('SELECT id, ho_ten FROM ho_so WHERE id = ? AND is_deleted = 0').get(id);
+  if (!hoSo) return error(res, 'Không tìm thấy hồ sơ hội viên.', 404);
+
+  const pkg = db.prepare(`
+    SELECT dk.*, gt.ten_goi
+    FROM dang_ky_goi_tap dk
+    JOIN goi_tap gt ON gt.id = dk.goi_tap_id
+    WHERE dk.id = ? AND dk.ho_so_id = ?
+  `).get(pkgId, id);
+  if (!pkg) return error(res, 'Không tìm thấy đăng ký gói tập.', 404);
+  if (pkg.trang_thai === 'huy') return error(res, 'Gói tập này đã bị hủy trước đó.', 400);
+  if (pkg.trang_thai === 'het_han') return error(res, 'Không thể hủy gói tập đã hết hạn.', 400);
+
+  const oldData = { ...pkg };
+  db.prepare(`
+    UPDATE dang_ky_goi_tap
+    SET trang_thai = 'huy', ly_do_huy = ?, so_tien_hoan = ?, ngay_huy = datetime('now','localtime'),
+        nguoi_cap_nhat_id = ?, ngay_cap_nhat = datetime('now','localtime')
+    WHERE id = ?
+  `).run(ly_do_huy || null, so_tien_hoan, req.user.id, pkgId);
+
+  ghi_audit_log(req, 'UPDATE', 'dang_ky_goi_tap', pkgId, oldData,
+    { trang_thai: 'huy', ly_do_huy, so_tien_hoan },
+    `Hủy gói "${pkg.ten_goi}" của ${hoSo.ho_ten}`);
+
+  // Thông báo cho admin/le_tan
+  createNotification(
+    'huy_buoi_tap',
+    'Gói tập bị hủy',
+    `${req.user.ten_dang_nhap || 'Nhân viên'} đã hủy gói "${pkg.ten_goi}" của ${hoSo.ho_ten}${so_tien_hoan > 0 ? `, hoàn tiền ${so_tien_hoan.toLocaleString('vi-VN')}đ` : ''}.`,
+    pkgId,
+    'dang_ky_goi_tap',
+    'admin'
+  );
+
+  // Thông báo cho hội viên trên mobile
+  createUserNotification(
+    hoSo.id,
+    'Gói tập đã bị hủy',
+    `Gói tập "${pkg.ten_goi}" của bạn đã được hủy${ly_do_huy ? ` (${ly_do_huy})` : ''}. ${so_tien_hoan > 0 ? `Hoàn tiền: ${Number(so_tien_hoan).toLocaleString('vi-VN')}đ.` : ''} Liên hệ lễ tân để biết thêm chi tiết.`,
+    'thong_bao_chung'
+  );
+
+  return success(res, null, `Đã hủy gói tập "${pkg.ten_goi}" thành công.`);
+};
+
+// ── PATCH /api/members/:id/package/:pkgId ─────────────────────
+export const editPackage = (req, res) => {
+  const { id, pkgId } = req.params;
+  const { tu_ngay, den_ngay, gia_thuc_te, phuong_thuc_tt, ghi_chu_tt, ghi_chu_gia } = req.body;
+
+  const hoSo = db.prepare('SELECT id, ho_ten FROM ho_so WHERE id = ? AND is_deleted = 0').get(id);
+  if (!hoSo) return error(res, 'Không tìm thấy hồ sơ hội viên.', 404);
+
+  const pkg = db.prepare(`
+    SELECT dk.*, gt.ten_goi
+    FROM dang_ky_goi_tap dk
+    JOIN goi_tap gt ON gt.id = dk.goi_tap_id
+    WHERE dk.id = ? AND dk.ho_so_id = ?
+  `).get(pkgId, id);
+  if (!pkg) return error(res, 'Không tìm thấy đăng ký gói tập.', 404);
+  if (pkg.trang_thai === 'huy') return error(res, 'Không thể chỉnh sửa gói tập đã hủy.', 400);
+
+  if (tu_ngay && den_ngay && new Date(den_ngay) <= new Date(tu_ngay)) {
+    return error(res, 'Ngày kết thúc phải sau ngày bắt đầu.', 400);
+  }
+
+  const oldData = { ...pkg };
+  db.prepare(`
+    UPDATE dang_ky_goi_tap
+    SET tu_ngay = COALESCE(?, tu_ngay),
+        den_ngay = COALESCE(?, den_ngay),
+        gia_thuc_te = COALESCE(?, gia_thuc_te),
+        phuong_thuc_tt = COALESCE(?, phuong_thuc_tt),
+        ghi_chu_tt = COALESCE(?, ghi_chu_tt),
+        ghi_chu_gia = COALESCE(?, ghi_chu_gia),
+        nguoi_cap_nhat_id = ?,
+        ngay_cap_nhat = datetime('now','localtime')
+    WHERE id = ?
+  `).run(tu_ngay || null, den_ngay || null, gia_thuc_te || null, phuong_thuc_tt || null,
+         ghi_chu_tt || null, ghi_chu_gia || null, req.user.id, pkgId);
+
+  ghi_audit_log(req, 'UPDATE', 'dang_ky_goi_tap', pkgId, oldData,
+    { tu_ngay, den_ngay, gia_thuc_te, phuong_thuc_tt, ghi_chu_tt, ghi_chu_gia },
+    `Chỉnh sửa gói "${pkg.ten_goi}" của ${hoSo.ho_ten}`);
+
+  // Thông báo cho hội viên trên mobile
+  createUserNotification(
+    hoSo.id,
+    'Thông tin gói tập được cập nhật',
+    `Gói tập "${pkg.ten_goi}" của bạn vừa được cập nhật thông tin. Vui lòng kiểm tra lại trong ứng dụng.`,
+    'thong_bao_chung'
+  );
+
+  return success(res, null, `Đã cập nhật gói tập "${pkg.ten_goi}" thành công.`);
+};
+
+// ── POST /api/members/:id/package/switch ──────────────────────
+export const switchPackage = (req, res) => {
+  const { id } = req.params;
+  const { pkg_id_cu, goi_tap_id_moi, tu_ngay, ly_do_huy = 'Đổi sang gói mới', so_tien_hoan = 0,
+          gia_thuc_te, phuong_thuc_tt, ghi_chu_tt } = req.body;
+
+  if (!pkg_id_cu || !goi_tap_id_moi || !tu_ngay) {
+    return error(res, 'Thiếu thông tin: pkg_id_cu, goi_tap_id_moi, tu_ngay.', 400);
+  }
+
+  const hoSo = db.prepare('SELECT id, ho_ten FROM ho_so WHERE id = ? AND is_deleted = 0').get(id);
+  if (!hoSo) return error(res, 'Không tìm thấy hồ sơ hội viên.', 404);
+
+  const pkgCu = db.prepare(`
+    SELECT dk.*, gt.ten_goi
+    FROM dang_ky_goi_tap dk
+    JOIN goi_tap gt ON gt.id = dk.goi_tap_id
+    WHERE dk.id = ? AND dk.ho_so_id = ?
+  `).get(pkg_id_cu, id);
+  if (!pkgCu) return error(res, 'Không tìm thấy gói tập cũ.', 404);
+  if (pkgCu.trang_thai === 'huy') return error(res, 'Gói tập cũ đã bị hủy rồi.', 400);
+
+  const goiMoi = db.prepare('SELECT * FROM goi_tap WHERE id = ? AND is_deleted = 0').get(goi_tap_id_moi);
+  if (!goiMoi) return error(res, 'Gói tập mới không tồn tại.', 404);
+
+  // Tính ngày kết thúc cho gói mới
+  let denNgay;
+  if (goiMoi.so_thang && goiMoi.so_thang > 0) {
+    const dateResult = db.prepare(`SELECT date(?, '+' || ? || ' months', '+' || COALESCE(?, 0) || ' days') AS den_ngay`)
+      .get(tu_ngay, goiMoi.so_thang, goiMoi.so_ngay_them || 0);
+    denNgay = dateResult?.den_ngay;
+  } else if (goiMoi.so_ngay_them) {
+    const dateResult = db.prepare(`SELECT date(?, '+' || ? || ' days') AS den_ngay`)
+      .get(tu_ngay, goiMoi.so_ngay_them);
+    denNgay = dateResult?.den_ngay;
+  }
+  if (!denNgay) return error(res, 'Không tính được ngày kết thúc cho gói mới.', 400);
+
+  const switchTx = db.transaction(() => {
+    // Hủy gói cũ
+    db.prepare(`
+      UPDATE dang_ky_goi_tap
+      SET trang_thai = 'huy', ly_do_huy = ?, so_tien_hoan = ?, ngay_huy = datetime('now','localtime'),
+          nguoi_cap_nhat_id = ?, ngay_cap_nhat = datetime('now','localtime')
+      WHERE id = ?
+    `).run(ly_do_huy, so_tien_hoan, req.user.id, pkg_id_cu);
+
+    // Đăng ký gói mới
+    const ins = db.prepare(`
+      INSERT INTO dang_ky_goi_tap
+        (ho_so_id, goi_tap_id, tu_ngay, den_ngay, gia_thuc_te, phuong_thuc_tt, ghi_chu_tt,
+         trang_thai, nguoi_tao_id, nguoi_cap_nhat_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'dang_hoat_dong', ?, ?)
+    `).run(hoSo.id, goi_tap_id_moi, tu_ngay, denNgay,
+           gia_thuc_te ?? goiMoi.gia, phuong_thuc_tt || null, ghi_chu_tt || null,
+           req.user.id, req.user.id);
+
+    return ins.lastInsertRowid;
+  });
+
+  let newPkgId;
+  try {
+    newPkgId = switchTx();
+  } catch (err) {
+    console.error('[switchPackage] error:', err);
+    return error(res, 'Lỗi khi đổi gói tập.', 500);
+  }
+
+  ghi_audit_log(req, 'UPDATE', 'dang_ky_goi_tap', pkg_id_cu, pkgCu,
+    { trang_thai: 'huy', ly_do_huy, goi_moi_id: newPkgId },
+    `Đổi gói "${pkgCu.ten_goi}" → "${goiMoi.ten_goi}" cho ${hoSo.ho_ten}`);
+
+  // Thông báo cho admin
+  createNotification(
+    'gia_han_goi_tap',
+    'Đổi gói tập',
+    `${req.user.ten_dang_nhap || 'Nhân viên'} đã đổi gói "${pkgCu.ten_goi}" → "${goiMoi.ten_goi}" cho ${hoSo.ho_ten}.`,
+    newPkgId,
+    'dang_ky_goi_tap',
+    'admin'
+  );
+
+  // Thông báo cho hội viên trên mobile
+  createUserNotification(
+    hoSo.id,
+    'Gói tập đã được đổi',
+    `Gói tập cũ "${pkgCu.ten_goi}" đã được đổi sang gói "${goiMoi.ten_goi}" (hiệu lực từ ${new Date(tu_ngay).toLocaleDateString('vi-VN')} đến ${new Date(denNgay).toLocaleDateString('vi-VN')}).${so_tien_hoan > 0 ? ` Hoàn tiền gói cũ: ${Number(so_tien_hoan).toLocaleString('vi-VN')}đ.` : ''}`,
+    'thong_bao_chung'
+  );
+
+  return success(res, { new_pkg_id: newPkgId, den_ngay: denNgay },
+    `Đã đổi sang gói "${goiMoi.ten_goi}" thành công.`);
+};
+
+// ── GET /api/members/lookup ───────────────────────────────
+// Tra cứu nhanh HV bằng SĐT / tên / mã hồ sơ (admin, le_tan)
+export const lookupMember = (req, res) => {
+  const { q } = req.query;
+  if (!q || q.trim().length < 2) return error(res, 'Từ khoá phải có ít nhất 2 ký tự.', 400);
+
+  const s = `%${q.trim()}%`;
+  const rows = db.prepare(`
+    SELECT
+      h.id, h.ma_ho_so, h.ho_ten, h.so_dien_thoai, h.email, h.gioi_tinh, h.anh_dai_dien,
+      (SELECT gt.ten_goi FROM dang_ky_goi_tap dk JOIN goi_tap gt ON gt.id = dk.goi_tap_id
+       WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong'
+       ORDER BY dk.den_ngay DESC LIMIT 1) AS ten_goi_tap,
+      (SELECT dk.den_ngay FROM dang_ky_goi_tap dk
+       WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong'
+       ORDER BY dk.den_ngay DESC LIMIT 1) AS het_han_goi_tap
+    FROM ho_so h
+    WHERE h.loai_ho_so = 'hoi_vien' AND h.is_deleted = 0
+      AND (h.ho_ten LIKE ? OR h.so_dien_thoai LIKE ? OR h.ma_ho_so LIKE ?)
+    ORDER BY h.ho_ten ASC
+    LIMIT 20
+  `).all(s, s, s);
+
+  return success(res, rows);
+};
+
+// ── GET /api/members/me/payments ─────────────────────────
+// HV xem lịch sử thanh toán gói tập của bản thân
+export const getMyPayments = (req, res) => {
+  const hoSo = db.prepare('SELECT id FROM ho_so WHERE tai_khoan_id = ?').get(req.user.id);
+  if (!hoSo) return error(res, 'Không tìm thấy hồ sơ.', 404);
+
+  const rows = db.prepare(`
+    SELECT
+      dk.id, dk.tu_ngay, dk.den_ngay, dk.gia_thuc_te, dk.phuong_thuc_tt,
+      dk.trang_thai, dk.ghi_chu_tt, dk.ngay_tao,
+      gt.ten_goi, gt.loai_goi
+    FROM dang_ky_goi_tap dk
+    JOIN goi_tap gt ON gt.id = dk.goi_tap_id
+    WHERE dk.ho_so_id = ?
+    ORDER BY dk.ngay_tao DESC
+  `).all(hoSo.id);
+
+  return success(res, rows);
+};
+
+// ── POST /api/members/me/package-pause-request ───────────
+// HV yêu cầu tạm dừng gói tập đang hoạt động
+export const requestPackagePause = (req, res) => {
+  const hoSo = db.prepare('SELECT id, ho_ten FROM ho_so WHERE tai_khoan_id = ?').get(req.user.id);
+  if (!hoSo) return error(res, 'Không tìm thấy hồ sơ.', 404);
+
+  const { ly_do } = req.body;
+
+  const pkg = db.prepare(`
+    SELECT dk.id, dk.ho_so_id, dk.den_ngay, gt.ten_goi
+    FROM dang_ky_goi_tap dk
+    JOIN goi_tap gt ON gt.id = dk.goi_tap_id
+    WHERE dk.ho_so_id = ? AND dk.trang_thai = 'dang_hoat_dong'
+    ORDER BY dk.den_ngay DESC LIMIT 1
+  `).get(hoSo.id);
+
+  if (!pkg) return error(res, 'Không có gói tập đang hoạt động.', 404);
+
+  // Ghi yêu cầu vào bảng yeu_cau_goi_tap (tái dụng bảng hiện có)
+  const ins = db.prepare(`
+    INSERT INTO yeu_cau_goi_tap (ho_so_id, dang_ky_id, loai_yeu_cau, ly_do, trang_thai, ngay_tao)
+    VALUES (?, ?, 'tam_dung', ?, 'cho_duyet', datetime('now','localtime'))
+  `).run(hoSo.id, pkg.id, ly_do || null);
+
+  createNotification(
+    'ho_so_moi',
+    'Yêu cầu tạm dừng gói',
+    `${hoSo.ho_ten} yêu cầu tạm dừng gói "${pkg.ten_goi}". Lý do: ${ly_do || 'Không có'}.`,
+    ins.lastInsertRowid,
+    'yeu_cau_goi_tap',
+    'ca_hai'
+  );
+
+  return success(res, { request_id: ins.lastInsertRowid }, 'Đã gửi yêu cầu tạm dừng. Chờ admin/lễ tân duyệt.');
+};
+
+// ── GET /api/members/:id/package/:pkgId/invoice ──────────
+// Lấy dữ liệu biên lai để hiển thị / in (admin, le_tan)
+export const getInvoice = (req, res) => {
+  const { id, pkgId } = req.params;
+
+  const hoSo = db.prepare('SELECT id, ma_ho_so, ho_ten, so_dien_thoai, email FROM ho_so WHERE id = ? AND is_deleted = 0').get(id);
+  if (!hoSo) return error(res, 'Không tìm thấy hồ sơ.', 404);
+
+  const pkg = db.prepare(`
+    SELECT dk.id, dk.tu_ngay, dk.den_ngay, dk.gia_thuc_te, dk.phuong_thuc_tt,
+           dk.ghi_chu_tt, dk.trang_thai, dk.ngay_tao,
+           gt.ten_goi, gt.loai_goi, gt.gia AS gia_niem_yet,
+           tc.ten_dang_nhap AS thu_ngan
+    FROM dang_ky_goi_tap dk
+    JOIN goi_tap gt ON gt.id = dk.goi_tap_id
+    LEFT JOIN tai_khoan tc ON tc.id = dk.nguoi_tao_id
+    WHERE dk.id = ? AND dk.ho_so_id = ?
+  `).get(pkgId, hoSo.id);
+
+  if (!pkg) return error(res, 'Không tìm thấy đăng ký gói tập.', 404);
+
+  const chiNhanh = db.prepare(`SELECT gia_tri FROM cau_hinh WHERE khoa = 'ten_phong_gym'`).get();
+
+  return success(res, {
+    phong_gym: chiNhanh?.gia_tri || 'Paradise GYM',
+    hoi_vien: hoSo,
+    goi_tap: pkg,
+    ngay_in: new Date().toISOString(),
+  });
 };

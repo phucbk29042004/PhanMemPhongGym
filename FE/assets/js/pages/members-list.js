@@ -183,73 +183,74 @@ window.GymApp.pages['members-list'] = {
       const isExpired = m.trang_thai === 'het_han';
       
       return `
-        <div class="group bg-surface-container-lowest/90 backdrop-blur-md rounded-3xl border border-outline-variant p-standard shadow-sm hover:shadow-2xl hover:shadow-brand-primary/10 hover:-translate-y-1.5 transition-all duration-500 flex flex-col gap-standard relative overflow-hidden">
+        <div class="group relative rounded-3xl overflow-hidden flex flex-col gap-standard
+          shadow-sm hover:shadow-xl hover:shadow-[#1D9336]/15 hover:-translate-y-1.5 transition-all duration-500"
+          style="background:linear-gradient(135deg,#f0fdf4 0%,#f7fef9 60%,#ffffff 100%);border:1.5px solid #bbf7d0;">
+          <!-- Accent bar top -->
+          <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#1D9336,#4ade80);border-radius:3px 3px 0 0;"></div>
+
           <!-- Card Header: Avatar & Quick Info -->
-          <div class="flex items-start gap-standard">
+          <div class="flex items-start gap-standard pt-standard px-standard">
             <div class="relative flex-shrink-0">
-              <div class="p-1 rounded-2xl bg-surface-container-low border border-outline-variant/50 group-hover:border-brand-primary/30 transition-colors duration-500">
+              <div class="p-1 rounded-2xl border-2 transition-colors duration-500"
+                style="background:#dcfce7;border-color:#86efac;">
                 ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'lg')}
               </div>
-              <span class="absolute -bottom-1 -right-1 w-5 h-5 border-4 border-white rounded-full ${isCheckedIn ? 'bg-green-500 animate-pulse' : 'bg-outline'} shadow-sm"></span>
+              <span class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full shadow-sm"
+                style="border:3px solid #f0fdf4;background:${isCheckedIn ? '#22c55e' : '#94a3b8'};${isCheckedIn ? 'animation:pulse 2s infinite;' : ''}"></span>
             </div>
-            
-            <div class="flex flex-col min-w-0 pt-1">
-              <div class="flex items-center gap-xs">
-                <button class="member-name-link text-left font-bold text-on-surface text-body-lg truncate group-hover:text-brand-primary transition-colors cursor-pointer block leading-tight" data-id="${m.id}" title="${m.ho_ten || 'Không rõ'}">
+
+            <div class="flex flex-col min-w-0 pt-1 flex-1">
+              <div class="flex items-start justify-between gap-xs">
+                <button class="member-name-link text-left font-bold text-body-lg truncate cursor-pointer block leading-tight transition-colors"
+                  style="color:#14532d;" data-id="${m.id}" title="${m.ho_ten || 'Không rõ'}">
                   ${m.ho_ten || 'Không rõ'}
                 </button>
                 ${m.co_yeu_cau_gia_han ? `
-                  <span class="flex items-center gap-[2px] bg-warning-container text-warning text-[9px] px-1 rounded font-bold animate-pulse" title="Có yêu cầu gia hạn từ App">
-                    <span class="material-symbols-outlined text-[12px]">app_registration</span>
-                    APP
+                  <span class="flex items-center gap-[2px] text-[9px] px-1 rounded font-bold animate-pulse flex-shrink-0"
+                    style="background:#fef9c3;color:#a16207;" title="Có yêu cầu gia hạn từ App">
+                    <span class="material-symbols-outlined" style="font-size:11px">app_registration</span>APP
                   </span>
                 ` : ''}
               </div>
-              <div class="flex items-center gap-1 mt-1">
-                <span class="text-on-surface-variant text-[11px] font-mono tracking-tight bg-surface-container px-1.5 py-0.5 rounded-md border border-outline-variant/30">ID: ${m.ma_ho_so || '—'}</span>
-              </div>
+              <span class="text-[11px] font-medium mt-0.5" style="color:#4ade80;letter-spacing:0.03em">${m.ma_ho_so || ''}</span>
             </div>
           </div>
 
           <!-- Info Grid -->
-          <div class="grid grid-cols-2 gap-2">
-            <div class="flex flex-col bg-surface-container-low/40 p-2.5 rounded-2xl border border-outline-variant/20 group-hover:bg-brand-primary/5 transition-colors duration-500">
-              <span class="text-[9px] uppercase font-bold tracking-widest text-on-surface-variant opacity-50 mb-1">Gói tập</span>
-              <span class="text-on-surface font-bold text-body-sm truncate" title="${packageName}">${packageName}</span>
+          <div class="grid grid-cols-2 gap-2 px-standard">
+            <div class="flex flex-col p-2.5 rounded-2xl transition-colors duration-300"
+              style="background:rgba(187,247,208,0.35);border:1px solid #bbf7d0;">
+              <span class="text-[9px] uppercase font-bold tracking-widest mb-1" style="color:#166534;opacity:0.6">Gói tập</span>
+              <span class="font-bold text-body-sm truncate" style="color:#14532d;" title="${packageName}">${packageName}</span>
             </div>
-            <div class="flex flex-col bg-surface-container-low/40 p-2.5 rounded-2xl border border-outline-variant/20 group-hover:bg-brand-primary/5 transition-colors duration-500">
-              <span class="text-[9px] uppercase font-bold tracking-widest text-on-surface-variant opacity-50 mb-1">Trạng thái</span>
+            <div class="flex flex-col p-2.5 rounded-2xl transition-colors duration-300"
+              style="background:rgba(187,247,208,0.35);border:1px solid #bbf7d0;">
+              <span class="text-[9px] uppercase font-bold tracking-widest mb-1" style="color:#166534;opacity:0.6">Trạng thái</span>
               <div class="flex">${window.GymApp.statusBadge(m.trang_thai)}</div>
             </div>
           </div>
 
-          <div class="flex items-center gap-standard px-1">
-            <div class="flex flex-col">
-              <span class="text-[9px] uppercase font-bold tracking-widest text-on-surface-variant opacity-50">Ngày hết hạn</span>
-              <span class="text-body-sm font-bold ${isExpired ? 'text-error' : 'text-on-surface-variant'}">${window.GymApp.formatDate(m.ngay_het_han)}</span>
-            </div>
-            <div class="h-8 w-px bg-outline-variant/50 ml-auto"></div>
-            <div class="flex flex-col items-end">
-              <span class="text-[9px] uppercase font-bold tracking-widest text-on-surface-variant opacity-50">Liên hệ</span>
-              <span class="text-body-sm font-bold text-on-surface-variant truncate max-w-[100px]">${m.so_dien_thoai || '—'}</span>
-            </div>
-          </div>
-
-          <!-- Actions Overlay/Footer -->
-          <div class="mt-auto pt-standard border-t border-outline-variant/30 flex items-center justify-between">
-            <div class="flex items-center gap-1.5">
-              <span class="material-symbols-outlined text-sm text-outline">badge</span>
-              <span class="text-[11px] font-bold text-on-surface-variant/70 uppercase tracking-wider">${window.GymApp.formatEnumLabel(m.loai_ho_so || 'hoi_vien')}</span>
-            </div>
-            
+          <!-- Actions Footer -->
+          <div class="mt-auto px-standard pb-standard pt-compact flex items-center justify-end"
+            style="border-top:1px solid #bbf7d0;">
             <div class="flex gap-1">
-              <button class="w-9 h-9 flex items-center justify-center rounded-xl bg-surface-container-low text-on-surface-variant hover:bg-brand-primary hover:text-white transition-all duration-300 member-view-btn shadow-sm" data-id="${m.id}" title="Xem chi tiết">
+              <button class="w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-300 member-view-btn shadow-sm"
+                style="background:#dcfce7;color:#166534;" data-id="${m.id}" title="Xem chi tiết"
+                onmouseover="this.style.background='#1D9336';this.style.color='#fff'"
+                onmouseout="this.style.background='#dcfce7';this.style.color='#166534'">
                 <span class="material-symbols-outlined text-lg">visibility</span>
               </button>
-              <button class="w-9 h-9 flex items-center justify-center rounded-xl bg-surface-container-low text-on-surface-variant hover:bg-brand-primary hover:text-white transition-all duration-300 member-edit-btn shadow-sm" data-id="${m.id}" title="Chỉnh sửa">
+              <button class="w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-300 member-edit-btn shadow-sm"
+                style="background:#dcfce7;color:#166534;" data-id="${m.id}" title="Chỉnh sửa"
+                onmouseover="this.style.background='#1D9336';this.style.color='#fff'"
+                onmouseout="this.style.background='#dcfce7';this.style.color='#166534'">
                 <span class="material-symbols-outlined text-lg">edit</span>
               </button>
-              <button class="w-9 h-9 flex items-center justify-center rounded-xl bg-surface-container-low text-on-surface-variant hover:bg-error hover:text-white transition-all duration-300 member-delete-btn shadow-sm" data-id="${m.id}" data-name="${m.ho_ten || 'hội viên này'}" title="Xóa">
+              <button class="w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-300 member-delete-btn shadow-sm"
+                style="background:#fee2e2;color:#991b1b;" data-id="${m.id}" data-name="${m.ho_ten || 'hội viên này'}" title="Xóa"
+                onmouseover="this.style.background='#dc2626';this.style.color='#fff'"
+                onmouseout="this.style.background='#fee2e2';this.style.color='#991b1b'">
                 <span class="material-symbols-outlined text-lg">delete</span>
               </button>
             </div>
@@ -301,9 +302,6 @@ window.GymApp.pages['members-list'] = {
               <button class="pt-name-link text-left font-bold text-on-surface text-body-lg truncate group-hover:text-brand-primary transition-colors cursor-pointer block leading-tight" data-id="${pt.id}" title="${pt.ho_ten}">
                 ${pt.ho_ten}
               </button>
-              <div class="flex items-center gap-1 mt-1">
-                <span class="text-on-surface-variant text-[11px] font-mono tracking-tight bg-surface-container px-1.5 py-0.5 rounded-md border border-outline-variant/30">${pt.ma_ho_so || 'PT-XXXX'}</span>
-              </div>
             </div>
           </div>
 
@@ -319,24 +317,15 @@ window.GymApp.pages['members-list'] = {
             </div>
           </div>
 
-          <div class="flex items-center justify-between px-1">
+          <div class="flex items-center px-1">
             <div class="flex items-center gap-2 bg-brand-primary/10 px-3 py-1.5 rounded-xl border border-brand-primary/20">
               <span class="material-symbols-outlined text-sm text-brand-primary" style="font-variation-settings:'FILL' 1">star</span>
               <span class="font-bold text-body-sm text-brand-primary">${ratingDisplay}</span>
             </div>
-            <div class="flex flex-col items-end">
-              <span class="text-[9px] uppercase font-bold tracking-widest text-on-surface-variant opacity-50">SĐT</span>
-              <span class="text-body-sm font-bold text-on-surface-variant">${pt.so_dien_thoai || pt.phone || '—'}</span>
-            </div>
           </div>
 
-          <!-- Actions Overlay/Footer -->
-          <div class="mt-auto pt-standard border-t border-outline-variant/30 flex items-center justify-between">
-            <div class="flex items-center gap-1.5">
-              <span class="material-symbols-outlined text-sm text-outline">verified</span>
-              <span class="text-[11px] font-bold text-on-surface-variant/70 uppercase tracking-wider">${window.GymApp.formatEnumLabel(pt.loai_ho_so || 'pt')}</span>
-            </div>
-            
+          <!-- Actions Footer -->
+          <div class="mt-auto pt-standard border-t border-outline-variant/30 flex items-center justify-end">
             <div class="flex gap-1">
               <button class="w-9 h-9 flex items-center justify-center rounded-xl bg-surface-container-low text-on-surface-variant hover:bg-brand-primary hover:text-white transition-all duration-300 pt-view-btn shadow-sm" data-id="${pt.id}" title="Xem chi tiết">
                 <span class="material-symbols-outlined text-lg">visibility</span>
@@ -1000,7 +989,7 @@ window.GymApp.pages['members-list'] = {
         btn.style.fontWeight = active ? '800' : '700';
       });
       document.getElementById('member-modal-body').innerHTML = self._renderMemberTab(t, m, pkgHistory, memberSchedules);
-      self._bindMemberTabEvents(t, m, () => refreshAndSetTab(t));
+      self._bindMemberTabEvents(t, m, () => refreshAndSetTab(t), pkgHistory);
     };
 
     overlay.querySelectorAll('.member-detail-tab').forEach(btn => {
@@ -1118,75 +1107,97 @@ window.GymApp.pages['members-list'] = {
 
     if (tab === 'package') {
       const today = new Date(); today.setHours(0, 0, 0, 0);
-      const upcomingPackages = pkgHistory.filter(p => new Date(p.tu_ngay || p.from) > today);
-      const pastPackages = pkgHistory.filter(p => new Date(p.tu_ngay || p.from) <= today);
+      const activePkg = Array.isArray(m.goi_tap_hien_tai) && m.goi_tap_hien_tai.length > 0 ? m.goi_tap_hien_tai[0] : null;
+      const upcomingPackages = pkgHistory.filter(p => new Date(p.tu_ngay || p.from) > today && p.trang_thai !== 'huy');
+      const pastPackages = pkgHistory.filter(p => new Date(p.tu_ngay || p.from) <= today || p.trang_thai === 'huy');
+
+      const _actionBtns = (p, dark = false) => {
+        if (p.trang_thai === 'huy' || p.trang_thai === 'het_han') return '';
+        const base = dark
+          ? 'background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);color:#fff;'
+          : 'background:var(--md-sys-color-surface-container,#f1f5f9);border:1px solid var(--md-sys-color-outline-variant,#e2e8f0);color:var(--md-sys-color-on-surface-variant,#475569);';
+        const danger = dark
+          ? 'background:rgba(220,38,38,0.25);border:1px solid rgba(255,100,100,0.3);color:#fca5a5;'
+          : 'background:#fef2f2;border:1px solid #fecaca;color:#dc2626;';
+        const blue = dark
+          ? 'background:rgba(99,179,237,0.2);border:1px solid rgba(147,210,255,0.3);color:#bfdbfe;'
+          : 'background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;';
+        const btn = (cls, icon, label, style) =>
+          `<button class="${cls}" data-pkg-id="${p.id}" data-member-id="${m.id}"
+            style="display:inline-flex;align-items:center;gap:3px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;${style}">
+            <span class="material-symbols-outlined" style="font-size:13px;">${icon}</span>${label}
+          </button>`;
+        return `<div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;">
+          ${btn('btn-edit-pkg',   'edit',       'Sửa',     base)}
+          ${btn('btn-switch-pkg', 'swap_horiz', 'Đổi gói', blue)}
+          ${btn('btn-cancel-pkg', 'cancel',     'Hủy gói', danger)}
+        </div>`;
+      };
+
       const renderPkgCard = (p, type) => {
         const isUpcoming = type === 'upcoming';
-        const icon = isUpcoming ? 'schedule' : 'history';
-        const color = isUpcoming ? '#d97706' : '#64748b';
-        const bg = isUpcoming ? '#fef3c7' : '#f1f5f9';
-        const border = isUpcoming ? '#fde68a' : '#e2e8f0';
+        const isCanceled = p.trang_thai === 'huy';
+        const accentColor = isCanceled ? '#dc2626' : (isUpcoming ? '#d97706' : '#94a3b8');
+        const accentBg    = isCanceled ? '#fef2f2' : (isUpcoming ? '#fef9ec' : '#f8fafc');
+        const borderColor = isCanceled ? '#fecaca' : (isUpcoming ? '#fde68a' : '#e2e8f0');
+        const icon        = isCanceled ? 'cancel'  : (isUpcoming ? 'schedule' : 'history');
         return `
-          <div style="display:flex;align-items:center;gap:16px;padding:16px;background:#fff;border:1px solid ${border};border-radius:12px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.02);">
-            <div style="width:44px;height:44px;border-radius:12px;background:${bg};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-              <span class="material-symbols-outlined" style="color:${color};font-size:24px;">${icon}</span>
-            </div>
+          <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:#fff;border:1px solid ${borderColor};border-left:3px solid ${accentColor};border-radius:10px;margin-bottom:8px;">
+            <span class="material-symbols-outlined" style="font-size:18px;color:${accentColor};margin-top:1px;flex-shrink:0;">${icon}</span>
             <div style="flex:1;min-width:0;">
-              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">
-                <h5 style="font-size:15px;font-weight:800;color:var(--md-sys-color-on-surface,#1a2018);margin:0;">${p.ten_goi || p.name || '—'}</h5>
-                ${this._packageStatusBadge(p.trang_thai || p.status || (isUpcoming ? 'Sắp tới' : 'Lịch sử'))}
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+                <span style="font-size:13px;font-weight:800;color:var(--md-sys-color-on-surface,#1a2018);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.ten_goi || '—'}</span>
+                ${this._packageStatusBadge(p.trang_thai || (isUpcoming ? 'Sắp tới' : 'Lịch sử'))}
               </div>
-              <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--md-sys-color-on-surface-variant,#3f4a3c);">
-                <span style="display:flex;align-items:center;gap:4px;font-weight:600;"><span class="material-symbols-outlined" style="font-size:14px;opacity:0.7;">payments</span>${window.GymApp.formatCurrency(p.gia_thuc_te || p.gia || p.price || 0)}</span>
-                <span style="display:flex;align-items:center;gap:4px;"><span class="material-symbols-outlined" style="font-size:14px;opacity:0.7;">event</span>${window.GymApp.formatDate(p.tu_ngay || p.from)} ➔ ${window.GymApp.formatDate(p.den_ngay || p.to)}</span>
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:3px;font-size:11px;color:var(--md-sys-color-on-surface-variant,#64748b);">
+                <span style="font-weight:600;">${window.GymApp.formatCurrency(p.gia_thuc_te || p.gia || 0)}</span>
+                <span>${window.GymApp.formatDate(p.tu_ngay)} – ${window.GymApp.formatDate(p.den_ngay)}</span>
               </div>
-              ${p.ghi_chu_tt || p.ghi_chu || p.note ? `<div style="margin-top:6px;font-size:12px;color:#64748b;font-style:italic;">📝 ${p.ghi_chu_tt || p.ghi_chu || p.note}</div>` : ''}
+              ${p.ly_do_huy ? `<div style="margin-top:3px;font-size:11px;color:#dc2626;font-style:italic;">${p.ly_do_huy}${p.so_tien_hoan > 0 ? ` · Hoàn: ${window.GymApp.formatCurrency(p.so_tien_hoan)}` : ''}</div>` : ''}
+              ${p.ghi_chu_tt ? `<div style="margin-top:2px;font-size:11px;color:#94a3b8;font-style:italic;">${p.ghi_chu_tt}</div>` : ''}
+              ${_actionBtns(p, false)}
             </div>
           </div>`;
       };
-      const activePkg = Array.isArray(m.goi_tap_hien_tai) && m.goi_tap_hien_tai.length > 0 ? m.goi_tap_hien_tai[0] : null;
+
+      const sectionLabel = (label) =>
+        `<p class="text-body-sm font-bold text-on-surface-variant" style="text-transform:uppercase;letter-spacing:0.05em;margin:0 0 8px;">${label}</p>`;
+      const emptyState = (msg) =>
+        `<div style="text-align:center;padding:16px;background:var(--md-sys-color-surface-container,#f8fafc);border-radius:10px;border:1px dashed var(--md-sys-color-outline-variant,#cbd5e1);font-size:12px;color:var(--md-sys-color-on-surface-variant);">${msg}</div>`;
+
       return `
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-          <h4 style="font-size:16px;font-weight:800;color:var(--md-sys-color-on-surface);">Gói Tập Của Hội Viên</h4>
-          <button id="btn-add-package" style="display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;background:linear-gradient(135deg,#1D9336,#22c55e);color:#fff;font-weight:700;font-size:13px;border:none;cursor:pointer;box-shadow:0 4px 12px rgba(29,147,54,0.2);">
-            <span class="material-symbols-outlined" style="font-size:18px;">add_circle</span>Đăng ký gói
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <span class="text-body-md font-bold text-on-surface">Gói tập</span>
+          <button id="btn-add-package" class="flex items-center gap-xs px-standard py-compact rounded-lg font-bold text-body-sm text-white transition-all hover:opacity-90" style="background:#1D9336;border:none;cursor:pointer;">
+            <span class="material-symbols-outlined text-sm">add_circle</span>Đăng ký gói
           </button>
         </div>
+
         ${activePkg ? `
-          <div style="background:linear-gradient(135deg,#1a5e2a 0%,#1D9336 60%,#22c55e 100%);border-radius:16px;padding:20px;color:#fff;position:relative;overflow:hidden;box-shadow:0 10px 25px rgba(29,147,54,0.3);margin-bottom:24px;">
-            <div style="position:absolute;top:-20px;right:-20px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,0.1);"></div>
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;position:relative;z-index:1;">
-              <div>
-                <span style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;background:rgba(255,255,255,0.2);padding:4px 10px;border-radius:999px;">ĐANG SỬ DỤNG</span>
-                <h4 style="font-size:24px;font-weight:800;margin:10px 0 0;text-shadow:0 2px 4px rgba(0,0,0,0.2);">${activePkg.ten_goi || '—'}</h4>
+          <div style="background:linear-gradient(135deg,#14532d 0%,#1D9336 100%);border-radius:12px;padding:14px 16px;color:#fff;position:relative;overflow:hidden;margin-bottom:16px;">
+            <div style="position:absolute;right:-12px;top:-12px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.07);pointer-events:none;"></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;position:relative;z-index:1;">
+              <div style="min-width:0;">
+                <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;opacity:0.75;margin-bottom:4px;">Đang sử dụng</div>
+                <div style="font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${activePkg.ten_goi || '—'}</div>
+                <div style="font-size:11px;opacity:0.85;margin-top:3px;">${window.GymApp.formatDate(activePkg.tu_ngay)} – ${window.GymApp.formatDate(activePkg.den_ngay)} · ${window.GymApp.formatCurrency(activePkg.gia_thuc_te)}</div>
               </div>
-              <span class="material-symbols-outlined" style="font-size:48px;opacity:0.9;">card_membership</span>
+              <span class="material-symbols-outlined" style="font-size:32px;opacity:0.7;flex-shrink:0;">card_membership</span>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;position:relative;z-index:1;background:rgba(0,0,0,0.15);padding:16px;border-radius:12px;">
-              <div>
-                <div style="font-size:10px;font-weight:700;text-transform:uppercase;opacity:0.8;margin-bottom:4px;">Thời hạn</div>
-                <div style="font-size:14px;font-weight:700;">${window.GymApp.formatDate(activePkg.tu_ngay)} ➔ ${window.GymApp.formatDate(activePkg.den_ngay)}</div>
-              </div>
-              <div>
-                <div style="font-size:10px;font-weight:700;text-transform:uppercase;opacity:0.8;margin-bottom:4px;">Giá trị gói</div>
-                <div style="font-size:14px;font-weight:700;">${window.GymApp.formatCurrency(activePkg.gia_thuc_te)}</div>
-              </div>
-            </div>
+            ${_actionBtns(activePkg, true)}
           </div>` : `
-          <div style="background:#f8fafc;border:1px dashed #cbd5e1;border-radius:16px;padding:32px 20px;text-align:center;margin-bottom:24px;">
-            <p style="font-size:14px;font-weight:700;color:#475569;margin:0 0 4px;">Chưa đăng ký gói tập</p>
+          <div style="padding:16px;background:var(--md-sys-color-surface-container,#f8fafc);border:1px dashed var(--md-sys-color-outline-variant,#cbd5e1);border-radius:12px;text-align:center;margin-bottom:16px;">
+            <span class="material-symbols-outlined text-on-surface-variant" style="font-size:28px;opacity:0.4;">fitness_center</span>
+            <p style="font-size:13px;font-weight:700;color:var(--md-sys-color-on-surface-variant);margin:4px 0 0;">Chưa có gói tập đang hoạt động</p>
           </div>`}
-        <div style="margin-bottom:24px;">
-          <h5 style="font-size:13px;font-weight:800;text-transform:uppercase;color:var(--md-sys-color-on-surface-variant);margin-bottom:12px;">📅 Gói sắp kích hoạt</h5>
-          ${upcomingPackages.length === 0
-          ? `<div style="text-align:center;padding:24px;background:#f8fafc;border-radius:12px;border:1px dashed #cbd5e1;font-size:13px;color:var(--md-sys-color-on-surface-variant);">Không có gói tập sắp tới</div>`
-          : upcomingPackages.map(p => renderPkgCard(p, 'upcoming')).join('')}
+
+        <div style="margin-bottom:16px;">
+          ${sectionLabel('Sắp kích hoạt')}
+          ${upcomingPackages.length === 0 ? emptyState('Không có gói sắp tới') : upcomingPackages.map(p => renderPkgCard(p, 'upcoming')).join('')}
         </div>
         <div>
-          <h5 style="font-size:13px;font-weight:800;text-transform:uppercase;color:var(--md-sys-color-on-surface-variant);margin-bottom:12px;">📋 Lịch sử gói tập</h5>
-          ${pastPackages.length === 0
-          ? `<div style="text-align:center;padding:24px;background:#f8fafc;border-radius:12px;border:1px dashed #cbd5e1;font-size:13px;color:var(--md-sys-color-on-surface-variant);">Chưa có lịch sử gói tập</div>`
-          : pastPackages.map(p => renderPkgCard(p, 'history')).join('')}
+          ${sectionLabel('Lịch sử')}
+          ${pastPackages.length === 0 ? emptyState('Chưa có lịch sử gói tập') : pastPackages.map(p => renderPkgCard(p, 'history')).join('')}
         </div>
       `;
     }
@@ -1293,7 +1304,7 @@ window.GymApp.pages['members-list'] = {
     return '';
   },
 
-  _bindMemberTabEvents: function (tab, m, refreshTab) {
+  _bindMemberTabEvents: function (tab, m, refreshTab, pkgHistory) {
     const self = this;
     if (tab === 'info') {
       document.getElementById('btn-create-account')?.addEventListener('click', async () => {
@@ -1322,6 +1333,30 @@ window.GymApp.pages['members-list'] = {
     }
     if (tab === 'package') {
       document.getElementById('btn-add-package')?.addEventListener('click', () => self._showAddPackageModal(m, refreshTab));
+      document.querySelectorAll('.btn-edit-pkg').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const pkgId = btn.dataset.pkgId;
+          const allPkgs = [...(m.goi_tap_hien_tai || []), ...(pkgHistory || [])];
+          const pkg = allPkgs.find(p => String(p.id) === String(pkgId));
+          if (pkg) self._showEditPackageModal(m, pkg, refreshTab);
+        });
+      });
+      document.querySelectorAll('.btn-cancel-pkg').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const pkgId = btn.dataset.pkgId;
+          const allPkgs = [...(m.goi_tap_hien_tai || []), ...(pkgHistory || [])];
+          const pkg = allPkgs.find(p => String(p.id) === String(pkgId));
+          if (pkg) self._showCancelPackageModal(m, pkg, refreshTab);
+        });
+      });
+      document.querySelectorAll('.btn-switch-pkg').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const pkgId = btn.dataset.pkgId;
+          const allPkgs = [...(m.goi_tap_hien_tai || []), ...(pkgHistory || [])];
+          const pkg = allPkgs.find(p => String(p.id) === String(pkgId));
+          if (pkg) self._showSwitchPackageModal(m, pkg, refreshTab);
+        });
+      });
     }
     if (tab === 'schedule') {
       document.getElementById('btn-add-pt-reg')?.addEventListener('click', () => self._showAddPtRegistrationModal(m, refreshTab));
@@ -1354,16 +1389,16 @@ window.GymApp.pages['members-list'] = {
               <label class="block text-body-sm font-bold text-on-surface mb-xs">Tên gói tập ${REQ}</label>
               <select id="pkg-name" ${inputCls}><option value="">— Chọn gói tập —</option>${pkgNames.map(p => `<option value="${p.name}" data-price="${p.price}">${p.name}${p.price ? ' — ' + window.GymApp.formatCurrency(p.price) : ''}</option>`).join('')}</select>
             </div>
-            <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Giá gói tập (VNĐ) ${REQ}</label><input id="pkg-price" type="number" min="0" placeholder="Nhập giá..." ${inputCls} /></div>
+            <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Giá gói tập (VNĐ) ${REQ}</label><input id="pkg-price" type="text" inputmode="numeric" placeholder="VD: 1.500.000" ${inputCls} /></div>
             <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Mã giảm giá</label><input id="pkg-discount-code" type="text" placeholder="Nhập mã (nếu có)..." ${inputCls} /></div>
             <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Từ ngày ${REQ}</label><input id="pkg-from" type="date" value="${new Date().toISOString().split('T')[0]}" ${inputCls} /></div>
             <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Đến ngày ${REQ}</label><input id="pkg-to" type="date" ${inputCls} /></div>
             <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Trạng thái đăng ký ${REQ}</label><select id="pkg-reg-status" ${inputCls}><option value="paid">Đã thanh toán</option><option value="debt">Còn nợ</option><option value="free">Miễn phí</option></select></div>
             <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Phương thức TT ${REQ}</label><select id="pkg-payment-method" ${inputCls}><option value="tien_mat">Tiền mặt</option><option value="chuyen_khoan">Chuyển khoản</option><option value="the">Thẻ</option><option value="momo">MoMo</option><option value="zalopay">ZaloPay</option><option value="khac">Khác</option></select></div>
             <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Ngày thanh toán</label><input id="pkg-payment-date" type="date" value="${new Date().toISOString().split('T')[0]}" ${inputCls} /></div>
-            <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Cần thanh toán (VNĐ)</label><input id="pkg-need-pay" type="number" min="0" readonly class="bg-surface-container text-on-surface border border-outline-variant" style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;cursor:not-allowed;" /></div>
-            <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Tiền khách đưa (VNĐ)</label><input id="pkg-paid" type="number" min="0" placeholder="Nhập số tiền..." ${inputCls} /></div>
-            <div style="grid-column:1/-1;"><label class="block text-body-sm font-bold mb-xs" style="color:#93000a;">Khách nợ (VNĐ)</label><input id="pkg-debt" type="number" value="0" readonly style="width:100%;background:#ffdad6;border:1px solid #f2b8b5;color:#93000a;font-weight:700;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;cursor:not-allowed;" /></div>
+            <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Cần thanh toán (VNĐ)</label><input id="pkg-need-pay" type="text" readonly class="bg-surface-container text-on-surface border border-outline-variant" style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;cursor:not-allowed;" /></div>
+            <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Tiền khách đưa (VNĐ) ${REQ}</label><input id="pkg-paid" type="text" inputmode="numeric" placeholder="VD: 1.500.000" ${inputCls} /><p id="err-pkg-paid-modal" class="hidden" style="color:#ba1a1a;font-size:11px;margin-top:4px;font-weight:600;"></p></div>
+            <div style="grid-column:1/-1;"><label class="block text-body-sm font-bold mb-xs" style="color:#93000a;">Khách nợ (VNĐ)</label><input id="pkg-debt" type="text" value="0" readonly style="width:100%;background:#ffdad6;border:1px solid #f2b8b5;color:#93000a;font-weight:700;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;cursor:not-allowed;" /></div>
             <div style="grid-column:1/-1;"><label class="block text-body-sm font-bold text-on-surface mb-xs">Ghi chú</label><textarea id="pkg-note" rows="3" placeholder="Ghi chú thêm..." class="bg-surface-container-lowest text-on-surface border border-outline-variant" style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;resize:vertical;font-family:inherit;"></textarea></div>
           </div>
           <div class="flex gap-standard mt-standard">
@@ -1381,7 +1416,7 @@ window.GymApp.pages['members-list'] = {
       const name = this.value;
       const pkg = (window.GymApp.data.packages || []).find(p => (p.ten_goi || p.name) === name);
       if (!pkg) return;
-      if (pkg.gia > 0) { document.getElementById('pkg-price').value = pkg.gia; calcDebt(); }
+      if (pkg.gia > 0) { document.getElementById('pkg-price').value = fmtVND(pkg.gia); calcDebt(); }
       const fromVal = document.getElementById('pkg-from').value;
       if (fromVal && (pkg.so_thang || pkg.so_ngay_them)) {
         const from = new Date(fromVal);
@@ -1399,25 +1434,67 @@ window.GymApp.pages['members-list'] = {
       from.setDate(from.getDate() + (pkg.so_ngay_them || 0));
       document.getElementById('pkg-to').value = from.toISOString().split('T')[0];
     });
-    document.getElementById('pkg-price').addEventListener('input', calcDebt);
-    document.getElementById('pkg-discount-code').addEventListener('input', calcDebt);
-    document.getElementById('pkg-paid').addEventListener('input', calcDebt);
+    const fmtVND = n => n > 0 ? new Intl.NumberFormat('vi-VN').format(n) : '';
+    const parseVND = s => parseInt((s || '').replace(/\./g, '').replace(/,/g, '')) || 0;
+
     function calcDebt() {
-      const price = parseFloat(document.getElementById('pkg-price').value) || 0;
+      const price = parseVND(document.getElementById('pkg-price').value);
       const discountCode = document.getElementById('pkg-discount-code').value.trim().toUpperCase();
       const discount = discountCode ? Math.round(price * 0.1) : 0;
       const need = Math.max(0, price - discount);
-      const paid = parseFloat(document.getElementById('pkg-paid').value) || 0;
-      document.getElementById('pkg-need-pay').value = need;
-      document.getElementById('pkg-debt').value = Math.max(0, need - paid);
+      const paid = parseVND(document.getElementById('pkg-paid').value);
+      document.getElementById('pkg-need-pay').value = fmtVND(need);
+      document.getElementById('pkg-debt').value = fmtVND(Math.max(0, need - paid));
     }
+
+    const pkgPriceEl = document.getElementById('pkg-price');
+    const pkgPaidEl = document.getElementById('pkg-paid');
+
+    pkgPriceEl.addEventListener('focus', function () { const v = parseVND(this.value); this.value = v > 0 ? String(v) : ''; });
+    pkgPriceEl.addEventListener('blur', function () { const v = parseVND(this.value); this.value = fmtVND(v); calcDebt(); });
+    pkgPriceEl.addEventListener('input', calcDebt);
+
+    pkgPaidEl.addEventListener('focus', function () { const v = parseVND(this.value); this.value = v > 0 ? String(v) : ''; });
+    pkgPaidEl.addEventListener('blur', function () { const v = parseVND(this.value); this.value = fmtVND(v); calcDebt(); });
+    pkgPaidEl.addEventListener('input', function () {
+      calcDebt();
+      const errEl = document.getElementById('err-pkg-paid-modal');
+      if (errEl) errEl.classList.add('hidden');
+      this.style.borderColor = '';
+    });
+
+    document.getElementById('pkg-discount-code').addEventListener('input', calcDebt);
     document.getElementById('pkg-save-btn').addEventListener('click', async () => {
       const name = document.getElementById('pkg-name').value;
-      const price = parseFloat(document.getElementById('pkg-price').value) || 0;
+      const price = parseVND(document.getElementById('pkg-price').value);
       const from = document.getElementById('pkg-from').value;
       const to = document.getElementById('pkg-to').value;
       const regStatus = document.getElementById('pkg-reg-status').value;
-      if (!name || !price || !from || !to || !regStatus) { window.GymApp.toast('Vui lòng điền đầy đủ các trường bắt buộc (*)', 'error'); return; }
+      const paidVal = document.getElementById('pkg-paid').value.trim();
+      const paidErrEl = document.getElementById('err-pkg-paid-modal');
+      const paidInput = document.getElementById('pkg-paid');
+
+      // Highlight & validate
+      const hlField = (id, bad) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.style.borderColor = bad ? '#ba1a1a' : '';
+      };
+      hlField('pkg-name', !name);
+      hlField('pkg-price', !price);
+      hlField('pkg-from', !from);
+      hlField('pkg-to', !to);
+      hlField('pkg-reg-status', !regStatus);
+      const paidMissing = !paidVal;
+      if (paidMissing) {
+        if (paidErrEl) { paidErrEl.textContent = 'Vui lòng nhập số tiền khách đưa'; paidErrEl.classList.remove('hidden'); }
+        if (paidInput) paidInput.style.borderColor = '#ba1a1a';
+      } else {
+        if (paidErrEl) paidErrEl.classList.add('hidden');
+        if (paidInput) paidInput.style.borderColor = '';
+      }
+
+      if (!name || !price || !from || !to || !regStatus || paidMissing) { window.GymApp.toast('Vui lòng điền đầy đủ các trường bắt buộc (*)', 'error'); return; }
       const pkg = (window.GymApp.data.packages || []).find(p => (p.ten_goi || p.name) === name);
       if (!pkg) { window.GymApp.toast('Gói tập không hợp lệ', 'error'); return; }
       try {
@@ -1433,6 +1510,248 @@ window.GymApp.pages['members-list'] = {
         close();
         if (typeof onSaved === 'function') onSaved();
       } catch (err) { window.GymApp.toast(err.message || 'Lỗi khi lưu gói tập', 'error'); }
+    });
+  },
+
+  // ===== MODAL HỦY GÓI TẬP =====
+  _showCancelPackageModal: function (m, pkg, onSaved) {
+    document.getElementById('gym-sub-modal')?.remove();
+    const iCls = `class="bg-surface-container-lowest text-on-surface border border-outline-variant" style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;"`;
+    const overlay = document.createElement('div');
+    overlay.id = 'gym-sub-modal';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);padding:16px;';
+    overlay.innerHTML = `
+      <div class="modal-card bg-surface-container-lowest" style="border-radius:16px;width:100%;max-width:400px;position:relative;box-shadow:0 30px 80px rgba(0,0,0,0.4);">
+        <div class="border-b border-outline-variant px-loose py-standard flex items-center justify-between">
+          <div>
+            <h3 class="font-bold text-on-surface" style="font-size:16px;margin:0;">Hủy gói tập</h3>
+            <p class="text-on-surface-variant text-body-sm" style="margin:2px 0 0;">Gói: <strong>${pkg.ten_goi}</strong></p>
+          </div>
+          <button id="cancel-pkg-close" style="background:transparent;border:none;cursor:pointer;"><span class="material-symbols-outlined text-on-surface-variant text-xl">close</span></button>
+        </div>
+        <div class="p-loose" style="display:flex;flex-direction:column;gap:14px;">
+          <div class="grid gap-standard">
+            <div>
+              <label class="block text-body-sm font-bold text-on-surface mb-xs">Lý do hủy</label>
+              <input id="cancel-pkg-reason" type="text" placeholder="VD: Đăng ký nhầm, hội viên yêu cầu..." ${iCls} />
+            </div>
+            <div>
+              <label class="block text-body-sm font-bold text-on-surface mb-xs">Hoàn tiền (VNĐ)</label>
+              <input id="cancel-pkg-refund" type="text" inputmode="numeric" placeholder="VD: 500.000" ${iCls} />
+            </div>
+            <div class="rounded-xl border" style="padding:10px 12px;background:#fef2f2;border-color:#fecaca;">
+              <p class="text-body-sm" style="color:#b91c1c;margin:0;">Sau khi hủy, hội viên nhận thông báo trên app. Thao tác không thể hoàn tác.</p>
+            </div>
+          </div>
+          <div class="flex gap-standard">
+            <button id="cancel-pkg-close2" class="flex-1 py-compact rounded-xl border border-outline-variant text-on-surface-variant font-bold hover:bg-surface-container transition-colors text-body-md">Đóng</button>
+            <button id="cancel-pkg-confirm" class="flex-1 py-compact rounded-xl font-bold text-white text-body-md transition-all hover:opacity-90" style="background:#dc2626;border:none;cursor:pointer;">Xác nhận hủy</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    overlay.querySelector('#cancel-pkg-close').addEventListener('click', close);
+    overlay.querySelector('#cancel-pkg-close2').addEventListener('click', close);
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+    const _cParseVND = s => parseInt((s || '').replace(/\./g, '').replace(/,/g, '')) || 0;
+    const _cFmtVND = n => n > 0 ? new Intl.NumberFormat('vi-VN').format(n) : '';
+    const cancelRefundEl = overlay.querySelector('#cancel-pkg-refund');
+    cancelRefundEl?.addEventListener('focus', function () { const v = _cParseVND(this.value); this.value = v > 0 ? String(v) : ''; });
+    cancelRefundEl?.addEventListener('blur', function () { this.value = _cFmtVND(_cParseVND(this.value)); });
+    overlay.querySelector('#cancel-pkg-confirm').addEventListener('click', async () => {
+      const ly_do_huy = overlay.querySelector('#cancel-pkg-reason').value.trim();
+      const so_tien_hoan = _cParseVND(overlay.querySelector('#cancel-pkg-refund').value);
+      try {
+        await window.GymApp.api.patch(`/members/${m.id}/package/${pkg.id}/cancel`, { ly_do_huy, so_tien_hoan });
+        window.GymApp.toast('Đã hủy gói tập thành công!', 'success');
+        close();
+        if (typeof onSaved === 'function') onSaved();
+      } catch (err) { window.GymApp.toast(err.message || 'Lỗi khi hủy gói tập', 'error'); }
+    });
+  },
+
+  // ===== MODAL CHỈNH SỬA GÓI TẬP =====
+  _showEditPackageModal: function (m, pkg, onSaved) {
+    document.getElementById('gym-sub-modal')?.remove();
+    const d0 = s => s ? s.substring(0, 10) : '';
+    const iCls = `class="bg-surface-container-lowest text-on-surface border border-outline-variant" style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;"`;
+    const PM = {tien_mat:'Tiền mặt',chuyen_khoan:'Chuyển khoản',the:'Thẻ',momo:'MoMo',zalopay:'ZaloPay',khac:'Khác'};
+    const overlay = document.createElement('div');
+    overlay.id = 'gym-sub-modal';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);padding:16px;';
+    overlay.innerHTML = `
+      <div class="modal-card bg-surface-container-lowest" style="border-radius:16px;width:100%;max-width:420px;position:relative;box-shadow:0 30px 80px rgba(0,0,0,0.4);">
+        <div class="border-b border-outline-variant px-loose py-standard flex items-center justify-between">
+          <div>
+            <h3 class="font-bold text-on-surface" style="font-size:16px;margin:0;">Chỉnh sửa gói tập</h3>
+            <p class="text-on-surface-variant text-body-sm" style="margin:2px 0 0;">Gói: <strong>${pkg.ten_goi}</strong></p>
+          </div>
+          <button id="edit-pkg-close" style="background:transparent;border:none;cursor:pointer;"><span class="material-symbols-outlined text-on-surface-variant text-xl">close</span></button>
+        </div>
+        <div class="p-loose" style="display:flex;flex-direction:column;gap:14px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+              <label class="block text-body-sm font-bold text-on-surface mb-xs">Từ ngày</label>
+              <input id="edit-pkg-from" type="date" value="${d0(pkg.tu_ngay)}" ${iCls} />
+            </div>
+            <div>
+              <label class="block text-body-sm font-bold text-on-surface mb-xs">Đến ngày</label>
+              <input id="edit-pkg-to" type="date" value="${d0(pkg.den_ngay)}" ${iCls} />
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+              <label class="block text-body-sm font-bold text-on-surface mb-xs">Giá thực tế (VNĐ)</label>
+              <input id="edit-pkg-price" type="text" inputmode="numeric" value="${pkg.gia_thuc_te > 0 ? new Intl.NumberFormat('vi-VN').format(pkg.gia_thuc_te) : ''}" placeholder="Không đổi" ${iCls} />
+            </div>
+            <div>
+              <label class="block text-body-sm font-bold text-on-surface mb-xs">Phương thức TT</label>
+              <select id="edit-pkg-payment" ${iCls}>
+                ${Object.entries(PM).map(([v,l]) => `<option value="${v}" ${pkg.phuong_thuc_tt === v ? 'selected' : ''}>${l}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="block text-body-sm font-bold text-on-surface mb-xs">Ghi chú thanh toán</label>
+            <input id="edit-pkg-note" type="text" value="${pkg.ghi_chu_tt || ''}" placeholder="Ghi chú thêm..." ${iCls} />
+          </div>
+          <div class="flex gap-standard">
+            <button id="edit-pkg-close2" class="flex-1 py-compact rounded-xl border border-outline-variant text-on-surface-variant font-bold hover:bg-surface-container transition-colors text-body-md">Đóng</button>
+            <button id="edit-pkg-save" class="flex-1 py-compact rounded-xl font-bold text-white text-body-md transition-all hover:opacity-90" style="background:#1d4ed8;border:none;cursor:pointer;">Lưu thay đổi</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    overlay.querySelector('#edit-pkg-close').addEventListener('click', close);
+    overlay.querySelector('#edit-pkg-close2').addEventListener('click', close);
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+    const _parseVND = s => parseInt((s || '').replace(/\./g, '').replace(/,/g, '')) || 0;
+    const _fmtVND = n => n > 0 ? new Intl.NumberFormat('vi-VN').format(n) : '';
+    const editPriceEl = overlay.querySelector('#edit-pkg-price');
+    editPriceEl?.addEventListener('focus', function () { const v = _parseVND(this.value); this.value = v > 0 ? String(v) : ''; });
+    editPriceEl?.addEventListener('blur', function () { const v = _parseVND(this.value); this.value = _fmtVND(v); });
+    overlay.querySelector('#edit-pkg-save').addEventListener('click', async () => {
+      const tu_ngay = overlay.querySelector('#edit-pkg-from').value;
+      const den_ngay = overlay.querySelector('#edit-pkg-to').value;
+      if (tu_ngay && den_ngay && den_ngay <= tu_ngay)
+        return window.GymApp.toast('Ngày kết thúc phải sau ngày bắt đầu', 'error');
+      try {
+        await window.GymApp.api.patch(`/members/${m.id}/package/${pkg.id}`, {
+          tu_ngay: tu_ngay || undefined,
+          den_ngay: den_ngay || undefined,
+          gia_thuc_te: _parseVND(overlay.querySelector('#edit-pkg-price').value) || undefined,
+          phuong_thuc_tt: overlay.querySelector('#edit-pkg-payment').value || undefined,
+          ghi_chu_tt: overlay.querySelector('#edit-pkg-note').value.trim() || undefined,
+        });
+        window.GymApp.toast('Cập nhật gói tập thành công!', 'success');
+        close();
+        if (typeof onSaved === 'function') onSaved();
+      } catch (err) { window.GymApp.toast(err.message || 'Lỗi khi cập nhật gói tập', 'error'); }
+    });
+  },
+
+  // ===== MODAL ĐỔI GÓI TẬP =====
+  _showSwitchPackageModal: async function (m, pkg, onSaved) {
+    document.getElementById('gym-sub-modal')?.remove();
+    let goiTapList = [];
+    try {
+      const res = await window.GymApp.api.get('/packages');
+      goiTapList = (res.data || []).filter(g => !g.is_deleted && g.id !== pkg.goi_tap_id);
+    } catch (_) {}
+    const iCls = `class="bg-surface-container-lowest text-on-surface border border-outline-variant" style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;"`;
+    const PM = {tien_mat:'Tiền mặt',chuyen_khoan:'Chuyển khoản',the:'Thẻ',momo:'MoMo',zalopay:'ZaloPay',khac:'Khác'};
+    const overlay = document.createElement('div');
+    overlay.id = 'gym-sub-modal';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);padding:16px;';
+    overlay.innerHTML = `
+      <div class="modal-card bg-surface-container-lowest" style="border-radius:16px;width:100%;max-width:440px;position:relative;box-shadow:0 30px 80px rgba(0,0,0,0.4);">
+        <div class="border-b border-outline-variant px-loose py-standard flex items-center justify-between">
+          <div>
+            <h3 class="font-bold text-on-surface" style="font-size:16px;margin:0;">Đổi gói tập</h3>
+            <p class="text-on-surface-variant text-body-sm" style="margin:2px 0 0;">Đang hủy: <strong>${pkg.ten_goi}</strong></p>
+          </div>
+          <button id="switch-pkg-close" style="background:transparent;border:none;cursor:pointer;"><span class="material-symbols-outlined text-on-surface-variant text-xl">close</span></button>
+        </div>
+        <div class="p-loose" style="display:flex;flex-direction:column;gap:14px;">
+          <div>
+            <label class="block text-body-sm font-bold text-on-surface mb-xs">Gói tập mới <span style="color:#ba1a1a;">*</span></label>
+            <select id="switch-pkg-new" ${iCls}>
+              <option value="">— Chọn gói tập —</option>
+              ${goiTapList.map(g => `<option value="${g.id}" data-gia="${g.gia}">${g.ten_goi} — ${window.GymApp.formatCurrency(g.gia)}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label class="block text-body-sm font-bold text-on-surface mb-xs">Ngày bắt đầu <span style="color:#ba1a1a;">*</span></label>
+            <input id="switch-pkg-from" type="date" value="${new Date().toISOString().substring(0,10)}" ${iCls} />
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+              <label class="block text-body-sm font-bold text-on-surface mb-xs">Giá thực tế (VNĐ)</label>
+              <input id="switch-pkg-price" type="text" inputmode="numeric" placeholder="Mặc định = giá gói" ${iCls} />
+            </div>
+            <div>
+              <label class="block text-body-sm font-bold text-on-surface mb-xs">Phương thức TT</label>
+              <select id="switch-pkg-payment" ${iCls}>
+                ${Object.entries(PM).map(([v,l]) => `<option value="${v}">${l}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label class="block text-body-sm font-bold text-on-surface mb-xs">Hoàn tiền gói cũ (VNĐ)</label>
+              <input id="switch-pkg-refund" type="text" inputmode="numeric" placeholder="0" ${iCls} />
+            </div>
+            <div>
+              <label class="block text-body-sm font-bold text-on-surface mb-xs">Lý do đổi</label>
+              <input id="switch-pkg-reason" type="text" placeholder="Nâng cấp, sai gói..." ${iCls} />
+            </div>
+          </div>
+          <div class="rounded-xl" style="padding:10px 12px;background:#f0fdf4;border:1px solid #bbf7d0;">
+            <p class="text-body-sm" style="color:#166534;margin:0;">Gói cũ bị hủy và gói mới kích hoạt ngay. Hội viên nhận thông báo.</p>
+          </div>
+          </div>
+          <div class="flex gap-standard mt-standard">
+            <button id="switch-pkg-close2" class="flex-1 py-compact rounded-xl border border-outline-variant text-on-surface-variant font-bold hover:bg-surface-container transition-colors text-body-md">Đóng</button>
+            <button id="switch-pkg-confirm" class="flex-1 py-compact rounded-xl font-bold text-white text-body-md transition-all hover:opacity-90" style="background:#1D9336;border:none;cursor:pointer;">Xác nhận đổi gói</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    overlay.querySelector('#switch-pkg-close').addEventListener('click', close);
+    overlay.querySelector('#switch-pkg-close2').addEventListener('click', close);
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+    const _pVND = s => parseInt((s || '').replace(/\./g, '').replace(/,/g, '')) || 0;
+    const _fVND = n => n > 0 ? new Intl.NumberFormat('vi-VN').format(n) : '';
+    const swPriceEl = overlay.querySelector('#switch-pkg-price');
+    const swRefundEl = overlay.querySelector('#switch-pkg-refund');
+    swPriceEl?.addEventListener('focus', function () { const v = _pVND(this.value); this.value = v > 0 ? String(v) : ''; });
+    swPriceEl?.addEventListener('blur', function () { this.value = _fVND(_pVND(this.value)); });
+    swRefundEl?.addEventListener('focus', function () { const v = _pVND(this.value); this.value = v > 0 ? String(v) : ''; });
+    swRefundEl?.addEventListener('blur', function () { this.value = _fVND(_pVND(this.value)); });
+    overlay.querySelector('#switch-pkg-new')?.addEventListener('change', function () {
+      const gia = parseFloat(this.options[this.selectedIndex]?.dataset?.gia) || 0;
+      if (gia > 0 && swPriceEl) swPriceEl.value = _fVND(gia);
+    });
+    overlay.querySelector('#switch-pkg-confirm').addEventListener('click', async () => {
+      const goi_tap_id_moi = overlay.querySelector('#switch-pkg-new').value;
+      const tu_ngay = overlay.querySelector('#switch-pkg-from').value;
+      if (!goi_tap_id_moi) return window.GymApp.toast('Vui lòng chọn gói tập mới', 'error');
+      if (!tu_ngay) return window.GymApp.toast('Vui lòng chọn ngày bắt đầu', 'error');
+      try {
+        await window.GymApp.api.post(`/members/${m.id}/package/switch`, {
+          pkg_id_cu: pkg.id,
+          goi_tap_id_moi: parseInt(goi_tap_id_moi),
+          tu_ngay,
+          ly_do_huy: overlay.querySelector('#switch-pkg-reason').value.trim() || 'Đổi sang gói mới',
+          so_tien_hoan: _pVND(overlay.querySelector('#switch-pkg-refund').value) || 0,
+          gia_thuc_te: _pVND(overlay.querySelector('#switch-pkg-price').value) || undefined,
+          phuong_thuc_tt: overlay.querySelector('#switch-pkg-payment').value,
+        });
+        window.GymApp.toast('Đổi gói tập thành công!', 'success');
+        close();
+        if (typeof onSaved === 'function') onSaved();
+      } catch (err) { window.GymApp.toast(err.message || 'Lỗi khi đổi gói tập', 'error'); }
     });
   },
 

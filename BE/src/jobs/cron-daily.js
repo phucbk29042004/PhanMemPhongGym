@@ -6,7 +6,7 @@
 
 import cron from 'node-cron';
 import db from '../config/db.js';
-import { createNotification } from '../utils/notifications.js';
+import { createNotification, createUserNotification } from '../utils/notifications.js';
 
 // ── Cron 08:00 sáng mỗi ngày ─────────────────────────────
 function runDailyJob() {
@@ -106,19 +106,44 @@ function runDailyJob() {
   }
   if (hetHanGoiPtThang.length > 0) console.log(`[CRON-DAILY] Đã tạo ${hetHanGoiPtThang.length} thông báo gói PT theo tháng hết hạn.`);
 
-  // 5. Tổng hợp buổi sáng — sinh 1 thông báo duy nhất
+  // 5. Chúc mừng sinh nhật tự động
+  const sinhNhatHomNay = db.prepare(`
+    SELECT id, ho_ten FROM ho_so
+    WHERE loai_ho_so = 'hoi_vien' AND is_deleted = 0
+      AND strftime('%m-%d', ngay_sinh) = strftime('%m-%d', 'now', 'localtime')
+  `).all();
+
+  for (const hv of sinhNhatHomNay) {
+    createUserNotification(
+      hv.id,
+      '🎂 Chúc mừng sinh nhật!',
+      `Chúc mừng sinh nhật ${hv.ho_ten}! Paradise GYM chúc bạn một ngày thật vui vẻ và tràn đầy năng lượng! 🎉`,
+      'sinh_nhat'
+    );
+  }
+  if (sinhNhatHomNay.length > 0) {
+    createNotification(
+      'sinh_nhat',
+      `🎂 Sinh nhật hôm nay — ${sinhNhatHomNay.length} hội viên`,
+      `Hôm nay có ${sinhNhatHomNay.length} hội viên sinh nhật: ${sinhNhatHomNay.map(hv => hv.ho_ten).join(', ')}. Hệ thống đã tự động gửi lời chúc.`,
+      null, null, 'ca_hai'
+    );
+    console.log(`[CRON-DAILY] Đã gửi lời chúc sinh nhật tự động cho ${sinhNhatHomNay.length} hội viên.`);
+  }
+
+  // 7. Tổng hợp buổi sáng — sinh 1 thông báo duy nhất
   const ngayHienTai = new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
   createNotification(
     'tom_tat_buoi_sang',
     `Tổng hợp buổi sáng ${ngayHienTai}`,
-    `Sắp hết hạn gói tập: ${sapHetHan.length} hội viên | Hết hạn hôm nay: ${hetHan.length} | Sắp hết buổi PT: ${sapHetBuoi.length}`,
+    `Sắp hết hạn gói tập: ${sapHetHan.length} HV | Hết hạn hôm nay: ${hetHan.length} | Sắp hết buổi PT: ${sapHetBuoi.length} | Sinh nhật hôm nay: ${sinhNhatHomNay.length}`,
     null,
     null,
     'ca_hai'
   );
   console.log(`[CRON-DAILY] Đã tạo 1 thông báo tổng hợp buổi sáng.`);
 
-  // 6. Xóa thông báo cũ hơn 30 ngày
+  // 8. Xóa thông báo cũ hơn 30 ngày
   const deleted = db.prepare(`
     DELETE FROM thong_bao
     WHERE ngay_tao < datetime('now','localtime','-30 days')

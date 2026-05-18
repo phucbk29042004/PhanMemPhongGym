@@ -107,15 +107,17 @@
 
     <!-- ===== SIDEBAR ===== -->
     <aside id="sidebar"
-      class="flex flex-col h-full bg-surface-container-low border-r border-outline-variant w-64 flex-shrink-0"
-      style="box-shadow:2px 0 12px rgba(0,0,0,0.06)">
+      class="flex flex-col h-full w-64 flex-shrink-0"
+      style="background:linear-gradient(180deg,#f0fdf4 0%,#dcfce7 100%);border-right:1px solid #bbf7d0;box-shadow:2px 0 12px rgba(0,0,0,0.07)">
 
       <!-- Toggle + Logo -->
       <div
-        class="sidebar-toggle-area sidebar-logo-area flex items-center border-b border-outline-variant px-compact py-standard gap-compact flex-shrink-0">
-        <button id="sidebar-toggle" class="p-atom rounded-xl hover:bg-surface-container transition-colors flex-shrink-0"
+        class="sidebar-toggle-area sidebar-logo-area flex items-center px-compact py-standard gap-compact flex-shrink-0"
+        style="border-bottom:1px solid #bbf7d0">
+        <button id="sidebar-toggle" class="p-atom rounded-xl transition-colors flex-shrink-0"
+          style="color:#166534" onmouseover="this.style.background='#bbf7d0'" onmouseout="this.style.background=''"
           title="Thu gọn / Mở rộng">
-          <span class="material-symbols-outlined text-on-surface-variant text-xl">menu</span>
+          <span class="material-symbols-outlined text-xl">menu</span>
         </button>
         <div class="sidebar-label flex items-center gap-compact overflow-hidden flex-1">
           <div class="w-8 h-8 bg-brand-primary rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
@@ -123,9 +125,9 @@
               style="font-size:16px;font-variation-settings:'FILL' 1,'wght' 500">fitness_center</span>
           </div>
           <div class="min-w-0">
-            <h1 class="font-display-xl text-display-xl text-brand-primary font-bold leading-tight whitespace-nowrap">
+            <h1 class="font-display-xl text-display-xl font-bold leading-tight whitespace-nowrap" style="color:#14532d">
               Paradise GYM</h1>
-            <p class="text-on-surface-variant font-body-sm text-body-sm" style="font-size:10px">Quản lý phòng tập</p>
+            <p class="font-body-sm text-body-sm" style="font-size:10px;color:#16a34a">Quản lý phòng tập</p>
           </div>
         </div>
       </div>
@@ -135,7 +137,7 @@
 
         <!-- Tổng quan -->
         <button
-          class="nav-item flex items-center gap-standard w-full px-standard py-compact rounded-xl text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150"
+          class="nav-item flex items-center gap-standard w-full px-standard py-compact rounded-xl transition-all duration-150" style="color:#166534" onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}" onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
           data-page="dashboard" title="Tổng quan">
           <span class="material-symbols-outlined text-xl flex-shrink-0">dashboard</span>
           <span class="sidebar-label font-body-md text-body-md font-medium">Tổng quan</span>
@@ -144,7 +146,7 @@
         <!-- Quản lý hội viên (Accordion) -->
         <div class="accordion-group">
           <button
-            class="accordion-trigger flex items-center gap-standard w-full px-standard py-compact rounded-xl text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150"
+            class="accordion-trigger flex items-center gap-standard w-full px-standard py-compact rounded-xl transition-all duration-150" style="color:#166534" onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}" onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
             data-accordion="hoi-vien" title="Quản lý hội viên">
             <span class="material-symbols-outlined text-xl flex-shrink-0">manage_accounts</span>
             <span class="sidebar-label font-body-md text-body-md font-medium flex-1 text-left">Quản lý</span>
@@ -157,49 +159,49 @@
             <div class="pl-6 py-atom space-y-atom">
 
               <button
-                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150"
+                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm transition-all duration-150" style="color:#166534" onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}" onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
                 data-page="members-list" title="Danh sách hội viên">
                 <span class="material-symbols-outlined text-sm flex-shrink-0">people</span>
                 <span class="sidebar-label">Danh sách hội viên</span>
               </button>
 
               <button
-                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150"
+                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm transition-all duration-150" style="color:#166534" onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}" onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
                 data-page="member-add" title="Thêm mới hội viên">
                 <span class="material-symbols-outlined text-sm flex-shrink-0">person_add</span>
                 <span class="sidebar-label">Thêm hội viên mới</span>
               </button>
 
               <button
-                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150"
+                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm transition-all duration-150" style="color:#166534" onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}" onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
                 data-page="checkin" title="Vào - Ra">
                 <span class="material-symbols-outlined text-sm flex-shrink-0">how_to_reg</span>
                 <span class="sidebar-label">Check-in / Ra</span>
               </button>
 
               <button
-                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150"
+                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm transition-all duration-150" style="color:#166534" onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}" onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
                 data-page="revenue" title="Doanh thu">
                 <span class="material-symbols-outlined text-sm flex-shrink-0">payments</span>
                 <span class="sidebar-label">Doanh thu</span>
               </button>
 
               <button
-                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150"
+                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm transition-all duration-150" style="color:#166534" onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}" onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
                 data-page="expired" title="Danh sách hết hạn">
                 <span class="material-symbols-outlined text-sm flex-shrink-0">event_busy</span>
                 <span class="sidebar-label">Hết hạn / Sắp hết hạn</span>
               </button>
 
               <button
-                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150"
+                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm transition-all duration-150" style="color:#166534" onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}" onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
                 data-page="pt-training" title="Lịch đào tạo PT">
                 <span class="material-symbols-outlined text-sm flex-shrink-0">sports_gymnastics</span>
                 <span class="sidebar-label">Lịch đào tạo PT</span>
               </button>
 
               <button
-                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150"
+                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm transition-all duration-150" style="color:#166534" onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}" onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
                 data-page="pt-register" title="Đăng ký lịch tập PT">
                 <span class="material-symbols-outlined text-sm flex-shrink-0">edit_calendar</span>
                 <span class="sidebar-label">Đặt lịch PT</span>
@@ -207,14 +209,14 @@
 
 
               <button
-                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150"
+                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm transition-all duration-150" style="color:#166534" onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}" onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
                 data-page="packages" title="Gói tập">
                 <span class="material-symbols-outlined text-sm flex-shrink-0">card_membership</span>
                 <span class="sidebar-label">Gói tập</span>
               </button>
 
               <button
-                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container transition-all duration-150"
+                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm transition-all duration-150" style="color:#166534" onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}" onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
                 data-page="birthday" title="Sinh nhật">
                 <span class="material-symbols-outlined text-sm flex-shrink-0">cake</span>
                 <span class="sidebar-label">Sinh nhật hội viên</span>
@@ -227,9 +229,12 @@
       </nav>
 
       <!-- Đăng xuất -->
-      <div class="border-t border-outline-variant px-compact py-standard flex-shrink-0">
+      <div class="px-compact py-standard flex-shrink-0" style="border-top:1px solid #bbf7d0">
         <button id="btn-logout"
-          class="flex items-center gap-standard w-full px-standard py-compact rounded-xl text-on-surface-variant hover:text-error hover:bg-error-container transition-all duration-150"
+          class="flex items-center gap-standard w-full px-standard py-compact rounded-xl transition-all duration-150"
+          style="color:#dc2626"
+          onmouseover="this.style.background='#fee2e2'"
+          onmouseout="this.style.background=''"
           title="Đăng xuất">
           <span class="material-symbols-outlined text-xl flex-shrink-0">logout</span>
           <span class="sidebar-label font-body-md text-body-md">Đăng xuất</span>

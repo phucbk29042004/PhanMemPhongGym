@@ -72,6 +72,14 @@ export const createSchedule = (req, res) => {
 
   if (!dkpt) return error(res, 'Đăng ký PT không tồn tại hoặc đã kết thúc.', 404);
 
+  // PT chỉ đặt lịch cho học viên của mình
+  if (req.user.vai_tro === 'pt') {
+    const hoSoPt = db.prepare('SELECT id FROM ho_so WHERE tai_khoan_id = ?').get(req.user.id);
+    if (!hoSoPt || dkpt.pt_id !== hoSoPt.id) {
+      return error(res, 'Bạn chỉ có thể đặt lịch cho học viên của chính mình.', 403);
+    }
+  }
+
   // Kiểm tra PT có lịch bị trùng không
   const conflict = db.prepare(`
     SELECT id FROM lich_tap
@@ -124,6 +132,14 @@ export const cancelSchedule = (req, res) => {
   if (!schedule) return error(res, 'Không tìm thấy lịch tập.', 404);
   if (schedule.trang_thai === 'da_tap') return error(res, 'Không thể hủy buổi đã tập.', 400);
   if (schedule.trang_thai === 'da_huy') return error(res, 'Buổi tập đã bị hủy rồi.', 400);
+
+  // PT chỉ hủy lịch của chính mình
+  if (req.user.vai_tro === 'pt') {
+    const hoSoPt = db.prepare('SELECT id FROM ho_so WHERE tai_khoan_id = ?').get(req.user.id);
+    if (!hoSoPt || schedule.pt_id !== hoSoPt.id) {
+      return error(res, 'Bạn chỉ có thể hủy lịch tập do chính mình phụ trách.', 403);
+    }
+  }
 
   db.prepare(`
     UPDATE lich_tap SET trang_thai = 'da_huy', ly_do_huy = ?, nguoi_huy_id = ? WHERE id = ?
@@ -230,6 +246,14 @@ export const updateSchedule = (req, res) => {
   if (!schedule) return error(res, 'Không tìm thấy lịch tập.', 404);
   if (schedule.trang_thai !== 'cho_tap') return error(res, 'Chỉ có thể sửa lịch đang ở trạng thái "cho_tap".', 400);
 
+  // PT chỉ sửa lịch của chính mình
+  if (req.user.vai_tro === 'pt') {
+    const hoSoPt = db.prepare('SELECT id FROM ho_so WHERE tai_khoan_id = ?').get(req.user.id);
+    if (!hoSoPt || schedule.pt_id !== hoSoPt.id) {
+      return error(res, 'Bạn chỉ có thể sửa lịch tập do chính mình phụ trách.', 403);
+    }
+  }
+
   db.prepare(`
     UPDATE lich_tap SET
       ngay_tap = COALESCE(?, ngay_tap),
@@ -265,4 +289,57 @@ export const updateSchedule = (req, res) => {
   }
 
   return success(res, db.prepare('SELECT * FROM lich_tap WHERE id = ?').get(id), 'Cập nhật lịch thành công');
+};
+
+// ── PATCH /api/pt/schedules/:id/note ─────────────────────
+// Cập nhật ghi chú buổi tập — cho phép cả hội viên lẫn PT
+export const updateNote = (req, res) => {
+  const { id } = req.params;
+  const { ghi_chu } = req.body;
+  if (ghi_chu === undefined) return error(res, 'Thiếu trường ghi_chu.', 400);
+
+  const schedule = db.prepare(`
+    SELECT lt.id, lt.hoi_vien_id, lt.pt_id, lt.trang_thai
+    FROM lich_tap lt WHERE lt.id = ?
+  `).get(id);
+  if (!schedule) return error(res, 'Không tìm thấy lịch tập.', 404);
+
+  // Chỉ hội viên chủ sở hữu hoặc PT phụ trách mới được ghi chú
+  const u = req.user;
+  const isOwner = u.vai_tro === 'hoi_vien' && u.vai_tro_id === schedule.hoi_vien_id;
+  const isPT    = u.vai_tro === 'pt'        && u.vai_tro_id === schedule.pt_id;
+  const isStaff = u.vai_tro === 'admin'     || u.vai_tro === 'le_tan';
+  if (!isOwner && !isPT && !isStaff) return error(res, 'Không có quyền cập nhật ghi chú.', 403);
+
+  db.prepare(`UPDATE lich_tap SET ghi_chu = ? WHERE id = ?`).run(ghi_chu || null, id);
+
+  return success(res, { id: parseInt(id), ghi_chu: ghi_chu || null }, 'Đã lưu ghi chú');
+};
+
+// ── GET /api/pt/my-members ────────────────────────────────
+// PT xem danh sách học viên của mình (có đăng ký PT đang HĐ)
+export const getMyMembers = (req, res) => {
+  const hoSo = db.prepare('SELECT id FROM ho_so WHERE tai_khoan_id = ?').get(req.user.id);
+  if (!hoSo) return error(res, 'Không tìm thấy hồ sơ PT.', 404);
+
+  const rows = db.prepare(`
+    SELECT
+      dp.id AS dang_ky_id,
+      dp.tu_ngay, dp.den_ngay, dp.so_buoi_dang_ky, dp.so_buoi_da_tap,
+      dp.so_buoi_dang_ky - dp.so_buoi_da_tap AS buoi_con_lai,
+      dp.trang_thai AS trang_thai_dk,
+      hv.id AS hoi_vien_id, hv.ma_ho_so, hv.ho_ten, hv.so_dien_thoai,
+      hv.gioi_tinh, hv.anh_dai_dien,
+      gpt.ten_goi AS ten_goi_pt,
+      (SELECT lt.ngay_tap FROM lich_tap lt
+       WHERE lt.dang_ky_pt_id = dp.id AND lt.trang_thai = 'cho_tap'
+       ORDER BY lt.ngay_tap ASC LIMIT 1) AS buoi_tap_sap_toi
+    FROM dang_ky_pt dp
+    JOIN ho_so hv ON hv.id = dp.hoi_vien_id
+    LEFT JOIN goi_pt gpt ON gpt.id = dp.goi_pt_id
+    WHERE dp.pt_id = ? AND dp.trang_thai = 'dang_hoat_dong' AND hv.is_deleted = 0
+    ORDER BY hv.ho_ten ASC
+  `).all(hoSo.id);
+
+  return success(res, rows);
 };

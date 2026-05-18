@@ -6,6 +6,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import LoginScreen from '../screens/auth/LoginScreen';
 import MemberNavigator from './MemberNavigator';
 import PTNavigator from './PTNavigator';
+import AdminNavigator from './AdminNavigator';
 
 const Stack = createNativeStackNavigator();
 
@@ -28,6 +29,8 @@ export default function RootNavigator() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {token == null ? (
         <Stack.Screen name="Login" component={LoginScreen} />
+      ) : role === 'admin' ? (
+        <Stack.Screen name="AdminApp" component={AdminNavigator} />
       ) : role === 'pt' ? (
         <Stack.Screen name="PTApp" component={PTNavigator} />
       ) : (

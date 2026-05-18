@@ -9,7 +9,7 @@
   --bg-surface-highest: #e0e3e8;
   --text-on-surface: #181c20;
   --text-on-surface-variant: #3f4a3c;
-  --outline-variant: #becab9;
+  --outline-variant: #93b894;
 }
 
 html.dark {
@@ -22,7 +22,7 @@ html.dark {
   --bg-surface-highest: #282e37;
   --text-on-surface: #dde1e7;
   --text-on-surface-variant: #a8b5a5;
-  --outline-variant: #393f46;
+  --outline-variant: #4a6b4c;
 }
 
 .material-symbols-outlined {
@@ -99,7 +99,8 @@ html.dark {
 
 /* ===== NAV ACTIVE STATE ===== */
 .nav-active {
-  background-color: #e7f5e9 !important;
+  background-color: #1D9336 !important;
+  color: #ffffff !important;
 }
 
 /* ===== ACCORDION ===== */
@@ -721,15 +722,15 @@ html.dark .icon-bg-blue {
 
 /* ===== ENHANCED NAV ACTIVE STATE ===== */
 .nav-active {
-  background-color: #e7f5e9 !important;
-  color: #1D9336 !important;
-  border-left: 3px solid #1D9336 !important;
+  background-color: #1D9336 !important;
+  color: #ffffff !important;
+  border-left: 3px solid #14532d !important;
 }
 
 html.dark .nav-active {
-  background-color: #0e2a14 !important;
-  color: #4cce5f !important;
-  border-left-color: #4cce5f !important;
+  background-color: #166534 !important;
+  color: #ffffff !important;
+  border-left-color: #4ade80 !important;
 }
 
 /* ===== SECTION HEADER GRADIENT ===== */
@@ -965,4 +966,148 @@ html.dark .air-datepicker {
 
 html.dark .air-datepicker-cell.-selected- {
   box-shadow: 0 4px 10px rgba(76, 206, 95, 0.3) !important;
+}
+/* ===== DARK MODE — INLINE STYLE OVERRIDES ===== */
+/* Override hardcoded white/light backgrounds inside JS-rendered cards & modals */
+
+/* Member card gradient background */
+html.dark [style*="background:linear-gradient(135deg,#f0fdf4"],
+html.dark [style*="background: linear-gradient(135deg, #f0fdf4"],
+html.dark [style*="background:linear-gradient(135deg,#f7fef9"],
+html.dark [style*="background:linear-gradient(135deg,#ffffff"] {
+  background: #1c2028 !important;
+  border-color: #4a6b4c !important;
+}
+
+/* Member card inner info cells (#dcfce7 green tint) */
+html.dark [style*="background:#dcfce7"],
+html.dark [style*="background: #dcfce7"] {
+  background: #0e2a14 !important;
+  border-color: #4a6b4c !important;
+  color: #a8b5a5 !important;
+}
+
+/* Member card avatar wrapper */
+html.dark [style*="border-color:#86efac"] {
+  border-color: #4ade80 !important;
+}
+
+/* Member card action buttons (view/edit green bg) */
+html.dark [style*="background:#dcfce7"][style*="color:#166534"],
+html.dark [style*="background:#dcfce7"][style*="color:#14532d"] {
+  background: #0e2a14 !important;
+  color: #4ade80 !important;
+}
+
+/* Delete button */
+html.dark [style*="background:#fee2e2"][style*="color:#991b1b"] {
+  background: #2c0b0b !important;
+  color: #f87171 !important;
+}
+
+/* Modal / detail panel white backgrounds */
+html.dark [style*="background:#fff;"],
+html.dark [style*="background:#fff "],
+html.dark [style*="background: #fff;"],
+html.dark [style*="background:#ffffff"] {
+  background: #1c2028 !important;
+}
+
+/* Light gray backgrounds used in modal sections */
+html.dark [style*="background:#f8fafc"],
+html.dark [style*="background:#f1f5f9"],
+html.dark [style*="background:#f9fafb"] {
+  background: #141720 !important;
+}
+
+/* White card rows in package/schedule list inside modals */
+html.dark [style*="border:1px solid #e2e8f0"],
+html.dark [style*="border: 1px solid #e2e8f0"] {
+  border-color: #4a6b4c !important;
+  background: #1c2028 !important;
+}
+html.dark [style*="background:#fff;border:1px solid #e2e8f0"],
+html.dark [style*="background: #fff; border: 1px solid #e2e8f0"] {
+  background: #1c2028 !important;
+  border-color: #4a6b4c !important;
+}
+
+/* Dashed empty-state borders */
+html.dark [style*="border:1px dashed #cbd5e1"],
+html.dark [style*="border: 1px dashed #cbd5e1"] {
+  border-color: #4a6b4c !important;
+  background: #141720 !important;
+}
+
+/* Dividers */
+html.dark [style*="background:#e2e8f0"],
+html.dark [style*="background: #e2e8f0"] {
+  background: #393f46 !important;
+}
+
+/* Tag chips: green bg */
+html.dark [style*="background:#e7f5e9"][style*="color:#1D9336"] {
+  background: #0e2a14 !important;
+  color: #4ade80 !important;
+}
+/* Tag chips: orange bg */
+html.dark [style*="background:#fff3e0"][style*="color:#e65100"] {
+  background: #1f1200 !important;
+  color: #fb923c !important;
+}
+/* Tag chips: yellow bg */
+html.dark [style*="background:#fef9c3"][style*="color:#a16207"] {
+  background: #1a1200 !important;
+  color: #fbbf24 !important;
+}
+/* Status: red */
+html.dark [style*="background:#fef2f2"],
+html.dark [style*="background: #fef2f2"] {
+  background: #200a0a !important;
+  border-color: #7f1d1d !important;
+  color: #f87171 !important;
+}
+/* Status: blue */
+html.dark [style*="background:#eff6ff"],
+html.dark [style*="background: #eff6ff"] {
+  background: #0a1020 !important;
+  border-color: #1e3a5f !important;
+  color: #93c5fd !important;
+}
+
+/* Member card name color override */
+html.dark [style*="color:#14532d"] {
+  color: #bbf7d0 !important;
+}
+html.dark [style*="color:#166534"] {
+  color: #86efac !important;
+}
+
+/* Package card dark gradient in modal */
+html.dark [style*="background:linear-gradient(135deg,#14532d"],
+html.dark [style*="background:linear-gradient(135deg,#1a5e2a"] {
+  background: linear-gradient(135deg, #0a1a0f 0%, #14532d 100%) !important;
+}
+
+/* Sidebar sage green — override in dark mode */
+html.dark #sidebar {
+  background: linear-gradient(180deg, #141720 0%, #0f1218 100%) !important;
+  border-right-color: #4a6b4c !important;
+}
+html.dark #sidebar [style*="border-bottom:1px solid #bbf7d0"],
+html.dark #sidebar [style*="border-bottom: 1px solid #bbf7d0"] {
+  border-bottom-color: #4a6b4c !important;
+}
+html.dark #sidebar [style*="color:#166534"],
+html.dark #sidebar [style*="color: #166534"] {
+  color: rgba(255,255,255,0.75) !important;
+}
+html.dark #sidebar [style*="color:#14532d"] {
+  color: #e2e8f0 !important;
+}
+html.dark #sidebar h1[style*="color:#14532d"] {
+  color: #ffffff !important;
+}
+html.dark #sidebar p[style*="color:#16a34a"] {
+  color: rgba(255,255,255,0.5) !important;
 }

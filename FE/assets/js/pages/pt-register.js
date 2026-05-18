@@ -244,10 +244,14 @@ window.GymApp.pages['pt-register'] = {
             ${b.loai_buoi === 'nhom' ? 'Nhóm' : 'Cá nhân'}
           </span>
         </div>
-        ${b.notes ? `<p class="text-on-surface-variant text-body-sm italic break-words">"${b.notes}"</p>` : ''}
+        ${b.ghi_chu ? `<p class="text-on-surface-variant text-body-sm italic break-words">"${b.ghi_chu}"</p>` : ''}
         <div class="flex items-center justify-end gap-atom pt-xs border-t border-outline-variant">
-          <button class="material-symbols-outlined text-outline hover:text-brand-primary text-xl p-atom rounded-lg hover:bg-surface-container transition-colors" title="Sửa">edit</button>
-          <button class="btn-cancel-booking material-symbols-outlined text-outline hover:text-error text-xl p-atom rounded-lg hover:bg-error-container transition-colors" data-id="${b.id}" title="Hủy">event_busy</button>
+          ${b.trang_thai === 'cho_tap' ? `
+            <button class="btn-edit-booking material-symbols-outlined text-outline hover:text-brand-primary text-xl p-atom rounded-lg hover:bg-surface-container transition-colors"
+              data-id="${b.id}" data-ngay="${b.ngay_tap}" data-start="${b.gio_bat_dau}" data-end="${b.gio_ket_thuc}" data-ghi-chu="${b.ghi_chu || ''}" title="Sửa lịch">edit</button>
+            <button class="btn-cancel-booking material-symbols-outlined text-outline hover:text-error text-xl p-atom rounded-lg hover:bg-error-container transition-colors"
+              data-id="${b.id}" title="Hủy lịch">event_busy</button>
+          ` : ''}
         </div>
       </div>
     `).join('');
@@ -479,14 +483,126 @@ window.GymApp.pages['pt-register'] = {
       }
     });
 
-    // Hủy booking
-    document.addEventListener('click', async e => {
+    // Hủy booking — gọi API thực sự
+    document.getElementById('booking-list')?.addEventListener('click', async e => {
+      // Nút hủy
       const cancelBtn = e.target.closest('.btn-cancel-booking');
       if (cancelBtn) {
         const id = cancelBtn.dataset.id;
-        if (confirm('Bạn có chắc chắn muốn hủy lịch tập này?')) {
-          window.GymApp.toast('Yêu cầu hủy lịch đã được gửi!', 'info');
+        const ok = await window.GymApp.confirm('Bạn có chắc chắn muốn hủy lịch tập này?', 'Hủy lịch tập');
+        if (!ok) return;
+        try {
+          const res = await window.GymApp.api.put(`/pt/schedules/${id}/cancel`, { ly_do: 'Hủy từ trang đặt lịch' });
+          if (res?.success) {
+            window.GymApp.toast('Đã hủy lịch tập thành công!', 'success');
+            const schedulesRes = await window.GymApp.api.get('/pt/schedules');
+            if (schedulesRes?.success) window.GymApp.data.ptSchedules = Array.isArray(schedulesRes.data) ? schedulesRes.data : [];
+            self._refreshBookingList();
+          } else {
+            window.GymApp.toast(res?.message || 'Hủy lịch thất bại!', 'error');
+          }
+        } catch (err) {
+          window.GymApp.toast('Lỗi kết nối máy chủ', 'error');
         }
+        return;
+      }
+
+      // Nút sửa
+      const editBtn = e.target.closest('.btn-edit-booking');
+      if (editBtn) {
+        const id = editBtn.dataset.id;
+        const ngay = editBtn.dataset.ngay;
+        const start = editBtn.dataset.start;
+        const end = editBtn.dataset.end;
+        const ghiChu = editBtn.dataset.ghiChu;
+
+        const [startH, startM] = (start || '06:00').split(':');
+        const startMins = parseInt(startH) * 60 + parseInt(startM);
+        const [endH, endM] = (end || '07:00').split(':');
+        const durationMins = (parseInt(endH) * 60 + parseInt(endM)) - startMins;
+
+        window.GymApp.showModal(`
+          <div class="p-standard flex flex-col gap-standard">
+            <h3 class="font-bold text-on-surface text-body-lg flex items-center gap-compact">
+              <span class="material-symbols-outlined text-brand-primary" style="font-variation-settings:'FILL' 1">edit_calendar</span>
+              Sửa lịch tập
+            </h3>
+            <div class="grid grid-cols-2 gap-standard">
+              <div>
+                <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Ngày tập</label>
+                <input id="edit-ngay" type="date" value="${ngay}" class="w-full bg-surface-container-low border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none text-body-md" />
+              </div>
+              <div>
+                <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Giờ bắt đầu</label>
+                <div class="flex items-center gap-xs">
+                  <select id="edit-start-hour" class="flex-1 bg-surface-container-low border border-outline-variant text-on-surface px-2 py-compact rounded-xl focus:border-brand-primary outline-none text-body-md text-center font-medium">
+                    ${[5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22].map(h => `<option value="${String(h).padStart(2,'0')}" ${String(h).padStart(2,'0') === startH ? 'selected' : ''}>${String(h).padStart(2,'0')}</option>`).join('')}
+                  </select>
+                  <span class="font-bold text-on-surface-variant">:</span>
+                  <select id="edit-start-minute" class="flex-1 bg-surface-container-low border border-outline-variant text-on-surface px-2 py-compact rounded-xl focus:border-brand-primary outline-none text-body-md text-center font-medium">
+                    ${['00','10','15','20','30','40','45','50'].map(m => `<option value="${m}" ${m === startM ? 'selected' : ''}>${m}</option>`).join('')}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Thời lượng</label>
+                <select id="edit-duration" class="w-full bg-surface-container-low border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none text-body-md">
+                  ${[30,60,90,120].map(d => `<option value="${d}" ${d === durationMins ? 'selected' : ''}>${d === 30 ? '30 phút' : d === 60 ? '1 giờ' : d === 90 ? '1.5 giờ' : '2 giờ'}</option>`).join('')}
+                </select>
+              </div>
+              <div>
+                <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Giờ kết thúc</label>
+                <input id="edit-end" type="time" readonly value="${end}" class="w-full bg-surface-container border border-outline-variant/60 text-on-surface-variant px-standard py-compact rounded-xl outline-none text-body-md cursor-not-allowed opacity-80" />
+              </div>
+            </div>
+            <div>
+              <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Ghi chú</label>
+              <textarea id="edit-ghi-chu" rows="2" class="w-full bg-surface-container-low border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none text-body-md resize-none">${ghiChu}</textarea>
+            </div>
+            <div class="flex gap-standard justify-end pt-xs">
+              <button id="close-modal" class="px-standard py-compact rounded-xl border border-outline-variant text-on-surface-variant font-bold text-body-sm hover:bg-surface-container transition-colors">Hủy bỏ</button>
+              <button id="btn-edit-save" class="px-standard py-compact rounded-xl bg-brand-primary text-white font-bold text-body-sm hover:opacity-90 transition-opacity flex items-center gap-xs">
+                <span class="material-symbols-outlined text-sm">save</span>Lưu thay đổi
+              </button>
+            </div>
+          </div>
+        `);
+
+        // Tự tính giờ kết thúc khi đổi giờ/thời lượng trong modal
+        const calcEditEnd = () => {
+          const h = document.getElementById('edit-start-hour')?.value || '06';
+          const m = document.getElementById('edit-start-minute')?.value || '00';
+          const dur = parseInt(document.getElementById('edit-duration')?.value || '60');
+          const total = parseInt(h) * 60 + parseInt(m) + dur;
+          document.getElementById('edit-end').value = `${String(Math.floor(total/60)%24).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`;
+        };
+        document.getElementById('edit-start-hour')?.addEventListener('change', calcEditEnd);
+        document.getElementById('edit-start-minute')?.addEventListener('change', calcEditEnd);
+        document.getElementById('edit-duration')?.addEventListener('change', calcEditEnd);
+
+        document.getElementById('btn-edit-save')?.addEventListener('click', async () => {
+          const newNgay = document.getElementById('edit-ngay')?.value;
+          const newStart = `${document.getElementById('edit-start-hour').value}:${document.getElementById('edit-start-minute').value}`;
+          const newEnd = document.getElementById('edit-end')?.value;
+          const newGhiChu = document.getElementById('edit-ghi-chu')?.value || '';
+          if (!newNgay) { window.GymApp.toast('Vui lòng chọn ngày tập!', 'error'); return; }
+          try {
+            const res = await window.GymApp.api.put(`/pt/schedules/${id}`, {
+              ngay_tap: newNgay, gio_bat_dau: newStart, gio_ket_thuc: newEnd, ghi_chu: newGhiChu,
+            });
+            if (res?.success) {
+              window.GymApp.toast('Đã cập nhật lịch tập thành công!', 'success');
+              document.getElementById('gym-modal')?.remove();
+              const schedulesRes = await window.GymApp.api.get('/pt/schedules');
+              if (schedulesRes?.success) window.GymApp.data.ptSchedules = Array.isArray(schedulesRes.data) ? schedulesRes.data : [];
+              self._refreshBookingList();
+            } else {
+              window.GymApp.toast(res?.message || 'Cập nhật thất bại!', 'error');
+            }
+          } catch (err) {
+            window.GymApp.toast('Lỗi kết nối máy chủ', 'error');
+          }
+        });
       }
     });
   },

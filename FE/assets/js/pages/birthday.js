@@ -72,16 +72,24 @@ window.GymApp.pages['birthday'] = {
               </div>
               <h3 class="font-bold text-on-surface text-body-lg">Sinh nhật hôm nay</h3>
               <span class="ml-auto bg-[#a52d59] text-white px-compact py-xs rounded-full text-label-xs font-bold">${todayBirthdays.length} người</span>
+              <button id="btn-wish-all" class="flex items-center gap-xs px-compact py-xs rounded-xl bg-[#a52d59] text-white font-bold text-body-sm hover:bg-[#8b2449] transition-colors ml-2">
+                <span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL' 1">send</span>
+                Gửi lời chúc tất cả
+              </button>
             </div>
             <div class="flex flex-wrap gap-compact">
               ${todayBirthdays.map(m => `
-                <button class="birthday-today-chip gym-card flex items-center gap-compact bg-surface-container-lowest border border-outline-variant rounded-xl px-compact py-xs" data-label="Sinh nhật hôm nay" data-count="${todayBirthdays.length}">
+                <div class="birthday-today-card gym-card flex items-center gap-compact bg-surface-container-lowest border border-outline-variant rounded-xl px-compact py-xs">
                   ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'sm')}
                   <div class="text-left">
                     <span class="font-bold text-on-surface text-body-sm block">${m.ho_ten}</span>
                     <span class="text-[#a52d59] text-body-sm">🎂 Hôm nay</span>
                   </div>
-                </button>
+                  <button class="btn-wish-one ml-2 flex items-center gap-xs px-compact py-xs rounded-lg border border-[#a52d59]/40 text-[#a52d59] hover:bg-[#a52d59]/10 transition-colors text-label-xs font-bold" data-id="${m.id}" data-name="${m.ho_ten}">
+                    <span class="material-symbols-outlined text-xs" style="font-variation-settings:'FILL' 1">send</span>
+                    Chúc
+                  </button>
+                </div>
               `).join('')}
             </div>
           </div>
@@ -106,7 +114,7 @@ window.GymApp.pages['birthday'] = {
                   <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider" style="width:150px">Tháng</th>
                   <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider" style="width:110px">Số lượng</th>
                   <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Hội viên sinh nhật</th>
-                  <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider text-right" style="width:120px">Hiệu ứng</th>
+                  <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider text-right" style="width:200px">Thao tác</th>
                 </tr>
               </thead>
               <tbody>
@@ -144,10 +152,18 @@ window.GymApp.pages['birthday'] = {
                         </div>
                       </td>
                       <td class="px-standard py-compact align-middle text-right">
-                        <button class="birthday-burst-btn inline-flex items-center gap-xs px-standard py-compact rounded-xl border border-outline-variant text-on-surface-variant hover:text-[#a52d59] hover:border-[#a52d59]/40 transition-colors font-bold text-body-sm" data-month="${group.month}" data-label="${group.label}" data-count="${group.members.length}">
-                          <span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL' 1">auto_awesome</span>
-                          Bắn
-                        </button>
+                        <div class="flex items-center justify-end gap-xs">
+                          ${group.month === today.getMonth() + 1 ? `
+                            <button class="btn-wish-month inline-flex items-center gap-xs px-compact py-xs rounded-xl bg-[#a52d59] text-white font-bold text-label-xs hover:bg-[#8b2449] transition-colors" data-month="${group.month}" data-members='${JSON.stringify(group.members.map(m => ({ id: m.id, ho_ten: m.ho_ten })))}'>
+                              <span class="material-symbols-outlined text-xs" style="font-variation-settings:'FILL' 1">send</span>
+                              Gửi lời chúc
+                            </button>
+                          ` : ''}
+                          <button class="birthday-burst-btn inline-flex items-center gap-xs px-compact py-xs rounded-xl border border-outline-variant text-on-surface-variant hover:text-[#a52d59] hover:border-[#a52d59]/40 transition-colors font-bold text-label-xs" data-month="${group.month}" data-label="${group.label}" data-count="${group.members.length}">
+                            <span class="material-symbols-outlined text-xs" style="font-variation-settings:'FILL' 1">auto_awesome</span>
+                            Bắn
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   `).join('')
@@ -199,20 +215,73 @@ window.GymApp.pages['birthday'] = {
     setTimeout(() => layer.remove(), 5200);
   },
 
+  _sendWish: async function (id, name) {
+    try {
+      await window.GymApp.api.post(`/members/${id}/birthday-wish`);
+      window.GymApp.toast(`Đã gửi lời chúc sinh nhật đến ${name} 🎂`, 'success');
+    } catch (e) {
+      window.GymApp.toast(e?.message || 'Gửi thất bại', 'error');
+    }
+  },
+
+  _sendWishAll: async function () {
+    const btn = document.getElementById('btn-wish-all');
+    if (btn) { btn.disabled = true; btn.textContent = 'Đang gửi...'; }
+    try {
+      const res = await window.GymApp.api.post('/members/birthday-wish-all');
+      window.GymApp.toast(`Đã gửi lời chúc đến ${res.data?.so_luong || 0} hội viên sinh nhật hôm nay 🎉`, 'success');
+    } catch (e) {
+      window.GymApp.toast(e?.message || 'Gửi thất bại', 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = '<span class="material-symbols-outlined text-sm" style="font-variation-settings:\'FILL\' 1">send</span> Gửi lời chúc tất cả'; }
+    }
+  },
+
   init: function () {
     const self = this;
 
     document.querySelectorAll('.birthday-month-row').forEach(row => {
       row.addEventListener('click', e => {
-        if (e.target.closest('.birthday-burst-btn')) return;
+        if (e.target.closest('.birthday-burst-btn') || e.target.closest('.btn-wish-month')) return;
         self._showBirthdayBurst(row.dataset.label, row.dataset.count, e);
       });
     });
 
-    document.querySelectorAll('.birthday-burst-btn, .birthday-today-chip').forEach(btn => {
+    document.querySelectorAll('.birthday-burst-btn').forEach(btn => {
       btn.addEventListener('click', e => {
         e.stopPropagation();
         self._showBirthdayBurst(btn.dataset.label, btn.dataset.count, e);
+      });
+    });
+
+    // Gửi lời chúc 1 người (nút Chúc trên card hôm nay)
+    document.querySelectorAll('.btn-wish-one').forEach(btn => {
+      btn.addEventListener('click', async e => {
+        e.stopPropagation();
+        btn.disabled = true;
+        await self._sendWish(btn.dataset.id, btn.dataset.name);
+        btn.disabled = false;
+      });
+    });
+
+    // Gửi lời chúc tất cả hôm nay
+    document.getElementById('btn-wish-all')?.addEventListener('click', () => self._sendWishAll());
+
+    // Gửi lời chúc theo tháng (tháng hiện tại)
+    document.querySelectorAll('.btn-wish-month').forEach(btn => {
+      btn.addEventListener('click', async e => {
+        e.stopPropagation();
+        const members = JSON.parse(btn.dataset.members || '[]');
+        if (!members.length) return;
+        btn.disabled = true;
+        btn.textContent = 'Đang gửi...';
+        let ok = 0;
+        for (const m of members) {
+          try { await window.GymApp.api.post(`/members/${m.id}/birthday-wish`); ok++; } catch (_) {}
+        }
+        window.GymApp.toast(`Đã gửi lời chúc đến ${ok}/${members.length} hội viên tháng này 🎂`, 'success');
+        btn.disabled = false;
+        btn.innerHTML = '<span class="material-symbols-outlined text-xs" style="font-variation-settings:\'FILL\' 1">send</span> Gửi lời chúc';
       });
     });
 

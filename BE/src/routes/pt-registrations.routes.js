@@ -16,8 +16,8 @@ router.use(verifyToken);
 
 router.get('/',    requireRole('admin', 'le_tan', 'pt'), getRegistrations);
 router.get('/:id', requireRole('admin', 'le_tan', 'pt'), getRegistrationById);
-router.post('/',   requireRole('admin', 'le_tan'), createRegistration);
-router.put('/:id', requireRole('admin', 'le_tan'), updateRegistration);
-router.put('/:id/cancel', requireRole('admin', 'le_tan'), cancelRegistration);
+router.post('/',          requireRole('admin', 'le_tan'), createRegistration);   // Đăng ký gói PT mới
+router.put('/:id',        requireRole('admin', 'le_tan'), updateRegistration);     // Sửa gói PT
+router.put('/:id/cancel', requireRole('admin'), cancelRegistration);               // Hủy gói PT — chỉ admin
 
 export default router;

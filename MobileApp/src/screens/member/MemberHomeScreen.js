@@ -2,12 +2,12 @@ import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator, FlatList, RefreshControl, ScrollView,
   StatusBar, StyleSheet, Text, TouchableOpacity, View,
-  Modal, TextInput, Platform,
+  Modal, TextInput, Platform, KeyboardAvoidingView,
 } from 'react-native';
 import {
   Award, CalendarCheck, ChevronRight, Clock,
   CreditCard, Dumbbell, QrCode, ShieldCheck,
-  TrendingUp, Users, Zap,
+  TrendingUp, Users, Zap, MessageSquare, CheckCircle2, XCircle, ChevronDown,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import ProfileAvatar from '../../components/ProfileAvatar';
@@ -65,7 +65,7 @@ function PackageCard({ item, index }) {
   return (
     <View style={[styles.packageCard, { backgroundColor: c.bg }]}>
       <View style={[styles.packageIconBox, { backgroundColor: c.accent + '22' }]}>
-        {isPT ? <Users color={c.accent} size={22} strokeWidth={2} /> : <Award color={c.accent} size={22} strokeWidth={2} />}
+        {isPT ? <Users color={c.accent} size={24} strokeWidth={2} /> : <Award color={c.accent} size={24} strokeWidth={2} />}
       </View>
       <Text style={[styles.packageName, { color: c.accent }]} numberOfLines={2}>{item.ten_goi}</Text>
       <Text style={[styles.packagePrice, { color: G.gray900 }]}>{formatPrice(item.gia)}</Text>
@@ -105,6 +105,14 @@ export default function MemberHomeScreen({ navigation }) {
   const [renewalStartDate, setRenewalStartDate] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // ── State modal lịch PT ───────────────────────────────────
+  const [ptScheduleVisible, setPtScheduleVisible] = useState(false);
+  const [ptSchedules, setPtSchedules] = useState([]);
+  const [ptScheduleLoading, setPtScheduleLoading] = useState(false);
+  const [editingNote, setEditingNote] = useState(null); // { id, ghi_chu }
+  const [noteText, setNoteText] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
+
   // ── Fetch dữ liệu thực tế từ API ─────────────────────────
   const fetchAll = useCallback(async () => {
     try {
@@ -135,6 +143,38 @@ export default function MemberHomeScreen({ navigation }) {
   );
 
   const onRefresh = () => { setRefreshing(true); fetchAll(); };
+
+  // ── Mở modal lịch tập PT ────────────────────────────────
+  const openPtSchedule = async () => {
+    setPtScheduleVisible(true);
+    setPtScheduleLoading(true);
+    try {
+      const res = await api.get('/pt/schedules');
+      if (res.data?.success) {
+        const sorted = (res.data.data || []).sort((a, b) => new Date(b.ngay_tap) - new Date(a.ngay_tap));
+        setPtSchedules(sorted);
+      }
+    } catch (e) {
+      console.error('[PT Schedule]', e?.message);
+    } finally {
+      setPtScheduleLoading(false);
+    }
+  };
+
+  // ── Lưu ghi chú buổi tập ────────────────────────────────
+  const saveNote = async () => {
+    if (!editingNote) return;
+    setSavingNote(true);
+    try {
+      await api.patch(`/pt/schedules/${editingNote.id}/note`, { ghi_chu: noteText });
+      setPtSchedules(prev => prev.map(s => s.id === editingNote.id ? { ...s, ghi_chu: noteText } : s));
+      setEditingNote(null);
+    } catch (e) {
+      console.error('[SaveNote]', e?.message);
+    } finally {
+      setSavingNote(false);
+    }
+  };
 
   const openRenewModal = () => {
     const today = new Date().toISOString().split('T')[0];
@@ -310,21 +350,22 @@ export default function MemberHomeScreen({ navigation }) {
                 </View>
               </View>
 
-              {/* HLV PT (nếu có) */}
+              {/* HLV PT (nếu có) — bấm để xem lịch tập */}
               {activePT ? (
-                <View style={styles.ptRow}>
-                  <Dumbbell color={G.primary} size={14} strokeWidth={2} />
+                <TouchableOpacity style={styles.ptRow} onPress={openPtSchedule} activeOpacity={0.75}>
+                  <Dumbbell color={G.primary} size={15} strokeWidth={2} />
                   <Text style={styles.ptRowText}>
                     {activePT.ten_goi_pt ? (
                       <>
-                        Gói PT: <Text style={{ fontWeight: '700', color: G.gray900 }}>{activePT.ten_goi_pt}</Text>
+                        <Text style={{ fontWeight: '700', color: G.gray900 }}>{activePT.ten_goi_pt}</Text>
                         {'  •  '}
                       </>
                     ) : null}
                     HLV: <Text style={{ fontWeight: '700', color: G.gray900 }}>{activePT.ten_pt}</Text>
                     {'  •  '}Còn <Text style={{ fontWeight: '700', color: G.primary }}>{ptRemaining} buổi</Text>
                   </Text>
-                </View>
+                  <ChevronRight color={G.primary} size={16} strokeWidth={2.5} />
+                </TouchableOpacity>
               ) : null}
 
               {/* Nút gia hạn nếu hết hạn hoặc không có gói và KHÔNG CÓ yêu cầu chờ duyệt */}
@@ -466,6 +507,128 @@ export default function MemberHomeScreen({ navigation }) {
 
         <View style={{ height: 16 }} />
       </ScrollView>
+
+      {/* ── Modal Lịch tập PT ──────────────────────────────── */}
+      <Modal
+        visible={ptScheduleVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => { setPtScheduleVisible(false); setEditingNote(null); }}
+      >
+        <View style={styles.modalOverlay}>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ width: '100%' }}>
+            <View style={[styles.modalContent, { maxHeight: '88%' }]}>
+              {/* Header */}
+              <View style={[styles.modalHeader, { backgroundColor: G.primaryDark }]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.modalTitle}>Lịch tập với PT</Text>
+                  {activePT ? (
+                    <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 12, marginTop: 2 }}>
+                      HLV: {activePT.ten_pt}  •  Còn {ptRemaining} buổi
+                    </Text>
+                  ) : null}
+                </View>
+                <TouchableOpacity onPress={() => { setPtScheduleVisible(false); setEditingNote(null); }}>
+                  <Text style={styles.modalCloseX}>✕</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Ghi chú inline editor */}
+              {editingNote ? (
+                <View style={styles.noteEditor}>
+                  <Text style={styles.noteEditorLabel}>Ghi chú buổi tập</Text>
+                  <TextInput
+                    style={styles.noteInput}
+                    value={noteText}
+                    onChangeText={setNoteText}
+                    multiline
+                    numberOfLines={3}
+                    placeholder="VD: Hôm nay ăn gì, tập bài gì, cảm nhận sau buổi tập..."
+                    placeholderTextColor={G.gray400}
+                    autoFocus
+                  />
+                  <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+                    <TouchableOpacity
+                      style={[styles.noteBtn, { backgroundColor: G.gray100 }]}
+                      onPress={() => setEditingNote(null)}
+                    >
+                      <Text style={{ color: G.gray500, fontWeight: '700', fontSize: 13 }}>Hủy</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.noteBtn, { backgroundColor: G.primary, flex: 2 }]}
+                      onPress={saveNote}
+                      disabled={savingNote}
+                    >
+                      {savingNote
+                        ? <ActivityIndicator color={G.white} size="small" />
+                        : <Text style={{ color: G.white, fontWeight: '700', fontSize: 13 }}>Lưu ghi chú</Text>
+                      }
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : null}
+
+              {/* Danh sách lịch tập */}
+              {ptScheduleLoading ? (
+                <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+                  <ActivityIndicator color={G.primary} size="large" />
+                </View>
+              ) : ptSchedules.length === 0 ? (
+                <View style={{ paddingVertical: 40, alignItems: 'center', gap: 8 }}>
+                  <CalendarCheck color={G.gray400} size={36} strokeWidth={1.5} />
+                  <Text style={{ color: G.gray400, fontWeight: '600' }}>Chưa có lịch tập nào</Text>
+                </View>
+              ) : (
+                <ScrollView contentContainerStyle={{ padding: 16, gap: 10 }}>
+                  {ptSchedules.map(s => {
+                    const statusMap = {
+                      cho_tap:  { label: 'Chờ tập',      color: G.warning,  bg: G.warningLight },
+                      da_tap:   { label: 'Đã hoàn thành', color: G.primary,  bg: G.primaryLight },
+                      da_huy:   { label: 'Đã hủy',        color: G.danger,   bg: G.dangerLight },
+                    };
+                    const st = statusMap[s.trang_thai] || { label: s.trang_thai, color: G.gray500, bg: G.gray100 };
+                    const isEditing = editingNote?.id === s.id;
+                    return (
+                      <View key={s.id} style={styles.scheduleItem}>
+                        {/* Ngày + giờ + badge */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.scheduleDate}>{s.ngay_tap ? new Date(s.ngay_tap).toLocaleDateString('vi-VN', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}</Text>
+                            <Text style={styles.scheduleTime}>{s.gio_bat_dau || '?'}–{s.gio_ket_thuc || '?'}</Text>
+                          </View>
+                          <View style={[styles.scheduleBadge, { backgroundColor: st.bg }]}>
+                            <Text style={[styles.scheduleBadgeText, { color: st.color }]}>{st.label}</Text>
+                          </View>
+                        </View>
+
+                        {/* Ghi chú hiện tại */}
+                        {s.ghi_chu && !isEditing ? (
+                          <View style={styles.noteBox}>
+                            <MessageSquare color={G.gray400} size={13} strokeWidth={2} />
+                            <Text style={styles.noteBoxText}>{s.ghi_chu}</Text>
+                          </View>
+                        ) : null}
+
+                        {/* Nút thêm/sửa ghi chú */}
+                        {!isEditing ? (
+                          <TouchableOpacity
+                            style={styles.noteAddBtn}
+                            onPress={() => { setEditingNote(s); setNoteText(s.ghi_chu || ''); }}
+                            activeOpacity={0.7}
+                          >
+                            <MessageSquare color={G.primary} size={13} strokeWidth={2} />
+                            <Text style={styles.noteAddBtnText}>{s.ghi_chu ? 'Sửa ghi chú' : 'Thêm ghi chú'}</Text>
+                          </TouchableOpacity>
+                        ) : null}
+                      </View>
+                    );
+                  })}
+                </ScrollView>
+              )}
+            </View>
+          </KeyboardAvoidingView>
+        </View>
+      </Modal>
 
       {/* ── Modal Gia hạn ────────────────────────────────── */}
       <Modal
@@ -679,17 +842,19 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   contractDivider: { width: 1, backgroundColor: G.gray200 },
-  contractGridLabel: { fontSize: 10, color: G.gray400, fontWeight: '500' },
-  contractGridValue: { fontSize: 12, fontWeight: '700', color: G.gray700 },
+  contractGridLabel: { fontSize: 11, color: G.gray400, fontWeight: '500' },
+  contractGridValue: { fontSize: 13, fontWeight: '700', color: G.gray700 },
   ptRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     backgroundColor: G.white,
     borderRadius: 10,
-    padding: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: G.primary + '25',
   },
-  ptRowText: { fontSize: 13, color: G.gray500, flex: 1 },
+  ptRowText: { fontSize: 13, color: G.gray500, flex: 1, lineHeight: 18 },
   emptyContract: {
     alignItems: 'center',
     paddingVertical: 24,
@@ -720,29 +885,99 @@ const styles = StyleSheet.create({
     lineHeight: 13,
   },
 
-  // Package cards
+  // Package cards — tăng size lên 1 bậc
   packageScroll: { paddingRight: 4, gap: 10 },
   packageCard: {
-    width: 140,
-    padding: 14,
+    width: 155,
+    padding: 16,
     borderRadius: 16,
-    gap: 6,
+    gap: 7,
   },
   packageIconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
+    width: 42,
+    height: 42,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
   },
   packageName: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '700',
-    lineHeight: 18,
+    lineHeight: 20,
   },
-  packagePrice: { fontSize: 16, fontWeight: '800' },
-  packageSub: { fontSize: 11, color: G.gray400, fontWeight: '500' },
+  packagePrice: { fontSize: 18, fontWeight: '800' },
+  packageSub: { fontSize: 12, color: G.gray400, fontWeight: '500' },
+
+  // PT Schedule modal
+  scheduleItem: {
+    backgroundColor: G.gray50,
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: G.gray200,
+  },
+  scheduleDate: { fontSize: 14, fontWeight: '700', color: G.gray900 },
+  scheduleTime: { fontSize: 12, color: G.gray500, marginTop: 1 },
+  scheduleBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  scheduleBadgeText: { fontSize: 11, fontWeight: '700' },
+  noteBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    backgroundColor: G.white,
+    borderRadius: 10,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: G.gray200,
+    marginBottom: 8,
+  },
+  noteBoxText: { fontSize: 13, color: G.gray700, flex: 1, lineHeight: 18 },
+  noteAddBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    alignSelf: 'flex-start',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 20,
+    backgroundColor: G.primaryLight,
+    borderWidth: 1,
+    borderColor: G.primary + '30',
+  },
+  noteAddBtnText: { fontSize: 12, fontWeight: '700', color: G.primary },
+  noteEditor: {
+    margin: 16,
+    marginBottom: 0,
+    backgroundColor: G.gray50,
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: G.primary + '40',
+  },
+  noteEditorLabel: { fontSize: 11, fontWeight: '700', color: G.primary, marginBottom: 8, textTransform: 'uppercase' },
+  noteInput: {
+    backgroundColor: G.white,
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 14,
+    color: G.gray900,
+    borderWidth: 1,
+    borderColor: G.gray200,
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  noteBtn: {
+    flex: 1,
+    paddingVertical: 11,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
   // Paradise panel
   paradisePanel: {
