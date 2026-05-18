@@ -5,8 +5,9 @@
     'expired': 'Danh sách hết hạn', 'pt-training': 'Lịch đào tạo PT',
     'pt-register': 'Đăng ký lịch tập PT', 'packages': 'Danh sách gói tập',
     'birthday': 'Sinh nhật hội viên', 'gym-rules': 'Nội quy phòng tập',
+    'package-requests': 'Yêu cầu gia hạn gói tập',
   };
-  const SUB_PAGES = ['members-list', 'member-add', 'checkin', 'expired', 'pt-training', 'pt-register', 'packages', 'birthday'];
+  const SUB_PAGES = ['members-list', 'member-add', 'checkin', 'expired', 'pt-training', 'pt-register', 'packages', 'birthday', 'package-requests'];
 
   // ===== NAVIGATE =====
   window.GymApp.navigate = function (pageName) {
@@ -558,6 +559,16 @@
         window.GymApp.data.packages = Array.isArray(packagesRes.data) ? packagesRes.data : (packagesRes.data.data || []);
       }
       if (dashboardRes?.success) window.GymApp.data.stats = dashboardRes.data;
+
+      // Cập nhật badge yêu cầu gia hạn
+      try {
+        const pkgReqRes = await window.GymApp.api.get('/members/package-requests');
+        if (pkgReqRes?.success) {
+          const count = (pkgReqRes.data || []).length;
+          const badge = document.getElementById('pkg-req-badge');
+          if (badge) { badge.textContent = count > 9 ? '9+' : count; badge.style.display = count > 0 ? 'flex' : 'none'; }
+        }
+      } catch (_) {}
 
       console.log('Global Data Synced with SQL');
     } catch (err) {

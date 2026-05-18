@@ -15,8 +15,8 @@ window.GymApp.pages['pt-register'] = {
         <div class="grid grid-cols-1 lg:grid-cols-10 items-stretch gap-standard">
 
           <!-- ===== CARD 1: Form đặt lịch ===== -->
-          <div class="lg:col-span-7 bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
-            <div class="section-header px-standard py-compact border-b border-outline-variant flex items-center gap-compact">
+          <div class="lg:col-span-7 bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm">
+            <div class="section-header px-standard py-compact border-b border-outline-variant flex items-center gap-compact" style="border-top-left-radius: 16px; border-top-right-radius: 16px;">
               <div class="icon-bg icon-bg-green" style="width:32px;height:32px;border-radius:8px">
                 <span class="material-symbols-outlined text-brand-primary text-base" style="font-variation-settings:'FILL' 1">edit_calendar</span>
               </div>

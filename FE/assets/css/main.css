@@ -971,6 +971,8 @@ html.dark .custom-scrollbar::-webkit-scrollbar-thumb {
   --adp-cell-color-selected-hover: #ffffff;
   --adp-nav-color-secondary: #6e7a6b;
   --adp-day-name-color: #3f4a3c;
+  --adp-pointer-bg: var(--adp-background-color);
+  --adp-pointer-border-color: transparent;
   border-radius: 20px !important;
   box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.15) !important;
   border: none !important;
@@ -1003,6 +1005,7 @@ html.dark .air-datepicker {
   --adp-cell-color-selected-hover: #0a0c10;
   --adp-nav-color-secondary: #a8b5a5;
   --adp-day-name-color: #a8b5a5;
+  --adp-pointer-bg: #1c2028;
   box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5) !important;
 }
 

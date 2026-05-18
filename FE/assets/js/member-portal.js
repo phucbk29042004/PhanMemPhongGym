@@ -376,21 +376,6 @@
 
       return `
         <div class="space-y-s6">
-          ${renderNotificationBanners()}
-
-          ${isExpired ? `
-            <div class="bg-error-container text-white p-s5 rounded-2xl flex flex-col sm:flex-row items-center gap-s4 shadow-lg border border-white/20">
-              <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center shrink-0">
-                <span class="material-symbols-outlined text-white text-3xl">error</span>
-              </div>
-              <div class="flex-1 text-center sm:text-left">
-                <p class="font-bold text-headline-sm">Gói tập đã hết hạn!</p>
-                <p class="text-body-md opacity-90">Bạn cần gia hạn để tiếp tục sử dụng các dịch vụ của phòng tập.</p>
-              </div>
-              <button id="btn-dashboard-renew" class="bg-white text-error-container px-s6 py-s3 rounded-full font-bold text-label-md hover:bg-surface-container-low transition-all shadow-md active:scale-95">Gia hạn ngay</button>
-            </div>
-          ` : ''}
-
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-s6">
             <section class="lg:col-span-2 relative overflow-hidden rounded-xl bg-primary-container text-white p-s6 min-h-[240px] flex flex-col justify-between">
               <div class="absolute inset-0 opacity-15 pointer-events-none" style="background:radial-gradient(circle at 20% 20%,#ffffff 0,transparent 28%),linear-gradient(135deg,#004d2a,#0c6c40 60%,#84d8a2)"></div>
@@ -763,6 +748,240 @@
     }
   };
 
+  // ── Tab: Thông báo cá nhân ────────────────────────────────
+  pages['notifications'] = {
+    render() {
+      return `
+        <div class="space-y-s6">
+          <div class="flex items-center justify-between flex-wrap gap-s3">
+            <div>
+              <h2 class="text-headline-md font-bold text-on-surface">Thông báo của tôi</h2>
+              <p class="text-on-surface-variant text-body-md mt-s1">Các thông báo từ hệ thống Paradise GYM</p>
+            </div>
+            <button id="btn-notif-clear-all"
+              class="flex items-center gap-s2 px-s4 py-s3 rounded-xl border border-outline-variant text-on-surface-variant hover:text-error hover:border-error hover:bg-error-container transition-all text-label-md font-bold">
+              <span class="material-symbols-outlined text-sm">delete_sweep</span>Xóa tất cả
+            </button>
+          </div>
+          <div id="notif-page-list" class="flex flex-col gap-s3">
+            <div class="member-card p-s6 text-center text-on-surface-variant">
+              <span class="material-symbols-outlined text-3xl block mb-s3 animate-spin">refresh</span>
+              <p class="text-body-sm">Đang tải thông báo...</p>
+            </div>
+          </div>
+        </div>
+      `;
+    },
+
+    async init() {
+      try {
+        const res = await window.GymApp.api.get('/members/me/notifications');
+        if (res?.success) {
+          window.GymApp.data.myNotifications = res.data?.notifications || [];
+          window.GymApp.data.daCheckInHomNay = res.data?.da_check_in_hom_nay || false;
+          // Sync badge
+          const badge = document.getElementById('member-notif-badge');
+          const notifs = window.GymApp.data.myNotifications;
+          if (badge) {
+            if (notifs.length > 0) { badge.textContent = notifs.length > 9 ? '9+' : notifs.length; badge.style.display = 'flex'; }
+            else badge.style.display = 'none';
+          }
+        }
+      } catch (e) { console.error(e); }
+
+      this._renderList();
+
+      document.getElementById('btn-notif-clear-all')?.addEventListener('click', async () => {
+        if (!confirm('Xóa tất cả thông báo?')) return;
+        try {
+          await window.GymApp.api.delete('/members/me/notifications');
+        } catch (_) {}
+        window.GymApp.data.myNotifications = [];
+        const badge = document.getElementById('member-notif-badge');
+        if (badge) badge.style.display = 'none';
+        this._renderList();
+        _renderMemberDropdownList();
+      });
+    },
+
+    _renderList() {
+      const notifs = window.GymApp.data.myNotifications || [];
+      const container = document.getElementById('notif-page-list');
+      if (!container) return;
+
+      if (!notifs.length) {
+        container.innerHTML = emptyState('notifications_none', 'Không có thông báo nào', 'Hệ thống sẽ gửi thông báo khi có cập nhật quan trọng');
+        return;
+      }
+
+      container.innerHTML = notifs.map((n, idx) => {
+        const s = NOTIF_STYLE[n.muc_do] || NOTIF_STYLE.info;
+        const iconMap = { danger: 'warning', warning: 'info', info: 'notifications', success: 'check_circle' };
+        const icon = n.icon || iconMap[n.muc_do] || 'notifications';
+        const dateStr = n.ngay_tao ? new Date(n.ngay_tao).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+        return `
+          <div class="member-card overflow-hidden transition-all" data-notif-idx="${idx}"
+            style="border-left:4px solid ${s.border}">
+            <div class="p-s4 flex items-start gap-s4">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                style="background:${s.bg}">
+                <span class="material-symbols-outlined" style="color:${s.icon_color};font-size:20px;font-variation-settings:'FILL' 1">${icon}</span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-start justify-between gap-s2">
+                  <p class="font-bold text-body-md" style="color:${s.text_color}">${n.tieu_de}</p>
+                  <button class="page-notif-del flex-shrink-0 p-s1 rounded-lg hover:bg-surface-container transition-colors" data-idx="${idx}" title="Xóa">
+                    <span class="material-symbols-outlined text-on-surface-variant" style="font-size:16px">close</span>
+                  </button>
+                </div>
+                <p class="text-body-sm mt-s1" style="color:${s.text_color};opacity:0.85;line-height:1.6">${n.noi_dung}</p>
+                ${dateStr ? `<p class="text-body-sm text-on-surface-variant mt-s2">${dateStr}</p>` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      container.querySelectorAll('.page-notif-del').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = parseInt(btn.dataset.idx);
+          window.GymApp.data.myNotifications.splice(idx, 1);
+          const badge = document.getElementById('member-notif-badge');
+          const count = window.GymApp.data.myNotifications.length;
+          if (badge) { badge.textContent = count > 9 ? '9+' : count; badge.style.display = count > 0 ? 'flex' : 'none'; }
+          this._renderList();
+          _renderMemberDropdownList();
+        });
+      });
+    }
+  };
+
+  // ── Tab: Lịch sử Vào / Ra ─────────────────────────────────
+  pages['checkins'] = {
+    _filter: 'all',
+
+    render() {
+      return `
+        <div class="space-y-s6">
+          <div>
+            <h2 class="text-headline-md font-bold text-on-surface">Lịch sử Vào / Ra</h2>
+            <p class="text-on-surface-variant text-body-md mt-s1">Nhật ký ra vào phòng tập của bạn</p>
+          </div>
+
+          <!-- Stat cards -->
+          <div id="checkin-stats" class="grid grid-cols-3 gap-s4"></div>
+
+          <!-- Filter -->
+          <div class="flex items-center gap-s2 p-s1 bg-surface-container rounded-2xl w-fit border border-outline-variant">
+            ${['all','vao','ra'].map(f => `
+              <button class="checkin-filter-btn px-s4 py-s2 rounded-xl text-label-md font-bold transition-all ${f === 'all' ? 'bg-brand-primary text-white shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-high'}"
+                data-filter="${f}">
+                ${{ all: 'Tất cả', vao: 'Vào', ra: 'Ra' }[f]}
+              </button>
+            `).join('')}
+          </div>
+
+          <!-- List -->
+          <div id="checkin-list" class="flex flex-col gap-s3">
+            <div class="member-card p-s6 text-center text-on-surface-variant">
+              <span class="material-symbols-outlined text-3xl block mb-s3 animate-spin">refresh</span>
+              <p class="text-body-sm">Đang tải...</p>
+            </div>
+          </div>
+        </div>
+      `;
+    },
+
+    async init() {
+      try {
+        const res = await window.GymApp.api.get('/checkins/me?limit=50');
+        if (res?.success) {
+          window.GymApp.data.myCheckins = res.data?.data || res.data || [];
+        }
+      } catch (e) { console.error(e); }
+
+      this._renderStats();
+      this._renderList();
+
+      document.querySelectorAll('.checkin-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          this._filter = btn.dataset.filter;
+          document.querySelectorAll('.checkin-filter-btn').forEach(b => {
+            const active = b.dataset.filter === this._filter;
+            b.className = `checkin-filter-btn px-s4 py-s2 rounded-xl text-label-md font-bold transition-all ${active ? 'bg-brand-primary text-white shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-high'}`;
+          });
+          this._renderList();
+        });
+      });
+    },
+
+    _renderStats() {
+      const all = window.GymApp.data.myCheckins || [];
+      const vao = all.filter(c => c.loai === 'vao').length;
+      const ra  = all.filter(c => c.loai === 'ra').length;
+      const stats = [
+        { label: 'Tổng lượt', value: all.length, icon: 'history', color: '#1D9336', bg: '#e7f5e9' },
+        { label: 'Lượt vào',  value: vao, icon: 'login',   color: '#1565c0', bg: '#e3f2fd' },
+        { label: 'Lượt ra',   value: ra,  icon: 'logout',  color: '#6a1b9a', bg: '#f3e5f5' },
+      ];
+      const el = document.getElementById('checkin-stats');
+      if (!el) return;
+      el.innerHTML = stats.map(s => `
+        <div class="member-card p-s4 flex items-center gap-s3">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:${s.bg}">
+            <span class="material-symbols-outlined" style="color:${s.color};font-size:20px;font-variation-settings:'FILL' 1">${s.icon}</span>
+          </div>
+          <div>
+            <p class="text-on-surface-variant text-body-sm">${s.label}</p>
+            <p class="font-bold text-headline-sm text-on-surface">${s.value}</p>
+          </div>
+        </div>
+      `).join('');
+    },
+
+    _renderList() {
+      const all = window.GymApp.data.myCheckins || [];
+      const filtered = this._filter === 'all' ? all : all.filter(c => c.loai === this._filter);
+      const el = document.getElementById('checkin-list');
+      if (!el) return;
+
+      if (!filtered.length) {
+        el.innerHTML = emptyState('how_to_reg', 'Chưa có lượt nào', 'Dữ liệu sẽ xuất hiện sau khi bạn check-in');
+        return;
+      }
+
+      el.innerHTML = filtered.map(c => {
+        const isVao = c.loai === 'vao';
+        const color = isVao ? '#1565c0' : '#6a1b9a';
+        const bg = isVao ? '#e3f2fd' : '#f3e5f5';
+        const icon = isVao ? 'login' : 'logout';
+        const phuongThucMap = { qr_code: 'QR Code', thu_cong: 'Thủ công', the_tu: 'Thẻ từ' };
+        const thoiGian = c.thoi_gian ? new Date(c.thoi_gian).toLocaleString('vi-VN', {
+          weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+        }) : '—';
+        return `
+          <div class="member-card overflow-hidden" style="border-left:4px solid ${color}30">
+            <div class="p-s4 flex items-center gap-s4">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:${bg}">
+                <span class="material-symbols-outlined" style="color:${color};font-size:20px;font-variation-settings:'FILL' 1">${icon}</span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-s2 flex-wrap">
+                  <span class="font-bold text-body-md text-on-surface">${isVao ? 'Vào phòng tập' : 'Ra phòng tập'}</span>
+                  <span style="padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;background:${bg};color:${color}">${isVao ? 'VÀO' : 'RA'}</span>
+                </div>
+                <p class="text-body-sm text-on-surface-variant mt-s1">${thoiGian}</p>
+              </div>
+              <div class="text-right flex-shrink-0">
+                <p class="text-body-sm text-on-surface-variant">${phuongThucMap[c.phuong_thuc] || c.phuong_thuc || '—'}</p>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+  };
+
   async function _showMemberRenewalModal() {
     const activePackage = getActivePackage();
     const today = todayKey();
@@ -782,8 +1001,8 @@
 
     const modalHtml = `
       <div id="modal-member-renewal" class="fixed inset-0 z-[100] flex items-center justify-center p-standard bg-black/60 backdrop-blur-sm animate-fade-in">
-        <div class="bg-surface-container-lowest w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-scale-in">
-          <div class="px-s6 py-s5 bg-primary-container text-white">
+        <div class="bg-surface-container-lowest w-full max-w-md rounded-2xl shadow-2xl animate-scale-in">
+          <div class="px-s6 py-s5 bg-primary-container text-white" style="border-top-left-radius: 16px; border-top-right-radius: 16px;">
             <h3 class="text-headline-sm font-bold">Gia hạn gói tập</h3>
             <p class="text-body-sm opacity-90 mt-s1">Chọn gói tập và ngày bắt đầu để tiếp tục tập luyện</p>
           </div>
@@ -808,7 +1027,7 @@
             </div>
           </div>
 
-          <div class="px-s6 py-s5 bg-surface-container border-t border-outline-variant flex gap-s3">
+          <div class="px-s6 py-s5 bg-surface-container border-t border-outline-variant flex gap-s3" style="border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
             <button id="btn-renew-cancel" class="flex-1 px-s4 py-s3 rounded-xl font-bold text-label-md text-on-surface-variant hover:bg-surface-container-high transition-colors">Hủy bỏ</button>
             <button id="btn-renew-submit" class="flex-1 px-s4 py-s3 rounded-xl font-bold text-label-md bg-brand-primary text-white hover:opacity-90 transition-all shadow-md active:scale-95">Gửi yêu cầu</button>
           </div>

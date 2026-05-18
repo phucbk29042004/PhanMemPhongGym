@@ -28,10 +28,10 @@ window.GymApp.pages['member-add'] = {
       ${specialtyDatalist}
       <div class="flex flex-col gap-standard w-full max-w-none mx-auto animate-in fade-in duration-500">
 
-        <div class="bg-surface-container-lowest rounded-3xl border border-outline-variant shadow-lg overflow-hidden flex flex-col">
+        <div class="bg-surface-container-lowest rounded-3xl border border-outline-variant shadow-lg flex flex-col">
           
           <!-- Unified Header & Tab Navigation -->
-          <div class="bg-surface-container-low/40 px-standard py-compact border-b border-outline-variant flex flex-wrap items-center justify-between gap-compact">
+          <div class="bg-surface-container-low/40 px-standard py-compact border-b border-outline-variant flex flex-wrap items-center justify-between gap-compact" style="border-top-left-radius: 24px; border-top-right-radius: 24px;">
             <div class="flex items-center gap-standard">
               <button class="flex items-center justify-center w-10 h-10 rounded-2xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-surface-container-lowest transition-all shadow-sm bg-surface-container-lowest" data-page="members-list">
                 <span class="material-symbols-outlined text-xl">arrow_back</span>

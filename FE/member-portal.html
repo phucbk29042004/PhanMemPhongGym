@@ -224,6 +224,12 @@
         </button>
         <button
           class="member-side-nav mx-s2 flex items-center gap-s3 px-s4 py-s3 rounded-full text-on-surface-variant hover:bg-surface-container-high transition-all text-left"
+          data-tab="notifications">
+          <span class="material-symbols-outlined">notifications</span>
+          <span class="text-label-md">Thông báo</span>
+        </button>
+        <button
+          class="member-side-nav mx-s2 flex items-center gap-s3 px-s4 py-s3 rounded-full text-on-surface-variant hover:bg-surface-container-high transition-all text-left"
           data-tab="profile">
           <span class="material-symbols-outlined">person</span>
           <span class="text-label-md">Cá nhân</span>
@@ -242,26 +248,31 @@
   </div>
 
   <nav
-    class="md:hidden fixed bottom-0 left-0 right-0 z-40 h-16 bg-surface-container-lowest border-t border-outline-variant shadow-lg grid grid-cols-4">
+    class="md:hidden fixed bottom-0 left-0 right-0 z-40 h-16 bg-surface-container-lowest border-t border-outline-variant shadow-lg grid grid-cols-5">
     <button data-tab="dashboard"
       class="member-bottom-nav flex flex-col items-center justify-center gap-s1 text-on-surface-variant">
-      <span class="material-symbols-outlined">home</span>
-      <span class="text-label-sm">Trang chủ</span>
+      <span class="material-symbols-outlined" style="font-size:20px">home</span>
+      <span class="text-label-sm" style="font-size:10px">Trang chủ</span>
     </button>
     <button data-tab="my-schedule"
       class="member-bottom-nav flex flex-col items-center justify-center gap-s1 text-on-surface-variant">
-      <span class="material-symbols-outlined">event</span>
-      <span class="text-label-sm">Lịch tập</span>
+      <span class="material-symbols-outlined" style="font-size:20px">event</span>
+      <span class="text-label-sm" style="font-size:10px">Lịch tập</span>
     </button>
     <button data-tab="checkins"
       class="member-bottom-nav flex flex-col items-center justify-center gap-s1 text-on-surface-variant">
-      <span class="material-symbols-outlined">how_to_reg</span>
-      <span class="text-label-sm">Vào/Ra</span>
+      <span class="material-symbols-outlined" style="font-size:20px">how_to_reg</span>
+      <span class="text-label-sm" style="font-size:10px">Vào/Ra</span>
+    </button>
+    <button data-tab="notifications"
+      class="member-bottom-nav flex flex-col items-center justify-center gap-s1 text-on-surface-variant relative">
+      <span class="material-symbols-outlined" style="font-size:20px">notifications</span>
+      <span class="text-label-sm" style="font-size:10px">Thông báo</span>
     </button>
     <button data-tab="profile"
       class="member-bottom-nav flex flex-col items-center justify-center gap-s1 text-on-surface-variant">
-      <span class="material-symbols-outlined">person</span>
-      <span class="text-label-sm">Cá nhân</span>
+      <span class="material-symbols-outlined" style="font-size:20px">person</span>
+      <span class="text-label-sm" style="font-size:10px">Cá nhân</span>
     </button>
   </nav>
 

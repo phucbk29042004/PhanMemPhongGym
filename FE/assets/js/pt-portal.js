@@ -454,9 +454,9 @@
       const overlay = document.createElement('div');
       overlay.style.cssText = `position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:9000;padding:20px;`;
       overlay.innerHTML = `
-        <div class="animate-fade-in" style="background:var(--bg-surface-lowest);border:1px solid var(--outline-variant);border-radius:24px;width:100%;max-width:500px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,0.15);">
+        <div class="animate-fade-in" style="background:var(--bg-surface-lowest);border:1px solid var(--outline-variant);border-radius:24px;width:100%;max-width:500px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,0.15);">
           <!-- Header -->
-          <div style="padding:20px 24px;background:linear-gradient(135deg,#1D9336,#0a591c);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+          <div style="padding:20px 24px;background:linear-gradient(135deg,#1D9336,#0a591c);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-top-left-radius:24px;border-top-right-radius:24px;">
             <div>
               <h3 style="font-size:16px;font-weight:800;margin:0;letter-spacing:0.02em;">ĐẶT LỊCH TẬP MỚI</h3>
               <p style="font-size:11px;opacity:0.85;margin:4px 0 0 0;">Lên lịch dạy học viên của bạn</p>
@@ -515,7 +515,7 @@
           </div>
 
           <!-- Footer -->
-          <div style="padding:16px 24px;border-top:1px solid var(--outline-variant);display:flex;justify-content:flex-end;gap:12px;background:var(--bg-surface-low);flex-shrink:0;">
+          <div style="padding:16px 24px;border-top:1px solid var(--outline-variant);display:flex;justify-content:flex-end;gap:12px;background:var(--bg-surface-low);flex-shrink:0;border-bottom-left-radius:24px;border-bottom-right-radius:24px;">
             <button id="btn-cancel-create-sched" style="padding:10px 20px;border-radius:12px;border:1px solid var(--outline-variant);color:var(--text-on-surface);background:transparent;font-weight:700;font-size:13px;cursor:pointer;">Hủy</button>
             <button id="btn-submit-create-sched" style="padding:10px 24px;border-radius:12px;border:none;color:#fff;background:#1D9336;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 2px 8px rgba(29,147,54,0.3);">Đặt lịch</button>
           </div>
@@ -583,9 +583,9 @@
     const overlay = document.createElement('div');
     overlay.style.cssText = `position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:9000;padding:20px;`;
     overlay.innerHTML = `
-      <div class="animate-fade-in" style="background:var(--bg-surface-lowest);border:1px solid var(--outline-variant);border-radius:24px;width:100%;max-width:500px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,0.15);">
+      <div class="animate-fade-in" style="background:var(--bg-surface-lowest);border:1px solid var(--outline-variant);border-radius:24px;width:100%;max-width:500px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,0.15);">
         <!-- Header -->
-        <div style="padding:20px 24px;background:linear-gradient(135deg,#03872c,#156324);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+        <div style="padding:20px 24px;background:linear-gradient(135deg,#03872c,#156324);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-top-left-radius:24px;border-top-right-radius:24px;">
           <div>
             <h3 style="font-size:16px;font-weight:800;margin:0;letter-spacing:0.02em;">SỬA LỊCH TẬP</h3>
             <p style="font-size:11px;opacity:0.85;margin:4px 0 0 0;">Cập nhật lại thời gian buổi tập</p>
@@ -632,7 +632,7 @@
         </div>
 
         <!-- Footer -->
-        <div style="padding:16px 24px;border-top:1px solid var(--outline-variant);display:flex;justify-content:flex-end;gap:12px;background:var(--bg-surface-low);flex-shrink:0;">
+        <div style="padding:16px 24px;border-top:1px solid var(--outline-variant);display:flex;justify-content:flex-end;gap:12px;background:var(--bg-surface-low);flex-shrink:0;border-bottom-left-radius:24px;border-bottom-right-radius:24px;">
           <button id="btn-cancel-edit-sched" style="padding:10px 20px;border-radius:12px;border:1px solid var(--outline-variant);color:var(--text-on-surface);background:transparent;font-weight:700;font-size:13px;cursor:pointer;">Hủy</button>
           <button id="btn-submit-edit-sched" style="padding:10px 24px;border-radius:12px;border:none;color:#fff;background:#1D9336;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 2px 8px rgba(29,147,54,0.3);">Lưu thay đổi</button>
         </div>
@@ -926,59 +926,117 @@
   // ── Học viên của tôi ──────────────────────────────────────
   pages['my-students'] = {
     render() {
-      const schedules = window.GymApp.data.ptSchedules || [];
-      const studentMap = {};
-      schedules.forEach(s => {
-        if (!s.hoi_vien_id) return;
-        if (!studentMap[s.hoi_vien_id]) {
-          studentMap[s.hoi_vien_id] = {
-            id: s.hoi_vien_id, ten: s.ten_hoi_vien, avatar: s.avatar_hoi_vien,
-            buoi_con_lai: s.buoi_con_lai, tong_buoi: 0, da_tap: 0,
-          };
-        }
-        studentMap[s.hoi_vien_id].tong_buoi++;
-        if (s.trang_thai === 'da_tap') studentMap[s.hoi_vien_id].da_tap++;
-        studentMap[s.hoi_vien_id].buoi_con_lai = s.buoi_con_lai;
-      });
-      const students = Object.values(studentMap);
-
       return `
         <div class="flex flex-col gap-loose">
           <div class="page-title-bar">
             <h2 class="font-display-lg text-display-lg text-on-surface font-bold">Học viên của tôi</h2>
-            <p class="text-on-surface-variant font-body-sm text-body-sm mt-xs">Danh sách học viên đang tập với bạn</p>
+            <p class="text-on-surface-variant font-body-sm text-body-sm mt-xs">Danh sách học viên đang kèm 1-1 với bạn</p>
           </div>
-
-          ${students.length === 0
-          ? `<div class="bg-surface-container-lowest rounded-2xl border border-outline-variant p-margin text-center text-on-surface-variant">
-                 <span class="material-symbols-outlined text-4xl text-outline block mb-standard">person_off</span>
-                 <p class="font-bold">Chưa có học viên nào</p>
-               </div>`
-          : `<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-loose">
-                ${students.map(sv => `
-                  <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-loose shadow-sm flex flex-col items-center gap-standard">
-                    ${window.GymApp.avatarImg(sv.avatar, sv.ten, 'lg')}
-                    <div class="text-center">
-                      <p class="font-bold text-on-surface text-body-md">${sv.ten || '—'}</p>
-                    </div>
-                    <div class="w-full grid grid-cols-2 gap-sm">
-                      <div class="bg-surface-container rounded-xl p-compact text-center">
-                        <p class="text-on-surface-variant text-body-sm">Đã tập</p>
-                        <p class="font-bold text-brand-primary text-body-md">${sv.da_tap}</p>
-                      </div>
-                      <div class="bg-surface-container rounded-xl p-compact text-center">
-                        <p class="text-on-surface-variant text-body-sm">Còn lại</p>
-                        <p class="font-bold text-[#e65100] text-body-md">${sv.buoi_con_lai ?? '—'}</p>
-                      </div>
-                    </div>
-                  </div>
-                `).join('')}
-              </div>`
-        }
+          <div id="students-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-loose">
+            <div class="col-span-full bg-surface-container-lowest rounded-2xl border border-outline-variant p-loose text-center text-on-surface-variant">
+              <span class="material-symbols-outlined text-4xl block mb-standard animate-spin">refresh</span>
+              <p class="font-body-sm text-body-sm">Đang tải...</p>
+            </div>
+          </div>
         </div>
       `;
     },
-    init() { }
+
+    async init() {
+      try {
+        const res = await window.GymApp.api.get('/pt/schedules/my-members');
+        if (res?.success) window.GymApp.data.myStudents = res.data || [];
+      } catch (e) {
+        // Fallback: tổng hợp từ ptSchedules nếu API chưa sẵn sàng
+        const schedules = window.GymApp.data.ptSchedules || [];
+        const map = {};
+        schedules.forEach(s => {
+          if (!s.hoi_vien_id) return;
+          if (!map[s.hoi_vien_id]) map[s.hoi_vien_id] = {
+            ho_so_id: s.hoi_vien_id, ho_ten: s.ten_hoi_vien, avatar_url: s.avatar_hoi_vien,
+            buoi_da_tap: 0, buoi_con_lai: s.buoi_con_lai ?? 0, tong_buoi_dk: 0,
+            ten_goi_pt: '—', ngay_het_han: null,
+          };
+          map[s.hoi_vien_id].tong_buoi_dk++;
+          if (s.trang_thai === 'da_tap' || s.trang_thai === 'da_xac_nhan') map[s.hoi_vien_id].buoi_da_tap++;
+          map[s.hoi_vien_id].buoi_con_lai = s.buoi_con_lai ?? 0;
+        });
+        window.GymApp.data.myStudents = Object.values(map);
+      }
+      this._renderGrid();
+    },
+
+    _renderGrid() {
+      const students = window.GymApp.data.myStudents || [];
+      const grid = document.getElementById('students-grid');
+      if (!grid) return;
+
+      if (!students.length) {
+        grid.innerHTML = `
+          <div class="col-span-full bg-surface-container-lowest rounded-2xl border border-outline-variant p-margin text-center text-on-surface-variant">
+            <span class="material-symbols-outlined text-4xl text-outline block mb-standard">person_off</span>
+            <p class="font-bold text-on-surface">Chưa có học viên nào</p>
+            <p class="font-body-sm text-body-sm mt-xs">Học viên sẽ xuất hiện khi bạn có lịch tập đang hoạt động</p>
+          </div>`;
+        return;
+      }
+
+      grid.innerHTML = students.map(sv => {
+        const total = sv.tong_buoi_dk || (sv.buoi_da_tap + sv.buoi_con_lai) || 0;
+        const done  = sv.buoi_da_tap || 0;
+        const left  = sv.buoi_con_lai ?? 0;
+        const pct   = total > 0 ? Math.round((done / total) * 100) : 0;
+        const isAlert = left <= 3 && left > 0;
+        const isAlmost = pct >= 80;
+
+        const progressColor = pct >= 80 ? '#e65100' : pct >= 50 ? '#f59e0b' : '#1D9336';
+        const hetHan = sv.ngay_het_han ? window.GymApp.formatDate(sv.ngay_het_han) : null;
+
+        return `
+          <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden flex flex-col"
+            style="${isAlmost ? 'border-color:#fdba74' : ''}">
+            <!-- Header gradient -->
+            <div class="px-loose pt-loose pb-standard flex flex-col items-center gap-compact section-header"
+              style="border-bottom:1px solid var(--outline-variant)">
+              ${window.GymApp.avatarImg(sv.avatar_url, sv.ho_ten, 'lg')}
+              <div class="text-center mt-xs">
+                <p class="font-bold text-on-surface font-display-xl text-display-xl">${sv.ho_ten || '—'}</p>
+                <p class="text-on-surface-variant font-body-sm text-body-sm">${sv.ten_goi_pt || 'Gói PT'}</p>
+              </div>
+              ${isAlert ? `<span style="padding:2px 10px;border-radius:999px;font-size:10px;font-weight:700;background:#fff3e0;color:#e65100;">⚠ Còn ${left} buổi</span>` : ''}
+            </div>
+
+            <!-- Stats -->
+            <div class="p-standard grid grid-cols-3 gap-xs text-center">
+              <div class="bg-surface-container rounded-xl p-compact">
+                <p class="text-on-surface-variant font-body-sm text-body-sm">Đã tập</p>
+                <p class="font-bold text-brand-primary font-display-xl text-display-xl">${done}</p>
+              </div>
+              <div class="bg-surface-container rounded-xl p-compact">
+                <p class="text-on-surface-variant font-body-sm text-body-sm">Còn lại</p>
+                <p class="font-bold font-display-xl text-display-xl" style="color:${left <= 3 ? '#e65100' : 'var(--text-on-surface)'}">${left}</p>
+              </div>
+              <div class="bg-surface-container rounded-xl p-compact">
+                <p class="text-on-surface-variant font-body-sm text-body-sm">Tổng</p>
+                <p class="font-bold text-on-surface font-display-xl text-display-xl">${total}</p>
+              </div>
+            </div>
+
+            <!-- Progress bar -->
+            <div class="px-standard pb-standard">
+              <div class="flex justify-between items-center mb-xs">
+                <p class="font-body-sm text-body-sm text-on-surface-variant">Tiến độ</p>
+                <p class="font-body-sm text-body-sm font-bold" style="color:${progressColor}">${pct}%</p>
+              </div>
+              <div class="h-2 rounded-full bg-surface-container overflow-hidden">
+                <div class="h-full rounded-full transition-all duration-500" style="width:${pct}%;background:${progressColor}"></div>
+              </div>
+              ${hetHan ? `<p class="font-body-sm text-body-sm text-on-surface-variant mt-xs">Hết hạn: ${hetHan}</p>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
   };
 
   // ── Hồ sơ cá nhân ─────────────────────────────────────────

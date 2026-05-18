@@ -1558,8 +1558,8 @@ window.GymApp.pages['members-list'] = {
     overlay.id = 'gym-sub-modal';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);padding:16px;';
     overlay.innerHTML = `
-      <div class="modal-card bg-surface-container-lowest border border-outline-variant" style="border-radius:24px;width:100%;max-width:440px;position:relative;box-shadow:0 30px 80px rgba(0,0,0,0.4);overflow:hidden;">
-        <div class="border-b border-outline-variant px-loose py-standard flex items-center justify-between bg-surface-container/20">
+      <div class="modal-card bg-surface-container-lowest border border-outline-variant" style="border-radius:24px;width:100%;max-width:440px;position:relative;box-shadow:0 30px 80px rgba(0,0,0,0.4);">
+        <div class="border-b border-outline-variant px-loose py-standard flex items-center justify-between bg-surface-container/20" style="border-top-left-radius: 24px; border-top-right-radius: 24px;">
           <div>
             <h3 class="font-bold text-on-surface" style="font-size:17px;margin:0;">Chỉnh sửa gói tập</h3>
             <div class="flex items-center gap-xs mt-xs">
@@ -2426,8 +2426,8 @@ window.GymApp.pages['members-list'] = {
       </div>`;
 
     overlay.innerHTML = `
-      <div style="border-radius:24px;width:100%;max-width:560px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,0.4);background:var(--bg-surface-lowest);">
-        <div style="background:linear-gradient(135deg,#1a5e2a 0%,#1D9336 60%,#22c55e 100%);padding:24px 24px 20px;flex-shrink:0;position:relative;overflow:hidden;">
+      <div style="border-radius:24px;width:100%;max-width:560px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,0.4);background:var(--bg-surface-lowest);">
+        <div style="background:linear-gradient(135deg,#1a5e2a 0%,#1D9336 60%,#22c55e 100%);padding:24px 24px 20px;flex-shrink:0;position:relative;overflow:hidden;border-top-left-radius:24px;border-top-right-radius:24px;">
           <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,0.07);"></div>
           <button id="close-edit-member" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.15);border:none;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:50;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">
             <span class="material-symbols-outlined" style="color:#fff;font-size:18px;">close</span>
@@ -2479,7 +2479,7 @@ window.GymApp.pages['members-list'] = {
             </div>
           </div>
         </div>
-        <div style="padding:16px 24px;border-top:1px solid var(--outline-variant);display:flex;gap:12px;justify-content:flex-end;background:var(--bg-surface-low);flex-shrink:0;">
+        <div style="padding:16px 24px;border-top:1px solid var(--outline-variant);display:flex;gap:12px;justify-content:flex-end;background:var(--bg-surface-low);flex-shrink:0;border-bottom-left-radius:24px;border-bottom-right-radius:24px;">
           <button id="cancel-edit-member" style="padding:10px 20px;border-radius:12px;font-weight:700;font-size:14px;border:1px solid var(--outline-variant);color:var(--text-on-surface-variant);background:transparent;cursor:pointer;">Hủy</button>
           <button id="save-edit-member" style="padding:10px 24px;border-radius:12px;font-weight:700;font-size:14px;border:none;color:#fff;background:linear-gradient(135deg,#1D9336,#22c55e);cursor:pointer;display:flex;align-items:center;gap:8px;">
             <span class="material-symbols-outlined" style="font-size:18px;">save</span>Lưu thay đổi
