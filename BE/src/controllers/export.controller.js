@@ -9,18 +9,45 @@ import { error } from '../utils/response.js';
 function escapeCSV(val) {
   if (val == null) return '';
   const s = String(val);
-  if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+  if (s.includes(';') || s.includes('"') || s.includes('\n')) {
     return `"${s.replace(/"/g, '""')}"`;
   }
   return s;
 }
 
 function toCSV(headers, rows, labelMap = {}) {
-  const headerLine = headers.map(h => escapeCSV(labelMap[h] || h)).join(',');
+  const headerLine = headers.map(h => escapeCSV(labelMap[h] || h)).join(';');
   const dataLines = rows.map(row =>
-    headers.map(h => escapeCSV(row[h])).join(',')
+    headers.map(h => escapeCSV(row[h])).join(';')
   );
   return [headerLine, ...dataLines].join('\r\n');
+}
+
+// ──────────────────────────────────────────────────────────
+// Helpers định dạng dữ liệu cho Excel thân thiện
+// ──────────────────────────────────────────────────────────
+function formatVND(amount) {
+  if (amount == null || amount === '') return '';
+  const num = parseFloat(amount);
+  if (isNaN(num)) return amount;
+  return new Intl.NumberFormat('vi-VN').format(num) + ' VNĐ';
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  // Định dạng YYYY-MM-DD -> DD/MM/YYYY
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    return `${match[3]}/${match[2]}/${match[1]}`;
+  }
+  return dateStr;
+}
+
+function translateGender(g) {
+  if (g === 'nam') return 'Nam';
+  if (g === 'nu') return 'Nữ';
+  if (g === 'khac') return 'Khác';
+  return g || '';
 }
 
 // ── GET /api/export/members ───────────────────────────────
@@ -47,7 +74,7 @@ export const exportMembers = (req, res) => {
       (SELECT dk.den_ngay FROM dang_ky_goi_tap dk
        WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong'
        ORDER BY dk.den_ngay DESC LIMIT 1) AS het_han_goi_tap,
-      (SELECT dp.ten_pt FROM dang_ky_pt dp
+      (SELECT pt.ho_ten FROM dang_ky_pt dp JOIN ho_so pt ON pt.id = dp.pt_id
        WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong'
        ORDER BY dp.id DESC LIMIT 1) AS ten_pt,
       h.ngay_tao
@@ -55,6 +82,14 @@ export const exportMembers = (req, res) => {
     ${where}
     ORDER BY h.ho_ten ASC
   `).all(...params);
+
+  const formattedRows = rows.map(r => ({
+    ...r,
+    gioi_tinh: translateGender(r.gioi_tinh),
+    ngay_sinh: formatDate(r.ngay_sinh),
+    het_han_goi_tap: formatDate(r.het_han_goi_tap),
+    ngay_tao: r.ngay_tao ? formatDate(r.ngay_tao.slice(0, 10)) : ''
+  }));
 
   const headers = ['ma_ho_so','ho_ten','gioi_tinh','ngay_sinh','so_dien_thoai','email','chi_nhanh','ten_goi_tap','het_han_goi_tap','ten_pt','ngay_tao'];
   const labelMap = {
@@ -64,11 +99,12 @@ export const exportMembers = (req, res) => {
     ten_pt: 'PT phụ trách', ngay_tao: 'Ngày gia nhập',
   };
 
-  const csv = toCSV(headers, rows, labelMap);
-  const filename = `hoi-vien-${new Date().toISOString().slice(0,10)}.csv`;
+  const csv = toCSV(headers, formattedRows, labelMap);
+  const prefix = loai_ho_so === 'pt' ? 'pt' : 'hoi-vien';
+  const filename = `${prefix}-${new Date().toISOString().slice(0,10)}.csv`;
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-  res.write('﻿'); // BOM cho Excel đọc được UTF-8
+  res.write('\ufeff'); // BOM cho Excel đọc được UTF-8 tiếng Việt
   return res.end(csv);
 };
 
@@ -94,17 +130,26 @@ export const exportRevenue = (req, res) => {
     ORDER BY d.ngay ASC
   `).all(...params);
 
+  const formattedRows = rows.map(r => ({
+    ...r,
+    ngay: formatDate(r.ngay),
+    tong_tien: formatVND(r.tong_tien),
+    tong_don: r.tong_don,
+    tien_goi_tap: formatVND(r.tien_goi_tap),
+    tien_goi_pt: formatVND(r.tien_goi_pt)
+  }));
+
   const headers = ['ngay','tong_don','tong_tien','tien_goi_tap','tien_goi_pt'];
   const labelMap = {
     ngay: 'Ngày', tong_don: 'Số giao dịch',
     tong_tien: 'Tổng doanh thu', tien_goi_tap: 'Gói Gym', tien_goi_pt: 'Gói PT',
   };
 
-  const csv = toCSV(headers, rows, labelMap);
+  const csv = toCSV(headers, formattedRows, labelMap);
   const filename = `doanh-thu-${new Date().toISOString().slice(0,10)}.csv`;
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-  res.write('﻿');
+  res.write('\ufeff');
   return res.end(csv);
 };
 
@@ -135,6 +180,24 @@ export const exportPTSchedules = (req, res) => {
     ORDER BY lt.thoi_gian_bat_dau ASC
   `).all(...params);
 
+  const formattedRows = rows.map(r => {
+    let trangThaiText = r.trang_thai;
+    if (r.trang_thai === 'cho_tap' || r.trang_thai === 'pending') trangThaiText = 'Chờ tập';
+    else if (r.trang_thai === 'da_tap' || r.trang_thai === 'confirmed') trangThaiText = 'Đã tập';
+    else if (r.trang_thai === 'da_huy' || r.trang_thai === 'cancelled') trangThaiText = 'Đã hủy';
+
+    let loaiBuoiText = r.loai_buoi;
+    if (r.loai_buoi === 'ca_nhan') loaiBuoiText = 'Cá nhân';
+    else if (r.loai_buoi === 'nhom') loaiBuoiText = 'Nhóm';
+
+    return {
+      ...r,
+      ngay: formatDate(r.ngay),
+      trang_thai: trangThaiText,
+      loai_buoi: loaiBuoiText
+    };
+  });
+
   const headers = ['id','ngay','gio_bat_dau','gio_ket_thuc','ten_hoi_vien','ma_hv','ten_pt','ma_pt','trang_thai','loai_buoi','ghi_chu'];
   const labelMap = {
     id: 'Mã lịch', ngay: 'Ngày', gio_bat_dau: 'Giờ bắt đầu', gio_ket_thuc: 'Giờ kết thúc',
@@ -142,10 +205,10 @@ export const exportPTSchedules = (req, res) => {
     trang_thai: 'Trạng thái', loai_buoi: 'Loại buổi', ghi_chu: 'Ghi chú',
   };
 
-  const csv = toCSV(headers, rows, labelMap);
+  const csv = toCSV(headers, formattedRows, labelMap);
   const filename = `lich-pt-${new Date().toISOString().slice(0,10)}.csv`;
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-  res.write('﻿');
+  res.write('\ufeff');
   return res.end(csv);
 };

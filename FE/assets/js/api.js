@@ -52,6 +52,30 @@
         put: (endpoint, body) => window.GymApp.api.fetch(endpoint, { method: 'PUT', body: JSON.stringify(body) }),
         patch: (endpoint, body) => window.GymApp.api.fetch(endpoint, { method: 'PATCH', body: JSON.stringify(body) }),
         delete: (endpoint) => window.GymApp.api.fetch(endpoint, { method: 'DELETE' }),
+        download: async (endpoint, filename) => {
+            const url = `${BASE_URL}${endpoint}`;
+            const token = localStorage.getItem('gym-token');
+            const headers = {};
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+            try {
+                const response = await fetch(url, { headers });
+                if (!response.ok) throw new Error('Không thể tải báo cáo từ máy chủ.');
+                const blob = await response.blob();
+                const blobUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(blobUrl);
+                return true;
+            } catch (error) {
+                console.error('Download error:', error);
+                window.GymApp.toast('Có lỗi xảy ra khi xuất file!', 'error');
+                return false;
+            }
+        },
 
         /**
          * Special fetch for FormData (file uploads)

@@ -405,23 +405,23 @@
   <div id="modal-qr-scan"
     style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px;">
     <div
-      style="background:#fff;border-radius:20px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,0.28);position:relative;">
+      style="background:var(--bg-surface-lowest);border:1px solid var(--outline-variant);border-radius:20px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,0.28);position:relative;">
 
       <!-- Header -->
-      <div style="display:flex;align-items:center;gap:12px;padding:18px 20px 14px;border-bottom:1px solid #e8ede6;">
+      <div style="display:flex;align-items:center;gap:12px;padding:18px 20px 14px;border-bottom:1px solid var(--outline-variant);">
         <div
           style="width:34px;height:34px;background:#1D9336;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
           <span class="material-symbols-outlined"
             style="color:#fff;font-size:18px;font-variation-settings:'FILL' 1">qr_code_scanner</span>
         </div>
         <div style="flex:1;min-width:0;">
-          <p style="font-weight:700;color:#181c20;font-size:15px;line-height:1.3">Quét mã QR Check-in</p>
-          <p style="color:#6e7a6b;font-size:11px">Hội viên giơ điện thoại, lễ tân bấm Bắt đầu quét</p>
+          <p style="font-weight:700;color:var(--text-on-surface);font-size:15px;line-height:1.3">Quét mã QR Check-in</p>
+          <p style="color:var(--text-on-surface-variant);font-size:11px">Hội viên giơ điện thoại, lễ tân bấm Bắt đầu quét</p>
         </div>
         <button id="btn-close-qr-modal"
           style="background:none;border:none;cursor:pointer;padding:4px;border-radius:8px;display:flex;align-items:center;"
           title="Đóng">
-          <span class="material-symbols-outlined" style="font-size:20px;color:#6e7a6b">close</span>
+          <span class="material-symbols-outlined" style="font-size:20px;color:var(--text-on-surface-variant)">close</span>
         </button>
       </div>
 
@@ -429,7 +429,7 @@
       <div style="padding:16px;display:flex;flex-direction:column;gap:12px;">
 
         <!-- Camera scanner -->
-        <div style="background:#f7f9f7;border:1px solid #e0e8dc;border-radius:14px;overflow:hidden;">
+        <div style="background:var(--bg-surface-low);border:1px solid var(--outline-variant);border-radius:14px;overflow:hidden;">
           <div style="padding:12px 14px;">
             <div id="qr-modal-reader" style="width:100%;max-width:360px;margin:0 auto;"></div>
             <button id="qr-modal-btn-start"
@@ -437,7 +437,7 @@
               <span class="material-symbols-outlined" style="font-size:16px">qr_code_scanner</span>Bắt đầu quét
             </button>
             <button id="qr-modal-btn-stop"
-              style="width:100%;margin-top:12px;display:none;align-items:center;justify-content:center;gap:8px;padding:11px 0;border-radius:10px;border:1px solid #cdd6ca;background:#fff;color:#3f4a3c;font-weight:700;font-size:13px;cursor:pointer;">
+              style="width:100%;margin-top:12px;display:none;align-items:center;justify-content:center;gap:8px;padding:11px 0;border-radius:10px;border:1px solid var(--outline-variant);background:var(--bg-surface-lowest);color:var(--text-on-surface);font-weight:700;font-size:13px;cursor:pointer;">
               <span class="material-symbols-outlined" style="font-size:16px">stop_circle</span>Dừng quét
             </button>
           </div>
@@ -445,34 +445,34 @@
 
         <!-- Hướng dẫn -->
         <div
-          style="background:#e8f4fd;border:1px solid #b3d8f0;border-radius:12px;padding:12px 14px;display:flex;gap:10px;">
+          style="background:var(--notif-info-bg);border:1px solid var(--notif-info-border);border-radius:12px;padding:12px 14px;display:flex;gap:10px;">
           <span class="material-symbols-outlined"
-            style="color:#1565c0;font-size:18px;flex-shrink:0;margin-top:2px;font-variation-settings:'FILL' 1">info</span>
+            style="color:var(--notif-info-icon);font-size:18px;flex-shrink:0;margin-top:2px;font-variation-settings:'FILL' 1">info</span>
           <div>
-            <p style="font-weight:700;color:#1565c0;font-size:12px;margin-bottom:4px">Cách quét đúng</p>
-            <p style="color:#1976d2;font-size:11px;line-height:1.6">Hội viên mở <strong>QR Check-in</strong> trên cổng
+            <p style="font-weight:700;color:var(--notif-info-text);font-size:12px;margin-bottom:4px">Cách quét đúng</p>
+            <p style="color:var(--notif-info-text);opacity:0.9;font-size:11px;line-height:1.6">Hội viên mở <strong>QR Check-in</strong> trên cổng
               hội viên → giơ điện thoại → lễ tân bấm <strong>"Bắt đầu quét"</strong>.</p>
           </div>
         </div>
 
         <!-- Upload ảnh QR -->
-        <div style="background:#fff;border:1px solid #e0e8dc;border-radius:12px;padding:12px 14px;">
-          <p style="font-weight:700;color:#3f4a3c;font-size:12px;margin-bottom:6px">Tải ảnh QR lên để quét</p>
+        <div style="background:var(--bg-surface-low);border:1px solid var(--outline-variant);border-radius:12px;padding:12px 14px;">
+          <p style="font-weight:700;color:var(--text-on-surface);font-size:12px;margin-bottom:6px">Tải ảnh QR lên để quét</p>
           <label id="qr-modal-label-upload"
-            style="display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border-radius:10px;border:2px dashed #cdd6ca;color:#6e7a6b;font-weight:700;font-size:12px;cursor:pointer;transition:border-color 0.2s;">
+            style="display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border-radius:10px;border:2px dashed var(--outline-variant);color:var(--text-on-surface-variant);background:var(--bg-surface-lowest);font-weight:700;font-size:12px;cursor:pointer;transition:border-color 0.2s;">
             <span class="material-symbols-outlined" style="font-size:16px">upload_file</span>Chọn ảnh QR
             <input id="qr-modal-input-upload" type="file" accept="image/*" style="display:none" />
           </label>
           <p id="qr-modal-upload-status"
-            style="display:none;font-size:11px;color:#6e7a6b;margin-top:6px;text-align:center">Đang xử lý ảnh...</p>
+            style="display:none;font-size:11px;color:var(--text-on-surface-variant);margin-top:6px;text-align:center">Đang xử lý ảnh...</p>
         </div>
 
         <!-- Nhập token thủ công -->
-        <div style="background:#fff;border:1px solid #e0e8dc;border-radius:12px;padding:12px 14px;">
-          <p style="font-weight:700;color:#3f4a3c;font-size:12px;margin-bottom:8px">Nhập token thủ công</p>
+        <div style="background:var(--bg-surface-low);border:1px solid var(--outline-variant);border-radius:12px;padding:12px 14px;">
+          <p style="font-weight:700;color:var(--text-on-surface);font-size:12px;margin-bottom:8px">Nhập token thủ công</p>
           <div style="display:flex;gap:8px;">
             <input id="qr-modal-manual-token" type="text" placeholder="Dán token QR vào đây..."
-              style="flex:1;border:1px solid #cdd6ca;border-radius:8px;padding:8px 12px;font-size:12px;outline:none;" />
+              style="flex:1;border:1px solid var(--outline-variant);background:var(--bg-surface-lowest);color:var(--text-on-surface);border-radius:8px;padding:8px 12px;font-size:12px;outline:none;" />
             <button id="qr-modal-btn-manual"
               style="padding:8px 14px;border-radius:8px;background:#1D9336;color:#fff;font-weight:700;font-size:12px;border:none;cursor:pointer;white-space:nowrap;">Xác
               nhận</button>
@@ -489,7 +489,7 @@
   <div id="modal-admin-profile"
     style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px;">
     <div
-      style="background:#fff;border-radius:20px;width:100%;max-width:480px;box-shadow:0 24px 60px rgba(0,0,0,0.28);position:relative;overflow:hidden;">
+      style="background:var(--bg-surface-lowest);border:1px solid var(--outline-variant);border-radius:20px;width:100%;max-width:480px;box-shadow:0 24px 60px rgba(0,0,0,0.28);position:relative;overflow:hidden;">
       <div
         style="background:linear-gradient(135deg,#1a5e2a 0%,#1D9336 60%,#22c55e 100%);padding:20px;text-align:center;">
         <h3 style="color:#fff;font-weight:700;font-size:18px;">Thông tin cá nhân</h3>
@@ -501,13 +501,13 @@
         <div
           style="display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:-48px;position:relative;z-index:10;">
           <div
-            style="position:relative;width:80px;height:80px;border-radius:50%;border:4px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,0.15);background:#e0e8dc;overflow:hidden;"
+            style="position:relative;width:80px;height:80px;border-radius:50%;border:4px solid var(--bg-surface-lowest);box-shadow:0 4px 12px rgba(0,0,0,0.15);background:var(--bg-surface-container);overflow:hidden;"
             id="admin-profile-avatar-preview">
             <span class="material-symbols-outlined"
               style="font-size:40px;color:#94a3b8;position:absolute;top:50%;left:50%;transform:translate(-50%, -50%);font-variation-settings:'FILL' 1;">person</span>
           </div>
           <label
-            style="cursor:pointer;background:#e8f4fd;color:#1565c0;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px;transition:background 0.2s;">
+            style="cursor:pointer;background:var(--notif-info-bg);color:var(--notif-info-icon);padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px;transition:background 0.2s;">
             <span class="material-symbols-outlined" style="font-size:16px;">upload</span> Đổi ảnh
             <input type="file" id="admin-profile-avatar-input" accept="image/jpeg, image/png, image/webp"
               style="display:none;" />
@@ -515,24 +515,24 @@
         </div>
 
         <div>
-          <label style="font-size:12px;font-weight:700;color:#6e7a6b;margin-bottom:6px;display:block;">Họ và tên</label>
+          <label style="font-size:12px;font-weight:700;color:var(--text-on-surface-variant);margin-bottom:6px;display:block;">Họ và tên</label>
           <input id="profile-ho-ten" type="text"
-            style="width:100%;border:1px solid #cdd6ca;border-radius:10px;padding:10px 14px;font-size:14px;outline:none;" />
+            style="width:100%;border:1px solid var(--outline-variant);background:var(--bg-surface-lowest);color:var(--text-on-surface);border-radius:10px;padding:10px 14px;font-size:14px;outline:none;" />
         </div>
         <div>
-          <label style="font-size:12px;font-weight:700;color:#6e7a6b;margin-bottom:6px;display:block;">Số điện
+          <label style="font-size:12px;font-weight:700;color:var(--text-on-surface-variant);margin-bottom:6px;display:block;">Số điện
             thoại</label>
           <input id="profile-so-dien-thoai" type="tel"
-            style="width:100%;border:1px solid #cdd6ca;border-radius:10px;padding:10px 14px;font-size:14px;outline:none;" />
+            style="width:100%;border:1px solid var(--outline-variant);background:var(--bg-surface-lowest);color:var(--text-on-surface);border-radius:10px;padding:10px 14px;font-size:14px;outline:none;" />
         </div>
         <div>
-          <label style="font-size:12px;font-weight:700;color:#6e7a6b;margin-bottom:6px;display:block;">Email</label>
+          <label style="font-size:12px;font-weight:700;color:var(--text-on-surface-variant);margin-bottom:6px;display:block;">Email</label>
           <input id="profile-email" type="email"
-            style="width:100%;border:1px solid #cdd6ca;border-radius:10px;padding:10px 14px;font-size:14px;outline:none;" />
+            style="width:100%;border:1px solid var(--outline-variant);background:var(--bg-surface-lowest);color:var(--text-on-surface);border-radius:10px;padding:10px 14px;font-size:14px;outline:none;" />
         </div>
         <div style="display:flex;gap:12px;margin-top:8px;">
           <button id="btn-close-profile"
-            style="flex:1;padding:12px;border-radius:10px;background:#f0f2f0;color:#3f4a3c;font-weight:700;border:none;cursor:pointer;">Hủy</button>
+            style="flex:1;padding:12px;border-radius:10px;background:var(--bg-surface-container);color:var(--text-on-surface-variant);font-weight:700;border:none;cursor:pointer;">Hủy</button>
           <button id="btn-save-profile"
             style="flex:1;padding:12px;border-radius:10px;background:#1D9336;color:#fff;font-weight:700;border:none;cursor:pointer;">Lưu
             thay đổi</button>
@@ -545,32 +545,32 @@
   <div id="modal-admin-change-password"
     style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px;">
     <div
-      style="background:#fff;border-radius:20px;width:100%;max-width:400px;box-shadow:0 24px 60px rgba(0,0,0,0.28);position:relative;overflow:hidden;">
-      <div style="padding:20px 24px;border-bottom:1px solid #e8ede6;">
-        <h3 style="color:#181c20;font-weight:700;font-size:18px;">Đổi mật khẩu</h3>
+      style="background:var(--bg-surface-lowest);border:1px solid var(--outline-variant);border-radius:20px;width:100%;max-width:400px;box-shadow:0 24px 60px rgba(0,0,0,0.28);position:relative;overflow:hidden;">
+      <div style="padding:20px 24px;border-bottom:1px solid var(--outline-variant);">
+        <h3 style="color:var(--text-on-surface);font-weight:700;font-size:18px;">Đổi mật khẩu</h3>
       </div>
       <div style="padding:24px;display:flex;flex-direction:column;gap:16px;">
         <div>
-          <label style="font-size:12px;font-weight:700;color:#6e7a6b;margin-bottom:6px;display:block;">Mật khẩu hiện
+          <label style="font-size:12px;font-weight:700;color:var(--text-on-surface-variant);margin-bottom:6px;display:block;">Mật khẩu hiện
             tại</label>
           <input id="pwd-old" type="password"
-            style="width:100%;border:1px solid #cdd6ca;border-radius:10px;padding:10px 14px;font-size:14px;outline:none;" />
+            style="width:100%;border:1px solid var(--outline-variant);background:var(--bg-surface-lowest);color:var(--text-on-surface);border-radius:10px;padding:10px 14px;font-size:14px;outline:none;" />
         </div>
         <div>
-          <label style="font-size:12px;font-weight:700;color:#6e7a6b;margin-bottom:6px;display:block;">Mật khẩu
+          <label style="font-size:12px;font-weight:700;color:var(--text-on-surface-variant);margin-bottom:6px;display:block;">Mật khẩu
             mới</label>
           <input id="pwd-new" type="password"
-            style="width:100%;border:1px solid #cdd6ca;border-radius:10px;padding:10px 14px;font-size:14px;outline:none;" />
+            style="width:100%;border:1px solid var(--outline-variant);background:var(--bg-surface-lowest);color:var(--text-on-surface);border-radius:10px;padding:10px 14px;font-size:14px;outline:none;" />
         </div>
         <div>
-          <label style="font-size:12px;font-weight:700;color:#6e7a6b;margin-bottom:6px;display:block;">Nhập lại mật khẩu
+          <label style="font-size:12px;font-weight:700;color:var(--text-on-surface-variant);margin-bottom:6px;display:block;">Nhập lại mật khẩu
             mới</label>
           <input id="pwd-confirm" type="password"
-            style="width:100%;border:1px solid #cdd6ca;border-radius:10px;padding:10px 14px;font-size:14px;outline:none;" />
+            style="width:100%;border:1px solid var(--outline-variant);background:var(--bg-surface-lowest);color:var(--text-on-surface);border-radius:10px;padding:10px 14px;font-size:14px;outline:none;" />
         </div>
         <div style="display:flex;gap:12px;margin-top:8px;">
           <button id="btn-close-password"
-            style="flex:1;padding:12px;border-radius:10px;background:#f0f2f0;color:#3f4a3c;font-weight:700;border:none;cursor:pointer;">Hủy</button>
+            style="flex:1;padding:12px;border-radius:10px;background:var(--bg-surface-container);color:var(--text-on-surface-variant);font-weight:700;border:none;cursor:pointer;">Hủy</button>
           <button id="btn-save-password"
             style="flex:1;padding:12px;border-radius:10px;background:#ba1a1a;color:#fff;font-weight:700;border:none;cursor:pointer;">Đổi
             mật khẩu</button>

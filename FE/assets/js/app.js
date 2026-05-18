@@ -283,11 +283,13 @@
       const inputs = container.querySelectorAll('input[type="date"]:not([data-airpicker])');
       inputs.forEach(originalInput => {
         originalInput.setAttribute('data-airpicker', 'true');
+        const originalStyle = originalInput.style.cssText;
         originalInput.style.display = 'none';
 
         const visibleInput = document.createElement('input');
         visibleInput.type = 'text';
         visibleInput.className = originalInput.className;
+        visibleInput.style.cssText = originalStyle;
         visibleInput.placeholder = 'dd/mm/yyyy';
         originalInput.parentNode.insertBefore(visibleInput, originalInput);
 
@@ -328,9 +330,15 @@
           set: function(val) {
             baseDescriptor.set.call(originalInput, val);
             if (val) {
-              const parts = val.split('-');
+              const cleanVal = val.substring(0, 10);
+              const parts = cleanVal.split('-');
               if (parts.length === 3) {
-                adp.selectDate(new Date(parts[0], parts[1] - 1, parts[2]), { silent: true });
+                const y = parseInt(parts[0]);
+                const m = parseInt(parts[1]);
+                const d = parseInt(parts[2]);
+                if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+                  adp.selectDate(new Date(y, m - 1, d), { silent: true });
+                }
               }
             } else { adp.clear({ silent: true }); }
           }
@@ -339,9 +347,15 @@
         // Tự động prefill dữ liệu ban đầu
         const initialVal = baseDescriptor.get.call(originalInput);
         if (initialVal) {
-          const parts = initialVal.split('-');
+          const cleanVal = initialVal.substring(0, 10);
+          const parts = cleanVal.split('-');
           if (parts.length === 3) {
-            adp.selectDate(new Date(parts[0], parts[1] - 1, parts[2]), { silent: true });
+            const y = parseInt(parts[0]);
+            const m = parseInt(parts[1]);
+            const d = parseInt(parts[2]);
+            if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+              adp.selectDate(new Date(y, m - 1, d), { silent: true });
+            }
           }
         }
       });

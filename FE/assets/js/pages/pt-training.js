@@ -60,6 +60,11 @@ window.GymApp.pages['pt-training'] = {
               <span class="material-symbols-outlined text-sm">refresh</span>
               Tải lại
             </button>
+
+            <button id="btn-export-schedules" class="flex items-center gap-xs px-standard py-standard rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all group">
+              <span class="material-symbols-outlined text-sm text-[#1D9336]">download</span>
+              <span class="text-body-sm font-bold">Xuất Excel</span>
+            </button>
           </div>
         </div>
 
@@ -283,6 +288,15 @@ window.GymApp.pages['pt-training'] = {
       document.getElementById('pt-filter-pt').value = '';
       self._applyFilter();
       window.GymApp.toast('Đã tải lại danh sách!', 'success');
+    });
+
+    document.getElementById('btn-export-schedules')?.addEventListener('click', async () => {
+      window.GymApp.toast('Đang xuất lịch tập PT...', 'info');
+      const ptId = document.getElementById('pt-filter-pt')?.value || '';
+      let url = '/export/pt-schedules';
+      if (ptId) url += '?pt_id=' + ptId;
+      const ok = await window.GymApp.api.download(url, 'lich-pt.csv');
+      if (ok) window.GymApp.toast('Đã tải xuống file Excel lịch tập PT!', 'success');
     });
 
     // Sửa lịch tập (event delegation)

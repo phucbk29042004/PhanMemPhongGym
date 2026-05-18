@@ -22,7 +22,7 @@ app.listen(PORT, () => {
   console.log(`🏋️   Môi trường:    ${process.env.NODE_ENV || 'development'}`);
   console.log('🏋️  ════════════════════════════════════════════');
   console.log('');
-  console.log('📋 API Endpoints:');
+  console.log(' API Endpoints:');
   console.log(`   POST   http://localhost:${PORT}/api/auth/login`);
   console.log(`   GET    http://localhost:${PORT}/api/members`);
   console.log(`   GET    http://localhost:${PORT}/api/packages`);

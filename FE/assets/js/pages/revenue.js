@@ -20,6 +20,10 @@ window.GymApp.pages['revenue'] = {
               <span class="material-symbols-outlined text-sm">refresh</span>
               Tải lại
             </button>
+            <button id="btn-export-revenue" class="flex items-center gap-xs px-standard py-standard rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all group">
+              <span class="material-symbols-outlined text-sm text-[#1D9336]">download</span>
+              <span class="text-body-sm font-bold">Xuất Excel</span>
+            </button>
           </div>
         </div>
 
@@ -356,6 +360,13 @@ window.GymApp.pages['revenue'] = {
     document.getElementById('rev-reload')?.addEventListener('click', async () => {
       await self._fetchAndRender();
       window.GymApp.toast('Đã tải lại dữ liệu!', 'success');
+    });
+
+    // Nút xuất Excel
+    document.getElementById('btn-export-revenue')?.addEventListener('click', async () => {
+      window.GymApp.toast('Đang xuất báo cáo doanh thu...', 'info');
+      const ok = await window.GymApp.api.download(`/export/revenue?days=${self._days}`, `bao-cao-doanh-thu-${self._days}-ngay.csv`);
+      if (ok) window.GymApp.toast('Đã tải xuống file Excel doanh thu!', 'success');
     });
   },
 

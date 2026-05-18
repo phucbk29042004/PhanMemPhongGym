@@ -75,6 +75,11 @@ window.GymApp.pages['members-list'] = {
                   <span class="text-body-sm font-bold">Sắp xếp</span>
                   <span id="member-sort-badge" style="display:none;position:absolute;top:-8px;right:-8px;width:22px;height:22px;background:#1D9336;color:#fff;border-radius:50%;font-size:11px;align-items:center;justify-content:center;font-weight:800;box-shadow:0 2px 8px rgba(29,147,54,0.4);border:2px solid #fff;">1</span>
                 </button>
+                
+                <button id="btn-export-members" class="flex items-center gap-xs px-standard py-standard rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all group">
+                  <span class="material-symbols-outlined text-sm text-[#1D9336]">download</span>
+                  <span class="text-body-sm font-bold">Xuất Excel</span>
+                </button>
               </div>
             </div>
 
@@ -112,6 +117,11 @@ window.GymApp.pages['members-list'] = {
                   <span class="material-symbols-outlined text-sm transition-transform group-hover:rotate-180 duration-500">sort</span>
                   <span class="text-body-sm font-bold">Sắp xếp</span>
                   <span id="pt-sort-badge" style="display:none;position:absolute;top:-8px;right:-8px;width:22px;height:22px;background:#1D9336;color:#fff;border-radius:50%;font-size:11px;align-items:center;justify-content:center;font-weight:800;box-shadow:0 2px 8px rgba(29,147,54,0.4);border:2px solid #fff;">1</span>
+                </button>
+
+                <button id="btn-export-pts" class="flex items-center gap-xs px-standard py-standard rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all group">
+                  <span class="material-symbols-outlined text-sm text-[#1D9336]">download</span>
+                  <span class="text-body-sm font-bold">Xuất Excel</span>
                 </button>
               </div>
             </div>
@@ -1542,50 +1552,71 @@ window.GymApp.pages['members-list'] = {
   _showEditPackageModal: function (m, pkg, onSaved) {
     document.getElementById('gym-sub-modal')?.remove();
     const d0 = s => s ? s.substring(0, 10) : '';
-    const iCls = `class="bg-surface-container-lowest text-on-surface border border-outline-variant" style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;"`;
+    const iCls = `class="w-full bg-surface-container/30 border border-outline-variant text-on-surface rounded-xl focus:border-brand-primary focus:bg-surface-container-lowest outline-none transition-all placeholder-outline-variant/60 font-body-md text-body-md shadow-inner focus:shadow-none"`;
     const PM = {tien_mat:'Tiền mặt',chuyen_khoan:'Chuyển khoản',the:'Thẻ',momo:'MoMo',zalopay:'ZaloPay',khac:'Khác'};
     const overlay = document.createElement('div');
     overlay.id = 'gym-sub-modal';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);padding:16px;';
     overlay.innerHTML = `
-      <div class="modal-card bg-surface-container-lowest" style="border-radius:16px;width:100%;max-width:420px;position:relative;box-shadow:0 30px 80px rgba(0,0,0,0.4);">
-        <div class="border-b border-outline-variant px-loose py-standard flex items-center justify-between">
+      <div class="modal-card bg-surface-container-lowest border border-outline-variant" style="border-radius:24px;width:100%;max-width:440px;position:relative;box-shadow:0 30px 80px rgba(0,0,0,0.4);overflow:hidden;">
+        <div class="border-b border-outline-variant px-loose py-standard flex items-center justify-between bg-surface-container/20">
           <div>
-            <h3 class="font-bold text-on-surface" style="font-size:16px;margin:0;">Chỉnh sửa gói tập</h3>
-            <p class="text-on-surface-variant text-body-sm" style="margin:2px 0 0;">Gói: <strong>${pkg.ten_goi}</strong></p>
+            <h3 class="font-bold text-on-surface" style="font-size:17px;margin:0;">Chỉnh sửa gói tập</h3>
+            <div class="flex items-center gap-xs mt-xs">
+              <span class="text-body-xs font-bold px-compact py-3xs bg-brand-primary/10 text-brand-primary rounded-full">Gói tập</span>
+              <p class="text-on-surface-variant text-body-xs font-bold" style="margin:0;">${pkg.ten_goi}</p>
+            </div>
           </div>
-          <button id="edit-pkg-close" style="background:transparent;border:none;cursor:pointer;"><span class="material-symbols-outlined text-on-surface-variant text-xl">close</span></button>
+          <button id="edit-pkg-close" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container transition-colors" style="background:transparent;border:none;cursor:pointer;">
+            <span class="material-symbols-outlined text-on-surface-variant text-lg">close</span>
+          </button>
         </div>
-        <div class="p-loose" style="display:flex;flex-direction:column;gap:14px;">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="p-loose" style="display:flex;flex-direction:column;gap:16px;">
+          <div class="grid grid-cols-2 gap-standard">
             <div>
-              <label class="block text-body-sm font-bold text-on-surface mb-xs">Từ ngày</label>
-              <input id="edit-pkg-from" type="date" value="${d0(pkg.tu_ngay)}" ${iCls} />
+              <label class="block text-body-sm font-bold text-on-surface-variant mb-xs">Từ ngày</label>
+              <div class="relative w-full">
+                <span class="material-symbols-outlined absolute left-standard top-1/2 -translate-y-1/2 text-outline text-sm">calendar_month</span>
+                <input id="edit-pkg-from" type="date" value="${d0(pkg.tu_ngay)}" ${iCls} style="padding:10px 12px 10px 36px; box-sizing:border-box; width:100%;" />
+              </div>
             </div>
             <div>
-              <label class="block text-body-sm font-bold text-on-surface mb-xs">Đến ngày</label>
-              <input id="edit-pkg-to" type="date" value="${d0(pkg.den_ngay)}" ${iCls} />
+              <label class="block text-body-sm font-bold text-on-surface-variant mb-xs">Đến ngày</label>
+              <div class="relative w-full">
+                <span class="material-symbols-outlined absolute left-standard top-1/2 -translate-y-1/2 text-outline text-sm">calendar_month</span>
+                <input id="edit-pkg-to" type="date" value="${d0(pkg.den_ngay)}" ${iCls} style="padding:10px 12px 10px 36px; box-sizing:border-box; width:100%;" />
+              </div>
             </div>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="grid grid-cols-2 gap-standard">
             <div>
-              <label class="block text-body-sm font-bold text-on-surface mb-xs">Giá thực tế (VNĐ)</label>
-              <input id="edit-pkg-price" type="text" inputmode="numeric" value="${pkg.gia_thuc_te > 0 ? new Intl.NumberFormat('vi-VN').format(pkg.gia_thuc_te) : ''}" placeholder="Không đổi" ${iCls} />
+              <label class="block text-body-sm font-bold text-on-surface-variant mb-xs">Giá thực tế (VNĐ)</label>
+              <div class="relative w-full">
+                <span class="material-symbols-outlined absolute left-standard top-1/2 -translate-y-1/2 text-outline text-sm">payments</span>
+                <input id="edit-pkg-price" type="text" inputmode="numeric" value="${pkg.gia_thuc_te > 0 ? new Intl.NumberFormat('vi-VN').format(pkg.gia_thuc_te) : ''}" placeholder="Không đổi" ${iCls} style="padding:10px 12px 10px 36px; box-sizing:border-box; width:100%;" />
+              </div>
             </div>
             <div>
-              <label class="block text-body-sm font-bold text-on-surface mb-xs">Phương thức TT</label>
-              <select id="edit-pkg-payment" ${iCls}>
-                ${Object.entries(PM).map(([v,l]) => `<option value="${v}" ${pkg.phuong_thuc_tt === v ? 'selected' : ''}>${l}</option>`).join('')}
-              </select>
+              <label class="block text-body-sm font-bold text-on-surface-variant mb-xs">Phương thức TT</label>
+              <div class="relative w-full">
+                <span class="material-symbols-outlined absolute left-standard top-1/2 -translate-y-1/2 text-outline text-sm">credit_card</span>
+                <select id="edit-pkg-payment" ${iCls} style="padding:10px 32px 10px 36px; box-sizing:border-box; width:100%; appearance:none;">
+                  ${Object.entries(PM).map(([v,l]) => `<option value="${v}" ${pkg.phuong_thuc_tt === v ? 'selected' : ''}>${l}</option>`).join('')}
+                </select>
+                <span class="material-symbols-outlined absolute right-standard top-1/2 -translate-y-1/2 text-outline pointer-events-none text-sm">keyboard_arrow_down</span>
+              </div>
             </div>
           </div>
           <div>
-            <label class="block text-body-sm font-bold text-on-surface mb-xs">Ghi chú thanh toán</label>
-            <input id="edit-pkg-note" type="text" value="${pkg.ghi_chu_tt || ''}" placeholder="Ghi chú thêm..." ${iCls} />
+            <label class="block text-body-sm font-bold text-on-surface-variant mb-xs">Ghi chú thanh toán</label>
+            <div class="relative w-full">
+              <span class="material-symbols-outlined absolute left-standard top-1/2 -translate-y-1/2 text-outline text-sm">description</span>
+              <input id="edit-pkg-note" type="text" value="${pkg.ghi_chu_tt || ''}" placeholder="Ghi chú thêm..." ${iCls} style="padding:10px 12px 10px 36px; box-sizing:border-box; width:100%;" />
+            </div>
           </div>
-          <div class="flex gap-standard">
-            <button id="edit-pkg-close2" class="flex-1 py-compact rounded-xl border border-outline-variant text-on-surface-variant font-bold hover:bg-surface-container transition-colors text-body-md">Đóng</button>
-            <button id="edit-pkg-save" class="flex-1 py-compact rounded-xl font-bold text-white text-body-md transition-all hover:opacity-90" style="background:#1d4ed8;border:none;cursor:pointer;">Lưu thay đổi</button>
+          <div class="flex gap-standard mt-xs">
+            <button id="edit-pkg-close2" class="flex-1 py-standard rounded-xl border border-outline-variant text-on-surface-variant font-bold hover:bg-surface-container transition-colors text-body-sm">Đóng</button>
+            <button id="edit-pkg-save" class="flex-1 py-standard rounded-xl font-bold text-white text-body-sm transition-all hover:opacity-95 shadow-md shadow-brand-primary/10 hover:shadow-lg hover:scale-[1.01]" style="background:#1D9336; border:none; cursor:pointer;">Lưu thay đổi</button>
           </div>
         </div>
       </div>`;
@@ -2425,9 +2456,11 @@ window.GymApp.pages['members-list'] = {
             <div style="flex:1;height:1px;background:linear-gradient(to right,#1D933640,transparent);"></div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-            ${field('badge', 'Họ và tên', 'ho_ten', 'text', m.ho_ten, true, true)}
-            ${field('cake', 'Ngày sinh', 'ngay_sinh', 'date', m.ngay_sinh, false, false)}
+            ${field('person', 'Họ và tên', 'ho_ten', 'text', m.ho_ten, true, true)}
+            ${field('cake', 'Ngày sinh', 'ngay_sinh', 'date', m.ngay_sinh ? m.ngay_sinh.substring(0, 10) : '', false, false)}
             ${selectField('wc', 'Giới tính', 'gioi_tinh', [{ v: '', l: '— Chọn —' }, { v: 'nam', l: 'Nam' }, { v: 'nu', l: 'Nữ' }, { v: 'khac', l: 'Khác' }], m.gioi_tinh === 'male' ? 'nam' : (m.gioi_tinh === 'female' ? 'nu' : m.gioi_tinh), false)}
+            ${field('badge', 'CCCD / CMND', 'cccd', 'text', m.cccd, false, false)}
+            ${field('home_pin', 'Quê quán', 'que_quan', 'text', m.que_quan, false, false)}
           </div>
           <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
             <span class="material-symbols-outlined" style="color:#1D9336;font-size:18px;">contact_page</span>
@@ -2500,6 +2533,8 @@ window.GymApp.pages['members-list'] = {
           ngay_sinh: document.getElementById('em-ngay_sinh').value || null,
           gioi_tinh: document.getElementById('em-gioi_tinh').value || null,
           dia_chi_tam_tru: document.getElementById('em-dia_chi_tam_tru').value.trim() || null,
+          cccd: document.getElementById('em-cccd').value.trim() || null,
+          que_quan: document.getElementById('em-que_quan').value.trim() || null,
           ghi_chu: document.getElementById('em-ghi_chu').value.trim() || null,
         });
         if (res?.success) {
@@ -2668,6 +2703,21 @@ window.GymApp.pages['members-list'] = {
 
     document.getElementById('btn-filter-pt')?.addEventListener('click', () => self._showPtFilterModal());
     document.getElementById('btn-sort-pt')?.addEventListener('click', () => self._showPtSortModal());
+
+    document.getElementById('btn-export-members')?.addEventListener('click', async () => {
+      window.GymApp.toast('Đang xuất danh sách hội viên...', 'info');
+      const q = document.getElementById('member-search')?.value || '';
+      const ok = await window.GymApp.api.download('/export/members?loai_ho_so=hoi_vien&search=' + encodeURIComponent(q), 'danh-sach-hoi-vien.csv');
+      if (ok) window.GymApp.toast('Đã tải xuống file Excel hội viên!', 'success');
+    });
+
+    document.getElementById('btn-export-pts')?.addEventListener('click', async () => {
+      window.GymApp.toast('Đang xuất danh sách huấn luyện viên...', 'info');
+      const q = document.getElementById('pt-search')?.value || '';
+      const ok = await window.GymApp.api.download('/export/members?loai_ho_so=pt&search=' + encodeURIComponent(q), 'danh-sach-pt.csv');
+      if (ok) window.GymApp.toast('Đã tải xuống file Excel PT!', 'success');
+    });
+
     self._updatePtSortUI();
     self._updateMemberSortUI();
   }

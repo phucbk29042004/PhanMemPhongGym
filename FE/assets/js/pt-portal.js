@@ -437,6 +437,283 @@
     }
   };
 
+  // ── PT Schedules Actions Modals ─────────────────────────────────
+  async function _showCreateScheduleModal() {
+    try {
+      const res = await window.GymApp.api.get('/pt/my-members');
+      if (!res?.success) {
+        window.GymApp.toast('Không thể lấy danh sách học viên!', 'error');
+        return;
+      }
+      const members = res.data || [];
+      if (members.length === 0) {
+        window.GymApp.toast('Bạn chưa có học viên nào đăng ký hoạt động!', 'warning');
+        return;
+      }
+
+      const overlay = document.createElement('div');
+      overlay.style.cssText = `position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:9000;padding:20px;`;
+      overlay.innerHTML = `
+        <div class="animate-fade-in" style="background:var(--bg-surface-lowest);border:1px solid var(--outline-variant);border-radius:24px;width:100%;max-width:500px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,0.15);">
+          <!-- Header -->
+          <div style="padding:20px 24px;background:linear-gradient(135deg,#1D9336,#0a591c);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+            <div>
+              <h3 style="font-size:16px;font-weight:800;margin:0;letter-spacing:0.02em;">ĐẶT LỊCH TẬP MỚI</h3>
+              <p style="font-size:11px;opacity:0.85;margin:4px 0 0 0;">Lên lịch dạy học viên của bạn</p>
+            </div>
+            <button id="close-create-sched" style="background:rgba(255,255,255,0.15);border:none;color:#fff;cursor:pointer;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;margin-left:auto;transition:background .2s;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">
+              <span class="material-symbols-outlined" style="font-size:20px;">close</span>
+            </button>
+          </div>
+          
+          <!-- Body -->
+          <div style="overflow-y:auto;flex:1;padding:24px;display:flex;flex-direction:column;gap:16px;">
+            <!-- Học viên -->
+            <div>
+              <label style="display:block;font-size:11px;text-transform:uppercase;font-weight:800;color:var(--text-on-surface-variant);opacity:0.8;margin-bottom:6px;">Học viên <span style="color:#ba1a1a;">*</span></label>
+              <select id="cs-member" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl focus:border-brand-primary outline-none text-[14px] font-medium transition-all">
+                <option value="">— Chọn học viên —</option>
+                ${members.map(m => `<option value="${m.dang_ky_id}">${m.ho_ten} (${m.ten_goi_pt || 'Gói PT'} · Còn ${m.buoi_con_lai} buổi)</option>`).join('')}
+              </select>
+            </div>
+
+            <!-- Ngày tập -->
+            <div>
+              <label style="display:block;font-size:11px;text-transform:uppercase;font-weight:800;color:var(--text-on-surface-variant);opacity:0.8;margin-bottom:6px;">Ngày tập <span style="color:#ba1a1a;">*</span></label>
+              <div class="relative w-full">
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">calendar_month</span>
+                <input id="cs-date" type="date" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-4 py-2.5 rounded-xl focus:border-brand-primary outline-none text-[14px] font-medium transition-all" />
+              </div>
+            </div>
+
+            <!-- Khung giờ -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+              <div>
+                <label style="display:block;font-size:11px;text-transform:uppercase;font-weight:800;color:var(--text-on-surface-variant);opacity:0.8;margin-bottom:6px;">Giờ bắt đầu <span style="color:#ba1a1a;">*</span></label>
+                <input id="cs-start" type="time" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl focus:border-brand-primary outline-none text-[14px] font-medium transition-all" />
+              </div>
+              <div>
+                <label style="display:block;font-size:11px;text-transform:uppercase;font-weight:800;color:var(--text-on-surface-variant);opacity:0.8;margin-bottom:6px;">Giờ kết thúc <span style="color:#ba1a1a;">*</span></label>
+                <input id="cs-end" type="time" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl focus:border-brand-primary outline-none text-[14px] font-medium transition-all" />
+              </div>
+            </div>
+
+            <!-- Loại buổi -->
+            <div>
+              <label style="display:block;font-size:11px;text-transform:uppercase;font-weight:800;color:var(--text-on-surface-variant);opacity:0.8;margin-bottom:6px;">Loại buổi</label>
+              <select id="cs-type" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl focus:border-brand-primary outline-none text-[14px] font-medium transition-all">
+                <option value="ca_nhan">Cá nhân (1-1)</option>
+                <option value="nhom">Nhóm</option>
+              </select>
+            </div>
+
+            <!-- Ghi chú -->
+            <div>
+              <label style="display:block;font-size:11px;text-transform:uppercase;font-weight:800;color:var(--text-on-surface-variant);opacity:0.8;margin-bottom:6px;">Ghi chú</label>
+              <textarea id="cs-note" placeholder="Ví dụ: Tập Cardio, bài ngực..." rows="2" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl focus:border-brand-primary outline-none text-[14px] font-medium transition-all resize-none"></textarea>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div style="padding:16px 24px;border-top:1px solid var(--outline-variant);display:flex;justify-content:flex-end;gap:12px;background:var(--bg-surface-low);flex-shrink:0;">
+            <button id="btn-cancel-create-sched" style="padding:10px 20px;border-radius:12px;border:1px solid var(--outline-variant);color:var(--text-on-surface);background:transparent;font-weight:700;font-size:13px;cursor:pointer;">Hủy</button>
+            <button id="btn-submit-create-sched" style="padding:10px 24px;border-radius:12px;border:none;color:#fff;background:#1D9336;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 2px 8px rgba(29,147,54,0.3);">Đặt lịch</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(overlay);
+
+      const close = () => overlay.remove();
+      document.getElementById('close-create-sched').addEventListener('click', close);
+      document.getElementById('btn-cancel-create-sched').addEventListener('click', close);
+
+      document.getElementById('btn-submit-create-sched').addEventListener('click', async () => {
+        const dangKyPtId = document.getElementById('cs-member').value;
+        const ngayTap = document.getElementById('cs-date').value;
+        const gioBatDau = document.getElementById('cs-start').value;
+        const gioKetThuc = document.getElementById('cs-end').value;
+        const loaiBuoi = document.getElementById('cs-type').value;
+        const ghiChu = document.getElementById('cs-note').value.trim();
+
+        if (!dangKyPtId || !ngayTap || !gioBatDau || !gioKetThuc) {
+          window.GymApp.toast('Vui lòng điền đầy đủ các trường bắt buộc (*)!', 'error');
+          return;
+        }
+
+        const submitBtn = document.getElementById('btn-submit-create-sched');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Đang xử lý...';
+
+        try {
+          const res = await window.GymApp.api.post('/pt/schedules', {
+            dang_ky_pt_id: parseInt(dangKyPtId),
+            ngay_tap: ngayTap,
+            gio_bat_dau: gioBatDau,
+            gio_ket_thuc: gioKetThuc,
+            loai_buoi: loaiBuoi,
+            ghi_chu: ghiChu || null
+          });
+
+          if (res?.success) {
+            window.GymApp.toast('Lịch tập mới đã được xếp thành công!', 'success');
+            close();
+            const fresh = await window.GymApp.api.get('/pt/schedules');
+            if (fresh?.success) window.GymApp.data.ptSchedules = fresh.data || [];
+            window.GymApp.pages['my-schedule']._applyFilter();
+          } else {
+            window.GymApp.toast(res?.message || 'Không thể xếp lịch tập!', 'error');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Đặt lịch';
+          }
+        } catch (err) {
+          console.error(err);
+          window.GymApp.toast('Lỗi máy chủ, vui lòng thử lại sau!', 'error');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Đặt lịch';
+        }
+      });
+    } catch (e) {
+      console.error(e);
+      window.GymApp.toast('Có lỗi xảy ra!', 'error');
+    }
+  }
+
+  function _showEditScheduleModal(s) {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:9000;padding:20px;`;
+    overlay.innerHTML = `
+      <div class="animate-fade-in" style="background:var(--bg-surface-lowest);border:1px solid var(--outline-variant);border-radius:24px;width:100%;max-width:500px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,0.15);">
+        <!-- Header -->
+        <div style="padding:20px 24px;background:linear-gradient(135deg,#03872c,#156324);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+          <div>
+            <h3 style="font-size:16px;font-weight:800;margin:0;letter-spacing:0.02em;">SỬA LỊCH TẬP</h3>
+            <p style="font-size:11px;opacity:0.85;margin:4px 0 0 0;">Cập nhật lại thời gian buổi tập</p>
+          </div>
+          <button id="close-edit-sched" style="background:rgba(255,255,255,0.15);border:none;color:#fff;cursor:pointer;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;margin-left:auto;transition:background .2s;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">
+            <span class="material-symbols-outlined" style="font-size:20px;">close</span>
+          </button>
+        </div>
+        
+        <!-- Body -->
+        <div style="overflow-y:auto;flex:1;padding:24px;display:flex;flex-direction:column;gap:16px;">
+          <!-- Học viên -->
+          <div>
+            <label style="display:block;font-size:11px;text-transform:uppercase;font-weight:800;color:var(--text-on-surface-variant);opacity:0.8;margin-bottom:6px;">Học viên</label>
+            <input type="text" value="${s.ten_hoi_vien || '—'}" disabled class="w-full bg-surface-container border border-outline-variant text-on-surface-variant px-4 py-2.5 rounded-xl outline-none text-[14px] font-medium cursor-not-allowed" />
+          </div>
+
+          <!-- Ngày tập -->
+          <div>
+            <label style="display:block;font-size:11px;text-transform:uppercase;font-weight:800;color:var(--text-on-surface-variant);opacity:0.8;margin-bottom:6px;">Ngày tập <span style="color:#ba1a1a;">*</span></label>
+            <div class="relative w-full">
+              <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">calendar_month</span>
+              <input id="es-date" type="date" value="${s.ngay_tap ? s.ngay_tap.substring(0,10) : ''}" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-4 py-2.5 rounded-xl focus:border-brand-primary outline-none text-[14px] font-medium transition-all" />
+            </div>
+          </div>
+
+          <!-- Khung giờ -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div>
+              <label style="display:block;font-size:11px;text-transform:uppercase;font-weight:800;color:var(--text-on-surface-variant);opacity:0.8;margin-bottom:6px;">Giờ bắt đầu <span style="color:#ba1a1a;">*</span></label>
+              <input id="es-start" type="time" value="${s.gio_bat_dau || ''}" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl focus:border-brand-primary outline-none text-[14px] font-medium transition-all" />
+            </div>
+            <div>
+              <label style="display:block;font-size:11px;text-transform:uppercase;font-weight:800;color:var(--text-on-surface-variant);opacity:0.8;margin-bottom:6px;">Giờ kết thúc <span style="color:#ba1a1a;">*</span></label>
+              <input id="es-end" type="time" value="${s.gio_ket_thuc || ''}" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl focus:border-brand-primary outline-none text-[14px] font-medium transition-all" />
+            </div>
+          </div>
+
+          <!-- Ghi chú -->
+          <div>
+            <label style="display:block;font-size:11px;text-transform:uppercase;font-weight:800;color:var(--text-on-surface-variant);opacity:0.8;margin-bottom:6px;">Ghi chú</label>
+            <textarea id="es-note" rows="2" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl focus:border-brand-primary outline-none text-[14px] font-medium transition-all resize-none">${s.ghi_chu || ''}</textarea>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="padding:16px 24px;border-top:1px solid var(--outline-variant);display:flex;justify-content:flex-end;gap:12px;background:var(--bg-surface-low);flex-shrink:0;">
+          <button id="btn-cancel-edit-sched" style="padding:10px 20px;border-radius:12px;border:1px solid var(--outline-variant);color:var(--text-on-surface);background:transparent;font-weight:700;font-size:13px;cursor:pointer;">Hủy</button>
+          <button id="btn-submit-edit-sched" style="padding:10px 24px;border-radius:12px;border:none;color:#fff;background:#1D9336;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 2px 8px rgba(29,147,54,0.3);">Lưu thay đổi</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const close = () => overlay.remove();
+    document.getElementById('close-edit-sched').addEventListener('click', close);
+    document.getElementById('btn-cancel-edit-sched').addEventListener('click', close);
+
+    document.getElementById('btn-submit-edit-sched').addEventListener('click', async () => {
+      const ngayTap = document.getElementById('es-date').value;
+      const gioBatDau = document.getElementById('es-start').value;
+      const gioKetThuc = document.getElementById('es-end').value;
+      const ghiChu = document.getElementById('es-note').value.trim();
+
+      if (!ngayTap || !gioBatDau || !gioKetThuc) {
+        window.GymApp.toast('Vui lòng điền đầy đủ các trường bắt buộc (*)!', 'error');
+        return;
+      }
+
+      const submitBtn = document.getElementById('btn-submit-edit-sched');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Đang lưu...';
+
+      try {
+        const res = await window.GymApp.api.put(`/pt/schedules/${s.id}`, {
+          ngay_tap: ngayTap,
+          gio_bat_dau: gioBatDau,
+          gio_ket_thuc: gioKetThuc,
+          ghi_chu: ghiChu || null
+        });
+
+        if (res?.success) {
+          window.GymApp.toast('Đã cập nhật lịch tập thành công!', 'success');
+          close();
+          const fresh = await window.GymApp.api.get('/pt/schedules');
+          if (fresh?.success) window.GymApp.data.ptSchedules = fresh.data || [];
+          window.GymApp.pages['my-schedule']._applyFilter();
+        } else {
+          window.GymApp.toast(res?.message || 'Cập nhật lịch tập thất bại!', 'error');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Lưu thay đổi';
+        }
+      } catch (err) {
+        console.error(err);
+        window.GymApp.toast('Lỗi máy chủ, vui lòng thử lại sau!', 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Lưu thay đổi';
+      }
+    });
+  }
+
+  async function _cancelScheduleSession(scheduleId, studentName) {
+    const reason = prompt(`Nhập lý do hủy buổi tập với ${studentName}:`);
+    if (reason === null) return;
+    
+    const cleanReason = reason.trim();
+    if (!cleanReason) {
+      window.GymApp.toast('Lý do hủy không được để trống!', 'error');
+      return;
+    }
+
+    try {
+      const res = await window.GymApp.api.put(`/pt/schedules/${scheduleId}/cancel`, { ly_do: cleanReason });
+      if (res?.success) {
+        window.GymApp.toast(`Đã hủy thành công buổi tập với ${studentName}!`, 'success');
+        const fresh = await window.GymApp.api.get('/pt/schedules');
+        if (fresh?.success) window.GymApp.data.ptSchedules = fresh.data || [];
+        window.GymApp.pages['my-schedule']._applyFilter();
+      } else {
+        window.GymApp.toast(res?.message || 'Hủy buổi tập thất bại!', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      window.GymApp.toast('Lỗi kết nối máy chủ!', 'error');
+    }
+  }
+
   // ── Lịch tập của tôi ──────────────────────────────────────
   pages['my-schedule'] = {
     _filter: '',
@@ -468,6 +745,9 @@
               <input id="sch-date" type="date" class="bg-surface-container-low border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none font-body-md text-body-md transition-colors" />
               <button id="sch-reload" class="flex items-center gap-xs px-loose py-compact rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary transition-all font-body-md whitespace-nowrap">
                 <span class="material-symbols-outlined text-sm">refresh</span>Tải lại
+              </button>
+              <button id="sch-create" class="flex items-center gap-xs px-loose py-compact rounded-xl bg-brand-primary text-white hover:bg-brand-primary/90 active:scale-95 transition-all font-bold text-body-md whitespace-nowrap shadow-sm">
+                <span class="material-symbols-outlined text-sm">add</span>Đặt lịch mới
               </button>
             </div>
           </div>
@@ -519,14 +799,31 @@
                   <td class="text-on-surface-variant text-body-sm max-w-[160px] truncate">${s.ghi_chu || '—'}</td>
                   <td class="text-center">
                     ${s.trang_thai === 'cho_tap'
-          ? `<button
-                            class="btn-confirm-session inline-flex items-center gap-xs px-standard py-xs rounded-xl bg-brand-primary text-white font-bold text-body-sm hover:bg-brand-primary/80 active:scale-95 transition-all shadow-sm whitespace-nowrap"
-                            data-id="${s.id}"
-                            data-name="${s.ten_hoi_vien || 'học viên'}"
-                          >
-                            <span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL' 1"></span>
-                            Xác nhận đã tập
-                          </button>`
+          ? `<div class="flex items-center justify-center gap-2">
+                             <button
+                               class="btn-confirm-session flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-brand-primary text-white font-bold text-xs hover:bg-brand-primary/95 active:scale-95 transition-all shadow-sm whitespace-nowrap"
+                               data-id="${s.id}"
+                               data-name="${s.ten_hoi_vien || 'học viên'}"
+                             >
+                               <span class="material-symbols-outlined text-xs">done</span> Xác nhận
+                             </button>
+                             <button
+                               class="btn-edit-session flex items-center justify-center p-1.5 rounded-lg border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary active:scale-95 transition-all"
+                               data-id="${s.id}"
+                               data-sdata='${encodeURIComponent(JSON.stringify(s))}'
+                               title="Sửa lịch"
+                             >
+                               <span class="material-symbols-outlined text-xs">edit</span>
+                             </button>
+                             <button
+                               class="btn-cancel-session flex items-center justify-center p-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 hover:border-red-400 active:scale-95 transition-all"
+                               data-id="${s.id}"
+                               data-name="${s.ten_hoi_vien || 'học viên'}"
+                               title="Hủy lịch"
+                             >
+                               <span class="material-symbols-outlined text-xs">close</span>
+                             </button>
+                           </div>`
           : `<span class="text-outline text-body-sm">—</span>`
         }
                   </td>
@@ -567,40 +864,60 @@
         window.GymApp.toast('Đã tải lại lịch tập!', 'success');
       });
 
-      // Xác nhận buổi tập — event delegation
+      // Đặt lịch mới
+      document.getElementById('sch-create')?.addEventListener('click', () => {
+        _showCreateScheduleModal();
+      });
+
+      // Xác nhận, Sửa, Hủy buổi tập — event delegation
       document.getElementById('schedule-table-wrap')?.addEventListener('click', async (e) => {
+        // 1. Xác nhận đã tập
         const btn = e.target.closest('.btn-confirm-session');
-        if (!btn || btn.disabled) return;
+        if (btn && !btn.disabled) {
+          const scheduleId = btn.dataset.id;
+          const studentName = btn.dataset.name;
 
-        const scheduleId = btn.dataset.id;
-        const studentName = btn.dataset.name;
+          if (!confirm(`Xác nhận buổi tập với ${studentName} đã hoàn thành?\n(Buổi này sẽ được trừ từ gói PT.)`)) return;
 
-        if (!confirm(`Xác nhận buổi tập với ${studentName} đã hoàn thành?\n(Buổi này sẽ được trừ từ gói PT.)`)) return;
+          btn.disabled = true;
+          btn.innerHTML = `<span class="material-symbols-outlined text-xs animate-spin">autorenew</span> Đang lưu...`;
 
-        // Hiện trạng thái loading trên nút
-        btn.disabled = true;
-        btn.innerHTML = `<span class="material-symbols-outlined text-sm animate-spin">autorenew</span> Đang xử lý...`;
-
-        try {
-          const res = await window.GymApp.api.put(`/pt/schedules/${scheduleId}/confirm`, {});
-          if (res?.success) {
-            // Cập nhật dữ liệu cục bộ ngay không cần reload toàn bộ
-            window.GymApp.toast(`✅ Đã xác nhận buổi tập với ${studentName}!`, 'success');
-
-            // Reload lại dữ liệu từ server rồi render lại bảng
-            const fresh = await window.GymApp.api.get('/pt/schedules');
-            if (fresh?.success) window.GymApp.data.ptSchedules = fresh.data || [];
-            self._applyFilter();
-          } else {
-            window.GymApp.toast(res?.message || 'Xác nhận thất bại!', 'error');
+          try {
+            const res = await window.GymApp.api.put(`/pt/schedules/${scheduleId}/confirm`, {});
+            if (res?.success) {
+              window.GymApp.toast(`✅ Đã xác nhận buổi tập với ${studentName}!`, 'success');
+              const fresh = await window.GymApp.api.get('/pt/schedules');
+              if (fresh?.success) window.GymApp.data.ptSchedules = fresh.data || [];
+              self._applyFilter();
+            } else {
+              window.GymApp.toast(res?.message || 'Xác nhận thất bại!', 'error');
+              btn.disabled = false;
+              btn.innerHTML = `<span class="material-symbols-outlined text-xs">done</span> Xác nhận`;
+            }
+          } catch (err) {
+            console.error(err);
+            window.GymApp.toast('Lỗi kết nối, vui lòng thử lại.', 'error');
             btn.disabled = false;
-            btn.innerHTML = `<span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL' 1">check_circle</span> Xác nhận đã tập`;
+            btn.innerHTML = `<span class="material-symbols-outlined text-xs">done</span> Xác nhận`;
           }
-        } catch (err) {
-          console.error(err);
-          window.GymApp.toast('Lỗi kết nối, vui lòng thử lại.', 'error');
-          btn.disabled = false;
-          btn.innerHTML = `<span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL' 1">check_circle</span> Xác nhận đã tập`;
+          return;
+        }
+
+        // 2. Sửa lịch tập
+        const editBtn = e.target.closest('.btn-edit-session');
+        if (editBtn) {
+          const s = JSON.parse(decodeURIComponent(editBtn.dataset.sdata));
+          _showEditScheduleModal(s);
+          return;
+        }
+
+        // 3. Hủy lịch tập
+        const cancelBtn = e.target.closest('.btn-cancel-session');
+        if (cancelBtn) {
+          const id = cancelBtn.dataset.id;
+          const name = cancelBtn.dataset.name;
+          _cancelScheduleSession(id, name);
+          return;
         }
       });
     }
