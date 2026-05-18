@@ -47,7 +47,7 @@ export const getSchedules = (req, res) => {
     JOIN ho_so pt ON pt.id = lt.pt_id
     JOIN dang_ky_pt dk ON dk.id = lt.dang_ky_pt_id
     ${where}
-    ORDER BY lt.ngay_tap DESC, lt.gio_bat_dau DESC
+    ORDER BY lt.id DESC
   `).all(...params);
 
   return success(res, rows);

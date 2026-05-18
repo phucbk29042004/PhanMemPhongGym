@@ -796,7 +796,14 @@
                   <td class="font-bold text-on-surface">${s.gio_bat_dau} — ${s.gio_ket_thuc}</td>
                   <td><span class="bg-surface-container px-compact py-xs rounded-full text-body-sm text-on-surface-variant font-bold">${s.loai_buoi === 'nhom' ? 'Nhóm' : 'Cá nhân'}</span></td>
                   <td>${window.GymApp.statusBadge(s.trang_thai)}</td>
-                  <td class="text-on-surface-variant text-body-sm max-w-[160px] truncate">${s.ghi_chu || '—'}</td>
+                  <td class="text-on-surface-variant text-body-sm max-w-[160px]">
+                    <div class="flex items-center gap-xs group/note">
+                      <span class="truncate block flex-1" title="${s.ghi_chu || ''}">${s.ghi_chu || '—'}</span>
+                      <button class="btn-pt-edit-note opacity-0 group-hover/note:opacity-100 transition-opacity p-0.5 rounded-md hover:bg-surface-container text-brand-primary" data-id="${s.id}" data-ghi-chu="${(s.ghi_chu || '').replace(/"/g, '&quot;')}" title="Chỉnh sửa ghi chú" style="background:transparent; border:none; cursor:pointer; display:inline-flex; align-items:center; justify-content:center;">
+                        <span class="material-symbols-outlined text-[16px]">edit_note</span>
+                      </button>
+                    </div>
+                  </td>
                   <td class="text-center">
                     ${s.trang_thai === 'cho_tap'
           ? `<div class="flex items-center justify-center gap-2">
@@ -918,6 +925,74 @@
           const name = cancelBtn.dataset.name;
           _cancelScheduleSession(id, name);
           return;
+        }
+
+        // 4. Sửa nhanh ghi chú
+        const noteBtn = e.target.closest('.btn-pt-edit-note');
+        if (noteBtn) {
+          const id = noteBtn.dataset.id;
+          const oldNote = noteBtn.dataset.ghiChu;
+          self._showEditNoteModal(id, oldNote);
+          return;
+        }
+      });
+    },
+
+    _showEditNoteModal(scheduleId, oldNote) {
+      const self = this;
+      const overlay = document.createElement('div');
+      overlay.style.cssText = `position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:9000;padding:20px;`;
+      overlay.innerHTML = `
+        <div class="animate-fade-in bg-surface-container-lowest border border-outline-variant" style="width:100%;max-width:440px;display:flex;flex-direction:column;border-radius:20px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,0.15);">
+          <!-- Header -->
+          <div style="padding:16px 20px;background:linear-gradient(135deg,#1D9336,#0a591c);color:#fff;display:flex;align-items:center;justify-content:space-between;">
+            <h3 style="font-size:15px;font-weight:800;margin:0;">📝 GHI CHÚ BUỔI TẬP (PT)</h3>
+            <button id="close-note-modal" style="background:none;border:none;color:#fff;cursor:pointer;margin-left:auto;display:flex;align-items:center;">
+              <span class="material-symbols-outlined" style="font-size:20px;">close</span>
+            </button>
+          </div>
+          <!-- Body -->
+          <div style="padding:20px;display:flex;flex-direction:column;gap:12px;">
+            <p class="text-body-sm text-on-surface-variant font-medium">Nhập ghi chú cho buổi tập này:</p>
+            <textarea id="note-input" rows="3" placeholder="Nhập bài tập, lưu ý sức khỏe học viên..." class="w-full bg-surface-container border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl focus:border-brand-primary outline-none text-body-md transition-colors resize-none">${oldNote || ''}</textarea>
+          </div>
+          <!-- Footer -->
+          <div style="padding:12px 20px;border-top:1px solid var(--outline-variant);display:flex;justify-content:flex-end;gap:10px;background:var(--bg-surface-low);">
+            <button id="btn-cancel-note" class="px-loose py-compact rounded-xl border border-outline-variant text-on-surface text-body-sm font-bold" style="padding:8px 16px; border-radius:8px; border:1px solid var(--outline-variant); cursor:pointer;">Hủy</button>
+            <button id="btn-save-note" class="px-loose py-compact rounded-xl bg-brand-primary text-white text-body-sm font-bold" style="padding:8px 18px; border-radius:8px; border:none; background:var(--brand-primary); color:white; cursor:pointer;">Lưu ghi chú</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+
+      const close = () => overlay.remove();
+      document.getElementById('close-note-modal').addEventListener('click', close);
+      document.getElementById('btn-cancel-note').addEventListener('click', close);
+
+      document.getElementById('btn-save-note').addEventListener('click', async () => {
+        const text = document.getElementById('note-input').value.trim();
+        const saveBtn = document.getElementById('btn-save-note');
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Đang lưu...';
+
+        try {
+          const res = await window.GymApp.api.patch(`/pt/schedules/${scheduleId}/note`, { ghi_chu: text || null });
+          if (res?.success) {
+            window.GymApp.toast('Đã lưu ghi chú thành công!', 'success');
+            close();
+            const fresh = await window.GymApp.api.get('/pt/schedules');
+            if (fresh?.success) window.GymApp.data.ptSchedules = fresh.data || [];
+            self._applyFilter();
+          } else {
+            window.GymApp.toast(res?.message || 'Không thể lưu ghi chú!', 'error');
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Lưu ghi chú';
+          }
+        } catch (err) {
+          console.error(err);
+          window.GymApp.toast('Lỗi kết nối máy chủ!', 'error');
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Lưu ghi chú';
         }
       });
     }
@@ -1099,6 +1174,61 @@
           document.getElementById('content-area').innerHTML = this.render();
         }
       } catch (e) { console.error(e); }
+    }
+  };
+
+  pages['gym-rules'] = {
+    rules: [],
+    render() {
+      const activeRules = this.rules.filter(r => r.is_active === 1 && (r.ap_dung_cho === 'tat_ca' || r.ap_dung_cho === 'pt'));
+      return `
+        <div class="flex flex-col gap-loose">
+          <div class="page-title-bar">
+            <h2 class="font-display-lg text-display-lg text-on-surface font-bold">Nội quy phòng tập</h2>
+            <p class="text-on-surface-variant font-body-sm text-body-sm mt-xs">Quy định và hướng dẫn chung dành cho Huấn luyện viên (PT) tại Paradise GYM</p>
+          </div>
+
+          <div class="grid grid-cols-1 gap-standard">
+            ${activeRules.length === 0 ? `
+              <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant p-margin text-center text-on-surface-variant">
+                <span class="material-symbols-outlined text-4xl text-outline block mb-standard">gavel</span>
+                <p class="font-bold text-on-surface">Không có nội quy nào</p>
+              </div>
+            ` : activeRules.map((r, index) => `
+              <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant p-loose shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex items-start gap-standard">
+                  <div class="w-8 h-8 rounded-full bg-brand-primary/10 flex items-center justify-center text-brand-primary font-bold shrink-0">
+                    ${index + 1}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <h3 class="font-bold text-on-surface text-body-md">${r.tieu_de}</h3>
+                    <p class="text-body-sm text-on-surface-variant mt-xs whitespace-pre-line leading-relaxed">${r.noi_dung}</p>
+                    <div class="mt-standard flex items-center gap-xs opacity-40">
+                      <span class="material-symbols-outlined text-sm">schedule</span>
+                      <span class="text-xs font-bold">Cập nhật: ${window.GymApp.formatDate(r.ngay_cap_nhat)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    },
+    async init() {
+      const self = this;
+      try {
+        const res = await window.GymApp.api.get('/config/rules');
+        if (res?.success) {
+          self.rules = res.data || [];
+          const container = document.getElementById('content-area');
+          if (window.GymApp.currentPage === 'gym-rules' && container) {
+            container.innerHTML = self.render();
+          }
+        }
+      } catch (err) {
+        console.error('Lỗi tải nội quy:', err);
+      }
     }
   };
 

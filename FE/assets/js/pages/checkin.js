@@ -314,8 +314,11 @@ window.GymApp.pages['checkin'] = {
     // Nút tải lại thủ công
     document.getElementById('btn-checkin-reload')?.addEventListener('click', async () => {
       const btn = document.getElementById('btn-checkin-reload');
+      const icon = btn?.querySelector('.material-symbols-outlined');
+      if (icon) icon.classList.add('animate-spin');
       if (btn) btn.classList.add('opacity-50', 'pointer-events-none');
       await self._fetchAndRefresh();
+      if (icon) icon.classList.remove('animate-spin');
       if (btn) btn.classList.remove('opacity-50', 'pointer-events-none');
       window.GymApp.toast('Đã cập nhật dữ liệu check-in!', 'success');
     });

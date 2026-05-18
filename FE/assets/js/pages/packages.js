@@ -181,7 +181,7 @@ window.GymApp.pages['packages'] = {
           </div>
           <div>
             <label class="text-on-surface-variant text-body-sm font-bold block mb-xs">Giá (VNĐ) <span class="text-error">*</span></label>
-            <input id="pkg-gia" type="number" min="0" value="${pkg?.gia ?? ''}" placeholder="VD: 300000" class="w-full bg-surface-container border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none text-body-md" />
+            <input id="pkg-gia" type="text" inputmode="numeric" value="${pkg?.gia ? pkg.gia.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') : ''}" placeholder="VD: 300.000" class="w-full bg-surface-container border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none text-body-md" />
           </div>
           <div>
             <label class="text-on-surface-variant text-body-sm font-bold block mb-xs">Mô tả</label>
@@ -203,6 +203,15 @@ window.GymApp.pages['packages'] = {
     document.getElementById('cancel-pkg-modal').addEventListener('click', close);
     overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
 
+    // Format giá tiền liên tục khi gõ theo định dạng VNĐ (300.000)
+    const priceInput = document.getElementById('pkg-gia');
+    if (priceInput) {
+      priceInput.addEventListener('input', function () {
+        let value = this.value.replace(/\D/g, '');
+        this.value = value ? value.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '';
+      });
+    }
+
     document.getElementById('save-pkg-modal').addEventListener('click', async () => {
       const ten = document.getElementById('pkg-ten').value.trim();
       const thang = document.getElementById('pkg-thang').value;
@@ -210,7 +219,9 @@ window.GymApp.pages['packages'] = {
       const gia = document.getElementById('pkg-gia').value;
       const mota = document.getElementById('pkg-mota').value.trim();
 
-      if (!ten || thang === '' || gia === '') {
+      const rawGia = gia.replace(/\./g, '');
+
+      if (!ten || thang === '' || rawGia === '') {
         window.GymApp.toast('Vui lòng điền đầy đủ tên gói, số tháng và giá!', 'error');
         return;
       }
@@ -219,7 +230,7 @@ window.GymApp.pages['packages'] = {
       btn.disabled = true; btn.classList.add('opacity-50');
 
       try {
-        const body = { ten_goi: ten, so_thang: parseInt(thang), so_ngay_them: parseInt(ngay), gia: parseInt(gia), mo_ta: mota };
+        const body = { ten_goi: ten, so_thang: parseInt(thang), so_ngay_them: parseInt(ngay), gia: parseInt(rawGia), mo_ta: mota };
         let res;
         if (isEdit) {
           res = await window.GymApp.api.put(`/packages/${pkg.id}`, body);

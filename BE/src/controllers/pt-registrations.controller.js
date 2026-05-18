@@ -6,7 +6,7 @@
 import db from '../config/db.js';
 import { success, error } from '../utils/response.js';
 import { ghi_audit_log } from '../utils/audit.js';
-import { createNotification } from '../utils/notifications.js';
+import { createNotification, createUserNotification } from '../utils/notifications.js';
 
 // ── GET /api/pt/registrations ─────────────────────────────
 // Danh sách đăng ký PT (admin/lễ tân xem tất cả, PT xem lịch của mình)
@@ -183,7 +183,7 @@ export const updateRegistration = (req, res) => {
       tu_ngay        = COALESCE(?, tu_ngay),
       den_ngay       = COALESCE(?, den_ngay),
       gia_thuc_te    = COALESCE(?, gia_thuc_te),
-      ghi_chu        = COALESCE(?, ghi_chu)
+      ghi_chu_tt     = COALESCE(?, ghi_chu_tt)
     WHERE id = ?
   `).run(
     pt_id || null, goi_pt_id || null, so_buoi_dang_ky ? parseInt(so_buoi_dang_ky) : null,
@@ -202,7 +202,14 @@ export const cancelRegistration = (req, res) => {
   const { id } = req.params;
   const { ly_do } = req.body;
 
-  const reg = db.prepare('SELECT * FROM dang_ky_pt WHERE id = ?').get(id);
+  const reg = db.prepare(`
+    SELECT dp.*, hv.ho_ten AS ten_hv, pt.ho_ten AS ten_pt
+    FROM dang_ky_pt dp
+    JOIN ho_so hv ON hv.id = dp.hoi_vien_id
+    JOIN ho_so pt ON pt.id = dp.pt_id
+    WHERE dp.id = ?
+  `).get(id);
+
   if (!reg) return error(res, 'Không tìm thấy đăng ký PT.', 404);
   if (reg.trang_thai === 'da_huy') return error(res, 'Đăng ký đã bị hủy rồi.', 400);
 
@@ -215,6 +222,22 @@ export const cancelRegistration = (req, res) => {
     UPDATE lich_tap SET trang_thai = 'da_huy', ly_do_huy = 'Hủy đăng ký PT'
     WHERE dang_ky_pt_id = ? AND trang_thai = 'cho_tap'
   `).run(id);
+
+  // Gửi thông báo đến hội viên
+  createUserNotification(
+    reg.hoi_vien_id,
+    'Hợp đồng PT bị hủy ❌',
+    `Hợp đồng tập luyện với PT ${reg.ten_pt} đã bị hủy. Lý do: ${ly_do || 'Không có lý do cụ thể'}.`,
+    'huy_goi_pt'
+  );
+
+  // Gửi thông báo đến PT
+  createUserNotification(
+    reg.pt_id,
+    'Học viên hủy hợp đồng ❌',
+    `Học viên ${reg.ten_hv} đã hủy hợp đồng tập luyện với bạn. Lý do: ${ly_do || 'Không có lý do cụ thể'}.`,
+    'huy_goi_pt'
+  );
 
   ghi_audit_log(req, 'UPDATE', 'dang_ky_pt', parseInt(id), { trang_thai: reg.trang_thai },
     { trang_thai: 'da_huy', ly_do }, 'Hủy đăng ký PT');
