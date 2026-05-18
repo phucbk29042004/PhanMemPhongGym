@@ -1,0 +1,716 @@
+[
+    {
+        "stt": 1,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Phường Bến Nghé, một phần phường Đa Kao và Nguyễn Thái Bình",
+        "new_ward": "Phường Sài Gòn"
+    },
+    {
+        "stt": 2,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Phường Tân Định và một phần phường Đa Kao",
+        "new_ward": "Phường Tân Định"
+    },
+    {
+        "stt": 3,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường Bến Thành, Phạm Ngũ Lão, một phần phường Cầu Ông Lãnh và Nguyễn Thái Bình",
+        "new_ward": "Phường Bến Thành"
+    },
+    {
+        "stt": 4,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường Nguyễn Cư Trinh, Cầu Kho, Cô Giang, một phần phường Cầu Ông Lãnh",
+        "new_ward": "Phường Cầu Ông Lãnh"
+    },
+    {
+        "stt": 5,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 1, 2, 3, 5, một phần phường 4 (Quận 3)",
+        "new_ward": "Phường Bàn Cờ"
+    },
+    {
+        "stt": 6,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường Võ Thị Sáu, một phần phường 4 (Quận 3)",
+        "new_ward": "Phường Xuân Hòa"
+    },
+    {
+        "stt": 7,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 9, 11, 12, 14 (Quận 3)",
+        "new_ward": "Phường Nhiêu Lộc"
+    },
+    {
+        "stt": 8,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 13, 16, 18, một phần phường 15 (Quận 4)",
+        "new_ward": "Phường Xóm Chiếu"
+    },
+    {
+        "stt": 9,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 8, 9, một phần phường 2, 4 và 15 (Quận 4)",
+        "new_ward": "Phường Khánh Hội"
+    },
+    {
+        "stt": 10,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 1, 3, một phần phường 2 và 4 (Quận 4)",
+        "new_ward": "Phường Vĩnh Hội"
+    },
+    {
+        "stt": 11,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 1, 2, 4 (Quận 5)",
+        "new_ward": "Phường Chợ Quán"
+    },
+    {
+        "stt": 12,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 5, 7, 9 (Quận 5)",
+        "new_ward": "Phường An Đông"
+    },
+    {
+        "stt": 13,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 11, 12, 13, 14 (Quận 5)",
+        "new_ward": "Phường Chợ Lớn"
+    },
+    {
+        "stt": 14,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 2, 9 (Quận 6)",
+        "new_ward": "Phường Bình Tây"
+    },
+    {
+        "stt": 15,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 1, 7, 8 (Quận 6)",
+        "new_ward": "Phường Bình Tiên"
+    },
+    {
+        "stt": 16,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 10, 11 (Quận 6), một phần phường 16 (Quận 8)",
+        "new_ward": "Phường Bình Phú"
+    },
+    {
+        "stt": 17,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 12, 13, 14 (Quận 6)",
+        "new_ward": "Phường Phú Lâm"
+    },
+    {
+        "stt": 18,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường Bình Thuận, Tân Thuận Đông, Tân Thuận Tây",
+        "new_ward": "Phường Tân Thuận"
+    },
+    {
+        "stt": 19,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Phường Phú Thuận và một phần phường Phú Mỹ (Quận 7)",
+        "new_ward": "Phường Phú Thuận"
+    },
+    {
+        "stt": 20,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường Tân Phú và một phần phường Phú Mỹ (Quận 7)",
+        "new_ward": "Phường Tân Mỹ"
+    },
+    {
+        "stt": 21,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường Tân Phong, Tân Quy, Tân Kiểng, Tân Hưng",
+        "new_ward": "Phường Tân Hưng"
+    },
+    {
+        "stt": 22,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 4 (Quận 8), Rạch Ông, Hưng Phú và một phần phường 5 (Quận 8)",
+        "new_ward": "Phường Chánh Hưng"
+    },
+    {
+        "stt": 23,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 14, 15, Xóm Củi và một phần phường 16 (Quận 8)",
+        "new_ward": "Phường Phú Định"
+    },
+    {
+        "stt": 24,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Phường 6, một phần phường 5 và 7 (Quận 8), xã An Phú Tây (Huyện Bình Chánh)",
+        "new_ward": "Phường Bình Đông"
+    },
+    {
+        "stt": 25,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 6, 8, một phần phường 14 (Quận 10)",
+        "new_ward": "Phường Diên Hồng"
+    },
+    {
+        "stt": 26,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 1, 2, 4, 9, 10 (Quận 10)",
+        "new_ward": "Phường Vườn Lài"
+    },
+    {
+        "stt": 27,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 12, 13, 15, một phần phường 14 (Quận 10)",
+        "new_ward": "Phường Hòa Hưng"
+    },
+    {
+        "stt": 28,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 1, 7, 16 (Quận 11)",
+        "new_ward": "Phường Minh Phụng"
+    },
+    {
+        "stt": 29,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 3, 10, một phần phường 8 (Quận 11)",
+        "new_ward": "Phường Bình Thới"
+    },
+    {
+        "stt": 30,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 5, 14 (Quận 11)",
+        "new_ward": "Phường Hòa Bình"
+    },
+    {
+        "stt": 31,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 11, 15, một phần phường 8 (Quận 11)",
+        "new_ward": "Phường Phú Thọ"
+    },
+    {
+        "stt": 32,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường Tân Thới Nhất, Tân Hưng Thuận, Đông Hưng Thuận",
+        "new_ward": "Phường Đông Hưng Thuận"
+    },
+    {
+        "stt": 33,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường Tân Chánh Hiệp, Trung Mỹ Tây",
+        "new_ward": "Phường Trung Mỹ Tây"
+    },
+    {
+        "stt": 34,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường Hiệp Thành (Quận 12), Tân Thới Hiệp",
+        "new_ward": "Phường Tân Thới Hiệp"
+    },
+    {
+        "stt": 35,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường Thạnh Xuân, Thới An",
+        "new_ward": "Phường Thới An"
+    },
+    {
+        "stt": 36,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường Thạnh Lộc, An Phú Đông",
+        "new_ward": "Phường An Phú Đông"
+    },
+    {
+        "stt": 37,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường Bình Trị Đông B, An Lạc A, An Lạc",
+        "new_ward": "Phường An Lạc"
+    },
+    {
+        "stt": 38,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường Bình Hưng Hòa B, một phần phường Bình Trị Đông A và Tân Tạo",
+        "new_ward": "Phường Bình Tân"
+    },
+    {
+        "stt": 39,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Xã Tân Kiên, một phần phường Tân Tạo A và Tân Tạo",
+        "new_ward": "Phường Tân Tạo"
+    },
+    {
+        "stt": 40,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường Bình Trị Đông, một phần phường Bình Hưng Hòa A và Bình Trị Đông A",
+        "new_ward": "Phường Bình Trị Đông"
+    },
+    {
+        "stt": 41,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường Bình Hưng Hòa, một phần phường Sơn Kỳ và Bình Hưng Hòa A",
+        "new_ward": "Phường Bình Hưng Hòa"
+    },
+    {
+        "stt": 42,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 1, 2, 7, 17 (quận Bình Thạnh)",
+        "new_ward": "Phường Gia Định"
+    },
+    {
+        "stt": 43,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 12, 14, 26 (quận Bình Thạnh)",
+        "new_ward": "Phường Bình Thạnh"
+    },
+    {
+        "stt": 44,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 5, 11, 13 (quận Bình Thạnh)",
+        "new_ward": "Phường Bình Lợi Trung"
+    },
+    {
+        "stt": 45,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 19, 22, 25",
+        "new_ward": "Phường Thạnh Mỹ Tây"
+    },
+    {
+        "stt": 46,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 27, 28",
+        "new_ward": "Phường Bình Quới"
+    },
+    {
+        "stt": 47,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 1, 3 (quận Gò Vấp)",
+        "new_ward": "Phường Hạnh Thông"
+    },
+    {
+        "stt": 48,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 5, 6 (quận Gò Vấp)",
+        "new_ward": "Phường An Nhơn"
+    },
+    {
+        "stt": 49,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 10, 17 (quận Gò Vấp)",
+        "new_ward": "Phường Gò Vấp"
+    },
+    {
+        "stt": 50,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 15, 16 (quận Gò Vấp)",
+        "new_ward": "Phường An Hội Đông"
+    },
+    {
+        "stt": 51,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 8, 11 (quận Gò Vấp)",
+        "new_ward": "Phường Thông Tây Hội"
+    },
+    {
+        "stt": 52,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 12, 14 (quận Gò Vấp)",
+        "new_ward": "Phường An Hội Tây"
+    },
+    {
+        "stt": 53,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 4, 5, 9 (quận Phú Nhuận)",
+        "new_ward": "Phường Đức Nhuận"
+    },
+    {
+        "stt": 54,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 1, 2, 7, một phần phường 15 (quận Phú Nhuận)",
+        "new_ward": "Phường Cầu Kiệu"
+    },
+    {
+        "stt": 55,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 8, 10, 11, 13, một phần phường 15 (quận Phú Nhuận)",
+        "new_ward": "Phường Phú Nhuận"
+    },
+    {
+        "stt": 56,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 1, 2, 3 (quận Tân Bình)",
+        "new_ward": "Phường Tân Sơn Hòa"
+    },
+    {
+        "stt": 57,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 4, 5, 7 (quận Tân Bình)",
+        "new_ward": "Phường Tân Sơn Nhất"
+    },
+    {
+        "stt": 58,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 6, 8, 9 (quận Tân Bình)",
+        "new_ward": "Phường Tân Hòa"
+    },
+    {
+        "stt": 59,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 10, 11, 12 (quận Tân Bình)",
+        "new_ward": "Phường Bảy Hiền"
+    },
+    {
+        "stt": 60,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường 13, 14, một phần phường 15 (quận Tân Bình)",
+        "new_ward": "Phường Tân Bình"
+    },
+    {
+        "stt": 61,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Phần còn lại phường 15 (quận Tân Bình)",
+        "new_ward": "Phường Tân Sơn"
+    },
+    {
+        "stt": 62,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường Tây Thạnh, một phần phường Sơn Kỳ",
+        "new_ward": "Phường Tây Thạnh"
+    },
+    {
+        "stt": 63,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường Tân Sơn Nhì, Sơn Kỳ, một phần phường Tân Quý và Tân Thành",
+        "new_ward": "Phường Tân Sơn Nhì"
+    },
+    {
+        "stt": 64,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường Phú Thọ Hòa, một phần phường Tân Thành và Tân Quý",
+        "new_ward": "Phường Phú Thọ Hòa"
+    },
+    {
+        "stt": 65,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường Phú Trung, Hòa Thạnh, một phần phường Tân Thới Hòa và Tân Thành",
+        "new_ward": "Phường Tân Phú"
+    },
+    {
+        "stt": 66,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường Hiệp Tân, Phú Thạnh, một phần phường Tân Thới Hòa",
+        "new_ward": "Phường Phú Thạnh"
+    },
+    {
+        "stt": 67,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường Hiệp Bình Chánh, Hiệp Bình Phước, một phần phường Linh Đông",
+        "new_ward": "Phường Hiệp Bình"
+    },
+    {
+        "stt": 68,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường Bình Thọ, Linh Chiểu, Trường Thọ, một phần phường Linh Tây và Linh Đông",
+        "new_ward": "Phường Thủ Đức"
+    },
+    {
+        "stt": 69,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường Bình Chiểu, Tam Phú, Tam Bình",
+        "new_ward": "Phường Tam Bình"
+    },
+    {
+        "stt": 70,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường Linh Trung, Linh Xuân, một phần phường Linh Tây",
+        "new_ward": "Phường Linh Xuân"
+    },
+    {
+        "stt": 71,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường Tân Phú (thành phố Thủ Đức), Hiệp Phú, Tăng Nhơn Phú A, Tăng Nhơn Phú B, một phần phường Long Thạnh Mỹ",
+        "new_ward": "Phường Tăng Nhơn Phú"
+    },
+    {
+        "stt": 72,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường Long Bình, một phần phường Long Thạnh Mỹ",
+        "new_ward": "Phường Long Bình"
+    },
+    {
+        "stt": 73,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường Trường Thạnh, Long Phước",
+        "new_ward": "Phường Long Phước"
+    },
+    {
+        "stt": 74,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường Phú Hữu, Long Trường",
+        "new_ward": "Phường Long Trường"
+    },
+    {
+        "stt": 75,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường Thạnh Mỹ Lợi, Cát Lái",
+        "new_ward": "Phường Cát Lái"
+    },
+    {
+        "stt": 76,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường Bình Trưng Đông, Bình Trưng Tây, một phần phường An Phú (thành phố Thủ Đức)",
+        "new_ward": "Phường Bình Trưng"
+    },
+    {
+        "stt": 77,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường Phước Bình, Phước Long A, Phước Long B",
+        "new_ward": "Phường Phước Long"
+    },
+    {
+        "stt": 78,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các phường Thủ Thiêm, An Lợi Đông, Thảo Điền, An Khánh, một phần phường An Phú (thành phố Thủ Đức)",
+        "new_ward": "Phường An Khánh"
+    },
+    {
+        "stt": 113,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Xã Vĩnh Lộc A và một phần xã Phạm Văn Hai",
+        "new_ward": "Xã Vĩnh Lộc"
+    },
+    {
+        "stt": 114,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các xã Vĩnh Lộc B, một phần xã Phạm Văn Hai và một phần phường Tân Tạo",
+        "new_ward": "Xã Tân Vĩnh Lộc"
+    },
+    {
+        "stt": 115,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các xã Lê Minh Xuân, Bình Lợi",
+        "new_ward": "Xã Bình Lợi"
+    },
+    {
+        "stt": 116,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Thị trấn Tân Túc, Xã Tân Nhựt, một phần phường Tân Tạo A, xã Tân Kiên và phường 16 (Quận 8)",
+        "new_ward": "Xã Tân Nhựt"
+    },
+    {
+        "stt": 117,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các xã Tân Quý Tây, Bình Chánh, An Phú Tây",
+        "new_ward": "Xã Bình Chánh"
+    },
+    {
+        "stt": 118,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các xã Đa Phước, Qui Đức, Hưng Long",
+        "new_ward": "Xã Hưng Long"
+    },
+    {
+        "stt": 119,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các xã Phong Phú, xã Bình Hưng, một phần phường 7 (Quận 8)",
+        "new_ward": "Xã Bình Hưng"
+    },
+    {
+        "stt": 120,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các xã Tam Thôn Hiệp, Bình Khánh, một phần xã An Thới Đông",
+        "new_ward": "Xã Bình Khánh"
+    },
+    {
+        "stt": 121,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Xã Lý Nhơn và một phần xã An Thới Đông",
+        "new_ward": "Xã An Thới Đông"
+    },
+    {
+        "stt": 122,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Xã Long Hòa (huyện Cần Giờ), Thị trấn Cần Thạnh",
+        "new_ward": "Xã Cần Giờ"
+    },
+    {
+        "stt": 123,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các xã Tân Phú Trung, Tân Thông Hội, Phước Vĩnh An",
+        "new_ward": "Xã Củ Chi"
+    },
+    {
+        "stt": 124,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Thị trấn Củ Chi, Xã Phước Hiệp, Xã Tân An Hội",
+        "new_ward": "Xã Tân An Hội"
+    },
+    {
+        "stt": 125,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các xã Trung Lập Thượng, Phước Thạnh, Thái Mỹ",
+        "new_ward": "Xã Thái Mỹ"
+    },
+    {
+        "stt": 126,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các xã Phú Mỹ Hưng, An Phú, An Nhơn Tây",
+        "new_ward": "Xã An Nhơn Tây"
+    },
+    {
+        "stt": 127,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các xã Phạm Văn Cội, Trung Lập Hạ, Nhuận Đức",
+        "new_ward": "Xã Nhuận Đức"
+    },
+    {
+        "stt": 128,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các xã Tân Thạnh Tây, Tân Thạnh Đông, Phú Hòa Đông",
+        "new_ward": "Xã Phú Hòa Đông"
+    },
+    {
+        "stt": 129,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các xã Bình Mỹ (huyện Củ Chi), Hòa Phú, Trung An",
+        "new_ward": "Xã Bình Mỹ"
+    },
+    {
+        "stt": 130,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các xã Thới Tam Thôn, Nhị Bình, Đông Thạnh",
+        "new_ward": "Xã Đông Thạnh"
+    },
+    {
+        "stt": 131,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các xã Tân Hiệp (huyện Hóc Môn), Xã Tân Xuân, Thị trấn Hóc Môn",
+        "new_ward": "Xã Hóc Môn"
+    },
+    {
+        "stt": 132,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các xã Tân Thới Nhì, Xuân Thới Đông, Xuân Thới Sơn",
+        "new_ward": "Xã Xuân Thới Sơn"
+    },
+    {
+        "stt": 133,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các xã Xuân Thới Thượng, Trung Chánh, Bà Điểm",
+        "new_ward": "Xã Bà Điểm"
+    },
+    {
+        "stt": 134,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Thị trấn Nhà Bè, Xã Phú Xuân, Xã Phước Kiển, Xã Phước Lộc",
+        "new_ward": "Xã Nhà Bè"
+    },
+    {
+        "stt": 135,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Các xã Nhơn Đức, Long Thới, Hiệp Phước",
+        "new_ward": "Xã Hiệp Phước"
+    },
+    {
+        "stt": 167,
+        "province_code": "79",
+        "old_province": "TP.HCM",
+        "old_wards": "Không sáp nhập",
+        "new_ward": "Xã Thạnh An"
+    }
+]

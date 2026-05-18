@@ -108,7 +108,7 @@ export const createRegistration = (req, res) => {
     return error(res, 'Thiếu: hoi_vien_id, pt_id, goi_pt_id, tu_ngay, gia_thuc_te', 400);
   }
 
-  const validTT = ['tien_mat','chuyen_khoan','the','momo','zalopay','khac'];
+  const validTT = ['tien_mat','chuyen_khoan'];
   if (!validTT.includes(phuong_thuc_tt)) {
     return error(res, `phuong_thuc_tt phải là: ${validTT.join(', ')}`, 400);
   }

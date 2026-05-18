@@ -5,7 +5,7 @@
 import db from '../config/db.js';
 import { success, error } from '../utils/response.js';
 import { ghi_audit_log } from '../utils/audit.js';
-import { createNotification } from '../utils/notifications.js';
+import { createNotification, createUserNotification } from '../utils/notifications.js';
 
 // ── GET /api/pt/schedules ─────────────────────────────────
 // Xem lịch tập toàn phòng (admin) hoặc lịch cá nhân (PT/hội viên)
@@ -63,7 +63,7 @@ export const createSchedule = (req, res) => {
 
   // Lấy thông tin đăng ký PT
   const dkpt = db.prepare(`
-    SELECT dp.*, h_hv.id AS hv_id, h_pt.id AS pt_hoso_id
+    SELECT dp.*, h_hv.id AS hv_id, h_hv.ho_ten AS ho_ten_hv, h_pt.id AS pt_hoso_id, h_pt.ho_ten AS ho_ten_pt
     FROM dang_ky_pt dp
     JOIN ho_so h_hv ON h_hv.id = dp.hoi_vien_id
     JOIN ho_so h_pt ON h_pt.id = dp.pt_id
@@ -95,6 +95,21 @@ export const createSchedule = (req, res) => {
   `).run(dang_ky_pt_id, dkpt.pt_id, dkpt.hoi_vien_id, ngay_tap, gio_bat_dau, gio_ket_thuc, loai_buoi, ghi_chu || null, req.user.id);
 
   ghi_audit_log(req, 'CREATE', 'lich_tap', result.lastInsertRowid, null, { ngay_tap, gio_bat_dau, gio_ket_thuc }, 'Đặt lịch tập PT');
+
+  // Tạo thông báo inbox cá nhân (chạm đến hộp thư di động & kích hoạt badge số lượng màu đỏ)
+  createUserNotification(
+    dkpt.hv_id,
+    'Lịch tập mới được xếp 🗓️',
+    `Bạn có lịch tập mới vào lúc ${gio_bat_dau}–${gio_ket_thuc} ngày ${ngay_tap} với HLV ${dkpt.ho_ten_pt}.`,
+    'thong_bao_chung'
+  );
+  createUserNotification(
+    dkpt.pt_hoso_id,
+    'Lịch tập mới được xếp 🗓️',
+    `Lịch dạy mới với học viên ${dkpt.ho_ten_hv} vào lúc ${gio_bat_dau}–${gio_ket_thuc} ngày ${ngay_tap} đã được xếp thành công.`,
+    'thong_bao_chung'
+  );
+
   return success(res, db.prepare('SELECT * FROM lich_tap WHERE id = ?').get(result.lastInsertRowid), 'Đặt lịch thành công', 201);
 };
 
@@ -163,6 +178,20 @@ export const cancelSchedule = (req, res) => {
       parseInt(id),
       'lich_tap',
       'ca_hai'
+    );
+
+    // Tạo thông báo inbox cá nhân
+    createUserNotification(
+      schedule.hoi_vien_id,
+      'Buổi tập bị hủy ❌',
+      `Buổi tập lúc ${schedInfo.gio_bat_dau} ngày ${schedInfo.ngay_tap} với HLV ${schedInfo.ho_ten_pt} đã bị hủy. Lý do: ${ly_do || 'Không có lý do'}.`,
+      'nhac_nho_gia_han'
+    );
+    createUserNotification(
+      schedule.pt_id,
+      'Buổi tập bị hủy ❌',
+      `Buổi dạy lúc ${schedInfo.gio_bat_dau} ngày ${schedInfo.ngay_tap} với học viên ${schedInfo.ho_ten_hoi_vien} đã bị hủy. Lý do: ${ly_do || 'Không có lý do'}.`,
+      'nhac_nho_gia_han'
     );
   }
 
@@ -286,6 +315,20 @@ export const updateSchedule = (req, res) => {
       'lich_tap',
       'ca_hai'
     );
+
+    // Tạo thông báo inbox cá nhân
+    createUserNotification(
+      schedule.hoi_vien_id,
+      'Lịch tập thay đổi 📅',
+      `Lịch tập với HLV ${updated.ho_ten_pt} đã dời sang ngày ${updated.ngay_tap} lúc ${updated.gio_bat_dau}–${updated.gio_ket_thuc}.`,
+      'thong_bao_chung'
+    );
+    createUserNotification(
+      schedule.pt_id,
+      'Lịch tập thay đổi 📅',
+      `Lịch dạy với học viên ${updated.ho_ten_hoi_vien} đã dời sang ngày ${updated.ngay_tap} lúc ${updated.gio_bat_dau}–${updated.gio_ket_thuc}.`,
+      'thong_bao_chung'
+    );
   }
 
   return success(res, db.prepare('SELECT * FROM lich_tap WHERE id = ?').get(id), 'Cập nhật lịch thành công');
@@ -306,8 +349,11 @@ export const updateNote = (req, res) => {
 
   // Chỉ hội viên chủ sở hữu hoặc PT phụ trách mới được ghi chú
   const u = req.user;
-  const isOwner = u.vai_tro === 'hoi_vien' && u.vai_tro_id === schedule.hoi_vien_id;
-  const isPT    = u.vai_tro === 'pt'        && u.vai_tro_id === schedule.pt_id;
+  const hoSo = db.prepare('SELECT id FROM ho_so WHERE tai_khoan_id = ?').get(u.id);
+  const hoSoId = hoSo ? hoSo.id : null;
+
+  const isOwner = u.vai_tro === 'hoi_vien' && hoSoId === schedule.hoi_vien_id;
+  const isPT    = u.vai_tro === 'pt'        && hoSoId === schedule.pt_id;
   const isStaff = u.vai_tro === 'admin'     || u.vai_tro === 'le_tan';
   if (!isOwner && !isPT && !isStaff) return error(res, 'Không có quyền cập nhật ghi chú.', 403);
 

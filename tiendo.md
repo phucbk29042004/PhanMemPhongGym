@@ -8,11 +8,121 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
-**✅ Tối ưu hóa mật độ thông tin Dashboard (Toàn diện)** — Đã chuẩn hóa toàn bộ giao diện quản trị sang chuẩn High-Density bằng cách giảm whitespace, thay thế `loose/margin` bằng `standard/compact` trên tất cả các module chính, đảm bảo tối đa hóa diện tích hiển thị dữ liệu mà vẫn giữ được tính thẩm mỹ và responsive.
+**✅ Nâng cấp địa chỉ & quê quán theo địa giới mới (34 tỉnh & bypass TP.HCM)** — Đã tích hợp bộ chọn địa chỉ thông minh cho TP.HCM (ẩn Quận/Huyện, nạp Phường mới qua Datalist Search), đồng thời cập nhật gợi ý Quê quán thành 34 tỉnh thành đã sáp nhập. Đồng bộ hóa hiển thị tuyệt hảo trên cả Web Admin, Web Portal và Mobile App.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
+
+### 18/05/2026 19:00 — Tối Ưu Hóa Giao Diện Card (Loại Bỏ Khung Viền Vuông Avatar)
+- **Loại**: Cải tiến giao diện & Tối ưu hóa thẩm mỹ UI (Frontend)
+- **File chỉnh sửa**:
+  - `FE/assets/js/pages/members-list.js` — Loại bỏ thẻ bao ngoài `member-card-avatar-wrapper` (khung viền vuông bo góc có border màu xanh) xung quanh ảnh đại diện của cả hai tab **Hội viên** và **Huấn luyện viên (PT)**.
+- **Mô tả chi tiết**:
+  - **Thiết kế mượt mà hơn**: Thay thế khung vuông bao ngoài rườm rà bằng cách hiển thị trực tiếp ảnh đại diện dạng tròn nguyên bản của hệ thống, giúp tổng thể card trở nên thanh thoát, tinh gọn và tôn lên nét cao cấp của thiết kế Material 3.
+  - **Đồng bộ hóa vị trí chấm trạng thái**: Đưa chấm nhỏ chỉ báo hoạt động (online/offline) bám chính xác vào góc dưới bên phải của vòng tròn ảnh đại diện, tạo trải nghiệm trực quan đồng bộ như các nền tảng chat/dashboard hàng đầu hiện nay.
+- **Kết quả**: Thành công 100%, giao diện được tối giản hóa sang trọng, đúng ý người dùng.
+
+### 18/05/2026 18:45 — Đồng Bộ & Chuẩn Hóa Phương Thức Thanh Toán (Chỉ Giữ Tiền Mặt & Chuyển Khoản)
+- **Loại**: Cải tiến bảo mật, Đồng bộ & Đơn giản hóa quy trình tài chính (Fullstack)
+- **File chỉnh sửa**:
+  - `FE/assets/js/pages/members-list.js` — Cập nhật các select box `pkg-payment-method` (thêm gói tập) và `ptreg-payment` (đăng ký gói PT) chỉ giữ lại hai lựa chọn: "Tiền mặt" (`tien_mat`) và "Chuyển khoản" (`chuyen_khoan`). Loại bỏ hoàn toàn các tùy chọn "Thẻ", "MoMo", "ZaloPay", "Khác" không nằm trong quy chuẩn.
+  - `FE/assets/js/pages/expired.js` — Loại bỏ tùy chọn "Quẹt thẻ" (`the`) trong dropdown phương thức thanh toán của modal duyệt gia hạn.
+  - `BE/src/controllers/members.controller.js` — Thêm kiểm tra validation nghiêm ngặt trên backend tại các API đăng ký gói tập (`registerPackage`), chỉnh sửa gói tập (`editPackage`), chuyển gói tập (`switchPackage`), và duyệt gia hạn (`approvePackageRequest`).
+  - `BE/src/controllers/pt-registrations.controller.js` — Cập nhật `validTT` chỉ cho phép `tien_mat` và `chuyen_khoan` trong API đăng ký gói PT cho hội viên.
+- **Mô tả chi tiết**:
+  - **Kiểm soát chặt chẽ**: Đồng bộ toàn bộ các biểu mẫu tài chính trên cả giao diện quản lý hội viên, huấn luyện viên, gia hạn, chuyển gói để thống nhất hai phương thức thanh toán chính thống của trung tâm.
+  - **An toàn tối đa**: Rà soát và thêm ràng buộc dữ liệu tại tầng backend để loại bỏ hoàn toàn các yêu cầu giao dịch bất hợp lệ gửi trực tiếp qua API.
+- **Kết quả**: Thành công 100%, bảo mật dòng tiền tối ưu, kiểm soát chính sách tài chính của phòng GYM nghiêm ngặt.
+
+### 18/05/2026 18:30 — Loại bỏ Trạng Thái "Sắp Kích Hoạt" Rườm Rà & Đơn Giản Hóa Luồng Nghiệp Vụ Gói Tập
+- **Loại**: Cải tiến giao diện & Đơn giản hóa quy trình nghiệp vụ (Frontend)
+- **File chỉnh sửa**:
+  - `FE/assets/js/pages/members-list.js` — Xóa bỏ hoàn toàn khu vực tiêu đề "Sắp kích hoạt". Gộp các gói có ngày bắt đầu ở tương lai chung vào danh sách "Lịch sử & Gói khác", hiển thị thẻ "Chờ kích hoạt" tinh tế để lễ tân dễ dàng theo dõi.
+  - `FE/assets/js/pages/member-add.js` — Loại bỏ dropdown "Trạng thái" rườm rà khi tạo mới/đăng ký gói tập, vì hệ thống tự động gán hoạt động dựa trên thời gian bắt đầu thực tế, giảm thiểu bước thao tác cho lễ tân.
+- **Mô tả chi tiết**:
+  - **Đơn giản hóa tuyệt đối**: Giao diện quản lý gói tập của hội viên giờ chỉ còn 2 phần trực quan: "Đang sử dụng" (Gói đang hoạt động) và "Lịch sử & Gói khác" (Tất cả các gói khác).
+  - **Tránh Reference Error**: Khai báo biến `today` tại đầu hàm hiển thị tab `package` để định dạng nhãn trạng thái chính xác dựa theo thời gian thực mà không bị crash ứng dụng.
+- **Kết quả**: Thành công 100%, giao diện tinh gọn và sang trọng, nghiệp vụ đơn giản hóa tối đa.
+
+### 18/05/2026 18:15 — Cập Nhật Bộ Gợi Ý Quê Quán Thành 34 Tỉnh Thành Mới & Đồng Bộ Hóa Web & Mobile
+- **Loại**: Cải tiến nghiệp vụ hành chính & Trải nghiệm người dùng (Frontend & Mobile)
+- **File chỉnh sửa**:
+  - `FE/assets/js/pages/member-add.js` — Thay thế danh sách 63 tỉnh thành cũ của `dl-que-quan` datalist thành 34 tỉnh thành mới đã hợp nhất theo đúng quy hoạch địa giới hành chính hiện hành. Sắp xếp thứ tự bảng chữ cái để thuận tiện cho việc chọn.
+- **Mô tả chi tiết**:
+  - **34 Tỉnh thành mới**: Cập nhật danh sách Quê quán sang danh sách 34 tỉnh thành đã sáp nhập (Ví dụ: Hợp nhất Bà Rịa - Vũng Tàu, Bình Dương và TP.HCM đặt tại TP.HCM; Hợp nhất Bắc Kạn và Thái Nguyên đặt tại Thái Nguyên,...).
+  - **Đồng bộ hóa tuyệt đối Web và Mobile**: Nhờ cấu trúc lưu trữ dữ liệu đồng bộ dạng chuỗi văn bản và cơ chế lọc địa chỉ hiển thị `.filter(Boolean).join(', ')` thông minh, hệ thống hiển thị địa chỉ trên cả giao diện Web Admin, Web Portal và Mobile App (`MobileApp/src/screens/member/MemberProfileScreen.js`) đều tự động tương thích và hiển thị trơn tru, tuyệt đối không bị lỗi thừa dấu phẩy hay lỗi hiển thị nào khác.
+- **Kết quả**: Thành công tuyệt đối, đồng bộ hoàn hảo.
+
+### 18/05/2026 18:00 — Nâng Cấp Bộ Chọn Địa Chỉ Hành Chính Mới Cho TP.HCM & Tích Hợp Datalist Search Cho Phường/Xã
+- **Loại**: Cải tiến giao diện & Nâng cấp nghiệp vụ hành chính (Frontend)
+- **File chỉnh sửa**:
+  - `FE/assets/js/pages/member-add.js` — Thay thế dropdown select truyền thống của Phường/Xã bằng thẻ `<input>` tích hợp `<datalist>`. Tải thêm dữ liệu hành chính mới nhất của TP.HCM [hanh_chinh_tphcm.json](file:///d:/UI%20GYM/FE/assets/data/hanh_chinh_tphcm.json). Cập nhật sự kiện `change` của `#reg-tinh-thanh` để tự động ẩn ô chọn Quận / Huyện và nạp trực tiếp danh sách phường mới nhất đã chuẩn hóa (loại bỏ trùng lặp và sắp xếp bảng chữ cái) vào datalist.
+- **Mô tả chi tiết**:
+  - **Tích hợp Datalist Search**: Thay vì hiển thị dropdown select cuộn dài khó tìm kiếm, trường Phường/Xã giờ đây cho phép người dùng **vừa nhập tìm kiếm nhanh vừa chọn** gợi ý tự động (Datalist Autocomplete).
+  - **Ẩn Quận / Huyện**: Khi chọn "Thành phố Hồ Chí Minh" (mã `"79"`), dropdown Quận/Huyện tự động ẩn đi để giảm bớt bước chọn trung gian.
+  - **Tải Phường Mới Trực Tiếp**: Trích xuất các phường mới nhất thuộc HCMC từ file dữ liệu mới và điền trực tiếp vào datalist Phường/Xã. Đối với các tỉnh thành khác, luồng chọn 3 cấp (Tỉnh -> Quận -> Phường) vẫn chạy mượt mà và tự động điền các phường thuộc Quận/Huyện tương ứng vào datalist gợi ý.
+  - **Đồng bộ hóa hiển thị**: Tương thích hoàn hảo với database và các màn hình hiển thị địa chỉ khác nhờ cấu hình lấy giá trị văn bản trực tiếp.
+- **Kết quả**: Thành công tuyệt đối, mang lại trải nghiệm nhập liệu siêu tốc.
+
+### 18/05/2026 17:45 — Sửa Nút Đóng Modal Chỉnh Sửa Hồ Sơ & Nâng Cấp Dấu (*) Bắt Buộc Màu Đỏ
+- **Loại**: Cải tiến giao diện & Sửa lỗi UX (Frontend)
+- **File chỉnh sửa**:
+  - `FE/assets/js/pages/members-list.js` — Thiết lập `z-index: 50` trên nút đóng `close-edit-member` để tránh bị đè bởi các phần tử tương đối cùng cấp. Thay thế các dấu asterisk `*` thô cũ thành thẻ `<span style="color:#ba1a1a;">*</span>` chuẩn màu đỏ thương hiệu.
+  - `FE/assets/js/pages/member-add.js` — Cấu hình lại hai helper `_field` và `_select` để tự động parse dấu `*` và thay thế thành màu đỏ chuẩn. Đồng bộ hóa các nhãn nhập liệu tĩnh để hiển thị dấu `*` màu đỏ rực rỡ nhất.
+- **Mô tả chi tiết**:
+  - **Sự cố nút đóng bị đơ/chập chờn**: Do modal chỉnh sửa hồ sơ hội viên có cấu trúc header xếp chồng nhiều phần tử tuyệt đối (`position:absolute`) và tương đối (`position:relative; z-index:1`) nhưng nút close `x` lại thiếu chỉ số xếp chồng `z-index`, dẫn đến việc click chuột đôi khi bị các phần tử khác che phủ ngầm.
+  - **Giải pháp**: Gán `z-index: 50` trực tiếp cho nút đóng.
+  - **Đồng bộ hóa dấu sao đỏ bắt buộc**: Toàn bộ dấu `*` ở các trường bắt buộc của module Quản lý Hội viên, PT, và Tạo tài khoản đăng nhập đều đã được đồng bộ sang màu đỏ đậm (#ba1a1a) chuyên nghiệp.
+- **Kết quả**: Thành công tuyệt đối.
+
+### 18/05/2026 10:15 — Thiết Kế Lại Toàn Diện Trang Sinh Nhật Premium & Đại Tiệc Ăn Mừng
+- **Loại**: Cải tiến giao diện & Trải nghiệm tương tác (Frontend)
+- **File chỉnh sửa**:
+  - `FE/assets/js/pages/birthday.js` — Thay thế giao diện dạng bảng đơn điệu bằng Grid 12 Card tương ứng 12 tháng. Mỗi card được gán gradient màu sắc theo mùa (Xuân/Hạ/Thu/Đông) có độ tương phản cực sắc nét ở cả Dark/Light Mode.
+- **Mô tả chi tiết nâng cấp**:
+  - **Kiến trúc Grid Card Mùa**: Thiết kế 12 card biểu trưng cho 12 tháng, làm nổi bật "Tháng hiện tại" bằng viền phát sáng và badge nhấp nháy, gắn badge "Đông nhất" cho tháng có số lượng sinh nhật cao nhất.
+  - **Hiệu ứng Bánh kem & Bóng bông Di động**: Tích hợp các emoji 🎂 và 🎈 di chuyển nhẹ nhàng (breath animation) tại phần header của mỗi card tháng. Khi di chuyển chuột vào (hover), các emoji sẽ nhảy nảy (bounce animation) vô cùng sống động.
+  - **Đại tiệc tương tác toàn màn hình**: Nâng cấp chức năng "Bắn hiệu ứng" và "Đại tiệc" thành hệ thống cascade đa tầng: Confetti rơi xoay, bóng bay 🎈 và bánh kem 🎂 khổng lồ bay lên từ đáy màn hình, bong bóng thủy tinh glassmorphic 🫧 nổi lên, và một banner trung tâm kính mờ hiển thị lời chúc mừng siêu sang trọng.
+  - **Click-to-Pop đặc biệt**: Người dùng có thể click chuột vào bất kỳ điểm nào trên màn hình khi hiệu ứng đang chạy để tạo thêm các cụm pháo hoa và emoji nổ ra tại vị trí con trỏ chuột.
+  - **Đồng bộ hóa Dark Mode hoàn hảo**: Màu sắc, độ bóng viền, và chữ hiển thị của các banner/particles được tinh chỉnh tự động tương thích với theme Dark/Light.
+- **Kết quả**: Thành công tuyệt đối, mang lại trải nghiệm WOW vượt trội.
+
+### 18/05/2026 11:00 — Nâng Cấp Giao Diện Bộ Chọn Ngày Sinh (Date Picker Calendar)
+- **Loại**: Cải tiến giao diện & Trải nghiệm (Frontend)
+- **File chỉnh sửa**:
+  - `FE/assets/js/app.js` — Cấu hình lại ngôn ngữ hiển thị tiếng Việt, các nhãn hiển thị tháng và hàm tùy chỉnh tiêu đề lịch cho bộ chọn ngày `AirDatepicker`.
+  - `FE/assets/css/main.css` — Thay đổi bo góc các ô chọn lịch (cells) từ hình tròn sang hình vuông bo góc mềm mại.
+- **Mô tả chi tiết**:
+  - **Sự cố / Yêu cầu**: 
+    - Tiêu đề tháng hiển thị định dạng cũ có dấu phẩy và in hoa (ví dụ: "Tháng 5, 2026") làm mất đi sự tối giản.
+    - Trong lưới chọn tháng nhanh, các tháng hiển thị viết tắt dạng "Th 1", "Th 2",... thay vì viết đầy đủ và không in hoa.
+    - Các ô chọn ngày, tháng, năm hiển thị dưới dạng hình tròn thay vì hình vuông bo góc mềm mại.
+  - **Giải pháp**:
+    - **Tiêu đề không dấu phẩy & chữ thường**: Bổ sung cấu hình `navTitles.days` tùy chỉnh cho `AirDatepicker` để lấy tên tháng từ locale viết hoàn toàn bằng chữ thường và hiển thị nối tiếp với năm mà không có dấu phẩy (ví dụ: "tháng 5 2026").
+    - **Hiển thị tháng đầy đủ**: Thay đổi các mảng `months` và `monthsShort` trong `localeVi` thành chữ viết thường đầy đủ (ví dụ: "tháng 1", "tháng 2",...) thay vì viết tắt.
+    - **Bo góc mềm mại dạng ô vuông**: Thay đổi biến CSS `--adp-cell-border-radius` của lịch từ `50%` (hình tròn) thành `8px` (hình vuông bo góc nhẹ nhàng).
+- **Kết quả**: Thành công vượt trội, bộ chọn lịch hiển thị đồng bộ, hiện đại, thân thiện và cực kỳ cao cấp.
+
+### 18/05/2026 10:45 — Thiết Kế Lại Toàn Diện Modal Duyệt Gia Hạn Gói Tập
+- **Loại**: Cải tiến giao diện & Trải nghiệm (Frontend)
+- **File chỉnh sửa**:
+  - `FE/assets/js/pages/expired.js` — Thiết kế lại hoàn toàn cấu trúc HTML và CSS của modal xác nhận duyệt gia hạn gói tập (`modal-approve-renewal`).
+- **Mô tả chi tiết**:
+  - **Sự cố**: Các ô nhập liệu (`input`, `select`), khoảng đệm (`padding`), cỡ chữ (`font-size`), và nút bấm trong modal duyệt gia hạn cũ hiển thị quá to so với chuẩn chung của hệ thống, phá vỡ trải nghiệm thống nhất.
+  - **Giải pháp**: 
+    - Thu nhỏ các input từ `py-4 text-headline-sm` về `py-2 text-body-sm font-black` (bằng chuẩn form chung).
+    - Thay thế bo góc thô `rounded-[28px]` bằng `rounded-2xl` mượt mà, chuyên nghiệp.
+    - Cải tiến phần thẻ thông tin yêu cầu gói tập (`Gói tập`, `Thời gian gia hạn`) thành dạng bento box thu nhỏ với viền mảnh sang trọng.
+    - Chuẩn hóa các nút hành động (`Hủy bỏ`, `Duyệt gia hạn`) từ `py-3 rounded-2xl` sang `py-2 rounded-xl text-body-sm font-bold/black` để đồng nhất 100% với các modal khác trong Dashboard.
+- **Kết quả**: Thành công, giao diện cân đối, gọn gàng và cao cấp.
+
+### 18/05/2026 10:30 — Sửa Lỗi Trùng Định Tuyến (Route Collision) Endpoint Nội Quy Phòng Tập
+- **Loại**: Sửa lỗi hệ thống (Backend)
+- **File chỉnh sửa**:
+  - `BE/src/routes/config.routes.js` — Di chuyển định tuyến wildcard `router.get('/:khoa')` xuống dưới cùng của danh sách route.
+- **Mô tả**: Wildcard `:khoa` được đặt phía trên tĩnh `/rules` và `/rules/all`, dẫn tới việc Express tự động nhận diện `/rules` là tham số khóa cấu hình và trả về mã lỗi 404 (Không tìm thấy cấu hình) cho thiết bị di động (`GymRulesScreen`). Sau khi di chuyển wildcard xuống cuối, định tuyến tĩnh đã hoạt động chính xác hoàn toàn.
+- **Kết quả**: Thành công, ứng dụng di động truy xuất nội quy mượt mà không gặp lỗi 404.
 
 ### 15/05/2026 09:30 — Tối Ưu Hóa Mật Độ Thông Tin Dashboard (Toàn Diện)
 - **Loại**: Cải thiện UI/UX (Frontend)

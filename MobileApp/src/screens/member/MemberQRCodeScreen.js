@@ -9,6 +9,7 @@ import {
 import ProfileAvatar from '../../components/ProfileAvatar';
 import { api } from '../../services/api';
 import { unwrapData } from '../../utils/data';
+import { useTheme } from '../../context/ThemeContext';
 
 // ── Màu sắc ────────────────────────────────────────────────
 const G = {
@@ -30,6 +31,7 @@ const G = {
 };
 
 export default function MemberQRCodeScreen() {
+  const { colors } = useTheme();
   const [qrData, setQrData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -100,8 +102,8 @@ export default function MemberQRCodeScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={G.primaryDark} />
+    <View style={[styles.container, { backgroundColor: colors.isDark ? colors.background : G.primaryDark }]}>
+      <StatusBar barStyle={colors.statusBar} backgroundColor={colors.isDark ? colors.statusBarBg : G.primaryDark} />
 
       {/* ── Header ────────────────────────────── */}
       <View style={styles.header}>
@@ -120,7 +122,7 @@ export default function MemberQRCodeScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={[G.primary]}
+            colors={[colors.primary]}
             tintColor={G.white}
           />
         }
@@ -136,10 +138,10 @@ export default function MemberQRCodeScreen() {
 
         {/* ── Error ──────────────────────────── */}
         {!loading && errorText ? (
-          <View style={styles.errorBox}>
+          <View style={[styles.errorBox, { backgroundColor: colors.surface }]}>
             <QrCode color={G.danger} size={40} strokeWidth={1.5} />
-            <Text style={styles.errorTitle}>Không tải được mã QR</Text>
-            <Text style={styles.errorText}>{errorText}</Text>
+            <Text style={[styles.errorTitle, { color: colors.text }]}>Không tải được mã QR</Text>
+            <Text style={[styles.errorText, { color: colors.textMuted }]}>{errorText}</Text>
             <TouchableOpacity style={styles.retryBtn} onPress={fetchQr} activeOpacity={0.8}>
               <RefreshCw color={G.white} size={16} strokeWidth={2} />
               <Text style={styles.retryBtnText}>Thử lại</Text>
@@ -149,7 +151,7 @@ export default function MemberQRCodeScreen() {
 
         {/* ── QR Card ────────────────────────── */}
         {!loading && qrData && !errorText ? (
-          <View style={styles.qrCard}>
+          <View style={[styles.qrCard, { backgroundColor: colors.surface }]}>
             {/* Thông tin hội viên */}
             <View style={styles.memberInfo}>
               <ProfileAvatar
@@ -158,27 +160,27 @@ export default function MemberQRCodeScreen() {
                 size={56}
               />
               <View style={styles.memberText}>
-                <Text style={styles.memberName}>{qrData.ho_ten}</Text>
+                <Text style={[styles.memberName, { color: colors.text }]}>{qrData.ho_ten}</Text>
                 <View style={styles.memberCodeRow}>
-                  <ShieldCheck color={G.primary} size={13} strokeWidth={2} />
-                  <Text style={styles.memberCode}>{qrData.ma_ho_so || 'Hội viên'}</Text>
+                  <ShieldCheck color={colors.primary} size={13} strokeWidth={2} />
+                  <Text style={[styles.memberCode, { color: colors.primary }]}>{qrData.ma_ho_so || 'Hội viên'}</Text>
                 </View>
               </View>
-              <View style={styles.activeBadge}>
-                <UserCheck color={G.primary} size={12} strokeWidth={2.5} />
-                <Text style={styles.activeBadgeText}>Active</Text>
+              <View style={[styles.activeBadge, { backgroundColor: colors.primaryLight }]}>
+                <UserCheck color={colors.primary} size={12} strokeWidth={2.5} />
+                <Text style={[styles.activeBadgeText, { color: colors.primary }]}>Active</Text>
               </View>
             </View>
 
             {/* Đường kẻ phân cách với 2 vòng tròn hai bên */}
             <View style={styles.separator}>
-              <View style={styles.separatorCircleLeft} />
-              <View style={styles.separatorDash} />
-              <View style={styles.separatorCircleRight} />
+              <View style={[styles.separatorCircleLeft, { backgroundColor: colors.isDark ? colors.background : G.primaryDark }]} />
+              <View style={[styles.separatorDash, { borderColor: colors.border }]} />
+              <View style={[styles.separatorCircleRight, { backgroundColor: colors.isDark ? colors.background : G.primaryDark }]} />
             </View>
 
             {/* QR Image */}
-            <View style={styles.qrWrapper}>
+            <View style={[styles.qrWrapper, { backgroundColor: G.white, borderColor: colors.border }]}>
               {isExpired ? (
                 <View style={styles.expiredOverlay}>
                   <Clock color={G.danger} size={32} strokeWidth={1.5} />
@@ -197,16 +199,18 @@ export default function MemberQRCodeScreen() {
             {/* Countdown */}
             <View style={[
               styles.countdownBox,
+              { backgroundColor: colors.primaryLight },
               isUrgent && !isExpired && styles.countdownBoxUrgent,
               isExpired && styles.countdownBoxExpired,
             ]}>
               <Clock
-                color={isExpired ? G.danger : isUrgent ? G.warning : G.primary}
+                color={isExpired ? G.danger : isUrgent ? G.warning : colors.primary}
                 size={16}
                 strokeWidth={2}
               />
               <Text style={[
                 styles.countdownText,
+                { color: colors.primary },
                 isUrgent && !isExpired && styles.countdownTextUrgent,
                 isExpired && styles.countdownTextExpired,
               ]}>
@@ -218,7 +222,7 @@ export default function MemberQRCodeScreen() {
 
             {/* Nút làm mới */}
             <TouchableOpacity
-              style={[styles.refreshBtn, isExpired && styles.refreshBtnUrgent]}
+              style={[styles.refreshBtn, isExpired && styles.refreshBtnUrgent, { backgroundColor: colors.primary }]}
               onPress={onRefresh}
               activeOpacity={0.8}
             >
@@ -227,7 +231,7 @@ export default function MemberQRCodeScreen() {
             </TouchableOpacity>
 
             {/* Ghi chú nhỏ */}
-            <Text style={styles.hint}>
+            <Text style={[styles.hint, { color: colors.textMuted }]}>
               Giữ màn hình sáng và đưa mã QR về phía máy đọc tại quầy lễ tân.
             </Text>
           </View>

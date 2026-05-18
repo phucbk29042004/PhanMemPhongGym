@@ -15,6 +15,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useNotificationStore } from '../../store/useNotificationStore';
 import { api } from '../../services/api';
 import { formatDate } from '../../utils/data';
+import { useTheme } from '../../context/ThemeContext';
 
 // ── Hằng số màu sắc Paradise Gym ─────────────────────────
 const G = {
@@ -52,40 +53,36 @@ function formatPrice(val) {
 }
 
 // ── Component: Card Gói Hội Viên ──────────────────────────
-function PackageCard({ item, index }) {
+function PackageCard({ item, index, colors }) {
   const isPT = item.loai_goi === 'pt' || item.loai_goi === 'theo_buoi';
-  const colors = [
-    { bg: G.primaryLight, accent: G.primary },
-    { bg: '#e8f4fd', accent: '#1565c0' },
-    { bg: '#fef9e7', accent: '#b7791f' },
-    { bg: '#f3e8ff', accent: '#7c3aed' },
-  ];
-  const c = colors[index % colors.length];
+  const isDark = colors?.isDark;
+  const cardBg = isDark ? colors.surfaceVariant : [G.primaryLight, '#e8f4fd', '#fef9e7', '#f3e8ff'][index % 4];
+  const accentColor = isDark ? colors.primary : [G.primary, '#1565c0', '#b7791f', '#7c3aed'][index % 4];
 
   return (
-    <View style={[styles.packageCard, { backgroundColor: c.bg }]}>
-      <View style={[styles.packageIconBox, { backgroundColor: c.accent + '22' }]}>
-        {isPT ? <Users color={c.accent} size={24} strokeWidth={2} /> : <Award color={c.accent} size={24} strokeWidth={2} />}
+    <View style={[styles.packageCard, { backgroundColor: cardBg }]}>
+      <View style={[styles.packageIconBox, { backgroundColor: accentColor + '22' }]}>
+        {isPT ? <Users color={accentColor} size={24} strokeWidth={2} /> : <Award color={accentColor} size={24} strokeWidth={2} />}
       </View>
-      <Text style={[styles.packageName, { color: c.accent }]} numberOfLines={2}>{item.ten_goi}</Text>
-      <Text style={[styles.packagePrice, { color: G.gray900 }]}>{formatPrice(item.gia)}</Text>
+      <Text style={[styles.packageName, { color: accentColor }]} numberOfLines={2}>{item.ten_goi}</Text>
+      <Text style={[styles.packagePrice, { color: colors?.text || G.gray900 }]}>{formatPrice(item.gia)}</Text>
       {item.so_thang ? (
-        <Text style={styles.packageSub}>{item.so_thang} tháng{item.so_ngay_them > 0 ? ` +${item.so_ngay_them} ngày` : ''}</Text>
+        <Text style={[styles.packageSub, { color: colors?.textMuted || G.gray500 }]}>{item.so_thang} tháng{item.so_ngay_them > 0 ? ` +${item.so_ngay_them} ngày` : ''}</Text>
       ) : item.so_buoi ? (
-        <Text style={styles.packageSub}>{item.so_buoi} buổi</Text>
+        <Text style={[styles.packageSub, { color: colors?.textMuted || G.gray500 }]}>{item.so_buoi} buổi</Text>
       ) : null}
     </View>
   );
 }
 
 // ── Component: Chip Tiện Ích ──────────────────────────────
-function UtilityChip({ icon: Icon, label, onPress, accent = G.primary }) {
+function UtilityChip({ icon: Icon, label, onPress, accent = G.primary, colors }) {
   return (
-    <TouchableOpacity style={styles.utilChip} onPress={onPress} activeOpacity={0.75}>
+    <TouchableOpacity style={[styles.utilChip, { backgroundColor: colors?.surface || G.white }]} onPress={onPress} activeOpacity={0.75}>
       <View style={[styles.utilIcon, { backgroundColor: accent + '18' }]}>
         <Icon color={accent} size={22} strokeWidth={2} />
       </View>
-      <Text style={[styles.utilLabel, { color: G.gray700 }]} numberOfLines={2}>{label}</Text>
+      <Text style={[styles.utilLabel, { color: colors?.text || G.gray700 }]} numberOfLines={2}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -94,6 +91,7 @@ function UtilityChip({ icon: Icon, label, onPress, accent = G.primary }) {
 // ── Màn hình chính ────────────────────────────────────────
 export default function MemberHomeScreen({ navigation }) {
   const { user, logout } = useAuthStore();
+  const { colors } = useTheme();
   const { fetchNotifications } = useNotificationStore();
   const [profile, setProfile] = useState(null);
   const [gymPackages, setGymPackages] = useState([]);
@@ -139,7 +137,14 @@ export default function MemberHomeScreen({ navigation }) {
   useFocusEffect(
     useCallback(() => {
       fetchAll();
-    }, [fetchAll])
+
+      // Tự động tải lại thông báo mỗi 10 giây để hiển thị badge số đỏ realtime khi có lịch tập thay đổi
+      const intervalId = setInterval(() => {
+        fetchNotifications();
+      }, 10000);
+
+      return () => clearInterval(intervalId);
+    }, [fetchAll, fetchNotifications])
   );
 
   const onRefresh = () => { setRefreshing(true); fetchAll(); };
@@ -229,8 +234,8 @@ export default function MemberHomeScreen({ navigation }) {
   ];
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={G.primaryDark} />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colors.statusBar} backgroundColor={colors.statusBarBg} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -288,25 +293,25 @@ export default function MemberHomeScreen({ navigation }) {
         {/* ────────────────────────────────────── */}
         {/* CARD HỢP ĐỒNG / GÓI TẬP ĐANG HOẠT ĐỘNG */}
         {/* ────────────────────────────────────── */}
-        <View style={styles.section}>
+        <View style={[styles.section, { backgroundColor: colors.surface }]}>
           <View style={styles.sectionHeader}>
-            <View style={styles.sectionIconBox}>
-              <CreditCard color={G.primary} size={18} strokeWidth={2} />
+            <View style={[styles.sectionIconBox, { backgroundColor: colors.primaryLight }]}>
+              <CreditCard color={colors.primary} size={18} strokeWidth={2} />
             </View>
-            <Text style={styles.sectionTitle}>Hợp đồng</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Hợp đồng</Text>
           </View>
 
           {loading ? (
             <View style={styles.loadingBox}>
-              <ActivityIndicator color={G.primary} size="small" />
+              <ActivityIndicator color={colors.primary} size="small" />
             </View>
           ) : activePlan ? (
-            <View style={styles.contractCard}>
+            <View style={[styles.contractCard, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
               {/* Trạng thái + tên gói */}
               <View style={styles.contractTop}>
                 {activePlan ? (
                   <View style={styles.contractBadge}>
-                    <ShieldCheck color={G.primary} size={12} strokeWidth={2.5} />
+                    <ShieldCheck color={colors.primary} size={12} strokeWidth={2.5} />
                     <Text style={styles.contractBadgeText}>Đang hoạt động</Text>
                   </View>
                 ) : null}
@@ -323,28 +328,28 @@ export default function MemberHomeScreen({ navigation }) {
                   </View>
                 )}
               </View>
-              <Text style={styles.contractPackageName}>{activePlan ? activePlan.ten_goi : pendingPlan ? pendingPlan.ten_goi : 'Chưa có gói tập'}</Text>
+              <Text style={[styles.contractPackageName, { color: colors.text }]}>{activePlan ? activePlan.ten_goi : pendingPlan ? pendingPlan.ten_goi : 'Chưa có gói tập'}</Text>
 
               {/* Thông số grid */}
-              <View style={styles.contractGrid}>
+              <View style={[styles.contractGrid, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <View style={styles.contractGridItem}>
-                  <CalendarCheck color={G.gray400} size={14} strokeWidth={2} />
-                  <Text style={styles.contractGridLabel}>Từ ngày</Text>
-                  <Text style={styles.contractGridValue}>{formatDate(activePlan.tu_ngay)}</Text>
+                  <CalendarCheck color={colors.textMuted} size={14} strokeWidth={2} />
+                  <Text style={[styles.contractGridLabel, { color: colors.textMuted }]}>Từ ngày</Text>
+                  <Text style={[styles.contractGridValue, { color: colors.text }]}>{formatDate(activePlan.tu_ngay)}</Text>
                 </View>
-                <View style={styles.contractDivider} />
+                <View style={[styles.contractDivider, { backgroundColor: colors.border }]} />
                 <View style={styles.contractGridItem}>
-                  <Clock color={remaining !== null && remaining <= 7 ? G.danger : G.gray400} size={14} strokeWidth={2} />
-                  <Text style={styles.contractGridLabel}>Hết hạn</Text>
-                  <Text style={[styles.contractGridValue, remaining !== null && remaining <= 7 && { color: G.danger }]}>
+                  <Clock color={remaining !== null && remaining <= 7 ? G.danger : colors.textMuted} size={14} strokeWidth={2} />
+                  <Text style={[styles.contractGridLabel, { color: colors.textMuted }]}>Hết hạn</Text>
+                  <Text style={[styles.contractGridValue, { color: colors.text }, remaining !== null && remaining <= 7 && { color: G.danger }]}>
                     {formatDate(activePlan.den_ngay)}
                   </Text>
                 </View>
-                <View style={styles.contractDivider} />
+                <View style={[styles.contractDivider, { backgroundColor: colors.border }]} />
                 <View style={styles.contractGridItem}>
-                  <TrendingUp color={G.primary} size={14} strokeWidth={2} />
-                  <Text style={styles.contractGridLabel}>Còn lại</Text>
-                  <Text style={[styles.contractGridValue, { color: remaining !== null && remaining <= 7 ? G.danger : G.primary }]}>
+                  <TrendingUp color={colors.primary} size={14} strokeWidth={2} />
+                  <Text style={[styles.contractGridLabel, { color: colors.textMuted }]}>Còn lại</Text>
+                  <Text style={[styles.contractGridValue, { color: remaining !== null && remaining <= 7 ? G.danger : colors.primary }]}>
                     {remaining !== null ? `${remaining} ngày` : '—'}
                   </Text>
                 </View>
@@ -353,18 +358,18 @@ export default function MemberHomeScreen({ navigation }) {
               {/* HLV PT (nếu có) — bấm để xem lịch tập */}
               {activePT ? (
                 <TouchableOpacity style={styles.ptRow} onPress={openPtSchedule} activeOpacity={0.75}>
-                  <Dumbbell color={G.primary} size={15} strokeWidth={2} />
-                  <Text style={styles.ptRowText}>
+                  <Dumbbell color={colors.primary} size={15} strokeWidth={2} />
+                  <Text style={[styles.ptRowText, { color: colors.text }]}>
                     {activePT.ten_goi_pt ? (
                       <>
-                        <Text style={{ fontWeight: '700', color: G.gray900 }}>{activePT.ten_goi_pt}</Text>
+                        <Text style={{ fontWeight: '700', color: colors.text }}>{activePT.ten_goi_pt}</Text>
                         {'  •  '}
                       </>
                     ) : null}
-                    HLV: <Text style={{ fontWeight: '700', color: G.gray900 }}>{activePT.ten_pt}</Text>
-                    {'  •  '}Còn <Text style={{ fontWeight: '700', color: G.primary }}>{ptRemaining} buổi</Text>
+                    HLV: <Text style={{ fontWeight: '700', color: colors.text }}>{activePT.ten_pt}</Text>
+                    {'  •  '}Còn <Text style={{ fontWeight: '700', color: colors.primary }}>{ptRemaining} buổi</Text>
                   </Text>
-                  <ChevronRight color={G.primary} size={16} strokeWidth={2.5} />
+                  <ChevronRight color={colors.primary} size={16} strokeWidth={2.5} />
                 </TouchableOpacity>
               ) : null}
 
@@ -381,17 +386,17 @@ export default function MemberHomeScreen({ navigation }) {
               )}
 
               {pendingPlan && (
-                <View style={[styles.renewButton, { backgroundColor: G.gray200, shadowOpacity: 0 }]}>
-                  <Clock color={G.gray500} size={16} strokeWidth={2.5} />
-                  <Text style={[styles.renewButtonText, { color: G.gray500 }]}>Đang xử lý yêu cầu...</Text>
+                <View style={[styles.renewButton, { backgroundColor: colors.border, shadowOpacity: 0 }]}>
+                  <Clock color={colors.textMuted} size={16} strokeWidth={2.5} />
+                  <Text style={[styles.renewButtonText, { color: colors.textMuted }]}>Đang xử lý yêu cầu...</Text>
                 </View>
               )}
             </View>
           ) : (
             <View style={styles.emptyContract}>
-              <CreditCard color={G.gray400} size={32} strokeWidth={1.5} />
-              <Text style={styles.emptyContractText}>Không có dữ liệu</Text>
-              <Text style={styles.emptyContractSub}>Liên hệ lễ tân hoặc gia hạn trên App</Text>
+              <CreditCard color={colors.textMuted} size={32} strokeWidth={1.5} />
+              <Text style={[styles.emptyContractText, { color: colors.text }]}>Không có dữ liệu</Text>
+              <Text style={[styles.emptyContractSub, { color: colors.textMuted }]}>Liên hệ lễ tân hoặc gia hạn trên App</Text>
               {!pendingPlan ? (
                 <TouchableOpacity 
                   style={[styles.renewButton, { marginTop: 12, width: '60%' }]}
@@ -401,9 +406,9 @@ export default function MemberHomeScreen({ navigation }) {
                   <Text style={styles.renewButtonText}>Gia hạn</Text>
                 </TouchableOpacity>
               ) : (
-                <View style={[styles.renewButton, { marginTop: 12, width: '80%', backgroundColor: G.gray100, shadowOpacity: 0 }]}>
-                  <Clock color={G.gray500} size={16} strokeWidth={2.5} />
-                  <Text style={[styles.renewButtonText, { color: G.gray500, fontSize: 12 }]}>Yêu cầu đang chờ duyệt...</Text>
+                <View style={[styles.renewButton, { marginTop: 12, width: '80%', backgroundColor: colors.surfaceVariant, shadowOpacity: 0 }]}>
+                  <Clock color={colors.textMuted} size={16} strokeWidth={2.5} />
+                  <Text style={[styles.renewButtonText, { color: colors.textMuted, fontSize: 12 }]}>Yêu cầu đang chờ duyệt...</Text>
                 </View>
               )}
             </View>
@@ -413,14 +418,14 @@ export default function MemberHomeScreen({ navigation }) {
         {/* ──────────────────── */}
         {/* TIỆN ÍCH NHANH      */}
         {/* ──────────────────── */}
-        <View style={styles.section}>
+        <View style={[styles.section, { backgroundColor: colors.surface }]}>
           <View style={styles.sectionHeader}>
-            <View style={styles.sectionIconBox}>
-              <Zap color={G.primary} size={18} strokeWidth={2} />
+            <View style={[styles.sectionIconBox, { backgroundColor: colors.primaryLight }]}>
+              <Zap color={colors.primary} size={18} strokeWidth={2} />
             </View>
-            <Text style={styles.sectionTitle}>Tiện ích</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Tiện ích</Text>
             {profile?.chi_nhanh ? (
-              <Text style={styles.branchLabel} numberOfLines={1}>{profile.chi_nhanh}</Text>
+              <Text style={[styles.branchLabel, { color: colors.textMuted }]} numberOfLines={1}>{profile.chi_nhanh}</Text>
             ) : null}
           </View>
 
@@ -430,24 +435,28 @@ export default function MemberHomeScreen({ navigation }) {
               label={'Quét QR\nCheck-in'}
               accent="#7c3aed"
               onPress={() => navigation?.navigate?.('QRCode')}
+              colors={colors}
             />
             <UtilityChip
               icon={CalendarCheck}
               label={'Lịch tập\ntiếp theo'}
-              accent={G.primary}
+              accent={colors.primary}
               onPress={() => navigation?.navigate?.('Schedule')}
+              colors={colors}
             />
             <UtilityChip
               icon={TrendingUp}
               label={'Thống kê\ntập luyện'}
               accent="#0891b2"
               onPress={() => navigation?.navigate?.('Checkins')}
+              colors={colors}
             />
             <UtilityChip
               icon={Award}
               label={'Buổi PT\ncòn lại'}
               accent="#b7791f"
               onPress={() => navigation?.navigate?.('Schedule')}
+              colors={colors}
             />
           </View>
         </View>
@@ -456,12 +465,12 @@ export default function MemberHomeScreen({ navigation }) {
         {/* GÓI HỘI VIÊN THỰC TẾ */}
         {/* ──────────────────── */}
         {!loading && allPackages.length > 0 && (
-          <View style={styles.section}>
+          <View style={[styles.section, { backgroundColor: colors.surface }]}>
             <View style={styles.sectionHeader}>
-              <View style={styles.sectionIconBox}>
-                <Award color={G.primary} size={18} strokeWidth={2} />
+              <View style={[styles.sectionIconBox, { backgroundColor: colors.primaryLight }]}>
+                <Award color={colors.primary} size={18} strokeWidth={2} />
               </View>
-              <Text style={styles.sectionTitle}>Gói Hội Viên</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Gói Hội Viên</Text>
             </View>
 
             <ScrollView
@@ -470,7 +479,7 @@ export default function MemberHomeScreen({ navigation }) {
               contentContainerStyle={styles.packageScroll}
             >
               {allPackages.map((item, i) => (
-                <PackageCard key={item._key} item={item} index={i} />
+                <PackageCard key={item._key} item={item} index={i} colors={colors} />
               ))}
             </ScrollView>
           </View>
@@ -479,14 +488,14 @@ export default function MemberHomeScreen({ navigation }) {
         {/* ──────────────────────────── */}
         {/* PANEL PARADISE GYM          */}
         {/* ──────────────────────────── */}
-        <View style={styles.paradisePanel}>
-          <View style={styles.paradisePanelInner}>
+        <View style={[styles.paradisePanel, { backgroundColor: colors.surfaceVariant }]}>
+          <View style={[styles.paradisePanelInner, { backgroundColor: colors.surface }]}>
             <View style={styles.paradiseBadge}>
               <ShieldCheck color={G.white} size={12} strokeWidth={2} />
               <Text style={styles.paradiseBadgeText}>PREMIUM GYM</Text>
             </View>
-            <Text style={styles.paradiseTitle}>Paradise GYM</Text>
-            <Text style={styles.paradiseDesc}>
+            <Text style={[styles.paradiseTitle, { color: colors.text }]}>Paradise GYM</Text>
+            <Text style={[styles.paradiseDesc, { color: colors.textMuted }]}>
               Không gian hiện đại · Huấn luyện viên chuyên nghiệp · Thiết bị cao cấp
             </Text>
             <View style={styles.paradiseStats}>
@@ -497,8 +506,8 @@ export default function MemberHomeScreen({ navigation }) {
               ].map(({ icon: Icon, label, value }) => (
                 <View key={label} style={styles.paradiseStat}>
                   <Icon color={G.primaryMid} size={18} strokeWidth={2} />
-                  <Text style={styles.paradiseStatValue}>{value}</Text>
-                  <Text style={styles.paradiseStatLabel}>{label}</Text>
+                  <Text style={[styles.paradiseStatValue, { color: colors.text }]}>{value}</Text>
+                  <Text style={[styles.paradiseStatLabel, { color: colors.textMuted }]}>{label}</Text>
                 </View>
               ))}
             </View>
@@ -517,7 +526,7 @@ export default function MemberHomeScreen({ navigation }) {
       >
         <View style={styles.modalOverlay}>
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ width: '100%' }}>
-            <View style={[styles.modalContent, { maxHeight: '88%' }]}>
+            <View style={[styles.modalContent, { backgroundColor: colors.surface, maxHeight: '88%' }]}>
               {/* Header */}
               <View style={[styles.modalHeader, { backgroundColor: G.primaryDark }]}>
                 <View style={{ flex: 1 }}>
@@ -535,27 +544,27 @@ export default function MemberHomeScreen({ navigation }) {
 
               {/* Ghi chú inline editor */}
               {editingNote ? (
-                <View style={styles.noteEditor}>
-                  <Text style={styles.noteEditorLabel}>Ghi chú buổi tập</Text>
+                <View style={[styles.noteEditor, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
+                  <Text style={[styles.noteEditorLabel, { color: colors.text }]}>Ghi chú buổi tập</Text>
                   <TextInput
-                    style={styles.noteInput}
+                    style={[styles.noteInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
                     value={noteText}
                     onChangeText={setNoteText}
                     multiline
                     numberOfLines={3}
                     placeholder="VD: Hôm nay ăn gì, tập bài gì, cảm nhận sau buổi tập..."
-                    placeholderTextColor={G.gray400}
+                    placeholderTextColor={colors.textMuted}
                     autoFocus
                   />
                   <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
                     <TouchableOpacity
-                      style={[styles.noteBtn, { backgroundColor: G.gray100 }]}
+                      style={[styles.noteBtn, { backgroundColor: colors.surfaceVariant }]}
                       onPress={() => setEditingNote(null)}
                     >
-                      <Text style={{ color: G.gray500, fontWeight: '700', fontSize: 13 }}>Hủy</Text>
+                      <Text style={{ color: colors.textMuted, fontWeight: '700', fontSize: 13 }}>Hủy</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={[styles.noteBtn, { backgroundColor: G.primary, flex: 2 }]}
+                      style={[styles.noteBtn, { backgroundColor: colors.primary, flex: 2 }]}
                       onPress={saveNote}
                       disabled={savingNote}
                     >
@@ -571,30 +580,30 @@ export default function MemberHomeScreen({ navigation }) {
               {/* Danh sách lịch tập */}
               {ptScheduleLoading ? (
                 <View style={{ paddingVertical: 40, alignItems: 'center' }}>
-                  <ActivityIndicator color={G.primary} size="large" />
+                  <ActivityIndicator color={colors.primary} size="large" />
                 </View>
               ) : ptSchedules.length === 0 ? (
                 <View style={{ paddingVertical: 40, alignItems: 'center', gap: 8 }}>
-                  <CalendarCheck color={G.gray400} size={36} strokeWidth={1.5} />
-                  <Text style={{ color: G.gray400, fontWeight: '600' }}>Chưa có lịch tập nào</Text>
+                  <CalendarCheck color={colors.textMuted} size={36} strokeWidth={1.5} />
+                  <Text style={{ color: colors.textMuted, fontWeight: '600' }}>Chưa có lịch tập nào</Text>
                 </View>
               ) : (
                 <ScrollView contentContainerStyle={{ padding: 16, gap: 10 }}>
                   {ptSchedules.map(s => {
                     const statusMap = {
                       cho_tap:  { label: 'Chờ tập',      color: G.warning,  bg: G.warningLight },
-                      da_tap:   { label: 'Đã hoàn thành', color: G.primary,  bg: G.primaryLight },
+                      da_tap:   { label: 'Đã hoàn thành', color: colors.primary,  bg: colors.primaryLight },
                       da_huy:   { label: 'Đã hủy',        color: G.danger,   bg: G.dangerLight },
                     };
-                    const st = statusMap[s.trang_thai] || { label: s.trang_thai, color: G.gray500, bg: G.gray100 };
+                    const st = statusMap[s.trang_thai] || { label: s.trang_thai, color: colors.textMuted, bg: colors.surfaceVariant };
                     const isEditing = editingNote?.id === s.id;
                     return (
-                      <View key={s.id} style={styles.scheduleItem}>
+                      <View key={s.id} style={[styles.scheduleItem, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
                         {/* Ngày + giờ + badge */}
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
                           <View style={{ flex: 1 }}>
-                            <Text style={styles.scheduleDate}>{s.ngay_tap ? new Date(s.ngay_tap).toLocaleDateString('vi-VN', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}</Text>
-                            <Text style={styles.scheduleTime}>{s.gio_bat_dau || '?'}–{s.gio_ket_thuc || '?'}</Text>
+                            <Text style={[styles.scheduleDate, { color: colors.text }]}>{s.ngay_tap ? new Date(s.ngay_tap).toLocaleDateString('vi-VN', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}</Text>
+                            <Text style={[styles.scheduleTime, { color: colors.textMuted }]}>{s.gio_bat_dau || '?'}–{s.gio_ket_thuc || '?'}</Text>
                           </View>
                           <View style={[styles.scheduleBadge, { backgroundColor: st.bg }]}>
                             <Text style={[styles.scheduleBadgeText, { color: st.color }]}>{st.label}</Text>
@@ -603,9 +612,9 @@ export default function MemberHomeScreen({ navigation }) {
 
                         {/* Ghi chú hiện tại */}
                         {s.ghi_chu && !isEditing ? (
-                          <View style={styles.noteBox}>
-                            <MessageSquare color={G.gray400} size={13} strokeWidth={2} />
-                            <Text style={styles.noteBoxText}>{s.ghi_chu}</Text>
+                          <View style={[styles.noteBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                            <MessageSquare color={colors.textMuted} size={13} strokeWidth={2} />
+                            <Text style={[styles.noteBoxText, { color: colors.text }]}>{s.ghi_chu}</Text>
                           </View>
                         ) : null}
 
@@ -616,8 +625,8 @@ export default function MemberHomeScreen({ navigation }) {
                             onPress={() => { setEditingNote(s); setNoteText(s.ghi_chu || ''); }}
                             activeOpacity={0.7}
                           >
-                            <MessageSquare color={G.primary} size={13} strokeWidth={2} />
-                            <Text style={styles.noteAddBtnText}>{s.ghi_chu ? 'Sửa ghi chú' : 'Thêm ghi chú'}</Text>
+                            <MessageSquare color={colors.primary} size={13} strokeWidth={2} />
+                            <Text style={[styles.noteAddBtnText, { color: colors.primary }]}>{s.ghi_chu ? 'Sửa ghi chú' : 'Thêm ghi chú'}</Text>
                           </TouchableOpacity>
                         ) : null}
                       </View>
@@ -638,42 +647,55 @@ export default function MemberHomeScreen({ navigation }) {
         onRequestClose={() => setRenewModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Gia hạn gói tập</Text>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Gia hạn gói tập</Text>
               <TouchableOpacity onPress={() => setRenewModalVisible(false)}>
-                <Text style={styles.modalCloseX}>✕</Text>
+                <Text style={[styles.modalCloseX, { color: colors.textMuted }]}>✕</Text>
               </TouchableOpacity>
             </View>
 
             <View style={styles.modalBody}>
-              <Text style={styles.inputLabel}>Chọn gói tập</Text>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>Chọn gói tập</Text>
               <View style={styles.pkgPicker}>
                 {gymPackages.map(p => (
                   <TouchableOpacity 
                     key={p.id} 
-                    style={[styles.pkgOption, selectedPkg === p.id && styles.pkgOptionActive]}
+                    style={[
+                      styles.pkgOption, 
+                      { backgroundColor: colors.surfaceVariant, borderColor: colors.border },
+                      selectedPkg === p.id && { borderColor: colors.primary, backgroundColor: colors.primaryLight }
+                    ]}
                     onPress={() => setSelectedPkg(p.id)}
                   >
-                    <Text style={[styles.pkgOptionText, selectedPkg === p.id && styles.pkgOptionTextActive]}>{p.ten_goi}</Text>
-                    <Text style={[styles.pkgOptionPrice, selectedPkg === p.id && styles.pkgOptionTextActive]}>{formatPrice(p.gia)}</Text>
+                    <Text style={[
+                      styles.pkgOptionText, 
+                      { color: colors.text },
+                      selectedPkg === p.id && { color: colors.primary, fontWeight: '700' }
+                    ]}>{p.ten_goi}</Text>
+                    <Text style={[
+                      styles.pkgOptionPrice, 
+                      { color: colors.textMuted },
+                      selectedPkg === p.id && { color: colors.primary, fontWeight: '700' }
+                    ]}>{formatPrice(p.gia)}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <Text style={[styles.inputLabel, { marginTop: 16 }]}>Ngày bắt đầu (YYYY-MM-DD)</Text>
+              <Text style={[styles.inputLabel, { marginTop: 16, color: colors.text }]}>Ngày bắt đầu (YYYY-MM-DD)</Text>
               <TextInput
-                style={styles.dateInput}
+                style={[styles.dateInput, { backgroundColor: colors.surfaceVariant, borderColor: colors.border, color: colors.text }]}
                 value={renewalStartDate}
                 onChangeText={setRenewalStartDate}
                 placeholder="2024-01-01"
+                placeholderTextColor={colors.textMuted}
               />
-              <Text style={styles.inputHint}>Mặc định: Ngày tiếp nối gói cũ hoặc hôm nay</Text>
+              <Text style={[styles.inputHint, { color: colors.textMuted }]}>Mặc định: Ngày tiếp nối gói cũ hoặc hôm nay</Text>
             </View>
 
             <View style={styles.modalFooter}>
-              <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setRenewModalVisible(false)}>
-                <Text style={styles.modalCancelText}>Hủy</Text>
+              <TouchableOpacity style={[styles.modalCancelBtn, { borderColor: colors.border }]} onPress={() => setRenewModalVisible(false)}>
+                <Text style={[styles.modalCancelText, { color: colors.textMuted }]}>Hủy</Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={styles.modalSubmitBtn} 

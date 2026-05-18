@@ -15,7 +15,7 @@ window.GymApp.pages['member-add'] = {
   render: function () {
     const provinceDatalist = `
       <datalist id="dl-que-quan">
-        ${['Hà Nội', 'TP. Hồ Chí Minh', 'Đà Nẵng', 'Hải Phòng', 'Cần Thơ', 'An Giang', 'Bà Rịa - Vũng Tàu', 'Bắc Giang', 'Bắc Kạn', 'Bạc Liêu', 'Bắc Ninh', 'Bến Tre', 'Bình Định', 'Bình Dương', 'Bình Phước', 'Bình Thuận', 'Cà Mau', 'Cao Bằng', 'Đắk Lắk', 'Đắk Nông', 'Điện Biên', 'Đồng Nai', 'Đồng Tháp', 'Gia Lai', 'Hà Giang', 'Hà Nam', 'Hà Tĩnh', 'Hải Dương', 'Hậu Giang', 'Hòa Bình', 'Hưng Yên', 'Khánh Hòa', 'Kiên Giang', 'Kon Tum', 'Lai Châu', 'Lâm Đồng', 'Lạng Sơn', 'Lào Cai', 'Long An', 'Nam Định', 'Nghệ An', 'Ninh Bình', 'Ninh Thuận', 'Phú Thọ', 'Phú Yên', 'Quảng Bình', 'Quảng Nam', 'Quảng Ngãi', 'Quảng Ninh', 'Quảng Trị', 'Sóc Trăng', 'Sơn La', 'Tây Ninh', 'Thái Bình', 'Thái Nguyên', 'Thanh Hóa', 'Thừa Thiên Huế', 'Tiền Giang', 'Trà Vinh', 'Tuyên Quang', 'Vĩnh Long', 'Vĩnh Phúc', 'Yên Bái'].map(t => `<option value="${t}">`).join('')}
+        ${['An Giang', 'Bắc Ninh', 'Cao Bằng', 'Cà Mau', 'Điện Biên', 'Đà Nẵng', 'Đắk Lắk', 'Đồng Nai', 'Đồng Tháp', 'Gia Lai', 'Hà Tĩnh', 'Hải Phòng', 'Hưng Yên', 'Khánh Hoà', 'Lai Châu', 'Lạng Sơn', 'Lào Cai', 'Lâm Đồng', 'Nghệ An', 'Ninh Bình', 'Phú Thọ', 'Quảng Ngãi', 'Quảng Ninh', 'Quảng Trị', 'Sơn La', 'Tây Ninh', 'Thái Nguyên', 'Thanh Hoá', 'Thành phố Cần Thơ', 'Thành phố Hà Nội', 'Thành phố Hồ Chí Minh', 'Thành phố Huế', 'Tuyên Quang', 'Vĩnh Long'].map(t => `<option value="${t}">`).join('')}
       </datalist>`;
 
     const specialtyDatalist = `
@@ -89,7 +89,7 @@ window.GymApp.pages['member-add'] = {
                 ${this._select('Giới tính', 'reg-gioi-tinh', [{ v: 'nam', t: 'Nam' }, { v: 'nu', t: 'Nữ' }, { v: 'khac', t: 'Khác' }])}
                 <!-- SĐT với inline error -->
                 <div>
-                  <label class="block text-body-sm text-on-surface-variant font-bold mb-1">Số điện thoại *</label>
+                  <label class="block text-body-sm text-on-surface-variant font-bold mb-1">Số điện thoại <span style="color:#ba1a1a;">*</span></label>
                   <input id="reg-so-dien-thoai" type="tel" placeholder="0912345678" maxlength="10"
                     class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none transition-colors" />
                   <p id="err-sdt" class="hidden text-error text-[11px] mt-xs font-medium"></p>
@@ -124,7 +124,7 @@ window.GymApp.pages['member-add'] = {
               <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                 ${this._select('Tỉnh / Thành phố', 'reg-tinh-thanh', [])}
                 ${this._select('Quận / Huyện', 'reg-quan-huyen', [])}
-                ${this._select('Phường / Xã', 'reg-phuong-xa', [])}
+                ${this._datalistInput('Phường / Xã', 'reg-phuong-xa', 'dl-phuong-xa', 'Chọn hoặc nhập phường/xã...')}
                 ${this._field('Số nhà / Đường', 'reg-dia-chi', 'text', '123 Đường...')}
               </div>
             </div>
@@ -177,10 +177,9 @@ window.GymApp.pages['member-add'] = {
 
             <!-- Thời hạn -->
             <div class="mb-5">
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 ${this._field('Từ ngày', 'pkg-from', 'date')}
                 ${this._field('Đến ngày (tự tính)', 'pkg-to', 'date', '', true)}
-                ${this._select('Trạng thái', 'pkg-status', [{ v: 'dang_hoat_dong', t: 'Kích hoạt ngay' }, { v: 'cho_kich_hoat', t: 'Chờ kích hoạt' }])}
                 ${this._field('Mã giảm giá', 'pkg-coupon', 'text', 'GYM2026')}
               </div>
             </div>
@@ -190,7 +189,7 @@ window.GymApp.pages['member-add'] = {
               <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 ${this._field('Tổng tiền', 'pkg-total', 'text', '0', true)}
                 <div>
-                  <label class="block text-body-sm text-on-surface-variant font-bold mb-1">Tiền khách trả *</label>
+                  <label class="block text-body-sm text-on-surface-variant font-bold mb-1">Tiền khách trả <span style="color:#ba1a1a;">*</span></label>
                   <input id="pkg-paid" type="text" inputmode="numeric" placeholder="VD: 1.500.000"
                     class="w-full border border-outline-variant text-on-surface px-standard py-compact rounded-xl outline-none transition-colors appearance-none bg-surface-container-lowest focus:border-brand-primary" />
                   <p id="err-pkg-paid" class="hidden text-error text-[11px] mt-xs font-medium"></p>
@@ -213,28 +212,41 @@ window.GymApp.pages['member-add'] = {
   },
 
   _field: function (label, id, type, placeholder = '', readonly = false) {
+    const formattedLabel = label.replace('*', ' <span style="color:#ba1a1a;margin-left:2px;font-weight:700;">*</span>');
     const base = 'w-full border border-outline-variant text-on-surface px-standard py-compact rounded-xl outline-none transition-colors appearance-none';
     if (readonly) {
       return `<div>
-        <label class="block text-body-sm text-on-surface-variant font-bold mb-1">${label}</label>
+        <label class="block text-body-sm text-on-surface-variant font-bold mb-1">${formattedLabel}</label>
         <input id="${id}" type="${type}" placeholder="${placeholder}" readonly
           class="${base} bg-surface-container text-on-surface-variant cursor-not-allowed" />
       </div>`;
     }
     return `<div>
-      <label class="block text-body-sm text-on-surface-variant font-bold mb-1">${label}</label>
+      <label class="block text-body-sm text-on-surface-variant font-bold mb-1">${formattedLabel}</label>
       <input id="${id}" type="${type}" placeholder="${placeholder}"
         class="${base} bg-surface-container-lowest focus:border-brand-primary" />
     </div>`;
   },
 
   _select: function (label, id, options) {
+    const formattedLabel = label.replace('*', ' <span style="color:#ba1a1a;margin-left:2px;font-weight:700;">*</span>');
     return `<div>
-      <label class="block text-body-sm text-on-surface-variant font-bold mb-1">${label}</label>
+      <label class="block text-body-sm text-on-surface-variant font-bold mb-1">${formattedLabel}</label>
       <select id="${id}" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none transition-colors">
-        <option value="">— ${label} —</option>
+        <option value="">— ${label.replace('*', '').trim()} —</option>
         ${options.map(o => `<option value="${o.v}">${o.t}</option>`).join('')}
       </select>
+    </div>`;
+  },
+
+  _datalistInput: function (label, id, listId, placeholder = '') {
+    const formattedLabel = label.replace('*', ' <span style="color:#ba1a1a;margin-left:2px;font-weight:700;">*</span>');
+    const base = 'w-full border border-outline-variant text-on-surface px-standard py-compact rounded-xl outline-none transition-colors appearance-none';
+    return `<div>
+      <label class="block text-body-sm text-on-surface-variant font-bold mb-1">${formattedLabel}</label>
+      <input id="${id}" type="text" list="${listId}" placeholder="${placeholder}"
+        class="${base} bg-surface-container-lowest focus:border-brand-primary" autocomplete="off" />
+      <datalist id="${listId}"></datalist>
     </div>`;
   },
 
@@ -310,12 +322,14 @@ window.GymApp.pages['member-add'] = {
 
     // 1. Tải dữ liệu địa chính
     try {
-      const [pRes, dRes, wRes] = await Promise.all([
+      const [pRes, dRes, wRes, hcmcRes] = await Promise.all([
         fetch('assets/data/provinces.json').then(r => r.json()),
         fetch('assets/data/districts.json').then(r => r.json()),
-        fetch('assets/data/wards.json').then(r => r.json())
+        fetch('assets/data/wards.json').then(r => r.json()),
+        fetch('assets/data/hanh_chinh_tphcm.json').then(r => r.json())
       ]);
       self._provinces = pRes; self._districts = dRes; self._wards = wRes;
+      self._hcmcWards = hcmcRes;
 
       const pSelect = document.getElementById('reg-tinh-thanh');
       pSelect.innerHTML = '<option value="">— Chọn Tỉnh/Thành —</option>' +
@@ -323,18 +337,42 @@ window.GymApp.pages['member-add'] = {
 
       pSelect.addEventListener('change', () => {
         const code = pSelect.value;
-        const filtered = self._districts.filter(d => d.province_code === code);
         const dSelect = document.getElementById('reg-quan-huyen');
-        dSelect.innerHTML = '<option value="">— Chọn Quận/Huyện —</option>' +
-          filtered.map(d => `<option value="${d.code}">${d.name}</option>`).join('');
-        document.getElementById('reg-phuong-xa').innerHTML = '<option value="">— Chọn Phường/Xã —</option>';
+        const dContainer = dSelect.closest('div');
+        const wInput = document.getElementById('reg-phuong-xa');
+        const dlPhuongXa = document.getElementById('dl-phuong-xa');
+
+        wInput.value = '';
+        if (code === '79') {
+          // Thành phố Hồ Chí Minh: Ẩn Quận/Huyện, nạp trực tiếp Phường mới nhất từ hanh_chinh_tphcm.json vào datalist
+          if (dContainer) dContainer.style.display = 'none';
+          dSelect.innerHTML = '<option value="">— Chọn Quận/Huyện —</option>';
+          dSelect.value = '';
+
+          // Lấy danh sách các new_ward không trùng lặp, sắp xếp bảng chữ cái tiếng Việt
+          const uniqueWards = [...new Set(self._hcmcWards.map(item => item.new_ward))].filter(Boolean).sort((a, b) => a.localeCompare(b, 'vi'));
+          if (dlPhuongXa) {
+            dlPhuongXa.innerHTML = uniqueWards.map(w => `<option value="${w}">`).join('');
+          }
+        } else {
+          // Tỉnh/Thành khác: Hiện Quận/Huyện, chạy luồng 3 cấp chuẩn
+          if (dContainer) dContainer.style.display = 'block';
+          const filtered = self._districts.filter(d => d.province_code === code);
+          dSelect.innerHTML = '<option value="">— Chọn Quận/Huyện —</option>' +
+            filtered.map(d => `<option value="${d.code}">${d.name}</option>`).join('');
+          if (dlPhuongXa) dlPhuongXa.innerHTML = '';
+        }
       });
 
       document.getElementById('reg-quan-huyen').addEventListener('change', (e) => {
         const code = e.target.value;
         const filtered = self._wards.filter(w => w.district_code === code);
-        document.getElementById('reg-phuong-xa').innerHTML = '<option value="">— Chọn Phường/Xã —</option>' +
-          filtered.map(w => `<option value="${w.code}">${w.name}</option>`).join('');
+        const wInput = document.getElementById('reg-phuong-xa');
+        const dlPhuongXa = document.getElementById('dl-phuong-xa');
+        wInput.value = '';
+        if (dlPhuongXa) {
+          dlPhuongXa.innerHTML = filtered.map(w => `<option value="${w.name}">`).join('');
+        }
       });
     } catch (e) { console.error('Address load error:', e); }
 
@@ -417,7 +455,7 @@ window.GymApp.pages['member-add'] = {
         // Chuyên môn PT: input + datalist gợi ý
         extraFields.innerHTML = `
           <div>
-            <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Chuyên môn PT *</label>
+            <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Chuyên môn PT <span style="color:#ba1a1a;">*</span></label>
             <input id="reg-chuyen-mon" type="text" list="dl-chuyen-mon" placeholder="VD: Gym, Yoga, Boxing..."
               class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none transition-colors" />
           </div>
@@ -429,7 +467,7 @@ window.GymApp.pages['member-add'] = {
       } else if (type === 'nhan_vien') {
         extraFields.innerHTML = `
           <div>
-            <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Chức vụ *</label>
+            <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Chức vụ <span style="color:#ba1a1a;">*</span></label>
             <input id="reg-chuc-vu" type="text" placeholder="VD: Lễ tân, Quản lý..."
               class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none transition-colors" />
           </div>`;
@@ -560,7 +598,8 @@ window.GymApp.pages['member-add'] = {
         // Địa chỉ: lấy text của option được chọn
         if (tinhThanh.selectedIndex > 0) fd.append('tinh_thanh', tinhThanh.options[tinhThanh.selectedIndex].text);
         if (quanHuyen.selectedIndex > 0) fd.append('quan_huyen', quanHuyen.options[quanHuyen.selectedIndex].text);
-        if (phuongXa.selectedIndex > 0) fd.append('phuong_xa', phuongXa.options[phuongXa.selectedIndex].text);
+        const pxVal = phuongXa.value?.trim();
+        if (pxVal) fd.append('phuong_xa', pxVal);
 
         // Đính kèm ảnh nếu có
         if (self._avatarFile) fd.append('avatar', self._avatarFile);

@@ -10,7 +10,7 @@ import {
   Clock, Dumbbell, Eye, EyeOff, Info, KeyRound, LogOut,
   Moon, Phone, ShieldCheck, Star, Sun, User, X,
 } from 'lucide-react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import ProfileAvatar from '../../components/ProfileAvatar';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useTheme } from '../../context/ThemeContext';
@@ -220,6 +220,7 @@ const pwStyles = StyleSheet.create({
 
 // ── Màn hình hồ sơ HLV ──────────────────────────────────────
 export default function PTProfileScreen() {
+  const navigation = useNavigation();
   const { user, logout } = useAuthStore();
   const { isDark, toggleTheme, colors } = useTheme();
   const [profile, setProfile] = useState(null);
@@ -255,8 +256,11 @@ export default function PTProfileScreen() {
 
   const onRefresh = () => { setRefreshing(true); fetchData(); };
 
+  const safeCheckins = Array.isArray(checkins) ? checkins : [];
+  const safeNotifications = Array.isArray(notifications) ? notifications : [];
+
   const handleClearNotifications = () => {
-    if (notifications.filter(n => n.is_custom).length === 0) {
+    if (safeNotifications.filter(n => n.is_custom).length === 0) {
       Alert.alert('Thông báo', 'Bạn không có thông báo nào để xoá.');
       return;
     }
@@ -363,19 +367,19 @@ export default function PTProfileScreen() {
           title="Thông báo cá nhân"
           colors={colors}
           extraHeader={
-            notifications.filter(n => n.is_custom).length > 0 ? (
+            safeNotifications.filter(n => n.is_custom).length > 0 ? (
               <TouchableOpacity onPress={handleClearNotifications}>
                 <Text style={{ fontSize: 11, color: BRAND.danger, fontWeight: '700' }}>Xoá sạch</Text>
               </TouchableOpacity>
             ) : null
           }
         >
-          {notifications.length === 0 ? (
+          {safeNotifications.length === 0 ? (
             <View style={{ paddingVertical: 16, alignItems: 'center' }}>
               <Text style={{ fontSize: 12, color: colors.textMuted }}>Không có thông báo mới</Text>
             </View>
           ) : (
-            notifications.map((n, idx) => (
+            safeNotifications.map((n, idx) => (
               <MenuRow
                 key={idx}
                 icon={n.muc_do === 'danger' || n.muc_do === 'warning' ? Bell : Info}
@@ -401,11 +405,11 @@ export default function PTProfileScreen() {
 
         {/* ── NHẬT KÝ RA VÀO ──────────────────── */}
         <Section title="Nhật ký Check-in ca làm" colors={colors}>
-          {checkins.length === 0 ? (
+          {safeCheckins.length === 0 ? (
             <View style={{ paddingVertical: 20, alignItems: 'center' }}>
               <Text style={{ fontSize: 12, color: colors.textMuted }}>Chưa có dữ liệu check-in</Text>
             </View>
-          ) : checkins.map((item) => (
+          ) : safeCheckins.map((item) => (
             <MenuRow
               key={item.id}
               icon={item.loai === 'vao' ? ShieldCheck : Clock}
@@ -426,6 +430,11 @@ export default function PTProfileScreen() {
             icon={KeyRound} iconBg={colors.primaryLight}
             label="Đổi mật khẩu" sublabel="Cập nhật mật khẩu đăng nhập"
             onPress={() => setShowChangePw(true)} colors={colors}
+          />
+          <MenuRow
+            icon={Building2} iconBg={colors.primaryLight}
+            label="Nội quy phòng tập" sublabel="Xem các quy định của phòng tập"
+            onPress={() => navigation.navigate('GymRules')} colors={colors}
           />
           <MenuRow
             icon={isDark ? Moon : Sun}

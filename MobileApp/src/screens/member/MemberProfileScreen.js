@@ -10,7 +10,7 @@ import {
   CreditCard, Dumbbell, Eye, EyeOff, KeyRound, LogOut,
   Moon, Phone, Star, Sun, User, UserCheck, X,
 } from 'lucide-react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import ProfileAvatar from '../../components/ProfileAvatar';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useTheme } from '../../context/ThemeContext';
@@ -233,6 +233,7 @@ const pwStyles = StyleSheet.create({
 
 // ── Màn hình chính ─────────────────────────────────────────
 export default function MemberProfileScreen() {
+  const navigation = useNavigation();
   const { user, logout } = useAuthStore();
   const { isDark, toggleTheme, colors } = useTheme();
   const [profile, setProfile] = useState(null);
@@ -386,6 +387,11 @@ export default function MemberProfileScreen() {
             icon={KeyRound} iconBg={colors.primaryLight}
             label="Đổi mật khẩu" sublabel="Cập nhật mật khẩu đăng nhập"
             onPress={() => setShowChangePw(true)} colors={colors}
+          />
+          <MenuRow
+            icon={Building2} iconBg={colors.primaryLight}
+            label="Nội quy phòng tập" sublabel="Xem các quy định của phòng tập"
+            onPress={() => navigation.navigate('GymRules')} colors={colors}
           />
           <MenuRow
             icon={isDark ? Moon : Sun}

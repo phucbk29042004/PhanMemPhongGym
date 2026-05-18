@@ -10,6 +10,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../services/api';
 import { useNotificationStore } from '../../store/useNotificationStore';
+import { useTheme } from '../../context/ThemeContext';
 
 // ── Màu sắc ────────────────────────────────────────────────
 const G = {
@@ -84,20 +85,30 @@ const LEVEL_CONFIG = {
 
 // ── Component: Card thông báo ──────────────────────────────
 function NotificationCard({ item }) {
+  const { colors } = useTheme();
   const cfg = LEVEL_CONFIG[item.muc_do] || LEVEL_CONFIG.info;
   const { Icon } = cfg;
 
   return (
-    <View style={[notifStyles.card, { backgroundColor: cfg.bg, borderLeftColor: cfg.border }]}>
+    <View style={[
+      notifStyles.card, 
+      { 
+        backgroundColor: colors.isDark ? colors.surfaceVariant : cfg.bg, 
+        borderLeftColor: cfg.border,
+        borderColor: colors.border,
+        borderWidth: colors.isDark ? 1 : 0,
+        borderLeftWidth: 3
+      }
+    ]}>
       {/* Icon + Badge */}
-      <View style={[notifStyles.iconBox, { backgroundColor: cfg.iconBg }]}>
+      <View style={[notifStyles.iconBox, { backgroundColor: colors.isDark ? 'rgba(255,255,255,0.08)' : cfg.iconBg }]}>
         <Icon color={cfg.iconColor} size={20} strokeWidth={2.5} />
       </View>
 
       {/* Nội dung */}
       <View style={notifStyles.content}>
         <View style={notifStyles.titleRow}>
-          <Text style={[notifStyles.title, { color: cfg.textColor }]} numberOfLines={2}>
+          <Text style={[notifStyles.title, { color: colors.isDark ? colors.text : cfg.textColor }]} numberOfLines={2}>
             {item.tieu_de}
           </Text>
           {cfg.badge && (
@@ -106,7 +117,7 @@ function NotificationCard({ item }) {
             </View>
           )}
         </View>
-        <Text style={[notifStyles.body, { color: cfg.textColor }]} numberOfLines={4}>
+        <Text style={[notifStyles.body, { color: colors.isDark ? colors.textMuted : cfg.textColor }]} numberOfLines={4}>
           {item.noi_dung}
         </Text>
       </View>
@@ -218,44 +229,51 @@ export default function MemberNotificationScreen() {
   const infoItems = notifications.filter(n => n.muc_do === 'info');
   const successItems = notifications.filter(n => n.muc_do === 'success');
 
+  const { colors } = useTheme();
+
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={G.white} />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colors.statusBar} backgroundColor={colors.isDark ? colors.statusBarBg : G.white} />
 
       {/* ── Header ─────────────────────────────── */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <View style={styles.headerLeft}>
-          <View style={styles.headerIconBox}>
-            <Bell color={G.primary} size={18} strokeWidth={2} />
+          <View style={[styles.headerIconBox, { backgroundColor: colors.primaryLight }]}>
+            <Bell color={colors.primary} size={18} strokeWidth={2} />
           </View>
-          <Text style={styles.headerTitle}>Thông báo</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Thông báo</Text>
         </View>
         <View style={styles.headerRight}>
           <TouchableOpacity
-            style={[styles.refreshBtn, { marginRight: 8 }]}
+            style={[styles.refreshBtn, { marginRight: 8, backgroundColor: colors.surfaceVariant }]}
             onPress={handleClearAll}
             activeOpacity={0.7}
           >
             <Trash2 color={G.danger} size={16} strokeWidth={2} />
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.refreshBtn}
+            style={[styles.refreshBtn, { backgroundColor: colors.surfaceVariant }]}
             onPress={onRefresh}
             activeOpacity={0.7}
           >
-            <RefreshCw color={G.primary} size={16} strokeWidth={2} />
+            <RefreshCw color={colors.primary} size={16} strokeWidth={2} />
           </TouchableOpacity>
         </View>
       </View>
 
       {/* ── Check-in banner ────────────────────── */}
-      <View style={[styles.checkinBanner, checkedIn ? styles.checkinBannerActive : styles.checkinBannerIdle]}>
+      <View style={[
+        styles.checkinBanner, 
+        checkedIn 
+          ? { backgroundColor: colors.primaryLight } 
+          : { backgroundColor: colors.isDark ? 'rgba(217,119,6,0.15)' : G.warningLight }
+      ]}>
         {checkedIn ? (
-          <CheckCircle color={G.primary} size={16} strokeWidth={2.5} />
+          <CheckCircle color={colors.primary} size={16} strokeWidth={2.5} />
         ) : (
-          <Info color={G.warning} size={16} strokeWidth={2.5} />
+          <Info color={colors.isDark ? '#fbbf24' : G.warning} size={16} strokeWidth={2.5} />
         )}
-        <Text style={[styles.checkinText, { color: checkedIn ? G.primary : G.warning }]}>
+        <Text style={[styles.checkinText, { color: checkedIn ? colors.primary : colors.isDark ? '#fbbf24' : G.warning }]}>
           {checkedIn ? 'Bạn đã check-in hôm nay ✓' : 'Bạn chưa check-in hôm nay'}
         </Text>
       </View>
@@ -263,19 +281,19 @@ export default function MemberNotificationScreen() {
       {/* ── Danh sách thông báo ─────────────────── */}
       <ScrollView
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[G.primary]} tintColor={G.primary} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
         contentContainerStyle={styles.scrollContent}
       >
         {loading ? (
           <View style={styles.loadingCenter}>
-            <ActivityIndicator size="large" color={G.primary} />
-            <Text style={styles.loadingText}>Đang tải thông báo...</Text>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={[styles.loadingText, { color: colors.textMuted }]}>Đang tải thông báo...</Text>
           </View>
         ) : notifications.length === 0 ? (
           <View style={styles.emptyBox}>
-            <BellOff color={G.gray300} size={48} strokeWidth={1.5} />
-            <Text style={styles.emptyTitle}>Không có thông báo</Text>
-            <Text style={styles.emptySubText}>
+            <BellOff color={colors.textMuted} size={48} strokeWidth={1.5} />
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>Không có thông báo</Text>
+            <Text style={[styles.emptySubText, { color: colors.textMuted }]}>
               Mọi thứ đang ổn định. Kéo xuống để làm mới.
             </Text>
           </View>
@@ -296,8 +314,8 @@ export default function MemberNotificationScreen() {
             {warningItems.length > 0 && (
               <View style={styles.group}>
                 <View style={styles.groupHeader}>
-                  <AlertTriangle color={G.warning} size={14} strokeWidth={2.5} />
-                  <Text style={[styles.groupTitle, { color: G.warning }]}>Cần chú ý</Text>
+                  <AlertTriangle color={colors.isDark ? '#fbbf24' : G.warning} size={14} strokeWidth={2.5} />
+                  <Text style={[styles.groupTitle, { color: colors.isDark ? '#fbbf24' : G.warning }]}>Cần chú ý</Text>
                 </View>
                 {warningItems.map((n, i) => <NotificationCard key={i} item={n} />)}
               </View>
@@ -307,8 +325,8 @@ export default function MemberNotificationScreen() {
             {infoItems.length > 0 && (
               <View style={styles.group}>
                 <View style={styles.groupHeader}>
-                  <Info color={G.info} size={14} strokeWidth={2.5} />
-                  <Text style={[styles.groupTitle, { color: G.info }]}>Thông tin</Text>
+                  <Info color={colors.isDark ? '#2196f3' : G.info} size={14} strokeWidth={2.5} />
+                  <Text style={[styles.groupTitle, { color: colors.isDark ? '#2196f3' : G.info }]}>Thông tin</Text>
                 </View>
                 {infoItems.map((n, i) => <NotificationCard key={i} item={n} />)}
               </View>
@@ -318,8 +336,8 @@ export default function MemberNotificationScreen() {
             {successItems.length > 0 && (
               <View style={styles.group}>
                 <View style={styles.groupHeader}>
-                  <CheckCircle color={G.success} size={14} strokeWidth={2.5} />
-                  <Text style={[styles.groupTitle, { color: G.success }]}>Tích cực</Text>
+                  <CheckCircle color={colors.primary} size={14} strokeWidth={2.5} />
+                  <Text style={[styles.groupTitle, { color: colors.primary }]}>Tích cực</Text>
                 </View>
                 {successItems.map((n, i) => <NotificationCard key={i} item={n} />)}
               </View>

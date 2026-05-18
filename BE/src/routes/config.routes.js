@@ -12,7 +12,6 @@ router.use(verifyToken);
 // ── Cấu hình hệ thống ─────────────────────────────────────
 router.get('/',         requireRole('admin'), getConfig);
 router.put('/',         requireRole('admin'), updateConfig);
-router.get('/:khoa',    getConfigByKey);   // public — mobile dùng để lấy gio_dong_cua, v.v.
 
 // ── Nội quy phòng tập ─────────────────────────────────────
 router.get('/rules/all', requireRole('admin'), getAllRules);  // admin xem cả inactive
@@ -20,5 +19,8 @@ router.get('/rules',     getRules);                           // tất cả user
 router.post('/rules',    requireRole('admin'), createRule);
 router.put('/rules/:id', requireRole('admin'), updateRule);
 router.delete('/rules/:id', requireRole('admin'), deleteRule);
+
+// ── Lấy 1 cấu hình cụ thể (wildcard - phải đặt dưới cùng) ──
+router.get('/:khoa',    getConfigByKey);   // public — mobile dùng để lấy gio_dong_cua, v.v.
 
 export default router;

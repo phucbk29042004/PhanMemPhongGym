@@ -4,7 +4,7 @@
     'member-add': 'Thêm mới hội viên', 'checkin': 'Vào - Ra',
     'expired': 'Danh sách hết hạn', 'pt-training': 'Lịch đào tạo PT',
     'pt-register': 'Đăng ký lịch tập PT', 'packages': 'Danh sách gói tập',
-    'birthday': 'Sinh nhật hội viên',
+    'birthday': 'Sinh nhật hội viên', 'gym-rules': 'Nội quy phòng tập',
   };
   const SUB_PAGES = ['members-list', 'member-add', 'checkin', 'expired', 'pt-training', 'pt-register', 'packages', 'birthday'];
 
@@ -31,7 +31,7 @@
     }
 
     // Update nav active state
-    document.querySelectorAll('[data-page]').forEach(btn => {
+    document.querySelectorAll('#sidebar [data-page]').forEach(btn => {
       btn.classList.remove('nav-active', 'text-brand-primary', 'font-bold', 'bg-[#e7f5e9]');
       btn.style.background = '';
       btn.style.color = '#166534';
@@ -269,8 +269,8 @@
     days: ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'],
     daysShort: ['CN', 'Th 2', 'Th 3', 'Th 4', 'Th 5', 'Th 6', 'Th 7'],
     daysMin: ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'],
-    months: ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'],
-    monthsShort: ['Th 1', 'Th 2', 'Th 3', 'Th 4', 'Th 5', 'Th 6', 'Th 7', 'Th 8', 'Th 9', 'Th 10', 'Th 11', 'Th 12'],
+    months: ['tháng 1', 'tháng 2', 'tháng 3', 'tháng 4', 'tháng 5', 'tháng 6', 'tháng 7', 'tháng 8', 'tháng 9', 'tháng 10', 'tháng 11', 'tháng 12'],
+    monthsShort: ['tháng 1', 'tháng 2', 'tháng 3', 'tháng 4', 'tháng 5', 'tháng 6', 'tháng 7', 'tháng 8', 'tháng 9', 'tháng 10', 'tháng 11', 'tháng 12'],
     today: 'Hôm nay',
     clear: 'Xóa',
     dateFormat: 'yyyy-MM-dd',
@@ -299,6 +299,13 @@
           autoClose: true,
           container: originalInput.parentElement,
           position: 'bottom left',
+          navTitles: {
+            days: function(dp) {
+              const month = dp.locale.months[dp.viewDate.getMonth()].toLowerCase();
+              const year = dp.viewDate.getFullYear();
+              return `${month} ${year}`;
+            }
+          },
           onSelect: function ({ date }) {
             if (date && !Array.isArray(date)) {
               const y = date.getFullYear();
@@ -1014,10 +1021,10 @@
 
     // Bảng màu M3 cho từng mức độ (inline style để tránh purge Tailwind)
     const STYLE_MUC_DO = {
-      danger:  { bg: '#fff0f0', border: '#fca5a5', icon: '#dc2626', text: '#7f1d1d' },
-      warning: { bg: '#fffbeb', border: '#fcd34d', icon: '#d97706', text: '#78350f' },
-      info:    { bg: '#eff6ff', border: '#93c5fd', icon: '#2563eb', text: '#1e3a5f' },
-      success: { bg: '#f0fdf4', border: '#86efac', icon: '#16a34a', text: '#14532d' },
+      danger:  { bg: 'var(--notif-danger-bg)', border: 'var(--notif-danger-border)', icon: 'var(--notif-danger-icon)', text: 'var(--notif-danger-text)' },
+      warning: { bg: 'var(--notif-warning-bg)', border: 'var(--notif-warning-border)', icon: 'var(--notif-warning-icon)', text: 'var(--notif-warning-text)' },
+      info:    { bg: 'var(--notif-info-bg)', border: 'var(--notif-info-border)', icon: 'var(--notif-info-icon)', text: 'var(--notif-info-text)' },
+      success: { bg: 'var(--notif-success-bg)', border: 'var(--notif-success-border)', icon: 'var(--notif-success-icon)', text: 'var(--notif-success-text)' },
     };
 
     function _timeAgo(dateStr) {

@@ -9,16 +9,16 @@ import PTQRCodeScreen from '../screens/pt/PTQRCodeScreen';
 import PTScheduleScreen from '../screens/pt/PTScheduleScreen';
 import PTStudentsScreen from '../screens/pt/PTStudentsScreen';
 import PTProfileScreen from '../screens/pt/PTProfileScreen';
+import GymRulesScreen from '../screens/shared/GymRulesScreen';
+import { useTheme } from '../context/ThemeContext';
 
 const Tab = createBottomTabNavigator();
 
-const BRAND_GREEN = '#1D9336';
-const INACTIVE_COLOR = '#9CA3AF';
-
 // Icon container
-function TabIcon({ IconComponent, color, focused }) {
+function TabIcon({ IconComponent, color, focused, colors }) {
+  const activeBg = colors?.primaryLight || '#e6f4ea';
   return (
-    <View style={[styles.iconContainer, focused && styles.iconContainerActive]}>
+    <View style={[styles.iconContainer, focused && { backgroundColor: activeBg }]}>
       <IconComponent color={color} size={22} strokeWidth={focused ? 2.5 : 1.8} />
     </View>
   );
@@ -34,14 +34,16 @@ function TabLabel({ label, color, focused }) {
 }
 
 export default function PTNavigator() {
+  const { colors } = useTheme();
+
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: true,
-        tabBarActiveTintColor: BRAND_GREEN,
-        tabBarInactiveTintColor: INACTIVE_COLOR,
-        tabBarStyle: styles.tabBar,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textMuted,
+        tabBarStyle: [styles.tabBar, { backgroundColor: colors.surface, borderTopColor: colors.border }],
       }}
     >
       {/* Tab 1: Tổng quan */}
@@ -50,7 +52,7 @@ export default function PTNavigator() {
         component={PTHomeScreen}
         options={{
           tabBarLabel: ({ color, focused }) => <TabLabel label="Tổng quan" color={color} focused={focused} />,
-          tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={Home} color={color} focused={focused} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={Home} color={color} focused={focused} colors={colors} />,
         }}
       />
 
@@ -60,7 +62,7 @@ export default function PTNavigator() {
         component={PTScheduleScreen}
         options={{
           tabBarLabel: ({ color, focused }) => <TabLabel label="Lịch dạy" color={color} focused={focused} />,
-          tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={Calendar} color={color} focused={focused} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={Calendar} color={color} focused={focused} colors={colors} />,
         }}
       />
 
@@ -70,14 +72,18 @@ export default function PTNavigator() {
         component={PTQRCodeScreen}
         options={{
           tabBarLabel: ({ color, focused }) => (
-            <Text style={[styles.tabLabelCenter, { color: focused ? BRAND_GREEN : INACTIVE_COLOR }]}>
+            <Text style={[styles.tabLabelCenter, { color: focused ? colors.primary : colors.textMuted }]}>
               QR
             </Text>
           ),
           tabBarIcon: ({ focused }) => (
-            <View style={[styles.centerTabIcon, focused && styles.centerTabIconActive]}>
+            <View style={[
+              styles.centerTabIcon,
+              { backgroundColor: colors.primaryLight },
+              focused && { backgroundColor: colors.primary, shadowColor: colors.primary }
+            ]}>
               <QrCode
-                color={focused ? '#fff' : INACTIVE_COLOR}
+                color={focused ? '#fff' : colors.textMuted}
                 size={24}
                 strokeWidth={2}
               />
@@ -92,7 +98,7 @@ export default function PTNavigator() {
         component={PTStudentsScreen}
         options={{
           tabBarLabel: ({ color, focused }) => <TabLabel label="Học viên" color={color} focused={focused} />,
-          tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={Users} color={color} focused={focused} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={Users} color={color} focused={focused} colors={colors} />,
         }}
       />
 
@@ -102,7 +108,16 @@ export default function PTNavigator() {
         component={PTProfileScreen}
         options={{
           tabBarLabel: ({ color, focused }) => <TabLabel label="Cá nhân" color={color} focused={focused} />,
-          tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={User} color={color} focused={focused} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={User} color={color} focused={focused} colors={colors} />,
+        }}
+      />
+
+      {/* Màn hình ẩn khỏi tab bar: Nội quy phòng tập */}
+      <Tab.Screen
+        name="GymRules"
+        component={GymRulesScreen}
+        options={{
+          tabBarItemStyle: { display: 'none' },
         }}
       />
     </Tab.Navigator>
@@ -154,8 +169,8 @@ const styles = StyleSheet.create({
     marginTop: -6,
   },
   centerTabIconActive: {
-    backgroundColor: BRAND_GREEN,
-    shadowColor: BRAND_GREEN,
+    backgroundColor: '#1D9336',
+    shadowColor: '#1D9336',
     shadowOpacity: 0.4,
     shadowRadius: 10,
     elevation: 8,

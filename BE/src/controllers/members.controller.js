@@ -549,6 +549,11 @@ export const registerPackage = (req, res) => {
     return error(res, 'Thiếu thông tin bắt buộc: goi_tap_id, tu_ngay, gia_thuc_te, phuong_thuc_tt', 400);
   }
 
+  const validTT = ['tien_mat', 'chuyen_khoan'];
+  if (!validTT.includes(phuong_thuc_tt)) {
+    return error(res, `phuong_thuc_tt phải là: ${validTT.join(', ')}`, 400);
+  }
+
   const member = db.prepare('SELECT * FROM ho_so WHERE id = ? AND is_deleted = 0').get(id);
   if (!member) return error(res, 'Không tìm thấy hội viên.', 404);
 
@@ -647,6 +652,13 @@ export const getPackageRequests = (req, res) => {
 export const approvePackageRequest = (req, res) => {
   const { id } = req.params;
   const { action, gia_thuc_te, phuong_thuc_tt, ghi_chu_tt } = req.body; // action: 'approve' or 'reject'
+
+  if (action !== 'reject') {
+    const validTT = ['tien_mat', 'chuyen_khoan'];
+    if (phuong_thuc_tt && !validTT.includes(phuong_thuc_tt)) {
+      return error(res, `phuong_thuc_tt phải là: ${validTT.join(', ')}`, 400);
+    }
+  }
 
   const request = db.prepare(`
     SELECT dk.*, gt.ten_goi
@@ -1162,6 +1174,13 @@ export const editPackage = (req, res) => {
   const { id, pkgId } = req.params;
   const { tu_ngay, den_ngay, gia_thuc_te, phuong_thuc_tt, ghi_chu_tt, ghi_chu_gia } = req.body;
 
+  if (phuong_thuc_tt) {
+    const validTT = ['tien_mat', 'chuyen_khoan'];
+    if (!validTT.includes(phuong_thuc_tt)) {
+      return error(res, `phuong_thuc_tt phải là: ${validTT.join(', ')}`, 400);
+    }
+  }
+
   const hoSo = db.prepare('SELECT id, ho_ten FROM ho_so WHERE id = ? AND is_deleted = 0').get(id);
   if (!hoSo) return error(res, 'Không tìm thấy hồ sơ hội viên.', 404);
 
@@ -1213,6 +1232,13 @@ export const switchPackage = (req, res) => {
   const { id } = req.params;
   const { pkg_id_cu, goi_tap_id_moi, tu_ngay, ly_do_huy = 'Đổi sang gói mới', so_tien_hoan = 0,
           gia_thuc_te, phuong_thuc_tt, ghi_chu_tt } = req.body;
+
+  if (phuong_thuc_tt) {
+    const validTT = ['tien_mat', 'chuyen_khoan'];
+    if (!validTT.includes(phuong_thuc_tt)) {
+      return error(res, `phuong_thuc_tt phải là: ${validTT.join(', ')}`, 400);
+    }
+  }
 
   if (!pkg_id_cu || !goi_tap_id_moi || !tu_ngay) {
     return error(res, 'Thiếu thông tin: pkg_id_cu, goi_tap_id_moi, tu_ngay.', 400);

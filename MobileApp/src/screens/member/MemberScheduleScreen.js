@@ -9,6 +9,7 @@ import {
 } from 'lucide-react-native';
 import { api } from '../../services/api';
 import { formatDate } from '../../utils/data';
+import { useTheme } from '../../context/ThemeContext';
 
 // ── Màu sắc ────────────────────────────────────────────────
 const G = {
@@ -57,13 +58,14 @@ function todayYMD() {
 
 // ── Badge trạng thái ───────────────────────────────────────
 function StatusBadge({ status }) {
+  const { colors } = useTheme();
   const cfg = {
     cho_tap: { bg: G.warningLight, color: G.warning, label: 'Chờ tập' },
-    da_tap: { bg: G.primaryLight, color: G.primary, label: 'Đã hoàn thành' },
-    da_xac_nhan: { bg: G.primaryLight, color: G.primary, label: 'Đã xác nhận' },
+    da_tap: { bg: colors.primaryLight, color: colors.primary, label: 'Đã hoàn thành' },
+    da_xac_nhan: { bg: colors.primaryLight, color: colors.primary, label: 'Đã xác nhận' },
     da_huy: { bg: '#fef2f2', color: G.danger, label: 'Đã hủy' },
     vang: { bg: '#faf5ff', color: '#7c3aed', label: 'Vắng' },
-  }[status] || { bg: G.gray100, color: G.gray500, label: status || 'Chưa rõ' };
+  }[status] || { bg: colors.surfaceVariant, color: colors.textMuted, label: status || 'Chưa rõ' };
 
   return (
     <View style={[badgeStyles.badge, { backgroundColor: cfg.bg }]}>
@@ -78,6 +80,7 @@ const badgeStyles = StyleSheet.create({
 
 // ── Component Lịch Lưới Mini Calendar ─────────────────────
 function MiniCalendar({ year, month, trainedDays, today, onPrevMonth, onNextMonth }) {
+  const { colors } = useTheme();
   const firstDay = getFirstDayOfWeek(year, month);
   const totalDays = getDaysInMonth(year, month);
   // Ngày của tháng trước để fill ô trống
@@ -105,14 +108,14 @@ function MiniCalendar({ year, month, trainedDays, today, onPrevMonth, onNextMont
     <View>
       {/* Header điều hướng tháng */}
       <View style={calStyles.navRow}>
-        <TouchableOpacity onPress={onPrevMonth} style={calStyles.navBtn} activeOpacity={0.7}>
-          <ChevronLeft color={G.gray700} size={20} strokeWidth={2} />
+        <TouchableOpacity onPress={onPrevMonth} style={[calStyles.navBtn, { backgroundColor: colors.surfaceVariant }]} activeOpacity={0.7}>
+          <ChevronLeft color={colors.text} size={20} strokeWidth={2} />
         </TouchableOpacity>
-        <Text style={calStyles.monthLabel}>
+        <Text style={[calStyles.monthLabel, { color: colors.text }]}>
           {String(month + 1).padStart(2, '0')}/{year}
         </Text>
-        <TouchableOpacity onPress={onNextMonth} style={calStyles.navBtn} activeOpacity={0.7}>
-          <ChevronRight color={G.gray700} size={20} strokeWidth={2} />
+        <TouchableOpacity onPress={onNextMonth} style={[calStyles.navBtn, { backgroundColor: colors.surfaceVariant }]} activeOpacity={0.7}>
+          <ChevronRight color={colors.text} size={20} strokeWidth={2} />
         </TouchableOpacity>
       </View>
 
@@ -120,7 +123,7 @@ function MiniCalendar({ year, month, trainedDays, today, onPrevMonth, onNextMont
       <View style={calStyles.weekRow}>
         {WEEKDAYS.map(wd => (
           <View key={wd} style={calStyles.weekCell}>
-            <Text style={calStyles.weekText}>{wd}</Text>
+            <Text style={[calStyles.weekText, { color: colors.textMuted }]}>{wd}</Text>
           </View>
         ))}
       </View>
@@ -134,14 +137,15 @@ function MiniCalendar({ year, month, trainedDays, today, onPrevMonth, onNextMont
             <View key={idx} style={calStyles.dayCell}>
               <View style={[
                 calStyles.dayInner,
-                isTrained && calStyles.dayTrained,
-                isToday && !isTrained && calStyles.dayToday,
+                isTrained && { backgroundColor: colors.primary },
+                isToday && !isTrained && { borderWidth: 1.5, borderColor: colors.primary },
               ]}>
                 <Text style={[
                   calStyles.dayText,
-                  cell.type !== 'current' && calStyles.dayTextOther,
-                  isTrained && calStyles.dayTextTrained,
-                  isToday && !isTrained && calStyles.dayTextToday,
+                  { color: colors.text },
+                  cell.type !== 'current' && { color: colors.textMuted, opacity: 0.4 },
+                  isTrained && { color: G.white, fontWeight: '800' },
+                  isToday && !isTrained && { color: colors.primary, fontWeight: '800' },
                 ]}>
                   {cell.day}
                 </Text>
@@ -174,33 +178,34 @@ const calStyles = StyleSheet.create({
 
 // ── Card Lịch Tập Chi Tiết ─────────────────────────────────
 function ScheduleCard({ item }) {
+  const { colors } = useTheme();
   return (
-    <View style={styles.schedCard}>
-      <View style={styles.schedDateBox}>
-        <Text style={styles.schedDay}>
+    <View style={[styles.schedCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <View style={[styles.schedDateBox, { backgroundColor: colors.primaryLight }]}>
+        <Text style={[styles.schedDay, { color: colors.primary }]}>
           {item.ngay_tap ? new Date(item.ngay_tap + 'T00:00:00').toLocaleDateString('vi-VN', { day: '2-digit' }) : '—'}
         </Text>
-        <Text style={styles.schedMonth}>
+        <Text style={[styles.schedMonth, { color: colors.primary }]}>
           {item.ngay_tap ? `Th.${String(new Date(item.ngay_tap + 'T00:00:00').getMonth() + 1).padStart(2, '0')}` : ''}
         </Text>
       </View>
       <View style={styles.schedInfo}>
         <View style={styles.schedRow}>
-          <Clock color={G.gray400} size={13} strokeWidth={2} />
-          <Text style={styles.schedTime}>
+          <Clock color={colors.textMuted} size={13} strokeWidth={2} />
+          <Text style={[styles.schedTime, { color: colors.text }]}>
             {item.gio_bat_dau || '—'} – {item.gio_ket_thuc || '—'}
           </Text>
         </View>
         {item.ten_pt ? (
           <View style={styles.schedRow}>
-            <Dumbbell color={G.primary} size={13} strokeWidth={2} />
-            <Text style={styles.schedPt}>HLV: {item.ten_pt}</Text>
+            <Dumbbell color={colors.primary} size={13} strokeWidth={2} />
+            <Text style={[styles.schedPt, { color: colors.primary }]}>HLV: {item.ten_pt}</Text>
           </View>
         ) : null}
         {item.chi_nhanh ? (
           <View style={styles.schedRow}>
-            <MapPin color={G.gray400} size={13} strokeWidth={2} />
-            <Text style={styles.schedLocation} numberOfLines={1}>{item.chi_nhanh}</Text>
+            <MapPin color={colors.textMuted} size={13} strokeWidth={2} />
+            <Text style={[styles.schedLocation, { color: colors.textMuted }]} numberOfLines={1}>{item.chi_nhanh}</Text>
           </View>
         ) : null}
       </View>
@@ -285,43 +290,45 @@ export default function MemberScheduleScreen() {
     else setMonth(m => m + 1);
   };
 
+  const { colors } = useTheme();
+
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={G.gray50} />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colors.statusBar} backgroundColor={colors.isDark ? colors.statusBarBg : G.gray50} />
 
       {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerIcon}>
-          <CalendarDays color={G.primary} size={20} strokeWidth={2} />
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <View style={[styles.headerIcon, { backgroundColor: colors.primaryLight }]}>
+          <CalendarDays color={colors.primary} size={20} strokeWidth={2} />
         </View>
-        <Text style={styles.headerTitle}>Tập luyện</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Tập luyện</Text>
       </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchSchedules(); }} colors={[G.primary]} tintColor={G.primary} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchSchedules(); }} colors={[colors.primary]} tintColor={colors.primary} />}
         contentContainerStyle={styles.scrollContent}
       >
         {loading ? (
           <View style={styles.loadingCenter}>
-            <ActivityIndicator size="large" color={G.primary} />
-            <Text style={styles.loadingText}>Đang tải lịch tập...</Text>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={[styles.loadingText, { color: colors.textMuted }]}>Đang tải lịch tập...</Text>
           </View>
         ) : (
           <>
             {/* ── Thống Kê Tháng ──────────────────────────── */}
-            <View style={styles.card}>
+            <View style={[styles.card, { backgroundColor: colors.surface }]}>
               <View style={styles.cardHeaderRow}>
-                <Dumbbell color={G.primary} size={16} strokeWidth={2} />
-                <Text style={styles.cardTitle}>Tập luyện tháng này</Text>
+                <Dumbbell color={colors.primary} size={16} strokeWidth={2} />
+                <Text style={[styles.cardTitle, { color: colors.text }]}>Tập luyện tháng này</Text>
               </View>
 
               <View style={styles.statsRow}>
-                <View style={[styles.statBox, { backgroundColor: G.gray100 }]}>
-                  <Text style={styles.statLabel}>Không tập luyện</Text>
-                  <Text style={[styles.statValue, { color: G.gray500 }]}>{monthStats.chuaTap}</Text>
+                <View style={[styles.statBox, { backgroundColor: colors.surfaceVariant }]}>
+                  <Text style={[styles.statLabel, { color: colors.textMuted }]}>Không tập luyện</Text>
+                  <Text style={[styles.statValue, { color: colors.textMuted }]}>{monthStats.chuaTap}</Text>
                 </View>
-                <View style={[styles.statBox, { backgroundColor: G.primary }]}>
+                <View style={[styles.statBox, { backgroundColor: colors.primary }]}>
                   <Text style={[styles.statLabel, { color: 'rgba(255,255,255,0.8)' }]}>Đã tập luyện</Text>
                   <Text style={[styles.statValue, { color: G.white }]}>{monthStats.daTap}</Text>
                 </View>
@@ -340,12 +347,12 @@ export default function MemberScheduleScreen() {
 
             {/* ── Lịch Sử Tập Luyện ──────────────────────── */}
             <View style={styles.historySection}>
-              <Text style={styles.historyTitle}>Lịch sử tập luyện</Text>
+              <Text style={[styles.historyTitle, { color: colors.text }]}>Lịch sử tập luyện</Text>
               {historyList.length === 0 ? (
-                <View style={styles.emptyBox}>
-                  <CalendarDays color={G.gray300} size={36} strokeWidth={1.5} />
-                  <Text style={styles.emptyText}>Chưa có lịch tập nào</Text>
-                  <Text style={styles.emptySubText}>Liên hệ lễ tân để đặt lịch với HLV</Text>
+                <View style={[styles.emptyBox, { backgroundColor: colors.surface }]}>
+                  <CalendarDays color={colors.textMuted} size={36} strokeWidth={1.5} />
+                  <Text style={[styles.emptyText, { color: colors.text }]}>Chưa có lịch tập nào</Text>
+                  <Text style={[styles.emptySubText, { color: colors.textMuted }]}>Liên hệ lễ tân để đặt lịch với HLV</Text>
                 </View>
               ) : (
                 historyList.map((item) => (

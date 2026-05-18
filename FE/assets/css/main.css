@@ -10,6 +10,27 @@
   --text-on-surface: #181c20;
   --text-on-surface-variant: #3f4a3c;
   --outline-variant: #93b894;
+
+  /* Notification Level Colors */
+  --notif-danger-bg: #fff0f0;
+  --notif-danger-border: #fca5a5;
+  --notif-danger-icon: #dc2626;
+  --notif-danger-text: #7f1d1d;
+
+  --notif-warning-bg: #fffbeb;
+  --notif-warning-border: #fcd34d;
+  --notif-warning-icon: #d97706;
+  --notif-warning-text: #78350f;
+
+  --notif-info-bg: #eff6ff;
+  --notif-info-border: #93c5fd;
+  --notif-info-icon: #2563eb;
+  --notif-info-text: #1e3a5f;
+
+  --notif-success-bg: #f0fdf4;
+  --notif-success-border: #86efac;
+  --notif-success-icon: #16a34a;
+  --notif-success-text: #14532d;
 }
 
 html.dark {
@@ -23,6 +44,27 @@ html.dark {
   --text-on-surface: #dde1e7;
   --text-on-surface-variant: #a8b5a5;
   --outline-variant: #4a6b4c;
+
+  /* Notification Level Colors - Dark Mode Harmonized */
+  --notif-danger-bg: #2d1818;
+  --notif-danger-border: #4c1c1c;
+  --notif-danger-icon: #f87171;
+  --notif-danger-text: #fecaca;
+
+  --notif-warning-bg: #2d2218;
+  --notif-warning-border: #4c321c;
+  --notif-warning-icon: #fbbf24;
+  --notif-warning-text: #fef3c7;
+
+  --notif-info-bg: #182235;
+  --notif-info-border: #1c355e;
+  --notif-info-icon: #60a5fa;
+  --notif-info-text: #dbeafe;
+
+  --notif-success-bg: #182d1f;
+  --notif-success-border: #1c4c2d;
+  --notif-success-icon: #34d399;
+  --notif-success-text: #d1fae5;
 }
 
 .material-symbols-outlined {
@@ -922,7 +964,7 @@ html.dark .custom-scrollbar::-webkit-scrollbar-thumb {
   --adp-background-color: #ffffff;
   --adp-color: #181c20;
   --adp-accent-color: #1D9336;
-  --adp-cell-border-radius: 50%;
+  --adp-cell-border-radius: 8px;
   --adp-cell-background-color-selected: #1D9336;
   --adp-cell-background-color-hover: #e7f5e9;
   --adp-cell-color-selected: #ffffff;
@@ -967,6 +1009,121 @@ html.dark .air-datepicker {
 html.dark .air-datepicker-cell.-selected- {
   box-shadow: 0 4px 10px rgba(76, 206, 95, 0.3) !important;
 }
+
+/* ===== CUSTOM SEMANTIC MEMBER CARD SYSTEM ===== */
+
+/* Light mode styles */
+.member-card {
+  background: linear-gradient(135deg, #f0fdf4 0%, #f7fef9 60%, #ffffff 100%);
+  border: 1.5px solid #bbf7d0;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.member-card:hover {
+  box-shadow: 0 20px 25px -5px rgba(29, 147, 54, 0.12), 0 8px 10px -6px rgba(29, 147, 54, 0.08);
+}
+.member-card-avatar-wrapper {
+  background: #dcfce7;
+  border-color: #86efac;
+}
+.member-card-dot {
+  border: 3px solid #f0fdf4;
+}
+.member-name-link {
+  color: #14532d;
+}
+.member-name-link:hover {
+  color: #1D9336;
+}
+.member-card-info-cell {
+  background: rgba(187, 247, 208, 0.35);
+  border: 1px solid #bbf7d0;
+}
+.member-card-info-label {
+  color: #166534;
+  opacity: 0.6;
+}
+.member-card-info-value {
+  color: #14532d;
+}
+.member-card-footer {
+  border-top: 1px solid #bbf7d0;
+}
+.member-action-btn {
+  background: #dcfce7;
+  color: #166534;
+}
+.member-action-btn:hover {
+  background: #1D9336;
+  color: #ffffff;
+}
+.member-delete-btn {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.member-delete-btn:hover {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+/* Dark mode overrides — Option 2: Premium Space Cyberpunk Mint */
+html.dark .member-card {
+  background: #161a22 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(12px);
+}
+html.dark .member-card:hover {
+  box-shadow: 0 20px 30px -5px rgba(34, 197, 94, 0.15), 0 8px 12px -6px rgba(6, 182, 212, 0.15) !important;
+  border-color: rgba(34, 197, 94, 0.4) !important;
+}
+html.dark .member-card-avatar-wrapper {
+  background: rgba(34, 197, 94, 0.05) !important;
+  border-color: rgba(52, 211, 153, 0.2) !important;
+}
+html.dark .member-card-dot {
+  border-color: #161a22 !important;
+}
+html.dark .member-name-link {
+  color: #a7f3d0 !important;
+}
+html.dark .member-name-link:hover {
+  color: #22d3ee !important;
+}
+html.dark .member-card-info-cell {
+  background: rgba(34, 197, 94, 0.04) !important;
+  border-color: rgba(52, 211, 153, 0.08) !important;
+}
+html.dark .member-card-info-label {
+  color: #94a3b8 !important;
+  opacity: 0.7 !important;
+}
+html.dark .member-card-info-value {
+  color: #f8fafc !important;
+}
+html.dark .member-card-footer {
+  border-top-color: rgba(255, 255, 255, 0.05) !important;
+}
+html.dark .member-action-btn {
+  background: rgba(34, 197, 94, 0.1) !important;
+  color: #a7f3d0 !important;
+}
+html.dark .member-action-btn:hover {
+  background: #06b6d4 !important;
+  color: #ffffff !important;
+}
+html.dark .member-delete-btn {
+  background: rgba(239, 68, 68, 0.1) !important;
+  color: #f87171 !important;
+}
+html.dark .member-delete-btn:hover {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+}
+html.dark .pt-rating-badge {
+  background: rgba(34, 197, 94, 0.1) !important;
+  color: #a7f3d0 !important;
+  border-color: rgba(52, 211, 153, 0.15) !important;
+}
+
 /* ===== DARK MODE — INLINE STYLE OVERRIDES ===== */
 /* Override hardcoded white/light backgrounds inside JS-rendered cards & modals */
 

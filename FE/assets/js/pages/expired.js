@@ -570,47 +570,58 @@ window.GymApp.pages['expired'] = {
     // Approve logic with modal
     const modalHtml = `
       <div id="modal-approve-renewal" class="fixed inset-0 z-[100] flex items-center justify-center p-standard bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-        <div class="bg-surface-container-lowest w-full max-w-md rounded-[28px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-outline-variant">
-          <div class="px-loose py-loose bg-brand-primary text-white flex items-center gap-standard">
-            <div class="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center">
-              <span class="material-symbols-outlined text-3xl">task_alt</span>
+        <div class="bg-surface-container-lowest w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-outline-variant">
+          <!-- Header -->
+          <div class="px-standard py-standard bg-brand-primary text-white flex items-center gap-standard">
+            <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shadow-inner">
+              <span class="material-symbols-outlined text-2xl">task_alt</span>
             </div>
             <div>
-              <h3 class="text-headline-sm font-black tracking-tight">Xác nhận duyệt</h3>
-              <p class="text-body-sm opacity-80 font-medium mt-0.5">Hội viên: ${req.ho_ten}</p>
+              <h3 class="text-body-lg font-black tracking-tight">Xác nhận duyệt gia hạn</h3>
+              <p class="text-body-xs opacity-90 font-bold">Hội viên: ${req.ho_ten}</p>
             </div>
           </div>
-          <div class="p-loose space-y-standard">
-            <div class="bg-surface-container-low p-standard rounded-2xl border border-outline-variant/30 space-y-compact">
+          
+          <!-- Content -->
+          <div class="p-standard space-y-standard">
+            <!-- Info Box -->
+            <div class="bg-surface-container-low p-compact rounded-xl border border-outline-variant/30 space-y-xs text-body-xs">
                <div class="flex justify-between items-center">
-                  <span class="text-label-sm text-outline font-bold">Gói tập</span>
-                  <span class="text-body-sm font-black text-brand-primary">${req.ten_goi_tap}</span>
+                  <span class="text-outline font-bold">Gói tập yêu cầu:</span>
+                  <span class="font-black text-brand-primary">${req.ten_goi_tap}</span>
                </div>
-               <div class="flex justify-between items-center">
-                  <span class="text-label-sm text-outline font-bold">Thời gian</span>
-                  <span class="text-body-sm font-bold text-on-surface">${window.GymApp.formatDate(req.tu_ngay)} - ${window.GymApp.formatDate(req.den_ngay)}</span>
+               <div class="flex justify-between items-center border-t border-outline-variant/10 pt-xs mt-xs">
+                  <span class="text-outline font-bold">Thời gian gia hạn:</span>
+                  <span class="font-bold text-on-surface">${window.GymApp.formatDate(req.tu_ngay)} - ${window.GymApp.formatDate(req.den_ngay)}</span>
                </div>
             </div>
-            <div>
-              <label class="block text-label-sm text-on-surface-variant font-black mb-compact ml-1 uppercase tracking-widest opacity-70">Số tiền thực thu (VNĐ)</label>
-              <input type="number" id="approve-price" value="${req.gia_thuc_te}" class="w-full bg-surface-container-low border border-outline-variant px-loose py-4 rounded-2xl outline-none focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/10 text-headline-sm font-black transition-all" />
-            </div>
-            <div>
-              <label class="block text-label-sm text-on-surface-variant font-black mb-compact ml-1 uppercase tracking-widest opacity-70">Phương thức thanh toán</label>
-              <select id="approve-method" class="w-full bg-surface-container-low border border-outline-variant px-loose py-3 rounded-2xl outline-none focus:border-brand-primary transition-all font-bold">
-                <option value="tien_mat">Tiền mặt</option>
-                <option value="chuyen_khoan">Chuyển khoản</option>
-                <option value="the">Quẹt thẻ</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-label-sm text-on-surface-variant font-black mb-compact ml-1 uppercase tracking-widest opacity-70">Ghi chú giao dịch</label>
-              <input type="text" id="approve-note" placeholder="VD: Đã nhận tiền qua Vietcombank..." class="w-full bg-surface-container-low border border-outline-variant px-loose py-3 rounded-2xl outline-none focus:border-brand-primary transition-all" />
+            
+            <!-- Inputs -->
+            <div class="space-y-compact">
+              <div>
+                <label class="block text-body-xs font-bold text-on-surface-variant mb-xs ml-0.5">Số tiền thực thu (VNĐ)</label>
+                <input type="number" id="approve-price" value="${req.gia_thuc_te}" class="w-full bg-surface-container-lowest border border-outline-variant px-standard py-2 rounded-xl outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 text-body-sm font-black transition-all" />
+              </div>
+              
+              <div>
+                <label class="block text-body-xs font-bold text-on-surface-variant mb-xs ml-0.5">Phương thức thanh toán</label>
+                <select id="approve-method" class="w-full bg-surface-container-lowest border border-outline-variant px-standard py-2 rounded-xl outline-none focus:border-brand-primary transition-all text-body-sm font-bold">
+                  <option value="tien_mat">Tiền mặt</option>
+                  <option value="chuyen_khoan">Chuyển khoản</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-body-xs font-bold text-on-surface-variant mb-xs ml-0.5">Ghi chú giao dịch</label>
+                <input type="text" id="approve-note" placeholder="Ví dụ: Đã nhận tiền qua chuyển khoản..." class="w-full bg-surface-container-lowest border border-outline-variant px-standard py-2 rounded-xl outline-none focus:border-brand-primary transition-all text-body-sm font-medium" />
+              </div>
             </div>
           </div>
-          <div class="px-loose py-loose bg-surface-container-low flex gap-standard border-t border-outline-variant/30">
-            <button id="btn-approve-cancel" class="flex-1 py-3 rounded-2xl font-bold text-on-surface-variant hover:bg-surface-container-high transition-all">Hủy bỏ</button>
-            <button id="btn-approve-submit" class="flex-[2] py-3 rounded-2xl font-black bg-brand-primary text-white shadow-lg shadow-brand-primary/20 active:scale-95 transition-all">HOÀN TẤT DUYỆT</button>
+          
+          <!-- Actions -->
+          <div class="px-standard py-standard bg-surface-container-low flex gap-compact border-t border-outline-variant/30">
+            <button id="btn-approve-cancel" class="flex-1 py-2 rounded-xl font-bold text-on-surface-variant hover:bg-surface-container-high transition-all text-body-sm">Hủy bỏ</button>
+            <button id="btn-approve-submit" class="flex-[2] py-2 rounded-xl font-black bg-brand-primary text-white shadow-md active:scale-95 hover:bg-[#187a2d] transition-all text-body-sm">DUYỆT GIA HẠN</button>
           </div>
         </div>
       </div>
@@ -634,9 +645,15 @@ window.GymApp.pages['expired'] = {
           document.getElementById('modal-approve-renewal').remove();
           self._loadData();
           await window.GymApp.refreshData();
-        } else { window.GymApp.toast(res?.message || 'Lỗi khi duyệt.', 'error'); }
-      } catch (e) { window.GymApp.toast('Lỗi kết nối.', 'error'); }
-      finally { btn.disabled = false; btn.textContent = 'Xác nhận'; }
+        } else {
+          window.GymApp.toast(res?.message || 'Lỗi khi duyệt.', 'error');
+        }
+      } catch (e) {
+        window.GymApp.toast('Lỗi kết nối.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'DUYỆT GIA HẠN';
+      }
     };
   },
 

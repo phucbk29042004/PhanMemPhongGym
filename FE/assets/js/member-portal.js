@@ -168,10 +168,10 @@
   }
 
   const NOTIF_STYLE = {
-    danger:  { bg: '#fff0f0', border: '#fca5a5', icon_color: '#dc2626', text_color: '#7f1d1d' },
-    warning: { bg: '#fffbeb', border: '#fcd34d', icon_color: '#d97706', text_color: '#78350f' },
-    info:    { bg: '#eff6ff', border: '#93c5fd', icon_color: '#2563eb', text_color: '#1e3a5f' },
-    success: { bg: '#f0fdf4', border: '#86efac', icon_color: '#16a34a', text_color: '#14532d' },
+    danger:  { bg: 'var(--notif-danger-bg)', border: 'var(--notif-danger-border)', icon_color: 'var(--notif-danger-icon)', text_color: 'var(--notif-danger-text)' },
+    warning: { bg: 'var(--notif-warning-bg)', border: 'var(--notif-warning-border)', icon_color: 'var(--notif-warning-icon)', text_color: 'var(--notif-warning-text)' },
+    info:    { bg: 'var(--notif-info-bg)', border: 'var(--notif-info-border)', icon_color: 'var(--notif-info-icon)', text_color: 'var(--notif-info-text)' },
+    success: { bg: 'var(--notif-success-bg)', border: 'var(--notif-success-border)', icon_color: 'var(--notif-success-icon)', text_color: 'var(--notif-success-text)' },
   };
 
   function _renderMemberDropdownList() {

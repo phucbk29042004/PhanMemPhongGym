@@ -8,6 +8,7 @@ import {
   Clock, FileText, Filter, ScanLine,
 } from 'lucide-react-native';
 import { api } from '../../services/api';
+import { useTheme } from '../../context/ThemeContext';
 
 // ── Màu sắc ────────────────────────────────────────────────
 const G = {
@@ -60,40 +61,43 @@ function methodLabel(method) {
 
 // ── Card lượt vào/ra ───────────────────────────────────────
 function CheckinCard({ item }) {
+  const { colors } = useTheme();
   const isVao = item.loai === 'vao';
+  const blueLight = colors.isDark ? 'rgba(33,150,243,0.15)' : G.blueLight;
+  const blueColor = colors.isDark ? '#64b5f6' : G.blue;
 
   return (
-    <View style={cardStyles.wrapper}>
+    <View style={[cardStyles.wrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
       {/* Icon loại */}
-      <View style={[cardStyles.iconBox, { backgroundColor: isVao ? G.primaryLight : G.blueLight }]}>
+      <View style={[cardStyles.iconBox, { backgroundColor: isVao ? colors.primaryLight : blueLight }]}>
         {isVao
-          ? <ArrowUpRight color={G.primary} size={20} strokeWidth={2.5} />
-          : <ArrowDownLeft color={G.blue} size={20} strokeWidth={2.5} />
+          ? <ArrowUpRight color={colors.primary} size={20} strokeWidth={2.5} />
+          : <ArrowDownLeft color={blueColor} size={20} strokeWidth={2.5} />
         }
       </View>
 
       {/* Thông tin */}
       <View style={cardStyles.info}>
-        <Text style={[cardStyles.typeLabel, { color: isVao ? G.primary : G.blue }]}>
+        <Text style={[cardStyles.typeLabel, { color: isVao ? colors.primary : blueColor }]}>
           {isVao ? 'Vào phòng tập' : 'Ra khỏi phòng tập'}
         </Text>
         <View style={cardStyles.row}>
-          <Clock color={G.gray300} size={12} strokeWidth={2} />
-          <Text style={cardStyles.time}>
+          <Clock color={colors.textMuted} size={12} strokeWidth={2} />
+          <Text style={[cardStyles.time, { color: colors.text }]}>
             {item.gio_hien_thi || formatTimeOnly(item.thoi_diem)}
           </Text>
-          <Text style={cardStyles.date}>
+          <Text style={[cardStyles.date, { color: colors.textMuted }]}>
             {formatDateOnly(item.thoi_diem?.split?.('T')?.[0] || item.thoi_diem)}
           </Text>
         </View>
         <View style={cardStyles.row}>
-          <ScanLine color={G.gray300} size={12} strokeWidth={2} />
-          <Text style={cardStyles.method}>{methodLabel(item.phuong_thuc)}</Text>
+          <ScanLine color={colors.textMuted} size={12} strokeWidth={2} />
+          <Text style={[cardStyles.method, { color: colors.textMuted }]}>{methodLabel(item.phuong_thuc)}</Text>
         </View>
       </View>
 
       {/* Dot chỉ thị */}
-      <View style={[cardStyles.dot, { backgroundColor: isVao ? G.primary : G.blue }]} />
+      <View style={[cardStyles.dot, { backgroundColor: isVao ? colors.primary : blueColor }]} />
     </View>
   );
 }
@@ -144,23 +148,28 @@ export default function MemberCheckinsScreen() {
 
   const onRefresh = () => { setRefreshing(true); fetchCheckins(); };
 
-  const filtered = filterType ? checkins.filter(c => c.loai === filterType) : checkins;
-  const totalVao = checkins.filter(c => c.loai === 'vao').length;
-  const totalRa = checkins.filter(c => c.loai === 'ra').length;
+  const safeCheckins = Array.isArray(checkins) ? checkins : [];
+  const filtered = filterType ? safeCheckins.filter(c => c.loai === filterType) : safeCheckins;
+  const totalVao = safeCheckins.filter(c => c.loai === 'vao').length;
+  const totalRa = safeCheckins.filter(c => c.loai === 'ra').length;
+
+  const { colors } = useTheme();
+  const blueLight = colors.isDark ? 'rgba(33,150,243,0.15)' : G.blueLight;
+  const blueColor = colors.isDark ? '#64b5f6' : G.blue;
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={G.white} />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colors.statusBar} backgroundColor={colors.isDark ? colors.statusBarBg : G.white} />
 
       {/* ── Header ───────────────────────── */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <View style={styles.headerLeft}>
-          <View style={styles.headerIconBox}>
-            <CalendarClock color={G.primary} size={18} strokeWidth={2} />
+          <View style={[styles.headerIconBox, { backgroundColor: colors.primaryLight }]}>
+            <CalendarClock color={colors.primary} size={18} strokeWidth={2} />
           </View>
           <View>
-            <Text style={styles.headerTitle}>Lịch sử Vào / Ra</Text>
-            <Text style={styles.headerSub}>{checkins.length} lượt gần nhất</Text>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>Lịch sử Vào / Ra</Text>
+            <Text style={[styles.headerSub, { color: colors.textMuted }]}>{safeCheckins.length} lượt gần nhất</Text>
           </View>
         </View>
       </View>
@@ -168,15 +177,15 @@ export default function MemberCheckinsScreen() {
       {/* ── Summary cards ────────────────── */}
       {!loading && (
         <View style={styles.summaryRow}>
-          <View style={[styles.summaryCard, { backgroundColor: G.primaryLight }]}>
-            <ArrowUpRight color={G.primary} size={18} strokeWidth={2.5} />
-            <Text style={[styles.summaryVal, { color: G.primary }]}>{totalVao}</Text>
-            <Text style={styles.summaryLabel}>Lượt vào</Text>
+          <View style={[styles.summaryCard, { backgroundColor: colors.primaryLight }]}>
+            <ArrowUpRight color={colors.primary} size={18} strokeWidth={2.5} />
+            <Text style={[styles.summaryVal, { color: colors.primary }]}>{totalVao}</Text>
+            <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>Lượt vào</Text>
           </View>
-          <View style={[styles.summaryCard, { backgroundColor: G.blueLight }]}>
-            <ArrowDownLeft color={G.blue} size={18} strokeWidth={2.5} />
-            <Text style={[styles.summaryVal, { color: G.blue }]}>{totalRa}</Text>
-            <Text style={styles.summaryLabel}>Lượt ra</Text>
+          <View style={[styles.summaryCard, { backgroundColor: blueLight }]}>
+            <ArrowDownLeft color={blueColor} size={18} strokeWidth={2.5} />
+            <Text style={[styles.summaryVal, { color: blueColor }]}>{totalRa}</Text>
+            <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>Lượt ra</Text>
           </View>
         </View>
       )}
@@ -184,7 +193,7 @@ export default function MemberCheckinsScreen() {
       {/* ── Bộ lọc ───────────────────────── */}
       {!loading && (
         <View style={styles.filterRow}>
-          <Filter color={G.gray400} size={14} strokeWidth={2} />
+          <Filter color={colors.textMuted} size={14} strokeWidth={2} />
           {[
             { label: 'Tất cả', val: '' },
             { label: 'Vào', val: 'vao' },
@@ -192,11 +201,19 @@ export default function MemberCheckinsScreen() {
           ].map(opt => (
             <TouchableOpacity
               key={opt.val}
-              style={[styles.filterChip, filterType === opt.val && styles.filterChipActive]}
+              style={[
+                styles.filterChip, 
+                { backgroundColor: colors.surfaceVariant, borderColor: colors.border },
+                filterType === opt.val && { backgroundColor: colors.primaryLight, borderColor: colors.primary }
+              ]}
               onPress={() => setFilterType(opt.val)}
               activeOpacity={0.7}
             >
-              <Text style={[styles.filterChipText, filterType === opt.val && styles.filterChipTextActive]}>
+              <Text style={[
+                styles.filterChipText, 
+                { color: colors.textMuted },
+                filterType === opt.val && { color: colors.primary, fontWeight: '700' }
+              ]}>
                 {opt.label}
               </Text>
             </TouchableOpacity>
@@ -207,19 +224,19 @@ export default function MemberCheckinsScreen() {
       {/* ── Danh sách ────────────────────── */}
       <ScrollView
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[G.primary]} tintColor={G.primary} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
         contentContainerStyle={styles.scrollContent}
       >
         {loading ? (
           <View style={styles.loadingCenter}>
-            <ActivityIndicator size="large" color={G.primary} />
-            <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={[styles.loadingText, { color: colors.textMuted }]}>Đang tải dữ liệu...</Text>
           </View>
         ) : filtered.length === 0 ? (
           <View style={styles.emptyBox}>
-            <FileText color={G.gray300} size={48} strokeWidth={1.5} />
-            <Text style={styles.emptyTitle}>Chưa có dữ liệu</Text>
-            <Text style={styles.emptySub}>
+            <FileText color={colors.textMuted} size={48} strokeWidth={1.5} />
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>Chưa có dữ liệu</Text>
+            <Text style={[styles.emptySub, { color: colors.textMuted }]}>
               {filterType ? 'Thử bỏ bộ lọc để xem tất cả' : 'Chưa có lịch sử vào/ra nào'}
             </Text>
           </View>

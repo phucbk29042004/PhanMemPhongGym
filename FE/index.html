@@ -106,17 +106,15 @@
   <div class="flex h-screen w-full overflow-hidden">
 
     <!-- ===== SIDEBAR ===== -->
-    <aside id="sidebar"
-      class="flex flex-col h-full w-64 flex-shrink-0"
+    <aside id="sidebar" class="flex flex-col h-full w-64 flex-shrink-0"
       style="background:linear-gradient(180deg,#f0fdf4 0%,#dcfce7 100%);border-right:1px solid #bbf7d0;box-shadow:2px 0 12px rgba(0,0,0,0.07)">
 
       <!-- Toggle + Logo -->
       <div
         class="sidebar-toggle-area sidebar-logo-area flex items-center px-compact py-standard gap-compact flex-shrink-0"
         style="border-bottom:1px solid #bbf7d0">
-        <button id="sidebar-toggle" class="p-atom rounded-xl transition-colors flex-shrink-0"
-          style="color:#166534" onmouseover="this.style.background='#bbf7d0'" onmouseout="this.style.background=''"
-          title="Thu gọn / Mở rộng">
+        <button id="sidebar-toggle" class="p-atom rounded-xl transition-colors flex-shrink-0" style="color:#166534"
+          onmouseover="this.style.background='#bbf7d0'" onmouseout="this.style.background=''" title="Thu gọn / Mở rộng">
           <span class="material-symbols-outlined text-xl">menu</span>
         </button>
         <div class="sidebar-label flex items-center gap-compact overflow-hidden flex-1">
@@ -137,7 +135,10 @@
 
         <!-- Tổng quan -->
         <button
-          class="nav-item flex items-center gap-standard w-full px-standard py-compact rounded-xl transition-all duration-150" style="color:#166534" onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}" onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
+          class="nav-item flex items-center gap-standard w-full px-standard py-compact rounded-xl transition-all duration-150"
+          style="color:#166534"
+          onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}"
+          onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
           data-page="dashboard" title="Tổng quan">
           <span class="material-symbols-outlined text-xl flex-shrink-0">dashboard</span>
           <span class="sidebar-label font-body-md text-body-md font-medium">Tổng quan</span>
@@ -146,7 +147,10 @@
         <!-- Quản lý hội viên (Accordion) -->
         <div class="accordion-group">
           <button
-            class="accordion-trigger flex items-center gap-standard w-full px-standard py-compact rounded-xl transition-all duration-150" style="color:#166534" onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}" onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
+            class="accordion-trigger flex items-center gap-standard w-full px-standard py-compact rounded-xl transition-all duration-150"
+            style="color:#166534"
+            onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}"
+            onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
             data-accordion="hoi-vien" title="Quản lý hội viên">
             <span class="material-symbols-outlined text-xl flex-shrink-0">manage_accounts</span>
             <span class="sidebar-label font-body-md text-body-md font-medium flex-1 text-left">Quản lý</span>
@@ -159,49 +163,70 @@
             <div class="pl-6 py-atom space-y-atom">
 
               <button
-                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm transition-all duration-150" style="color:#166534" onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}" onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
+                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm transition-all duration-150"
+                style="color:#166534"
+                onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}"
+                onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
                 data-page="members-list" title="Danh sách hội viên">
                 <span class="material-symbols-outlined text-sm flex-shrink-0">people</span>
                 <span class="sidebar-label">Danh sách hội viên</span>
               </button>
 
               <button
-                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm transition-all duration-150" style="color:#166534" onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}" onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
+                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm transition-all duration-150"
+                style="color:#166534"
+                onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}"
+                onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
                 data-page="member-add" title="Thêm mới hội viên">
                 <span class="material-symbols-outlined text-sm flex-shrink-0">person_add</span>
                 <span class="sidebar-label">Thêm hội viên mới</span>
               </button>
 
               <button
-                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm transition-all duration-150" style="color:#166534" onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}" onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
+                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm transition-all duration-150"
+                style="color:#166534"
+                onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}"
+                onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
                 data-page="checkin" title="Vào - Ra">
                 <span class="material-symbols-outlined text-sm flex-shrink-0">how_to_reg</span>
                 <span class="sidebar-label">Check-in / Ra</span>
               </button>
 
               <button
-                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm transition-all duration-150" style="color:#166534" onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}" onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
+                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm transition-all duration-150"
+                style="color:#166534"
+                onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}"
+                onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
                 data-page="revenue" title="Doanh thu">
                 <span class="material-symbols-outlined text-sm flex-shrink-0">payments</span>
                 <span class="sidebar-label">Doanh thu</span>
               </button>
 
               <button
-                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm transition-all duration-150" style="color:#166534" onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}" onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
+                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm transition-all duration-150"
+                style="color:#166534"
+                onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}"
+                onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
                 data-page="expired" title="Danh sách hết hạn">
                 <span class="material-symbols-outlined text-sm flex-shrink-0">event_busy</span>
                 <span class="sidebar-label">Hết hạn / Sắp hết hạn</span>
               </button>
 
               <button
-                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm transition-all duration-150" style="color:#166534" onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}" onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
+                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm transition-all duration-150"
+                style="color:#166534"
+                onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}"
+                onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
                 data-page="pt-training" title="Lịch đào tạo PT">
                 <span class="material-symbols-outlined text-sm flex-shrink-0">sports_gymnastics</span>
                 <span class="sidebar-label">Lịch đào tạo PT</span>
               </button>
 
               <button
-                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm transition-all duration-150" style="color:#166534" onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}" onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
+                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm transition-all duration-150"
+                style="color:#166534"
+                onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}"
+                onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
                 data-page="pt-register" title="Đăng ký lịch tập PT">
                 <span class="material-symbols-outlined text-sm flex-shrink-0">edit_calendar</span>
                 <span class="sidebar-label">Đặt lịch PT</span>
@@ -209,14 +234,20 @@
 
 
               <button
-                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm transition-all duration-150" style="color:#166534" onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}" onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
+                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm transition-all duration-150"
+                style="color:#166534"
+                onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}"
+                onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
                 data-page="packages" title="Gói tập">
                 <span class="material-symbols-outlined text-sm flex-shrink-0">card_membership</span>
                 <span class="sidebar-label">Gói tập</span>
               </button>
 
               <button
-                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm transition-all duration-150" style="color:#166534" onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}" onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
+                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm transition-all duration-150"
+                style="color:#166534"
+                onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}"
+                onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
                 data-page="birthday" title="Sinh nhật">
                 <span class="material-symbols-outlined text-sm flex-shrink-0">cake</span>
                 <span class="sidebar-label">Sinh nhật hội viên</span>
@@ -224,17 +255,23 @@
 
 
             </div>
-          </div>
-        </div>
+            <!-- Nội quy phòng tập -->
+            <button
+              class="nav-item flex items-center gap-standard w-full px-standard py-compact rounded-xl transition-all duration-150"
+              style="color:#166534"
+              onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}"
+              onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
+              data-page="gym-rules" title="Nội quy phòng tập">
+              <span class="material-symbols-outlined text-xl flex-shrink-0">gavel</span>
+              <span class="sidebar-label font-body-md text-body-md font-medium">Nội quy phòng tập</span>
+            </button>
       </nav>
 
       <!-- Đăng xuất -->
       <div class="px-compact py-standard flex-shrink-0" style="border-top:1px solid #bbf7d0">
         <button id="btn-logout"
           class="flex items-center gap-standard w-full px-standard py-compact rounded-xl transition-all duration-150"
-          style="color:#dc2626"
-          onmouseover="this.style.background='#fee2e2'"
-          onmouseout="this.style.background=''"
+          style="color:#dc2626" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background=''"
           title="Đăng xuất">
           <span class="material-symbols-outlined text-xl flex-shrink-0">logout</span>
           <span class="sidebar-label font-body-md text-body-md">Đăng xuất</span>
@@ -287,8 +324,6 @@
           title="Chuyển chế độ sáng/tối">
           <span id="theme-icon">dark_mode</span>
         </button>
-        <button
-          class="material-symbols-outlined text-on-surface-variant hover:text-brand-primary p-atom rounded-lg transition-all">settings</button>
         <div
           class="relative group cursor-pointer flex items-center gap-compact ml-xs pl-standard border-l border-outline-variant"
           title="Tài khoản Quản trị" id="admin-account-dropdown">
@@ -319,7 +354,7 @@
               <button id="btn-broadcast-modal-trigger"
                 class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container rounded-lg transition-colors">
                 <span class="material-symbols-outlined text-lg">campaign</span>
-                Thông báo tổng (Broadcast)
+                Thông báo tổng
               </button>
               <div class="h-px bg-outline-variant/50 my-1"></div>
               <button id="btn-admin-logout"
@@ -359,6 +394,7 @@
   <script src="assets/js/pages/pt-training.js"></script>
   <script src="assets/js/pages/pt-register.js"></script>
   <script src="assets/js/pages/packages.js"></script>
+  <script src="assets/js/pages/gym-rules.js"></script>
   <script src="assets/js/pages/birthday.js"></script>
   <script src="assets/js/pages/broadcast.js"></script>
   <script src="assets/js/pages/revenue.js"></script>

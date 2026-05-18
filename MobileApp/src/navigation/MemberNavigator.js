@@ -10,17 +10,17 @@ import MemberScheduleScreen from '../screens/member/MemberScheduleScreen';
 import MemberNotificationScreen from '../screens/member/MemberNotificationScreen';
 import MemberProfileScreen from '../screens/member/MemberProfileScreen';
 import MemberCheckinsScreen from '../screens/member/MemberCheckinsScreen';
+import GymRulesScreen from '../screens/shared/GymRulesScreen';
 import { useNotificationStore } from '../store/useNotificationStore';
+import { useTheme } from '../context/ThemeContext';
 
 const Tab = createBottomTabNavigator();
 
-const BRAND_GREEN = '#1D9336';
-const INACTIVE_COLOR = '#9CA3AF';
-
 // Icon container với nền khi active
-function TabIcon({ IconComponent, color, focused }) {
+function TabIcon({ IconComponent, color, focused, colors }) {
+  const activeBg = colors?.primaryLight || '#e6f4ea';
   return (
-    <View style={[styles.iconContainer, focused && styles.iconContainerActive]}>
+    <View style={[styles.iconContainer, focused && { backgroundColor: activeBg }]}>
       <IconComponent color={color} size={22} strokeWidth={focused ? 2.5 : 1.8} />
     </View>
   );
@@ -37,15 +37,16 @@ function TabLabel({ label, color, focused }) {
 
 export default function MemberNavigator() {
   const unreadCount = useNotificationStore(state => state.unreadCount);
+  const { colors } = useTheme();
 
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: true,
-        tabBarActiveTintColor: BRAND_GREEN,
-        tabBarInactiveTintColor: INACTIVE_COLOR,
-        tabBarStyle: styles.tabBar,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textMuted,
+        tabBarStyle: [styles.tabBar, { backgroundColor: colors.surface, borderTopColor: colors.border }],
       }}
     >
       {/* Tab 1: Trang chủ */}
@@ -54,7 +55,7 @@ export default function MemberNavigator() {
         component={MemberHomeScreen}
         options={{
           tabBarLabel: ({ color, focused }) => <TabLabel label="Trang chủ" color={color} focused={focused} />,
-          tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={Home} color={color} focused={focused} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={Home} color={color} focused={focused} colors={colors} />,
         }}
       />
 
@@ -64,7 +65,7 @@ export default function MemberNavigator() {
         component={MemberScheduleScreen}
         options={{
           tabBarLabel: ({ color, focused }) => <TabLabel label="Tập luyện" color={color} focused={focused} />,
-          tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={CalendarCheck} color={color} focused={focused} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={CalendarCheck} color={color} focused={focused} colors={colors} />,
         }}
       />
 
@@ -74,14 +75,18 @@ export default function MemberNavigator() {
         component={MemberQRCodeScreen}
         options={{
           tabBarLabel: ({ color, focused }) => (
-            <Text style={[styles.tabLabelCenter, { color: focused ? BRAND_GREEN : INACTIVE_COLOR }]}>
+            <Text style={[styles.tabLabelCenter, { color: focused ? colors.primary : colors.textMuted }]}>
               QR
             </Text>
           ),
           tabBarIcon: ({ focused }) => (
-            <View style={[styles.centerTabIcon, focused && styles.centerTabIconActive]}>
+            <View style={[
+              styles.centerTabIcon,
+              { backgroundColor: colors.primaryLight },
+              focused && { backgroundColor: colors.primary, shadowColor: colors.primary }
+            ]}>
               <QrCode
-                color={focused ? '#fff' : INACTIVE_COLOR}
+                color={focused ? '#fff' : colors.primary}
                 size={24}
                 strokeWidth={2}
               />
@@ -96,7 +101,7 @@ export default function MemberNavigator() {
         component={MemberNotificationScreen}
         options={{
           tabBarLabel: ({ color, focused }) => <TabLabel label="Thông báo" color={color} focused={focused} />,
-          tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={Bell} color={color} focused={focused} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={Bell} color={color} focused={focused} colors={colors} />,
           tabBarBadge: unreadCount > 0 ? unreadCount : null,
           tabBarBadgeStyle: {
             backgroundColor: '#dc2626',
@@ -112,7 +117,7 @@ export default function MemberNavigator() {
         component={MemberProfileScreen}
         options={{
           tabBarLabel: ({ color, focused }) => <TabLabel label="Tài khoản" color={color} focused={focused} />,
-          tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={User} color={color} focused={focused} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={User} color={color} focused={focused} colors={colors} />,
         }}
       />
 
@@ -120,6 +125,15 @@ export default function MemberNavigator() {
       <Tab.Screen
         name="Checkins"
         component={MemberCheckinsScreen}
+        options={{
+          tabBarItemStyle: { display: 'none' },
+        }}
+      />
+
+      {/* Màn hình ẩn khỏi tab bar: Nội quy phòng tập */}
+      <Tab.Screen
+        name="GymRules"
+        component={GymRulesScreen}
         options={{
           tabBarItemStyle: { display: 'none' },
         }}
@@ -174,8 +188,8 @@ const styles = StyleSheet.create({
     marginTop: -6,
   },
   centerTabIconActive: {
-    backgroundColor: BRAND_GREEN,
-    shadowColor: BRAND_GREEN,
+    backgroundColor: '#1D9336',
+    shadowColor: '#1D9336',
     shadowOpacity: 0.4,
     shadowRadius: 10,
     elevation: 8,
