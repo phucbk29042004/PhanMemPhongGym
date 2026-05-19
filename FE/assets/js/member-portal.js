@@ -84,7 +84,14 @@
 
     document.addEventListener('click', function (e) {
       const tabBtn = e.target.closest('[data-tab]');
-      if (tabBtn?.dataset.tab) navigate(tabBtn.dataset.tab);
+      if (tabBtn?.dataset.tab) { navigate(tabBtn.dataset.tab); return; }
+
+      const noteBtn = e.target.closest('.btn-member-edit-note');
+      if (noteBtn) {
+        const scheduleId = noteBtn.dataset.id;
+        const oldNote = noteBtn.dataset.ghiChu;
+        pages['my-schedule']._showEditNoteModal(scheduleId, oldNote);
+      }
     });
 
     navigate('dashboard');
@@ -343,16 +350,29 @@
     const weekday = day ? day.toLocaleDateString('vi-VN', { weekday: 'short' }) : '—';
     const date = day ? day.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }) : '—';
     return `
-      <div class="p-s5 flex items-center gap-s4 hover:bg-surface-container transition-colors">
-        <div class="bg-surface-container-low w-14 h-14 rounded-lg flex flex-col items-center justify-center shrink-0">
-          <span class="font-bold text-brand-primary">${weekday}</span>
-          <span class="text-label-sm text-on-surface-variant">${date}</span>
+      <div class="p-s5 flex flex-col gap-s2 hover:bg-surface-container transition-colors">
+        <div class="flex items-center gap-s4">
+          <div class="bg-surface-container-low w-14 h-14 rounded-lg flex flex-col items-center justify-center shrink-0">
+            <span class="font-bold text-brand-primary">${weekday}</span>
+            <span class="text-label-sm text-on-surface-variant">${date}</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="font-bold text-on-surface text-label-md truncate">${s.ten_pt ? `Tập cùng ${s.ten_pt}` : 'Lịch tập PT'}</p>
+            <p class="text-label-sm text-on-surface-variant">${window.GymApp.formatTime(s.gio_bat_dau)} - ${window.GymApp.formatTime(s.gio_ket_thuc)} | ${window.GymApp.formatEnumLabel(s.loai_buoi || 'ca_nhan')}</p>
+          </div>
+          <div class="flex items-center gap-s2 shrink-0">
+            <button class="btn-member-edit-note text-brand-primary hover:text-brand-primary/80 flex items-center justify-center p-2 rounded-xl hover:bg-brand-primary/10 transition-colors" data-id="${s.id}" data-ghi-chu="${(s.ghi_chu || '').replace(/"/g, '&quot;')}" title="Ghi chú">
+              <span class="material-symbols-outlined text-[20px]">${s.ghi_chu ? 'edit_note' : 'add_notes'}</span>
+            </button>
+            ${window.GymApp.statusBadge(s.trang_thai)}
+          </div>
         </div>
-        <div class="flex-1 min-w-0">
-          <p class="font-bold text-on-surface text-label-md truncate">${s.ten_pt ? `Tập cùng ${s.ten_pt}` : 'Lịch tập PT'}</p>
-          <p class="text-label-sm text-on-surface-variant">${window.GymApp.formatTime(s.gio_bat_dau)} - ${window.GymApp.formatTime(s.gio_ket_thuc)} | ${window.GymApp.formatEnumLabel(s.loai_buoi || 'ca_nhan')}</p>
-        </div>
-        ${window.GymApp.statusBadge(s.trang_thai)}
+        ${s.ghi_chu ? `
+          <div class="ml-[72px] bg-brand-primary/5 border border-brand-primary/10 rounded-xl p-s2 flex items-start gap-s1">
+            <span class="material-symbols-outlined text-brand-primary text-[16px] shrink-0 mt-0.5" style="font-variation-settings:'FILL' 1">description</span>
+            <p class="text-body-sm font-medium text-brand-primary/90 break-words flex-1"><strong class="text-brand-primary/70">Ghi chú:</strong> ${s.ghi_chu}</p>
+          </div>
+        ` : ''}
       </div>
     `;
   }
@@ -601,6 +621,14 @@
 
       document.getElementById('ms-status')?.addEventListener('change', () => self._applyFilter());
       document.getElementById('ms-date')?.addEventListener('change', () => self._applyFilter());
+      document.getElementById('ms-list')?.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.btn-member-edit-note');
+        if (editBtn) {
+          const scheduleId = editBtn.dataset.id;
+          const oldNote = editBtn.dataset.ghiChu;
+          self._showEditNoteModal(scheduleId, oldNote);
+        }
+      });
       document.getElementById('ms-reload')?.addEventListener('click', async () => {
         const btn = document.getElementById('ms-reload');
         btn?.classList.add('opacity-50', 'pointer-events-none');
@@ -615,6 +643,69 @@
         }
         btn?.classList.remove('opacity-50', 'pointer-events-none');
         window.GymApp.toast('Đã tải lại lịch tập!', 'success');
+      });
+    },
+
+    _showEditNoteModal(scheduleId, oldNote) {
+      const self = this;
+      const overlay = document.createElement('div');
+      overlay.style.cssText = `position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:9000;padding:20px;`;
+      overlay.innerHTML = `
+        <div class="animate-fade-in member-card" style="width:100%;max-width:440px;display:flex;flex-direction:column;border-radius:20px;overflow:hidden;background:var(--bg-surface-lowest);border:1px solid var(--outline-variant);box-shadow:0 12px 40px rgba(0,0,0,0.15);">
+          <!-- Header -->
+          <div style="padding:16px 20px;background:linear-gradient(135deg,#1D9336,#0a591c);color:#fff;display:flex;align-items:center;justify-content:space-between;">
+            <h3 style="font-size:15px;font-weight:800;margin:0;">📝 GHI CHÚ BUỔI TẬP</h3>
+            <button id="close-note-modal" style="background:none;border:none;color:#fff;cursor:pointer;margin-left:auto;display:flex;align-items:center;">
+              <span class="material-symbols-outlined" style="font-size:20px;">close</span>
+            </button>
+          </div>
+          <!-- Body -->
+          <div style="padding:20px;display:flex;flex-direction:column;gap:12px;">
+            <p class="text-body-sm text-on-surface-variant font-medium">Nhập ghi chú cho buổi tập này (ví dụ: yêu cầu bài tập, ghi chú thể trạng...):</p>
+            <textarea id="note-input" rows="3" placeholder="Yêu cầu tập tay, đau chân nhẹ..." class="w-full bg-surface-container border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl focus:border-brand-primary outline-none text-body-md transition-colors resize-none">${oldNote || ''}</textarea>
+          </div>
+          <!-- Footer -->
+          <div style="padding:12px 20px;border-top:1px solid var(--outline-variant);display:flex;justify-content:flex-end;gap:10px;background:var(--bg-surface-low);">
+            <button id="btn-cancel-note" class="px-loose py-compact rounded-xl border border-outline-variant text-on-surface text-body-sm font-bold" style="padding:8px 16px; border-radius:8px; border:1px solid var(--outline-variant); cursor:pointer;">Hủy</button>
+            <button id="btn-save-note" class="px-loose py-compact rounded-xl bg-brand-primary text-white text-body-sm font-bold" style="padding:8px 18px; border-radius:8px; border:none; background:var(--brand-primary); color:white; cursor:pointer;">Lưu ghi chú</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+
+      const close = () => overlay.remove();
+      document.getElementById('close-note-modal').addEventListener('click', close);
+      document.getElementById('btn-cancel-note').addEventListener('click', close);
+
+      document.getElementById('btn-save-note').addEventListener('click', async () => {
+        const text = document.getElementById('note-input').value.trim();
+        const saveBtn = document.getElementById('btn-save-note');
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Đang lưu...';
+
+        try {
+          const res = await window.GymApp.api.patch(`/pt/schedules/${scheduleId}/note`, { ghi_chu: text || null });
+          if (res?.success) {
+            window.GymApp.toast('Đã lưu ghi chú thành công!', 'success');
+            close();
+            const fresh = await window.GymApp.api.get('/pt/schedules');
+            if (fresh?.success) window.GymApp.data.ptSchedules = fresh.data || [];
+            if (window.GymApp.currentPage === 'my-schedule') {
+              self._applyFilter();
+            } else {
+              navigate(window.GymApp.currentPage);
+            }
+          } else {
+            window.GymApp.toast(res?.message || 'Không thể lưu ghi chú!', 'error');
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Lưu ghi chú';
+          }
+        } catch (err) {
+          console.error(err);
+          window.GymApp.toast('Lỗi kết nối máy chủ!', 'error');
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Lưu ghi chú';
+        }
       });
     }
   };
@@ -1066,6 +1157,61 @@
       }
     };
   }
+
+  pages['gym-rules'] = {
+    rules: [],
+    render() {
+      const activeRules = this.rules.filter(r => r.is_active === 1 && (r.ap_dung_cho === 'tat_ca' || r.ap_dung_cho === 'hoi_vien'));
+      return `
+        <div class="space-y-s6">
+          <div>
+            <h2 class="text-headline-md font-bold text-on-surface">Nội quy phòng tập</h2>
+            <p class="text-on-surface-variant text-body-md mt-s1">Quy định và hướng dẫn chung dành cho hội viên tại Paradise GYM</p>
+          </div>
+
+          <div class="grid grid-cols-1 gap-s4">
+            ${activeRules.length === 0 ? `
+              <div class="member-card p-s6 text-center text-on-surface-variant">
+                <span class="material-symbols-outlined text-4xl text-outline block mb-s3">gavel</span>
+                <p class="font-bold text-on-surface">Không có nội quy nào</p>
+              </div>
+            ` : activeRules.map((r, index) => `
+              <div class="member-card p-s5 hover:shadow-md transition-shadow">
+                <div class="flex items-start gap-s4">
+                  <div class="w-8 h-8 rounded-full bg-brand-primary/10 flex items-center justify-center text-brand-primary font-bold shrink-0 text-label-md">
+                    ${index + 1}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <h3 class="font-bold text-on-surface text-label-md">${r.tieu_de}</h3>
+                    <p class="text-body-sm text-on-surface-variant mt-s2 whitespace-pre-line leading-relaxed">${r.noi_dung}</p>
+                    <div class="mt-s4 flex items-center gap-s2 opacity-40">
+                      <span class="material-symbols-outlined text-[14px]">schedule</span>
+                      <span class="text-[11px] font-bold">Cập nhật: ${window.GymApp.formatDate(r.ngay_cap_nhat)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    },
+    async init() {
+      const self = this;
+      try {
+        const res = await window.GymApp.api.get('/config/rules');
+        if (res?.success) {
+          self.rules = res.data || [];
+          const container = document.getElementById('content-area');
+          if (window.GymApp.currentPage === 'gym-rules' && container) {
+            container.innerHTML = self.render();
+          }
+        }
+      } catch (err) {
+        console.error('Lỗi tải nội quy:', err);
+      }
+    }
+  };
 
   document.addEventListener('DOMContentLoaded', initPortal);
 })();

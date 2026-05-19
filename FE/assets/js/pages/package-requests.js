@@ -46,9 +46,18 @@
 
       document.getElementById('btn-refresh-pkg-req')?.addEventListener('click', async () => {
         const btn = document.getElementById('btn-refresh-pkg-req');
-        btn.disabled = true;
+        const icon = btn?.querySelector('.material-symbols-outlined');
+        if (icon) icon.classList.add('animate-spin');
+        if (btn) {
+          btn.disabled = true;
+          btn.classList.add('pointer-events-none', 'opacity-50');
+        }
         await this._load();
-        btn.disabled = false;
+        if (icon) icon.classList.remove('animate-spin');
+        if (btn) {
+          btn.disabled = false;
+          btn.classList.remove('pointer-events-none', 'opacity-50');
+        }
       });
     },
 

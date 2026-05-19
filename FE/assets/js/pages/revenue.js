@@ -358,7 +358,13 @@ window.GymApp.pages['revenue'] = {
 
     // Nút tải lại
     document.getElementById('rev-reload')?.addEventListener('click', async () => {
+      const btn = document.getElementById('rev-reload');
+      const icon = btn?.querySelector('.material-symbols-outlined');
+      if (icon) icon.classList.add('animate-spin');
+      if (btn) btn.classList.add('pointer-events-none', 'opacity-50');
       await self._fetchAndRender();
+      if (icon) icon.classList.remove('animate-spin');
+      if (btn) btn.classList.remove('pointer-events-none', 'opacity-50');
       window.GymApp.toast('Đã tải lại dữ liệu!', 'success');
     });
 

@@ -80,10 +80,15 @@ window.GymApp.pages['expired'] = {
       loading.style.display = 'flex';
     }
 
+    const btn = document.getElementById('btn-refresh-expired');
+    const icon = btn?.querySelector('.material-symbols-outlined');
+    if (icon) icon.classList.add('animate-spin');
+    if (btn) btn.classList.add('pointer-events-none', 'opacity-50');
+
     try {
       const [expiredRes, expiringRes, requestsRes] = await Promise.all([
         window.GymApp.api.get('/members/expired'),
-        window.GymApp.api.get('/members/expiring?days=30'),
+        window.GymApp.api.get('/members/expiring?days=7'),
         window.GymApp.api.get('/members/package-requests'),
       ]);
 
@@ -134,6 +139,9 @@ window.GymApp.pages['expired'] = {
             <button onclick="window.GymApp.pages['expired']._loadData()" class="mt-standard px-loose py-compact bg-error text-white rounded-xl font-bold">Thử lại</button>
           </div>`;
       }
+    } finally {
+      if (icon) icon.classList.remove('animate-spin');
+      if (btn) btn.classList.remove('pointer-events-none', 'opacity-50');
     }
   },
 

@@ -452,7 +452,7 @@ window.GymApp.pages['member-add'] = {
       const type = typeSelect.value;
       extraFields.classList.remove('hidden');
       if (type === 'pt') {
-        // Chuyên môn PT: input + datalist gợi ý
+        // Chuyên môn PT: input + datalist
         extraFields.innerHTML = `
           <div>
             <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Chuyên môn PT <span style="color:#ba1a1a;">*</span></label>

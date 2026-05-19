@@ -76,9 +76,11 @@ const badge = StyleSheet.create({
 
 // ── Avatar chữ cái ────────────────────────────────────────
 function Avatar({ name, size = 44 }) {
-  const initials = (name || '?').split(' ').slice(-2).map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  const safeName = name || '?';
+  const initials = safeName.split(' ').slice(-2).map(w => w[0] || '').join('').toUpperCase().slice(0, 2);
   const colors = ['#1D9336', '#1565c0', '#7c3aed', '#d97706', '#dc2626'];
-  const color = colors[(name || '').charCodeAt(0) % colors.length];
+  const charCode = safeName.charCodeAt(0) || 0;
+  const color = colors[charCode % colors.length];
   return (
     <View style={[av.box, { width: size, height: size, borderRadius: size / 2, backgroundColor: color + '22' }]}>
       <Text style={[av.text, { color, fontSize: size * 0.35 }]}>{initials}</Text>
@@ -92,7 +94,7 @@ const av = StyleSheet.create({
 
 // ── Member Card ───────────────────────────────────────────
 function MemberCard({ item }) {
-  const activePkg = item.goi_hien_tai;
+  const activePkg = Array.isArray(item.goi_tap_hien_tai) && item.goi_tap_hien_tai.length > 0 && item.goi_tap_hien_tai[0].trang_thai !== 'het_han' && item.goi_tap_hien_tai[0].trang_thai !== 'huy' ? item.goi_tap_hien_tai[0] : null;
   const days = activePkg ? daysLeft(activePkg.den_ngay) : null;
 
   return (
@@ -174,7 +176,8 @@ export default function AdminMembersScreen() {
     try {
       const res = await api.get('/members?limit=200&loai_ho_so=hoi_vien');
       if (res.data?.success) {
-        setMembers(res.data.data?.members || res.data.data || []);
+        const payload = res.data.data;
+        setMembers(Array.isArray(payload) ? payload : (payload?.data || payload?.members || []));
       }
     } catch (err) {
       console.error('[AdminMembers] fetch error:', err?.message);
@@ -191,9 +194,11 @@ export default function AdminMembersScreen() {
     const q = search.toLowerCase().trim();
     if (q && !m.ho_ten?.toLowerCase().includes(q) && !m.so_dien_thoai?.includes(q) && !m.ma_ho_so?.toLowerCase().includes(q)) return false;
 
-    if (filter === 'no_pkg') return !m.goi_hien_tai;
-    if (!m.goi_hien_tai) return filter === 'all';
-    const days = daysLeft(m.goi_hien_tai?.den_ngay);
+    const activePkg = Array.isArray(m.goi_tap_hien_tai) && m.goi_tap_hien_tai.length > 0 && m.goi_tap_hien_tai[0].trang_thai !== 'het_han' && m.goi_tap_hien_tai[0].trang_thai !== 'huy' ? m.goi_tap_hien_tai[0] : null;
+
+    if (filter === 'no_pkg') return !activePkg;
+    if (!activePkg) return filter === 'all';
+    const days = daysLeft(activePkg?.den_ngay);
     if (filter === 'active') return days !== null && days > 7;
     if (filter === 'expiring') return days !== null && days >= 0 && days <= 7;
     if (filter === 'expired') return days !== null && days < 0;

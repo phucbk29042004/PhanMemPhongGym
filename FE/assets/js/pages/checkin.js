@@ -4,6 +4,30 @@ window.GymApp.pages['checkin'] = {
   _autoRefreshTimer: null,
   _stats: null,
 
+  _getGroupedVisits: function(checkins) {
+    const groupedVisits = [];
+    const processedIds = new Set();
+    
+    for (const c of checkins) {
+      if (!c.ho_so_id) {
+        if (c.loai === 'vao') groupedVisits.push(c);
+        continue;
+      }
+      
+      if (c.loai === 'vao' && !processedIds.has(c.ho_so_id)) {
+        processedIds.add(c.ho_so_id);
+        groupedVisits.push(c);
+      } else if (c.loai === 'ra' && !processedIds.has(c.ho_so_id)) {
+        processedIds.add(c.ho_so_id);
+        const correspondingVao = checkins.find(v => v.ho_so_id === c.ho_so_id && v.loai === 'vao' && v.thoi_diem < c.thoi_diem);
+        if (correspondingVao) {
+          groupedVisits.push({ ...correspondingVao, raRecord: c });
+        }
+      }
+    }
+    return groupedVisits;
+  },
+
   _buildHourCounts: function (checkins) {
     const hourCounts = {};
     for (let h = 5; h <= 22; h++) hourCounts[h] = 0;
@@ -101,25 +125,35 @@ window.GymApp.pages['checkin'] = {
               </div>
             </div>
             <div id="checkin-cards-grid" class="grid grid-cols-2 md:grid-cols-3 gap-standard max-h-80 overflow-y-auto pr-xs">
-              ${checkins.length === 0
-        ? `<div class="col-span-3 flex flex-col items-center justify-center py-standard text-center">
+              ${(function() {
+                const grouped = window.GymApp.pages['checkin']._getGroupedVisits(checkins);
+                if (grouped.length === 0) return `<div class="col-span-3 flex flex-col items-center justify-center py-standard text-center">
                      <span class="material-symbols-outlined text-4xl text-outline">person_off</span>
                      <p class="text-on-surface-variant text-body-sm mt-standard">Chưa có check-in hôm nay</p>
-                   </div>`
-        : checkins.map(c => `
+                   </div>`;
+                return grouped.map(c => `
                     <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-standard shadow-sm flex flex-col items-center gap-sm">
                       ${window.GymApp.avatarImg(c.avatar_url, c.ho_ten, 'lg')}
                       <div class="text-center">
                         <p class="font-bold text-on-surface text-body-md truncate w-full">${c.ho_ten}</p>
                         <p class="text-on-surface-variant text-body-sm">${c.ma_ho_so}</p>
                       </div>
-                      <div class="flex items-center gap-xs bg-brand-primary/10 rounded-full px-compact py-xs">
-                        <span class="material-symbols-outlined text-brand-primary" style="font-size:12px">schedule</span>
-                        <span class="text-brand-primary text-body-sm font-bold">${c.gio_hien_thi || c.thoi_diem.substring(11, 16)}</span>
-                      </div>
+                      ${c.raRecord 
+                        ? `<div class="flex items-center gap-xs bg-surface-container rounded-full px-compact py-xs border border-outline-variant w-full justify-center">
+                             <span class="material-symbols-outlined text-on-surface-variant" style="font-size:12px">logout</span>
+                             <span class="text-on-surface-variant text-body-sm font-bold">Đã ra: ${c.raRecord.gio_hien_thi || c.raRecord.thoi_diem.substring(11, 16)}</span>
+                           </div>`
+                        : `<div class="flex items-center gap-xs bg-brand-primary/10 rounded-full px-compact py-xs mb-1 w-full justify-center">
+                             <span class="material-symbols-outlined text-brand-primary" style="font-size:12px">login</span>
+                             <span class="text-brand-primary text-body-sm font-bold">Vào: ${c.gio_hien_thi || c.thoi_diem.substring(11, 16)}</span>
+                           </div>
+                           <button class="btn-checkout flex items-center justify-center gap-xs bg-surface-container-high hover:bg-[#fee2e2] text-on-surface hover:text-[#dc2626] rounded-lg px-standard py-xs transition-colors border border-outline-variant w-full font-bold text-body-sm" data-id="${c.ho_so_id}">
+                             <span class="material-symbols-outlined" style="font-size:16px">logout</span> Check-out
+                           </button>`
+                      }
                     </div>
-                  `).join('')
-      }
+                  `).join('');
+              })()}
             </div>
           </div>
         </div>
@@ -146,7 +180,10 @@ window.GymApp.pages['checkin'] = {
     const start = (this._page - 1) * this._perPage;
     const paginated = checkins.slice(start, start + this._perPage);
 
-    const rows = paginated.map(c => `
+    const rows = paginated.map((c, idx) => {
+      const globalIdx = start + idx;
+      const isLatestVao = c.loai === 'vao' && c.ho_so_id && checkins.findIndex(x => x.ho_so_id === c.ho_so_id) === globalIdx;
+      return `
       <tr class="h-11 border-b border-outline-variant hover:bg-surface-container-low transition-colors">
         <td class="px-standard">
           <div class="flex items-center gap-compact">
@@ -164,8 +201,16 @@ window.GymApp.pages['checkin'] = {
           </div>
         </td>
         <td class="px-standard">${window.GymApp.statusBadge(c.loai === 'vao' ? 'active' : 'inactive')}</td>
+        <td class="px-standard">
+          ${isLatestVao 
+            ? `<button class="btn-checkout text-[#dc2626] hover:bg-[#fee2e2] px-compact py-3xs rounded-md transition-colors text-body-sm font-bold flex items-center gap-xs" data-id="${c.ho_so_id}">
+                 <span class="material-symbols-outlined" style="font-size:14px">logout</span> Check-out
+               </button>` 
+            : ''}
+        </td>
       </tr>
-    `).join('');
+      `;
+    }).join('');
 
     return `
       <div class="overflow-x-auto">
@@ -173,15 +218,42 @@ window.GymApp.pages['checkin'] = {
           <thead>
             <tr class="h-10">
               <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Hội viên</th>
-              <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Giờ vào</th>
+              <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Giờ</th>
               <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Trạng thái</th>
+              <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Thao tác</th>
             </tr>
           </thead>
-          <tbody>${rows || `<tr><td colspan="3" class="px-standard py-standard text-center text-on-surface-variant">Không có dữ liệu</td></tr>`}</tbody>
+          <tbody>${rows || `<tr><td colspan="4" class="px-standard py-standard text-center text-on-surface-variant">Không có dữ liệu</td></tr>`}</tbody>
         </table>
       </div>
       ${window.GymApp.renderPagination(this._page, checkins.length, this._perPage)}
     `;
+  },
+
+  _bindCheckoutEvents: function () {
+    const self = this;
+    document.querySelectorAll('.btn-checkout').forEach(btn => {
+      // Prevent multiple bindings
+      if (btn.dataset.bound) return;
+      btn.dataset.bound = "true";
+      
+      btn.addEventListener('click', async function () {
+        const id = this.dataset.id;
+        if (!id) return;
+        this.disabled = true;
+        const oldHtml = this.innerHTML;
+        this.innerHTML = '<span class="material-symbols-outlined animate-spin" style="font-size:16px">sync</span> Đang xử lý...';
+        try {
+          await window.GymApp.api.post('/checkins', { ho_so_id: id, loai: 'ra', phuong_thuc: 'thu_cong' });
+          window.GymApp.toast('Đã check-out thành công!', 'success');
+          self._fetchAndRefresh();
+        } catch (err) {
+          window.GymApp.toast('Lỗi: ' + (err.message || 'Không thể check-out'), 'error');
+          this.disabled = false;
+          this.innerHTML = oldHtml;
+        }
+      });
+    });
   },
 
   _fetchAndRefresh: async function () {
@@ -230,32 +302,47 @@ window.GymApp.pages['checkin'] = {
     // Cập nhật grid cards
     const grid = document.getElementById('checkin-cards-grid');
     if (grid) {
-      grid.innerHTML = checkins.length === 0
+      const grouped = this._getGroupedVisits(checkins);
+      grid.innerHTML = grouped.length === 0
         ? `<div class="col-span-3 flex flex-col items-center justify-center py-standard text-center">
              <span class="material-symbols-outlined text-4xl text-outline">person_off</span>
              <p class="text-on-surface-variant text-body-sm mt-standard">Chưa có check-in hôm nay</p>
            </div>`
-        : checkins.map(c => `
+        : grouped.map(c => `
             <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-standard shadow-sm flex flex-col items-center gap-sm">
               ${window.GymApp.avatarImg(c.avatar_url, c.ho_ten, 'lg')}
               <div class="text-center">
                 <p class="font-bold text-on-surface text-body-md truncate w-full">${c.ho_ten || 'Khách vãng lai'}</p>
                 <p class="text-on-surface-variant text-body-sm">${c.ma_ho_so || '—'}</p>
               </div>
-              <div class="flex items-center gap-xs bg-brand-primary/10 rounded-full px-compact py-xs">
-                <span class="material-symbols-outlined text-brand-primary" style="font-size:12px">schedule</span>
-                <span class="text-brand-primary text-body-sm font-bold">${c.gio_hien_thi || c.thoi_diem.substring(11, 16)}</span>
-              </div>
+              ${c.raRecord 
+                ? `<div class="flex items-center gap-xs bg-surface-container rounded-full px-compact py-xs border border-outline-variant w-full justify-center">
+                     <span class="material-symbols-outlined text-on-surface-variant" style="font-size:12px">logout</span>
+                     <span class="text-on-surface-variant text-body-sm font-bold">Đã ra: ${c.raRecord.gio_hien_thi || c.raRecord.thoi_diem.substring(11, 16)}</span>
+                   </div>`
+                : `<div class="flex items-center gap-xs bg-brand-primary/10 rounded-full px-compact py-xs mb-1 w-full justify-center">
+                     <span class="material-symbols-outlined text-brand-primary" style="font-size:12px">login</span>
+                     <span class="text-brand-primary text-body-sm font-bold">Vào: ${c.gio_hien_thi || c.thoi_diem.substring(11, 16)}</span>
+                   </div>
+                   <button class="btn-checkout flex items-center justify-center gap-xs bg-surface-container-high hover:bg-[#fee2e2] text-on-surface hover:text-[#dc2626] rounded-lg px-standard py-xs transition-colors border border-outline-variant w-full font-bold text-body-sm" data-id="${c.ho_so_id}">
+                     <span class="material-symbols-outlined" style="font-size:16px">logout</span> Check-out
+                   </button>`
+              }
             </div>
           `).join('');
     }
 
     // Cập nhật bảng chi tiết
     const table = document.getElementById('checkin-table-container');
-    if (table) table.innerHTML = this._renderDetailTable();
+    if (table) {
+        table.innerHTML = this._renderDetailTable();
+    }
 
     // Cập nhật biểu đồ
     this._updateChart(checkins);
+    
+    // Bind events for dynamically added buttons
+    this._bindCheckoutEvents();
   },
 
   _updateChart: function (checkins) {
@@ -305,7 +392,10 @@ window.GymApp.pages['checkin'] = {
     window.GymApp._pgHandler = function (pg) {
       self._page = pg;
       const table = document.getElementById('checkin-table-container');
-      if (table) table.innerHTML = self._renderDetailTable();
+      if (table) {
+          table.innerHTML = self._renderDetailTable();
+          self._bindCheckoutEvents();
+      }
     };
 
     // Luôn fetch mới khi vào trang
@@ -314,8 +404,11 @@ window.GymApp.pages['checkin'] = {
     // Nút tải lại thủ công
     document.getElementById('btn-checkin-reload')?.addEventListener('click', async () => {
       const btn = document.getElementById('btn-checkin-reload');
+      const icon = btn?.querySelector('.material-symbols-outlined');
+      if (icon) icon.classList.add('animate-spin');
       if (btn) btn.classList.add('opacity-50', 'pointer-events-none');
       await self._fetchAndRefresh();
+      if (icon) icon.classList.remove('animate-spin');
       if (btn) btn.classList.remove('opacity-50', 'pointer-events-none');
       window.GymApp.toast('Đã cập nhật dữ liệu check-in!', 'success');
     });

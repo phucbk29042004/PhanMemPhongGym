@@ -413,4 +413,98 @@ db.exec(`
   );
 `);
 
+// ── Migration v10: Sửa Trigger doanh thu — hỗ trợ duyệt từ App & trừ khi hủy ─────
+const migratedV10 = db.prepare(`SELECT gia_tri FROM cau_hinh WHERE khoa = 'db_migration_triggers_revenue_v10'`).get();
+if (!migratedV10) {
+  db.exec(`DROP TRIGGER IF EXISTS trg_doanh_thu_goi_tap;`);
+  db.exec(`DROP TRIGGER IF EXISTS trg_doanh_thu_goi_pt;`);
+  db.exec(`DROP TRIGGER IF EXISTS trg_doanh_thu_goi_tap_update;`);
+  db.exec(`DROP TRIGGER IF EXISTS trg_doanh_thu_goi_pt_update;`);
+
+  // Trigger INSERT: chỉ cộng doanh thu khi đăng ký thẳng (không qua phê duyệt)
+  db.exec(`
+    CREATE TRIGGER trg_doanh_thu_goi_tap
+    AFTER INSERT ON dang_ky_goi_tap
+    WHEN NEW.trang_thai IN ('dang_hoat_dong', 'het_han')
+    BEGIN
+      INSERT INTO doanh_thu (ngay, tong_tien, tong_don, tien_goi_tap, tien_goi_pt)
+      VALUES (date('now','localtime'), NEW.gia_thuc_te, 1, NEW.gia_thuc_te, 0)
+      ON CONFLICT(ngay) DO UPDATE SET
+        tong_tien    = tong_tien + NEW.gia_thuc_te,
+        tong_don     = tong_don + 1,
+        tien_goi_tap = tien_goi_tap + NEW.gia_thuc_te,
+        ngay_cap_nhat = datetime('now','localtime');
+    END;
+  `);
+  db.exec(`
+    CREATE TRIGGER trg_doanh_thu_goi_pt
+    AFTER INSERT ON dang_ky_pt
+    WHEN NEW.trang_thai IN ('dang_hoat_dong', 'hoan_thanh')
+    BEGIN
+      INSERT INTO doanh_thu (ngay, tong_tien, tong_don, tien_goi_tap, tien_goi_pt)
+      VALUES (date('now','localtime'), NEW.gia_thuc_te, 1, 0, NEW.gia_thuc_te)
+      ON CONFLICT(ngay) DO UPDATE SET
+        tong_tien   = tong_tien + NEW.gia_thuc_te,
+        tong_don    = tong_don + 1,
+        tien_goi_pt = tien_goi_pt + NEW.gia_thuc_te,
+        ngay_cap_nhat = datetime('now','localtime');
+    END;
+  `);
+
+  // Trigger UPDATE goi_tap: cộng khi duyệt, trừ khi hủy
+  db.exec(`
+    CREATE TRIGGER trg_doanh_thu_goi_tap_update
+    AFTER UPDATE OF trang_thai ON dang_ky_goi_tap
+    BEGIN
+      INSERT INTO doanh_thu (ngay, tong_tien, tong_don, tien_goi_tap, tien_goi_pt)
+      SELECT date('now','localtime'), NEW.gia_thuc_te, 1, NEW.gia_thuc_te, 0
+      WHERE NEW.trang_thai IN ('dang_hoat_dong', 'het_han')
+        AND OLD.trang_thai NOT IN ('dang_hoat_dong', 'het_han')
+      ON CONFLICT(ngay) DO UPDATE SET
+        tong_tien    = tong_tien + NEW.gia_thuc_te,
+        tong_don     = tong_don + 1,
+        tien_goi_tap = tien_goi_tap + NEW.gia_thuc_te,
+        ngay_cap_nhat = datetime('now','localtime');
+
+      UPDATE doanh_thu SET
+        tong_tien    = MAX(0, tong_tien - OLD.gia_thuc_te),
+        tong_don     = MAX(0, tong_don - 1),
+        tien_goi_tap = MAX(0, tien_goi_tap - OLD.gia_thuc_te),
+        ngay_cap_nhat = datetime('now','localtime')
+      WHERE ngay = date(OLD.ngay_tao)
+        AND OLD.trang_thai IN ('dang_hoat_dong', 'het_han')
+        AND NEW.trang_thai NOT IN ('dang_hoat_dong', 'het_han');
+    END;
+  `);
+
+  // Trigger UPDATE goi_pt: cộng khi duyệt, trừ khi hủy
+  db.exec(`
+    CREATE TRIGGER trg_doanh_thu_goi_pt_update
+    AFTER UPDATE OF trang_thai ON dang_ky_pt
+    BEGIN
+      INSERT INTO doanh_thu (ngay, tong_tien, tong_don, tien_goi_tap, tien_goi_pt)
+      SELECT date('now','localtime'), NEW.gia_thuc_te, 1, 0, NEW.gia_thuc_te
+      WHERE NEW.trang_thai IN ('dang_hoat_dong', 'hoan_thanh')
+        AND OLD.trang_thai NOT IN ('dang_hoat_dong', 'hoan_thanh')
+      ON CONFLICT(ngay) DO UPDATE SET
+        tong_tien   = tong_tien + NEW.gia_thuc_te,
+        tong_don    = tong_don + 1,
+        tien_goi_pt = tien_goi_pt + NEW.gia_thuc_te,
+        ngay_cap_nhat = datetime('now','localtime');
+
+      UPDATE doanh_thu SET
+        tong_tien   = MAX(0, tong_tien - OLD.gia_thuc_te),
+        tong_don    = MAX(0, tong_don - 1),
+        tien_goi_pt = MAX(0, tien_goi_pt - OLD.gia_thuc_te),
+        ngay_cap_nhat = datetime('now','localtime')
+      WHERE ngay = date(OLD.ngay_tao)
+        AND OLD.trang_thai IN ('dang_hoat_dong', 'hoan_thanh')
+        AND NEW.trang_thai NOT IN ('dang_hoat_dong', 'hoan_thanh');
+    END;
+  `);
+
+  db.prepare(`INSERT OR IGNORE INTO cau_hinh (khoa, gia_tri, mo_ta) VALUES ('db_migration_triggers_revenue_v10', '1', 'Sửa 4 triggers doanh thu: hỗ trợ duyệt từ App và trừ khi hủy gói')`).run();
+  console.log('[DB] ✅ Migration triggers doanh thu v10 hoàn thành.');
+}
+
 export default db;
