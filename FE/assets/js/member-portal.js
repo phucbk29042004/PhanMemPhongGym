@@ -32,6 +32,11 @@
     return packages.find(p => p.trang_thai === 'dang_hoat_dong') || packages[0] || null;
   }
 
+  function getPendingPackage() {
+    const packages = window.GymApp.data.myPackages || [];
+    return packages.find(p => p.trang_thai === 'cho_duyet') || null;
+  }
+
   function getActivePt() {
     const contracts = window.GymApp.data.myPtContracts || [];
     return contracts.find(p => p.trang_thai === 'dang_hoat_dong') || null;
@@ -384,6 +389,7 @@
     render() {
       const user = window.GymApp.auth.user || {};
       const activePackage = getActivePackage();
+      const pendingPackage = getPendingPackage();
       const activePt = getActivePt();
       const upcoming = nextSchedules(3);
       const next = upcoming[0] || null;
@@ -417,12 +423,16 @@
                 <button data-tab="my-schedule" class="bg-brand-primary text-white px-s6 py-s3 rounded-full font-bold text-label-md hover:bg-brand-primary/90 transition-colors shadow-sm focus-ring flex items-center gap-s2">
                   <span class="material-symbols-outlined text-[20px]">calendar_month</span> Xem lịch tập
                 </button>
-                ${(isExpired || isExpiringSoon) ? `
+                ${pendingPackage ? `
+                <button disabled class="bg-surface-container text-on-surface-variant border border-outline-variant px-s6 py-s3 rounded-full font-bold text-label-md cursor-not-allowed flex items-center gap-s2 opacity-80">
+                  <span class="material-symbols-outlined text-[20px] animate-spin">sync</span> Đang chờ duyệt yêu cầu gia hạn...
+                </button>
+                ` : (isExpired || isExpiringSoon) ? `
                 <button id="btn-dashboard-renew" class="bg-white text-brand-primary border border-brand-primary px-s6 py-s3 rounded-full font-bold text-label-md hover:bg-surface-container transition-colors shadow-sm focus-ring flex items-center gap-s2">
                   <span class="material-symbols-outlined text-[20px]">bolt</span> Gia hạn gói tập
                 </button>
                 ` : ''}
-                ${isExpiringSoon ? `<span class="bg-error/10 text-error border border-error/20 px-s4 py-s3 rounded-full text-label-md font-bold flex items-center gap-s2"><span class="material-symbols-outlined text-[18px]">warning</span> Gói còn ${daysLeft} ngày</span>` : ''}
+                ${(isExpiringSoon && !pendingPackage) ? `<span class="bg-error/10 text-error border border-error/20 px-s4 py-s3 rounded-full text-label-md font-bold flex items-center gap-s2"><span class="material-symbols-outlined text-[18px]">warning</span> Gói còn ${daysLeft} ngày</span>` : ''}
               </div>
               <span class="material-symbols-outlined absolute -right-4 -bottom-4 text-[180px] text-brand-primary/5 select-none pointer-events-none" style="font-variation-settings: 'FILL' 1;">fitness_center</span>
             </section>
@@ -445,7 +455,12 @@
 
           <div class="grid grid-cols-2 md:grid-cols-4 gap-s4">
             ${[
-              { label: 'Gói tập', value: activePackage?.ten_goi || 'Chưa có', icon: 'card_membership', sub: activePackage ? `Hết hạn ${window.GymApp.formatDate(activePackage.den_ngay)}` : 'Chưa có gói tập' },
+              { 
+                label: 'Gói tập', 
+                value: activePackage?.ten_goi || (pendingPackage ? `${pendingPackage.ten_goi} (Chờ duyệt)` : 'Chưa có'), 
+                icon: 'card_membership', 
+                sub: activePackage ? `Hết hạn ${window.GymApp.formatDate(activePackage.den_ngay)}` : pendingPackage ? 'Đang chờ lễ tân duyệt' : 'Chưa có gói tập' 
+              },
               { label: 'Ngày còn lại', value: daysLeft ?? '—', icon: 'hourglass_top', sub: activePackage ? 'Tính theo gói hiện tại' : 'Chưa đăng ký' },
               { label: 'Buổi PT còn lại', value: ptRemain ?? '—', icon: 'sports_gymnastics', sub: activePt?.ten_pt || 'Chưa có PT' },
               { label: 'Lượt vào/ra', value: checkins.length, icon: 'how_to_reg', sub: '30 lượt gần nhất' },
@@ -476,8 +491,14 @@
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-s4">
                 <div class="bg-surface-container rounded-xl p-s4">
                   <p class="text-on-surface-variant text-label-md">Trạng thái gói</p>
-                  <div class="mt-s2">${activePackage ? window.GymApp.statusBadge(activePackage.trang_thai) : window.GymApp.statusBadge('chua_dang_ky')}</div>
-                  <p class="text-body-sm text-on-surface-variant mt-s3">${activePackage ? `${window.GymApp.formatDate(activePackage.tu_ngay)} - ${window.GymApp.formatDate(activePackage.den_ngay)}` : 'Chưa có gói đang hoạt động'}</p>
+                  <div class="mt-s2 flex items-center gap-s2 flex-wrap">
+                    ${activePackage ? window.GymApp.statusBadge(activePackage.trang_thai) : window.GymApp.statusBadge('chua_dang_ky')}
+                    ${pendingPackage ? window.GymApp.statusBadge('cho_duyet') : ''}
+                  </div>
+                  <p class="text-body-sm text-on-surface-variant mt-s3">
+                    ${activePackage ? `${window.GymApp.formatDate(activePackage.tu_ngay)} - ${window.GymApp.formatDate(activePackage.den_ngay)}` : 'Chưa có gói đang hoạt động'}
+                    ${pendingPackage ? `<br><span class="text-[#e65100] font-semibold flex items-center gap-1 mt-1"><span class="material-symbols-outlined text-[14px]">schedule</span> Chờ duyệt: ${pendingPackage.ten_goi}</span>` : ''}
+                  </p>
                 </div>
                 <div class="bg-surface-container rounded-xl p-s4">
                   <p class="text-on-surface-variant text-label-md">Huấn luyện viên</p>
@@ -487,7 +508,9 @@
               </div>
               <div class="bg-surface-container rounded-xl p-s4">
                 <p class="text-on-surface-variant text-label-md">Ghi chú</p>
-                <p class="text-body-md text-on-surface mt-s2">${isExpiringSoon ? `Gói tập còn ${daysLeft} ngày. Bạn có thể gia hạn ngay trên App hoặc liên hệ lễ tân.` : 'Tất cả dữ liệu trên được lấy từ hệ thống hiện tại.'}</p>
+                <p class="text-body-md text-on-surface mt-s2">
+                  ${pendingPackage ? `Yêu cầu gia hạn gói "${pendingPackage.ten_goi}" đang chờ duyệt. Vui lòng thanh toán tại quầy hoặc chuyển khoản để kích hoạt.` : isExpiringSoon ? `Gói tập còn ${daysLeft} ngày. Bạn có thể gia hạn ngay trên App hoặc liên hệ lễ tân.` : 'Tất cả dữ liệu trên được lấy từ hệ thống hiện tại.'}
+                </p>
               </div>
             </section>
           </div>
@@ -802,9 +825,20 @@
       ];
 
       const activePackage = getActivePackage();
+      const pendingPackage = getPendingPackage();
+      const displayPackage = activePackage || pendingPackage || null;
       const activePt = getActivePt();
       const memberType = window.GymApp.formatEnumLabel(p.loai_hv || 'thuong');
-      const statusText = activePackage?.trang_thai === 'dang_hoat_dong' ? '● Còn hạn' : '○ Hết hạn';
+      
+      let statusText = '○ Hết hạn';
+      if (activePackage?.trang_thai === 'dang_hoat_dong') {
+        statusText = '● Còn hạn';
+        if (pendingPackage) {
+          statusText = '● Có yêu cầu gia hạn';
+        }
+      } else if (pendingPackage) {
+        statusText = '● Đang chờ duyệt';
+      }
       const isActive = activePackage?.trang_thai === 'dang_hoat_dong';
 
       return `
@@ -824,7 +858,7 @@
                   <div style="width:80px;height:80px;border-radius:50%;border:3px solid rgba(255,255,255,0.6);overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.25);">
                     ${window.GymApp.avatarImg(avatarUrl, tenHV, 'lg', 'width:100%;height:100%;object-fit:cover;')}
                   </div>
-                  <span style="position:absolute;bottom:3px;right:3px;width:14px;height:14px;border-radius:50%;background:${isActive ? '#4ade80' : '#94a3b8'};border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.2);"></span>
+                  <span style="position:absolute;bottom:3px;right:3px;width:14px;height:14px;border-radius:50%;background:${isActive ? '#4ade80' : pendingPackage ? '#f59e0b' : '#94a3b8'};border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.2);"></span>
                 </div>
                 <div style="flex:1;min-width:0;padding-bottom:4px;">
                   <h3 style="font-size:22px;font-weight:800;color:#fff;line-height:1.2;margin:0 0 4px;text-shadow:0 1px 4px rgba(0,0,0,0.2);">${tenHV}</h3>
@@ -832,7 +866,7 @@
                     <span style="font-size:12px;color:rgba(255,255,255,0.85);font-weight:600;">${p.ma_ho_so || '—'}</span>
                     <span style="width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,0.5);"></span>
                     <span style="font-size:12px;color:rgba(255,255,255,0.85);">Hội viên</span>
-                    <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:${isActive ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'};color:#fff;border:1px solid rgba(255,255,255,0.3);">${statusText}</span>
+                    <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:${isActive ? 'rgba(255,255,255,0.2)' : pendingPackage ? 'rgba(245,158,11,0.3)' : 'rgba(0,0,0,0.2)'};color:#fff;border:1px solid ${isActive ? 'rgba(255,255,255,0.3)' : pendingPackage ? 'rgba(245,158,11,0.5)' : 'rgba(255,255,255,0.2)'};">${statusText}</span>
                   </div>
                 </div>
               </div>
@@ -845,7 +879,7 @@
                 </div>
                 <div style="background:rgba(0,0,0,0.15);padding:10px 14px;backdrop-filter:blur(4px);">
                   <div style="font-size:10px;color:rgba(255,255,255,0.65);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Gói tập</div>
-                  <div style="font-size:13px;font-weight:800;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${activePackage?.ten_goi_tap || 'Chưa đăng ký'}">${activePackage?.ten_goi_tap || 'Chưa đăng ký'}</div>
+                  <div style="font-size:13px;font-weight:800;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${displayPackage?.ten_goi || 'Chưa đăng ký'}">${displayPackage?.ten_goi || 'Chưa đăng ký'}${pendingPackage && activePackage ? ' (Gia hạn chờ duyệt)' : pendingPackage ? ' (Chờ duyệt)' : ''}</div>
                 </div>
                 <div style="background:rgba(0,0,0,0.15);padding:10px 14px;backdrop-filter:blur(4px);">
                   <div style="font-size:10px;color:rgba(255,255,255,0.65);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Huấn luyện viên</div>

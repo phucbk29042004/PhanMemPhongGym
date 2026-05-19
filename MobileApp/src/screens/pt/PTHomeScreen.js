@@ -1,11 +1,11 @@
 import React, { useCallback, useState } from 'react';
 import {
-  ActivityIndicator, Alert, RefreshControl, ScrollView,
+  ActivityIndicator, Alert, FlatList, Modal, RefreshControl, ScrollView,
   StatusBar, StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
 import {
   Award, CalendarCheck, CheckCircle2, ChevronRight, Clock,
-  CreditCard, Dumbbell, MapPin, QrCode, ShieldCheck, TrendingUp, UserCheck, Users, Zap,
+  CreditCard, Dumbbell, MapPin, QrCode, ShieldCheck, TrendingUp, UserCheck, Users, X, Zap,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import ProfileAvatar from '../../components/ProfileAvatar';
@@ -54,6 +54,9 @@ export default function PTHomeScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState(null);
+  const [showStudentsModal, setShowStudentsModal] = useState(false);
+  const [students, setStudents] = useState([]);
+  const [studentsLoading, setStudentsLoading] = useState(false);
 
   // ── Fetch dữ liệu thực tế từ API Backend ─────────────────
   const fetchAll = useCallback(async () => {
@@ -70,6 +73,18 @@ export default function PTHomeScreen({ navigation }) {
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  }, []);
+
+  const fetchStudents = useCallback(async () => {
+    setStudentsLoading(true);
+    try {
+      const res = await api.get('/pt/schedules/my-members');
+      if (res.data?.success) setStudents(res.data.data || []);
+    } catch (err) {
+      console.error('[PTHomeScreen] fetchStudents error:', err?.message);
+    } finally {
+      setStudentsLoading(false);
     }
   }, []);
 
@@ -196,9 +211,6 @@ export default function PTHomeScreen({ navigation }) {
               <CalendarCheck color={G.primary} size={18} strokeWidth={2} />
             </View>
             <Text style={styles.sectionTitle}>Buổi tập tiếp theo</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Lịch dạy')}>
-              <Text style={styles.viewAllText}>Tất cả</Text>
-            </TouchableOpacity>
           </View>
 
           {loading ? (
@@ -236,7 +248,7 @@ export default function PTHomeScreen({ navigation }) {
                     <View style={styles.contractGridItem}>
                       <Dumbbell color={G.gray400} size={14} strokeWidth={2} />
                       <Text style={styles.contractGridLabel}>Buổi thứ</Text>
-                      <Text style={styles.contractGridValue}>{(next.so_buoi_da_tap || 0) + 1}</Text>
+                      <Text style={styles.contractGridValue}>{(next.so_buoi_da_tap ?? 0) + 1}/{next.so_buoi_dang_ky ?? '—'}</Text>
                     </View>
                     <View style={styles.contractDivider} />
                     <View style={styles.contractGridItem}>
@@ -299,7 +311,7 @@ export default function PTHomeScreen({ navigation }) {
               icon={Users}
               label={'Danh sách\nHọc viên'}
               accent="#0891b2"
-              onPress={() => navigation?.navigate?.('Members')}
+              onPress={() => { fetchStudents(); setShowStudentsModal(true); }}
             />
             <UtilityChip
               icon={UserCheck}
@@ -319,7 +331,7 @@ export default function PTHomeScreen({ navigation }) {
               <Clock color={G.primary} size={18} strokeWidth={2} />
             </View>
             <Text style={styles.sectionTitle}>Ca dạy tiếp theo</Text>
-            <TouchableOpacity onPress={() => navigation?.navigate?.('Schedule')}>
+            <TouchableOpacity onPress={() => navigation.navigate('Schedule')}>
               <Text style={styles.viewAllText}>Xem tất cả</Text>
             </TouchableOpacity>
           </View>
@@ -352,7 +364,7 @@ export default function PTHomeScreen({ navigation }) {
                       <View style={{ flex: 1 }}>
                         <Text style={styles.schedMemberName}>{item.ten_hoi_vien}</Text>
                         <Text style={styles.schedPackageType}>
-                          {item.loai_buoi === 'ca_nhan' ? 'Cá nhân (1 kèm 1)' : 'Tập nhóm'} • Còn lại: <Text style={{ color: G.primary, fontWeight: '700' }}>{item.buoi_con_lai ?? '—'} buổi</Text>
+                          {item.loai_buoi === 'ca_nhan' ? 'Cá nhân (1 kèm 1)' : 'Tập nhóm'} • Đã tập: <Text style={{ color: G.primary, fontWeight: '700' }}>{item.so_buoi_da_tap ?? 0}/{item.so_buoi_dang_ky ?? '—'}</Text> • Còn: <Text style={{ color: G.primary, fontWeight: '700' }}>{item.buoi_con_lai ?? '—'} buổi</Text>
                         </Text>
                       </View>
                     </View>
@@ -419,6 +431,76 @@ export default function PTHomeScreen({ navigation }) {
         </View>
 
       </ScrollView>
+
+      {/* ── MODAL DANH SÁCH HỌC VIÊN ──────────────────── */}
+      <Modal visible={showStudentsModal} animationType="slide" transparent onRequestClose={() => setShowStudentsModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <View style={[styles.sectionIconBox, { backgroundColor: '#0891b218' }]}>
+                  <Users color="#0891b2" size={18} strokeWidth={2} />
+                </View>
+                <View>
+                  <Text style={styles.modalTitle}>Học viên của tôi</Text>
+                  <Text style={styles.modalSubtitle}>{students.length} học viên đang hướng dẫn</Text>
+                </View>
+              </View>
+              <TouchableOpacity onPress={() => setShowStudentsModal(false)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <X color={G.gray400} size={22} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+
+            {studentsLoading ? (
+              <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+                <ActivityIndicator color={G.primary} size="large" />
+              </View>
+            ) : students.length === 0 ? (
+              <View style={{ paddingVertical: 40, alignItems: 'center', gap: 8 }}>
+                <Users color={G.gray300} size={48} strokeWidth={1} />
+                <Text style={{ fontSize: 14, color: G.gray400 }}>Chưa có học viên nào</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={students}
+                keyExtractor={(item) => String(item.dang_ky_id || item.hoi_vien_id)}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 20 }}
+                renderItem={({ item }) => (
+                  <View style={styles.studentCard}>
+                    <View style={styles.studentTop}>
+                      <ProfileAvatar uri={item.avatar_url} name={item.ho_ten} size={48} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.studentName}>{item.ho_ten || 'Hội viên'}</Text>
+                        <Text style={styles.studentMeta}>{item.ten_goi_pt || 'Gói PT'} • {item.so_dien_thoai || ''}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.studentStats}>
+                      <View style={styles.studentStatItem}>
+                        <Dumbbell color={G.primary} size={14} strokeWidth={2} />
+                        <Text style={styles.studentStatVal}>{item.so_buoi_da_tap}/{item.so_buoi_dang_ky}</Text>
+                        <Text style={styles.studentStatLabel}>Đã tập</Text>
+                      </View>
+                      <View style={[styles.studentStatDivider]} />
+                      <View style={styles.studentStatItem}>
+                        <Clock color={G.warning} size={14} strokeWidth={2} />
+                        <Text style={[styles.studentStatVal, { color: G.warning }]}>{item.buoi_con_lai ?? '—'}</Text>
+                        <Text style={styles.studentStatLabel}>Còn lại</Text>
+                      </View>
+                      <View style={[styles.studentStatDivider]} />
+                      <View style={styles.studentStatItem}>
+                        <CalendarCheck color={G.gray500} size={14} strokeWidth={2} />
+                        <Text style={[styles.studentStatVal, { color: G.gray700 }]}>{item.buoi_tap_sap_toi ? formatDate(item.buoi_tap_sap_toi) : '—'}</Text>
+                        <Text style={styles.studentStatLabel}>Buổi tới</Text>
+                      </View>
+                    </View>
+                  </View>
+                )}
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -725,4 +807,51 @@ const styles = StyleSheet.create({
   paradiseStat: { flex: 1, alignItems: 'center', paddingVertical: 14, gap: 4 },
   paradiseStatValue: { fontSize: 15, fontWeight: '800', color: G.white },
   paradiseStatLabel: { fontSize: 10, color: 'rgba(255,255,255,0.6)', textAlign: 'center' },
+
+  // Modal Học viên
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  modalSheet: {
+    backgroundColor: G.white,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '85%',
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: G.gray100,
+    marginBottom: 12,
+  },
+  modalTitle: { fontSize: 17, fontWeight: '800', color: G.gray900 },
+  modalSubtitle: { fontSize: 11, color: G.gray400, fontWeight: '500', marginTop: 1 },
+
+  // Student Cards in Modal
+  studentCard: {
+    backgroundColor: G.gray50,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: G.gray100,
+  },
+  studentTop: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+  studentName: { fontSize: 16, fontWeight: '800', color: G.gray900 },
+  studentMeta: { fontSize: 11, color: G.gray500, fontWeight: '500', marginTop: 2 },
+  studentStats: {
+    flexDirection: 'row',
+    backgroundColor: G.white,
+    borderRadius: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: G.gray100,
+  },
+  studentStatItem: { flex: 1, alignItems: 'center', gap: 2 },
+  studentStatDivider: { width: 1, height: 24, backgroundColor: G.gray100, alignSelf: 'center' },
+  studentStatVal: { fontSize: 13, fontWeight: '800', color: G.primary },
+  studentStatLabel: { fontSize: 9, color: G.gray400, fontWeight: '600' },
 });

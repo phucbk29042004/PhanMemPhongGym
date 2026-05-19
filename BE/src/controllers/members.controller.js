@@ -280,17 +280,48 @@ export const deleteMember = (req, res) => {
     return success(res, null, 'Hồ sơ hội viên đã được xoá trước đó');
   }
 
-  db.prepare(`
-    UPDATE ho_so SET
-      is_deleted = 1,
-      ngay_xoa = datetime('now','localtime'),
-      nguoi_xoa_id = ?,
-      ly_do_xoa = ?
-    WHERE id = ?
-  `).run(req.user.id, ly_do || 'Không có lý do', id);
+  const reason = ly_do || 'Không có lý do';
+  const tx = db.transaction(() => {
+    db.prepare(`
+      UPDATE ho_so SET
+        is_deleted = 1,
+        ngay_xoa = datetime('now','localtime'),
+        nguoi_xoa_id = ?,
+        ly_do_xoa = ?
+      WHERE id = ?
+    `).run(req.user.id, reason, id);
 
-  ghi_audit_log(req, 'DELETE', 'ho_so', parseInt(id), member, null, ly_do || 'Xóa hồ sơ hội viên');
-  return success(res, null, 'Đã xoá hồ sơ hội viên (Soft Delete)');
+    db.prepare(`
+      UPDATE dang_ky_goi_tap SET
+        trang_thai = 'huy',
+        ly_do_huy = ?,
+        ngay_huy = datetime('now','localtime'),
+        nguoi_cap_nhat_id = ?
+      WHERE ho_so_id = ? AND trang_thai IN ('cho_duyet','dang_hoat_dong','tam_dung')
+    `).run('Hủy vì hội viên bị xóa', req.user.id, id);
+
+    db.prepare(`
+      UPDATE dang_ky_pt SET
+        trang_thai = 'huy',
+        ghi_chu_tt = COALESCE(?, ghi_chu_tt),
+        ngay_cap_nhat = datetime('now','localtime')
+      WHERE hoi_vien_id = ? AND trang_thai IN ('dang_hoat_dong','tam_dung')
+    `).run('Hủy vì hội viên bị xóa', id);
+
+    db.prepare(`
+      UPDATE lich_tap SET
+        trang_thai = 'da_huy',
+        ly_do_huy = 'Hủy vì hội viên bị xóa',
+        nguoi_huy_id = ?,
+        ngay_huy = datetime('now','localtime')
+      WHERE hoi_vien_id = ? AND trang_thai = 'cho_tap'
+    `).run(req.user.id, id);
+  });
+
+  tx();
+
+  ghi_audit_log(req, 'DELETE', 'ho_so', parseInt(id), member, null, reason);
+  return success(res, null, 'Đã xoá hồ sơ hội viên và hủy các đăng ký/kế hoạch liên quan');
 };
 
 // ── GET /api/members/check-duplicate ─────────────────────

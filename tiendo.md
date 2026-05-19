@@ -8,11 +8,35 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
-**✅ Nâng cấp địa chỉ & quê quán theo địa giới mới (34 tỉnh & bypass TP.HCM)** — Đã tích hợp bộ chọn địa chỉ thông minh cho TP.HCM (ẩn Quận/Huyện, nạp Phường mới qua Datalist Search), đồng thời cập nhật gợi ý Quê quán thành 34 tỉnh thành đã sáp nhập. Đồng bộ hóa hiển thị tuyệt hảo trên cả Web Admin, Web Portal và Mobile App.
+**✅ Gộp chức năng Yêu cầu gia hạn vào trang Hết hạn / Sắp hết hạn** — Đã loại bỏ mục menu "Yêu cầu gia hạn" trùng lặp trên sidebar, di chuyển badge chỉ số lượng yêu cầu chờ duyệt sang mục "Hết hạn / Sắp hết hạn". Tích hợp giao diện Mobile Card View và gộp toàn bộ logic duyệt vào tab Yêu cầu của trang Hết hạn. Sửa lỗi hàm `refreshData` không tồn tại.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
+
+### 19/05/2026 14:45 — Gộp Mục Yêu Cầu Gia Hạn Vào Trang Hết Hạn / Sắp Hết Hạn
+- **Loại**: Cải tiến cấu trúc giao diện & Tối ưu hóa UI/UX (Frontend)
+- **File chỉnh sửa**:
+  - `FE/index.html` — Xóa bỏ menu con "Yêu cầu gia hạn", gắn `pkg-req-badge` vào menu "Hết hạn / Sắp hết hạn", loại bỏ script nhúng cũ.
+  - `FE/assets/js/app.js` — Cấu hình lại PAGE_TITLES và SUB_PAGES để loại bỏ trang `package-requests`.
+  - `FE/assets/js/pages/expired.js` — Thêm giao diện Mobile Card View cho danh sách Yêu cầu, sửa lỗi hàm gọi `refreshData` thành `fetchInitialData`.
+  - `FE/assets/js/pages/package-requests.js` — Làm sạch và đánh dấu deprecate cho file cũ.
+- **Mô tả chi tiết**:
+  - **Tối ưu hóa Sidebar**: Giảm thiểu sự phức tạp của sidebar bằng cách loại bỏ liên kết trực tiếp tới trang yêu cầu gia hạn trùng lặp. Đưa huy hiệu báo tin màu đỏ sang mục Hết hạn / Sắp hết hạn để người dùng dễ theo dõi.
+  - **Trải nghiệm di động (Mobile Card View)**: Tab "Yêu cầu" trên trang Hết hạn hiện đã hiển thị dạng thẻ đẹp mắt khi truy cập trên thiết bị di động, thay vì vỡ giao diện dạng bảng.
+  - **Khắc phục lỗi logic**: Sửa triệt để bug gọi hàm `refreshData` (hàm không tồn tại) gây lỗi ngưng xử lý JS sau khi admin thực hiện duyệt/từ chối yêu cầu.
+- **Kết quả**: Thành công 100%, cấu trúc module quản lý gói hết hạn và yêu cầu gia hạn gọn gàng, chạy ổn định và không còn trùng lặp.
+
+### 19/05/2026 14:30 — Đồng Bộ Hóa Trạng Thái Gói Chờ Duyệt Giữa Mobile App Và Web Portal
+- **Loại**: Đồng bộ hóa tính năng & Nâng cấp UI/UX (Fullstack)
+- **File chỉnh sửa**:
+  - `FE/assets/js/member-portal.js` — Cập nhật Dashboard và Hồ sơ cá nhân của Cổng hội viên để hiển thị trạng thái của gói chờ duyệt và ẩn/vô hiệu hóa nút đăng ký gia hạn khi có yêu cầu đang chờ duyệt.
+  - `FE/assets/js/app.js` — Thêm các trạng thái `cho_duyet` (Chờ duyệt) và `huy` (Bị từ chối) vào bộ định dạng badge và nhãn chung của hệ thống.
+  - `FE/member-portal.html` & `FE/pt-portal.html` — Đồng bộ hóa các hàm định dạng hiển thị badge và nhãn trạng thái bản cục bộ trên các trang HTML.
+- **Mô tả chi tiết**:
+  - **Cổng hội viên (Web Portal)**: Cập nhật giao diện khi người dùng có yêu cầu gia hạn đang chờ duyệt. Tránh việc gửi yêu cầu trùng lặp bằng cách chuyển đổi nút "Gia hạn" sang trạng thái disabled "Đang chờ duyệt...". Bổ sung hiển thị thông tin gói đang chờ duyệt tại phần Stats và Tình trạng hội viên (Ghi chú & Trạng thái).
+  - **Đồng bộ hóa nhãn trạng thái**: Đảm bảo tất cả các badge và chuỗi văn bản liên quan đến trạng thái gói đăng ký hoặc gia hạn hiển thị đúng màu sắc và nhãn tương ứng trên mọi portal (Member Portal, PT Portal, và Admin Portal).
+- **Kết quả**: Thành công 100%, luồng gia hạn hoạt động liền mạch và đồng bộ toàn diện giữa Mobile App và các Portal Web.
 
 ### 18/05/2026 19:00 — Tối Ưu Hóa Giao Diện Card (Loại Bỏ Khung Viền Vuông Avatar)
 - **Loại**: Cải tiến giao diện & Tối ưu hóa thẩm mỹ UI (Frontend)
