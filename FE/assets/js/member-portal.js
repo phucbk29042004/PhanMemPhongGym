@@ -3,7 +3,7 @@
  * Chi render giao dien; luong API/auth/QR giu theo backend hien co.
  */
 (function () {
-  const pages = {};
+  const pages = window.GymApp.pages;
 
   function todayKey() {
     const d = new Date();

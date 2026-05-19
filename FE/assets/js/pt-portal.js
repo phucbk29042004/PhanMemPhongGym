@@ -225,7 +225,7 @@
 
   // ── PAGES ──────────────────────────────────────────────────
 
-  const pages = {};
+  const pages = window.GymApp.pages;
 
   // ── Dashboard ──────────────────────────────────────────────
   pages['dashboard'] = {
@@ -688,30 +688,245 @@
     });
   }
 
-  async function _cancelScheduleSession(scheduleId, studentName) {
-    const reason = prompt(`Nhập lý do hủy buổi tập với ${studentName}:`);
-    if (reason === null) return;
+  function _showConfirmScheduleModal(scheduleId, studentName) {
+    const schedule = (window.GymApp.data.ptSchedules || []).find(item => item.id == scheduleId) || {};
+    const dateFormatted = window.GymApp.formatDate(schedule.ngay_tap);
+    const timeFormatted = `${schedule.gio_bat_dau || ''} — ${schedule.gio_ket_thuc || ''}`;
+    const typeLabel = schedule.loai_buoi === 'nhom' ? 'Nhóm' : 'Cá nhân';
+    const remaining = schedule.buoi_con_lai != null ? `${schedule.buoi_con_lai} buổi` : '—';
     
-    const cleanReason = reason.trim();
-    if (!cleanReason) {
-      window.GymApp.toast('Lý do hủy không được để trống!', 'error');
-      return;
-    }
-
-    try {
-      const res = await window.GymApp.api.put(`/pt/schedules/${scheduleId}/cancel`, { ly_do: cleanReason });
-      if (res?.success) {
-        window.GymApp.toast(`Đã hủy thành công buổi tập với ${studentName}!`, 'success');
-        const fresh = await window.GymApp.api.get('/pt/schedules');
-        if (fresh?.success) window.GymApp.data.ptSchedules = fresh.data || [];
-        window.GymApp.pages['my-schedule']._applyFilter();
-      } else {
-        window.GymApp.toast(res?.message || 'Hủy buổi tập thất bại!', 'error');
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:9000;padding:20px;`;
+    overlay.innerHTML = `
+      <div class="animate-fade-in bg-surface-container-lowest border border-outline-variant" style="width:100%;max-width:460px;display:flex;flex-direction:column;border-radius:24px;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,0.2); background-color: var(--bg-surface-lowest);">
+        <!-- Header -->
+        <div style="padding:20px 24px;background:linear-gradient(135deg,#1D9336,#0a591c);color:#fff;display:flex;align-items:center;gap:12px;">
+          <div style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;">
+            <span class="material-symbols-outlined" style="font-size:24px;color:#fff;">task_alt</span>
+          </div>
+          <div>
+            <h3 style="font-size:16px;font-weight:800;margin:0;letter-spacing:0.02em; color: #fff;">XÁC NHẬN BUỔI TẬP</h3>
+            <p style="font-size:11px;opacity:0.85;margin:4px 0 0 0; color: #fff;">Ghi nhận hoàn thành buổi dạy</p>
+          </div>
+          <button id="close-confirm-modal" style="background:none;border:none;color:#fff;cursor:pointer;margin-left:auto;display:flex;align-items:center;padding:4px;border-radius:50%;transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">
+            <span class="material-symbols-outlined" style="font-size:20px;">close</span>
+          </button>
+        </div>
+        
+        <!-- Body -->
+        <div style="padding:24px;display:flex;flex-direction:column;gap:16px;">
+          <p style="font-size:14px;color:var(--text-on-surface);margin:0;line-height:1.6;font-weight:500;">
+            Bạn có chắc chắn muốn xác nhận buổi tập với học viên <strong style="color:#1D9336;font-weight:700;">${studentName}</strong> đã hoàn thành?
+          </p>
+          
+          <!-- Chi tiết buổi tập -->
+          <div style="background:var(--bg-surface-low);border:1px solid var(--outline-variant);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+              <span style="color:var(--text-on-surface-variant);font-weight:500;">Ngày tập:</span>
+              <strong style="color:var(--text-on-surface);">${dateFormatted}</strong>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+              <span style="color:var(--text-on-surface-variant);font-weight:500;">Khung giờ:</span>
+              <strong style="color:var(--text-on-surface);">${timeFormatted}</strong>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+              <span style="color:var(--text-on-surface-variant);font-weight:500;">Phân loại:</span>
+              <span style="background:var(--bg-surface-container);color:var(--text-on-surface-variant);padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;">${typeLabel}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+              <span style="color:var(--text-on-surface-variant);font-weight:500;">Số buổi còn lại:</span>
+              <strong style="color:#e65100;">${remaining}</strong>
+            </div>
+          </div>
+          
+          <p style="font-size:11px;color:var(--text-on-surface-variant);margin:0;line-height:1.5;font-style:italic;">
+            * Lưu ý: Buổi này sẽ tự động trừ 01 buổi trực tiếp từ gói PT của học viên sau khi bạn xác nhận.
+          </p>
+        </div>
+        
+        <!-- Footer -->
+        <div style="padding:16px 24px;border-top:1px solid var(--outline-variant);display:flex;justify-content:flex-end;gap:12px;background:var(--bg-surface-low);">
+          <button id="btn-cancel-confirm" style="padding:10px 20px;border-radius:12px;border:1px solid var(--outline-variant);color:var(--text-on-surface);background:transparent;font-weight:700;font-size:13px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='var(--bg-surface-container)'" onmouseout="this.style.background='transparent'">Quay lại</button>
+          <button id="btn-submit-confirm" style="padding:10px 24px;border-radius:12px;border:none;color:#fff;background:#1D9336;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(29,147,54,0.25);transition:all 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+            <span class="material-symbols-outlined" style="font-size:18px;">done</span> Xác nhận hoàn thành
+          </button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    
+    const close = () => overlay.remove();
+    document.getElementById('close-confirm-modal').addEventListener('click', close);
+    document.getElementById('btn-cancel-confirm').addEventListener('click', close);
+    
+    document.getElementById('btn-submit-confirm').addEventListener('click', async () => {
+      const submitBtn = document.getElementById('btn-submit-confirm');
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<span class="material-symbols-outlined text-[18px] animate-spin">autorenew</span> Đang lưu...`;
+      
+      try {
+        const res = await window.GymApp.api.put(`/pt/schedules/${scheduleId}/confirm`, {});
+        if (res?.success) {
+          window.GymApp.toast(`✅ Đã xác nhận buổi tập với ${studentName}!`, 'success');
+          close();
+          const fresh = await window.GymApp.api.get('/pt/schedules');
+          if (fresh?.success) window.GymApp.data.ptSchedules = fresh.data || [];
+          pages['my-schedule']._applyFilter();
+        } else {
+          window.GymApp.toast(res?.message || 'Xác nhận thất bại!', 'error');
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = `<span class="material-symbols-outlined" style="font-size:18px;">done</span> Xác nhận hoàn thành`;
+        }
+      } catch (err) {
+        console.error(err);
+        window.GymApp.toast('Lỗi kết nối, vui lòng thử lại.', 'error');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<span class="material-symbols-outlined" style="font-size:18px;">done</span> Xác nhận hoàn thành`;
       }
-    } catch (err) {
-      console.error(err);
-      window.GymApp.toast('Lỗi kết nối máy chủ!', 'error');
-    }
+    });
+  }
+
+  async function _cancelScheduleSession(scheduleId, studentName) {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:9000;padding:20px;`;
+    overlay.innerHTML = `
+      <div class="animate-fade-in bg-surface-container-lowest border border-outline-variant" style="width:100%;max-width:480px;display:flex;flex-direction:column;border-radius:24px;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,0.2); background-color: var(--bg-surface-lowest);">
+        <!-- Header -->
+        <div style="padding:20px 24px;background:linear-gradient(135deg,#ba1a1a,#93000a);color:#fff;display:flex;align-items:center;gap:12px;">
+          <div style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;">
+            <span class="material-symbols-outlined" style="font-size:24px;color:#fff;">cancel</span>
+          </div>
+          <div>
+            <h3 style="font-size:16px;font-weight:800;margin:0;letter-spacing:0.02em; color: #fff;">HỦY LỊCH TẬP</h3>
+            <p style="font-size:11px;opacity:0.85;margin:4px 0 0 0; color: #fff;">Hủy lịch buổi tập đã xếp</p>
+          </div>
+          <button id="close-cancel-modal" style="background:none;border:none;color:#fff;cursor:pointer;margin-left:auto;display:flex;align-items:center;padding:4px;border-radius:50%;transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">
+            <span class="material-symbols-outlined" style="font-size:20px;">close</span>
+          </button>
+        </div>
+        
+        <!-- Body -->
+        <div style="padding:24px;display:flex;flex-direction:column;gap:16px;">
+          <p style="font-size:14px;color:var(--text-on-surface);margin:0;line-height:1.6;font-weight:500;">
+            Bạn đang thực hiện hủy buổi tập của học viên <strong style="color:#ba1a1a;font-weight:700;">${studentName}</strong>.
+          </p>
+          
+          <!-- Lý do hủy nhanh -->
+          <div>
+            <label style="display:block;font-size:11px;text-transform:uppercase;font-weight:800;color:var(--text-on-surface-variant);opacity:0.8;margin-bottom:8px;">Chọn nhanh lý do hủy <span style="color:#ba1a1a;">*</span></label>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--outline-variant);border-radius:12px;cursor:pointer;background:var(--bg-surface-low);font-size:13px;font-weight:500;transition:all 0.15s;" class="cancel-reason-option hover:border-[#ba1a1a]">
+                <input type="radio" name="quick_reason" value="Học viên báo bận đột xuất" style="accent-color:#ba1a1a;" checked />
+                Học viên báo bận việc đột xuất
+              </label>
+              <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--outline-variant);border-radius:12px;cursor:pointer;background:var(--bg-surface-low);font-size:13px;font-weight:500;transition:all 0.15s;" class="cancel-reason-option hover:border-[#ba1a1a]">
+                <input type="radio" name="quick_reason" value="PT có việc bận đột xuất" style="accent-color:#ba1a1a;" />
+                PT có việc bận đột xuất
+              </label>
+              <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--outline-variant);border-radius:12px;cursor:pointer;background:var(--bg-surface-low);font-size:13px;font-weight:500;transition:all 0.15s;" class="cancel-reason-option hover:border-[#ba1a1a]">
+                <input type="radio" name="quick_reason" value="Thay đổi lịch tập khác" style="accent-color:#ba1a1a;" />
+                Thay đổi khung giờ hoặc ngày tập khác
+              </label>
+              <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--outline-variant);border-radius:12px;cursor:pointer;background:var(--bg-surface-low);font-size:13px;font-weight:500;transition:all 0.15s;" class="cancel-reason-option hover:border-[#ba1a1a]">
+                <input type="radio" name="quick_reason" value="custom" style="accent-color:#ba1a1a;" />
+                Lý do khác (Nhập chi tiết bên dưới)
+              </label>
+            </div>
+          </div>
+          
+          <!-- Textarea cho lý do chi tiết -->
+          <div id="custom-reason-container" style="display:none;flex-direction:column;gap:6px;">
+            <label style="display:block;font-size:11px;text-transform:uppercase;font-weight:800;color:var(--text-on-surface-variant);opacity:0.8;">Chi tiết lý do hủy <span style="color:#ba1a1a;">*</span></label>
+            <textarea id="cancel-reason-text" placeholder="Nhập lý do chi tiết..." rows="2" class="w-full bg-surface-container border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl focus:border-brand-primary outline-none text-[13px] font-medium transition-all resize-none" style="background-color: var(--bg-surface-container); border-color: var(--outline-variant); color: var(--text-on-surface);"></textarea>
+          </div>
+        </div>
+        
+        <!-- Footer -->
+        <div style="padding:16px 24px;border-top:1px solid var(--outline-variant);display:flex;justify-content:flex-end;gap:12px;background:var(--bg-surface-low);">
+          <button id="btn-back-cancel" style="padding:10px 20px;border-radius:12px;border:1px solid var(--outline-variant);color:var(--text-on-surface);background:transparent;font-weight:700;font-size:13px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='var(--bg-surface-container)'" onmouseout="this.style.background='transparent'">Quay lại</button>
+          <button id="btn-submit-cancel" style="padding:10px 24px;border-radius:12px;border:none;color:#fff;background:#ba1a1a;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(186,26,26,0.25);transition:all 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+            <span class="material-symbols-outlined" style="font-size:18px;">close</span> Xác nhận hủy lịch
+          </button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    
+    const close = () => overlay.remove();
+    document.getElementById('close-cancel-modal').addEventListener('click', close);
+    document.getElementById('btn-back-cancel').addEventListener('click', close);
+    
+    const radios = document.getElementsByName('quick_reason');
+    const customContainer = document.getElementById('custom-reason-container');
+    const customText = document.getElementById('cancel-reason-text');
+    
+    radios.forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        if (e.target.value === 'custom') {
+          customContainer.style.display = 'flex';
+          customText.focus();
+        } else {
+          customContainer.style.display = 'none';
+        }
+      });
+    });
+    
+    const optionLabels = document.querySelectorAll('.cancel-reason-option');
+    const updateOptionStyles = () => {
+      optionLabels.forEach(label => {
+        const input = label.querySelector('input');
+        if (input.checked) {
+          label.style.borderColor = '#ba1a1a';
+          label.style.background = 'rgba(186,26,26,0.06)';
+        } else {
+          label.style.borderColor = 'var(--outline-variant)';
+          label.style.background = 'var(--bg-surface-low)';
+        }
+      });
+    };
+    updateOptionStyles();
+    optionLabels.forEach(label => {
+      label.addEventListener('click', () => {
+        setTimeout(updateOptionStyles, 0);
+      });
+    });
+    
+    document.getElementById('btn-submit-cancel').addEventListener('click', async () => {
+      const selectedRadio = document.querySelector('input[name="quick_reason"]:checked');
+      let finalReason = selectedRadio.value;
+      if (finalReason === 'custom') {
+        finalReason = customText.value.trim();
+        if (!finalReason) {
+          window.GymApp.toast('Vui lòng nhập chi tiết lý do hủy!', 'error');
+          customText.focus();
+          return;
+        }
+      }
+      
+      const submitBtn = document.getElementById('btn-submit-cancel');
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<span class="material-symbols-outlined text-[18px] animate-spin">autorenew</span> Đang hủy...`;
+      
+      try {
+        const res = await window.GymApp.api.put(`/pt/schedules/${scheduleId}/cancel`, { ly_do: finalReason });
+        if (res?.success) {
+          window.GymApp.toast(`Đã hủy thành công buổi tập với ${studentName}!`, 'success');
+          close();
+          const fresh = await window.GymApp.api.get('/pt/schedules');
+          if (fresh?.success) window.GymApp.data.ptSchedules = fresh.data || [];
+          pages['my-schedule']._applyFilter();
+        } else {
+          window.GymApp.toast(res?.message || 'Hủy buổi tập thất bại!', 'error');
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = `<span class="material-symbols-outlined" style="font-size:18px;">close</span> Xác nhận hủy lịch`;
+        }
+      } catch (err) {
+        console.error(err);
+        window.GymApp.toast('Lỗi kết nối máy chủ!', 'error');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<span class="material-symbols-outlined" style="font-size:18px;">close</span> Xác nhận hủy lịch`;
+      }
+    });
   }
 
   // ── Lịch tập của tôi ──────────────────────────────────────
@@ -883,30 +1098,7 @@
         if (btn && !btn.disabled) {
           const scheduleId = btn.dataset.id;
           const studentName = btn.dataset.name;
-
-          if (!confirm(`Xác nhận buổi tập với ${studentName} đã hoàn thành?\n(Buổi này sẽ được trừ từ gói PT.)`)) return;
-
-          btn.disabled = true;
-          btn.innerHTML = `<span class="material-symbols-outlined text-xs animate-spin">autorenew</span> Đang lưu...`;
-
-          try {
-            const res = await window.GymApp.api.put(`/pt/schedules/${scheduleId}/confirm`, {});
-            if (res?.success) {
-              window.GymApp.toast(`✅ Đã xác nhận buổi tập với ${studentName}!`, 'success');
-              const fresh = await window.GymApp.api.get('/pt/schedules');
-              if (fresh?.success) window.GymApp.data.ptSchedules = fresh.data || [];
-              self._applyFilter();
-            } else {
-              window.GymApp.toast(res?.message || 'Xác nhận thất bại!', 'error');
-              btn.disabled = false;
-              btn.innerHTML = `<span class="material-symbols-outlined text-xs">done</span> Xác nhận`;
-            }
-          } catch (err) {
-            console.error(err);
-            window.GymApp.toast('Lỗi kết nối, vui lòng thử lại.', 'error');
-            btn.disabled = false;
-            btn.innerHTML = `<span class="material-symbols-outlined text-xs">done</span> Xác nhận`;
-          }
+          _showConfirmScheduleModal(scheduleId, studentName);
           return;
         }
 
