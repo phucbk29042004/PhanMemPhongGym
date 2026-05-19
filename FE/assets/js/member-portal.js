@@ -397,24 +397,37 @@
       return `
         <div class="space-y-s6">
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-s6">
-            <section class="lg:col-span-2 relative overflow-hidden rounded-xl bg-primary-container text-white p-s6 min-h-[240px] flex flex-col justify-between">
-              <div class="absolute inset-0 opacity-15 pointer-events-none" style="background:radial-gradient(circle at 20% 20%,#ffffff 0,transparent 28%),linear-gradient(135deg,#004d2a,#0c6c40 60%,#84d8a2)"></div>
-              <div class="relative z-10">
-                <span class="inline-block bg-white/20 px-s3 py-s1 rounded-full text-label-sm mb-s3">Buổi tập tiếp theo</span>
-                <h2 class="text-display font-bold mb-s2">${next ? 'Lịch tập PT' : `Xin chào, ${user.ho_ten || 'Hội viên'}`}</h2>
-                ${next ? `
-                  <div class="flex flex-wrap items-center gap-s4 text-body-base opacity-95">
-                    <span class="flex items-center gap-s1"><span class="material-symbols-outlined text-[20px]">schedule</span>${window.GymApp.formatDate(next.ngay_tap)}, ${next.gio_bat_dau || '—'}</span>
-                    <span class="flex items-center gap-s1"><span class="material-symbols-outlined text-[20px]">person</span>PT: ${next.ten_pt || '—'}</span>
-                  </div>
-                ` : `<p class="text-body-base opacity-95">Hiện chưa có lịch tập sắp tới. Khi có lịch mới, thông tin sẽ xuất hiện tại đây.</p>`}
+            <!-- Welcome Banner -->
+            <section class="lg:col-span-2 relative overflow-hidden rounded-2xl bg-brand-primary/10 border border-brand-primary/20 p-s6 min-h-[240px] flex flex-col justify-between">
+              <div class="relative z-10 flex flex-col gap-s2">
+                <div class="flex items-center gap-s3">
+                  <span class="bg-brand-primary/20 text-brand-primary px-s3 py-s1 rounded-full text-label-sm font-bold border border-brand-primary/30">
+                    ${user.loai_hv === 'vip' ? 'VIP MEMBER' : user.loai_hv === 'premium' ? 'PREMIUM' : 'STANDARD'}
+                  </span>
+                  ${next ? `<span class="bg-warning-light text-warning px-s3 py-s1 rounded-full text-label-sm font-bold border border-warning/20">Buổi tập tiếp theo: ${window.GymApp.formatDate(next.ngay_tap)}</span>` : ''}
+                </div>
+                <h1 class="text-display-lg font-bold text-on-surface mt-s2">Xin chào, ${user.ho_ten || 'Hội viên'}! 👋</h1>
+                <p class="text-body-lg text-on-surface-variant max-w-md">
+                  ${next 
+                    ? `Bạn có lịch tập PT lúc <strong>${next.gio_bat_dau || '—'}</strong> với HLV <strong>${next.ten_pt || '—'}</strong>. Đừng quên mang theo bình nước nhé!` 
+                    : 'Chào mừng bạn trở lại Paradise GYM. Hãy bắt đầu một buổi tập tuyệt vời hôm nay!'}
+                </p>
               </div>
-              <div class="relative z-10 flex flex-wrap gap-s3">
-                <button data-tab="my-schedule" class="bg-white text-primary-container px-s6 py-s3 rounded-full font-bold text-label-md hover:bg-surface-container-low transition-colors focus-ring">Xem lịch tập</button>
-                ${isExpiringSoon ? `<span class="bg-white/20 px-s4 py-s3 rounded-full text-label-md">Gói còn ${daysLeft} ngày</span>` : ''}
+              <div class="relative z-10 flex flex-wrap gap-s3 mt-s4">
+                <button data-tab="my-schedule" class="bg-brand-primary text-white px-s6 py-s3 rounded-full font-bold text-label-md hover:bg-brand-primary/90 transition-colors shadow-sm focus-ring flex items-center gap-s2">
+                  <span class="material-symbols-outlined text-[20px]">calendar_month</span> Xem lịch tập
+                </button>
+                ${(isExpired || isExpiringSoon) ? `
+                <button id="btn-dashboard-renew" class="bg-white text-brand-primary border border-brand-primary px-s6 py-s3 rounded-full font-bold text-label-md hover:bg-surface-container transition-colors shadow-sm focus-ring flex items-center gap-s2">
+                  <span class="material-symbols-outlined text-[20px]">bolt</span> Gia hạn gói tập
+                </button>
+                ` : ''}
+                ${isExpiringSoon ? `<span class="bg-error/10 text-error border border-error/20 px-s4 py-s3 rounded-full text-label-md font-bold flex items-center gap-s2"><span class="material-symbols-outlined text-[18px]">warning</span> Gói còn ${daysLeft} ngày</span>` : ''}
               </div>
+              <span class="material-symbols-outlined absolute -right-4 -bottom-4 text-[180px] text-brand-primary/5 select-none pointer-events-none" style="font-variation-settings: 'FILL' 1;">fitness_center</span>
             </section>
 
+            <!-- QR Code Card -->
             <section class="member-card p-s6 flex flex-col items-center justify-center text-center">
               <h3 class="text-headline-sm font-bold text-brand-primary mb-s4">Check-in nhanh</h3>
               <div id="qr-wrapper" class="bg-white p-s4 rounded-xl border border-outline-variant shadow-sm mb-s4 flex items-center justify-center" style="width:168px;height:168px">
@@ -432,7 +445,7 @@
 
           <div class="grid grid-cols-2 md:grid-cols-4 gap-s4">
             ${[
-              { label: 'Gói tập', value: activePackage?.ten_goi || 'Chưa có', icon: 'card_membership', sub: activePackage ? `Hết hạn ${window.GymApp.formatDate(activePackage.den_ngay)}` : 'Liên hệ lễ tân' },
+              { label: 'Gói tập', value: activePackage?.ten_goi || 'Chưa có', icon: 'card_membership', sub: activePackage ? `Hết hạn ${window.GymApp.formatDate(activePackage.den_ngay)}` : 'Chưa có gói tập' },
               { label: 'Ngày còn lại', value: daysLeft ?? '—', icon: 'hourglass_top', sub: activePackage ? 'Tính theo gói hiện tại' : 'Chưa đăng ký' },
               { label: 'Buổi PT còn lại', value: ptRemain ?? '—', icon: 'sports_gymnastics', sub: activePt?.ten_pt || 'Chưa có PT' },
               { label: 'Lượt vào/ra', value: checkins.length, icon: 'how_to_reg', sub: '30 lượt gần nhất' },
@@ -447,8 +460,7 @@
               </div>
             `).join('')}
           </div>
-
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-s6">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-s6 mt-s6">
             <section class="member-card overflow-hidden">
               <div class="p-s5 border-b border-outline-variant flex justify-between items-center">
                 <h3 class="text-headline-sm font-bold text-brand-primary">Lịch tập sắp tới</h3>
@@ -789,36 +801,84 @@
         { label: 'Loại hội viên', value: window.GymApp.formatEnumLabel(p.loai_hv || 'thuong'), icon: 'star' },
       ];
 
-      return `
-        <div class="space-y-s6">
-          <div>
-            <h2 class="text-headline-md font-bold text-on-surface">Hồ sơ cá nhân</h2>
-            <p class="text-on-surface-variant text-body-md mt-s1">Thông tin cá nhân của bạn trong hệ thống</p>
-          </div>
+      const activePackage = getActivePackage();
+      const activePt = getActivePt();
+      const memberType = window.GymApp.formatEnumLabel(p.loai_hv || 'thuong');
+      const statusText = activePackage?.trang_thai === 'dang_hoat_dong' ? '● Còn hạn' : '○ Hết hạn';
+      const isActive = activePackage?.trang_thai === 'dang_hoat_dong';
 
-          <section class="member-card overflow-hidden">
-            <div class="p-s6 border-b border-outline-variant flex items-center gap-s5">
-              ${window.GymApp.avatarImg(avatarUrl, tenHV, 'xl')}
-              <div class="min-w-0">
-                <p class="font-bold text-headline-sm text-on-surface truncate">${tenHV}</p>
-                <p class="text-on-surface-variant text-body-sm mt-s1">Hội viên | ${window.GymApp.formatEnumLabel(p.loai_hv || 'thuong')}</p>
+      return `
+        <div class="flex flex-col gap-6">
+          <div class="bg-surface-container-lowest rounded-3xl border border-outline-variant shadow-sm overflow-hidden">
+
+            <!-- Banner Header (members-list style) -->
+            <div style="background:linear-gradient(135deg,#065f46 0%,#1D9336 60%,#4ade80 100%);padding:20px 24px 0;flex-shrink:0;position:relative;overflow:hidden;min-height:130px;">
+              <!-- Background orbs -->
+              <div style="position:absolute;top:-30px;right:-30px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,0.07);"></div>
+              <div style="position:absolute;top:20px;right:80px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.05);"></div>
+              <div style="position:absolute;bottom:-20px;left:120px;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,0.04);"></div>
+
+              <!-- Avatar + Name -->
+              <div style="display:flex;align-items:flex-end;gap:16px;margin-bottom:16px;position:relative;z-index:1;">
+                <div style="position:relative;flex-shrink:0;">
+                  <div style="width:80px;height:80px;border-radius:50%;border:3px solid rgba(255,255,255,0.6);overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.25);">
+                    ${window.GymApp.avatarImg(avatarUrl, tenHV, 'lg', 'width:100%;height:100%;object-fit:cover;')}
+                  </div>
+                  <span style="position:absolute;bottom:3px;right:3px;width:14px;height:14px;border-radius:50%;background:${isActive ? '#4ade80' : '#94a3b8'};border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.2);"></span>
+                </div>
+                <div style="flex:1;min-width:0;padding-bottom:4px;">
+                  <h3 style="font-size:22px;font-weight:800;color:#fff;line-height:1.2;margin:0 0 4px;text-shadow:0 1px 4px rgba(0,0,0,0.2);">${tenHV}</h3>
+                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <span style="font-size:12px;color:rgba(255,255,255,0.85);font-weight:600;">${p.ma_ho_so || '—'}</span>
+                    <span style="width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,0.5);"></span>
+                    <span style="font-size:12px;color:rgba(255,255,255,0.85);">Hội viên</span>
+                    <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:${isActive ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'};color:#fff;border:1px solid rgba(255,255,255,0.3);">${statusText}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quick Stats Bar -->
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(255,255,255,0.15);border-radius:12px 12px 0 0;overflow:hidden;">
+                <div style="background:rgba(0,0,0,0.15);padding:10px 14px;backdrop-filter:blur(4px);">
+                  <div style="font-size:10px;color:rgba(255,255,255,0.65);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Loại hội viên</div>
+                  <div style="font-size:13px;font-weight:800;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${memberType}</div>
+                </div>
+                <div style="background:rgba(0,0,0,0.15);padding:10px 14px;backdrop-filter:blur(4px);">
+                  <div style="font-size:10px;color:rgba(255,255,255,0.65);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Gói tập</div>
+                  <div style="font-size:13px;font-weight:800;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${activePackage?.ten_goi_tap || 'Chưa đăng ký'}">${activePackage?.ten_goi_tap || 'Chưa đăng ký'}</div>
+                </div>
+                <div style="background:rgba(0,0,0,0.15);padding:10px 14px;backdrop-filter:blur(4px);">
+                  <div style="font-size:10px;color:rgba(255,255,255,0.65);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Huấn luyện viên</div>
+                  <div style="font-size:13px;font-weight:800;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${activePt?.ten_pt || 'Chưa có PT'}</div>
+                </div>
               </div>
             </div>
 
-            <div class="p-s6 grid grid-cols-1 md:grid-cols-2 gap-s4">
-              ${fields.map(f => `
-                <div class="flex items-start gap-s3 p-s4 rounded-xl bg-surface-container">
-                  <div class="w-9 h-9 rounded-lg bg-[#e7f5e9] flex items-center justify-center shrink-0">
-                    <span class="material-symbols-outlined text-brand-primary text-sm" style="font-variation-settings:'FILL' 1">${f.icon}</span>
+            <!-- Info Body -->
+            <div style="padding:20px 24px 24px;" class="bg-surface-container-lowest">
+              <!-- Section title -->
+              <div style="display:flex;align-items:center;gap:8px;margin:4px 0 16px;">
+                <span class="material-symbols-outlined" style="font-size:15px;color:#1D9336;font-variation-settings:'FILL' 1;">badge</span>
+                <span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#1D9336;">Thông tin cá nhân</span>
+                <div style="flex:1;height:1px;background:linear-gradient(to right,#1D933640,transparent);margin-left:4px;"></div>
+              </div>
+
+              <!-- 2-col info grid (exact members-list style) -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-[1px] bg-outline-variant rounded-xl overflow-hidden border border-outline-variant">
+                ${fields.map(f => `
+                  <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-surface-lowest, #fff);">
+                    <div style="width:32px;height:32px;border-radius:8px;background:var(--bg-surface-low, #e7f5e9);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                      <span class="material-symbols-outlined" style="font-size:16px;color:#1D9336;font-variation-settings:'FILL' 1;">${f.icon}</span>
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-on-surface-variant);opacity:0.6;margin-bottom:2px;">${f.label}</div>
+                      <div style="font-size:13px;font-weight:700;color:var(--text-on-surface);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${f.value || '—'}">${f.value || '—'}</div>
+                    </div>
                   </div>
-                  <div class="min-w-0">
-                    <p class="text-on-surface-variant text-body-sm">${f.label}</p>
-                    <p class="font-bold text-on-surface text-body-md break-words">${f.value || '—'}</p>
-                  </div>
-                </div>
-              `).join('')}
+                `).join('')}
+              </div>
             </div>
-          </section>
+          </div>
         </div>
       `;
     },
@@ -1092,13 +1152,20 @@
 
     const modalHtml = `
       <div id="modal-member-renewal" class="fixed inset-0 z-[100] flex items-center justify-center p-standard bg-black/60 backdrop-blur-sm animate-fade-in">
-        <div class="bg-surface-container-lowest w-full max-w-md rounded-2xl shadow-2xl animate-scale-in">
-          <div class="px-s6 py-s5 bg-primary-container text-white" style="border-top-left-radius: 16px; border-top-right-radius: 16px;">
-            <h3 class="text-headline-sm font-bold">Gia hạn gói tập</h3>
-            <p class="text-body-sm opacity-90 mt-s1">Chọn gói tập và ngày bắt đầu để tiếp tục tập luyện</p>
+        <div class="bg-surface-container-lowest w-full max-w-md rounded-[24px] shadow-2xl animate-scale-in flex flex-col">
+          <div class="px-s6 py-s5 text-white flex-shrink-0" style="background:linear-gradient(135deg,#1D9336,#0a591c); border-top-left-radius: 24px; border-top-right-radius: 24px;">
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="text-headline-sm font-bold uppercase tracking-wider">Gia hạn gói tập</h3>
+                <p class="text-body-sm opacity-85 mt-s1">Chọn gói tập và ngày bắt đầu</p>
+              </div>
+              <button id="btn-renew-close" class="text-white/70 hover:text-white bg-white/10 hover:bg-white/20 p-s2 rounded-full transition-colors">
+                <span class="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
           </div>
           
-          <div class="p-s6 space-y-s5">
+          <div class="p-s6 space-y-s5 flex-1 overflow-y-auto">
             <div>
               <label class="block text-label-sm text-on-surface-variant font-bold mb-s2">Chọn gói tập</label>
               <select id="renew-pkg-id" class="w-full bg-surface-container-low border border-outline-variant px-s4 py-s3 rounded-xl outline-none focus:border-brand-primary text-body-md">
@@ -1118,9 +1185,9 @@
             </div>
           </div>
 
-          <div class="px-s6 py-s5 bg-surface-container border-t border-outline-variant flex gap-s3" style="border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
-            <button id="btn-renew-cancel" class="flex-1 px-s4 py-s3 rounded-xl font-bold text-label-md text-on-surface-variant hover:bg-surface-container-high transition-colors">Hủy bỏ</button>
-            <button id="btn-renew-submit" class="flex-1 px-s4 py-s3 rounded-xl font-bold text-label-md bg-brand-primary text-white hover:opacity-90 transition-all shadow-md active:scale-95">Gửi yêu cầu</button>
+          <div class="px-s6 py-s5 bg-surface-low border-t border-outline-variant flex justify-end gap-s3" style="border-bottom-left-radius: 24px; border-bottom-right-radius: 24px;">
+            <button id="btn-renew-cancel" class="px-s5 py-s3 rounded-xl font-bold text-label-md border border-outline-variant text-on-surface hover:bg-surface-container transition-colors">Hủy bỏ</button>
+            <button id="btn-renew-submit" class="px-s6 py-s3 rounded-xl font-bold text-label-md bg-brand-primary text-white hover:opacity-90 transition-all shadow-[0_2px_8px_rgba(29,147,54,0.3)] active:scale-95">Gửi yêu cầu</button>
           </div>
         </div>
       </div>
@@ -1130,6 +1197,7 @@
 
     const closeModal = () => document.getElementById('modal-member-renewal')?.remove();
     document.getElementById('btn-renew-cancel').onclick = closeModal;
+    document.getElementById('btn-renew-close').onclick = closeModal;
     document.getElementById('btn-renew-submit').onclick = async () => {
       const goi_tap_id = document.getElementById('renew-pkg-id').value;
       const tu_ngay = document.getElementById('renew-start-date').value;

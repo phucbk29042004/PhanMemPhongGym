@@ -12,6 +12,7 @@ import {
 } from 'lucide-react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import ProfileAvatar from '../../components/ProfileAvatar';
+import EditProfileModal from '../../components/EditProfileModal';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useTheme } from '../../context/ThemeContext';
 import { api } from '../../services/api';
@@ -229,6 +230,7 @@ export default function PTProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showChangePw, setShowChangePw] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -294,6 +296,14 @@ export default function PTProfileScreen() {
         colors={colors}
       />
 
+      <EditProfileModal
+        visible={showEditProfile}
+        onClose={() => setShowEditProfile(false)}
+        profile={profile}
+        onSaved={fetchData}
+        colors={colors}
+      />
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[BRAND.primary]} tintColor={BRAND.primary} />}
@@ -309,7 +319,7 @@ export default function PTProfileScreen() {
             </View>
           ) : (
             <View style={[styles.profileCard, { backgroundColor: colors.surface }]}>
-              <View style={styles.avatarWrapper}>
+              <TouchableOpacity style={styles.avatarWrapper} onPress={() => setShowEditProfile(true)} activeOpacity={0.8}>
                 <ProfileAvatar
                   uri={profile?.avatar_url || user?.avatar_url}
                   name={profile?.ho_ten || user?.name}
@@ -318,7 +328,7 @@ export default function PTProfileScreen() {
                 <View style={[styles.avatarBadge, { backgroundColor: BRAND.primary, borderColor: colors.surface }]}>
                   <ShieldCheck color="#ffffff" size={10} strokeWidth={2.5} fill="#ffffff" />
                 </View>
-              </View>
+              </TouchableOpacity>
 
               <Text style={[styles.profileName, { color: colors.text }]}>
                 {profile?.ho_ten || user?.name || 'Huấn luyện viên'}
@@ -396,7 +406,15 @@ export default function PTProfileScreen() {
         </Section>
 
         {/* ── THÔNG TIN CHUYÊN MÔN ──────────────── */}
-        <Section title="Thông tin HLV" colors={colors}>
+        <Section 
+          title="Thông tin HLV" 
+          colors={colors}
+          extraHeader={
+            <TouchableOpacity onPress={() => setShowEditProfile(true)}>
+              <Text style={{ fontSize: 11, color: BRAND.primary, fontWeight: '700' }}>Sửa thông tin</Text>
+            </TouchableOpacity>
+          }
+        >
           <MenuRow icon={User} label="Họ và tên" sublabel={profile?.ho_ten || '—'} onPress={() => {}} rightEl={null} colors={colors} />
           <MenuRow icon={Award} label="Chuyên môn" sublabel={profile?.chuyen_mon || '—'} onPress={() => {}} rightEl={null} colors={colors} />
           <MenuRow icon={Badge} label="CCCD / CMND" sublabel={profile?.cccd || '—'} onPress={() => {}} rightEl={null} colors={colors} />

@@ -704,6 +704,8 @@ window.GymApp.pages['member-add'] = {
 
       const pkgId = document.getElementById('pkg-select').value;
       const tuNgay = document.getElementById('pkg-from').value;
+      const denNgay = document.getElementById('pkg-to').value;
+      const ngayThu = document.getElementById('pkg-pay-date').value;
       const phuongThucTT = document.getElementById('pkg-method').value;
       const paidRaw = parseVND(document.getElementById('pkg-paid')?.value);
       const priceRaw = parseVND(document.getElementById('pkg-price')?.value);
@@ -712,6 +714,7 @@ window.GymApp.pages['member-add'] = {
       highlightField('pkg-select', !pkgId);
       highlightField('pkg-from', !tuNgay);
       highlightField('pkg-method', !phuongThucTT);
+      highlightField('pkg-pay-date', !ngayThu);
       const paidErrEl = document.getElementById('err-pkg-paid');
       const paidInput = document.getElementById('pkg-paid');
       const paidMissing = !document.getElementById('pkg-paid')?.value?.trim();
@@ -723,8 +726,13 @@ window.GymApp.pages['member-add'] = {
         if (paidInput) paidInput.classList.remove('border-error');
       }
 
-      if (!pkgId || !tuNgay || !phuongThucTT || paidMissing) {
+      if (!pkgId || !tuNgay || !phuongThucTT || paidMissing || !ngayThu) {
         return window.GymApp.toast('Vui lòng điền đủ các trường bắt buộc (*)', 'error');
+      }
+
+      if (denNgay && ngayThu > denNgay) {
+        highlightField('pkg-pay-date', true);
+        return window.GymApp.toast('Ngày thu tiền không được vượt quá ngày kết thúc gói tập', 'error');
       }
 
       const giaThucTe = priceRaw || undefined;
@@ -739,7 +747,8 @@ window.GymApp.pages['member-add'] = {
           tu_ngay: tuNgay,
           gia_thuc_te: giaThucTe,
           phuong_thuc_tt: phuongThucTT,
-          ma_giao_dich: document.getElementById('pkg-coupon')?.value || ''
+          ma_giao_dich: document.getElementById('pkg-coupon')?.value || '',
+          ngay_thanh_toan: ngayThu
         });
 
         if (res.success) {

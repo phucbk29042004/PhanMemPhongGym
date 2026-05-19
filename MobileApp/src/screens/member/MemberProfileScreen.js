@@ -12,6 +12,7 @@ import {
 } from 'lucide-react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import ProfileAvatar from '../../components/ProfileAvatar';
+import EditProfileModal from '../../components/EditProfileModal';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useTheme } from '../../context/ThemeContext';
 import { api } from '../../services/api';
@@ -240,6 +241,7 @@ export default function MemberProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showChangePw, setShowChangePw] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -277,6 +279,14 @@ export default function MemberProfileScreen() {
         colors={colors}
       />
 
+      <EditProfileModal
+        visible={showEditProfile}
+        onClose={() => setShowEditProfile(false)}
+        profile={profile}
+        onSaved={fetchProfile}
+        colors={colors}
+      />
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[BRAND.primary]} tintColor={BRAND.primary} />}
@@ -292,7 +302,7 @@ export default function MemberProfileScreen() {
             </View>
           ) : (
             <View style={[styles.profileCard, { backgroundColor: colors.surface }]}>
-              <View style={styles.avatarWrapper}>
+              <TouchableOpacity style={styles.avatarWrapper} onPress={() => setShowEditProfile(true)} activeOpacity={0.8}>
                 <ProfileAvatar
                   uri={profile?.avatar_url || user?.avatar_url}
                   name={profile?.ho_ten || user?.name}
@@ -301,7 +311,7 @@ export default function MemberProfileScreen() {
                 <View style={[styles.avatarBadge, { backgroundColor: BRAND.primary, borderColor: colors.surface }]}>
                   <Star color="#ffffff" size={10} strokeWidth={2.5} fill="#ffffff" />
                 </View>
-              </View>
+              </TouchableOpacity>
 
               <Text style={[styles.profileName, { color: colors.text }]}>
                 {profile?.ho_ten || user?.name || 'Hội viên'}
@@ -356,7 +366,15 @@ export default function MemberProfileScreen() {
         </View>
 
         {/* ── THÔNG TIN CÁ NHÂN ─────────────────── */}
-        <Section title="Thông tin định danh" colors={colors}>
+        <Section 
+          title="Thông tin định danh" 
+          colors={colors}
+          extraHeader={
+            <TouchableOpacity onPress={() => setShowEditProfile(true)}>
+              <Text style={{ fontSize: 11, color: BRAND.primary, fontWeight: '700' }}>Sửa thông tin</Text>
+            </TouchableOpacity>
+          }
+        >
           <MenuRow icon={User} label="Họ và tên" sublabel={profile?.ho_ten || '—'} onPress={() => {}} rightEl={null} colors={colors} />
           <MenuRow icon={Calendar} label="Ngày sinh" sublabel={formatDate(profile?.ngay_sinh) || '—'} onPress={() => {}} rightEl={null} colors={colors} />
           <MenuRow icon={User} label="Giới tính" sublabel={genderLabel(profile?.gioi_tinh)} onPress={() => {}} rightEl={null} colors={colors} />
@@ -365,21 +383,7 @@ export default function MemberProfileScreen() {
           <MenuRow icon={Building2} label="Chi nhánh" sublabel={profile?.chi_nhanh || '—'} onPress={() => {}} rightEl={<View />} colors={colors} />
         </Section>
 
-        {/* ── GÓI TẬP & HỢP ĐỒNG ───────────────── */}
-        <Section title="Gói tập & Hợp đồng" colors={colors}>
-          <MenuRow
-            icon={Award} iconBg="#fef3c7" iconColor="#b7791f"
-            label="Gói tập đang hoạt động"
-            sublabel={activePlan ? `${activePlan.ten_goi} · Hết ${formatDate(activePlan.den_ngay)}` : 'Chưa đăng ký gói tập'}
-            onPress={() => {}} colors={colors}
-          />
-          <MenuRow
-            icon={Dumbbell}
-            label="Gói PT cá nhân"
-            sublabel={activePT ? `${activePT.ten_goi_pt || `HLV ${activePT.ten_pt}`} · Còn ${ptRemaining} buổi` : 'Chưa đăng ký gói PT'}
-            onPress={() => {}} colors={colors}
-          />
-        </Section>
+
 
         {/* ── CÀI ĐẶT ──────────────────────────── */}
         <Section title="Cài đặt" colors={colors}>
