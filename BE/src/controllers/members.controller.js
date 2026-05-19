@@ -499,7 +499,11 @@ export const getMyProfile = (req, res) => {
 
   if (hoSo.loai_ho_so === 'hoi_vien') {
     hoSo.goi_tap = db.prepare(`
-      SELECT dk.id, dk.tu_ngay, dk.den_ngay, dk.gia_thuc_te, dk.trang_thai,
+      SELECT dk.id, dk.tu_ngay, dk.den_ngay, dk.gia_thuc_te,
+             CASE 
+               WHEN dk.trang_thai = 'dang_hoat_dong' AND dk.den_ngay < date('now', 'localtime') THEN 'het_han'
+               ELSE dk.trang_thai
+             END AS trang_thai,
              gt.ten_goi, gt.so_thang
       FROM dang_ky_goi_tap dk
       JOIN goi_tap gt ON gt.id = dk.goi_tap_id

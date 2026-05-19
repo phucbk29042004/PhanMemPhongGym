@@ -29,7 +29,10 @@
 
   function getActivePackage() {
     const packages = window.GymApp.data.myPackages || [];
-    return packages.find(p => p.trang_thai === 'dang_hoat_dong') || packages[0] || null;
+    const today = todayKey();
+    const active = packages.find(p => p.trang_thai === 'dang_hoat_dong' && p.den_ngay >= today);
+    if (active) return active;
+    return packages[0] || null;
   }
 
   function getActivePt() {
@@ -392,7 +395,11 @@
       const ptRemain = activePt ? Math.max(0, (activePt.so_buoi_dang_ky || 0) - (activePt.so_buoi_da_tap || 0)) : null;
       const checkins = window.GymApp.data.myCheckins || [];
 
-      const isExpired = activePackage?.trang_thai === 'het_han' || !activePackage;
+      const today = todayKey();
+      const isExpired = !activePackage || activePackage.trang_thai === 'het_han' || activePackage.den_ngay < today;
+      const pkgStatus = activePackage 
+        ? (activePackage.den_ngay < today ? 'het_han' : activePackage.trang_thai) 
+        : 'chua_dang_ky';
 
       return `
         <div class="space-y-s6">
@@ -411,10 +418,12 @@
               </div>
               <div class="relative z-10 flex flex-wrap gap-s3">
                 <button data-tab="my-schedule" class="bg-white text-primary-container px-s6 py-s3 rounded-full font-bold text-label-md hover:bg-surface-container-low transition-colors focus-ring">Xem lịch tập</button>
-                ${isExpiringSoon ? `<span class="bg-white/20 px-s4 py-s3 rounded-full text-label-md">Gói còn ${daysLeft} ngày</span>` : ''}
+                ${isExpired 
+                  ? `<button id="btn-banner-renew" class="bg-[#ba1a1a] hover:bg-[#961212] active:scale-95 text-white px-s4 py-s3 rounded-full text-label-md font-bold shadow-sm flex items-center gap-s1 transition-all"><span class="material-symbols-outlined text-[18px]">autorenew</span>Gia hạn ngay</button>`
+                  : (isExpiringSoon ? `<button id="btn-banner-renew" class="bg-white/20 hover:bg-white/30 active:scale-95 text-white px-s4 py-s3 rounded-full text-label-md font-bold flex items-center gap-s1 transition-all"><span class="material-symbols-outlined text-[18px]">autorenew</span>Gia hạn ngay (còn ${daysLeft} ngày)</button>` : '')}
               </div>
             </section>
-
+ 
             <section class="member-card p-s6 flex flex-col items-center justify-center text-center">
               <h3 class="text-headline-sm font-bold text-brand-primary mb-s4">Check-in nhanh</h3>
               <div id="qr-wrapper" class="bg-white p-s4 rounded-xl border border-outline-variant shadow-sm mb-s4 flex items-center justify-center" style="width:168px;height:168px">
@@ -429,7 +438,7 @@
               </button>
             </section>
           </div>
-
+ 
           <div class="grid grid-cols-2 md:grid-cols-4 gap-s4">
             ${[
               { label: 'Gói tập', value: activePackage?.ten_goi || 'Chưa có', icon: 'card_membership', sub: activePackage ? `Hết hạn ${window.GymApp.formatDate(activePackage.den_ngay)}` : 'Liên hệ lễ tân' },
@@ -447,7 +456,7 @@
               </div>
             `).join('')}
           </div>
-
+ 
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-s6">
             <section class="member-card overflow-hidden">
               <div class="p-s5 border-b border-outline-variant flex justify-between items-center">
@@ -458,13 +467,18 @@
                 ${upcoming.length ? upcoming.map(scheduleRow).join('') : `<div class="p-s6">${emptyState('event_busy', 'Chưa có lịch sắp tới')}</div>`}
               </div>
             </section>
-
+ 
             <section class="member-card p-s5 flex flex-col gap-s4">
-              <h3 class="text-headline-sm font-bold text-brand-primary">Tình trạng hội viên</h3>
+              <div class="flex items-center justify-between gap-s4">
+                <h3 class="text-headline-sm font-bold text-brand-primary">Tình trạng hội viên</h3>
+                <button id="btn-dashboard-renew" class="flex items-center gap-s1 bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary px-s4 py-s2 rounded-full font-bold text-label-sm transition-all active:scale-95">
+                  <span class="material-symbols-outlined text-[16px]">autorenew</span>Gia hạn gói
+                </button>
+              </div>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-s4">
                 <div class="bg-surface-container rounded-xl p-s4">
                   <p class="text-on-surface-variant text-label-md">Trạng thái gói</p>
-                  <div class="mt-s2">${activePackage ? window.GymApp.statusBadge(activePackage.trang_thai) : window.GymApp.statusBadge('chua_dang_ky')}</div>
+                  <div class="mt-s2">${window.GymApp.statusBadge(pkgStatus)}</div>
                   <p class="text-body-sm text-on-surface-variant mt-s3">${activePackage ? `${window.GymApp.formatDate(activePackage.tu_ngay)} - ${window.GymApp.formatDate(activePackage.den_ngay)}` : 'Chưa có gói đang hoạt động'}</p>
                 </div>
                 <div class="bg-surface-container rounded-xl p-s4">
@@ -544,6 +558,9 @@
       });
 
       document.getElementById('btn-dashboard-renew')?.addEventListener('click', () => {
+        _showMemberRenewalModal();
+      });
+      document.getElementById('btn-banner-renew')?.addEventListener('click', () => {
         _showMemberRenewalModal();
       });
     },
