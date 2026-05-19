@@ -1268,11 +1268,7 @@ window.GymApp.pages['members-list'] = {
                    <button class="btn-switch-pt-reg px-standard py-compact rounded-lg font-bold text-body-sm text-blue hover:opacity-90 transition-all flex items-center gap-xs" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;cursor:pointer;" data-contract-id="${c.id}">
                      <span class="material-symbols-outlined text-sm">swap_horiz</span>Đổi gói PT
                    </button>
-<<<<<<< HEAD
                    <button class="btn-cancel-pt-contract px-standard py-compact rounded-lg font-bold text-body-sm text-white hover:opacity-90 transition-all flex items-center gap-xs" style="background:#ba1a1a;border:none;cursor:pointer;" data-contract-id="${c.id}" data-pt-name="${c.ten_pt || ''}" data-member-name="${m.ho_ten || ''}">
-=======
-                   <button class="btn-cancel-pt-contract px-standard py-compact rounded-lg font-bold text-body-sm text-white hover:opacity-90 transition-all flex items-center gap-xs" style="background:#ba1a1a;border:none;cursor:pointer;" data-contract-id="${c.id}" data-pt-name="${c.ten_pt || ''}">
->>>>>>> main
                      <span class="material-symbols-outlined text-sm">cancel</span>Hủy gói PT
                    </button>
                  </div>
@@ -1397,32 +1393,6 @@ window.GymApp.pages['members-list'] = {
           if (contract) self._showSwitchPtRegistrationModal(m, contract, refreshTab);
         });
       });
-<<<<<<< HEAD
-=======
-      document.querySelectorAll('.btn-cancel-pt-contract').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const contractId = btn.dataset.contractId;
-          const ptName = btn.dataset.ptName;
-          const reason = prompt(`Nhập lý do hủy hợp đồng PT với ${ptName || 'huấn luyện viên'}:`, 'Hội viên yêu cầu hủy');
-          if (reason === null) return;
-          if (!reason.trim()) {
-            window.GymApp.toast('Vui lòng nhập lý do hủy!', 'error');
-            return;
-          }
-          try {
-            const res = await window.GymApp.api.put(`/pt/registrations/${contractId}/cancel`, { ly_do: reason.trim() });
-            if (res?.success) {
-              window.GymApp.toast('Đã hủy hợp đồng PT thành công!', 'success');
-              if (typeof refreshTab === 'function') refreshTab();
-            } else {
-              window.GymApp.toast(res?.message || 'Hủy hợp đồng thất bại!', 'error');
-            }
-          } catch (err) {
-            window.GymApp.toast(err.message || 'Lỗi khi hủy hợp đồng PT.', 'error');
-          }
-        });
-      });
->>>>>>> main
     }
   },
 
@@ -1892,11 +1862,7 @@ window.GymApp.pages['members-list'] = {
     ptregPriceEl?.addEventListener('focus', function () { const v = _pVND(this.value); this.value = v > 0 ? String(v) : ''; });
     ptregPriceEl?.addEventListener('blur', function () { this.value = _fVND(_pVND(this.value)); });
 
-<<<<<<< HEAD
     const updatePtRegDuration = (e) => {
-=======
-    const updatePtRegDuration = () => {
->>>>>>> main
       const goiSel = document.getElementById('ptreg-goi');
       if (!goiSel) return;
       const opt = goiSel.options[goiSel.selectedIndex];
@@ -1907,7 +1873,6 @@ window.GymApp.pages['members-list'] = {
       const soThang = parseInt(opt.dataset.thang) || 0;
       const fromVal = document.getElementById('ptreg-from').value;
 
-<<<<<<< HEAD
       if (price > 0 && (!e || e.target.id === 'ptreg-goi')) {
         document.getElementById('ptreg-price').value = _fVND(price);
       }
@@ -1919,19 +1884,12 @@ window.GymApp.pages['members-list'] = {
       }
       const numSessions = parseInt(sessionsVal) || 0;
 
-=======
-      if (price > 0) {
-        document.getElementById('ptreg-price').value = _fVND(price);
-      }
-
->>>>>>> main
       if (soThang > 0 && fromVal) {
         const from = new Date(fromVal);
         const to = new Date(fromVal);
         to.setMonth(to.getMonth() + soThang);
         document.getElementById('ptreg-to').value = to.toISOString().split('T')[0];
         
-<<<<<<< HEAD
         if (!e || e.target.id !== 'ptreg-sessions') {
           const diffDays = Math.ceil((to - from) / (1000 * 60 * 60 * 24));
           document.getElementById('ptreg-sessions').value = diffDays;
@@ -1942,23 +1900,13 @@ window.GymApp.pages['members-list'] = {
         to.setDate(to.getDate() + numSessions);
         document.getElementById('ptreg-to').value = to.toISOString().split('T')[0];
       } else {
-=======
-        // Tự động tính số buổi mặc định theo số ngày trong tháng/chu kỳ
-        const diffDays = Math.ceil((to - from) / (1000 * 60 * 60 * 24));
-        document.getElementById('ptreg-sessions').value = diffDays;
-      } else {
-        document.getElementById('ptreg-sessions').value = buoi || '';
->>>>>>> main
         document.getElementById('ptreg-to').value = '';
       }
     };
 
     document.getElementById('ptreg-goi').addEventListener('change', updatePtRegDuration);
     document.getElementById('ptreg-from').addEventListener('change', updatePtRegDuration);
-<<<<<<< HEAD
     document.getElementById('ptreg-sessions').addEventListener('input', updatePtRegDuration);
-=======
->>>>>>> main
     const close = () => overlay.remove();
     document.getElementById('close-sub-modal').addEventListener('click', close);
     document.getElementById('ptreg-cancel-btn').addEventListener('click', close);
@@ -2035,11 +1983,7 @@ window.GymApp.pages['members-list'] = {
     pteditPriceEl?.addEventListener('focus', function () { const v = _pVND(this.value); this.value = v > 0 ? String(v) : ''; });
     pteditPriceEl?.addEventListener('blur', function () { this.value = _fVND(_pVND(this.value)); });
 
-<<<<<<< HEAD
     const updatePtEditDuration = (e) => {
-=======
-    const updatePtEditDuration = () => {
->>>>>>> main
       const goiSel = document.getElementById('ptedit-goi');
       if (!goiSel) return;
       const opt = goiSel.options[goiSel.selectedIndex];
@@ -2050,7 +1994,6 @@ window.GymApp.pages['members-list'] = {
       const soThang = parseInt(opt.dataset.thang) || 0;
       const fromVal = document.getElementById('ptedit-from').value;
 
-<<<<<<< HEAD
       if (price > 0 && (!e || e.target.id === 'ptedit-goi')) {
         document.getElementById('ptedit-price').value = _fVND(price);
       }
@@ -2062,19 +2005,12 @@ window.GymApp.pages['members-list'] = {
       }
       const numSessions = parseInt(sessionsVal) || 0;
 
-=======
-      if (price > 0) {
-        document.getElementById('ptedit-price').value = _fVND(price);
-      }
-
->>>>>>> main
       if (soThang > 0 && fromVal) {
         const from = new Date(fromVal);
         const to = new Date(fromVal);
         to.setMonth(to.getMonth() + soThang);
         document.getElementById('ptedit-to').value = to.toISOString().split('T')[0];
         
-<<<<<<< HEAD
         if (!e || e.target.id !== 'ptedit-sessions') {
           const diffDays = Math.ceil((to - from) / (1000 * 60 * 60 * 24));
           document.getElementById('ptedit-sessions').value = diffDays;
@@ -2085,22 +2021,13 @@ window.GymApp.pages['members-list'] = {
         to.setDate(to.getDate() + numSessions);
         document.getElementById('ptedit-to').value = to.toISOString().split('T')[0];
       } else {
-=======
-        const diffDays = Math.ceil((to - from) / (1000 * 60 * 60 * 24));
-        document.getElementById('ptedit-sessions').value = diffDays;
-      } else {
-        document.getElementById('ptedit-sessions').value = buoi || '';
->>>>>>> main
         document.getElementById('ptedit-to').value = '';
       }
     };
 
     document.getElementById('ptedit-goi').addEventListener('change', updatePtEditDuration);
     document.getElementById('ptedit-from').addEventListener('change', updatePtEditDuration);
-<<<<<<< HEAD
     document.getElementById('ptedit-sessions').addEventListener('input', updatePtEditDuration);
-=======
->>>>>>> main
     const close = () => overlay.remove();
     document.getElementById('close-sub-modal').addEventListener('click', close);
     document.getElementById('ptedit-cancel-btn').addEventListener('click', close);
@@ -2176,11 +2103,7 @@ window.GymApp.pages['members-list'] = {
     ptswitchPriceEl?.addEventListener('focus', function () { const v = _pVND(this.value); this.value = v > 0 ? String(v) : ''; });
     ptswitchPriceEl?.addEventListener('blur', function () { this.value = _fVND(_pVND(this.value)); });
 
-<<<<<<< HEAD
     const updatePtSwitchDuration = (e) => {
-=======
-    const updatePtSwitchDuration = () => {
->>>>>>> main
       const goiSel = document.getElementById('ptswitch-goi');
       if (!goiSel) return;
       const opt = goiSel.options[goiSel.selectedIndex];
@@ -2191,7 +2114,6 @@ window.GymApp.pages['members-list'] = {
       const soThang = parseInt(opt.dataset.thang) || 0;
       const fromVal = document.getElementById('ptswitch-from').value;
 
-<<<<<<< HEAD
       if (price > 0 && (!e || e.target.id === 'ptswitch-goi')) {
         document.getElementById('ptswitch-price').value = _fVND(price);
       }
@@ -2203,19 +2125,12 @@ window.GymApp.pages['members-list'] = {
       }
       const numSessions = parseInt(sessionsVal) || 0;
 
-=======
-      if (price > 0) {
-        document.getElementById('ptswitch-price').value = _fVND(price);
-      }
-
->>>>>>> main
       if (soThang > 0 && fromVal) {
         const from = new Date(fromVal);
         const to = new Date(fromVal);
         to.setMonth(to.getMonth() + soThang);
         document.getElementById('ptswitch-to').value = to.toISOString().split('T')[0];
         
-<<<<<<< HEAD
         if (!e || e.target.id !== 'ptswitch-sessions') {
           const diffDays = Math.ceil((to - from) / (1000 * 60 * 60 * 24));
           document.getElementById('ptswitch-sessions').value = diffDays;
@@ -2226,22 +2141,13 @@ window.GymApp.pages['members-list'] = {
         to.setDate(to.getDate() + numSessions);
         document.getElementById('ptswitch-to').value = to.toISOString().split('T')[0];
       } else {
-=======
-        const diffDays = Math.ceil((to - from) / (1000 * 60 * 60 * 24));
-        document.getElementById('ptswitch-sessions').value = diffDays;
-      } else {
-        document.getElementById('ptswitch-sessions').value = buoi || '';
->>>>>>> main
         document.getElementById('ptswitch-to').value = '';
       }
     };
 
     document.getElementById('ptswitch-goi').addEventListener('change', updatePtSwitchDuration);
     document.getElementById('ptswitch-from').addEventListener('change', updatePtSwitchDuration);
-<<<<<<< HEAD
     document.getElementById('ptswitch-sessions').addEventListener('input', updatePtSwitchDuration);
-=======
->>>>>>> main
     const close = () => overlay.remove();
     document.getElementById('close-sub-modal').addEventListener('click', close);
     document.getElementById('ptswitch-cancel-btn').addEventListener('click', close);
