@@ -8,6 +8,13 @@ window.GymApp.pages['pt-training'] = {
     const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
     const todaySchedules = schedules.filter(s => s.ngay_tap === today);
 
+    const timeSlots = [];
+    for (let h = 0; h < 24; h++) {
+      for (let mn = 0; mn < 60; mn += 15) {
+        timeSlots.push(`${String(h).padStart(2, '0')}:${String(mn).padStart(2, '0')}`);
+      }
+    }
+
     const stats = [
       { label: 'Tổng PT', value: pts.length, icon: 'sports_gymnastics', iconBg: 'icon-bg-green', color: 'text-brand-primary' },
       { label: 'Lịch hôm nay', value: todaySchedules.length, icon: 'event_available', iconBg: 'icon-bg-green', color: 'text-brand-primary' },
@@ -44,12 +51,6 @@ window.GymApp.pages['pt-training'] = {
                 type="text"
               />
             </div>
-
-            <select id="pt-filter-status" class="bg-surface-container-low border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none font-body-md text-body-md min-w-[150px] transition-colors">
-              <option value="">Tất cả trạng thái</option>
-              <option value="confirmed">Đã xác nhận</option>
-              <option value="pending">Chờ xác nhận</option>
-            </select>
 
             <select id="pt-filter-pt" class="bg-surface-container-low border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none font-body-md text-body-md min-w-[150px] transition-colors">
               <option value="">Tất cả PT</option>
@@ -125,15 +126,16 @@ window.GymApp.pages['pt-training'] = {
               <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Ngày tập</label>
               <input id="edit-schedule-date" type="date" class="w-full bg-surface-container-low border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none font-body-md text-body-md transition-colors" />
             </div>
-            <div class="grid grid-cols-2 gap-standard">
-              <div>
-                <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Giờ bắt đầu</label>
-                <input id="edit-schedule-start" type="time" class="w-full bg-surface-container-low border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none font-body-md text-body-md transition-colors" />
+            <div>
+              <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Chọn giờ bắt đầu</label>
+              <div id="edit-schedule-time-display" class="text-body-sm mb-compact font-bold" style="min-height:18px;color:#6e7a6b;">Chưa chọn giờ</div>
+              <div style="border:1px solid #becab9;border-radius:12px;overflow:hidden;max-height:180px;overflow-y:auto;" class="bg-surface-container-low">
+                <div class="time-slot-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:4px;padding:8px;">
+                  ${timeSlots.map(t => `<button class="edit-time-slot-btn bg-surface-container-lowest text-on-surface border border-outline-variant hover:bg-surface-container transition-all" data-time="${t}" style="padding:6px 2px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;text-align:center;">${t}</button>`).join('')}
+                </div>
               </div>
-              <div>
-                <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Giờ kết thúc</label>
-                <input id="edit-schedule-end" type="time" class="w-full bg-surface-container-low border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none font-body-md text-body-md transition-colors" />
-              </div>
+              <input type="hidden" id="edit-schedule-start" />
+              <input type="hidden" id="edit-schedule-end" />
             </div>
             <div>
               <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Ghi chú</label>
@@ -232,7 +234,7 @@ window.GymApp.pages['pt-training'] = {
 
   _applyFilter: function () {
     const q = document.getElementById('pt-search')?.value.toLowerCase() || '';
-    const status = document.getElementById('pt-filter-status')?.value || '';
+    const status = '';
     const ptId = document.getElementById('pt-filter-pt')?.value || '';
     const filtered = (window.GymApp.data.ptSchedules || []).filter(s => {
       const ptName = (s.ten_pt || s.ptName || '').toLowerCase();
@@ -276,17 +278,21 @@ window.GymApp.pages['pt-training'] = {
 
     // Gán sự kiện (chỉ chạy khi skipFetch = true hoặc nếu fetch thất bại)
     document.getElementById('pt-search')?.addEventListener('input', () => self._applyFilter());
-    document.getElementById('pt-filter-status')?.addEventListener('change', () => self._applyFilter());
     document.getElementById('pt-filter-pt')?.addEventListener('change', () => self._applyFilter());
     document.getElementById('pt-reload')?.addEventListener('click', async () => {
+      const btn = document.getElementById('pt-reload');
+      const icon = btn?.querySelector('.material-symbols-outlined');
+      if (icon) icon.classList.add('animate-spin');
+      if (btn) btn.classList.add('pointer-events-none', 'opacity-50');
       try {
         const res = await window.GymApp.api.get('/pt/schedules');
         if (res?.success) window.GymApp.data.ptSchedules = Array.isArray(res.data) ? res.data : [];
       } catch (err) { console.error(err); }
-      document.getElementById('pt-search').value = '';
-      document.getElementById('pt-filter-status').value = '';
-      document.getElementById('pt-filter-pt').value = '';
+      if (document.getElementById('pt-search')) document.getElementById('pt-search').value = '';
+      if (document.getElementById('pt-filter-pt')) document.getElementById('pt-filter-pt').value = '';
       self._applyFilter();
+      if (icon) icon.classList.remove('animate-spin');
+      if (btn) btn.classList.remove('pointer-events-none', 'opacity-50');
       window.GymApp.toast('Đã tải lại danh sách!', 'success');
     });
 
@@ -305,10 +311,83 @@ window.GymApp.pages['pt-training'] = {
       if (!btn) return;
       document.getElementById('edit-schedule-id').value = btn.dataset.id;
       document.getElementById('edit-schedule-date').value = btn.dataset.ngay || '';
-      document.getElementById('edit-schedule-start').value = btn.dataset.start || '';
-      document.getElementById('edit-schedule-end').value = btn.dataset.end || '';
+      const startVal = btn.dataset.start || '';
+      const endVal = btn.dataset.end || '';
+      document.getElementById('edit-schedule-start').value = startVal;
+      document.getElementById('edit-schedule-end').value = endVal;
       document.getElementById('edit-schedule-note').value = btn.dataset.ghiChu || '';
-      document.getElementById('modal-edit-schedule').classList.remove('hidden');
+
+      const currStart = startVal.substring(0, 5);
+      const timeDisplay = document.getElementById('edit-schedule-time-display');
+      const modalEl = document.getElementById('modal-edit-schedule');
+      
+      // Reset button styles
+      modalEl.querySelectorAll('.edit-time-slot-btn').forEach(b => {
+        b.style.transform = 'scale(1)';
+        b.style.background = '';
+        b.style.color = '';
+      });
+
+      let matchedBtn = null;
+      if (currStart) {
+        matchedBtn = modalEl.querySelector(`.edit-time-slot-btn[data-time="${currStart}"]`);
+      }
+
+      if (matchedBtn) {
+        matchedBtn.style.transform = 'scale(1.05)';
+        matchedBtn.style.background = '#1D9336';
+        matchedBtn.style.color = '#fff';
+        timeDisplay.textContent = `Đã chọn: ${currStart} — ${endVal.substring(0, 5)}`;
+        timeDisplay.style.color = '#1D9336';
+        timeDisplay.style.fontWeight = '700';
+
+        setTimeout(() => {
+          matchedBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+      } else {
+        timeDisplay.textContent = 'Chưa chọn giờ';
+        timeDisplay.style.color = '';
+        timeDisplay.style.fontWeight = '';
+      }
+
+      modalEl.classList.remove('hidden');
+    });
+
+    // Custom time slot buttons interaction
+    const calculateEndTime = (startStr) => {
+      const [h, min] = startStr.split(':').map(Number);
+      const d = new Date();
+      d.setHours(h, min + 60);
+      return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    };
+
+    document.querySelectorAll('.edit-time-slot-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const t = btn.dataset.time;
+        const startEl = document.getElementById('edit-schedule-start');
+        const endEl = document.getElementById('edit-schedule-end');
+        const timeDisplay = document.getElementById('edit-schedule-time-display');
+
+        // Reset all buttons style
+        document.querySelectorAll('.edit-time-slot-btn').forEach(b => {
+          b.style.transform = 'scale(1)';
+          b.style.background = '';
+          b.style.color = '';
+        });
+
+        // Style active button
+        btn.style.transform = 'scale(1.05)';
+        btn.style.background = '#1D9336';
+        btn.style.color = '#fff';
+
+        const endTime = calculateEndTime(t);
+        startEl.value = t;
+        endEl.value = endTime;
+
+        timeDisplay.textContent = `Đã chọn: ${t} — ${endTime}`;
+        timeDisplay.style.color = '#1D9336';
+        timeDisplay.style.fontWeight = '700';
+      });
     });
 
     // Hủy lịch tập (event delegation)

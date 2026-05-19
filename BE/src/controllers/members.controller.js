@@ -99,11 +99,11 @@ export const getMemberById = (req, res) => {
        WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong') AS goi_tap_hien_tai,
       -- PT đang đăng ký
       (SELECT json_group_array(json_object(
-        'id', dp.id, 'pt_id', dp.pt_id, 'ten_pt', pt.ho_ten, 'avatar_pt', pt.avatar_url,
+        'id', dp.id, 'pt_id', dp.pt_id, 'goi_pt_id', dp.goi_pt_id, 'ten_pt', pt.ho_ten, 'avatar_pt', pt.avatar_url,
         'chuyen_mon', pt.chuyen_mon,
         'buoi_dang_ky', dp.so_buoi_dang_ky, 'buoi_da_tap', dp.so_buoi_da_tap,
         'tu_ngay', dp.tu_ngay, 'den_ngay', dp.den_ngay,
-        'trang_thai', dp.trang_thai
+        'trang_thai', dp.trang_thai, 'gia_thuc_te', dp.gia_thuc_te, 'ghi_chu_tt', dp.ghi_chu_tt
       )) FROM dang_ky_pt dp JOIN ho_so pt ON pt.id = dp.pt_id
        WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS pt_hien_tai,
       ((SELECT loai FROM luot_vao_ra WHERE ho_so_id = h.id AND date(thoi_diem) = date('now','localtime') ORDER BY id DESC LIMIT 1) = 'vao') AS da_check_in_hom_nay
