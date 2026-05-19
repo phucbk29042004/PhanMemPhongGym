@@ -826,25 +826,65 @@ html.dark .page-title-bar {
 }
 
 /* ===== TABLE ENHANCED ===== */
-.gym-table thead th {
-  background: linear-gradient(90deg, #e5e8ee 0%, #ebeef3 100%);
+.gym-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
 }
 
-html.dark .gym-table thead th {
-  background: linear-gradient(90deg, #282e37 0%, #22272f 100%) !important;
-  color: #a8b5a5 !important;
+.gym-table thead th {
+  background: linear-gradient(90deg, #e5e8ee 0%, #ebeef3 100%);
+  color: var(--text-on-surface-variant);
+  font-weight: 700;
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1.5px solid var(--outline-variant);
+}
+
+.gym-table thead th.text-center {
+  text-align: center;
+}
+
+.gym-table thead th.text-right {
+  text-align: right;
+}
+
+.gym-table tbody td {
+  padding: 14px 16px;
+  vertical-align: middle;
+  border-bottom: 1px solid rgba(147, 184, 148, 0.35); /* lighter than outline-variant for elegance */
+  font-size: 13.5px;
+  color: var(--text-on-surface);
 }
 
 .gym-table tbody tr {
   transition: all 0.15s ease;
 }
 
+.gym-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
 .gym-table tbody tr:hover {
-  background-color: rgba(29, 147, 54, 0.04) !important;
+  background-color: rgba(29, 147, 54, 0.05) !important;
+}
+
+html.dark .gym-table thead th {
+  background: linear-gradient(90deg, #282e37 0%, #22272f 100%) !important;
+  color: #a8b5a5 !important;
+  border-bottom-color: #393f46 !important;
+}
+
+html.dark .gym-table tbody td {
+  border-bottom-color: rgba(57, 63, 70, 0.4) !important;
+  color: #dde1e7 !important;
 }
 
 html.dark .gym-table tbody tr:hover {
-  background-color: rgba(76, 206, 95, 0.06) !important;
+  background-color: rgba(76, 206, 95, 0.08) !important;
 }
 
 /* ===== PILL/CHIP TAGS ===== */

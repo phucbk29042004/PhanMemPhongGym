@@ -437,6 +437,27 @@
     }
   };
 
+  function _generateTimeOptions(selected) {
+    const times = [];
+    for (let h = 5; h <= 22; h++) {
+      const hh = h.toString().padStart(2, '0');
+      times.push(`${hh}:00`);
+      times.push(`${hh}:15`);
+      times.push(`${hh}:30`);
+      times.push(`${hh}:45`);
+    }
+    const cleanSelected = selected ? selected.substring(0, 5) : '';
+    if (cleanSelected && !times.includes(cleanSelected)) {
+      times.push(cleanSelected);
+      times.sort((a, b) => {
+        const [ha, ma] = a.split(':').map(Number);
+        const [hb, mb] = b.split(':').map(Number);
+        return (ha * 60 + ma) - (hb * 60 + mb);
+      });
+    }
+    return times.map(t => `<option value="${t}" ${t === cleanSelected ? 'selected' : ''}>${t}</option>`).join('');
+  }
+
   // ── PT Schedules Actions Modals ─────────────────────────────────
   async function _showCreateScheduleModal() {
     try {
@@ -490,11 +511,21 @@
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
               <div>
                 <label style="display:block;font-size:11px;text-transform:uppercase;font-weight:800;color:var(--text-on-surface-variant);opacity:0.8;margin-bottom:6px;">Giờ bắt đầu <span style="color:#ba1a1a;">*</span></label>
-                <input id="cs-start" type="time" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl focus:border-brand-primary outline-none text-[14px] font-medium transition-all" />
+                <div class="relative w-full">
+                  <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">schedule</span>
+                  <select id="cs-start" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-8 py-2.5 rounded-xl focus:border-brand-primary outline-none text-[14px] font-medium transition-all cursor-pointer">
+                    ${_generateTimeOptions('08:00')}
+                  </select>
+                </div>
               </div>
               <div>
                 <label style="display:block;font-size:11px;text-transform:uppercase;font-weight:800;color:var(--text-on-surface-variant);opacity:0.8;margin-bottom:6px;">Giờ kết thúc <span style="color:#ba1a1a;">*</span></label>
-                <input id="cs-end" type="time" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl focus:border-brand-primary outline-none text-[14px] font-medium transition-all" />
+                <div class="relative w-full">
+                  <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">schedule</span>
+                  <select id="cs-end" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-8 py-2.5 rounded-xl focus:border-brand-primary outline-none text-[14px] font-medium transition-all cursor-pointer">
+                    ${_generateTimeOptions('09:00')}
+                  </select>
+                </div>
               </div>
             </div>
 
@@ -579,6 +610,9 @@
   }
 
   function _showEditScheduleModal(s) {
+    const startVal = s.gio_bat_dau || '08:00';
+    const endVal = s.gio_ket_thuc || '09:00';
+
     const overlay = document.createElement('div');
     overlay.style.cssText = `position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:9000;padding:20px;`;
     overlay.innerHTML = `
@@ -615,11 +649,21 @@
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
             <div>
               <label style="display:block;font-size:11px;text-transform:uppercase;font-weight:800;color:var(--text-on-surface-variant);opacity:0.8;margin-bottom:6px;">Giờ bắt đầu <span style="color:#ba1a1a;">*</span></label>
-              <input id="es-start" type="time" value="${s.gio_bat_dau || ''}" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl focus:border-brand-primary outline-none text-[14px] font-medium transition-all" />
+              <div class="relative w-full">
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">schedule</span>
+                <select id="es-start" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-8 py-2.5 rounded-xl focus:border-brand-primary outline-none text-[14px] font-medium transition-all cursor-pointer">
+                  ${_generateTimeOptions(startVal)}
+                </select>
+              </div>
             </div>
             <div>
               <label style="display:block;font-size:11px;text-transform:uppercase;font-weight:800;color:var(--text-on-surface-variant);opacity:0.8;margin-bottom:6px;">Giờ kết thúc <span style="color:#ba1a1a;">*</span></label>
-              <input id="es-end" type="time" value="${s.gio_ket_thuc || ''}" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl focus:border-brand-primary outline-none text-[14px] font-medium transition-all" />
+              <div class="relative w-full">
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">schedule</span>
+                <select id="es-end" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-8 py-2.5 rounded-xl focus:border-brand-primary outline-none text-[14px] font-medium transition-all cursor-pointer">
+                  ${_generateTimeOptions(endVal)}
+                </select>
+              </div>
             </div>
           </div>
 
@@ -940,25 +984,31 @@
           </div>
 
           <!-- Filter -->
-          <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant p-standard shadow-sm">
-            <div class="flex flex-wrap items-center gap-standard">
-              <div class="relative flex-1 min-w-[180px]">
-                <span class="material-symbols-outlined absolute left-standard top-1/2 -translate-y-1/2 text-outline text-sm">search</span>
-                <input id="sch-search" class="w-full bg-surface-container-low border border-outline-variant text-on-surface pl-8 pr-standard py-compact rounded-xl focus:border-brand-primary outline-none font-body-md text-body-md transition-colors" placeholder="Tìm theo tên học viên..." type="text" />
+          <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant p-4 shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+              <div class="flex flex-wrap items-center gap-3 flex-grow sm:flex-initial">
+                <div class="relative w-full sm:w-64">
+                  <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
+                  <input id="sch-search" class="w-full bg-surface-container-low border border-outline-variant text-on-surface pl-10 pr-4 py-2 rounded-xl focus:border-brand-primary outline-none font-body-md text-body-md transition-colors" placeholder="Tìm theo tên học viên..." type="text" />
+                </div>
+                <div class="w-full sm:w-40">
+                  <select id="sch-status" class="w-full bg-surface-container-low border border-outline-variant text-on-surface px-3 py-2 rounded-xl focus:border-brand-primary outline-none font-body-md text-body-md transition-colors cursor-pointer">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="cho_tap">Chờ tập</option>
+                    <option value="da_tap">Đã tập</option>
+                    <option value="da_huy">Đã hủy</option>
+                    <option value="vang">Vắng</option>
+                  </select>
+                </div>
+                <div class="w-full sm:w-40">
+                  <input id="sch-date" type="date" class="w-full bg-surface-container-low border border-outline-variant text-on-surface px-3 py-2 rounded-xl focus:border-brand-primary outline-none font-body-md text-body-md transition-colors" />
+                </div>
+                <button id="sch-reload" class="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-surface-container transition-all font-body-md whitespace-nowrap w-full sm:w-auto">
+                  <span class="material-symbols-outlined text-[18px]">refresh</span>Tải lại
+                </button>
               </div>
-              <select id="sch-status" class="bg-surface-container-low border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none font-body-md text-body-md min-w-[140px] transition-colors">
-                <option value="">Tất cả trạng thái</option>
-                <option value="cho_tap">Chờ tập</option>
-                <option value="da_tap">Đã tập</option>
-                <option value="da_huy">Đã hủy</option>
-                <option value="vang">Vắng</option>
-              </select>
-              <input id="sch-date" type="date" class="bg-surface-container-low border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none font-body-md text-body-md transition-colors" />
-              <button id="sch-reload" class="flex items-center gap-xs px-loose py-compact rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary transition-all font-body-md whitespace-nowrap">
-                <span class="material-symbols-outlined text-sm">refresh</span>Tải lại
-              </button>
-              <button id="sch-create" class="flex items-center gap-xs px-loose py-compact rounded-xl bg-brand-primary text-white hover:bg-brand-primary/90 active:scale-95 transition-all font-bold text-body-md whitespace-nowrap shadow-sm">
-                <span class="material-symbols-outlined text-sm">add</span>Đặt lịch mới
+              <button id="sch-create" class="flex items-center justify-center gap-1.5 px-5 py-2 rounded-xl bg-gradient-to-r from-brand-primary to-[#157a2a] text-white hover:shadow-md active:scale-95 transition-all font-bold text-body-md whitespace-nowrap shadow-sm w-full sm:w-auto">
+                <span class="material-symbols-outlined text-[18px]">add</span>Đặt lịch mới
               </button>
             </div>
           </div>
@@ -1005,7 +1055,7 @@
                   </td>
                   <td class="text-on-surface-variant">${window.GymApp.formatDate(s.ngay_tap)}</td>
                   <td class="font-bold text-on-surface">${s.gio_bat_dau} — ${s.gio_ket_thuc}</td>
-                  <td><span class="bg-surface-container px-compact py-xs rounded-full text-body-sm text-on-surface-variant font-bold">${s.loai_buoi === 'nhom' ? 'Nhóm' : 'Cá nhân'}</span></td>
+                  <td><span class="bg-surface-container px-3 py-1 rounded-full text-xs text-on-surface-variant font-bold">${s.loai_buoi === 'nhom' ? 'Nhóm' : 'Cá nhân'}</span></td>
                   <td>${window.GymApp.statusBadge(s.trang_thai)}</td>
                   <td class="text-on-surface-variant text-body-sm max-w-[160px]">
                     <div class="flex items-center gap-xs group/note">
@@ -1019,14 +1069,14 @@
                     ${s.trang_thai === 'cho_tap'
           ? `<div class="flex items-center justify-center gap-2">
                              <button
-                               class="btn-confirm-session flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-brand-primary text-white font-bold text-xs hover:bg-brand-primary/95 active:scale-95 transition-all shadow-sm whitespace-nowrap"
+                               class="btn-confirm-session flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-brand-primary to-[#157a2a] text-white font-bold text-xs hover:shadow-md active:scale-95 transition-all whitespace-nowrap"
                                data-id="${s.id}"
                                data-name="${s.ten_hoi_vien || 'học viên'}"
                              >
                                <span class="material-symbols-outlined text-xs">done</span> Xác nhận
                              </button>
                              <button
-                               class="btn-edit-session flex items-center justify-center p-1.5 rounded-lg border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary active:scale-95 transition-all"
+                               class="btn-edit-session flex items-center justify-center p-1.5 rounded-xl bg-surface-container text-on-surface-variant hover:text-brand-primary hover:bg-surface-container-high active:scale-95 transition-all"
                                data-id="${s.id}"
                                data-sdata='${encodeURIComponent(JSON.stringify(s))}'
                                title="Sửa lịch"
@@ -1034,7 +1084,7 @@
                                <span class="material-symbols-outlined text-xs">edit</span>
                              </button>
                              <button
-                               class="btn-cancel-session flex items-center justify-center p-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 hover:border-red-400 active:scale-95 transition-all"
+                               class="btn-cancel-session flex items-center justify-center p-1.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 dark:bg-red-950/20 dark:text-red-400 dark:hover:bg-red-950/40 active:scale-95 transition-all"
                                data-id="${s.id}"
                                data-name="${s.ten_hoi_vien || 'học viên'}"
                                title="Hủy lịch"

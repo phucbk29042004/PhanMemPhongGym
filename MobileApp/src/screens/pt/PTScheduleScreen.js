@@ -87,7 +87,10 @@ export default function PTScheduleScreen() {
     if (order[a.trang_thai] !== order[b.trang_thai]) {
       return order[a.trang_thai] - order[b.trang_thai];
     }
-    return new Date(b.ngay_tap) - new Date(a.ngay_tap);
+    if (a.ngay_tap !== b.ngay_tap) {
+      return new Date(b.ngay_tap) - new Date(a.ngay_tap);
+    }
+    return (a.gio_bat_dau || '').localeCompare(b.gio_bat_dau || '');
   });
 
   return (

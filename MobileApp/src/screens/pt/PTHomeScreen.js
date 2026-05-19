@@ -196,7 +196,7 @@ export default function PTHomeScreen({ navigation }) {
               <CalendarCheck color={G.primary} size={18} strokeWidth={2} />
             </View>
             <Text style={styles.sectionTitle}>Buổi tập tiếp theo</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Lịch dạy')}>
+            <TouchableOpacity onPress={() => navigation.navigate('Schedule')}>
               <Text style={styles.viewAllText}>Tất cả</Text>
             </TouchableOpacity>
           </View>
