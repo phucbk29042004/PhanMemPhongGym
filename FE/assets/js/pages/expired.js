@@ -608,7 +608,7 @@ window.GymApp.pages['expired'] = {
             <div class="space-y-compact">
               <div>
                 <label class="block text-body-xs font-bold text-on-surface-variant mb-xs ml-0.5">Số tiền thực thu (VNĐ)</label>
-                <input type="number" id="approve-price" value="${req.gia_thuc_te}" class="w-full bg-surface-container-lowest border border-outline-variant px-standard py-2 rounded-xl outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 text-body-sm font-black transition-all" />
+                <input type="text" inputmode="numeric" id="approve-price" value="${req.gia_thuc_te > 0 ? new Intl.NumberFormat('vi-VN').format(req.gia_thuc_te) : ''}" class="w-full bg-surface-container-lowest border border-outline-variant px-standard py-2 rounded-xl outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 text-body-sm font-black transition-all" />
               </div>
               
               <div>
@@ -637,10 +637,17 @@ window.GymApp.pages['expired'] = {
 
     document.body.insertAdjacentHTML('beforeend', modalHtml);
     document.getElementById('btn-approve-cancel').onclick = () => document.getElementById('modal-approve-renewal').remove();
+
+    const _pVND = s => parseInt((s || '').replace(/\./g, '').replace(/,/g, '')) || 0;
+    const _fVND = n => n > 0 ? new Intl.NumberFormat('vi-VN').format(n) : '';
+    const priceEl = document.getElementById('approve-price');
+    priceEl?.addEventListener('focus', function () { const v = _pVND(this.value); this.value = v > 0 ? String(v) : ''; });
+    priceEl?.addEventListener('blur', function () { this.value = _fVND(_pVND(this.value)); });
+
     document.getElementById('btn-approve-submit').onclick = async () => {
       const data = {
         action: 'approve',
-        gia_thuc_te: document.getElementById('approve-price').value,
+        gia_thuc_te: _pVND(document.getElementById('approve-price').value),
         phuong_thuc_tt: document.getElementById('approve-method').value,
         ghi_chu_tt: document.getElementById('approve-note').value
       };

@@ -245,7 +245,7 @@
             <div class="p-loose space-y-standard">
               <div>
                 <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Giá thực thu (đ)</label>
-                <input type="number" id="approve-price" value="${gia}"
+                <input type="text" inputmode="numeric" id="approve-price" value="${gia > 0 ? new Intl.NumberFormat('vi-VN').format(gia) : ''}"
                   class="w-full bg-surface-container-low border border-outline-variant px-standard py-compact rounded-xl outline-none focus:border-brand-primary transition-all font-bold text-on-surface text-body-md" />
               </div>
               <div>
@@ -286,8 +286,14 @@
         if (e.target === document.getElementById('modal-approve-req')) closeModal();
       });
 
+      const _pVND = s => parseInt((s || '').replace(/\./g, '').replace(/,/g, '')) || 0;
+      const _fVND = n => n > 0 ? new Intl.NumberFormat('vi-VN').format(n) : '';
+      const priceEl = document.getElementById('approve-price');
+      priceEl?.addEventListener('focus', function () { const v = _pVND(this.value); this.value = v > 0 ? String(v) : ''; });
+      priceEl?.addEventListener('blur', function () { this.value = _fVND(_pVND(this.value)); });
+
       document.getElementById('btn-confirm-approve').onclick = async () => {
-        const gia_thuc_te = document.getElementById('approve-price').value;
+        const gia_thuc_te = _pVND(document.getElementById('approve-price').value);
         const phuong_thuc_tt = document.getElementById('approve-method').value;
         const ghi_chu_tt = document.getElementById('approve-note').value;
         const confirmBtn = document.getElementById('btn-confirm-approve');
@@ -295,7 +301,7 @@
         confirmBtn.textContent = 'Đang duyệt...';
         try {
           const res = await window.GymApp.api.put(`/members/package-requests/${id}/approve`, {
-            action: 'approve', gia_thuc_te: Number(gia_thuc_te), phuong_thuc_tt, ghi_chu_tt
+            action: 'approve', gia_thuc_te, phuong_thuc_tt, ghi_chu_tt
           });
           if (res?.success) {
             window.GymApp.toast('Đã duyệt yêu cầu gia hạn thành công!', 'success');
