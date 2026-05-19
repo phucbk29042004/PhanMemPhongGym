@@ -440,7 +440,7 @@
   // ── PT Schedules Actions Modals ─────────────────────────────────
   async function _showCreateScheduleModal() {
     try {
-      const res = await window.GymApp.api.get('/pt/my-members');
+      const res = await window.GymApp.api.get('/pt/schedules/my-members');
       if (!res?.success) {
         window.GymApp.toast('Không thể lấy danh sách học viên!', 'error');
         return;
@@ -568,7 +568,6 @@
           }
         } catch (err) {
           console.error(err);
-          window.GymApp.toast('Lỗi máy chủ, vui lòng thử lại sau!', 'error');
           submitBtn.disabled = false;
           submitBtn.textContent = 'Đặt lịch';
         }
@@ -681,7 +680,6 @@
         }
       } catch (err) {
         console.error(err);
-        window.GymApp.toast('Lỗi máy chủ, vui lòng thử lại sau!', 'error');
         submitBtn.disabled = false;
         submitBtn.textContent = 'Lưu thay đổi';
       }
@@ -779,7 +777,6 @@
         }
       } catch (err) {
         console.error(err);
-        window.GymApp.toast('Lỗi kết nối, vui lòng thử lại.', 'error');
         submitBtn.disabled = false;
         submitBtn.innerHTML = `<span class="material-symbols-outlined" style="font-size:18px;">done</span> Xác nhận hoàn thành`;
       }
@@ -922,7 +919,6 @@
         }
       } catch (err) {
         console.error(err);
-        window.GymApp.toast('Lỗi kết nối máy chủ!', 'error');
         submitBtn.disabled = false;
         submitBtn.innerHTML = `<span class="material-symbols-outlined" style="font-size:18px;">close</span> Xác nhận hủy lịch`;
       }
@@ -1182,7 +1178,6 @@
           }
         } catch (err) {
           console.error(err);
-          window.GymApp.toast('Lỗi kết nối máy chủ!', 'error');
           saveBtn.disabled = false;
           saveBtn.textContent = 'Lưu ghi chú';
         }

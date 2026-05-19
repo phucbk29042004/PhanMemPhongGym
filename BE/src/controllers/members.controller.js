@@ -1342,7 +1342,7 @@ export const lookupMember = (req, res) => {
   const s = `%${q.trim()}%`;
   const rows = db.prepare(`
     SELECT
-      h.id, h.ma_ho_so, h.ho_ten, h.so_dien_thoai, h.email, h.gioi_tinh, h.anh_dai_dien,
+      h.id, h.ma_ho_so, h.ho_ten, h.so_dien_thoai, h.email, h.gioi_tinh, h.avatar_url,
       (SELECT gt.ten_goi FROM dang_ky_goi_tap dk JOIN goi_tap gt ON gt.id = dk.goi_tap_id
        WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong'
        ORDER BY dk.den_ngay DESC LIMIT 1) AS ten_goi_tap,

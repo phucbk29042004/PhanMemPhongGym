@@ -375,7 +375,7 @@ export const getMyMembers = (req, res) => {
       dp.so_buoi_dang_ky - dp.so_buoi_da_tap AS buoi_con_lai,
       dp.trang_thai AS trang_thai_dk,
       hv.id AS hoi_vien_id, hv.ma_ho_so, hv.ho_ten, hv.so_dien_thoai,
-      hv.gioi_tinh, hv.anh_dai_dien,
+      hv.gioi_tinh, hv.avatar_url,
       gpt.ten_goi AS ten_goi_pt,
       (SELECT lt.ngay_tap FROM lich_tap lt
        WHERE lt.dang_ky_pt_id = dp.id AND lt.trang_thai = 'cho_tap'
