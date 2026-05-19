@@ -1,6 +1,7 @@
 /**
- * Package Requests — Phê duyệt yêu cầu gia hạn gói tập từ App
+ * This page has been deprecated and its features migrated to expired.js (tab 'requests').
  */
+<<<<<<< HEAD
 (function () {
   const PAGE = {
     _data: [],
@@ -345,3 +346,5 @@
     window.GymApp.pages['package-requests'] = PAGE;
   }
 })();
+=======
+>>>>>>> main

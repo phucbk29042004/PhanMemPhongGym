@@ -257,9 +257,6 @@ window.GymApp.pages['expired'] = {
             <button class="renew-btn w-9 h-9 flex items-center justify-center rounded-xl bg-surface-container-low text-on-surface-variant hover:bg-brand-primary hover:text-white transition-all shadow-sm active:scale-95" data-id="${m.id}" title="Lập phiếu gia hạn">
               <span class="material-symbols-outlined text-[20px]">history_edu</span>
             </button>
-            <button class="call-btn w-9 h-9 flex items-center justify-center rounded-xl bg-surface-container-low text-on-surface-variant hover:bg-brand-primary hover:text-white transition-all shadow-sm active:scale-95" data-phone="${m.so_dien_thoai}" title="Gọi điện">
-              <span class="material-symbols-outlined text-[20px]">call</span>
-            </button>
           </div>
         </td>
       </tr>
@@ -492,7 +489,8 @@ window.GymApp.pages['expired'] = {
 
     return `
       <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
-        <div class="overflow-x-auto">
+        <!-- Desktop Table view -->
+        <div class="hidden md:block overflow-x-auto">
           <table class="w-full text-left border-collapse">
             <thead>
               <tr class="bg-surface-container-low/30 border-b border-outline-variant/50">
@@ -505,6 +503,51 @@ window.GymApp.pages['expired'] = {
             <tbody>${rows}</tbody>
           </table>
         </div>
+
+        <!-- Mobile Cards view -->
+        <div class="md:hidden flex flex-col gap-compact p-compact bg-surface-container-low/10">
+          ${paginated.map(req => `
+            <div class="rounded-xl border border-outline-variant bg-surface-container-lowest overflow-hidden shadow-sm" data-req-id="${req.id}">
+              <div class="px-compact py-compact flex items-center gap-compact border-b border-outline-variant">
+                ${window.GymApp.avatarImg(null, req.ho_ten, 'lg', 'width:36px;height:36px;border-radius:12px;')}
+                <div class="flex-1 min-w-0">
+                  <p class="font-black text-on-surface text-body-sm truncate">${req.ho_ten || '—'}</p>
+                  <p class="text-on-surface-variant" style="font-size:10px">${req.ma_ho_so || ''}</p>
+                </div>
+                <span class="text-[9px] px-2 py-0.5 rounded-full font-black bg-warning-container text-warning border border-warning/20">Chờ duyệt</span>
+              </div>
+              <div class="p-compact grid grid-cols-2 gap-xs text-[12px]">
+                <div>
+                  <p class="text-on-surface-variant opacity-60 font-bold">Gói tập</p>
+                  <p class="font-black text-brand-primary truncate">${req.ten_goi_tap || '—'}</p>
+                </div>
+                <div>
+                  <p class="text-on-surface-variant opacity-60 font-bold">Từ ngày</p>
+                  <p class="font-bold text-on-surface">${req.tu_ngay ? window.GymApp.formatDate(req.tu_ngay) : '—'}</p>
+                </div>
+                <div>
+                  <p class="text-on-surface-variant opacity-60 font-bold">Giá dự kiến</p>
+                  <p class="font-black text-brand-primary">${req.gia_thuc_te ? Number(req.gia_thuc_te).toLocaleString('vi-VN') + 'đ' : '—'}</p>
+                </div>
+                <div>
+                  <p class="text-on-surface-variant opacity-60 font-bold">Hạn dùng</p>
+                  <p class="font-bold text-on-surface">${req.den_ngay ? window.GymApp.formatDate(req.den_ngay) : '—'}</p>
+                </div>
+              </div>
+              <div class="px-compact pb-compact flex gap-compact border-t border-outline-variant/10 pt-compact mt-xs">
+                <button class="request-reject-btn flex-1 py-1.5 rounded-lg font-bold border border-outline-variant text-error hover:bg-error hover:text-white transition-all text-body-xs active:scale-95 flex items-center justify-center gap-xs"
+                  data-id="${req.id}">
+                  <span class="material-symbols-outlined text-sm">close</span> Từ chối
+                </button>
+                <button class="request-approve-btn flex-[1.5] py-1.5 rounded-lg font-black text-white transition-all text-body-xs active:scale-95 flex items-center justify-center gap-xs"
+                  style="background:#1D9336" data-id="${req.id}">
+                  <span class="material-symbols-outlined text-sm">check</span> Duyệt
+                </button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+
         ${window.GymApp.renderPagination(this._requestsPage, list.length, this._perPage)}
       </div>
     `;
@@ -659,7 +702,7 @@ window.GymApp.pages['expired'] = {
           window.GymApp.toast('Kích hoạt gói thành công!', 'success');
           document.getElementById('modal-approve-renewal').remove();
           self._loadData();
-          await window.GymApp.refreshData();
+          if (window.GymApp.fetchInitialData) await window.GymApp.fetchInitialData();
         } else {
           window.GymApp.toast(res?.message || 'Lỗi khi duyệt.', 'error');
         }
@@ -705,7 +748,7 @@ window.GymApp.pages['expired'] = {
       membersListPage._showAddPackageModal(member, async () => {
         window.GymApp.toast('Đã gia hạn thành công!', 'success');
         self._loadData();
-        await window.GymApp.refreshData();
+        if (window.GymApp.fetchInitialData) await window.GymApp.fetchInitialData();
       });
     } else {
       window.GymApp.toast('Module gia hạn chưa sẵn sàng!', 'warning');

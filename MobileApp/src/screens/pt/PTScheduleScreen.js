@@ -1,11 +1,12 @@
 import React, { useCallback, useState } from 'react';
 import {
-  ActivityIndicator, Alert, RefreshControl, ScrollView,
-  StatusBar, StyleSheet, Text, TouchableOpacity, View,
+  ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform,
+  RefreshControl, ScrollView, StatusBar, StyleSheet, Text,
+  TextInput, TouchableOpacity, View,
 } from 'react-native';
 import {
-  CalendarCheck, ChevronRight, Clock, Dumbbell,
-  Filter, Info, MapPin, User, Zap,
+  CalendarCheck, Clock, Dumbbell,
+  Filter, Info, MapPin, X, Zap,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../services/api';
@@ -36,6 +37,10 @@ export default function PTScheduleScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState(null);
+  const [noteModalVisible, setNoteModalVisible] = useState(false);
+  const [noteEditingId, setNoteEditingId] = useState(null);
+  const [noteText, setNoteText] = useState('');
+  const [noteSaving, setNoteSaving] = useState(false);
 
   const fetchSchedules = useCallback(async () => {
     try {
@@ -79,6 +84,51 @@ export default function PTScheduleScreen() {
         },
       ]
     );
+  };
+
+  const cancelSchedule = (id) => {
+    Alert.alert(
+      'Hủy buổi tập',
+      'Bạn có chắc chắn muốn hủy buổi tập này? Học viên sẽ được thông báo và buổi sẽ được đánh dấu là đã hủy.',
+      [
+        { text: 'Không', style: 'cancel' },
+        {
+          text: 'Hủy buổi tập',
+          style: 'destructive',
+          onPress: async () => {
+            setActionLoadingId(id);
+            try {
+              await api.put(`/pt/schedules/${id}/cancel`);
+              await fetchSchedules();
+            } catch (err) {
+              Alert.alert('Lỗi', err.response?.data?.message || 'Không thể hủy buổi tập.');
+            } finally {
+              setActionLoadingId(null);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const openNoteEditor = (item) => {
+    setNoteEditingId(item.id);
+    setNoteText(item.ghi_chu || '');
+    setNoteModalVisible(true);
+  };
+
+  const saveNote = async () => {
+    if (!noteEditingId) return;
+    setNoteSaving(true);
+    try {
+      await api.patch(`/pt/schedules/${noteEditingId}/note`, { ghi_chu: noteText });
+      setSchedules((prev) => prev.map((s) => s.id === noteEditingId ? { ...s, ghi_chu: noteText } : s));
+      setNoteModalVisible(false);
+    } catch (err) {
+      Alert.alert('Lỗi', err.response?.data?.message || 'Không thể lưu ghi chú.');
+    } finally {
+      setNoteSaving(false);
+    }
   };
 
   // Sắp xếp: Cho tập (sắp tới) lên đầu, rồi tới đã tập, rồi tới đã hủy
@@ -167,7 +217,7 @@ export default function PTScheduleScreen() {
                       <View style={styles.metaRow}>
                         <Dumbbell color={G.gray400} size={12} strokeWidth={2} />
                         <Text style={styles.metaText}>
-                          {item.loai_buoi === 'ca_nhan' ? 'Cá nhân' : 'Nhóm'} • Còn {item.buoi_con_lai ?? '—'} buổi
+                          {item.loai_buoi === 'ca_nhan' ? 'Cá nhân' : 'Nhóm'} • Đã tập {item.so_buoi_da_tap ?? 0}/{item.so_buoi_dang_ky ?? '—'} • Còn {item.buoi_con_lai ?? '—'} buổi
                         </Text>
                       </View>
                     </View>
@@ -190,24 +240,51 @@ export default function PTScheduleScreen() {
                       <Text style={styles.noteText}>{item.ghi_chu}</Text>
                     </View>
                   ) : null}
+
+                  {item.trang_thai === 'cho_tap' && (
+                    <TouchableOpacity
+                      style={styles.noteActionBtn}
+                      onPress={() => openNoteEditor(item)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.noteActionText}>{item.ghi_chu ? 'Sửa ghi chú' : 'Thêm ghi chú'}</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
 
                 {item.trang_thai === 'cho_tap' && (
-                  <TouchableOpacity
-                    style={styles.confirmBtn}
-                    onPress={() => confirmSchedule(item.id)}
-                    disabled={actionLoadingId === item.id}
-                    activeOpacity={0.8}
-                  >
-                    {actionLoadingId === item.id ? (
-                      <ActivityIndicator color={G.white} size="small" />
-                    ) : (
-                      <>
-                        <Zap color={G.white} size={16} strokeWidth={2.5} />
-                        <Text style={styles.confirmBtnText}>Hoàn thành buổi tập</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
+                  <View style={styles.actionRow}>
+                    <TouchableOpacity
+                      style={styles.cancelBtn}
+                      onPress={() => cancelSchedule(item.id)}
+                      disabled={actionLoadingId === item.id}
+                      activeOpacity={0.8}
+                    >
+                      {actionLoadingId === item.id ? (
+                        <ActivityIndicator color={G.danger} size="small" />
+                      ) : (
+                        <>
+                          <X color={G.danger} size={16} strokeWidth={2.5} />
+                          <Text style={styles.cancelBtnText}>Hủy lịch</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.confirmBtn}
+                      onPress={() => confirmSchedule(item.id)}
+                      disabled={actionLoadingId === item.id}
+                      activeOpacity={0.8}
+                    >
+                      {actionLoadingId === item.id ? (
+                        <ActivityIndicator color={G.white} size="small" />
+                      ) : (
+                        <>
+                          <Zap color={G.white} size={16} strokeWidth={2.5} />
+                          <Text style={styles.confirmBtnText}>Hoàn thành</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  </View>
                 )}
               </View>
             </View>
@@ -215,6 +292,51 @@ export default function PTScheduleScreen() {
         )}
         <View style={{ height: 20 }} />
       </ScrollView>
+
+      <Modal
+        visible={noteModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setNoteModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Ghi chú buổi tập</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={noteText}
+              onChangeText={setNoteText}
+              placeholder="Nhập ghi chú buổi tập"
+              multiline
+              textAlignVertical="top"
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalBtnCancel}
+                onPress={() => setNoteModalVisible(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.modalBtnCancelText}>Hủy</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalBtnSave}
+                onPress={saveNote}
+                disabled={noteSaving}
+                activeOpacity={0.8}
+              >
+                {noteSaving ? (
+                  <ActivityIndicator color={G.white} size="small" />
+                ) : (
+                  <Text style={styles.modalBtnSaveText}>Lưu</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
@@ -311,8 +433,37 @@ const styles = StyleSheet.create({
     borderColor: G.gray100,
   },
   noteText: { fontSize: 11, color: G.gray500, fontStyle: 'italic', flex: 1 },
+  noteActionBtn: {
+    marginTop: 12,
+    paddingVertical: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: G.primary,
+    backgroundColor: G.primaryLight,
+    alignItems: 'center',
+  },
+  noteActionText: { color: G.primary, fontWeight: '700', fontSize: 13 },
 
+  actionRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+  },
+  cancelBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: G.danger,
+    backgroundColor: 'rgba(220,38,38,0.08)',
+  },
+  cancelBtnText: { color: G.danger, fontWeight: '800', fontSize: 14 },
   confirmBtn: {
+    flex: 1,
     backgroundColor: G.primary,
     flexDirection: 'row',
     alignItems: 'center',
@@ -320,7 +471,6 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 12,
     borderRadius: 14,
-    marginTop: 16,
     shadowColor: G.primary,
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -328,4 +478,54 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   confirmBtnText: { color: G.white, fontWeight: '800', fontSize: 14 },
+
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  modalContent: {
+    backgroundColor: G.white,
+    borderRadius: 24,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 6,
+  },
+  modalTitle: { fontSize: 18, fontWeight: '800', color: G.gray900, marginBottom: 14 },
+  modalInput: {
+    minHeight: 110,
+    borderWidth: 1,
+    borderColor: G.gray200,
+    borderRadius: 16,
+    padding: 14,
+    backgroundColor: G.gray50,
+    color: G.gray900,
+    fontSize: 14,
+    marginBottom: 18,
+  },
+  modalActions: { flexDirection: 'row', gap: 12 },
+  modalBtnCancel: {
+    flex: 1,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: G.gray300,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    backgroundColor: G.white,
+  },
+  modalBtnCancelText: { color: G.gray700, fontWeight: '700' },
+  modalBtnSave: {
+    flex: 1,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    backgroundColor: G.primary,
+  },
+  modalBtnSaveText: { color: G.white, fontWeight: '800' },
 });

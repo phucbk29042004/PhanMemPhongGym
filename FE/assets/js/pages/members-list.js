@@ -1501,6 +1501,7 @@ window.GymApp.pages['members-list'] = {
       const price = parseVND(document.getElementById('pkg-price').value);
       const from = document.getElementById('pkg-from').value;
       const to = document.getElementById('pkg-to').value;
+      const paymentDate = document.getElementById('pkg-payment-date').value;
       const regStatus = document.getElementById('pkg-reg-status').value;
       const paidVal = document.getElementById('pkg-paid').value.trim();
       const paidErrEl = document.getElementById('err-pkg-paid-modal');
@@ -1516,6 +1517,7 @@ window.GymApp.pages['members-list'] = {
       hlField('pkg-price', !price);
       hlField('pkg-from', !from);
       hlField('pkg-to', !to);
+      hlField('pkg-payment-date', !paymentDate);
       hlField('pkg-reg-status', !regStatus);
       const paidMissing = !paidVal;
       if (paidMissing) {
@@ -1526,7 +1528,13 @@ window.GymApp.pages['members-list'] = {
         if (paidInput) paidInput.style.borderColor = '';
       }
 
-      if (!name || !price || !from || !to || !regStatus || paidMissing) { window.GymApp.toast('Vui lòng điền đầy đủ các trường bắt buộc (*)', 'error'); return; }
+      if (!name || !price || !from || !to || !regStatus || paidMissing || !paymentDate) { window.GymApp.toast('Vui lòng điền đầy đủ các trường bắt buộc (*)', 'error'); return; }
+
+      if (to && paymentDate > to) {
+        hlField('pkg-payment-date', true);
+        window.GymApp.toast('Ngày thanh toán không được vượt quá ngày kết thúc gói tập', 'error');
+        return;
+      }
       const pkg = (window.GymApp.data.packages || []).find(p => (p.ten_goi || p.name) === name);
       if (!pkg) { window.GymApp.toast('Gói tập không hợp lệ', 'error'); return; }
       try {
@@ -1534,7 +1542,8 @@ window.GymApp.pages['members-list'] = {
           goi_tap_id: pkg.id, tu_ngay: from, gia_thuc_te: price,
           phuong_thuc_tt: document.getElementById('pkg-payment-method').value,
           ghi_chu_tt: document.getElementById('pkg-note').value.trim(),
-          ma_giao_dich: document.getElementById('pkg-discount-code').value.trim()
+          ma_giao_dich: document.getElementById('pkg-discount-code').value.trim(),
+          ngay_thanh_toan: paymentDate
         });
         window.GymApp.toast('Đăng ký gói tập thành công!', 'success');
         if (window.GymApp.fetchInitialData) await window.GymApp.fetchInitialData();

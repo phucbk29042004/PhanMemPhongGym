@@ -210,6 +210,7 @@
                 data-page="expired" title="Danh sách hết hạn">
                 <span class="material-symbols-outlined text-sm flex-shrink-0">event_busy</span>
                 <span class="sidebar-label">Hết hạn / Sắp hết hạn</span>
+                <span id="pkg-req-badge" style="display:none;margin-left:auto;min-width:18px;height:18px;background:#dc2626;color:#fff;font-size:10px;font-weight:700;border-radius:999px;padding:0 4px;align-items:center;justify-content:center;line-height:1">0</span>
               </button>
 
               <button
@@ -251,17 +252,6 @@
                 data-page="birthday" title="Sinh nhật">
                 <span class="material-symbols-outlined text-sm flex-shrink-0">cake</span>
                 <span class="sidebar-label">Sinh nhật hội viên</span>
-              </button>
-
-              <button
-                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm transition-all duration-150"
-                style="color:#166534"
-                onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}"
-                onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
-                data-page="package-requests" title="Yêu cầu gia hạn từ App">
-                <span class="material-symbols-outlined text-sm flex-shrink-0">assignment_turned_in</span>
-                <span class="sidebar-label">Yêu cầu gia hạn</span>
-                <span id="pkg-req-badge" style="display:none;margin-left:auto;min-width:18px;height:18px;background:#dc2626;color:#fff;font-size:10px;font-weight:700;border-radius:999px;padding:0 4px;align-items:center;justify-content:center;line-height:1">0</span>
               </button>
 
 
@@ -408,7 +398,6 @@
   <script src="assets/js/pages/gym-rules.js"></script>
   <script src="assets/js/pages/birthday.js"></script>
   <script src="assets/js/pages/broadcast.js"></script>
-  <script src="assets/js/pages/package-requests.js"></script>
   <script src="assets/js/pages/revenue.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script src="assets/js/app.js?v=3.0"></script>
