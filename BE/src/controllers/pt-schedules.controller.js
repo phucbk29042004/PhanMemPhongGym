@@ -40,6 +40,8 @@ export const getSchedules = (req, res) => {
       lt.loai_buoi, lt.trang_thai, lt.ghi_chu, lt.ly_do_huy,
       hv.id AS hoi_vien_id, hv.ho_ten AS ten_hoi_vien, hv.avatar_url AS avatar_hoi_vien,
       pt.id AS pt_id, pt.ho_ten AS ten_pt, pt.avatar_url AS avatar_pt,
+      dk.so_buoi_da_tap AS so_buoi_da_tap,
+      dk.so_buoi_dang_ky AS so_buoi_dang_ky,
       (dk.so_buoi_dang_ky - dk.so_buoi_da_tap) AS buoi_con_lai,
       lt.ngay_xac_nhan
     FROM lich_tap lt
