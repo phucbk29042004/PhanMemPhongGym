@@ -25,7 +25,7 @@
 
     // Render content
     document.getElementById('content-area').innerHTML = page.render();
-    
+
     // Initialize datepickers
     if (window.GymApp.initDatePickers) {
       window.GymApp.initDatePickers(document.getElementById('content-area'));
@@ -74,10 +74,10 @@
     const content = document.getElementById('accordion-' + id);
     const trigger = document.querySelector('[data-accordion="' + id + '"]');
     if (!content || !trigger) return;
-    
+
     // Kiểm tra trạng thái thực tế dựa trên maxHeight
     const isOpen = content.style.maxHeight && content.style.maxHeight !== '0px';
-    
+
     if (isOpen) {
       content.style.maxHeight = '0px';
       const arrow = trigger.querySelector('.arrow-icon');
@@ -218,7 +218,7 @@
         </div>
       `;
       window.GymApp.showModal(html);
-      
+
       const modal = document.getElementById('gym-modal');
       const close = (val) => {
         modal?.remove();
@@ -227,7 +227,7 @@
 
       document.getElementById('confirm-cancel')?.addEventListener('click', () => close(false));
       document.getElementById('confirm-ok')?.addEventListener('click', () => close(true));
-      
+
       // Ghi đè nút X của modal để trả về false
       const closeBtn = document.getElementById('close-modal');
       if (closeBtn) {
@@ -242,7 +242,7 @@
     const dim = size === 'sm' ? 32 : size === 'lg' ? 48 : 36;
     const defaultStyle = `width:${dim}px;height:${dim}px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid #becab9;`;
     const finalStyle = extraStyle ? `${defaultStyle}${extraStyle}` : defaultStyle;
-    
+
     if (avatarUrl) {
       // Add timestamp to avatar URL to bypass browser cache
       const cacheBuster = avatarUrl.includes('?') ? `&t=${Date.now()}` : `?t=${Date.now()}`;
@@ -295,18 +295,29 @@
         originalInput.parentNode.insertBefore(visibleInput, originalInput);
 
         const baseDescriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+        let currentPos = 'bottom left';
 
         const adp = new AirDatepicker(visibleInput, {
           locale: window.GymApp.localeVi,
           dateFormat: 'dd/MM/yyyy',
           autoClose: true,
-          container: document.body,
+          container: originalInput.parentElement,
           position: 'bottom left',
           navTitles: {
-            days: function(dp) {
+            days: function (dp) {
               const month = dp.locale.months[dp.viewDate.getMonth()].toLowerCase();
               const year = dp.viewDate.getFullYear();
               return `${month} ${year}`;
+            }
+          },
+          onShow: function (isFinished) {
+            if (isFinished) return;
+            const rect = visibleInput.getBoundingClientRect();
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const desiredPos = (spaceBelow < 320 && rect.top > 300) ? 'top left' : 'bottom left';
+            if (currentPos !== desiredPos) {
+              currentPos = desiredPos;
+              adp.update({ position: desiredPos });
             }
           },
           onSelect: function ({ date }) {
@@ -325,10 +336,10 @@
 
         // Định nghĩa custom setter/getter để đồng bộ ngược nếu code JS gán originalInput.value
         Object.defineProperty(originalInput, 'value', {
-          get: function() {
+          get: function () {
             return baseDescriptor.get.call(originalInput);
           },
-          set: function(val) {
+          set: function (val) {
             baseDescriptor.set.call(originalInput, val);
             if (val) {
               const cleanVal = val.substring(0, 10);
@@ -419,31 +430,31 @@
   window.GymApp.statusBadge = function (status) {
     const map = {
       // Trạng thái hội viên (từ BE)
-      con_han:        { cls: 'background:#e7f5e9;color:#1D9336',  label: 'Còn hạn' },
-      sap_het_han:    { cls: 'background:#fff8e1;color:#f57f17',  label: 'Sắp hết hạn' },
-      het_han:        { cls: 'background:#ffdad6;color:#ba1a1a',  label: 'Hết hạn' },
-      chua_dang_ky:   { cls: 'background:#e0e3e8;color:#3f4a3c',  label: 'Chưa ĐK' },
+      con_han: { cls: 'background:#e7f5e9;color:#1D9336', label: 'Còn hạn' },
+      sap_het_han: { cls: 'background:#fff8e1;color:#f57f17', label: 'Sắp hết hạn' },
+      het_han: { cls: 'background:#ffdad6;color:#ba1a1a', label: 'Hết hạn' },
+      chua_dang_ky: { cls: 'background:#e0e3e8;color:#3f4a3c', label: 'Chưa ĐK' },
       // Trạng thái lịch tập PT
-      cho_tap:        { cls: 'background:#e8def8;color:#6750a4',  label: 'Chờ tập' },
-      da_tap:         { cls: 'background:#e7f5e9;color:#1D9336',  label: 'Đã tập' },
-      da_xac_nhan:    { cls: 'background:#e7f5e9;color:#1D9336',  label: 'Đã XN' },
-      da_huy:         { cls: 'background:#ffdad6;color:#ba1a1a',  label: 'Đã hủy' },
-      hoan_tac:       { cls: 'background:#fff8e1;color:#f57f17',  label: 'Hoàn tác' },
-      vang:           { cls: 'background:#f3e5f5;color:#6a1b9a',  label: 'Vắng' },
+      cho_tap: { cls: 'background:#e8def8;color:#6750a4', label: 'Chờ tập' },
+      da_tap: { cls: 'background:#e7f5e9;color:#1D9336', label: 'Đã tập' },
+      da_xac_nhan: { cls: 'background:#e7f5e9;color:#1D9336', label: 'Đã XN' },
+      da_huy: { cls: 'background:#ffdad6;color:#ba1a1a', label: 'Đã hủy' },
+      hoan_tac: { cls: 'background:#fff8e1;color:#f57f17', label: 'Hoàn tác' },
+      vang: { cls: 'background:#f3e5f5;color:#6a1b9a', label: 'Vắng' },
       // Trạng thái gói tập
-      dang_hoat_dong: { cls: 'background:#e7f5e9;color:#1D9336',  label: 'Đang dùng' },
-      hoat_dong:      { cls: 'background:#e7f5e9;color:#1D9336',  label: 'Hoạt động' },
-      dang_ban:       { cls: 'background:#e7f5e9;color:#1D9336',  label: 'Đang bán' },
-      cho_kich_hoat:  { cls: 'background:#fff3e0;color:#e65100',  label: 'Chờ kích hoạt' },
-      da_ket_thuc:    { cls: 'background:#e0e3e8;color:#3f4a3c',  label: 'Kết thúc' },
+      dang_hoat_dong: { cls: 'background:#e7f5e9;color:#1D9336', label: 'Đang dùng' },
+      hoat_dong: { cls: 'background:#e7f5e9;color:#1D9336', label: 'Hoạt động' },
+      dang_ban: { cls: 'background:#e7f5e9;color:#1D9336', label: 'Đang bán' },
+      cho_kich_hoat: { cls: 'background:#fff3e0;color:#e65100', label: 'Chờ kích hoạt' },
+      da_ket_thuc: { cls: 'background:#e0e3e8;color:#3f4a3c', label: 'Kết thúc' },
       // Alias legacy
-      active:         { cls: 'background:#e7f5e9;color:#1D9336',  label: 'Hoạt động' },
-      inactive:       { cls: 'background:#e0e3e8;color:#3f4a3c',  label: 'Không HĐ' },
-      expired:        { cls: 'background:#ffdad6;color:#ba1a1a',  label: 'Hết hạn' },
-      pending:        { cls: 'background:#fff3e0;color:#e65100',  label: 'Chờ XN' },
-      confirmed:      { cls: 'background:#e7f5e9;color:#1D9336',  label: 'Đã XN' },
-      vao:            { cls: 'background:#e7f5e9;color:#1D9336',  label: 'Vào' },
-      ra:             { cls: 'background:#e0e3e8;color:#3f4a3c',  label: 'Ra' },
+      active: { cls: 'background:#e7f5e9;color:#1D9336', label: 'Hoạt động' },
+      inactive: { cls: 'background:#e0e3e8;color:#3f4a3c', label: 'Không HĐ' },
+      expired: { cls: 'background:#ffdad6;color:#ba1a1a', label: 'Hết hạn' },
+      pending: { cls: 'background:#fff3e0;color:#e65100', label: 'Chờ XN' },
+      confirmed: { cls: 'background:#e7f5e9;color:#1D9336', label: 'Đã XN' },
+      vao: { cls: 'background:#e7f5e9;color:#1D9336', label: 'Vào' },
+      ra: { cls: 'background:#e0e3e8;color:#3f4a3c', label: 'Ra' },
     };
     const s = map[status] || { cls: 'background:#ebeef3;color:#181c20', label: window.GymApp.formatEnumLabel(status) };
     return `<span style="padding:2px 8px;border-radius:999px;font-size:9.6px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;${s.cls}">${s.label}</span>`;
@@ -490,9 +501,9 @@
   function _applySidebarDarkMode(isDark) {
     const sidebar = document.getElementById('sidebar');
     if (!sidebar) return;
-    const navColor    = isDark ? 'rgba(255,255,255,0.75)' : '#166534';
-    const hoverBg     = isDark ? 'rgba(255,255,255,0.12)' : '#bbf7d0';
-    const hoverColor  = isDark ? '#ffffff' : '#14532d';
+    const navColor = isDark ? 'rgba(255,255,255,0.75)' : '#166534';
+    const hoverBg = isDark ? 'rgba(255,255,255,0.12)' : '#bbf7d0';
+    const hoverColor = isDark ? '#ffffff' : '#14532d';
 
     sidebar.querySelectorAll('.nav-item, .accordion-trigger, .sub-nav-item').forEach(btn => {
       if (!btn.classList.contains('nav-active')) btn.style.color = navColor;
@@ -515,7 +526,7 @@
     if (toggleBtn) {
       toggleBtn.style.color = isDark ? 'rgba(255,255,255,0.75)' : '#166534';
       toggleBtn.onmouseover = () => { toggleBtn.style.background = hoverBg; };
-      toggleBtn.onmouseout  = () => { toggleBtn.style.background = ''; };
+      toggleBtn.onmouseout = () => { toggleBtn.style.background = ''; };
     }
   }
 
@@ -568,7 +579,7 @@
           const badge = document.getElementById('pkg-req-badge');
           if (badge) { badge.textContent = count > 9 ? '9+' : count; badge.style.display = count > 0 ? 'flex' : 'none'; }
         }
-      } catch (_) {}
+      } catch (_) { }
 
       console.log('Global Data Synced with SQL');
     } catch (err) {
@@ -579,21 +590,21 @@
   // ===== DOM READY =====
   document.addEventListener('DOMContentLoaded', async function () {
     console.log('Paradise GYM: DOMContentLoaded');
-    
+
     // 1. Kiểm tra xác thực (Auth)
     try {
-        const isAuthenticated = await window.GymApp.auth.init();
-        if (!isAuthenticated) return;
+      const isAuthenticated = await window.GymApp.auth.init();
+      if (!isAuthenticated) return;
     } catch (e) {
-        console.error('Auth check failed:', e);
-        // Nếu auth.js chưa load kịp hoặc bị lỗi, cho phép chạy tiếp nhưng báo lỗi
+      console.error('Auth check failed:', e);
+      // Nếu auth.js chưa load kịp hoặc bị lỗi, cho phép chạy tiếp nhưng báo lỗi
     }
 
     // 2. Đồng bộ dữ liệu SQL
     try {
-        await window.GymApp.fetchInitialData();
+      await window.GymApp.fetchInitialData();
     } catch (e) {
-        console.error('Initial data fetch failed:', e);
+      console.error('Initial data fetch failed:', e);
     }
 
     // 3. Áp dụng Theme
@@ -705,7 +716,7 @@
         if (res?.success) {
           window.GymApp.toast('Cập nhật thông tin thành công!', 'success');
           document.getElementById('modal-admin-profile').style.display = 'none';
-          
+
           window.GymApp.auth.user.ho_ten = data.ho_ten;
           window.GymApp.auth.user.so_dien_thoai = data.so_dien_thoai;
           window.GymApp.auth.user.email = data.email;
@@ -772,10 +783,10 @@
         if (page) {
           // Xử lý đóng sidebar trên mobile sau khi click
           if (window.innerWidth < 1024) {
-             const sidebar = document.getElementById('sidebar');
-             if (sidebar && !sidebar.classList.contains('-translate-x-full')) _toggleSidebar();
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar && !sidebar.classList.contains('-translate-x-full')) _toggleSidebar();
           }
-          
+
           window.GymApp.navigate(page);
           return;
         }
@@ -824,7 +835,7 @@
         { facingMode: 'environment' },
         { fps: 10, qrbox: { width: 220, height: 220 } },
         (decodedText) => _handleScan(decodedText),
-        () => {}
+        () => { }
       ).then(() => {
         _isScanning = true;
         document.getElementById('qr-modal-btn-start').style.display = 'none';
@@ -840,10 +851,10 @@
         _isScanning = false;
         _scanner = null;
         const btnStart = document.getElementById('qr-modal-btn-start');
-        const btnStop  = document.getElementById('qr-modal-btn-stop');
+        const btnStop = document.getElementById('qr-modal-btn-stop');
         if (btnStart) btnStart.style.display = 'flex';
-        if (btnStop)  btnStop.style.display  = 'none';
-      }).catch(() => {});
+        if (btnStop) btnStop.style.display = 'none';
+      }).catch(() => { });
     }
 
     async function _handleScan(qrToken) {
@@ -890,9 +901,9 @@
           </div>
           <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:#fff;">
             ${data.avatar_url
-              ? `<img src="${data.avatar_url}" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid #1D9336;flex-shrink:0;" />`
-              : `<div style="width:52px;height:52px;border-radius:50%;background:#1D9336;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="color:#fff;font-weight:700;font-size:20px">${(data.ho_ten || '?').charAt(0)}</span></div>`
-            }
+          ? `<img src="${data.avatar_url}" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid #1D9336;flex-shrink:0;" />`
+          : `<div style="width:52px;height:52px;border-radius:50%;background:#1D9336;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="color:#fff;font-weight:700;font-size:20px">${(data.ho_ten || '?').charAt(0)}</span></div>`
+        }
             <div>
               <p style="font-weight:700;color:#181c20;font-size:14px">${data.ho_ten || '—'}</p>
               <p style="color:#6e7a6b;font-size:11px">${data.ma_ho_so || ''}</p>
@@ -974,7 +985,7 @@
         if (!file) return;
 
         const statusEl = document.getElementById('qr-modal-upload-status');
-        const labelEl  = document.getElementById('qr-modal-label-upload');
+        const labelEl = document.getElementById('qr-modal-label-upload');
         statusEl.style.display = 'block';
         labelEl.style.opacity = '0.5';
         labelEl.style.pointerEvents = 'none';
@@ -1007,48 +1018,48 @@
     let _dropdownOpen = false;
 
     const LOAI_ICON = {
-      sap_het_han_goi_tap:          'schedule',
-      het_han_goi_tap:              'event_busy',
-      check_in:                     'how_to_reg',
-      chua_check_in_truoc_buoi_pt:  'warning',
-      cron_tu_xac_nhan:             'smart_toy',
-      sap_het_buoi_pt:              'fitness_center',
-      ho_so_moi:                    'person_add',
-      gia_han_goi_tap:              'card_membership',
-      dang_ky_goi_pt_moi:           'assignment_turned_in',
-      huy_buoi_tap:                 'event_busy',
-      hoan_tac_buoi_tap:            'undo',
-      tai_khoan_bi_khoa:            'lock',
-      tai_khoan_moi:                'manage_accounts',
-      tom_tat_buoi_sang:            'wb_sunny',
-      het_han_goi_pt_thang:         'timer_off',
-      cap_nhat_buoi_tap:            'edit_calendar',
+      sap_het_han_goi_tap: 'schedule',
+      het_han_goi_tap: 'event_busy',
+      check_in: 'how_to_reg',
+      chua_check_in_truoc_buoi_pt: 'warning',
+      cron_tu_xac_nhan: 'smart_toy',
+      sap_het_buoi_pt: 'fitness_center',
+      ho_so_moi: 'person_add',
+      gia_han_goi_tap: 'card_membership',
+      dang_ky_goi_pt_moi: 'assignment_turned_in',
+      huy_buoi_tap: 'event_busy',
+      hoan_tac_buoi_tap: 'undo',
+      tai_khoan_bi_khoa: 'lock',
+      tai_khoan_moi: 'manage_accounts',
+      tom_tat_buoi_sang: 'wb_sunny',
+      het_han_goi_pt_thang: 'timer_off',
+      cap_nhat_buoi_tap: 'edit_calendar',
     };
     // Ánh xạ loại sự kiện → mức độ (dùng để chọn màu M3)
     const LOAI_MUC_DO = {
-      het_han_goi_tap:              'danger',
-      huy_buoi_tap:                 'danger',
-      tai_khoan_bi_khoa:            'danger',
-      sap_het_han_goi_tap:          'warning',
-      chua_check_in_truoc_buoi_pt:  'warning',
-      sap_het_buoi_pt:              'warning',
-      het_han_goi_pt_thang:         'warning',
-      hoan_tac_buoi_tap:            'warning',
-      check_in:                     'success',
-      ho_so_moi:                    'success',
-      gia_han_goi_tap:              'success',
-      dang_ky_goi_pt_moi:           'success',
-      tai_khoan_moi:                'success',
-      cron_tu_xac_nhan:             'info',
-      tom_tat_buoi_sang:            'info',
-      cap_nhat_buoi_tap:            'info',
+      het_han_goi_tap: 'danger',
+      huy_buoi_tap: 'danger',
+      tai_khoan_bi_khoa: 'danger',
+      sap_het_han_goi_tap: 'warning',
+      chua_check_in_truoc_buoi_pt: 'warning',
+      sap_het_buoi_pt: 'warning',
+      het_han_goi_pt_thang: 'warning',
+      hoan_tac_buoi_tap: 'warning',
+      check_in: 'success',
+      ho_so_moi: 'success',
+      gia_han_goi_tap: 'success',
+      dang_ky_goi_pt_moi: 'success',
+      tai_khoan_moi: 'success',
+      cron_tu_xac_nhan: 'info',
+      tom_tat_buoi_sang: 'info',
+      cap_nhat_buoi_tap: 'info',
     };
 
     // Bảng màu M3 cho từng mức độ (inline style để tránh purge Tailwind)
     const STYLE_MUC_DO = {
-      danger:  { bg: 'var(--notif-danger-bg)', border: 'var(--notif-danger-border)', icon: 'var(--notif-danger-icon)', text: 'var(--notif-danger-text)' },
+      danger: { bg: 'var(--notif-danger-bg)', border: 'var(--notif-danger-border)', icon: 'var(--notif-danger-icon)', text: 'var(--notif-danger-text)' },
       warning: { bg: 'var(--notif-warning-bg)', border: 'var(--notif-warning-border)', icon: 'var(--notif-warning-icon)', text: 'var(--notif-warning-text)' },
-      info:    { bg: 'var(--notif-info-bg)', border: 'var(--notif-info-border)', icon: 'var(--notif-info-icon)', text: 'var(--notif-info-text)' },
+      info: { bg: 'var(--notif-info-bg)', border: 'var(--notif-info-border)', icon: 'var(--notif-info-icon)', text: 'var(--notif-info-text)' },
       success: { bg: 'var(--notif-success-bg)', border: 'var(--notif-success-border)', icon: 'var(--notif-success-icon)', text: 'var(--notif-success-text)' },
     };
 
@@ -1075,7 +1086,7 @@
       try {
         const res = await window.GymApp.api.get('/notifications/unread-count');
         if (res?.success) _updateBadge(res.data.count);
-      } catch (_) {}
+      } catch (_) { }
     }
 
     async function _openDropdown() {
@@ -1099,9 +1110,9 @@
         }
 
         listEl.innerHTML = items.map(n => {
-          const icon   = LOAI_ICON[n.loai] || 'notifications';
-          const mucDo  = LOAI_MUC_DO[n.loai] || 'info';
-          const s      = STYLE_MUC_DO[mucDo];
+          const icon = LOAI_ICON[n.loai] || 'notifications';
+          const mucDo = LOAI_MUC_DO[n.loai] || 'info';
+          const s = STYLE_MUC_DO[mucDo];
           const unread = n.da_doc === 0;
           return `
             <div class="notif-item" data-notif-id="${n.id}" data-da-doc="${n.da_doc}" style="
@@ -1157,7 +1168,7 @@
         } else {
           await window.GymApp.api.patch(`/notifications/${id}/read`);
         }
-      } catch (_) {}
+      } catch (_) { }
       // Fade-out mượt
       itemEl.style.transition = 'opacity .25s, max-height .3s, margin .3s, padding .3s';
       itemEl.style.opacity = '0';
@@ -1185,9 +1196,9 @@
     async function _markAllRead() {
       try {
         await window.GymApp.api.delete('/notifications');
-      } catch (_) {}
+      } catch (_) { }
       const listEl = document.getElementById('notif-list');
-      const items  = listEl?.querySelectorAll('.notif-item') || [];
+      const items = listEl?.querySelectorAll('.notif-item') || [];
       items.forEach((el, i) => {
         setTimeout(() => {
           el.style.transition = 'opacity .2s';
@@ -1219,7 +1230,7 @@
         if (parts.length > 0) {
           window.GymApp.toast(parts.join(', '), 'info');
         }
-      } catch (_) {}
+      } catch (_) { }
     }
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -1257,15 +1268,15 @@
         if (delBtn) {
           e.stopPropagation();
           const item = delBtn.closest('.notif-item');
-          const id   = delBtn.dataset.notifId;
+          const id = delBtn.dataset.notifId;
           if (item && id) _deleteOne(id, item, true); // actual delete
           return;
         }
         // Click vào body item → đánh dấu đã đọc
         const body = e.target.closest('.notif-body');
         if (body) {
-          const item  = body.closest('.notif-item');
-          const id    = item?.dataset.notifId;
+          const item = body.closest('.notif-item');
+          const id = item?.dataset.notifId;
           const daDoc = item?.dataset.daDoc;
           if (id && daDoc === '0') _deleteOne(id, item, false); // mark read
         }

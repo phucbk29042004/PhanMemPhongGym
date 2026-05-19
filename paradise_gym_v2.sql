@@ -535,9 +535,10 @@ CREATE TRIGGER IF NOT EXISTS trg_chong_xoa_ho_so
     SELECT RAISE(ABORT, 'KHÔNG THỂ XÓA: Hãy dùng Soft Delete (is_deleted=1, ngay_xoa, nguoi_xoa_id).');
 END;
 
--- Tự động cộng doanh thu khi đăng ký gói tập mới
+-- Tự động cộng doanh thu khi đăng ký gói tập mới (chỉ khi trạng thái active ngay, ko qua duyệt)
 CREATE TRIGGER IF NOT EXISTS trg_doanh_thu_goi_tap
-    AFTER INSERT ON dang_ky_goi_tap BEGIN
+    AFTER INSERT ON dang_ky_goi_tap
+    WHEN NEW.trang_thai IN ('dang_hoat_dong', 'het_han') BEGIN
     INSERT INTO doanh_thu (ngay, tong_tien, tong_don, tien_goi_tap, tien_goi_pt)
     VALUES (date('now','localtime'), NEW.gia_thuc_te, 1, NEW.gia_thuc_te, 0)
     ON CONFLICT(ngay) DO UPDATE SET
@@ -547,9 +548,10 @@ CREATE TRIGGER IF NOT EXISTS trg_doanh_thu_goi_tap
         ngay_cap_nhat = datetime('now','localtime');
 END;
 
--- Tự động cộng doanh thu khi đăng ký gói PT mới
+-- Tự động cộng doanh thu khi đăng ký gói PT mới (chỉ khi active ngay, không qua duyệt)
 CREATE TRIGGER IF NOT EXISTS trg_doanh_thu_goi_pt
-    AFTER INSERT ON dang_ky_pt BEGIN
+    AFTER INSERT ON dang_ky_pt
+    WHEN NEW.trang_thai IN ('dang_hoat_dong', 'hoan_thanh') BEGIN
     INSERT INTO doanh_thu (ngay, tong_tien, tong_don, tien_goi_tap, tien_goi_pt)
     VALUES (date('now','localtime'), NEW.gia_thuc_te, 1, 0, NEW.gia_thuc_te)
     ON CONFLICT(ngay) DO UPDATE SET
@@ -557,6 +559,54 @@ CREATE TRIGGER IF NOT EXISTS trg_doanh_thu_goi_pt
         tong_don    = tong_don + 1,
         tien_goi_pt = tien_goi_pt + NEW.gia_thuc_te,
         ngay_cap_nhat = datetime('now','localtime');
+END;
+
+-- Cộng/Trừ doanh thu khi trạng thái gói tập thay đổi (duyệt / hủy)
+CREATE TRIGGER IF NOT EXISTS trg_doanh_thu_goi_tap_update
+    AFTER UPDATE OF trang_thai ON dang_ky_goi_tap BEGIN
+    -- Duyệt từ cho_duyet → dang_hoat_dong: cộng doanh thu vào hôm nay
+    INSERT INTO doanh_thu (ngay, tong_tien, tong_don, tien_goi_tap, tien_goi_pt)
+    SELECT date('now','localtime'), NEW.gia_thuc_te, 1, NEW.gia_thuc_te, 0
+    WHERE NEW.trang_thai IN ('dang_hoat_dong', 'het_han')
+      AND OLD.trang_thai NOT IN ('dang_hoat_dong', 'het_han')
+    ON CONFLICT(ngay) DO UPDATE SET
+        tong_tien    = tong_tien + NEW.gia_thuc_te,
+        tong_don     = tong_don + 1,
+        tien_goi_tap = tien_goi_tap + NEW.gia_thuc_te,
+        ngay_cap_nhat = datetime('now','localtime');
+    -- Hủy gói đang active: trừ doanh thu khỏi ngày tạo
+    UPDATE doanh_thu SET
+        tong_tien    = MAX(0, tong_tien - OLD.gia_thuc_te),
+        tong_don     = MAX(0, tong_don - 1),
+        tien_goi_tap = MAX(0, tien_goi_tap - OLD.gia_thuc_te),
+        ngay_cap_nhat = datetime('now','localtime')
+    WHERE ngay = date(OLD.ngay_tao)
+      AND OLD.trang_thai IN ('dang_hoat_dong', 'het_han')
+      AND NEW.trang_thai NOT IN ('dang_hoat_dong', 'het_han');
+END;
+
+-- Cộng/Trừ doanh thu khi trạng thái gói PT thay đổi (duyệt / hủy)
+CREATE TRIGGER IF NOT EXISTS trg_doanh_thu_goi_pt_update
+    AFTER UPDATE OF trang_thai ON dang_ky_pt BEGIN
+    -- Duyệt từ cho_duyet → dang_hoat_dong
+    INSERT INTO doanh_thu (ngay, tong_tien, tong_don, tien_goi_tap, tien_goi_pt)
+    SELECT date('now','localtime'), NEW.gia_thuc_te, 1, 0, NEW.gia_thuc_te
+    WHERE NEW.trang_thai IN ('dang_hoat_dong', 'hoan_thanh')
+      AND OLD.trang_thai NOT IN ('dang_hoat_dong', 'hoan_thanh')
+    ON CONFLICT(ngay) DO UPDATE SET
+        tong_tien   = tong_tien + NEW.gia_thuc_te,
+        tong_don    = tong_don + 1,
+        tien_goi_pt = tien_goi_pt + NEW.gia_thuc_te,
+        ngay_cap_nhat = datetime('now','localtime');
+    -- Hủy gói đang active: trỬ doanh thu khỏi ngày tạo
+    UPDATE doanh_thu SET
+        tong_tien   = MAX(0, tong_tien - OLD.gia_thuc_te),
+        tong_don    = MAX(0, tong_don - 1),
+        tien_goi_pt = MAX(0, tien_goi_pt - OLD.gia_thuc_te),
+        ngay_cap_nhat = datetime('now','localtime')
+    WHERE ngay = date(OLD.ngay_tao)
+      AND OLD.trang_thai IN ('dang_hoat_dong', 'hoan_thanh')
+      AND NEW.trang_thai NOT IN ('dang_hoat_dong', 'hoan_thanh');
 END;
 
 -- ============================================================
