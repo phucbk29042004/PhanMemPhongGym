@@ -165,7 +165,7 @@ export const updateRegistration = (req, res) => {
   const { id } = req.params;
   const old = db.prepare('SELECT * FROM dang_ky_pt WHERE id = ?').get(id);
   if (!old) return error(res, 'Không tìm thấy đăng ký PT.', 404);
-  if (old.trang_thai === 'da_huy') return error(res, 'Không thể sửa đăng ký đã hủy.', 400);
+  if (old.trang_thai === 'huy') return error(res, 'Không thể sửa đăng ký đã hủy.', 400);
 
   const { pt_id, goi_pt_id, so_buoi_dang_ky, tu_ngay, den_ngay, gia_thuc_te, ghi_chu } = req.body;
 
@@ -211,10 +211,10 @@ export const cancelRegistration = (req, res) => {
   `).get(id);
 
   if (!reg) return error(res, 'Không tìm thấy đăng ký PT.', 404);
-  if (reg.trang_thai === 'da_huy') return error(res, 'Đăng ký đã bị hủy rồi.', 400);
+  if (reg.trang_thai === 'huy') return error(res, 'Đăng ký đã bị hủy rồi.', 400);
 
   db.prepare(`
-    UPDATE dang_ky_pt SET trang_thai = 'da_huy', ghi_chu_tt = COALESCE(?, ghi_chu_tt) WHERE id = ?
+    UPDATE dang_ky_pt SET trang_thai = 'huy', ghi_chu_tt = COALESCE(?, ghi_chu_tt) WHERE id = ?
   `).run(ly_do ? `[HỦY] ${ly_do}` : null, id);
 
   // Hủy luôn tất cả buổi tập chưa tập
@@ -240,6 +240,6 @@ export const cancelRegistration = (req, res) => {
   );
 
   ghi_audit_log(req, 'UPDATE', 'dang_ky_pt', parseInt(id), { trang_thai: reg.trang_thai },
-    { trang_thai: 'da_huy', ly_do }, 'Hủy đăng ký PT');
+    { trang_thai: 'huy', ly_do }, 'Hủy đăng ký PT');
   return success(res, null, 'Đã hủy đăng ký PT');
 };

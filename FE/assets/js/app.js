@@ -295,18 +295,29 @@
         originalInput.parentNode.insertBefore(visibleInput, originalInput);
 
         const baseDescriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+        let currentPos = 'bottom left';
 
         const adp = new AirDatepicker(visibleInput, {
           locale: window.GymApp.localeVi,
           dateFormat: 'dd/MM/yyyy',
           autoClose: true,
           container: document.body,
-          position: 'bottom left',
+          position: currentPos,
           navTitles: {
             days: function(dp) {
               const month = dp.locale.months[dp.viewDate.getMonth()].toLowerCase();
               const year = dp.viewDate.getFullYear();
               return `${month} ${year}`;
+            }
+          },
+          onShow: function(isFinished) {
+            if (isFinished) return;
+            const rect = visibleInput.getBoundingClientRect();
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const desiredPos = (spaceBelow < 320 && rect.top > 300) ? 'top left' : 'bottom left';
+            if (currentPos !== desiredPos) {
+              currentPos = desiredPos;
+              adp.update({ position: desiredPos });
             }
           },
           onSelect: function ({ date }) {

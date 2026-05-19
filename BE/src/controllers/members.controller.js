@@ -91,12 +91,13 @@ export const getMemberById = (req, res) => {
     SELECT
       h.*,
       tk.ten_dang_nhap,
-      -- Gói tập đang hoạt động
+      -- Gói tập đang hoạt động (sắp xếp mới nhất lên đầu)
       (SELECT json_group_array(json_object(
         'id', dk.id, 'ten_goi', gt.ten_goi, 'tu_ngay', dk.tu_ngay,
         'den_ngay', dk.den_ngay, 'gia_thuc_te', dk.gia_thuc_te, 'trang_thai', dk.trang_thai
       )) FROM dang_ky_goi_tap dk JOIN goi_tap gt ON gt.id = dk.goi_tap_id
-       WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong') AS goi_tap_hien_tai,
+       WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong'
+       ORDER BY dk.den_ngay DESC, dk.id DESC) AS goi_tap_hien_tai,
       -- PT đang đăng ký
       (SELECT json_group_array(json_object(
         'id', dp.id, 'pt_id', dp.pt_id, 'goi_pt_id', dp.goi_pt_id, 'ten_pt', pt.ho_ten, 'avatar_pt', pt.avatar_url,

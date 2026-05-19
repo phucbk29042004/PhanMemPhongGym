@@ -878,7 +878,7 @@ window.GymApp.pages['members-list'] = {
 
     const isActive = m.trang_thai === 'con_han' || m.trang_thai === 'sap_het_han' || m.trang_thai === 'active' || m.trang_thai === 'dang_tap';
     const isCheckedIn = m.da_check_in_hom_nay == 1;
-    const activePkg = m.goi_tap_hien_tai && m.goi_tap_hien_tai.length > 0 ? m.goi_tap_hien_tai[0] : null;
+    const activePkg = m.goi_tap_hien_tai && m.goi_tap_hien_tai.length > 0 && m.goi_tap_hien_tai[0].trang_thai !== 'het_han' && m.goi_tap_hien_tai[0].trang_thai !== 'huy' ? m.goi_tap_hien_tai[0] : null;
     const pkgName = activePkg ? (activePkg.ten_goi || activePkg.ten_goi_tap) : (m.ten_goi_tap || 'Chưa đăng ký');
     const hetHanVal = activePkg ? activePkg.den_ngay : m.ngay_het_han;
     const expDate = hetHanVal ? window.GymApp.formatDate(hetHanVal) : '—';
@@ -988,15 +988,17 @@ window.GymApp.pages['members-list'] = {
 
   _packageStatusBadge: function (status) {
     const dbMap = {
-      'dang_hoat_dong': 'Đang hoạt động', 'het_han': 'Hết hạn', 'da_huy': 'Đã hủy',
+      'dang_hoat_dong': 'Đang hoạt động', 'het_han': 'Hết hạn', 'da_huy': 'Hủy gói', 'huy': 'Hủy gói',
       'da_ket_thuc': 'Đã kết thúc', 'dang_cho': 'Đang chờ', 'cho_duyet': 'Đang chờ',
       'cho_kich_hoat': 'Chờ kích hoạt', 'paid': 'Đã thanh toán', 'debt': 'Còn nợ', 'free': 'Miễn phí',
+      'Đổi gói': 'Đổi gói', 'Sửa gói': 'Sửa gói', 'Hủy gói': 'Hủy gói'
     };
     status = dbMap[status] || window.GymApp.formatEnumLabel(status);
     const palette = {
       'Đang hoạt động': ['#e7f5e9', '#1D9336'], 'Đã thanh toán': ['#e7f5e9', '#1D9336'],
       'Còn nợ': ['#fff2cc', '#7a5b00'], 'Miễn phí': ['#e0f2fe', '#0369a1'],
       'Sắp tới': ['#e8def8', '#6750a4'], 'Hết hạn': ['#ffdad6', '#ba1a1a'],
+      'Hủy gói': ['#fef2f2', '#dc2626'], 'Đổi gói': ['#eff6ff', '#1d4ed8'], 'Sửa gói': ['#fdf4ff', '#c026d3']
     };
     const colors = palette[status] || ['#e0e3e8', '#3f4a3c'];
     return `<span style="padding:2px 8px;border-radius:999px;font-size:9.6px;font-weight:700;background:${colors[0]};color:${colors[1]};">${status}</span>`;
@@ -1089,7 +1091,7 @@ window.GymApp.pages['members-list'] = {
 
     if (tab === 'package') {
       const today = new Date(); today.setHours(0, 0, 0, 0);
-      const activePkg = Array.isArray(m.goi_tap_hien_tai) && m.goi_tap_hien_tai.length > 0 ? m.goi_tap_hien_tai[0] : null;
+      const activePkg = Array.isArray(m.goi_tap_hien_tai) && m.goi_tap_hien_tai.length > 0 && m.goi_tap_hien_tai[0].trang_thai !== 'het_han' && m.goi_tap_hien_tai[0].trang_thai !== 'huy' ? m.goi_tap_hien_tai[0] : null;
       const otherPackages = pkgHistory.filter(p => !activePkg || p.id !== activePkg.id);
 
       const _actionBtns = (p, dark = false) => {
@@ -1118,17 +1120,36 @@ window.GymApp.pages['members-list'] = {
       const renderPkgCard = (p) => {
         const isUpcoming = new Date(p.tu_ngay || p.from) > today && p.trang_thai !== 'huy' && p.trang_thai !== 'het_han';
         const isCanceled = p.trang_thai === 'huy';
-        const accentColor = isCanceled ? '#dc2626' : (isUpcoming ? '#d97706' : '#94a3b8');
-        const accentBg    = isCanceled ? 'var(--bg-surface-low, #fef2f2)' : (isUpcoming ? 'var(--bg-surface-low, #fef9ec)' : 'var(--bg-surface-low, #f8fafc)');
-        const borderColor = isCanceled ? 'var(--outline-variant, #fecaca)' : (isUpcoming ? 'var(--outline-variant, #fde68a)' : 'var(--outline-variant, #e2e8f0)');
-        const icon        = isCanceled ? 'cancel'  : (isUpcoming ? 'schedule' : 'history');
+        
+        let statusForBadge = p.trang_thai || (isUpcoming ? 'cho_kich_hoat' : 'het_han');
+        let accentColor = isCanceled ? '#dc2626' : (isUpcoming ? '#d97706' : '#94a3b8');
+        let borderColor = isCanceled ? 'var(--outline-variant, #fecaca)' : (isUpcoming ? 'var(--outline-variant, #fde68a)' : 'var(--outline-variant, #e2e8f0)');
+        let icon        = isCanceled ? 'cancel'  : (isUpcoming ? 'schedule' : 'history');
+
+        if (isCanceled) {
+            const reason = (p.ly_do_huy || '').toLowerCase();
+            if (reason.includes('đổi gói') || reason.includes('đổi sang')) {
+                statusForBadge = 'Đổi gói';
+                accentColor = '#1d4ed8';
+                borderColor = '#bfdbfe';
+                icon = 'swap_horiz';
+            } else if (reason.includes('sửa gói') || reason.includes('chỉnh sửa')) {
+                statusForBadge = 'Sửa gói';
+                accentColor = '#c026d3';
+                borderColor = '#f5d0fe';
+                icon = 'edit';
+            } else {
+                statusForBadge = 'Hủy gói';
+            }
+        }
+
         return `
           <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--bg-surface-lowest, #fff);border:1px solid ${borderColor};border-left:3px solid ${accentColor};border-radius:10px;margin-bottom:8px;">
             <span class="material-symbols-outlined" style="font-size:18px;color:${accentColor};margin-top:1px;flex-shrink:0;">${icon}</span>
             <div style="flex:1;min-width:0;">
               <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
                 <span style="font-size:13px;font-weight:800;color:var(--text-on-surface,#1a2018);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.ten_goi || '—'}</span>
-                ${this._packageStatusBadge(p.trang_thai || (isUpcoming ? 'cho_kich_hoat' : 'het_han'))}
+                ${this._packageStatusBadge(statusForBadge)}
               </div>
               <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:3px;font-size:11px;color:var(--text-on-surface-variant,#64748b);">
                 <span style="font-weight:600;">${window.GymApp.formatCurrency(p.gia_thuc_te || p.gia || 0)}</span>
@@ -1588,6 +1609,10 @@ window.GymApp.pages['members-list'] = {
     overlay.querySelector('#cancel-pkg-confirm').addEventListener('click', async () => {
       const ly_do_huy = overlay.querySelector('#cancel-pkg-reason').value.trim();
       const so_tien_hoan = _cParseVND(overlay.querySelector('#cancel-pkg-refund').value);
+      const maxHoan = pkg.gia_thuc_te || pkg.gia || 0;
+      if (so_tien_hoan > maxHoan) {
+        return window.GymApp.toast(`Số tiền hoàn không được vượt quá ${window.GymApp.formatCurrency(maxHoan)}`, 'error');
+      }
       try {
         await window.GymApp.api.patch(`/members/${m.id}/package/${pkg.id}/cancel`, { ly_do_huy, so_tien_hoan });
         window.GymApp.toast('Đã hủy gói tập thành công!', 'success');
@@ -1786,13 +1811,18 @@ window.GymApp.pages['members-list'] = {
       const tu_ngay = overlay.querySelector('#switch-pkg-from').value;
       if (!goi_tap_id_moi) return window.GymApp.toast('Vui lòng chọn gói tập mới', 'error');
       if (!tu_ngay) return window.GymApp.toast('Vui lòng chọn ngày bắt đầu', 'error');
+      const so_tien_hoan = _pVND(overlay.querySelector('#switch-pkg-refund').value) || 0;
+      const maxHoan = pkg.gia_thuc_te || pkg.gia || 0;
+      if (so_tien_hoan > maxHoan) {
+        return window.GymApp.toast(`Số tiền hoàn không được vượt quá ${window.GymApp.formatCurrency(maxHoan)}`, 'error');
+      }
       try {
         await window.GymApp.api.post(`/members/${m.id}/package/switch`, {
           pkg_id_cu: pkg.id,
           goi_tap_id_moi: parseInt(goi_tap_id_moi),
           tu_ngay,
           ly_do_huy: overlay.querySelector('#switch-pkg-reason').value.trim() || 'Đổi sang gói mới',
-          so_tien_hoan: _pVND(overlay.querySelector('#switch-pkg-refund').value) || 0,
+          so_tien_hoan: so_tien_hoan,
           gia_thuc_te: _pVND(overlay.querySelector('#switch-pkg-price').value) || undefined,
           phuong_thuc_tt: overlay.querySelector('#switch-pkg-payment').value,
         });

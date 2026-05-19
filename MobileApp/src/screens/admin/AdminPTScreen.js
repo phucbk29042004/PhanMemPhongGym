@@ -60,9 +60,11 @@ const sb = StyleSheet.create({
 
 // ── Avatar ────────────────────────────────────────────────
 function Avatar({ name, size = 44 }) {
-  const initials = (name || '?').split(' ').slice(-2).map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  const safeName = name || '?';
+  const initials = safeName.split(' ').slice(-2).map(w => w[0] || '').join('').toUpperCase().slice(0, 2);
   const colors = ['#1D9336', '#1565c0', '#7c3aed', '#d97706', '#dc2626'];
-  const color = colors[(name || '').charCodeAt(0) % colors.length];
+  const charCode = safeName.charCodeAt(0) || 0;
+  const color = colors[charCode % colors.length];
   return (
     <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: color + '22', alignItems: 'center', justifyContent: 'center' }}>
       <Text style={{ color, fontSize: size * 0.35, fontWeight: '800' }}>{initials}</Text>

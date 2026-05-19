@@ -113,7 +113,7 @@ export const getRevenueToday = (req, res) => {
     FROM dang_ky_goi_tap dk
     JOIN goi_tap gt ON gt.id = dk.goi_tap_id
     JOIN ho_so h ON h.id = dk.ho_so_id
-    WHERE date(dk.ngay_tao) = ?
+    WHERE date(dk.ngay_tao) = ? AND dk.trang_thai IN ('dang_hoat_dong', 'het_han')
     ORDER BY dk.ngay_tao DESC
   `).all(today);
 
@@ -124,7 +124,7 @@ export const getRevenueToday = (req, res) => {
     FROM dang_ky_pt dp
     JOIN goi_pt gp ON gp.id = dp.goi_pt_id
     JOIN ho_so h ON h.id = dp.hoi_vien_id
-    WHERE date(dp.ngay_tao) = ?
+    WHERE date(dp.ngay_tao) = ? AND dp.trang_thai IN ('dang_hoat_dong', 'hoan_thanh')
     ORDER BY dp.ngay_tao DESC
   `).all(today);
 
