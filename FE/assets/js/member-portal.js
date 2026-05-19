@@ -426,13 +426,6 @@
                     : 'Chào mừng bạn trở lại Paradise GYM. Hãy bắt đầu một buổi tập tuyệt vời hôm nay!'}
                 </p>
               </div>
-<<<<<<< HEAD
-              <div class="relative z-10 flex flex-wrap gap-s3">
-                <button data-tab="my-schedule" class="bg-white text-primary-container px-s6 py-s3 rounded-full font-bold text-label-md hover:bg-surface-container-low transition-colors focus-ring">Xem lịch tập</button>
-                ${isExpired 
-                  ? `<button id="btn-banner-renew" class="bg-[#ba1a1a] hover:bg-[#961212] active:scale-95 text-white px-s4 py-s3 rounded-full text-label-md font-bold shadow-sm flex items-center gap-s1 transition-all"><span class="material-symbols-outlined text-[18px]">autorenew</span>Gia hạn ngay</button>`
-                  : (isExpiringSoon ? `<button id="btn-banner-renew" class="bg-white/20 hover:bg-white/30 active:scale-95 text-white px-s4 py-s3 rounded-full text-label-md font-bold flex items-center gap-s1 transition-all"><span class="material-symbols-outlined text-[18px]">autorenew</span>Gia hạn ngay (còn ${daysLeft} ngày)</button>` : '')}
-=======
               <div class="relative z-10 flex flex-wrap gap-s3 mt-s4">
                 <button data-tab="my-schedule" class="bg-brand-primary text-white px-s6 py-s3 rounded-full font-bold text-label-md hover:bg-brand-primary/90 transition-colors shadow-sm focus-ring flex items-center gap-s2">
                   <span class="material-symbols-outlined text-[20px]">calendar_month</span> Xem lịch tập
@@ -447,16 +440,11 @@
                 </button>
                 ` : ''}
                 ${(isExpiringSoon && !pendingPackage) ? `<span class="bg-error/10 text-error border border-error/20 px-s4 py-s3 rounded-full text-label-md font-bold flex items-center gap-s2"><span class="material-symbols-outlined text-[18px]">warning</span> Gói còn ${daysLeft} ngày</span>` : ''}
->>>>>>> main
               </div>
               <span class="material-symbols-outlined absolute -right-4 -bottom-4 text-[180px] text-brand-primary/5 select-none pointer-events-none" style="font-variation-settings: 'FILL' 1;">fitness_center</span>
             </section>
-<<<<<<< HEAD
- 
-=======
 
             <!-- QR Code Card -->
->>>>>>> main
             <section class="member-card p-s6 flex flex-col items-center justify-center text-center">
               <h3 class="text-headline-sm font-bold text-brand-primary mb-s4">Check-in nhanh</h3>
               <div id="qr-wrapper" class="bg-white p-s4 rounded-xl border border-outline-variant shadow-sm mb-s4 flex items-center justify-center" style="width:168px;height:168px">
@@ -494,12 +482,7 @@
               </div>
             `).join('')}
           </div>
-<<<<<<< HEAD
- 
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-s6">
-=======
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-s6 mt-s6">
->>>>>>> main
             <section class="member-card overflow-hidden">
               <div class="p-s5 border-b border-outline-variant flex justify-between items-center">
                 <h3 class="text-headline-sm font-bold text-brand-primary">Lịch tập sắp tới</h3>
@@ -520,10 +503,6 @@
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-s4">
                 <div class="bg-surface-container rounded-xl p-s4">
                   <p class="text-on-surface-variant text-label-md">Trạng thái gói</p>
-<<<<<<< HEAD
-                  <div class="mt-s2">${window.GymApp.statusBadge(pkgStatus)}</div>
-                  <p class="text-body-sm text-on-surface-variant mt-s3">${activePackage ? `${window.GymApp.formatDate(activePackage.tu_ngay)} - ${window.GymApp.formatDate(activePackage.den_ngay)}` : 'Chưa có gói đang hoạt động'}</p>
-=======
                   <div class="mt-s2 flex items-center gap-s2 flex-wrap">
                     ${activePackage ? window.GymApp.statusBadge(activePackage.trang_thai) : window.GymApp.statusBadge('chua_dang_ky')}
                     ${pendingPackage ? window.GymApp.statusBadge('cho_duyet') : ''}
@@ -532,7 +511,6 @@
                     ${activePackage ? `${window.GymApp.formatDate(activePackage.tu_ngay)} - ${window.GymApp.formatDate(activePackage.den_ngay)}` : 'Chưa có gói đang hoạt động'}
                     ${pendingPackage ? `<br><span class="text-[#e65100] font-semibold flex items-center gap-1 mt-1"><span class="material-symbols-outlined text-[14px]">schedule</span> Chờ duyệt: ${pendingPackage.ten_goi}</span>` : ''}
                   </p>
->>>>>>> main
                 </div>
                 <div class="bg-surface-container rounded-xl p-s4">
                   <p class="text-on-surface-variant text-label-md">Huấn luyện viên</p>

@@ -742,7 +742,6 @@
     });
   }
 
-<<<<<<< HEAD
   function _showConfirmScheduleModal(scheduleId, studentName) {
     const schedule = (window.GymApp.data.ptSchedules || []).find(item => item.id == scheduleId) || {};
     const dateFormatted = window.GymApp.formatDate(schedule.ngay_tap);
@@ -836,27 +835,6 @@
         console.error(err);
         submitBtn.disabled = false;
         submitBtn.innerHTML = `<span class="material-symbols-outlined" style="font-size:18px;">done</span> Xác nhận hoàn thành`;
-=======
-  async function _cancelScheduleSession(scheduleId, studentName) {
-    const reason = prompt(`Nhập lý do hủy buổi tập với ${studentName}:`);
-    if (reason === null) return;
-
-    const cleanReason = reason.trim();
-    if (!cleanReason) {
-      window.GymApp.toast('Lý do hủy không được để trống!', 'error');
-      return;
-    }
-
-    try {
-      const res = await window.GymApp.api.put(`/pt/schedules/${scheduleId}/cancel`, { ly_do: cleanReason });
-      if (res?.success) {
-        window.GymApp.toast(`Đã hủy thành công buổi tập với ${studentName}!`, 'success');
-        const fresh = await window.GymApp.api.get('/pt/schedules');
-        if (fresh?.success) window.GymApp.data.ptSchedules = fresh.data || [];
-        window.GymApp.pages['my-schedule']._applyFilter();
-      } else {
-        window.GymApp.toast(res?.message || 'Hủy buổi tập thất bại!', 'error');
->>>>>>> main
       }
     });
   }
@@ -1197,83 +1175,11 @@
       }
 
       return `
-<<<<<<< HEAD
-        <div class="overflow-x-auto">
-          <table class="gym-table w-full">
-            <thead>
-              <tr>
-                <th>Học viên</th>
-                <th>Ngày tập</th>
-                <th>Giờ</th>
-                <th>Loại buổi</th>
-                <th>Trạng thái</th>
-                <th>Ghi chú</th>
-                <th class="text-center">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${list.map(s => `
-                <tr>
-                  <td>
-                    <div class="flex items-center gap-compact">
-                      ${window.GymApp.avatarImg(s.avatar_hoi_vien, s.ten_hoi_vien, 'sm')}
-                      <span class="font-bold text-on-surface">${s.ten_hoi_vien || '—'}</span>
-                    </div>
-                  </td>
-                  <td class="text-on-surface-variant">${window.GymApp.formatDate(s.ngay_tap)}</td>
-                  <td class="font-bold text-on-surface">${s.gio_bat_dau} — ${s.gio_ket_thuc}</td>
-                  <td><span class="bg-surface-container px-3 py-1 rounded-full text-xs text-on-surface-variant font-bold">${s.loai_buoi === 'nhom' ? 'Nhóm' : 'Cá nhân'}</span></td>
-                  <td>${window.GymApp.statusBadge(s.trang_thai)}</td>
-                  <td class="text-on-surface-variant text-body-sm max-w-[160px]">
-                    <div class="flex items-center gap-xs group/note">
-                      <span class="truncate block flex-1" title="${s.ghi_chu || ''}">${s.ghi_chu || '—'}</span>
-                      <button class="btn-pt-edit-note opacity-0 group-hover/note:opacity-100 transition-opacity p-0.5 rounded-md hover:bg-surface-container text-brand-primary" data-id="${s.id}" data-ghi-chu="${(s.ghi_chu || '').replace(/"/g, '&quot;')}" title="Chỉnh sửa ghi chú" style="background:transparent; border:none; cursor:pointer; display:inline-flex; align-items:center; justify-content:center;">
-                        <span class="material-symbols-outlined text-[16px]">edit_note</span>
-                      </button>
-                    </div>
-                  </td>
-                  <td class="text-center">
-                    ${s.trang_thai === 'cho_tap'
-          ? `<div class="flex items-center justify-center gap-2">
-                             <button
-                               class="btn-confirm-session flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-brand-primary to-[#157a2a] text-white font-bold text-xs hover:shadow-md active:scale-95 transition-all whitespace-nowrap"
-                               data-id="${s.id}"
-                               data-name="${s.ten_hoi_vien || 'học viên'}"
-                             >
-                               <span class="material-symbols-outlined text-xs">done</span> Xác nhận
-                             </button>
-                             <button
-                               class="btn-edit-session flex items-center justify-center p-1.5 rounded-xl bg-surface-container text-on-surface-variant hover:text-brand-primary hover:bg-surface-container-high active:scale-95 transition-all"
-                               data-id="${s.id}"
-                               data-sdata='${encodeURIComponent(JSON.stringify(s))}'
-                               title="Sửa lịch"
-                             >
-                               <span class="material-symbols-outlined text-xs">edit</span>
-                             </button>
-                             <button
-                               class="btn-cancel-session flex items-center justify-center p-1.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 dark:bg-red-950/20 dark:text-red-400 dark:hover:bg-red-950/40 active:scale-95 transition-all"
-                               data-id="${s.id}"
-                               data-name="${s.ten_hoi_vien || 'học viên'}"
-                               title="Hủy lịch"
-                             >
-                               <span class="material-symbols-outlined text-xs">close</span>
-                             </button>
-                           </div>`
-          : `<span class="text-outline text-body-sm">—</span>`
-        }
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>`;
-=======
         <div>
           ${groupsHtml}
           ${paginationHtml}
         </div>
       `;
->>>>>>> main
     },
 
     _applyFilter(resetPage = true) {
