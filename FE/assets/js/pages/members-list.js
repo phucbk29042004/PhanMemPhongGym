@@ -950,6 +950,9 @@ window.GymApp.pages['members-list'] = {
 
     const refreshAndSetTab = async (t) => {
       try {
+        if (window.GymApp.fetchInitialData) {
+          await window.GymApp.fetchInitialData();
+        }
         const [memberRes, historyRes, schedRes] = await Promise.all([
           window.GymApp.api.get(`/members/${id}`),
           window.GymApp.api.get(`/members/${id}/history`),
@@ -958,9 +961,14 @@ window.GymApp.pages['members-list'] = {
         m = memberRes.data;
         pkgHistory = Array.isArray(historyRes.data) ? historyRes.data : [];
         memberSchedules = Array.isArray(schedRes.data) ? schedRes.data : [];
+        
+        self._memberFiltered = [...(window.GymApp.data.members || [])];
+        self._refreshMemberTable();
       } catch (_) { }
       setTab(t);
     };
+
+    overlay.refreshAndSetTab = refreshAndSetTab;
 
     const setTab = (t) => {
       const tabs = overlay.querySelectorAll('.member-detail-tab');
@@ -1239,7 +1247,7 @@ window.GymApp.pages['members-list'] = {
                    <button class="btn-switch-pt-reg px-standard py-compact rounded-lg font-bold text-body-sm text-blue hover:opacity-90 transition-all flex items-center gap-xs" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;cursor:pointer;" data-contract-id="${c.id}">
                      <span class="material-symbols-outlined text-sm">swap_horiz</span>Đổi gói PT
                    </button>
-                   <button class="btn-cancel-pt-contract px-standard py-compact rounded-lg font-bold text-body-sm text-white hover:opacity-90 transition-all flex items-center gap-xs" style="background:#ba1a1a;border:none;cursor:pointer;" data-contract-id="${c.id}" data-pt-name="${c.ten_pt || ''}">
+                   <button class="btn-cancel-pt-contract px-standard py-compact rounded-lg font-bold text-body-sm text-white hover:opacity-90 transition-all flex items-center gap-xs" style="background:#ba1a1a;border:none;cursor:pointer;" data-contract-id="${c.id}" data-pt-name="${c.ten_pt || ''}" data-member-name="${m.ho_ten || ''}">
                      <span class="material-symbols-outlined text-sm">cancel</span>Hủy gói PT
                    </button>
                  </div>
@@ -1362,29 +1370,6 @@ window.GymApp.pages['members-list'] = {
           const contractId = btn.dataset.contractId;
           const contract = ptContracts.find(c => String(c.id) === String(contractId));
           if (contract) self._showSwitchPtRegistrationModal(m, contract, refreshTab);
-        });
-      });
-      document.querySelectorAll('.btn-cancel-pt-contract').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const contractId = btn.dataset.contractId;
-          const ptName = btn.dataset.ptName;
-          const reason = prompt(`Nhập lý do hủy hợp đồng PT với ${ptName || 'huấn luyện viên'}:`, 'Hội viên yêu cầu hủy');
-          if (reason === null) return;
-          if (!reason.trim()) {
-            window.GymApp.toast('Vui lòng nhập lý do hủy!', 'error');
-            return;
-          }
-          try {
-            const res = await window.GymApp.api.put(`/pt/registrations/${contractId}/cancel`, { ly_do: reason.trim() });
-            if (res?.success) {
-              window.GymApp.toast('Đã hủy hợp đồng PT thành công!', 'success');
-              if (typeof refreshTab === 'function') refreshTab();
-            } else {
-              window.GymApp.toast(res?.message || 'Hủy hợp đồng thất bại!', 'error');
-            }
-          } catch (err) {
-            window.GymApp.toast(err.message || 'Lỗi khi hủy hợp đồng PT.', 'error');
-          }
         });
       });
     }
@@ -1847,7 +1832,7 @@ window.GymApp.pages['members-list'] = {
     ptregPriceEl?.addEventListener('focus', function () { const v = _pVND(this.value); this.value = v > 0 ? String(v) : ''; });
     ptregPriceEl?.addEventListener('blur', function () { this.value = _fVND(_pVND(this.value)); });
 
-    const updatePtRegDuration = () => {
+    const updatePtRegDuration = (e) => {
       const goiSel = document.getElementById('ptreg-goi');
       if (!goiSel) return;
       const opt = goiSel.options[goiSel.selectedIndex];
@@ -1858,9 +1843,16 @@ window.GymApp.pages['members-list'] = {
       const soThang = parseInt(opt.dataset.thang) || 0;
       const fromVal = document.getElementById('ptreg-from').value;
 
-      if (price > 0) {
+      if (price > 0 && (!e || e.target.id === 'ptreg-goi')) {
         document.getElementById('ptreg-price').value = _fVND(price);
       }
+
+      let sessionsVal = document.getElementById('ptreg-sessions').value;
+      if (!e || e.target.id === 'ptreg-goi' || !sessionsVal) {
+        sessionsVal = buoi || '';
+        document.getElementById('ptreg-sessions').value = sessionsVal;
+      }
+      const numSessions = parseInt(sessionsVal) || 0;
 
       if (soThang > 0 && fromVal) {
         const from = new Date(fromVal);
@@ -1868,17 +1860,23 @@ window.GymApp.pages['members-list'] = {
         to.setMonth(to.getMonth() + soThang);
         document.getElementById('ptreg-to').value = to.toISOString().split('T')[0];
         
-        // Tự động tính số buổi mặc định theo số ngày trong tháng/chu kỳ
-        const diffDays = Math.ceil((to - from) / (1000 * 60 * 60 * 24));
-        document.getElementById('ptreg-sessions').value = diffDays;
+        if (!e || e.target.id !== 'ptreg-sessions') {
+          const diffDays = Math.ceil((to - from) / (1000 * 60 * 60 * 24));
+          document.getElementById('ptreg-sessions').value = diffDays;
+        }
+      } else if (numSessions > 0 && fromVal) {
+        const from = new Date(fromVal);
+        const to = new Date(fromVal);
+        to.setDate(to.getDate() + numSessions);
+        document.getElementById('ptreg-to').value = to.toISOString().split('T')[0];
       } else {
-        document.getElementById('ptreg-sessions').value = buoi || '';
         document.getElementById('ptreg-to').value = '';
       }
     };
 
     document.getElementById('ptreg-goi').addEventListener('change', updatePtRegDuration);
     document.getElementById('ptreg-from').addEventListener('change', updatePtRegDuration);
+    document.getElementById('ptreg-sessions').addEventListener('input', updatePtRegDuration);
     const close = () => overlay.remove();
     document.getElementById('close-sub-modal').addEventListener('click', close);
     document.getElementById('ptreg-cancel-btn').addEventListener('click', close);
@@ -1955,7 +1953,7 @@ window.GymApp.pages['members-list'] = {
     pteditPriceEl?.addEventListener('focus', function () { const v = _pVND(this.value); this.value = v > 0 ? String(v) : ''; });
     pteditPriceEl?.addEventListener('blur', function () { this.value = _fVND(_pVND(this.value)); });
 
-    const updatePtEditDuration = () => {
+    const updatePtEditDuration = (e) => {
       const goiSel = document.getElementById('ptedit-goi');
       if (!goiSel) return;
       const opt = goiSel.options[goiSel.selectedIndex];
@@ -1966,9 +1964,16 @@ window.GymApp.pages['members-list'] = {
       const soThang = parseInt(opt.dataset.thang) || 0;
       const fromVal = document.getElementById('ptedit-from').value;
 
-      if (price > 0) {
+      if (price > 0 && (!e || e.target.id === 'ptedit-goi')) {
         document.getElementById('ptedit-price').value = _fVND(price);
       }
+
+      let sessionsVal = document.getElementById('ptedit-sessions').value;
+      if (!e || e.target.id === 'ptedit-goi' || !sessionsVal) {
+        sessionsVal = buoi || '';
+        document.getElementById('ptedit-sessions').value = sessionsVal;
+      }
+      const numSessions = parseInt(sessionsVal) || 0;
 
       if (soThang > 0 && fromVal) {
         const from = new Date(fromVal);
@@ -1976,16 +1981,23 @@ window.GymApp.pages['members-list'] = {
         to.setMonth(to.getMonth() + soThang);
         document.getElementById('ptedit-to').value = to.toISOString().split('T')[0];
         
-        const diffDays = Math.ceil((to - from) / (1000 * 60 * 60 * 24));
-        document.getElementById('ptedit-sessions').value = diffDays;
+        if (!e || e.target.id !== 'ptedit-sessions') {
+          const diffDays = Math.ceil((to - from) / (1000 * 60 * 60 * 24));
+          document.getElementById('ptedit-sessions').value = diffDays;
+        }
+      } else if (numSessions > 0 && fromVal) {
+        const from = new Date(fromVal);
+        const to = new Date(fromVal);
+        to.setDate(to.getDate() + numSessions);
+        document.getElementById('ptedit-to').value = to.toISOString().split('T')[0];
       } else {
-        document.getElementById('ptedit-sessions').value = buoi || '';
         document.getElementById('ptedit-to').value = '';
       }
     };
 
     document.getElementById('ptedit-goi').addEventListener('change', updatePtEditDuration);
     document.getElementById('ptedit-from').addEventListener('change', updatePtEditDuration);
+    document.getElementById('ptedit-sessions').addEventListener('input', updatePtEditDuration);
     const close = () => overlay.remove();
     document.getElementById('close-sub-modal').addEventListener('click', close);
     document.getElementById('ptedit-cancel-btn').addEventListener('click', close);
@@ -2061,7 +2073,7 @@ window.GymApp.pages['members-list'] = {
     ptswitchPriceEl?.addEventListener('focus', function () { const v = _pVND(this.value); this.value = v > 0 ? String(v) : ''; });
     ptswitchPriceEl?.addEventListener('blur', function () { this.value = _fVND(_pVND(this.value)); });
 
-    const updatePtSwitchDuration = () => {
+    const updatePtSwitchDuration = (e) => {
       const goiSel = document.getElementById('ptswitch-goi');
       if (!goiSel) return;
       const opt = goiSel.options[goiSel.selectedIndex];
@@ -2072,9 +2084,16 @@ window.GymApp.pages['members-list'] = {
       const soThang = parseInt(opt.dataset.thang) || 0;
       const fromVal = document.getElementById('ptswitch-from').value;
 
-      if (price > 0) {
+      if (price > 0 && (!e || e.target.id === 'ptswitch-goi')) {
         document.getElementById('ptswitch-price').value = _fVND(price);
       }
+
+      let sessionsVal = document.getElementById('ptswitch-sessions').value;
+      if (!e || e.target.id === 'ptswitch-goi' || !sessionsVal) {
+        sessionsVal = buoi || '';
+        document.getElementById('ptswitch-sessions').value = sessionsVal;
+      }
+      const numSessions = parseInt(sessionsVal) || 0;
 
       if (soThang > 0 && fromVal) {
         const from = new Date(fromVal);
@@ -2082,16 +2101,23 @@ window.GymApp.pages['members-list'] = {
         to.setMonth(to.getMonth() + soThang);
         document.getElementById('ptswitch-to').value = to.toISOString().split('T')[0];
         
-        const diffDays = Math.ceil((to - from) / (1000 * 60 * 60 * 24));
-        document.getElementById('ptswitch-sessions').value = diffDays;
+        if (!e || e.target.id !== 'ptswitch-sessions') {
+          const diffDays = Math.ceil((to - from) / (1000 * 60 * 60 * 24));
+          document.getElementById('ptswitch-sessions').value = diffDays;
+        }
+      } else if (numSessions > 0 && fromVal) {
+        const from = new Date(fromVal);
+        const to = new Date(fromVal);
+        to.setDate(to.getDate() + numSessions);
+        document.getElementById('ptswitch-to').value = to.toISOString().split('T')[0];
       } else {
-        document.getElementById('ptswitch-sessions').value = buoi || '';
         document.getElementById('ptswitch-to').value = '';
       }
     };
 
     document.getElementById('ptswitch-goi').addEventListener('change', updatePtSwitchDuration);
     document.getElementById('ptswitch-from').addEventListener('change', updatePtSwitchDuration);
+    document.getElementById('ptswitch-sessions').addEventListener('input', updatePtSwitchDuration);
     const close = () => overlay.remove();
     document.getElementById('close-sub-modal').addEventListener('click', close);
     document.getElementById('ptswitch-cancel-btn').addEventListener('click', close);
@@ -2923,6 +2949,181 @@ window.GymApp.pages['members-list'] = {
     });
   },
 
+  _showCancelPtRegistrationModal: function (contractId, ptName, memberName) {
+    const self = this;
+    document.getElementById('gym-sub-modal')?.remove();
+    
+    const overlay = document.createElement('div');
+    overlay.id = 'gym-sub-modal';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(15, 23, 42, 0.45);backdrop-filter:blur(8px);padding:16px;';
+    
+    overlay.innerHTML = `
+      <div class="modal-card bg-surface-container-lowest border border-outline-variant animate-in zoom-in-95 duration-200" style="border-radius:24px;width:100%;max-width:500px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(15,23,42,0.3);">
+        
+        <!-- Header -->
+        <div class="border-b border-outline-variant px-loose py-standard flex items-center justify-between flex-shrink-0" style="padding:20px 24px;">
+          <div>
+            <h3 class="font-bold text-on-surface" style="font-size:18px;margin:0;display:flex;align-items:center;gap:8px;">
+              <span class="material-symbols-outlined" style="color:#ba1a1a;font-size:24px;">cancel</span>
+              Xác nhận hủy hợp đồng PT
+            </h3>
+            <p class="text-on-surface-variant text-body-sm" style="margin:4px 0 0 0;font-size:13px;">
+              Hội viên: <strong style="color:var(--text-on-surface);">${memberName}</strong>
+            </p>
+          </div>
+          <button id="close-cancel-modal" style="background:transparent;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:4px;border-radius:50%;" class="hover:bg-surface-container transition-colors">
+            <span class="material-symbols-outlined text-on-surface-variant" style="font-size:20px;">close</span>
+          </button>
+        </div>
+        
+        <!-- Body -->
+        <div class="p-loose flex-grow" style="padding:24px;box-sizing:border-box;">
+          
+          <!-- Danger Banner -->
+          <div style="background:#fef2f2;border:1px solid #fee2e2;border-radius:16px;padding:14px 18px;display:flex;gap:12px;align-items:flex-start;margin-bottom:20px;">
+            <span class="material-symbols-outlined" style="color:#ef4444;font-size:24px;flex-shrink:0;margin-top:2px;">warning</span>
+            <div>
+              <h5 style="margin:0;font-weight:700;font-size:14px;color:#991b1b;">Thông tin cảnh báo</h5>
+              <p style="margin:4px 0 0 0;font-size:13px;color:#b91c1c;line-height:1.5;">
+                Bạn đang thực hiện hủy hợp đồng PT của HLV <strong style="font-weight:800;">${ptName || 'này'}</strong>. 
+                Tất cả các lịch tập sắp tới ở trạng thái <strong>"Chờ tập"</strong> sẽ bị hủy tự động. Hành động này không thể hoàn tác.
+              </p>
+            </div>
+          </div>
+          
+          <!-- Input Reason -->
+          <div style="margin-bottom:8px;">
+            <label for="cancel-pt-reason" class="block text-body-sm font-bold text-on-surface" style="margin-bottom:8px;font-size:13px;display:block;">
+              Lý do hủy hợp đồng <span style="color:#ba1a1a;font-weight:700;">*</span>
+            </label>
+            <input id="cancel-pt-reason" type="text" value="Hội viên yêu cầu hủy" 
+              class="bg-surface-container-lowest text-on-surface border border-outline-variant focus:border-primary" 
+              style="width:100%;padding:12px 14px;border-radius:12px;outline:none;font-size:14px;box-sizing:border-box;border:1px solid var(--outline-variant);transition:border-color 0.2s;" 
+              placeholder="Nhập lý do hủy hợp đồng..." />
+          </div>
+          
+        </div>
+        
+        <!-- Footer -->
+        <div class="border-t border-outline-variant px-loose py-standard bg-surface-container-lowest flex gap-standard flex-shrink-0" style="padding:16px 24px;display:flex;gap:12px;">
+          <button id="btn-close-cancel-modal" class="flex-grow py-compact rounded-xl border border-outline-variant text-on-surface-variant font-bold hover:bg-surface-container transition-colors text-body-md" style="padding:10px 16px;border-radius:12px;border:1px solid var(--outline-variant);background:transparent;cursor:pointer;font-weight:700;flex:1;">
+            Đóng
+          </button>
+          <button id="btn-submit-cancel-modal" class="flex-grow py-compact rounded-xl font-bold text-white text-body-md transition-all hover:opacity-90 flex items-center justify-center gap-xs" style="padding:10px 16px;border-radius:12px;background:#ba1a1a;border:none;cursor:pointer;font-weight:700;flex:1;color:#fff;">
+            Xác nhận hủy
+          </button>
+        </div>
+        
+      </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    
+    // Bind modal close events
+    const close = () => overlay.remove();
+    overlay.querySelector('#close-cancel-modal').addEventListener('click', close);
+    overlay.querySelector('#btn-close-cancel-modal').addEventListener('click', close);
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+    
+    // Auto-focus and select text for quick editing
+    const reasonInput = overlay.querySelector('#cancel-pt-reason');
+    setTimeout(() => {
+      reasonInput.focus();
+      reasonInput.select();
+    }, 100);
+    
+    // Submit cancel event
+    overlay.querySelector('#btn-submit-cancel-modal').addEventListener('click', async () => {
+      const reason = reasonInput.value.trim();
+      if (!reason) {
+        window.GymApp.toast('Vui lòng nhập lý do hủy!', 'error');
+        reasonInput.focus();
+        return;
+      }
+      
+      close();
+      
+      self._showLoadingOverlay('Đang hủy hợp đồng PT...');
+      try {
+        const res = await window.GymApp.api.put(`/pt/registrations/${contractId}/cancel`, { ly_do: reason });
+        self._hideLoadingOverlay();
+        if (res?.success) {
+          window.GymApp.toast('Đã hủy hợp đồng PT thành công!', 'success');
+          // Tự động tải lại tab Lịch PT để cập nhật giao diện
+          const memberModal = document.getElementById('gym-member-modal');
+          if (memberModal && typeof memberModal.refreshAndSetTab === 'function') {
+            memberModal.refreshAndSetTab('schedule');
+          } else {
+            location.reload();
+          }
+        } else {
+          window.GymApp.toast(res?.message || 'Hủy hợp đồng thất bại!', 'error');
+        }
+      } catch (err) {
+        self._hideLoadingOverlay();
+        window.GymApp.toast(err.message || 'Lỗi khi hủy hợp đồng PT.', 'error');
+      }
+    });
+  },
+
+  _setupGlobalClickHandlers: function () {
+    const self = this;
+    document.addEventListener('click', async (e) => {
+      const cancelBtn = e.target.closest('.btn-cancel-pt-contract');
+      if (!cancelBtn) return;
+      e.preventDefault();
+      const contractId = cancelBtn.dataset.contractId;
+      const ptName = cancelBtn.dataset.ptName || cancelBtn.getAttribute('data-pt-name') || '';
+      const memberName = cancelBtn.dataset.memberName || cancelBtn.getAttribute('data-member-name') || '';
+      
+      self._showCancelPtRegistrationModal(contractId, ptName, memberName);
+    });
+  },
+
+  _showLoadingOverlay: function (msg = 'Đang xử lý...') {
+    let overlay = document.getElementById('global-loading-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'global-loading-overlay';
+      overlay.style.position = 'fixed';
+      overlay.style.inset = '0';
+      overlay.style.zIndex = '99999';
+      overlay.style.background = 'rgba(15, 23, 42, 0.4)';
+      overlay.style.backdropFilter = 'blur(6px)';
+      overlay.style.display = 'flex';
+      overlay.style.flexDirection = 'column';
+      overlay.style.alignItems = 'center';
+      overlay.style.justifyContent = 'center';
+      overlay.style.gap = '16px';
+      overlay.style.color = '#fff';
+      overlay.style.fontFamily = 'Inter, sans-serif';
+      overlay.style.transition = 'opacity 0.25s ease';
+      
+      overlay.innerHTML = `
+        <div style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); padding: 24px 40px; border-radius: 20px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3); display: flex; flex-direction: column; align-items: center; gap: 16px;">
+          <div style="width: 48px; height: 48px; border: 4px solid rgba(255, 255, 255, 0.1); border-top-color: #22c55e; border-radius: 50%; animation: spin-loading-overlay 0.8s linear infinite;"></div>
+          <span id="global-loading-msg" style="font-weight: 700; font-size: 15px; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">${msg}</span>
+        </div>
+        <style>
+          @keyframes spin-loading-overlay {
+            to { transform: rotate(360deg); }
+          }
+        </style>
+      `;
+      document.body.appendChild(overlay);
+    } else {
+      document.getElementById('global-loading-msg').innerText = msg;
+      overlay.style.display = 'flex';
+      overlay.style.opacity = '1';
+    }
+  },
+
+  _hideLoadingOverlay: function () {
+    const overlay = document.getElementById('global-loading-overlay');
+    if (overlay) {
+      overlay.style.display = 'none';
+    }
+  },
 
   init: function () {
     const self = this;
@@ -2931,6 +3132,7 @@ window.GymApp.pages['members-list'] = {
     this._memberFiltered = [...(window.GymApp.data.members || [])];
     this._ptFiltered = [...(window.GymApp.data.pts || [])];
     this._setupPgHandler();
+    this._setupGlobalClickHandlers();
     this._bindMemberTableEvents();
     this._bindPtCardEvents();
     document.querySelectorAll('.tab-btn').forEach(btn => {
