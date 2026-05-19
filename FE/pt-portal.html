@@ -39,6 +39,26 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/air-datepicker@3/air-datepicker.min.css">
   <script src="https://cdn.jsdelivr.net/npm/air-datepicker@3/air-datepicker.min.js"></script>
   <link rel="stylesheet" href="assets/css/main.css" />
+  <style>
+    .gym-card {
+      transition: all 0.2s ease-in-out;
+    }
+
+    .gym-card:hover {
+      border-color: var(--brand-primary);
+      box-shadow: 0 4px 12px rgba(29, 147, 54, 0.15);
+      transform: translateY(-2px);
+    }
+
+    [data-page] {
+      transition: all 0.2s ease-in-out;
+    }
+    
+    [data-page]:not(.nav-active):hover {
+      box-shadow: inset 0 0 0 1px var(--brand-primary);
+      color: var(--brand-primary);
+    }
+  </style>
 </head>
 
 <body class="font-body-md text-body-md overflow-hidden bg-background text-on-surface">
@@ -268,6 +288,8 @@
         nhom: 'Nhóm',
         dang_hoat_dong: 'Đang hoạt động',
         hoat_dong: 'Hoạt động',
+        cho_duyet: 'Chờ duyệt',
+        huy: 'Đã hủy',
         het_han: 'Hết hạn',
       };
       if (!value) return '—';
@@ -281,6 +303,9 @@
         da_huy: { bg: '#ffdad6', color: '#93000a', label: 'Đã hủy' },
         hoan_tac: { bg: '#fff8e1', color: '#f57f17', label: 'Hoàn tác' },
         vang: { bg: '#f3e5f5', color: '#6a1b9a', label: 'Vắng' },
+        dang_hoat_dong: { bg: '#e7f5e9', color: '#1D9336', label: 'Đang hoạt động' },
+        cho_duyet: { bg: '#fff3e0', color: '#e65100', label: 'Chờ duyệt' },
+        huy: { bg: '#ffdad6', color: '#93000a', label: 'Bị từ chối' },
       };
       const s = map[status] || { bg: '#ebeef3', color: '#181c20', label: window.GymApp.formatEnumLabel(status) };
       return `<span style="padding:2px 8px;border-radius:999px;font-size:9.6px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;background:${s.bg};color:${s.color}">${s.label}</span>`;
@@ -312,11 +337,65 @@
           originalInput.parentNode.insertBefore(visibleInput, originalInput);
 
           const baseDescriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+          let currentPos = 'bottom left';
 
           const adp = new AirDatepicker(visibleInput, {
             locale: window.GymApp.localeVi,
             dateFormat: 'dd/MM/yyyy',
             autoClose: true,
+            container: document.body,
+            position: currentPos,
+            onShow: function(isFinished) {
+              if (isFinished) return;
+              const rect = visibleInput.getBoundingClientRect();
+              const spaceBelow = window.innerHeight - rect.bottom;
+              const calendarHeight = 350; // Chiều cao an toàn của calendar
+              
+              // Quyết định vị trí tối ưu: chỉ chọn 'top left' nếu ở dưới không đủ và ở trên đủ chứa calendar
+              const desiredPos = (spaceBelow < calendarHeight && rect.top > calendarHeight) ? 'top left' : 'bottom left';
+              
+              if (currentPos !== desiredPos) {
+                currentPos = desiredPos;
+                adp.update({ position: desiredPos });
+              }
+
+              // Xử lý chống tràn màn hình tuyệt đối trong mọi trường hợp (Viewport Collision Adjustment)
+              setTimeout(() => {
+                if (adp.$datepicker) {
+                  const dpRect = adp.$datepicker.getBoundingClientRect();
+                  
+                  // 1. Chống tràn mép trên (Top boundary collision)
+                  if (dpRect.top < 10) {
+                    const currentTop = parseFloat(adp.$datepicker.style.top) || 0;
+                    adp.$datepicker.style.top = `${currentTop + (10 - dpRect.top)}px`;
+                  }
+                  
+                  // 2. Chống tràn mép dưới (Bottom boundary collision)
+                  const overflowBottom = dpRect.bottom - (window.innerHeight - 10);
+                  if (overflowBottom > 0) {
+                    const currentTop = parseFloat(adp.$datepicker.style.top) || 0;
+                    // Chỉ kéo lên nếu không làm tràn mép trên (y >= 10)
+                    const targetViewTop = dpRect.top - overflowBottom;
+                    if (targetViewTop >= 10) {
+                      adp.$datepicker.style.top = `${currentTop - overflowBottom}px`;
+                    } else {
+                      // Nếu kéo lên hết cỡ vẫn tràn cả 2 bên thì ưu tiên giữ lại thanh navigation ở trên cùng
+                      adp.$datepicker.style.top = `${currentTop + (10 - dpRect.top)}px`;
+                    }
+                  }
+                  
+                  // 3. Chống tràn mép trái/phải
+                  const spaceRight = window.innerWidth - dpRect.right;
+                  if (dpRect.left < 10) {
+                    const currentLeft = parseFloat(adp.$datepicker.style.left) || 0;
+                    adp.$datepicker.style.left = `${currentLeft + (10 - dpRect.left)}px`;
+                  } else if (spaceRight < 10) {
+                    const currentLeft = parseFloat(adp.$datepicker.style.left) || 0;
+                    adp.$datepicker.style.left = `${currentLeft - (10 - spaceRight)}px`;
+                  }
+                }
+              }, 50); // Trì hoãn nhẹ 50ms để layout được render hoàn tất
+            },
             onSelect: function ({ date }) {
               if (date && !Array.isArray(date)) {
                 const y = date.getFullYear();

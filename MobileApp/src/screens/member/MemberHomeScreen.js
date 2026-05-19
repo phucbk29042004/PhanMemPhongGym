@@ -53,14 +53,18 @@ function formatPrice(val) {
 }
 
 // ── Component: Card Gói Hội Viên ──────────────────────────
-function PackageCard({ item, index, colors }) {
+function PackageCard({ item, index, colors, onPress }) {
   const isPT = item.loai_goi === 'pt' || item.loai_goi === 'theo_buoi';
   const isDark = colors?.isDark;
   const cardBg = isDark ? colors.surfaceVariant : [G.primaryLight, '#e8f4fd', '#fef9e7', '#f3e8ff'][index % 4];
   const accentColor = isDark ? colors.primary : [G.primary, '#1565c0', '#b7791f', '#7c3aed'][index % 4];
 
   return (
-    <View style={[styles.packageCard, { backgroundColor: cardBg }]}>
+    <TouchableOpacity 
+      style={[styles.packageCard, { backgroundColor: cardBg }]}
+      onPress={onPress}
+      activeOpacity={0.8}
+    >
       <View style={[styles.packageIconBox, { backgroundColor: accentColor + '22' }]}>
         {isPT ? <Users color={accentColor} size={24} strokeWidth={2} /> : <Award color={accentColor} size={24} strokeWidth={2} />}
       </View>
@@ -71,7 +75,7 @@ function PackageCard({ item, index, colors }) {
       ) : item.so_buoi ? (
         <Text style={[styles.packageSub, { color: colors?.textMuted || G.gray500 }]}>{item.so_buoi} buổi</Text>
       ) : null}
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -224,14 +228,19 @@ export default function MemberHomeScreen({ navigation }) {
   // ── Dữ liệu đã xử lý ─────────────────────────────────────
   const activePlan = profile?.goi_tap?.find(p => p.trang_thai === 'dang_hoat_dong') || null;
   const pendingPlan = profile?.goi_tap?.find(p => p.trang_thai === 'cho_duyet') || null;
+  const currentPlan = activePlan || pendingPlan;
   const activePT = profile?.dang_ky_pt?.[0] || null;
-  const remaining = daysLeft(activePlan?.den_ngay);
+  const remaining = daysLeft(currentPlan?.den_ngay);
   const ptRemaining = activePT ? Math.max(0, (activePT.so_buoi_dang_ky || 0) - (activePT.so_buoi_da_tap || 0)) : null;
   // Thêm prefix 'gym-' / 'pt-' vào id để tránh key trùng khi render
   const allPackages = [
     ...gymPackages.map(p => ({ ...p, _key: `gym-${p.id}` })),
     ...ptPackages.map(p => ({ ...p, _key: `pt-${p.id}` })),
   ];
+
+  // ── State chi tiết gói tập ───────────────────────────────
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [selectedDetailPkg, setSelectedDetailPkg] = useState(null);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -298,15 +307,22 @@ export default function MemberHomeScreen({ navigation }) {
             <View style={[styles.sectionIconBox, { backgroundColor: colors.primaryLight }]}>
               <CreditCard color={colors.primary} size={18} strokeWidth={2} />
             </View>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Hợp đồng</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Gói Hội Viên</Text>
           </View>
 
           {loading ? (
             <View style={styles.loadingBox}>
               <ActivityIndicator color={colors.primary} size="small" />
             </View>
-          ) : activePlan ? (
-            <View style={[styles.contractCard, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
+          ) : currentPlan ? (
+            <TouchableOpacity 
+              style={[styles.contractCard, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
+              onPress={() => {
+                setSelectedDetailPkg(currentPlan);
+                setDetailModalVisible(true);
+              }}
+              activeOpacity={0.8}
+            >
               {/* Trạng thái + tên gói */}
               <View style={styles.contractTop}>
                 {activePlan ? (
@@ -321,36 +337,36 @@ export default function MemberHomeScreen({ navigation }) {
                     <Text style={[styles.contractBadgeText, { color: G.warning }]}>Đang chờ duyệt</Text>
                   </View>
                 ) : null}
-                {remaining !== null && remaining <= 7 && (
+                {remaining !== null && remaining <= 7 && activePlan && (
                   <View style={[styles.contractBadge, { backgroundColor: G.dangerLight }]}>
                     <Clock color={G.danger} size={12} strokeWidth={2.5} />
                     <Text style={[styles.contractBadgeText, { color: G.danger }]}>Sắp hết hạn</Text>
                   </View>
                 )}
               </View>
-              <Text style={[styles.contractPackageName, { color: colors.text }]}>{activePlan ? activePlan.ten_goi : pendingPlan ? pendingPlan.ten_goi : 'Chưa có gói tập'}</Text>
+              <Text style={[styles.contractPackageName, { color: colors.text }]}>{currentPlan.ten_goi}</Text>
 
               {/* Thông số grid */}
               <View style={[styles.contractGrid, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <View style={styles.contractGridItem}>
                   <CalendarCheck color={colors.textMuted} size={14} strokeWidth={2} />
                   <Text style={[styles.contractGridLabel, { color: colors.textMuted }]}>Từ ngày</Text>
-                  <Text style={[styles.contractGridValue, { color: colors.text }]}>{formatDate(activePlan.tu_ngay)}</Text>
+                  <Text style={[styles.contractGridValue, { color: colors.text }]}>{formatDate(currentPlan.tu_ngay)}</Text>
                 </View>
                 <View style={[styles.contractDivider, { backgroundColor: colors.border }]} />
                 <View style={styles.contractGridItem}>
-                  <Clock color={remaining !== null && remaining <= 7 ? G.danger : colors.textMuted} size={14} strokeWidth={2} />
+                  <Clock color={remaining !== null && remaining <= 7 && activePlan ? G.danger : colors.textMuted} size={14} strokeWidth={2} />
                   <Text style={[styles.contractGridLabel, { color: colors.textMuted }]}>Hết hạn</Text>
-                  <Text style={[styles.contractGridValue, { color: colors.text }, remaining !== null && remaining <= 7 && { color: G.danger }]}>
-                    {formatDate(activePlan.den_ngay)}
+                  <Text style={[styles.contractGridValue, { color: colors.text }, remaining !== null && remaining <= 7 && activePlan && { color: G.danger }]}>
+                    {formatDate(currentPlan.den_ngay)}
                   </Text>
                 </View>
                 <View style={[styles.contractDivider, { backgroundColor: colors.border }]} />
                 <View style={styles.contractGridItem}>
                   <TrendingUp color={colors.primary} size={14} strokeWidth={2} />
                   <Text style={[styles.contractGridLabel, { color: colors.textMuted }]}>Còn lại</Text>
-                  <Text style={[styles.contractGridValue, { color: remaining !== null && remaining <= 7 ? G.danger : colors.primary }]}>
-                    {remaining !== null ? `${remaining} ngày` : '—'}
+                  <Text style={[styles.contractGridValue, { color: remaining !== null && remaining <= 7 && activePlan ? G.danger : colors.primary }]}>
+                    {remaining !== null && activePlan ? `${remaining} ngày` : '—'}
                   </Text>
                 </View>
               </View>
@@ -391,27 +407,25 @@ export default function MemberHomeScreen({ navigation }) {
                   <Text style={[styles.renewButtonText, { color: colors.textMuted }]}>Đang xử lý yêu cầu...</Text>
                 </View>
               )}
-            </View>
+            </TouchableOpacity>
           ) : (
-            <View style={styles.emptyContract}>
+            <TouchableOpacity 
+              style={styles.emptyContract}
+              onPress={openRenewModal}
+              activeOpacity={0.7}
+            >
               <CreditCard color={colors.textMuted} size={32} strokeWidth={1.5} />
-              <Text style={[styles.emptyContractText, { color: colors.text }]}>Không có dữ liệu</Text>
-              <Text style={[styles.emptyContractSub, { color: colors.textMuted }]}>Liên hệ lễ tân hoặc gia hạn trên App</Text>
-              {!pendingPlan ? (
-                <TouchableOpacity 
-                  style={[styles.renewButton, { marginTop: 12, width: '60%' }]}
-                  onPress={openRenewModal}
-                >
-                  <Zap color={G.white} size={16} strokeWidth={2.5} />
-                  <Text style={styles.renewButtonText}>Gia hạn</Text>
-                </TouchableOpacity>
-              ) : (
-                <View style={[styles.renewButton, { marginTop: 12, width: '80%', backgroundColor: colors.surfaceVariant, shadowOpacity: 0 }]}>
-                  <Clock color={colors.textMuted} size={16} strokeWidth={2.5} />
-                  <Text style={[styles.renewButtonText, { color: colors.textMuted, fontSize: 12 }]}>Yêu cầu đang chờ duyệt...</Text>
-                </View>
-              )}
-            </View>
+              <Text style={[styles.emptyContractText, { color: colors.text }]}>Chưa đăng ký gói tập</Text>
+              <Text style={[styles.emptyContractSub, { color: colors.textMuted }]}>Nhấn vào đây để xem các gói và đăng ký mua</Text>
+              <TouchableOpacity 
+                style={[styles.renewButton, { marginTop: 12, width: '60%' }]}
+                onPress={openRenewModal}
+                activeOpacity={0.8}
+              >
+                <Zap color={G.white} size={16} strokeWidth={2.5} />
+                <Text style={styles.renewButtonText}>Mua gói ngay</Text>
+              </TouchableOpacity>
+            </TouchableOpacity>
           )}
         </View>
 
@@ -479,7 +493,29 @@ export default function MemberHomeScreen({ navigation }) {
               contentContainerStyle={styles.packageScroll}
             >
               {allPackages.map((item, i) => (
-                <PackageCard key={item._key} item={item} index={i} colors={colors} />
+                <PackageCard 
+                  key={item._key} 
+                  item={item} 
+                  index={i} 
+                  colors={colors} 
+                  onPress={() => {
+                    if (item.loai_goi !== 'pt' && item.loai_goi !== 'theo_buoi') {
+                      setSelectedPkg(item.id);
+                      const today = new Date().toISOString().split('T')[0];
+                      let defaultStart = today;
+                      const active = profile?.goi_tap?.[0];
+                      if (active && active.den_ngay >= today) {
+                        const d = new Date(active.den_ngay);
+                        d.setDate(d.getDate() + 1);
+                        defaultStart = d.toISOString().split('T')[0];
+                      }
+                      setRenewalStartDate(defaultStart);
+                      setRenewModalVisible(true);
+                    } else {
+                      alert(`Đây là gói Huấn Luyện Viên cá nhân (PT).\nVui lòng liên hệ quầy lễ tân để đăng ký tập với HLV.`);
+                    }
+                  }}
+                />
               ))}
             </ScrollView>
           </View>
@@ -639,7 +675,115 @@ export default function MemberHomeScreen({ navigation }) {
         </View>
       </Modal>
 
-      {/* ── Modal Gia hạn ────────────────────────────────── */}
+      {/* ── Modal Chi tiết gói hội viên ────────────────────── */}
+      <Modal
+        visible={detailModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDetailModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <View style={[styles.modalHeader, { backgroundColor: G.primaryDark }]}>
+              <Text style={[styles.modalTitle, { color: G.white }]}>Chi tiết gói hội viên</Text>
+              <TouchableOpacity onPress={() => setDetailModalVisible(false)}>
+                <Text style={[styles.modalCloseX, { color: G.white }]}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              {selectedDetailPkg && (
+                <View style={{ gap: 12 }}>
+                  <View style={{ alignItems: 'center', marginVertical: 10 }}>
+                    <View style={[styles.packageIconBox, { backgroundColor: G.primaryLight, width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center' }]}>
+                      <Award color={G.primary} size={32} />
+                    </View>
+                    <Text style={[styles.contractPackageName, { color: colors.text, marginTop: 8, fontSize: 20, textAlign: 'center' }]}>
+                      {selectedDetailPkg.ten_goi}
+                    </Text>
+                    <View style={[
+                      styles.contractBadge, 
+                      selectedDetailPkg.trang_thai === 'dang_hoat_dong' ? { backgroundColor: '#dcfce7' } : { backgroundColor: G.warningLight },
+                      { marginTop: 4 }
+                    ]}>
+                      {selectedDetailPkg.trang_thai === 'dang_hoat_dong' ? (
+                        <>
+                          <ShieldCheck color={G.primary} size={12} strokeWidth={2.5} />
+                          <Text style={styles.contractBadgeText}>Đang hoạt động</Text>
+                        </>
+                      ) : (
+                        <>
+                          <Clock color={G.warning} size={12} strokeWidth={2.5} />
+                          <Text style={[styles.contractBadgeText, { color: G.warning }]}>Chờ duyệt thanh toán</Text>
+                        </>
+                      )}
+                    </View>
+                  </View>
+
+                  <View style={[styles.detailRow, { borderBottomColor: colors.border }]}>
+                    <Text style={[styles.detailLabel, { color: colors.textMuted }]}>Thời lượng gói:</Text>
+                    <Text style={[styles.detailValue, { color: colors.text }]}>{selectedDetailPkg.so_thang} tháng</Text>
+                  </View>
+
+                  <View style={[styles.detailRow, { borderBottomColor: colors.border }]}>
+                    <Text style={[styles.detailLabel, { color: colors.textMuted }]}>Giá thanh toán:</Text>
+                    <Text style={[styles.detailValue, { color: colors.text, fontWeight: '700' }]}>
+                      {formatPrice(selectedDetailPkg.gia_thuc_te)}
+                    </Text>
+                  </View>
+
+                  <View style={[styles.detailRow, { borderBottomColor: colors.border }]}>
+                    <Text style={[styles.detailLabel, { color: colors.textMuted }]}>Ngày bắt đầu:</Text>
+                    <Text style={[styles.detailValue, { color: colors.text }]}>{formatDate(selectedDetailPkg.tu_ngay)}</Text>
+                  </View>
+
+                  <View style={[styles.detailRow, { borderBottomColor: colors.border }]}>
+                    <Text style={[styles.detailLabel, { color: colors.textMuted }]}>Ngày hết hạn:</Text>
+                    <Text style={[styles.detailValue, { color: colors.text }]}>{formatDate(selectedDetailPkg.den_ngay)}</Text>
+                  </View>
+
+                  {selectedDetailPkg.trang_thai === 'dang_hoat_dong' && remaining !== null && (
+                    <View style={[styles.detailRow, { borderBottomColor: colors.border }]}>
+                      <Text style={[styles.detailLabel, { color: colors.textMuted }]}>Thời gian còn lại:</Text>
+                      <Text style={[styles.detailValue, { color: remaining <= 7 ? G.danger : colors.primary, fontWeight: '700' }]}>
+                        {remaining} ngày
+                      </Text>
+                    </View>
+                  )}
+
+                  <Text style={{ fontSize: 11, color: colors.textMuted, textAlign: 'center', marginTop: 10, lineHeight: 16 }}>
+                    {selectedDetailPkg.trang_thai === 'cho_duyet' 
+                      ? 'Yêu cầu đang được chờ phê duyệt. Vui lòng liên hệ quầy lễ tân để thanh toán.'
+                      : 'Chúc bạn có những giờ phút tập luyện tuyệt vời tại Paradise GYM!'}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity 
+                style={[styles.modalCancelBtn, { borderColor: colors.border }]} 
+                onPress={() => setDetailModalVisible(false)}
+              >
+                <Text style={[styles.modalCancelText, { color: colors.textMuted }]}>Đóng</Text>
+              </TouchableOpacity>
+              {selectedDetailPkg?.trang_thai === 'dang_hoat_dong' && (
+                <TouchableOpacity 
+                  style={styles.modalSubmitBtn}
+                  onPress={() => {
+                    setDetailModalVisible(false);
+                    openRenewModal();
+                  }}
+                >
+                  <Text style={styles.modalSubmitText}>Gia hạn gói</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Modal Đăng ký/Gia hạn gói tập ────────────────────── */}
       <Modal
         visible={renewModalVisible}
         transparent
@@ -649,7 +793,9 @@ export default function MemberHomeScreen({ navigation }) {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Gia hạn gói tập</Text>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                {activePlan ? 'Gia hạn gói tập' : 'Đăng ký gói tập'}
+              </Text>
               <TouchableOpacity onPress={() => setRenewModalVisible(false)}>
                 <Text style={[styles.modalCloseX, { color: colors.textMuted }]}>✕</Text>
               </TouchableOpacity>
@@ -668,11 +814,18 @@ export default function MemberHomeScreen({ navigation }) {
                     ]}
                     onPress={() => setSelectedPkg(p.id)}
                   >
-                    <Text style={[
-                      styles.pkgOptionText, 
-                      { color: colors.text },
-                      selectedPkg === p.id && { color: colors.primary, fontWeight: '700' }
-                    ]}>{p.ten_goi}</Text>
+                    <View style={{ flex: 1, paddingRight: 8 }}>
+                      <Text style={[
+                        styles.pkgOptionText, 
+                        { color: colors.text },
+                        selectedPkg === p.id && { color: colors.primary, fontWeight: '700' }
+                      ]}>{p.ten_goi}</Text>
+                      {p.mo_ta ? (
+                        <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }} numberOfLines={2}>
+                          {p.mo_ta}
+                        </Text>
+                      ) : null}
+                    </View>
                     <Text style={[
                       styles.pkgOptionPrice, 
                       { color: colors.textMuted },
@@ -705,7 +858,9 @@ export default function MemberHomeScreen({ navigation }) {
                 {isSubmitting ? (
                   <ActivityIndicator color={G.white} size="small" />
                 ) : (
-                  <Text style={styles.modalSubmitText}>Gửi yêu cầu</Text>
+                  <Text style={styles.modalSubmitText}>
+                    {activePlan ? 'Gia hạn ngay' : 'Đăng ký mua'}
+                  </Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -1105,6 +1260,20 @@ const styles = StyleSheet.create({
   pkgOptionText: { fontSize: 14, color: G.gray700, fontWeight: '600' },
   pkgOptionTextActive: { color: G.primaryDark },
   pkgOptionPrice: { fontSize: 14, fontWeight: '700', color: G.gray900 },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+  },
+  detailLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  detailValue: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
   dateInput: {
     backgroundColor: G.gray100,
     padding: 12,

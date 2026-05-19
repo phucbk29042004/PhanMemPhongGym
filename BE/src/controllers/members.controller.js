@@ -280,17 +280,48 @@ export const deleteMember = (req, res) => {
     return success(res, null, 'Hồ sơ hội viên đã được xoá trước đó');
   }
 
-  db.prepare(`
-    UPDATE ho_so SET
-      is_deleted = 1,
-      ngay_xoa = datetime('now','localtime'),
-      nguoi_xoa_id = ?,
-      ly_do_xoa = ?
-    WHERE id = ?
-  `).run(req.user.id, ly_do || 'Không có lý do', id);
+  const reason = ly_do || 'Không có lý do';
+  const tx = db.transaction(() => {
+    db.prepare(`
+      UPDATE ho_so SET
+        is_deleted = 1,
+        ngay_xoa = datetime('now','localtime'),
+        nguoi_xoa_id = ?,
+        ly_do_xoa = ?
+      WHERE id = ?
+    `).run(req.user.id, reason, id);
 
-  ghi_audit_log(req, 'DELETE', 'ho_so', parseInt(id), member, null, ly_do || 'Xóa hồ sơ hội viên');
-  return success(res, null, 'Đã xoá hồ sơ hội viên (Soft Delete)');
+    db.prepare(`
+      UPDATE dang_ky_goi_tap SET
+        trang_thai = 'huy',
+        ly_do_huy = ?,
+        ngay_huy = datetime('now','localtime'),
+        nguoi_cap_nhat_id = ?
+      WHERE ho_so_id = ? AND trang_thai IN ('cho_duyet','dang_hoat_dong','tam_dung')
+    `).run('Hủy vì hội viên bị xóa', req.user.id, id);
+
+    db.prepare(`
+      UPDATE dang_ky_pt SET
+        trang_thai = 'huy',
+        ghi_chu_tt = COALESCE(?, ghi_chu_tt),
+        ngay_cap_nhat = datetime('now','localtime')
+      WHERE hoi_vien_id = ? AND trang_thai IN ('dang_hoat_dong','tam_dung')
+    `).run('Hủy vì hội viên bị xóa', id);
+
+    db.prepare(`
+      UPDATE lich_tap SET
+        trang_thai = 'da_huy',
+        ly_do_huy = 'Hủy vì hội viên bị xóa',
+        nguoi_huy_id = ?,
+        ngay_huy = datetime('now','localtime')
+      WHERE hoi_vien_id = ? AND trang_thai = 'cho_tap'
+    `).run(req.user.id, id);
+  });
+
+  tx();
+
+  ghi_audit_log(req, 'DELETE', 'ho_so', parseInt(id), member, null, reason);
+  return success(res, null, 'Đã xoá hồ sơ hội viên và hủy các đăng ký/kế hoạch liên quan');
 };
 
 // ── GET /api/members/check-duplicate ─────────────────────
@@ -544,7 +575,7 @@ export const getMyProfile = (req, res) => {
 // ── POST /api/members/:id/package ────────────────────────
 export const registerPackage = (req, res) => {
   const { id } = req.params;
-  const { goi_tap_id, tu_ngay, gia_thuc_te, phuong_thuc_tt, ma_giao_dich, ghi_chu_tt, ghi_chu_gia } = req.body;
+  const { goi_tap_id, tu_ngay, gia_thuc_te, phuong_thuc_tt, ma_giao_dich, ghi_chu_tt, ghi_chu_gia, ngay_thanh_toan } = req.body;
 
   if (!goi_tap_id || !tu_ngay || gia_thuc_te === undefined || !phuong_thuc_tt) {
     return error(res, 'Thiếu thông tin bắt buộc: goi_tap_id, tu_ngay, gia_thuc_te, phuong_thuc_tt', 400);
@@ -568,9 +599,9 @@ export const registerPackage = (req, res) => {
   const result = db.prepare(`
     INSERT INTO dang_ky_goi_tap
       (ho_so_id, goi_tap_id, tu_ngay, den_ngay, gia_thuc_te, ghi_chu_gia, phuong_thuc_tt, nguoi_thu_id, ma_giao_dich, ghi_chu_tt, nguoi_tao_id, nguoi_cap_nhat_id, trang_thai, ngay_thanh_toan)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'dang_hoat_dong', datetime('now','localtime'))
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'dang_hoat_dong', COALESCE(?, datetime('now','localtime')))
   `).run(id, goi_tap_id, tu_ngay, denNgay, gia_thuc_te, ghi_chu_gia || null,
-    phuong_thuc_tt, req.user.id, ma_giao_dich || null, ghi_chu_tt || null, req.user.id, req.user.id);
+    phuong_thuc_tt, req.user.id, ma_giao_dich || null, ghi_chu_tt || null, req.user.id, req.user.id, ngay_thanh_toan || null);
 
   ghi_audit_log(req, 'CREATE', 'dang_ky_goi_tap', result.lastInsertRowid, null,
     { ho_so_id: id, goi_tap_id, gia: gia_thuc_te }, 'Đăng ký gói tập cho hội viên');

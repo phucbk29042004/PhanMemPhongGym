@@ -41,7 +41,7 @@ export const getRegistrations = (req, res) => {
     JOIN ho_so hv ON hv.id = dp.hoi_vien_id
     JOIN ho_so pt ON pt.id = dp.pt_id
     LEFT JOIN goi_tap gp ON gp.id = dp.goi_pt_id
-    ${where}
+    ${where} AND hv.is_deleted = 0 AND pt.is_deleted = 0
     ORDER BY dp.ngay_tao DESC
     LIMIT ? OFFSET ?
   `).all(...params, parseInt(limit), offset);
@@ -49,7 +49,9 @@ export const getRegistrations = (req, res) => {
   const total = db.prepare(`
     SELECT COUNT(*) AS cnt
     FROM dang_ky_pt dp
-    ${where}
+    JOIN ho_so hv ON hv.id = dp.hoi_vien_id
+    JOIN ho_so pt ON pt.id = dp.pt_id
+    ${where} AND hv.is_deleted = 0 AND pt.is_deleted = 0
   `).get(...params).cnt;
 
   return success(res, {
@@ -78,7 +80,7 @@ export const getRegistrationById = (req, res) => {
     JOIN ho_so hv ON hv.id = dp.hoi_vien_id
     JOIN ho_so pt ON pt.id = dp.pt_id
     LEFT JOIN goi_tap gp ON gp.id = dp.goi_pt_id
-    WHERE dp.id = ?
+    WHERE dp.id = ? AND hv.is_deleted = 0 AND pt.is_deleted = 0
   `).get(id);
 
   if (!reg) return error(res, 'Không tìm thấy đăng ký PT.', 404);

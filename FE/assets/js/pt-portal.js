@@ -257,10 +257,22 @@
 
       return `
         <div class="flex flex-col gap-loose">
-          <div class="page-title-bar">
-            <h2 class="font-display-lg text-display-lg text-on-surface font-bold">Xin chào, ${window.GymApp.auth.user?.ho_ten || 'PT'} 👋</h2>
-            <p class="text-on-surface-variant font-body-sm text-body-sm mt-xs">Đây là tổng quan lịch làm việc của bạn hôm nay.</p>
-          </div>
+          <!-- Welcome Banner -->
+          <section class="relative overflow-hidden rounded-2xl bg-brand-primary/10 border border-brand-primary/20 p-loose min-h-[160px] flex flex-col justify-center shadow-sm">
+            <div class="relative z-10 flex flex-col gap-compact">
+              <div class="flex items-center gap-standard">
+                <span class="bg-brand-primary/20 text-brand-primary px-standard py-xs rounded-full text-label-xs font-bold border border-brand-primary/30 uppercase">
+                  Huấn luyện viên
+                </span>
+                <span class="bg-surface-lowest text-on-surface-variant px-standard py-xs rounded-full text-label-xs font-bold border border-outline-variant">
+                  ${window.GymApp.formatDate(today)}
+                </span>
+              </div>
+              <h1 class="text-display-lg font-bold text-on-surface mt-compact">Xin chào, ${window.GymApp.auth.user?.ho_ten || 'PT'}! 👋</h1>
+              <p class="text-body-md text-on-surface-variant max-w-md">Chúc bạn một ngày làm việc hiệu quả tại Paradise GYM. Hôm nay bạn có <strong>${todaySchedules.length}</strong> ca tập được phân công.</p>
+            </div>
+            <span class="material-symbols-outlined absolute -right-4 -bottom-4 text-[140px] text-brand-primary/5 select-none pointer-events-none" style="font-variation-settings: 'FILL' 1;">sports_gymnastics</span>
+          </section>
 
           <!-- Stats -->
           <div class="grid grid-cols-2 md:grid-cols-4 gap-loose">
@@ -291,11 +303,11 @@
                 </div>
                 <div class="p-loose">
                   ${todaySchedules.length === 0
-              ? `<div class="py-margin text-center text-on-surface-variant">
+          ? `<div class="py-margin text-center text-on-surface-variant">
                          <span class="material-symbols-outlined text-4xl text-outline block mb-standard">event_available</span>
                          <p class="font-bold">Không có lịch tập hôm nay</p>
                        </div>`
-              : `<div class="flex flex-col gap-standard">
+          : `<div class="flex flex-col gap-standard">
                         ${todaySchedules.map(s => `
                           <div class="flex items-center gap-compact p-standard rounded-xl bg-surface-container border border-outline-variant">
                             ${window.GymApp.avatarImg(s.avatar_hoi_vien, s.ten_hoi_vien, 'sm')}
@@ -307,7 +319,7 @@
                           </div>
                         `).join('')}
                        </div>`
-            }
+        }
                 </div>
               </div>
 
@@ -322,11 +334,11 @@
                 </div>
                 <div class="p-loose grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-loose">
                   ${students.length === 0
-              ? `<div class="col-span-3 py-margin text-center text-on-surface-variant">
+          ? `<div class="col-span-3 py-margin text-center text-on-surface-variant">
                          <span class="material-symbols-outlined text-4xl text-outline block mb-standard">person_off</span>
                          Chưa có học viên
                        </div>`
-              : students.map(sv => `
+          : students.map(sv => `
                         <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-loose shadow-sm flex flex-col items-center gap-standard">
                           ${window.GymApp.avatarImg(sv.avatar, sv.ten, 'lg')}
                           <div class="text-center">
@@ -335,7 +347,7 @@
                           </div>
                         </div>
                       `).join('')
-            }
+        }
                 </div>
               </div>
             </div>
@@ -608,7 +620,7 @@
             <label style="display:block;font-size:11px;text-transform:uppercase;font-weight:800;color:var(--text-on-surface-variant);opacity:0.8;margin-bottom:6px;">Ngày tập <span style="color:#ba1a1a;">*</span></label>
             <div class="relative w-full">
               <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">calendar_month</span>
-              <input id="es-date" type="date" value="${s.ngay_tap ? s.ngay_tap.substring(0,10) : ''}" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-4 py-2.5 rounded-xl focus:border-brand-primary outline-none text-[14px] font-medium transition-all" />
+              <input id="es-date" type="date" value="${s.ngay_tap ? s.ngay_tap.substring(0, 10) : ''}" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-4 py-2.5 rounded-xl focus:border-brand-primary outline-none text-[14px] font-medium transition-all" />
             </div>
           </div>
 
@@ -691,7 +703,7 @@
   async function _cancelScheduleSession(scheduleId, studentName) {
     const reason = prompt(`Nhập lý do hủy buổi tập với ${studentName}:`);
     if (reason === null) return;
-    
+
     const cleanReason = reason.trim();
     if (!cleanReason) {
       window.GymApp.toast('Lý do hủy không được để trống!', 'error');
@@ -718,16 +730,13 @@
   pages['my-schedule'] = {
     _filter: '',
     _status: '',
+    _currentPage: 1,
+    _pageSize: 10,
 
     render() {
       const schedules = window.GymApp.data.ptSchedules || [];
       return `
         <div class="flex flex-col gap-loose">
-          <div class="page-title-bar">
-            <h2 class="font-display-lg text-display-lg text-on-surface font-bold">Lịch tập của tôi</h2>
-            <p class="text-on-surface-variant font-body-sm text-body-sm mt-xs">Toàn bộ lịch tập được phân công cho bạn</p>
-          </div>
-
           <!-- Filter -->
           <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant p-standard shadow-sm">
             <div class="flex flex-wrap items-center gap-standard">
@@ -752,11 +761,9 @@
             </div>
           </div>
 
-          <!-- Table -->
-          <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
-            <div id="schedule-table-wrap">
-              ${this._renderTable(schedules)}
-            </div>
+          <!-- Table / Cards -->
+          <div id="schedule-table-wrap">
+            ${this._renderTable(schedules)}
           </div>
         </div>
       `;
@@ -766,82 +773,156 @@
       if (!list.length) return `
         <div class="p-margin text-center text-on-surface-variant">
           <span class="material-symbols-outlined text-4xl text-outline block mb-standard">event_busy</span>
-          <p class="font-bold">Không tìm thấy lịch tập</p>
+          <p class="font-bold text-label-md mt-s2">Không tìm thấy lịch tập</p>
         </div>`;
+
+      // 1. Sắp xếp: Ngày giảm dần (mới nhất lên đầu), Giờ tăng dần (sáng đến tối)
+      const sortedList = [...list].sort((a, b) => {
+        if (a.ngay_tap !== b.ngay_tap) {
+          return new Date(b.ngay_tap || 0) - new Date(a.ngay_tap || 0); // Ngày mới nhất ở trên
+        }
+        return (a.gio_bat_dau || '').localeCompare(b.gio_bat_dau || ''); // Giờ tăng dần
+      });
+
+      // 2. Pagination
+      const totalRecords = sortedList.length;
+      const totalPages = Math.ceil(totalRecords / this._pageSize);
+      if (this._currentPage > totalPages) this._currentPage = 1; // reset if out of bounds
+      const startIdx = (this._currentPage - 1) * this._pageSize;
+      const paginatedList = sortedList.slice(startIdx, startIdx + this._pageSize);
+
+      // 3. Gom nhóm theo ngày
+      const grouped = {};
+      paginatedList.forEach(s => {
+        const d = s.ngay_tap || 'Chưa xác định';
+        if (!grouped[d]) grouped[d] = [];
+        grouped[d].push(s);
+      });
+
+      // 4. Render các nhóm
+      const groupsHtml = Object.entries(grouped).map(([dateStr, schedules]) => {
+        const dayObj = dateStr !== 'Chưa xác định' ? new Date(dateStr) : null;
+        const weekday = dayObj ? dayObj.toLocaleDateString('vi-VN', { weekday: 'long' }) : '';
+        const formattedDate = dayObj ? dayObj.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : dateStr;
+
+        return `
+        <div class="mb-10">
+          <div class="flex items-center gap-3 mb-5 pl-2">
+            <span class="material-symbols-outlined text-brand-primary text-2xl" style="font-variation-settings: 'FILL' 1;">calendar_month</span>
+            <h3 class="font-display-xl text-display-xl text-on-surface font-bold capitalize tracking-tight">${weekday}, ${formattedDate}</h3>
+            <span class="bg-brand-primary/10 text-brand-primary text-label-sm px-3 py-1 rounded-full font-bold ml-2">${schedules.length} buổi</span>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            ${schedules.map(s => {
+          return `
+              <div class="group relative rounded-3xl overflow-hidden flex flex-col gap-4 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-500 bg-surface-container-lowest border border-outline-variant">
+                <!-- Accent bar top -->
+                <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#1D9336,#4ade80);border-radius:3px 3px 0 0;"></div>
+
+                <!-- Card Header: Time & Status -->
+                <div class="flex items-start justify-between gap-2 pt-5 px-5">
+                  <div class="flex flex-col min-w-0">
+                    <span class="text-[10px] uppercase font-bold tracking-widest text-on-surface-variant mb-1">Khung giờ</span>
+                    <div class="flex items-center gap-1.5">
+                      <span class="material-symbols-outlined text-brand-primary text-[18px] shrink-0">schedule</span>
+                      <span class="font-bold text-on-surface text-body-lg truncate whitespace-nowrap">${s.gio_bat_dau || '—'} - ${s.gio_ket_thuc || '—'}</span>
+                    </div>
+                  </div>
+                  <div class="shrink-0 ml-2">${window.GymApp.statusBadge(s.trang_thai)}</div>
+                </div>
+
+                <!-- Student Info -->
+                <div class="flex items-center gap-4 px-5">
+                  <div class="relative flex-shrink-0">
+                    ${window.GymApp.avatarImg(s.avatar_hoi_vien, s.ten_hoi_vien, 'lg')}
+                  </div>
+                  <div class="flex flex-col min-w-0 flex-1">
+                    <span class="font-bold text-on-surface text-body-lg truncate block leading-tight mb-1" title="${s.ten_hoi_vien || 'Không rõ'}">${s.ten_hoi_vien || 'Không rõ'}</span>
+                    <div class="flex">
+                      <span class="bg-brand-primary/10 text-brand-primary px-2 py-0.5 rounded-md font-bold text-[10px] uppercase tracking-wider border border-brand-primary/20">${s.loai_buoi === 'nhom' ? 'Nhóm' : 'Cá nhân'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Notes Area -->
+                <div class="px-5">
+                  <div class="bg-surface-container-low/50 rounded-2xl p-3 flex items-start gap-2 h-[68px]">
+                    <span class="material-symbols-outlined text-brand-primary text-[16px] shrink-0 mt-0.5" style="font-variation-settings: 'FILL' 1;">sticky_note_2</span>
+                    <p class="text-body-sm text-on-surface-variant line-clamp-2" title="${s.ghi_chu}">${s.ghi_chu ? s.ghi_chu : '<span class="italic opacity-60">Chưa có ghi chú</span>'}</p>
+                  </div>
+                </div>
+
+                <!-- Actions Footer -->
+                <div class="mt-auto px-5 pb-5 flex flex-wrap items-center justify-between gap-3 border-t border-outline-variant/30 pt-4">
+                  <button class="btn-pt-edit-note text-on-surface-variant hover:text-brand-primary hover:bg-brand-primary/10 w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-300 shadow-sm border border-transparent hover:border-brand-primary/30 focus-ring shrink-0" data-id="${s.id}" data-ghi-chu="${(s.ghi_chu || '').replace(/"/g, '&quot;')}" title="${s.ghi_chu ? 'Sửa ghi chú' : 'Thêm ghi chú'}">
+                    <span class="material-symbols-outlined text-lg">${s.ghi_chu ? 'edit_note' : 'add_comment'}</span>
+                  </button>
+                  
+                  <div class="flex flex-wrap items-center gap-1.5 justify-end">
+                    ${s.trang_thai === 'cho_tap'
+              ? `<button class="btn-cancel-session w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-300 shadow-sm border border-error/50 text-error hover:bg-error/10 hover:border-error focus-ring shrink-0" data-id="${s.id}" data-name="${s.ten_hoi_vien || 'học viên'}" title="Hủy lịch">
+                           <span class="material-symbols-outlined text-lg">close</span>
+                         </button>
+                         <button class="btn-edit-session w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-300 shadow-sm border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary bg-surface-container-lowest focus-ring shrink-0" data-id="${s.id}" data-sdata='${encodeURIComponent(JSON.stringify(s))}' title="Sửa lịch">
+                           <span class="material-symbols-outlined text-lg">edit</span>
+                         </button>
+                         <button class="btn-confirm-session flex items-center gap-1 px-3 h-9 rounded-xl transition-all duration-300 shadow-sm bg-brand-primary text-white hover:bg-brand-primary/90 hover:-translate-y-0.5 active:scale-95 font-bold text-label-sm focus-ring shrink-0" data-id="${s.id}" data-name="${s.ten_hoi_vien || 'học viên'}" title="Xác nhận hoàn thành">
+                           <span class="material-symbols-outlined text-sm">done</span> Xong
+                         </button>`
+              : `<span class="text-outline text-body-sm italic mr-2 shrink-0">—</span>`
+            }
+                  </div>
+                </div>
+              </div>
+              `;
+        }).join('')}
+          </div>
+        </div>
+        `;
+      }).join('');
+
+      // 5. Build Pagination UI
+      let paginationHtml = '';
+      if (totalPages > 1) {
+        let pagesHtml = '';
+        // Hiển thị tối đa 5 trang gần nhất
+        let startPage = Math.max(1, this._currentPage - 2);
+        let endPage = Math.min(totalPages, this._currentPage + 2);
+        if (startPage > 1) pagesHtml += `<button class="btn-sch-page w-10 h-10 rounded-xl flex items-center justify-center font-bold transition-colors bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high border border-outline-variant" data-page="1">1</button>${startPage > 2 ? '<span class="px-2 text-outline">...</span>' : ''}`;
+
+        for (let i = startPage; i <= endPage; i++) {
+          pagesHtml += `<button class="btn-sch-page w-10 h-10 rounded-xl flex items-center justify-center font-bold transition-colors ${i === this._currentPage ? 'bg-brand-primary text-white shadow-md' : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high border border-outline-variant'}" data-page="${i}">${i}</button>`;
+        }
+
+        if (endPage < totalPages) pagesHtml += `${endPage < totalPages - 1 ? '<span class="px-2 text-outline">...</span>' : ''}<button class="btn-sch-page w-10 h-10 rounded-xl flex items-center justify-center font-bold transition-colors bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high border border-outline-variant" data-page="${totalPages}">${totalPages}</button>`;
+
+        paginationHtml = `
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-s4 mt-s6 pt-s5 border-t border-outline-variant">
+            <span class="text-body-md text-on-surface-variant font-medium">Đang hiển thị ${startIdx + 1}-${Math.min(startIdx + this._pageSize, totalRecords)} trên tổng ${totalRecords} lịch tập</span>
+            <div class="flex items-center gap-s2">
+              <button class="btn-sch-page-prev p-2 rounded-xl border border-outline-variant text-on-surface-variant hover:bg-surface-container-high transition-colors disabled:opacity-50 disabled:cursor-not-allowed" ${this._currentPage === 1 ? 'disabled' : ''}>
+                <span class="material-symbols-outlined text-[20px]">chevron_left</span>
+              </button>
+              ${pagesHtml}
+              <button class="btn-sch-page-next p-2 rounded-xl border border-outline-variant text-on-surface-variant hover:bg-surface-container-high transition-colors disabled:opacity-50 disabled:cursor-not-allowed" ${this._currentPage === totalPages ? 'disabled' : ''}>
+                <span class="material-symbols-outlined text-[20px]">chevron_right</span>
+              </button>
+            </div>
+          </div>
+        `;
+      }
 
       return `
-        <div class="overflow-x-auto">
-          <table class="gym-table w-full">
-            <thead>
-              <tr>
-                <th>Học viên</th>
-                <th>Ngày tập</th>
-                <th>Giờ</th>
-                <th>Loại buổi</th>
-                <th>Trạng thái</th>
-                <th>Ghi chú</th>
-                <th class="text-center">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${list.map(s => `
-                <tr>
-                  <td>
-                    <div class="flex items-center gap-compact">
-                      ${window.GymApp.avatarImg(s.avatar_hoi_vien, s.ten_hoi_vien, 'sm')}
-                      <span class="font-bold text-on-surface">${s.ten_hoi_vien || '—'}</span>
-                    </div>
-                  </td>
-                  <td class="text-on-surface-variant">${window.GymApp.formatDate(s.ngay_tap)}</td>
-                  <td class="font-bold text-on-surface">${s.gio_bat_dau} — ${s.gio_ket_thuc}</td>
-                  <td><span class="bg-surface-container px-compact py-xs rounded-full text-body-sm text-on-surface-variant font-bold">${s.loai_buoi === 'nhom' ? 'Nhóm' : 'Cá nhân'}</span></td>
-                  <td>${window.GymApp.statusBadge(s.trang_thai)}</td>
-                  <td class="text-on-surface-variant text-body-sm max-w-[160px]">
-                    <div class="flex items-center gap-xs group/note">
-                      <span class="truncate block flex-1" title="${s.ghi_chu || ''}">${s.ghi_chu || '—'}</span>
-                      <button class="btn-pt-edit-note opacity-0 group-hover/note:opacity-100 transition-opacity p-0.5 rounded-md hover:bg-surface-container text-brand-primary" data-id="${s.id}" data-ghi-chu="${(s.ghi_chu || '').replace(/"/g, '&quot;')}" title="Chỉnh sửa ghi chú" style="background:transparent; border:none; cursor:pointer; display:inline-flex; align-items:center; justify-content:center;">
-                        <span class="material-symbols-outlined text-[16px]">edit_note</span>
-                      </button>
-                    </div>
-                  </td>
-                  <td class="text-center">
-                    ${s.trang_thai === 'cho_tap'
-          ? `<div class="flex items-center justify-center gap-2">
-                             <button
-                               class="btn-confirm-session flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-brand-primary text-white font-bold text-xs hover:bg-brand-primary/95 active:scale-95 transition-all shadow-sm whitespace-nowrap"
-                               data-id="${s.id}"
-                               data-name="${s.ten_hoi_vien || 'học viên'}"
-                             >
-                               <span class="material-symbols-outlined text-xs">done</span> Xác nhận
-                             </button>
-                             <button
-                               class="btn-edit-session flex items-center justify-center p-1.5 rounded-lg border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary active:scale-95 transition-all"
-                               data-id="${s.id}"
-                               data-sdata='${encodeURIComponent(JSON.stringify(s))}'
-                               title="Sửa lịch"
-                             >
-                               <span class="material-symbols-outlined text-xs">edit</span>
-                             </button>
-                             <button
-                               class="btn-cancel-session flex items-center justify-center p-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 hover:border-red-400 active:scale-95 transition-all"
-                               data-id="${s.id}"
-                               data-name="${s.ten_hoi_vien || 'học viên'}"
-                               title="Hủy lịch"
-                             >
-                               <span class="material-symbols-outlined text-xs">close</span>
-                             </button>
-                           </div>`
-          : `<span class="text-outline text-body-sm">—</span>`
-        }
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>`;
+        <div>
+          ${groupsHtml}
+          ${paginationHtml}
+        </div>
+      `;
     },
 
-    _applyFilter() {
+    _applyFilter(resetPage = true) {
+      if (resetPage) this._currentPage = 1;
       const q = (document.getElementById('sch-search')?.value || '').toLowerCase();
       const status = document.getElementById('sch-status')?.value || '';
       const date = document.getElementById('sch-date')?.value || '';
@@ -856,9 +937,9 @@
 
     init() {
       const self = this;
-      document.getElementById('sch-search')?.addEventListener('input', () => self._applyFilter());
-      document.getElementById('sch-status')?.addEventListener('change', () => self._applyFilter());
-      document.getElementById('sch-date')?.addEventListener('change', () => self._applyFilter());
+      document.getElementById('sch-search')?.addEventListener('input', () => self._applyFilter(true));
+      document.getElementById('sch-status')?.addEventListener('change', () => self._applyFilter(true));
+      document.getElementById('sch-date')?.addEventListener('change', () => self._applyFilter(true));
       document.getElementById('sch-reload')?.addEventListener('click', async () => {
         try {
           const res = await window.GymApp.api.get('/pt/schedules');
@@ -867,7 +948,7 @@
         document.getElementById('sch-search').value = '';
         document.getElementById('sch-status').value = '';
         document.getElementById('sch-date').value = '';
-        self._applyFilter();
+        self._applyFilter(true);
         window.GymApp.toast('Đã tải lại lịch tập!', 'success');
       });
 
@@ -876,9 +957,31 @@
         _showCreateScheduleModal();
       });
 
-      // Xác nhận, Sửa, Hủy buổi tập — event delegation
+      // Bắt sự kiện click (Event Delegation) cho bảng & phân trang
       document.getElementById('schedule-table-wrap')?.addEventListener('click', async (e) => {
-        // 1. Xác nhận đã tập
+        // --- Pagination ---
+        const pageBtn = e.target.closest('.btn-sch-page');
+        if (pageBtn) {
+          self._currentPage = parseInt(pageBtn.dataset.page, 10);
+          self._applyFilter(false);
+          return;
+        }
+        const prevBtn = e.target.closest('.btn-sch-page-prev');
+        if (prevBtn) {
+          if (self._currentPage > 1) {
+            self._currentPage--;
+            self._applyFilter(false);
+          }
+          return;
+        }
+        const nextBtn = e.target.closest('.btn-sch-page-next');
+        if (nextBtn) {
+          self._currentPage++;
+          self._applyFilter(false);
+          return;
+        }
+
+        // --- Xác nhận đã tập ---
         const btn = e.target.closest('.btn-confirm-session');
         if (btn && !btn.disabled) {
           const scheduleId = btn.dataset.id;
@@ -946,7 +1049,7 @@
         <div class="animate-fade-in bg-surface-container-lowest border border-outline-variant" style="width:100%;max-width:440px;display:flex;flex-direction:column;border-radius:20px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,0.15);">
           <!-- Header -->
           <div style="padding:16px 20px;background:linear-gradient(135deg,#1D9336,#0a591c);color:#fff;display:flex;align-items:center;justify-content:space-between;">
-            <h3 style="font-size:15px;font-weight:800;margin:0;">📝 GHI CHÚ BUỔI TẬP (PT)</h3>
+            <h3 style="font-size:15px;font-weight:800;margin:0;">GHI CHÚ BUỔI TẬP (PT)</h3>
             <button id="close-note-modal" style="background:none;border:none;color:#fff;cursor:pointer;margin-left:auto;display:flex;align-items:center;">
               <span class="material-symbols-outlined" style="font-size:20px;">close</span>
             </button>
@@ -1003,10 +1106,6 @@
     render() {
       return `
         <div class="flex flex-col gap-loose">
-          <div class="page-title-bar">
-            <h2 class="font-display-lg text-display-lg text-on-surface font-bold">Học viên của tôi</h2>
-            <p class="text-on-surface-variant font-body-sm text-body-sm mt-xs">Danh sách học viên đang kèm 1-1 với bạn</p>
-          </div>
           <div id="students-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-loose">
             <div class="col-span-full bg-surface-container-lowest rounded-2xl border border-outline-variant p-loose text-center text-on-surface-variant">
               <span class="material-symbols-outlined text-4xl block mb-standard animate-spin">refresh</span>
@@ -1058,9 +1157,9 @@
 
       grid.innerHTML = students.map(sv => {
         const total = sv.tong_buoi_dk || (sv.buoi_da_tap + sv.buoi_con_lai) || 0;
-        const done  = sv.buoi_da_tap || 0;
-        const left  = sv.buoi_con_lai ?? 0;
-        const pct   = total > 0 ? Math.round((done / total) * 100) : 0;
+        const done = sv.buoi_da_tap || 0;
+        const left = sv.buoi_con_lai ?? 0;
+        const pct = total > 0 ? Math.round((done / total) * 100) : 0;
         const isAlert = left <= 3 && left > 0;
         const isAlmost = pct >= 80;
 
@@ -1129,38 +1228,87 @@
         { label: 'Chi nhánh', value: u.chi_nhanh, icon: 'location_on' },
       ];
 
-      return `
-        <div class="flex flex-col gap-loose">
-          <div class="page-title-bar">
-            <h2 class="font-display-lg text-display-lg text-on-surface font-bold">Hồ sơ cá nhân</h2>
-            <p class="text-on-surface-variant font-body-sm text-body-sm mt-xs">Thông tin cá nhân của bạn (chỉ xem)</p>
-          </div>
+      const isActive = u.trang_thai === 'hoat_dong';
+      const statusText = isActive ? '● Đang làm việc' : '○ Tạm nghỉ';
+      const rating = u.danh_gia || u.rating || 0;
+      const stars = Array.from({ length: 5 }, (_, i) =>
+        `<span class="material-symbols-outlined" style="font-size:14px;color:${i < Math.round(rating) ? '#fbbf24' : 'rgba(255,255,255,0.3)'};font-variation-settings:'FILL' 1;">star</span>`
+      ).join('');
 
-          <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
-            <!-- Avatar header -->
-            <div class="section-header px-loose py-loose border-b border-outline-variant flex items-center gap-loose">
-            <div class="flex-shrink-0">
-                ${window.GymApp.avatarImg(u.avatar_url, u.ho_ten, 'xl')}
+      return `
+        <div class="flex flex-col gap-6">
+          <div class="bg-surface-container-lowest rounded-3xl border border-outline-variant shadow-sm overflow-hidden">
+
+            <!-- Banner Header (members-list style) -->
+            <div style="background:linear-gradient(135deg,#065f46 0%,#10b981 60%,#34d399 100%);padding:20px 24px 0;position:relative;overflow:hidden;min-height:130px;">
+              <div style="position:absolute;top:-30px;right:-30px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,0.07);"></div>
+              <div style="position:absolute;top:20px;right:80px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.05);"></div>
+              <div style="position:absolute;bottom:-20px;left:120px;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,0.04);"></div>
+
+              <!-- Avatar + Name -->
+              <div style="display:flex;align-items:flex-end;gap:16px;margin-bottom:16px;position:relative;z-index:1;">
+                <div style="position:relative;flex-shrink:0;">
+                  <div style="width:80px;height:80px;border-radius:50%;border:3px solid rgba(255,255,255,0.6);overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.25);">
+                    ${window.GymApp.avatarImg(u.avatar_url, u.ho_ten, 'lg', 'width:100%;height:100%;object-fit:cover;')}
+                  </div>
+                  <span style="position:absolute;bottom:3px;right:3px;width:14px;height:14px;border-radius:50%;background:${isActive ? '#4ade80' : '#94a3b8'};border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.2);"></span>
+                </div>
+                <div style="flex:1;min-width:0;padding-bottom:4px;">
+                  <h3 style="font-size:22px;font-weight:800;color:#fff;line-height:1.2;margin:0 0 4px;text-shadow:0 1px 4px rgba(0,0,0,0.2);">${u.ho_ten || '—'}</h3>
+                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <span style="font-size:12px;color:rgba(255,255,255,0.85);font-weight:600;">${u.ma_ho_so || '—'}</span>
+                    <span style="width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,0.5);"></span>
+                    <span style="font-size:12px;color:rgba(255,255,255,0.85);">Huấn luyện viên</span>
+                    <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:${isActive ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'};color:#fff;border:1px solid rgba(255,255,255,0.3);">${statusText}</span>
+                  </div>
+                  <!-- Stars -->
+                  <div style="display:flex;align-items:center;gap:3px;margin-top:6px;">
+                    ${stars}
+                    <span style="font-size:12px;font-weight:700;color:#fff;margin-left:4px;">${rating ? rating.toFixed(1) : '—'}/5</span>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p class="font-bold text-on-surface text-display-2xl">${u.ho_ten || '—'}</p>
-                <p class="text-on-surface-variant text-body-sm mt-xs">Huấn luyện viên · ${u.chuyen_mon || 'Chưa cập nhật chuyên môn'}</p>
+
+              <!-- Quick Stats Bar -->
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(255,255,255,0.15);border-radius:12px 12px 0 0;overflow:hidden;">
+                <div style="background:rgba(0,0,0,0.15);padding:10px 14px;backdrop-filter:blur(4px);">
+                  <div style="font-size:10px;color:rgba(255,255,255,0.65);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Chuyên môn</div>
+                  <div style="font-size:13px;font-weight:800;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${u.chuyen_mon || '—'}">${u.chuyen_mon || '—'}</div>
+                </div>
+                <div style="background:rgba(0,0,0,0.15);padding:10px 14px;backdrop-filter:blur(4px);">
+                  <div style="font-size:10px;color:rgba(255,255,255,0.65);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Kinh nghiệm</div>
+                  <div style="font-size:13px;font-weight:800;color:#fff;">${u.kinh_nghiem || 0} năm</div>
+                </div>
+                <div style="background:rgba(0,0,0,0.15);padding:10px 14px;backdrop-filter:blur(4px);">
+                  <div style="font-size:10px;color:rgba(255,255,255,0.65);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Tổng buổi dạy</div>
+                  <div style="font-size:13px;font-weight:800;color:#fff;">${u.tong_buoi_da_day || 0} buổi</div>
+                </div>
               </div>
             </div>
 
-            <!-- Fields -->
-            <div class="p-loose grid grid-cols-1 md:grid-cols-2 gap-standard">
-              ${fields.map(f => `
-                <div class="flex items-start gap-compact p-standard rounded-xl bg-surface-container">
-                  <div class="icon-bg icon-bg-green flex-shrink-0" style="width:32px;height:32px;border-radius:8px">
-                    <span class="material-symbols-outlined text-brand-primary text-sm" style="font-variation-settings:'FILL' 1">${f.icon}</span>
+            <!-- Info Body -->
+            <div style="padding:20px 24px 24px;" class="bg-surface-container-lowest">
+              <!-- Section title -->
+              <div style="display:flex;align-items:center;gap:8px;margin:4px 0 16px;">
+                <span class="material-symbols-outlined" style="font-size:15px;color:#10b981;font-variation-settings:'FILL' 1;">badge</span>
+                <span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#10b981;">Thông tin cá nhân</span>
+                <div style="flex:1;height:1px;background:linear-gradient(to right,#10b98140,transparent);margin-left:4px;"></div>
+              </div>
+
+              <!-- 2-col info grid -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-[1px] bg-outline-variant rounded-xl overflow-hidden border border-outline-variant">
+                ${fields.map(f => `
+                  <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-surface-lowest, #fff);">
+                    <div style="width:32px;height:32px;border-radius:8px;background:var(--bg-surface-low, #eff8ff);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                      <span class="material-symbols-outlined" style="font-size:16px;color:#0ea5e9;font-variation-settings:'FILL' 1;">${f.icon}</span>
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-on-surface-variant);opacity:0.6;margin-bottom:2px;">${f.label}</div>
+                      <div style="font-size:13px;font-weight:700;color:var(--text-on-surface);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${f.value || '—'}">${f.value || '—'}</div>
+                    </div>
                   </div>
-                  <div class="min-w-0">
-                    <p class="text-on-surface-variant text-body-sm">${f.label}</p>
-                    <p class="font-bold text-on-surface text-body-md truncate">${f.value || '—'}</p>
-                  </div>
-                </div>
-              `).join('')}
+                `).join('')}
+              </div>
             </div>
           </div>
         </div>

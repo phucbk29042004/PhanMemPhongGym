@@ -84,6 +84,22 @@
       border: 1px solid var(--outline-variant);
       border-radius: 8px;
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+      transition: all 0.2s ease-in-out;
+    }
+
+    .member-card:hover {
+      border-color: var(--brand-primary);
+      box-shadow: 0 4px 12px rgba(29, 147, 54, 0.15);
+      transform: translateY(-2px);
+    }
+
+    [data-tab] {
+      transition: all 0.2s ease-in-out;
+    }
+    
+    [data-tab]:not(.member-nav-active):not(button.bg-brand-primary):not(#btn-renew-cancel):not(#btn-renew-submit):not(button.border-outline-variant):not(.text-white):hover {
+      box-shadow: inset 0 0 0 1px var(--brand-primary);
+      color: var(--brand-primary);
     }
 
     .focus-ring:focus {
@@ -224,12 +240,6 @@
         </button>
         <button
           class="member-side-nav mx-s2 flex items-center gap-s3 px-s4 py-s3 rounded-full text-on-surface-variant hover:bg-surface-container-high transition-all text-left"
-          data-tab="notifications">
-          <span class="material-symbols-outlined">notifications</span>
-          <span class="text-label-md">Thông báo</span>
-        </button>
-        <button
-          class="member-side-nav mx-s2 flex items-center gap-s3 px-s4 py-s3 rounded-full text-on-surface-variant hover:bg-surface-container-high transition-all text-left"
           data-tab="profile">
           <span class="material-symbols-outlined">person</span>
           <span class="text-label-md">Cá nhân</span>
@@ -254,7 +264,7 @@
   </div>
 
   <nav
-    class="md:hidden fixed bottom-0 left-0 right-0 z-40 h-16 bg-surface-container-lowest border-t border-outline-variant shadow-lg grid grid-cols-5">
+    class="md:hidden fixed bottom-0 left-0 right-0 z-40 h-16 bg-surface-container-lowest border-t border-outline-variant shadow-lg grid grid-cols-4">
     <button data-tab="dashboard"
       class="member-bottom-nav flex flex-col items-center justify-center gap-s1 text-on-surface-variant">
       <span class="material-symbols-outlined" style="font-size:20px">home</span>
@@ -269,11 +279,6 @@
       class="member-bottom-nav flex flex-col items-center justify-center gap-s1 text-on-surface-variant">
       <span class="material-symbols-outlined" style="font-size:20px">how_to_reg</span>
       <span class="text-label-sm" style="font-size:10px">Vào/Ra</span>
-    </button>
-    <button data-tab="notifications"
-      class="member-bottom-nav flex flex-col items-center justify-center gap-s1 text-on-surface-variant relative">
-      <span class="material-symbols-outlined" style="font-size:20px">notifications</span>
-      <span class="text-label-sm" style="font-size:10px">Thông báo</span>
     </button>
     <button data-tab="profile"
       class="member-bottom-nav flex flex-col items-center justify-center gap-s1 text-on-surface-variant">
@@ -300,6 +305,7 @@
         cho_tap: 'Chờ tập', da_tap: 'Đã tập', da_xac_nhan: 'Đã xác nhận', da_huy: 'Đã hủy',
         hoan_tac: 'Hoàn tác', vang: 'Vắng', vao: 'Vào', ra: 'Ra',
         dang_hoat_dong: 'Đang hoạt động', hoat_dong: 'Hoạt động', het_han: 'Hết hạn', chua_dang_ky: 'Chưa đăng ký',
+        cho_duyet: 'Chờ duyệt', huy: 'Đã hủy',
         thuong: 'Thường', Normal: 'Thường', Student: 'Sinh viên', vip: 'VIP', premium: 'Premium',
         the_tu: 'Thẻ từ', qr_code: 'QR Code', khuon_mat: 'Khuôn mặt', thu_cong: 'Thủ công',
         ca_nhan: 'Cá nhân', nhom: 'Nhóm'
@@ -334,6 +340,8 @@
         vao: { bg: '#e7f5e9', color: '#1D9336', label: 'Vào' },
         ra: { bg: '#e3f2fd', color: '#1565c0', label: 'Ra' },
         dang_hoat_dong: { bg: '#e7f5e9', color: '#1D9336', label: 'Đang hoạt động' },
+        cho_duyet: { bg: '#fff3e0', color: '#e65100', label: 'Chờ duyệt' },
+        huy: { bg: '#ffdad6', color: '#93000a', label: 'Bị từ chối' },
         het_han: { bg: '#ffdad6', color: '#93000a', label: 'Hết hạn' },
         chua_dang_ky: { bg: '#ebeef3', color: '#3f4941', label: 'Chưa đăng ký' }
       };
@@ -367,11 +375,65 @@
           originalInput.parentNode.insertBefore(visibleInput, originalInput);
 
           const baseDescriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+          let currentPos = 'bottom left';
 
           const adp = new AirDatepicker(visibleInput, {
             locale: window.GymApp.localeVi,
             dateFormat: 'dd/MM/yyyy',
             autoClose: true,
+            container: document.body,
+            position: currentPos,
+            onShow: function(isFinished) {
+              if (isFinished) return;
+              const rect = visibleInput.getBoundingClientRect();
+              const spaceBelow = window.innerHeight - rect.bottom;
+              const calendarHeight = 350; // Chiều cao an toàn của calendar
+              
+              // Quyết định vị trí tối ưu: chỉ chọn 'top left' nếu ở dưới không đủ và ở trên đủ chứa calendar
+              const desiredPos = (spaceBelow < calendarHeight && rect.top > calendarHeight) ? 'top left' : 'bottom left';
+              
+              if (currentPos !== desiredPos) {
+                currentPos = desiredPos;
+                adp.update({ position: desiredPos });
+              }
+
+              // Xử lý chống tràn màn hình tuyệt đối trong mọi trường hợp (Viewport Collision Adjustment)
+              setTimeout(() => {
+                if (adp.$datepicker) {
+                  const dpRect = adp.$datepicker.getBoundingClientRect();
+                  
+                  // 1. Chống tràn mép trên (Top boundary collision)
+                  if (dpRect.top < 10) {
+                    const currentTop = parseFloat(adp.$datepicker.style.top) || 0;
+                    adp.$datepicker.style.top = `${currentTop + (10 - dpRect.top)}px`;
+                  }
+                  
+                  // 2. Chống tràn mép dưới (Bottom boundary collision)
+                  const overflowBottom = dpRect.bottom - (window.innerHeight - 10);
+                  if (overflowBottom > 0) {
+                    const currentTop = parseFloat(adp.$datepicker.style.top) || 0;
+                    // Chỉ kéo lên nếu không làm tràn mép trên (y >= 10)
+                    const targetViewTop = dpRect.top - overflowBottom;
+                    if (targetViewTop >= 10) {
+                      adp.$datepicker.style.top = `${currentTop - overflowBottom}px`;
+                    } else {
+                      // Nếu kéo lên hết cỡ vẫn tràn cả 2 bên thì ưu tiên giữ lại thanh navigation ở trên cùng
+                      adp.$datepicker.style.top = `${currentTop + (10 - dpRect.top)}px`;
+                    }
+                  }
+                  
+                  // 3. Chống tràn mép trái/phải
+                  const spaceRight = window.innerWidth - dpRect.right;
+                  if (dpRect.left < 10) {
+                    const currentLeft = parseFloat(adp.$datepicker.style.left) || 0;
+                    adp.$datepicker.style.left = `${currentLeft + (10 - dpRect.left)}px`;
+                  } else if (spaceRight < 10) {
+                    const currentLeft = parseFloat(adp.$datepicker.style.left) || 0;
+                    adp.$datepicker.style.left = `${currentLeft - (10 - spaceRight)}px`;
+                  }
+                }
+              }, 50); // Trì hoãn nhẹ 50ms để layout được render hoàn tất
+            },
             onSelect: function ({ date }) {
               if (date && !Array.isArray(date)) {
                 const y = date.getFullYear();
@@ -393,9 +455,15 @@
             set: function(val) {
               baseDescriptor.set.call(originalInput, val);
               if (val) {
-                const parts = val.split('-');
+                const cleanVal = val.substring(0, 10);
+                const parts = cleanVal.split('-');
                 if (parts.length === 3) {
-                  adp.selectDate(new Date(parts[0], parts[1] - 1, parts[2]), { silent: true });
+                  const y = parseInt(parts[0]);
+                  const m = parseInt(parts[1]);
+                  const d = parseInt(parts[2]);
+                  if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+                    adp.selectDate(new Date(y, m - 1, d), { silent: true });
+                  }
                 }
               } else { adp.clear({ silent: true }); }
             }
@@ -403,9 +471,15 @@
 
           const initialVal = baseDescriptor.get.call(originalInput);
           if (initialVal) {
-            const parts = initialVal.split('-');
+            const cleanVal = initialVal.substring(0, 10);
+            const parts = cleanVal.split('-');
             if (parts.length === 3) {
-              adp.selectDate(new Date(parts[0], parts[1] - 1, parts[2]), { silent: true });
+              const y = parseInt(parts[0]);
+              const m = parseInt(parts[1]);
+              const d = parseInt(parts[2]);
+              if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+                adp.selectDate(new Date(y, m - 1, d), { silent: true });
+              }
             }
           }
         });

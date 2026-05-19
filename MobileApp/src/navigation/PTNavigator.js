@@ -2,14 +2,15 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import {
-  Calendar, Home, QrCode, User, Users,
+  Bell, Calendar, Home, QrCode, User,
 } from 'lucide-react-native';
 import PTHomeScreen from '../screens/pt/PTHomeScreen';
 import PTQRCodeScreen from '../screens/pt/PTQRCodeScreen';
 import PTScheduleScreen from '../screens/pt/PTScheduleScreen';
-import PTStudentsScreen from '../screens/pt/PTStudentsScreen';
+import PTNotificationScreen from '../screens/pt/PTNotificationScreen';
 import PTProfileScreen from '../screens/pt/PTProfileScreen';
 import GymRulesScreen from '../screens/shared/GymRulesScreen';
+import { useNotificationStore } from '../store/useNotificationStore';
 import { useTheme } from '../context/ThemeContext';
 
 const Tab = createBottomTabNavigator();
@@ -35,6 +36,7 @@ function TabLabel({ label, color, focused }) {
 
 export default function PTNavigator() {
   const { colors } = useTheme();
+  const unreadCount = useNotificationStore(state => state.unreadCount);
 
   return (
     <Tab.Navigator
@@ -92,13 +94,19 @@ export default function PTNavigator() {
         }}
       />
 
-      {/* Tab 4: Học viên */}
+      {/* Tab 4: Thông báo */}
       <Tab.Screen
-        name="Members"
-        component={PTStudentsScreen}
+        name="Notifications"
+        component={PTNotificationScreen}
         options={{
-          tabBarLabel: ({ color, focused }) => <TabLabel label="Học viên" color={color} focused={focused} />,
-          tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={Users} color={color} focused={focused} colors={colors} />,
+          tabBarLabel: ({ color, focused }) => <TabLabel label="Thông báo" color={color} focused={focused} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={Bell} color={color} focused={focused} colors={colors} />,
+          tabBarBadge: unreadCount > 0 ? unreadCount : null,
+          tabBarBadgeStyle: {
+            backgroundColor: '#dc2626',
+            fontSize: 10,
+            lineHeight: 14,
+          }
         }}
       />
 

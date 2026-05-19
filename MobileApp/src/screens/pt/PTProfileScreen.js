@@ -6,12 +6,13 @@ import {
   TouchableOpacity, View,
 } from 'react-native';
 import {
-  Award, Badge, Bell, Building2, Calendar, ChevronRight,
-  Clock, Dumbbell, Eye, EyeOff, Info, KeyRound, LogOut,
+  Award, Badge, Building2, Calendar, ChevronRight,
+  Clock, Dumbbell, Eye, EyeOff, KeyRound, LogOut,
   Moon, Phone, ShieldCheck, Star, Sun, User, X,
 } from 'lucide-react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import ProfileAvatar from '../../components/ProfileAvatar';
+import EditProfileModal from '../../components/EditProfileModal';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useTheme } from '../../context/ThemeContext';
 import { api } from '../../services/api';
@@ -224,21 +225,19 @@ export default function PTProfileScreen() {
   const { user, logout } = useAuthStore();
   const { isDark, toggleTheme, colors } = useTheme();
   const [profile, setProfile] = useState(null);
-  const [notifications, setNotifications] = useState([]);
   const [checkins, setCheckins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showChangePw, setShowChangePw] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
-      const [profileRes, notifRes, checkinsRes] = await Promise.all([
+      const [profileRes, checkinsRes] = await Promise.all([
         api.get('/members/me/profile'),
-        api.get('/members/me/notifications'),
         api.get('/checkins/me?limit=5'),
       ]);
       if (profileRes.data?.success) setProfile(profileRes.data.data);
-      setNotifications(notifRes.data?.data?.notifications || []);
       setCheckins(checkinsRes.data?.data || []);
     } catch (err) {
       console.error('[PTProfileScreen] fetch error:', err?.message);
@@ -257,32 +256,6 @@ export default function PTProfileScreen() {
   const onRefresh = () => { setRefreshing(true); fetchData(); };
 
   const safeCheckins = Array.isArray(checkins) ? checkins : [];
-  const safeNotifications = Array.isArray(notifications) ? notifications : [];
-
-  const handleClearNotifications = () => {
-    if (safeNotifications.filter(n => n.is_custom).length === 0) {
-      Alert.alert('Thông báo', 'Bạn không có thông báo nào để xoá.');
-      return;
-    }
-    Alert.alert(
-      'Xoá thông báo',
-      'Bạn có chắc chắn muốn xoá sạch các thông báo cá nhân?',
-      [
-        { text: 'Hủy', style: 'cancel' },
-        {
-          text: 'Xoá', style: 'destructive',
-          onPress: async () => {
-            try {
-              await api.delete('/members/me/notifications');
-              setNotifications(prev => prev.filter(n => !n.is_custom));
-            } catch {
-              Alert.alert('Lỗi', 'Không thể xoá thông báo.');
-            }
-          }
-        }
-      ]
-    );
-  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -291,6 +264,14 @@ export default function PTProfileScreen() {
       <ChangePasswordModal
         visible={showChangePw}
         onClose={() => setShowChangePw(false)}
+        colors={colors}
+      />
+
+      <EditProfileModal
+        visible={showEditProfile}
+        onClose={() => setShowEditProfile(false)}
+        profile={profile}
+        onSaved={fetchData}
         colors={colors}
       />
 
@@ -309,7 +290,7 @@ export default function PTProfileScreen() {
             </View>
           ) : (
             <View style={[styles.profileCard, { backgroundColor: colors.surface }]}>
-              <View style={styles.avatarWrapper}>
+              <TouchableOpacity style={styles.avatarWrapper} onPress={() => setShowEditProfile(true)} activeOpacity={0.8}>
                 <ProfileAvatar
                   uri={profile?.avatar_url || user?.avatar_url}
                   name={profile?.ho_ten || user?.name}
@@ -318,7 +299,7 @@ export default function PTProfileScreen() {
                 <View style={[styles.avatarBadge, { backgroundColor: BRAND.primary, borderColor: colors.surface }]}>
                   <ShieldCheck color="#ffffff" size={10} strokeWidth={2.5} fill="#ffffff" />
                 </View>
-              </View>
+              </TouchableOpacity>
 
               <Text style={[styles.profileName, { color: colors.text }]}>
                 {profile?.ho_ten || user?.name || 'Huấn luyện viên'}
@@ -362,41 +343,18 @@ export default function PTProfileScreen() {
           )}
         </View>
 
-        {/* ── THÔNG BÁO ────────────────────────── */}
-        <Section
-          title="Thông báo cá nhân"
-          colors={colors}
-          extraHeader={
-            safeNotifications.filter(n => n.is_custom).length > 0 ? (
-              <TouchableOpacity onPress={handleClearNotifications}>
-                <Text style={{ fontSize: 11, color: BRAND.danger, fontWeight: '700' }}>Xoá sạch</Text>
-              </TouchableOpacity>
-            ) : null
-          }
-        >
-          {safeNotifications.length === 0 ? (
-            <View style={{ paddingVertical: 16, alignItems: 'center' }}>
-              <Text style={{ fontSize: 12, color: colors.textMuted }}>Không có thông báo mới</Text>
-            </View>
-          ) : (
-            safeNotifications.map((n, idx) => (
-              <MenuRow
-                key={idx}
-                icon={n.muc_do === 'danger' || n.muc_do === 'warning' ? Bell : Info}
-                iconBg={n.muc_do === 'danger' ? BRAND.dangerLight : (n.muc_do === 'warning' ? '#fffbeb' : colors.primaryLight)}
-                iconColor={n.muc_do === 'danger' ? BRAND.danger : (n.muc_do === 'warning' ? '#d97706' : colors.primary)}
-                label={n.tieu_de}
-                sublabel={n.noi_dung}
-                onPress={() => {}}
-                rightEl={null}
-                colors={colors}
-              />
-            ))
-          )}
-        </Section>
+
 
         {/* ── THÔNG TIN CHUYÊN MÔN ──────────────── */}
-        <Section title="Thông tin HLV" colors={colors}>
+        <Section 
+          title="Thông tin HLV" 
+          colors={colors}
+          extraHeader={
+            <TouchableOpacity onPress={() => setShowEditProfile(true)}>
+              <Text style={{ fontSize: 11, color: BRAND.primary, fontWeight: '700' }}>Sửa thông tin</Text>
+            </TouchableOpacity>
+          }
+        >
           <MenuRow icon={User} label="Họ và tên" sublabel={profile?.ho_ten || '—'} onPress={() => {}} rightEl={null} colors={colors} />
           <MenuRow icon={Award} label="Chuyên môn" sublabel={profile?.chuyen_mon || '—'} onPress={() => {}} rightEl={null} colors={colors} />
           <MenuRow icon={Badge} label="CCCD / CMND" sublabel={profile?.cccd || '—'} onPress={() => {}} rightEl={null} colors={colors} />

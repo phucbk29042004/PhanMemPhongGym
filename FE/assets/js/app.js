@@ -5,9 +5,8 @@
     'expired': 'Danh sách hết hạn', 'pt-training': 'Lịch đào tạo PT',
     'pt-register': 'Đăng ký lịch tập PT', 'packages': 'Danh sách gói tập',
     'birthday': 'Sinh nhật hội viên', 'gym-rules': 'Nội quy phòng tập',
-    'package-requests': 'Yêu cầu gia hạn gói tập',
   };
-  const SUB_PAGES = ['members-list', 'member-add', 'checkin', 'expired', 'pt-training', 'pt-register', 'packages', 'birthday', 'package-requests'];
+  const SUB_PAGES = ['members-list', 'member-add', 'checkin', 'expired', 'pt-training', 'pt-register', 'packages', 'birthday'];
 
   // ===== NAVIGATE =====
   window.GymApp.navigate = function (pageName) {
@@ -314,11 +313,52 @@
             if (isFinished) return;
             const rect = visibleInput.getBoundingClientRect();
             const spaceBelow = window.innerHeight - rect.bottom;
-            const desiredPos = (spaceBelow < 320 && rect.top > 300) ? 'top left' : 'bottom left';
+            const calendarHeight = 350; // Chiều cao an toàn của calendar
+            
+            // Quyết định vị trí tối ưu: chỉ chọn 'top left' nếu ở dưới không đủ và ở trên đủ chứa calendar
+            const desiredPos = (spaceBelow < calendarHeight && rect.top > calendarHeight) ? 'top left' : 'bottom left';
+            
             if (currentPos !== desiredPos) {
               currentPos = desiredPos;
               adp.update({ position: desiredPos });
             }
+
+            // Xử lý chống tràn màn hình tuyệt đối trong mọi trường hợp (Viewport Collision Adjustment)
+            setTimeout(() => {
+              if (adp.$datepicker) {
+                const dpRect = adp.$datepicker.getBoundingClientRect();
+                
+                // 1. Chống tràn mép trên (Top boundary collision)
+                if (dpRect.top < 10) {
+                  const currentTop = parseFloat(adp.$datepicker.style.top) || 0;
+                  adp.$datepicker.style.top = `${currentTop + (10 - dpRect.top)}px`;
+                }
+                
+                // 2. Chống tràn mép dưới (Bottom boundary collision)
+                const overflowBottom = dpRect.bottom - (window.innerHeight - 10);
+                if (overflowBottom > 0) {
+                  const currentTop = parseFloat(adp.$datepicker.style.top) || 0;
+                  // Chỉ kéo lên nếu không làm tràn mép trên (y >= 10)
+                  const targetViewTop = dpRect.top - overflowBottom;
+                  if (targetViewTop >= 10) {
+                    adp.$datepicker.style.top = `${currentTop - overflowBottom}px`;
+                  } else {
+                    // Nếu kéo lên hết cỡ vẫn tràn cả 2 bên thì ưu tiên giữ lại thanh navigation ở trên cùng
+                    adp.$datepicker.style.top = `${currentTop + (10 - dpRect.top)}px`;
+                  }
+                }
+                
+                // 3. Chống tràn mép trái/phải
+                const spaceRight = window.innerWidth - dpRect.right;
+                if (dpRect.left < 10) {
+                  const currentLeft = parseFloat(adp.$datepicker.style.left) || 0;
+                  adp.$datepicker.style.left = `${currentLeft + (10 - dpRect.left)}px`;
+                } else if (spaceRight < 10) {
+                  const currentLeft = parseFloat(adp.$datepicker.style.left) || 0;
+                  adp.$datepicker.style.left = `${currentLeft - (10 - spaceRight)}px`;
+                }
+              }
+            }, 50); // Trì hoãn nhẹ 50ms để layout được render hoàn tất
           },
           onSelect: function ({ date }) {
             if (date && !Array.isArray(date)) {
@@ -386,6 +426,8 @@
       dang_tap: 'Đang tập',
       da_ket_thuc: 'Đã kết thúc',
       cho_kich_hoat: 'Chờ kích hoạt',
+      cho_duyet: 'Chờ duyệt',
+      huy: 'Đã hủy',
       cho_tap: 'Chờ tập',
       da_tap: 'Đã tập',
       da_xac_nhan: 'Đã xác nhận',
@@ -446,6 +488,8 @@
       hoat_dong:      { cls: 'background:#e7f5e9;color:#1D9336',  label: 'Hoạt động' },
       dang_ban:       { cls: 'background:#e7f5e9;color:#1D9336',  label: 'Đang bán' },
       cho_kich_hoat:  { cls: 'background:#fff3e0;color:#e65100',  label: 'Chờ kích hoạt' },
+      cho_duyet:      { cls: 'background:#fff3e0;color:#e65100',  label: 'Chờ duyệt' },
+      huy:            { cls: 'background:#ffdad6;color:#ba1a1a',  label: 'Bị từ chối' },
       da_ket_thuc:    { cls: 'background:#e0e3e8;color:#3f4a3c',  label: 'Kết thúc' },
       // Alias legacy
       active:         { cls: 'background:#e7f5e9;color:#1D9336',  label: 'Hoạt động' },

@@ -40,13 +40,14 @@ export const getSchedules = (req, res) => {
       lt.loai_buoi, lt.trang_thai, lt.ghi_chu, lt.ly_do_huy,
       hv.id AS hoi_vien_id, hv.ho_ten AS ten_hoi_vien, hv.avatar_url AS avatar_hoi_vien,
       pt.id AS pt_id, pt.ho_ten AS ten_pt, pt.avatar_url AS avatar_pt,
+      dk.so_buoi_dang_ky, dk.so_buoi_da_tap,
       (dk.so_buoi_dang_ky - dk.so_buoi_da_tap) AS buoi_con_lai,
       lt.ngay_xac_nhan
     FROM lich_tap lt
     JOIN ho_so hv ON hv.id = lt.hoi_vien_id
     JOIN ho_so pt ON pt.id = lt.pt_id
     JOIN dang_ky_pt dk ON dk.id = lt.dang_ky_pt_id
-    ${where}
+    ${where} AND hv.is_deleted = 0 AND pt.is_deleted = 0
     ORDER BY lt.id DESC
   `).all(...params);
 
@@ -67,7 +68,7 @@ export const createSchedule = (req, res) => {
     FROM dang_ky_pt dp
     JOIN ho_so h_hv ON h_hv.id = dp.hoi_vien_id
     JOIN ho_so h_pt ON h_pt.id = dp.pt_id
-    WHERE dp.id = ? AND dp.trang_thai = 'dang_hoat_dong'
+    WHERE dp.id = ? AND dp.trang_thai = 'dang_hoat_dong' AND h_hv.is_deleted = 0 AND h_pt.is_deleted = 0
   `).get(dang_ky_pt_id);
 
   if (!dkpt) return error(res, 'Đăng ký PT không tồn tại hoặc đã kết thúc.', 404);
@@ -375,7 +376,7 @@ export const getMyMembers = (req, res) => {
       dp.so_buoi_dang_ky - dp.so_buoi_da_tap AS buoi_con_lai,
       dp.trang_thai AS trang_thai_dk,
       hv.id AS hoi_vien_id, hv.ma_ho_so, hv.ho_ten, hv.so_dien_thoai,
-      hv.gioi_tinh, hv.anh_dai_dien,
+      hv.gioi_tinh, hv.avatar_url,
       gpt.ten_goi AS ten_goi_pt,
       (SELECT lt.ngay_tap FROM lich_tap lt
        WHERE lt.dang_ky_pt_id = dp.id AND lt.trang_thai = 'cho_tap'
