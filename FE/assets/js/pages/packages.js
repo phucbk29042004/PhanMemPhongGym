@@ -156,43 +156,58 @@ window.GymApp.pages['packages'] = {
     const overlay = document.createElement('div');
     overlay.id = 'gym-pkg-modal';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);backdrop-filter:blur(3px);padding:16px;';
-    overlay.innerHTML = `
-      <div style="border-radius:24px;width:100%;max-width:480px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,0.3);position:relative;" class="bg-white dark:bg-[#1e1e1e] border-2 border-outline-variant/50">
-        <div class="px-loose py-standard border-b border-outline-variant/50 flex items-center justify-between">
-          <h3 class="font-bold text-on-surface text-body-lg">${isEdit ? 'Chỉnh sửa gói tập' : 'Thêm gói tập mới'}</h3>
-          <button id="close-pkg-modal" style="background:transparent;border:none;cursor:pointer;">
-            <span class="material-symbols-outlined text-on-surface-variant">close</span>
-          </button>
+
+    const field = (icon, label, fid, type, value, placeholder, required = false, isFull = false) => `
+      <div class="${isFull ? 'col-span-full' : ''}">
+        <label class="text-on-surface-variant text-body-sm uppercase font-bold tracking-wider block mb-1 opacity-80">${label}${required ? ' <span style="color:#ba1a1a;margin-left:2px;font-weight:700;">*</span>' : ''}</label>
+        <div class="relative group">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors text-[18px]">${icon}</span>
+          <input id="${fid}" type="${type}" value="${value || ''}" placeholder="${placeholder}" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-4 py-2.5 rounded-xl focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none text-body-md font-medium transition-all" />
         </div>
-        <div class="p-loose flex flex-col gap-standard">
-          <div>
-            <label class="text-on-surface-variant text-body-sm font-bold block mb-xs">Tên gói <span class="text-error">*</span></label>
-            <input id="pkg-ten" type="text" value="${pkg?.ten_goi || ''}" placeholder="VD: Gói 1 tháng" class="w-full bg-surface-container border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none text-body-md" />
-          </div>
-          <div class="grid grid-cols-2 gap-standard">
-            <div>
-              <label class="text-on-surface-variant text-body-sm font-bold block mb-xs">Số tháng <span class="text-error">*</span></label>
-              <input id="pkg-thang" type="number" min="0" value="${pkg?.so_thang ?? ''}" placeholder="VD: 1" class="w-full bg-surface-container border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none text-body-md" />
+      </div>
+    `;
+
+    const textareaField = (icon, label, fid, value, placeholder) => `
+      <div class="col-span-full">
+        <label class="text-on-surface-variant text-body-sm uppercase font-bold tracking-wider block mb-1 opacity-80">${label}</label>
+        <div class="relative group">
+          <span class="material-symbols-outlined absolute left-3 top-3 text-outline group-focus-within:text-brand-primary transition-colors text-[18px]">${icon}</span>
+          <textarea id="${fid}" rows="2" placeholder="${placeholder}" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-4 py-2.5 rounded-xl focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none text-body-md font-medium transition-all resize-none">${value || ''}</textarea>
+        </div>
+      </div>
+    `;
+
+    overlay.innerHTML = `
+      <div style="border-radius:24px;width:100%;max-width:560px;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,0.4);background:var(--bg-surface-lowest);">
+        <div style="background:linear-gradient(135deg,#312e81 0%,#4338ca 60%,#6366f1 100%);padding:24px 24px 20px;flex-shrink:0;position:relative;overflow:hidden;border-top-left-radius:24px;border-top-right-radius:24px;">
+          <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,0.07);"></div>
+          <button id="close-pkg-modal" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.15);border:none;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:50;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">
+            <span class="material-symbols-outlined" style="color:#fff;font-size:18px;">close</span>
+          </button>
+          <div style="display:flex;align-items:center;gap:16px;position:relative;z-index:1;">
+            <div class="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0" style="background:rgba(255,255,255,0.15);backdrop-filter:blur(4px);border:2px solid rgba(255,255,255,0.4);">
+              <span class="material-symbols-outlined text-white text-[28px]">${isEdit ? 'edit_document' : 'add_box'}</span>
             </div>
             <div>
-              <label class="text-on-surface-variant text-body-sm font-bold block mb-xs">Ngày thêm</label>
-              <input id="pkg-ngay" type="number" min="0" value="${pkg?.so_ngay_them ?? 0}" placeholder="0" class="w-full bg-surface-container border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none text-body-md" />
+              <span style="font-size:11px;font-weight:800;color:rgba(255,255,255,0.8);text-transform:uppercase;background:rgba(0,0,0,0.2);padding:3px 8px;border-radius:999px;">Quản lý Gói tập</span>
+              <h3 style="font-size:22px;font-weight:800;color:#fff;margin:6px 0 2px;">${isEdit ? 'Chỉnh sửa gói tập' : 'Thêm gói tập mới'}</h3>
             </div>
           </div>
-          <div>
-            <label class="text-on-surface-variant text-body-sm font-bold block mb-xs">Giá (VNĐ) <span class="text-error">*</span></label>
-            <input id="pkg-gia" type="text" inputmode="numeric" value="${pkg?.gia ? pkg.gia.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') : ''}" placeholder="VD: 300.000" class="w-full bg-surface-container border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none text-body-md" />
+        </div>
+        <div class="bg-surface-container-lowest overflow-y-auto p-loose">
+          <div class="grid grid-cols-2 gap-x-standard gap-y-4">
+            ${field('inventory_2', 'Tên gói', 'pkg-ten', 'text', pkg?.ten_goi || '', 'VD: Gói 1 tháng', true, true)}
+            ${field('calendar_month', 'Số tháng', 'pkg-thang', 'number', pkg?.so_thang ?? '', 'VD: 1', true, false)}
+            ${field('event_note', 'Ngày thêm', 'pkg-ngay', 'number', pkg?.so_ngay_them ?? 0, '0', false, false)}
+            ${field('payments', 'Giá (VNĐ)', 'pkg-gia', 'text', pkg?.gia ? pkg.gia.toString().replace(/\\B(?=(\\d{3})+(?!\\d))/g, '.') : '', 'VD: 300.000', true, true)}
+            ${textareaField('description', 'Mô tả', 'pkg-mota', pkg?.mo_ta || '', 'Mô tả ngắn về gói tập...')}
           </div>
-          <div>
-            <label class="text-on-surface-variant text-body-sm font-bold block mb-xs">Mô tả</label>
-            <textarea id="pkg-mota" rows="2" placeholder="Mô tả ngắn về gói tập..." class="w-full bg-surface-container border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none text-body-md resize-none">${pkg?.mo_ta || ''}</textarea>
-          </div>
-          <div class="flex gap-standard justify-end pt-xs border-t border-outline-variant mt-xs">
-            <button id="cancel-pkg-modal" class="px-loose py-compact rounded-xl font-bold text-body-md border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-all">Hủy</button>
-            <button id="save-pkg-modal" class="bg-brand-primary text-white px-loose py-compact rounded-xl font-bold text-body-md hover:bg-primary-container transition-all flex items-center gap-xs">
-              <span class="material-symbols-outlined text-sm">save</span>${isEdit ? 'Lưu thay đổi' : 'Tạo gói tập'}
-            </button>
-          </div>
+        </div>
+        <div class="bg-surface-container-lowest px-loose py-standard border-t border-outline-variant flex gap-standard justify-end flex-shrink-0" style="border-bottom-left-radius:24px;border-bottom-right-radius:24px;">
+          <button id="cancel-pkg-modal" class="px-loose py-2.5 rounded-xl border-2 border-outline-variant text-on-surface-variant font-bold hover:bg-surface-container transition-all active:scale-95">Hủy</button>
+          <button id="save-pkg-modal" class="px-loose py-2.5 rounded-xl font-bold text-white transition-all flex items-center gap-xs active:scale-95 shadow-md hover:shadow-lg hover:opacity-90" style="background:#4338ca;">
+            <span class="material-symbols-outlined text-sm">save</span>${isEdit ? 'Lưu thay đổi' : 'Tạo gói tập'}
+          </button>
         </div>
       </div>
     `;
@@ -264,18 +279,20 @@ window.GymApp.pages['packages'] = {
     overlay.id = 'gym-pkg-del-modal';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9001;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);backdrop-filter:blur(3px);padding:16px;';
     overlay.innerHTML = `
-      <div style="border-radius:24px;width:100%;max-width:400px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,0.3);" class="bg-white dark:bg-[#1e1e1e] border-2 border-outline-variant/50">
-        <div class="px-loose py-standard border-b border-outline-variant/50 flex items-center gap-compact">
-          <span class="material-symbols-outlined text-error text-2xl">warning</span>
-          <h3 class="font-bold text-on-surface text-body-lg">Xác nhận xóa gói tập</h3>
+      <div style="border-radius:24px;width:100%;max-width:440px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,0.4);" class="bg-surface-container-lowest">
+        <div class="px-loose py-standard border-b border-outline-variant flex items-center gap-compact" style="background:linear-gradient(135deg,#991b1b,#dc2626);">
+          <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
+            <span class="material-symbols-outlined text-white text-xl">delete_forever</span>
+          </div>
+          <h3 class="font-bold text-white text-[17px]">Xác nhận xóa gói tập</h3>
         </div>
-        <div class="p-loose bg-white dark:bg-[#1e1e1e]">
-          <p class="text-on-surface text-body-md">Bạn có chắc muốn xóa <strong>${name}</strong>?</p>
-          ${count > 0 ? `<p class="text-[#e65100] text-body-sm mt-xs font-bold bg-[#e65100]/5 p-2 rounded-xl border border-[#e65100]/20">Gói này có ${count} hội viên đang đăng ký — sẽ bị ẩn (soft delete), không xóa hẳn.</p>` : ''}
+        <div class="p-loose bg-surface-container-lowest">
+          <p class="text-on-surface text-body-md">Bạn có chắc chắn muốn xóa gói tập <strong class="text-error">${name}</strong> không?</p>
+          ${count > 0 ? `<div class="mt-standard flex items-start gap-xs bg-error/10 p-compact rounded-xl border border-error/20"><span class="material-symbols-outlined text-error text-[18px]">info</span><p class="text-error text-body-sm font-medium m-0">Gói này có ${count} hội viên đang đăng ký. Gói sẽ chỉ bị ẩn (soft delete) để đảm bảo lịch sử hội viên, không xóa vĩnh viễn.</p></div>` : ''}
           <div class="flex gap-standard justify-end mt-loose">
-            <button id="cancel-pkg-del" class="px-loose py-compact rounded-xl font-bold text-body-md border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-all">Hủy</button>
-            <button id="confirm-pkg-del" class="bg-error text-white px-loose py-compact rounded-xl font-bold text-body-md hover:opacity-80 transition-all flex items-center gap-xs">
-              <span class="material-symbols-outlined text-sm">delete</span>Xóa
+            <button id="cancel-pkg-del" class="px-loose py-2.5 rounded-xl border-2 border-outline-variant text-on-surface-variant font-bold hover:bg-surface-container transition-all active:scale-95">Hủy</button>
+            <button id="confirm-pkg-del" class="bg-error text-white px-loose py-2.5 rounded-xl font-bold transition-all flex items-center gap-xs active:scale-95 shadow-md hover:shadow-lg hover:opacity-90">
+              <span class="material-symbols-outlined text-sm">delete</span> Xóa gói
             </button>
           </div>
         </div>

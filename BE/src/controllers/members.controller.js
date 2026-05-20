@@ -10,9 +10,33 @@ import { ghi_audit_log } from '../utils/audit.js';
 import { createNotification, createUserNotification } from '../utils/notifications.js';
 import bcrypt from 'bcryptjs';
 
+// Tự động cập nhật các gói tập/PT đã quá hạn sử dụng sang trạng thái tương ứng
+const autoUpdateExpiredStatuses = () => {
+  try {
+    db.prepare(`
+      UPDATE dang_ky_goi_tap
+      SET trang_thai = 'het_han'
+      WHERE trang_thai = 'dang_hoat_dong' AND den_ngay < date('now','localtime')
+    `).run();
+
+    db.prepare(`
+      UPDATE dang_ky_pt
+      SET trang_thai = 'hoan_thanh'
+      WHERE trang_thai = 'dang_hoat_dong'
+        AND (
+          (den_ngay IS NOT NULL AND den_ngay < date('now','localtime'))
+          OR (so_buoi_dang_ky IS NOT NULL AND so_buoi_da_tap >= so_buoi_dang_ky)
+        )
+    `).run();
+  } catch (err) {
+    console.error('Lỗi khi tự động cập nhật trạng thái hết hạn:', err);
+  }
+};
+
 // ── GET /api/members ──────────────────────────────────────
 // Lấy danh sách hội viên (hỗ trợ filter và phân trang)
 export const getMembers = (req, res) => {
+  autoUpdateExpiredStatuses();
   const { search, status, page = 1, limit = 20 } = req.query;
   const offset = (parseInt(page) - 1) * parseInt(limit);
 
@@ -86,6 +110,7 @@ export const getMembers = (req, res) => {
 
 // ── GET /api/members/:id ──────────────────────────────────
 export const getMemberById = (req, res) => {
+  autoUpdateExpiredStatuses();
   const { id } = req.params;
   const member = db.prepare(`
     SELECT
@@ -117,6 +142,13 @@ export const getMemberById = (req, res) => {
 
   // Parse JSON strings
   member.goi_tap_hien_tai = JSON.parse(member.goi_tap_hien_tai || '[]');
+  // Sắp xếp gói tập hiện tại theo ngày kết thúc giảm dần (mới nhất lên đầu)
+  member.goi_tap_hien_tai.sort((a, b) => {
+    if (a.den_ngay !== b.den_ngay) {
+      return new Date(b.den_ngay) - new Date(a.den_ngay);
+    }
+    return b.id - a.id;
+  });
   member.pt_hien_tai = JSON.parse(member.pt_hien_tai || '[]');
   delete member.mat_khau_hash;
 
@@ -578,6 +610,7 @@ export const getMyProfile = (req, res) => {
 
 // ── POST /api/members/:id/package ────────────────────────
 export const registerPackage = (req, res) => {
+  autoUpdateExpiredStatuses();
   const { id } = req.params;
   const { goi_tap_id, tu_ngay, gia_thuc_te, phuong_thuc_tt, ma_giao_dich, ghi_chu_tt, ghi_chu_gia, ngay_thanh_toan } = req.body;
 

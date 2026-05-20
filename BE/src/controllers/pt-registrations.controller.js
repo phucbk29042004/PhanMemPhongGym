@@ -8,9 +8,33 @@ import { success, error } from '../utils/response.js';
 import { ghi_audit_log } from '../utils/audit.js';
 import { createNotification, createUserNotification } from '../utils/notifications.js';
 
+// Tự động cập nhật các gói tập/PT đã quá hạn sử dụng sang trạng thái tương ứng
+const autoUpdateExpiredStatuses = () => {
+  try {
+    db.prepare(`
+      UPDATE dang_ky_goi_tap
+      SET trang_thai = 'het_han'
+      WHERE trang_thai = 'dang_hoat_dong' AND den_ngay < date('now','localtime')
+    `).run();
+
+    db.prepare(`
+      UPDATE dang_ky_pt
+      SET trang_thai = 'hoan_thanh'
+      WHERE trang_thai = 'dang_hoat_dong'
+        AND (
+          (den_ngay IS NOT NULL AND den_ngay < date('now','localtime'))
+          OR (so_buoi_dang_ky IS NOT NULL AND so_buoi_da_tap >= so_buoi_dang_ky)
+        )
+    `).run();
+  } catch (err) {
+    console.error('Lỗi khi tự động cập nhật trạng thái hết hạn:', err);
+  }
+};
+
 // ── GET /api/pt/registrations ─────────────────────────────
 // Danh sách đăng ký PT (admin/lễ tân xem tất cả, PT xem lịch của mình)
 export const getRegistrations = (req, res) => {
+  autoUpdateExpiredStatuses();
   const { hoi_vien_id, pt_id, trang_thai, page = 1, limit = 20 } = req.query;
   const offset = (parseInt(page) - 1) * parseInt(limit);
 
@@ -67,6 +91,7 @@ export const getRegistrations = (req, res) => {
 
 // ── GET /api/pt/registrations/:id ────────────────────────
 export const getRegistrationById = (req, res) => {
+  autoUpdateExpiredStatuses();
   const { id } = req.params;
 
   const reg = db.prepare(`
@@ -99,6 +124,7 @@ export const getRegistrationById = (req, res) => {
 // ── POST /api/pt/registrations ────────────────────────────
 // Đăng ký gói PT cho hội viên
 export const createRegistration = (req, res) => {
+  autoUpdateExpiredStatuses();
   const {
     hoi_vien_id, pt_id, goi_pt_id,
     so_buoi_dang_ky, tu_ngay, den_ngay,

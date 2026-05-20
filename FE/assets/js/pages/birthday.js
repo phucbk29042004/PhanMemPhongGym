@@ -191,6 +191,13 @@ window.GymApp.pages['birthday'] = {
       const count = group.members.length;
       const config = monthGradients[group.month] || monthGradients[12];
       
+      this._monthPages = this._monthPages || {};
+      this._monthPages[group.month] = this._monthPages[group.month] || 1;
+      const page = this._monthPages[group.month];
+      const perPage = 3;
+      const totalPages = Math.ceil(count / perPage) || 1;
+      const paginatedMembers = group.members.slice((page - 1) * perPage, page * perPage);
+      
       return `
         <div class="month-card relative overflow-hidden bg-white dark:bg-[#1e1e1e] border-2 rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-md flex flex-col ${isCurrentMonth ? 'border-[#a52d59] shadow-md shadow-[#a52d59]/5' : 'border-outline-variant/50'}" data-month="${group.month}">
           <!-- Seasonal Header Gradient Banner -->
@@ -230,15 +237,15 @@ window.GymApp.pages['birthday'] = {
             </div>
             
             <!-- Members List Scrollable Area -->
-            <div class="flex flex-col gap-compact overflow-y-auto pr-xs custom-scrollbar" style="max-height: 240px; min-height: 180px;">
+            <div id="birthday-list-month-${group.month}" class="flex flex-col gap-compact overflow-y-auto pr-xs custom-scrollbar" style="height: 180px;">
               ${count === 0 ? `
                 <!-- Empty state for empty months -->
                 <div class="flex flex-col items-center justify-center flex-1 gap-xs text-center py-standard opacity-65">
                   <span class="material-symbols-outlined text-on-surface-variant text-4xl" style="font-variation-settings:'FILL' 0">cake</span>
                   <p class="text-on-surface-variant font-bold text-body-md">Không có sinh nhật</p>
-                  <p class="text-on-surface-variant text-body-sm">Không tìm thấy hội viên nào sinh nhật tháng này.</p>
+                  <p class="text-[#a52d59] font-bold text-body-sm">Không có sinh nhật tháng này</p>
                 </div>
-              ` : group.members.map(m => `
+              ` : paginatedMembers.map(m => `
                 <!-- Member Card Chip -->
                 <div class="birthday-member-chip flex items-center gap-compact bg-surface-container-low/30 border-2 border-outline-variant/50 rounded-xl p-compact hover:bg-surface-container-low transition-all">
                   ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'sm')}
@@ -250,6 +257,23 @@ window.GymApp.pages['birthday'] = {
                   </div>
                 </div>
               `).join('')}
+            </div>
+            
+            <!-- Local pagination controls for month -->
+            <div id="birthday-pagination-month-${group.month}">
+              ${totalPages > 1 ? `
+                <div class="flex items-center justify-between pt-xs text-[11px] border-t border-outline-variant/30">
+                  <span class="text-on-surface-variant font-bold">Trang ${page}/${totalPages}</span>
+                  <div class="flex gap-1">
+                    <button data-month-action="prev" data-month="${group.month}" ${page === 1 ? 'disabled style="opacity: 0.4; cursor: not-allowed;"' : 'style="cursor: pointer;"'} class="w-6 h-6 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-[#a52d59]/5 hover:text-[#a52d59] transition-all">
+                      <span class="material-symbols-outlined text-xs">chevron_left</span>
+                    </button>
+                    <button data-month-action="next" data-month="${group.month}" ${page === totalPages ? 'disabled style="opacity: 0.4; cursor: not-allowed;"' : 'style="cursor: pointer;"'} class="w-6 h-6 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-[#a52d59]/5 hover:text-[#a52d59] transition-all">
+                      <span class="material-symbols-outlined text-xs">chevron_right</span>
+                    </button>
+                  </div>
+                </div>
+              ` : ''}
             </div>
             
             <!-- Card Footer Operations -->
@@ -368,7 +392,7 @@ window.GymApp.pages['birthday'] = {
             </div>
           </div>
           
-          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-standard">
+          <div id="birthday-months-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-standard">
             ${monthCardsHtml}
           </div>
         </div>
@@ -608,13 +632,59 @@ window.GymApp.pages['birthday'] = {
     }
   },
 
+  _renderMonthPage: function (month) {
+    const listEl = document.getElementById(`birthday-list-month-${month}`);
+    const pagEl = document.getElementById(`birthday-pagination-month-${month}`);
+    if (!listEl || !pagEl) return;
+
+    const groups = this._getBirthdayGroups();
+    const group = groups.find(g => g.month === month);
+    if (!group) return;
+
+    const count = group.members.length;
+    this._monthPages = this._monthPages || {};
+    this._monthPages[month] = this._monthPages[month] || 1;
+    const page = this._monthPages[month];
+    const perPage = 3;
+    const totalPages = Math.ceil(count / perPage) || 1;
+    const paginatedMembers = group.members.slice((page - 1) * perPage, page * perPage);
+
+    listEl.innerHTML = paginatedMembers.map(m => `
+      <!-- Member Card Chip -->
+      <div class="birthday-member-chip flex items-center gap-compact bg-surface-container-low/30 border-2 border-outline-variant/50 rounded-xl p-compact hover:bg-surface-container-low transition-all">
+        ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'sm')}
+        <div class="min-w-0 flex-1 text-left">
+          <p class="font-bold text-on-surface text-body-md truncate">${m.ho_ten}</p>
+          <p class="text-on-surface-variant text-body-sm font-semibold mt-xxs">
+            📅 ${String(m.birthDay).padStart(2, '0')}/${String(m.birthMonth).padStart(2, '0')} · <span class="text-[#a52d59] font-bold">${m.ageThisYear} tuổi</span>
+          </p>
+        </div>
+      </div>
+    `).join('');
+
+    pagEl.innerHTML = totalPages > 1 ? `
+      <div class="flex items-center justify-between pt-xs text-[11px] border-t border-outline-variant/30">
+        <span class="text-on-surface-variant font-bold">Trang ${page}/${totalPages}</span>
+        <div class="flex gap-1">
+          <button data-month-action="prev" data-month="${group.month}" ${page === 1 ? 'disabled style="opacity: 0.4; cursor: not-allowed;"' : 'style="cursor: pointer;"'} class="w-6 h-6 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-[#a52d59]/5 hover:text-[#a52d59] transition-all">
+            <span class="material-symbols-outlined text-xs">chevron_left</span>
+          </button>
+          <button data-month-action="next" data-month="${group.month}" ${page === totalPages ? 'disabled style="opacity: 0.4; cursor: not-allowed;"' : 'style="cursor: pointer;"'} class="w-6 h-6 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-[#a52d59]/5 hover:text-[#a52d59] transition-all">
+            <span class="material-symbols-outlined text-xs">chevron_right</span>
+          </button>
+        </div>
+      </div>
+    ` : '';
+  },
+
   init: function () {
     const self = this;
+    this._monthPages = {};
 
     // Card click event triggers full-screen fireworks
     document.querySelectorAll('.month-card').forEach(card => {
       card.addEventListener('click', e => {
-        if (e.target.closest('.birthday-burst-btn') || e.target.closest('.btn-wish-month') || e.target.closest('.birthday-member-chip')) return;
+        if (e.target.closest('.birthday-burst-btn') || e.target.closest('.btn-wish-month') || e.target.closest('.birthday-member-chip') || e.target.closest('[data-month-action]')) return;
         
         const burstBtn = card.querySelector('.birthday-burst-btn');
         if (burstBtn) {
@@ -666,6 +736,31 @@ window.GymApp.pages['birthday'] = {
     document.getElementById('btn-birthday-celebrate-all')?.addEventListener('click', e => {
       const totalCount = Array.isArray(window.GymApp.data.members) ? window.GymApp.data.members.length : 0;
       self._showBirthdayBurst('Tất cả sinh nhật', totalCount, e);
+    });
+
+    // Event delegation for local pagination in month cards
+    document.getElementById('birthday-months-grid')?.addEventListener('click', e => {
+      const btn = e.target.closest('[data-month-action]');
+      if (!btn) return;
+      e.stopPropagation();
+      const month = parseInt(btn.dataset.month);
+      const action = btn.dataset.monthAction;
+      
+      const groups = self._getBirthdayGroups();
+      const group = groups.find(g => g.month === month);
+      const count = group ? group.members.length : 0;
+      const totalPages = Math.ceil(count / 3) || 1;
+      
+      self._monthPages = self._monthPages || {};
+      self._monthPages[month] = self._monthPages[month] || 1;
+      
+      if (action === 'prev' && self._monthPages[month] > 1) {
+        self._monthPages[month]--;
+        self._renderMonthPage(month);
+      } else if (action === 'next' && self._monthPages[month] < totalPages) {
+        self._monthPages[month]++;
+        self._renderMonthPage(month);
+      }
     });
   }
 };

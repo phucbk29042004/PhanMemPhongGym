@@ -36,7 +36,7 @@ window.GymApp.pages['pt-register'] = {
                   <div id="pt-selection-area" class="space-y-xs">
                     <div class="relative mb-standard group">
                       <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline text-[16px] group-focus-within:text-brand-primary transition-colors">search</span>
-                      <input id="search-pt" type="text" placeholder="Tìm kiếm PT..." class="w-full bg-surface-container-low/30 border-2 border-outline-variant/50 text-on-surface pl-10 pr-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all shadow-sm focus:shadow-none" />
+                      <input id="search-pt" type="text" placeholder="Tìm kiếm PT..." class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface pl-10 pr-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all shadow-sm focus:shadow-none" />
                     </div>
                     <div id="pt-list" class="flex flex-col gap-xs max-h-64 overflow-y-auto pr-xs border-2 border-outline-variant/50 rounded-xl p-2 bg-surface-container-low/10">
                       <p class="text-center py-4 text-on-surface-variant text-body-sm font-semibold">Đang tải danh sách PT...</p>
@@ -58,7 +58,7 @@ window.GymApp.pages['pt-register'] = {
                   <div id="member-selection-area" class="space-y-xs">
                     <div class="relative mb-standard group">
                       <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline text-[16px] group-focus-within:text-brand-primary transition-colors">search</span>
-                      <input id="search-member" type="text" placeholder="Tìm kiếm hội viên..." class="w-full bg-surface-container-low/30 border-2 border-outline-variant/50 text-on-surface pl-10 pr-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all shadow-sm focus:shadow-none" />
+                      <input id="search-member" type="text" placeholder="Tìm kiếm hội viên..." class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface pl-10 pr-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all shadow-sm focus:shadow-none" />
                     </div>
                     <div id="member-list" class="flex flex-col gap-xs max-h-64 overflow-y-auto pr-xs border-2 border-outline-variant/50 rounded-xl p-2 bg-surface-container-low/10">
                       <p class="text-center py-4 text-on-surface-variant text-body-sm font-semibold">Vui lòng chọn PT trước</p>

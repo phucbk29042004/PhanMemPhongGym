@@ -180,18 +180,15 @@ window.GymApp.pages['revenue'] = {
     ];
 
     grid.innerHTML = cards.map(c => `
-      <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 p-standard shadow-sm flex flex-col gap-standard hover:-translate-y-1 hover:shadow-md transition-all duration-300">
-        <div class="flex items-center justify-between">
-          <span class="text-on-surface-variant text-body-sm font-bold uppercase tracking-wider leading-tight" style="max-width:calc(100% - 48px)">${c.label}</span>
-          <div class="icon-bg ${c.iconBg}">
-            <span class="material-symbols-outlined ${c.color} text-xl" style="font-variation-settings:'FILL' 1">${c.icon}</span>
+      <div class="bg-brand-primary/5 dark:bg-brand-primary/10 rounded-2xl p-4 hover:-translate-y-1 hover:shadow-md hover:bg-brand-primary/10 transition-all duration-300 border border-brand-primary/20 flex flex-col justify-between" style="min-height: 104px;">
+        <div>
+          <p class="text-on-surface-variant text-body-sm font-bold uppercase tracking-wider mb-2 truncate" title="${c.label}">${c.label}</p>
+          <div class="flex items-baseline flex-wrap gap-x-2 gap-y-1">
+            <h3 class="text-xl font-bold text-on-surface truncate max-w-full" title="${c.value}">${c.value}</h3>
+            ${c.trendHtml || ''}
           </div>
         </div>
-        <div class="flex items-baseline flex-wrap gap-x-2 gap-y-1">
-          <span class="text-on-surface text-3xl font-bold tracking-tight truncate max-w-full" title="${c.value}">${c.value}</span>
-          ${c.trendHtml}
-        </div>
-        <span class="text-on-surface-variant text-body-sm font-medium">${c.sub}</span>
+        ${c.sub ? `<span class="text-on-surface-variant text-body-sm font-medium mt-1 truncate" title="${c.sub}">${c.sub}</span>` : ''}
       </div>
     `).join('');
   },
@@ -285,19 +282,30 @@ window.GymApp.pages['revenue'] = {
     const el = document.getElementById('rev-package-stats');
     if (!el) return;
 
-    const list = Array.isArray(packageStats) ? packageStats : [];
+    if (packageStats !== undefined) {
+      this._packageStats = packageStats;
+    }
+    const list = Array.isArray(this._packageStats) ? this._packageStats : [];
     if (list.length === 0) {
       el.innerHTML = '<p class="text-center text-on-surface-variant text-body-sm py-margin">Chưa có dữ liệu</p>';
       return;
     }
 
+    this._packagePage = this._packagePage || 1;
+    const perPage = 3;
+    const totalPages = Math.ceil(list.length / perPage);
+    this._packagePage = Math.max(1, Math.min(this._packagePage, totalPages));
+    const start = (this._packagePage - 1) * perPage;
+    const paginated = list.slice(start, start + perPage);
+
     const max = Math.max(...list.map(p => p.tong_tien || 0)) || 1;
-    el.innerHTML = list.slice(0, 6).map((p, i) => {
+    const itemsHtml = paginated.map((p, i) => {
+      const index = start + i + 1;
       const pct = Math.round(((p.tong_tien || 0) / max) * 100);
       return `
         <div class="flex flex-col gap-1 p-2 bg-surface-container-low/10 rounded-xl border border-outline-variant/30 hover:bg-surface-container-low/20 transition-all duration-300">
           <div class="flex items-center justify-between">
-            <span class="font-bold text-on-surface text-body-md truncate flex-1 pr-xs">${i + 1}. ${p.ten_goi}</span>
+            <span class="font-bold text-on-surface text-body-md truncate flex-1 pr-xs">${index}. ${p.ten_goi}</span>
             <span class="text-brand-primary font-bold text-body-sm whitespace-nowrap">${p.so_dang_ky} đơn</span>
           </div>
           <div class="h-1.5 bg-surface-container rounded-full overflow-hidden my-0.5">
@@ -307,6 +315,48 @@ window.GymApp.pages['revenue'] = {
         </div>
       `;
     }).join('');
+
+    const paginationHtml = totalPages > 1 ? `
+      <div class="flex items-center justify-between pt-standard border-t border-outline-variant/30 mt-auto text-body-sm">
+        <span class="text-on-surface-variant font-bold">Trang ${this._packagePage}/${totalPages}</span>
+        <div class="flex gap-1">
+          <button id="btn-pkg-prev" ${this._packagePage === 1 ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : 'style="cursor:pointer;"'} class="w-7 h-7 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-brand-primary/5 hover:text-brand-primary transition-all active:scale-95">
+            <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+          </button>
+          <button id="btn-pkg-next" ${this._packagePage === totalPages ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : 'style="cursor:pointer;"'} class="w-7 h-7 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-brand-primary/5 hover:text-brand-primary transition-all active:scale-95">
+            <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+          </button>
+        </div>
+      </div>
+    ` : '';
+
+    el.innerHTML = `
+      <div class="flex flex-col gap-standard flex-1 justify-between">
+        <div class="flex flex-col gap-standard">
+          ${itemsHtml}
+        </div>
+        ${paginationHtml}
+      </div>
+    `;
+
+    const prevBtn = document.getElementById('btn-pkg-prev');
+    const nextBtn = document.getElementById('btn-pkg-next');
+    if (prevBtn) {
+      prevBtn.addEventListener('click', () => {
+        if (this._packagePage > 1) {
+          this._packagePage--;
+          this._renderPackageStats();
+        }
+      });
+    }
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => {
+        if (this._packagePage < totalPages) {
+          this._packagePage++;
+          this._renderPackageStats();
+        }
+      });
+    }
   },
 
   _renderTodayTable: function (transactions) {
@@ -370,6 +420,8 @@ window.GymApp.pages['revenue'] = {
 
   init: async function () {
     const self = this;
+    this._packagePage = 1;
+    this._packageStats = [];
     this._days = 30;
     this._updateRangeButtons();
     await this._fetchAndRender();

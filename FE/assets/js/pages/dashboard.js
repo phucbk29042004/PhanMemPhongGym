@@ -93,26 +93,10 @@ window.GymApp.pages['dashboard'] = {
               </div>
 
               <!-- Traffic by Website -> Top Hội viên chăm chỉ -->
-              <div class="${cardClass} p-4 flex flex-col">
+              <div class="${cardClass} p-4 flex flex-col justify-between" style="min-height: 280px;">
                 <h3 class="text-sm font-bold text-on-surface mb-4">Hội viên chăm chỉ nhất</h3>
-                <div class="flex-1 flex flex-col justify-between gap-3">
-                  ${topMembers.length === 0 ? 
-                    `<p class="text-center text-on-surface-variant text-sm mt-10">Chưa có dữ liệu tháng này</p>` :
-                    topMembers.map((m, i) => {
-                      const maxVal = topMembers[0].so_buoi_tap || 1;
-                      const wPercent = Math.max(10, (m.so_buoi_tap / maxVal) * 100);
-                      return `
-                      <div class="flex items-center justify-between text-xs">
-                        <span class="text-on-surface font-medium truncate w-32" title="${m.ho_ten}">${m.ho_ten}</span>
-                        <div class="flex-1 mx-3 flex items-center">
-                          <div class="h-1.5 rounded-full bg-brand-primary/20" style="width: 100%;">
-                            <div class="h-full rounded-full bg-brand-primary" style="width: ${wPercent}%"></div>
-                          </div>
-                        </div>
-                        <span class="text-on-surface-variant w-5 text-right">${m.so_buoi_tap}</span>
-                      </div>
-                    `}).join('')
-                  }
+                <div id="dash-top-members-container" class="flex-grow flex flex-col justify-between">
+                   <p class="text-center text-on-surface-variant text-body-sm mt-10">Đang tải...</p>
                 </div>
               </div>
             </div>
@@ -164,22 +148,10 @@ window.GymApp.pages['dashboard'] = {
           <div class="xl:col-span-1 flex flex-col gap-4">
             
             <!-- Check-in gần nhất (Activities) -->
-            <div class="${cardClass} p-4 flex-1">
+            <div class="${cardClass} p-4 flex flex-col justify-between" style="min-height: 320px;">
               <h3 class="text-sm font-bold text-on-surface mb-4">Check-in gần nhất</h3>
-              <div class="relative pl-3 border-l border-outline-variant/50 flex flex-col gap-4">
-                ${recentCheckins.length === 0 ? 
-                  `<p class="text-body-sm text-on-surface-variant ml-2">Chưa có lượt vào</p>` :
-                  recentCheckins.slice(0, 6).map(c => `
-                  <div class="relative">
-                    <div class="absolute -left-[17px] top-1 w-2.5 h-2.5 rounded-full bg-brand-primary ring-4 ring-surface"></div>
-                    <div class="flex flex-col ml-3">
-                      <span class="text-body-md font-semibold text-on-surface">
-                        <a href="javascript:void(0)" onclick="window.GymApp.navigate('checkin')" class="hover:text-brand-primary transition-colors">${c.name}</a> đã vào tập.
-                      </span>
-                      <span class="text-label-xs text-on-surface-variant mt-1">${c.time} hôm nay</span>
-                    </div>
-                  </div>
-                `).join('')}
+              <div id="dash-recent-checkins-container" class="flex-grow flex flex-col justify-between">
+                <p class="text-center text-on-surface-variant text-body-sm mt-10">Đang tải...</p>
               </div>
             </div>
 
@@ -218,8 +190,167 @@ window.GymApp.pages['dashboard'] = {
     `;
   },
 
+  _renderTopMembers: function () {
+    const el = document.getElementById('dash-top-members-container');
+    if (!el) return;
+
+    const dbData = window.GymApp.data.stats || {};
+    const list = dbData.top_hoi_vien || [];
+    if (list.length === 0) {
+      el.innerHTML = '<p class="text-center text-on-surface-variant text-body-sm mt-10">Chưa có dữ liệu tháng này</p>';
+      return;
+    }
+
+    this._topMembersPage = this._topMembersPage || 1;
+    const perPage = 5;
+    const totalPages = Math.ceil(list.length / perPage);
+    this._topMembersPage = Math.max(1, Math.min(this._topMembersPage, totalPages));
+    const start = (this._topMembersPage - 1) * perPage;
+    const paginated = list.slice(start, start + perPage);
+
+    const maxVal = list[0]?.so_buoi_tap || 1;
+    const itemsHtml = paginated.map((m, i) => {
+      const wPercent = Math.max(10, (m.so_buoi_tap / maxVal) * 100);
+      return `
+        <div class="flex items-center justify-between text-body-sm py-1">
+          <span class="text-on-surface font-medium truncate w-32" title="${m.ho_ten}">${m.ho_ten}</span>
+          <div class="flex-1 mx-3 flex items-center">
+            <div class="h-1.5 rounded-full bg-brand-primary/20 w-full">
+              <div class="h-full rounded-full bg-brand-primary" style="width: ${wPercent}%"></div>
+            </div>
+          </div>
+          <span class="text-on-surface-variant w-5 text-right font-bold">${m.so_buoi_tap}</span>
+        </div>
+      `;
+    }).join('');
+
+    const paginationHtml = totalPages > 1 ? `
+      <div class="flex items-center justify-between pt-standard border-t border-outline-variant/30 mt-auto text-body-sm">
+        <span class="text-on-surface-variant font-bold">Trang ${this._topMembersPage}/${totalPages}</span>
+        <div class="flex gap-1">
+          <button id="btn-topmembers-prev" ${this._topMembersPage === 1 ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : 'style="cursor:pointer;"'} class="w-7 h-7 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-brand-primary/5 hover:text-brand-primary transition-all active:scale-95">
+            <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+          </button>
+          <button id="btn-topmembers-next" ${this._topMembersPage === totalPages ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : 'style="cursor:pointer;"'} class="w-7 h-7 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-brand-primary/5 hover:text-brand-primary transition-all active:scale-95">
+            <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+          </button>
+        </div>
+      </div>
+    ` : '';
+
+    el.innerHTML = `
+      <div class="flex flex-col gap-compact flex-grow justify-between">
+        <div class="flex flex-col gap-2">
+          ${itemsHtml}
+        </div>
+        ${paginationHtml}
+      </div>
+    `;
+
+    const prevBtn = document.getElementById('btn-topmembers-prev');
+    const nextBtn = document.getElementById('btn-topmembers-next');
+    if (prevBtn) {
+      prevBtn.addEventListener('click', () => {
+        if (this._topMembersPage > 1) {
+          this._topMembersPage--;
+          this._renderTopMembers();
+        }
+      });
+    }
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => {
+        if (this._topMembersPage < totalPages) {
+          this._topMembersPage++;
+          this._renderTopMembers();
+        }
+      });
+    }
+  },
+
+  _renderRecentCheckins: function () {
+    const el = document.getElementById('dash-recent-checkins-container');
+    if (!el) return;
+
+    const dbData = window.GymApp.data.stats || {};
+    const checkins = (dbData.recent_checkins || []).map(c => ({
+      id: c.id,
+      memberId: c.ma_ho_so,
+      name: c.ho_ten,
+      time: c.gio_hien_thi || c.thoi_diem.substring(11, 16),
+      avatar: c.avatar_url
+    }));
+
+    if (checkins.length === 0) {
+      el.innerHTML = '<p class="text-body-sm text-on-surface-variant ml-2 mt-10">Chưa có lượt vào</p>';
+      return;
+    }
+
+    this._recentCheckinsPage = this._recentCheckinsPage || 1;
+    const perPage = 5;
+    const totalPages = Math.ceil(checkins.length / perPage);
+    this._recentCheckinsPage = Math.max(1, Math.min(this._recentCheckinsPage, totalPages));
+    const start = (this._recentCheckinsPage - 1) * perPage;
+    const paginated = checkins.slice(start, start + perPage);
+
+    const itemsHtml = paginated.map(c => `
+      <div class="relative py-1">
+        <div class="absolute -left-[17px] top-2.5 w-2.5 h-2.5 rounded-full bg-brand-primary ring-4 ring-surface"></div>
+        <div class="flex flex-col ml-3 text-left">
+          <span class="text-body-md font-semibold text-on-surface">
+            <a href="javascript:void(0)" onclick="window.GymApp.navigate('checkin')" class="hover:text-brand-primary transition-colors">${c.name}</a> đã vào tập.
+          </span>
+          <span class="text-label-xs text-on-surface-variant mt-0.5">${c.time} hôm nay</span>
+        </div>
+      </div>
+    `).join('');
+
+    const paginationHtml = totalPages > 1 ? `
+      <div class="flex items-center justify-between pt-standard border-t border-outline-variant/30 mt-auto text-body-sm">
+        <span class="text-on-surface-variant font-bold">Trang ${this._recentCheckinsPage}/${totalPages}</span>
+        <div class="flex gap-1">
+          <button id="btn-recent-prev" ${this._recentCheckinsPage === 1 ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : 'style="cursor:pointer;"'} class="w-7 h-7 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-brand-primary/5 hover:text-brand-primary transition-all active:scale-95">
+            <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+          </button>
+          <button id="btn-recent-next" ${this._recentCheckinsPage === totalPages ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : 'style="cursor:pointer;"'} class="w-7 h-7 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-brand-primary/5 hover:text-brand-primary transition-all active:scale-95">
+            <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+          </button>
+        </div>
+      </div>
+    ` : '';
+
+    el.innerHTML = `
+      <div class="flex flex-col justify-between flex-grow">
+        <div class="relative pl-3 border-l border-outline-variant/50 flex flex-col gap-3 flex-grow my-1">
+          ${itemsHtml}
+        </div>
+        ${paginationHtml}
+      </div>
+    `;
+
+    const prevBtn = document.getElementById('btn-recent-prev');
+    const nextBtn = document.getElementById('btn-recent-next');
+    if (prevBtn) {
+      prevBtn.addEventListener('click', () => {
+        if (this._recentCheckinsPage > 1) {
+          this._recentCheckinsPage--;
+          this._renderRecentCheckins();
+        }
+      });
+    }
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => {
+        if (this._recentCheckinsPage < totalPages) {
+          this._recentCheckinsPage++;
+          this._renderRecentCheckins();
+        }
+      });
+    }
+  },
+
   init: async function () {
     const self = this;
+    this._topMembersPage = 1;
+    this._recentCheckinsPage = 1;
     await self._fetchAndRender();
 
     document.getElementById('btn-dashboard-refresh')?.addEventListener('click', async () => {
@@ -260,6 +391,8 @@ window.GymApp.pages['dashboard'] = {
     const contentArea = document.getElementById('content-area');
     if (contentArea && window.GymApp.currentPage === 'dashboard') {
       contentArea.innerHTML = this.render();
+      this._renderTopMembers();
+      this._renderRecentCheckins();
     }
     this._initCharts();
   },

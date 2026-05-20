@@ -36,12 +36,12 @@ window.GymApp.pages['member-add'] = {
               <button class="flex items-center justify-center w-8 h-8 rounded-xl border-2 border-outline-variant/50 text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-surface-container-low transition-all bg-white dark:bg-[#1e1e1e]" data-page="members-list">
                 <span class="material-symbols-outlined text-lg">arrow_back</span>
               </button>
-              <div class="flex gap-xs p-1 bg-surface-container-low/40 rounded-xl border border-outline-variant/30">
-                <button id="tab-register" class="tab-btn px-4 py-1.5 rounded-lg font-bold text-body-md transition-all bg-brand-primary text-white shadow-sm flex items-center gap-xs">
+              <div class="flex gap-xs p-1 bg-surface-container-low/40 rounded-full border border-outline-variant/30">
+                <button id="tab-register" class="tab-btn px-4 py-1.5 rounded-full font-bold text-body-md transition-all bg-brand-primary text-white shadow-sm flex items-center gap-xs">
                   <span class="material-symbols-outlined text-sm">person_add</span>
                   Thông tin hồ sơ
                 </button>
-                <button id="tab-package" class="tab-btn px-4 py-1.5 rounded-lg font-bold text-body-md transition-all text-on-surface-variant hover:text-brand-primary hover:bg-brand-primary/5 flex items-center gap-xs">
+                <button id="tab-package" class="tab-btn px-4 py-1.5 rounded-full font-bold text-body-md transition-all text-on-surface-variant hover:text-brand-primary hover:bg-brand-primary/5 flex items-center gap-xs">
                   <span class="material-symbols-outlined text-sm">card_membership</span>
                   Gói tập (Hội viên)
                 </button>
@@ -381,8 +381,8 @@ window.GymApp.pages['member-add'] = {
     const tabPkg = document.getElementById('tab-package');
     const formReg = document.getElementById('form-register');
     const formPkg = document.getElementById('form-package');
-    const clsActive = 'tab-btn px-4 py-1.5 rounded-lg font-bold text-body-md transition-all bg-brand-primary text-white shadow-sm flex items-center gap-xs';
-    const clsInactive = 'tab-btn px-4 py-1.5 rounded-lg font-bold text-body-md transition-all text-on-surface-variant hover:text-brand-primary hover:bg-brand-primary/5 flex items-center gap-xs';
+    const clsActive = 'tab-btn px-4 py-1.5 rounded-full font-bold text-body-md transition-all bg-brand-primary text-white shadow-sm flex items-center gap-xs';
+    const clsInactive = 'tab-btn px-4 py-1.5 rounded-full font-bold text-body-md transition-all text-on-surface-variant hover:text-brand-primary hover:bg-brand-primary/5 flex items-center gap-xs';
 
     tabReg?.addEventListener('click', () => {
       formReg.classList.remove('hidden'); formPkg.classList.add('hidden');

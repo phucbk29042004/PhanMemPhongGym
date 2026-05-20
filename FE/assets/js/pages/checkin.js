@@ -127,18 +127,15 @@ window.GymApp.pages['checkin'] = {
         <!-- Stats -->
         <div id="checkin-stats-grid" class="grid grid-cols-2 md:grid-cols-4 gap-standard">
           ${stats.map(s => `
-            <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 p-standard shadow-sm flex flex-col gap-standard hover:-translate-y-1 hover:shadow-md transition-all duration-300">
-              <div class="flex items-center justify-between">
-                <span class="text-on-surface-variant text-body-sm font-bold uppercase tracking-wider leading-tight" style="max-width:calc(100% - 52px)">${s.label}</span>
-                <div class="icon-bg ${s.iconBg}">
-                  <span class="material-symbols-outlined ${s.color} text-xl" style="font-variation-settings:'FILL' 1">${s.icon}</span>
+            <div class="bg-brand-primary/5 dark:bg-brand-primary/10 rounded-2xl p-4 hover:-translate-y-1 hover:shadow-md hover:bg-brand-primary/10 transition-all duration-300 border border-brand-primary/20 flex flex-col justify-between" style="min-height: 104px;">
+              <div>
+                <p class="text-on-surface-variant text-body-sm font-bold uppercase tracking-wider mb-2 truncate" title="${s.label}">${s.label}</p>
+                <div class="flex items-baseline flex-wrap gap-x-2 gap-y-1">
+                  <h3 class="text-xl font-bold text-on-surface truncate max-w-full" title="${s.value}">${s.value}</h3>
+                  ${s.trendHtml || ''}
                 </div>
               </div>
-              <div class="flex items-baseline flex-wrap gap-x-2 gap-y-1">
-                <span class="text-on-surface text-3xl font-bold tracking-tight truncate max-w-full" title="${s.value}">${s.value}</span>
-                ${s.trendHtml || ''}
-              </div>
-              <span class="text-on-surface-variant text-body-sm font-medium">${s.sub || ''}</span>
+              ${s.sub ? `<span class="text-on-surface-variant text-body-sm font-medium mt-1 truncate" title="${s.sub}">${s.sub}</span>` : ''}
             </div>
           `).join('')}
         </div>
@@ -337,18 +334,15 @@ window.GymApp.pages['checkin'] = {
     if (statsGrid) {
       const stats = this._buildStats(checkins);
       statsGrid.innerHTML = stats.map(s => `
-        <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 p-standard shadow-sm flex flex-col gap-standard hover:-translate-y-1 hover:shadow-md transition-all duration-300">
-          <div class="flex items-center justify-between">
-            <span class="text-on-surface-variant text-body-sm font-bold uppercase tracking-wider leading-tight" style="max-width:calc(100% - 52px)">${s.label}</span>
-            <div class="icon-bg ${s.iconBg}">
-              <span class="material-symbols-outlined ${s.color} text-xl" style="font-variation-settings:'FILL' 1">${s.icon}</span>
+        <div class="bg-brand-primary/5 dark:bg-brand-primary/10 rounded-2xl p-4 hover:-translate-y-1 hover:shadow-md hover:bg-brand-primary/10 transition-all duration-300 border border-brand-primary/20 flex flex-col justify-between" style="min-height: 104px;">
+          <div>
+            <p class="text-on-surface-variant text-body-sm font-bold uppercase tracking-wider mb-2 truncate" title="${s.label}">${s.label}</p>
+            <div class="flex items-baseline flex-wrap gap-x-2 gap-y-1">
+              <h3 class="text-xl font-bold text-on-surface truncate max-w-full" title="${s.value}">${s.value}</h3>
+              ${s.trendHtml || ''}
             </div>
           </div>
-          <div class="flex items-baseline flex-wrap gap-x-2 gap-y-1">
-            <span class="text-on-surface text-3xl font-bold tracking-tight truncate max-w-full" title="${s.value}">${s.value}</span>
-            ${s.trendHtml || ''}
-          </div>
-          <span class="text-on-surface-variant text-body-sm font-medium">${s.sub || ''}</span>
+          ${s.sub ? `<span class="text-on-surface-variant text-body-sm font-medium mt-1 truncate" title="${s.sub}">${s.sub}</span>` : ''}
         </div>
       `).join('');
     }

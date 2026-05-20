@@ -9,6 +9,44 @@ window.GymApp.pages['members-list'] = {
   _memberSortState: '',
   _memberPackageHistory: {},
 
+  _parseLocalDate: function(dateStr) {
+    if (!dateStr) return null;
+    const [y, m, d] = dateStr.split('T')[0].split('-').map(Number);
+    return new Date(y, m - 1, d, 0, 0, 0, 0);
+  },
+
+  _syncExpiredPackages: function(member) {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const self = this;
+    if (Array.isArray(member.goi_tap_hien_tai)) {
+      member.goi_tap_hien_tai.forEach(g => {
+        if (g.trang_thai === 'dang_hoat_dong' && g.den_ngay) {
+          const dVal = self._parseLocalDate(g.den_ngay);
+          if (dVal && dVal < today) {
+            g.trang_thai = 'het_han';
+          }
+        }
+      });
+      member.goi_tap_hien_tai.sort((a, b) => {
+        const da = self._parseLocalDate(a.den_ngay);
+        const db = self._parseLocalDate(b.den_ngay);
+        if (da && db && da.getTime() !== db.getTime()) return db - da;
+        return b.id - a.id;
+      });
+    }
+    if (Array.isArray(member.pt_hien_tai)) {
+      member.pt_hien_tai.forEach(p => {
+        if (p.trang_thai === 'dang_hoat_dong' && p.den_ngay) {
+          const dVal = self._parseLocalDate(p.den_ngay);
+          if (dVal && dVal < today) {
+            p.trang_thai = 'hoan_thanh';
+          }
+        }
+      });
+    }
+    return member;
+  },
+
   render: function () {
     const rawMembers = window.GymApp.data.members;
     const rawPts = window.GymApp.data.pts;
@@ -49,7 +87,7 @@ window.GymApp.pages['members-list'] = {
               <!-- Search Box -->
               <div class="relative flex-1 group" style="min-width:300px;">
                 <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors text-[18px]">search</span>
-                <input id="member-search" class="w-full bg-surface-container-low/30 border-2 border-outline-variant/50 text-on-surface pl-10 pr-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none placeholder-outline-variant/60 font-body-md text-body-md transition-all shadow-sm focus:shadow-none" placeholder="Tìm theo tên, mã HV, số điện thoại..." type="text" />
+                <input id="member-search" class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface pl-10 pr-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none placeholder-outline-variant/60 font-body-md text-body-md transition-all shadow-sm focus:shadow-none" placeholder="Tìm theo tên, mã HV, số điện thoại..." type="text" />
               </div>
               
               <!-- Filter Actions -->
@@ -93,7 +131,7 @@ window.GymApp.pages['members-list'] = {
             <div class="flex flex-wrap items-center gap-standard bg-white dark:bg-[#1e1e1e] p-standard rounded-2xl border-2 border-outline-variant/50 shadow-sm mb-standard transition-all duration-300 hover:shadow-md">
               <div class="relative flex-1 group" style="min-width:300px;">
                 <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors text-[18px]">search</span>
-                <input id="pt-search" class="w-full bg-surface-container-low/30 border-2 border-outline-variant/50 text-on-surface pl-10 pr-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none placeholder-outline-variant/60 font-body-md text-body-md transition-all shadow-sm focus:shadow-none" placeholder="Tìm theo tên, chuyên môn..." type="text" />
+                <input id="pt-search" class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface pl-10 pr-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none placeholder-outline-variant/60 font-body-md text-body-md transition-all shadow-sm focus:shadow-none" placeholder="Tìm theo tên, chuyên môn..." type="text" />
               </div>
               
               <div class="flex items-center gap-compact">
@@ -194,7 +232,6 @@ window.GymApp.pages['members-list'] = {
                   </span>
                 ` : ''}
               </div>
-              <span class="text-body-sm font-medium mt-0.5" style="color:#4ade80;letter-spacing:0.03em">${m.ma_ho_so || ''}</span>
             </div>
           </div>
 
@@ -389,8 +426,6 @@ window.GymApp.pages['members-list'] = {
             <div style="flex:1;min-width:0;padding-bottom:4px;">
               <h3 style="font-size:20px;font-weight:800;color:#fff;line-height:1.2;margin:0 0 4px;text-shadow:0 1px 4px rgba(0,0,0,0.2);">${pt.ho_ten || '—'}</h3>
               <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                <span style="font-size:12px;color:rgba(255,255,255,0.8);font-weight:600;">${pt.ma_ho_so || '—'}</span>
-                <span style="width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,0.5);"></span>
                 <span style="font-size:12px;color:rgba(255,255,255,0.8);">Huấn luyện viên</span>
                 <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:${isActive ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'};color:#fff;border:1px solid rgba(255,255,255,0.3);">${statusText}</span>
               </div>
@@ -705,59 +740,79 @@ window.GymApp.pages['members-list'] = {
     overlay.id = 'gym-pt-edit-modal';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);backdrop-filter:blur(3px);padding:16px;';
 
-    const field = (label, fid, type, value, readonly = false) => `
-      <div>
-        <label class="text-on-surface-variant text-body-sm font-bold block mb-xs">${label}</label>
-        <input id="pte-${fid}" type="${type}" value="${value || ''}" ${readonly
-        ? 'readonly class="w-full bg-surface-container border border-outline-variant text-on-surface-variant px-standard py-compact rounded-xl outline-none cursor-not-allowed text-body-md"'
-        : 'class="w-full bg-surface-container border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none text-body-md transition-colors"'} />
+    const field = (icon, label, fid, type, value, required = false, readonly = false, isFull = false) => `
+      <div class="${isFull ? 'col-span-full' : ''}">
+        <label class="text-on-surface-variant text-body-sm uppercase font-bold tracking-wider block mb-1 opacity-80">${label}${required ? ' <span style="color:#ba1a1a;margin-left:2px;font-weight:700;">*</span>' : ''}</label>
+        <div class="relative group">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors text-[18px]">${icon}</span>
+          <input id="pte-${fid}" type="${type}" value="${value || ''}" ${readonly
+        ? 'readonly class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-4 py-2.5 rounded-xl outline-none cursor-not-allowed text-body-md font-medium opacity-70"'
+        : 'class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-4 py-2.5 rounded-xl focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none text-body-md font-medium transition-all"'} />
+        </div>
+      </div>
+    `;
+
+    const selectField = (icon, label, fid, options, selectedValue, isFull = false) => `
+      <div class="${isFull ? 'col-span-full' : ''}">
+        <label class="text-on-surface-variant text-body-sm uppercase font-bold tracking-wider block mb-1 opacity-80">${label}</label>
+        <div class="relative group">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors text-[18px] z-10">${icon}</span>
+          <select id="pte-${fid}" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-10 py-2.5 rounded-xl focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none text-body-md font-medium transition-all appearance-none cursor-pointer relative z-0">
+            ${options.map(o => `<option value="${o.v}" ${o.v === selectedValue ? 'selected' : ''}>${o.l}</option>`).join('')}
+          </select>
+          <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none z-10">expand_more</span>
+        </div>
+      </div>
+    `;
+
+    const textareaField = (icon, label, fid, value, isFull = false) => `
+      <div class="${isFull ? 'col-span-full' : ''}">
+        <label class="text-on-surface-variant text-body-sm uppercase font-bold tracking-wider block mb-1 opacity-80">${label}</label>
+        <div class="relative group">
+          <span class="material-symbols-outlined absolute left-3 top-3 text-outline group-focus-within:text-brand-primary transition-colors text-[18px]">${icon}</span>
+          <textarea id="pte-${fid}" rows="2" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-4 py-2.5 rounded-xl focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none text-body-md font-medium transition-all resize-none">${value || ''}</textarea>
+        </div>
       </div>
     `;
 
     overlay.innerHTML = `
-      <div class="modal-card" style="border-radius:16px;width:100%;max-width:520px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 25px 60px rgba(0,0,0,0.3);">
-        <div style="background:linear-gradient(135deg,#065f46 0%,#10b981 60%,#34d399 100%);padding:16px 24px;flex-shrink:0;position:relative;overflow:hidden;" class="flex items-center justify-between">
-          <div class="flex items-center gap-compact relative z-10">
+      <div style="border-radius:24px;width:100%;max-width:560px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,0.4);background:var(--bg-surface-lowest);">
+        <div style="background:linear-gradient(135deg,#065f46 0%,#10b981 60%,#34d399 100%);padding:24px 24px 20px;flex-shrink:0;position:relative;overflow:hidden;border-top-left-radius:24px;border-top-right-radius:24px;">
+          <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,0.07);"></div>
+          <button id="close-pt-edit-modal" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.15);border:none;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:50;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">
+            <span class="material-symbols-outlined" style="color:#fff;font-size:18px;">close</span>
+          </button>
+          <div style="display:flex;align-items:center;gap:16px;position:relative;z-index:1;">
             <div id="pte-avatar-container" class="relative group cursor-pointer" title="Nhấn để đổi ảnh đại diện">
-              <div style="width:48px;height:48px;border-radius:50%;border:2px solid rgba(255,255,255,0.5);overflow:hidden;" id="pte-avatar-preview">
+              <div style="width:64px;height:64px;border-radius:50%;border:3px solid rgba(255,255,255,0.5);overflow:hidden;" id="pte-avatar-preview">
                 ${window.GymApp.avatarImg(pt.avatar_url, pt.ho_ten, 'lg', 'width:100%;height:100%;')}
               </div>
               <div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <span class="material-symbols-outlined text-white text-[16px]">photo_camera</span>
+                <span class="material-symbols-outlined text-white text-[18px]">photo_camera</span>
               </div>
               <input type="file" id="pte-avatar-input" accept="image/*" style="display:none;" />
             </div>
             <div>
-              <h3 class="font-bold text-white" style="font-size:16px">Chỉnh sửa PT</h3>
-              <p class="text-white/80 text-label-xs font-medium tracking-wide uppercase">${pt.ma_ho_so || ''}</p>
+              <span style="font-size:11px;font-weight:800;color:rgba(255,255,255,0.8);text-transform:uppercase;background:rgba(0,0,0,0.2);padding:3px 8px;border-radius:999px;">Chỉnh sửa PT</span>
+              <h3 style="font-size:22px;font-weight:800;color:#fff;margin:6px 0 2px;">${pt.ho_ten || '—'}</h3>
             </div>
           </div>
-          <button id="close-pt-edit-modal" style="background:rgba(255,255,255,0.15);border:none;cursor:pointer;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative;z-index:10;">
-            <span class="material-symbols-outlined text-white text-lg">close</span>
-          </button>
         </div>
-        <div class="bg-surface-container-lowest overflow-y-auto flex-1 p-loose flex flex-col gap-standard">
-          ${field('Họ và tên <span style="color:#ba1a1a;">*</span>', 'ho_ten', 'text', pt.ho_ten)}
-          ${field('Số điện thoại', 'so_dien_thoai', 'tel', pt.so_dien_thoai)}
-          ${field('Email', 'email', 'email', pt.email)}
-          ${field('Chuyên môn', 'chuyen_mon', 'text', pt.chuyen_mon || pt.specialty)}
-          ${field('Kinh nghiệm (năm)', 'kinh_nghiem', 'number', pt.kinh_nghiem || 0)}
-          <div>
-            <label class="text-on-surface-variant text-body-sm font-bold block mb-xs">Trạng thái</label>
-            <select id="pte-trang_thai" class="w-full bg-surface-container border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none text-body-md transition-colors">
-              <option value="hoat_dong" ${(pt.trang_thai === 'hoat_dong' || pt.trang_thai === 'active') ? 'selected' : ''}>Đang làm việc</option>
-              <option value="tam_nghi" ${(pt.trang_thai === 'tam_nghi' || pt.trang_thai === 'inactive') ? 'selected' : ''}>Tạm nghỉ</option>
-            </select>
-          </div>
-          <div>
-            <label class="text-on-surface-variant text-body-sm font-bold block mb-xs">Ghi chú</label>
-            <textarea id="pte-ghi_chu" rows="2" class="w-full bg-surface-container border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none text-body-md resize-none transition-colors">${pt.ghi_chu || ''}</textarea>
+        <div class="bg-surface-container-lowest overflow-y-auto flex-1 p-loose">
+          <div class="grid grid-cols-2 gap-x-standard gap-y-4">
+            ${field('person', 'Họ và tên', 'ho_ten', 'text', pt.ho_ten, true, false, true)}
+            ${field('call', 'Số điện thoại', 'so_dien_thoai', 'tel', pt.so_dien_thoai, false)}
+            ${field('mail', 'Email', 'email', 'email', pt.email, false)}
+            ${field('fitness_center', 'Chuyên môn', 'chuyen_mon', 'text', pt.chuyen_mon || pt.specialty, false)}
+            ${field('work_history', 'Kinh nghiệm (năm)', 'kinh_nghiem', 'number', pt.kinh_nghiem || 0, false)}
+            ${selectField('toggle_on', 'Trạng thái', 'trang_thai', [{v:'hoat_dong', l:'Đang làm việc'}, {v:'tam_nghi', l:'Tạm nghỉ'}], pt.trang_thai === 'active' ? 'hoat_dong' : pt.trang_thai === 'inactive' ? 'tam_nghi' : pt.trang_thai, true)}
+            ${textareaField('description', 'Ghi chú', 'ghi_chu', pt.ghi_chu, true)}
           </div>
         </div>
-        <div class="bg-surface-container-lowest px-loose py-standard border-t border-outline-variant flex gap-standard justify-end flex-shrink-0">
-          <button id="cancel-pt-edit" class="px-loose py-compact rounded-xl border border-outline-variant text-on-surface-variant font-bold hover:bg-surface-container transition-colors">Hủy</button>
-          <button id="save-pt-edit" class="px-loose py-compact rounded-xl font-bold text-white hover:opacity-90 transition-all" style="background:#10b981;">
-            <span class="material-symbols-outlined text-sm align-middle">save</span> Lưu thay đổi
+        <div class="bg-surface-container-lowest px-loose py-standard border-t border-outline-variant flex gap-standard justify-end flex-shrink-0" style="border-bottom-left-radius:24px;border-bottom-right-radius:24px;">
+          <button id="cancel-pt-edit" class="px-loose py-2.5 rounded-xl border-2 border-outline-variant text-on-surface-variant font-bold hover:bg-surface-container transition-all active:scale-95">Hủy</button>
+          <button id="save-pt-edit" class="px-loose py-2.5 rounded-xl font-bold text-white hover:opacity-90 transition-all flex items-center gap-xs active:scale-95 shadow-md hover:shadow-lg" style="background:#10b981;">
+            <span class="material-symbols-outlined text-sm">save</span> Lưu thay đổi
           </button>
         </div>
       </div>
@@ -851,6 +906,7 @@ window.GymApp.pages['members-list'] = {
       ]);
       const listMember = (window.GymApp.data.members || []).find(x => (x.id || x.ho_so_id) == id) || {};
       m = { ...listMember, ...(memberRes.data || {}) };
+      m = self._syncExpiredPackages(m);
       pkgHistory = Array.isArray(historyRes.data) ? historyRes.data : [];
       memberSchedules = Array.isArray(schedRes.data) ? schedRes.data : [];
     };
@@ -873,7 +929,15 @@ window.GymApp.pages['members-list'] = {
 
     const isActive = m.trang_thai === 'con_han' || m.trang_thai === 'sap_het_han' || m.trang_thai === 'active' || m.trang_thai === 'dang_tap';
     const isCheckedIn = m.da_check_in_hom_nay == 1;
-    const activePkg = m.goi_tap_hien_tai && m.goi_tap_hien_tai.length > 0 && m.goi_tap_hien_tai[0].trang_thai !== 'het_han' && m.goi_tap_hien_tai[0].trang_thai !== 'huy' ? m.goi_tap_hien_tai[0] : null;
+    const activePkg = Array.isArray(m.goi_tap_hien_tai)
+      ? (m.goi_tap_hien_tai.find(g => {
+          if (g.trang_thai !== 'dang_hoat_dong') return false;
+          if (!g.tu_ngay) return true;
+          const tuNgayVal = self._parseLocalDate(g.tu_ngay);
+          const today = new Date(); today.setHours(0,0,0,0);
+          return tuNgayVal && tuNgayVal <= today;
+        }) || null)
+      : null;
     const pkgName = activePkg ? (activePkg.ten_goi || activePkg.ten_goi_tap) : (m.ten_goi_tap || 'Chưa đăng ký');
     const hetHanVal = activePkg ? activePkg.den_ngay : m.ngay_het_han;
     const expDate = hetHanVal ? window.GymApp.formatDate(hetHanVal) : '—';
@@ -908,8 +972,6 @@ window.GymApp.pages['members-list'] = {
                 ` : ''}
               </div>
               <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                <span style="font-size:12px;color:rgba(255,255,255,0.8);font-weight:600;">${m.ma_ho_so || '—'}</span>
-                <span style="width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,0.5);"></span>
                 <span style="font-size:12px;color:rgba(255,255,255,0.8);">${window.GymApp.formatEnumLabel(m.loai_ho_so || 'hoi_vien')}</span>
                 <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:${isActive ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'};color:#fff;border:1px solid rgba(255,255,255,0.3);">${statusText}</span>
               </div>
@@ -951,6 +1013,7 @@ window.GymApp.pages['members-list'] = {
           window.GymApp.api.get(`/pt/schedules?hoi_vien_id=${id}`),
         ]);
         m = memberRes.data;
+        m = self._syncExpiredPackages(m);
         pkgHistory = Array.isArray(historyRes.data) ? historyRes.data : [];
         memberSchedules = Array.isArray(schedRes.data) ? schedRes.data : [];
       } catch (_) { }
@@ -1004,7 +1067,16 @@ window.GymApp.pages['members-list'] = {
       const hasAccount = !!m.tai_khoan_id;
       const genderLabel = m.gioi_tinh === 'nam' || m.gioi_tinh === 'male' ? 'Nam' : m.gioi_tinh === 'nu' || m.gioi_tinh === 'female' ? 'Nữ' : (m.gioi_tinh || '—');
       const diaChiFull = [m.dia_chi_tam_tru, m.phuong_xa, m.quan_huyen, m.tinh_thanh].filter(Boolean).join(', ') || '—';
-      const activePkg = m.goi_tap_hien_tai && m.goi_tap_hien_tai.length > 0 ? m.goi_tap_hien_tai[0] : null;
+      const self = this;
+      const activePkg = Array.isArray(m.goi_tap_hien_tai)
+        ? (m.goi_tap_hien_tai.find(g => {
+            if (g.trang_thai !== 'dang_hoat_dong') return false;
+            if (!g.tu_ngay) return true;
+            const tuNgayVal = self._parseLocalDate(g.tu_ngay);
+            const today = new Date(); today.setHours(0,0,0,0);
+            return tuNgayVal && tuNgayVal <= today;
+          }) || null)
+        : null;
       const pkgName = activePkg ? (activePkg.ten_goi || activePkg.ten_goi_tap) : (m.ten_goi_tap || 'Chưa đăng ký');
       const hetHanVal = activePkg ? activePkg.den_ngay : m.ngay_het_han;
       const expDate = hetHanVal ? window.GymApp.formatDate(hetHanVal) : '—';
@@ -1085,9 +1157,34 @@ window.GymApp.pages['members-list'] = {
     }
 
     if (tab === 'package') {
+      const self = this;
       const today = new Date(); today.setHours(0, 0, 0, 0);
-      const activePkg = Array.isArray(m.goi_tap_hien_tai) && m.goi_tap_hien_tai.length > 0 && m.goi_tap_hien_tai[0].trang_thai !== 'het_han' && m.goi_tap_hien_tai[0].trang_thai !== 'huy' ? m.goi_tap_hien_tai[0] : null;
-      const otherPackages = pkgHistory.filter(p => !activePkg || p.id !== activePkg.id);
+      const activePkg = Array.isArray(m.goi_tap_hien_tai)
+        ? (m.goi_tap_hien_tai.find(g => {
+            if (g.trang_thai !== 'dang_hoat_dong') return false;
+            if (!g.tu_ngay) return true;
+            const tuNgayVal = self._parseLocalDate(g.tu_ngay);
+            return tuNgayVal && tuNgayVal <= today;
+          }) || null)
+        : null;
+
+      // Tìm các gói đang chờ kích hoạt (nối tiếp)
+      const pendingPkgs = Array.isArray(m.goi_tap_hien_tai)
+        ? m.goi_tap_hien_tai.filter(g => {
+            if (g.trang_thai === 'cho_kich_hoat') return true;
+            if (g.trang_thai === 'dang_hoat_dong' && g.tu_ngay) {
+              const tuNgayVal = self._parseLocalDate(g.tu_ngay);
+              return tuNgayVal && tuNgayVal > today;
+            }
+            return false;
+          })
+        : [];
+
+      const otherPackages = pkgHistory.filter(p => {
+        if (activePkg && p.id === activePkg.id) return false;
+        if (pendingPkgs.some(pg => pg.id === p.id)) return false;
+        return true;
+      });
 
       const _actionBtns = (p, dark = false) => {
         if (p.trang_thai === 'huy' || p.trang_thai === 'het_han') return '';
@@ -1113,7 +1210,8 @@ window.GymApp.pages['members-list'] = {
       };
 
       const renderPkgCard = (p) => {
-        const isUpcoming = new Date(p.tu_ngay || p.from) > today && p.trang_thai !== 'huy' && p.trang_thai !== 'het_han';
+        const tuNgayVal = self._parseLocalDate(p.tu_ngay || p.from);
+        const isUpcoming = tuNgayVal && tuNgayVal > today && p.trang_thai !== 'huy' && p.trang_thai !== 'het_han';
         const isCanceled = p.trang_thai === 'huy';
         
         let statusForBadge = p.trang_thai || (isUpcoming ? 'cho_kich_hoat' : 'het_han');
@@ -1187,6 +1285,18 @@ window.GymApp.pages['members-list'] = {
             <span class="material-symbols-outlined text-on-surface-variant" style="font-size:28px;opacity:0.4;">fitness_center</span>
             <p style="font-size:13px;font-weight:700;color:var(--text-on-surface-variant);margin:4px 0 0;">Chưa có gói tập đang hoạt động</p>
           </div>`}
+
+        ${pendingPkgs.length > 0 ? pendingPkgs.map(g => `
+          <div style="border:2px dashed #d97706;border-radius:12px;padding:12px 16px;margin-bottom:16px;background:#fffbeb;">
+            <div style="font-size:9px;font-weight:800;text-transform:uppercase;color:#d97706;margin-bottom:4px;">
+              Gói nối tiếp — Chờ kích hoạt
+            </div>
+            <div style="font-size:15px;font-weight:800;color:#92400e;">${g.ten_goi || '—'}</div>
+            <div style="font-size:11px;color:#a16207;margin-top:3px;">
+              Bắt đầu: ${window.GymApp.formatDate(g.tu_ngay)} — Kết thúc: ${window.GymApp.formatDate(g.den_ngay)}
+            </div>
+          </div>
+        `).join('') : ''}
 
         <div>
           ${sectionLabel('Lịch sử & Gói khác')}
@@ -1416,6 +1526,26 @@ window.GymApp.pages['members-list'] = {
       : [...new Set(window.GymApp.data.members.map(x => x.ten_goi_tap || x.package))].map(n => ({ name: n, price: 0 }));
     const REQ = `<span style="color:#ba1a1a;margin-left:2px;font-weight:700;">*</span>`;
     const inputCls = `class="bg-surface-container-lowest text-on-surface border border-outline-variant" style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;"`;
+    
+    // Tìm gói tập hiện tại đang hoạt động
+    const activePkg = Array.isArray(m.goi_tap_hien_tai)
+      ? (m.goi_tap_hien_tai.find(g => {
+          if (g.trang_thai !== 'dang_hoat_dong') return false;
+          if (!g.tu_ngay) return true;
+          const tuNgayVal = self._parseLocalDate(g.tu_ngay);
+          const today = new Date(); today.setHours(0,0,0,0);
+          return tuNgayVal && tuNgayVal <= today;
+        }) || null)
+      : null;
+    
+    const getNextDayStr = (dateStr) => {
+      const d = new Date(dateStr);
+      d.setDate(d.getDate() + 1);
+      return d.toISOString().split('T')[0];
+    };
+    
+    const defaultFromDate = activePkg ? getNextDayStr(activePkg.den_ngay) : new Date().toISOString().split('T')[0];
+    
     const overlay = document.createElement('div');
     overlay.id = 'gym-sub-modal';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);padding:16px;';
@@ -1433,7 +1563,18 @@ window.GymApp.pages['members-list'] = {
             </div>
             <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Giá gói tập (VNĐ) ${REQ}</label><input id="pkg-price" type="text" inputmode="numeric" placeholder="VD: 1.500.000" ${inputCls} /></div>
             <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Mã giảm giá</label><input id="pkg-discount-code" type="text" placeholder="Nhập mã (nếu có)..." ${inputCls} /></div>
-            <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Từ ngày ${REQ}</label><input id="pkg-from" type="date" value="${new Date().toISOString().split('T')[0]}" ${inputCls} /></div>
+            <div>
+              <label class="block text-body-sm font-bold text-on-surface mb-xs">Từ ngày ${REQ}</label>
+              <input id="pkg-from" type="date" value="${defaultFromDate}" ${inputCls} />
+              ${activePkg ? `
+                <div style="margin-top: 6px; display: flex; align-items: center; gap: 6px;">
+                  <input type="checkbox" id="pkg-stack-mode" checked style="cursor: pointer; width: 14px; height: 14px;" />
+                  <label for="pkg-stack-mode" style="font-size: 11px; font-weight: 700; color: #1D9336; cursor: pointer; user-select: none;">
+                    Nối tiếp sau gói hiện tại (${window.GymApp.formatDate(activePkg.den_ngay)})
+                  </label>
+                </div>
+              ` : ''}
+            </div>
             <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Đến ngày ${REQ}</label><input id="pkg-to" type="date" ${inputCls} /></div>
             <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Trạng thái đăng ký ${REQ}</label><select id="pkg-reg-status" ${inputCls}><option value="paid">Đã thanh toán</option><option value="debt">Còn nợ</option><option value="free">Miễn phí</option></select></div>
             <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Phương thức TT ${REQ}</label><select id="pkg-payment-method" ${inputCls}><option value="tien_mat">Tiền mặt</option><option value="chuyen_khoan">Chuyển khoản</option></select></div>
@@ -1450,6 +1591,20 @@ window.GymApp.pages['members-list'] = {
         </div>
       </div>`;
     document.body.appendChild(overlay);
+    
+    const stackCheckbox = document.getElementById('pkg-stack-mode');
+    if (stackCheckbox && activePkg) {
+      stackCheckbox.addEventListener('change', function () {
+        const fromEl = document.getElementById('pkg-from');
+        if (this.checked) {
+          fromEl.value = getNextDayStr(activePkg.den_ngay);
+        } else {
+          fromEl.value = new Date().toISOString().split('T')[0];
+        }
+        fromEl.dispatchEvent(new Event('change'));
+      });
+    }
+    
     const close = () => overlay.remove();
     document.getElementById('close-sub-modal').addEventListener('click', close);
     document.getElementById('pkg-cancel-btn').addEventListener('click', close);
@@ -1547,6 +1702,29 @@ window.GymApp.pages['members-list'] = {
       }
       const pkg = (window.GymApp.data.packages || []).find(p => (p.ten_goi || p.name) === name);
       if (!pkg) { window.GymApp.toast('Gói tập không hợp lệ', 'error'); return; }
+
+      // Nếu có gói active VÀ người dùng KHÔNG chọn nối tiếp (bỏ tích checkbox)
+      // thì kết thúc gói cũ trước khi tạo gói mới
+      const stackCheckboxEl = document.getElementById('pkg-stack-mode');
+      if (activePkg && stackCheckboxEl && !stackCheckboxEl.checked) {
+        // Hiện confirm dialog
+        const confirmed = confirm(
+          `Gói "${activePkg.ten_goi || activePkg.ten_goi_tap}" hiện tại sẽ kết thúc ngay hôm nay.\nBạn có chắc chắn muốn kích hoạt gói mới song song không?`
+        );
+        if (!confirmed) return; // user hủy
+
+        // Gọi API kết thúc sớm gói cũ
+        try {
+          await window.GymApp.api.patch(`/members/${m.id}/package/${activePkg.id}/cancel`, {
+            ly_do_huy: 'Kết thúc sớm để kích hoạt gói mới',
+            so_tien_hoan: 0
+          });
+        } catch (err) {
+          window.GymApp.toast('Không thể kết thúc gói cũ: ' + (err.message || 'Lỗi không xác định'), 'error');
+          return;
+        }
+      }
+
       try {
         await window.GymApp.api.post(`/members/${m.id}/package`, {
           goi_tap_id: pkg.id, tu_ngay: from, gia_thuc_te: price,
@@ -1846,6 +2024,20 @@ window.GymApp.pages['members-list'] = {
     const pts = (window.GymApp.data.pts || []);
     let goiPtList = [];
     try { const res = await window.GymApp.api.get('/packages/pt'); goiPtList = Array.isArray(res.data) ? res.data : []; } catch (_) { }
+    
+    // Tìm hợp đồng PT đang hoạt động có den_ngay
+    const activePtReg = Array.isArray(m.pt_hien_tai)
+      ? (m.pt_hien_tai.find(p => p.trang_thai === 'dang_hoat_dong' && p.den_ngay) || null)
+      : null;
+    
+    const getNextDayStr = (dateStr) => {
+      const d = new Date(dateStr);
+      d.setDate(d.getDate() + 1);
+      return d.toISOString().split('T')[0];
+    };
+    
+    const defaultFromDate = activePtReg ? getNextDayStr(activePtReg.den_ngay) : new Date().toISOString().split('T')[0];
+    
     const overlay = document.createElement('div');
     overlay.id = 'gym-sub-modal';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);padding:16px;';
@@ -1862,7 +2054,18 @@ window.GymApp.pages['members-list'] = {
             <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Số buổi</label><input id="ptreg-sessions" type="number" min="1" placeholder="—" ${inputCls} /></div>
             <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Giá thực tế (VNĐ) ${REQ}</label><input id="ptreg-price" type="text" inputmode="numeric" placeholder="Tự điền từ gói..." ${inputCls} /></div>
             <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Phương thức TT ${REQ}</label><select id="ptreg-payment" ${inputCls}><option value="tien_mat">Tiền mặt</option><option value="chuyen_khoan">Chuyển khoản</option></select></div>
-            <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Từ ngày ${REQ}</label><input id="ptreg-from" type="date" value="${new Date().toISOString().split('T')[0]}" ${inputCls} /></div>
+            <div>
+              <label class="block text-body-sm font-bold text-on-surface mb-xs">Từ ngày ${REQ}</label>
+              <input id="ptreg-from" type="date" value="${defaultFromDate}" ${inputCls} />
+              ${activePtReg ? `
+                <div style="margin-top: 6px; display: flex; align-items: center; gap: 6px;">
+                  <input type="checkbox" id="ptreg-stack-mode" checked style="cursor: pointer; width: 14px; height: 14px;" />
+                  <label for="ptreg-stack-mode" style="font-size: 11px; font-weight: 700; color: #1D9336; cursor: pointer; user-select: none;">
+                    Nối tiếp sau gói hiện tại (${window.GymApp.formatDate(activePtReg.den_ngay)})
+                  </label>
+                </div>
+              ` : ''}
+            </div>
             <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Đến ngày</label><input id="ptreg-to" type="date" ${inputCls} /></div>
             <div class="col-span-1 sm:col-span-2"><label class="block text-body-sm font-bold text-on-surface mb-xs">Ghi chú</label><textarea id="ptreg-note" rows="2" placeholder="Ghi chú thêm..." class="bg-surface-container-lowest text-on-surface border border-outline-variant" style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;resize:vertical;font-family:inherit;"></textarea></div>
           </div>
@@ -1875,6 +2078,19 @@ window.GymApp.pages['members-list'] = {
       </div>`;
     document.body.appendChild(overlay);
     window.GymApp.initDatePickers(overlay);
+    
+    const stackCheckbox = document.getElementById('ptreg-stack-mode');
+    if (stackCheckbox && activePtReg) {
+      stackCheckbox.addEventListener('change', function () {
+        const fromEl = document.getElementById('ptreg-from');
+        if (this.checked) {
+          fromEl.value = getNextDayStr(activePtReg.den_ngay);
+        } else {
+          fromEl.value = new Date().toISOString().split('T')[0];
+        }
+        updatePtRegDuration();
+      });
+    }
     const _pVND = s => parseInt((s || '').replace(/\./g, '').replace(/,/g, '')) || 0;
     const _fVND = n => n > 0 ? new Intl.NumberFormat('vi-VN').format(n) : '';
     const ptregPriceEl = document.getElementById('ptreg-price');
@@ -1927,6 +2143,24 @@ window.GymApp.pages['members-list'] = {
       const sessions = document.getElementById('ptreg-sessions').value;
       const note = document.getElementById('ptreg-note').value.trim();
       if (!ptId || !goiId || price <= 0 || !from) { window.GymApp.toast('Vui lòng điền đầy đủ: PT, gói PT, giá và từ ngày (*)', 'error'); return; }
+
+      const ptStackCheckboxEl = document.getElementById('ptreg-stack-mode');
+      if (activePtReg && ptStackCheckboxEl && !ptStackCheckboxEl.checked) {
+        const confirmed = confirm(
+          `Gói PT hiện tại sẽ kết thúc ngay hôm nay.\nBạn có chắc chắn muốn kích hoạt gói PT mới song song không?`
+        );
+        if (!confirmed) return;
+
+        try {
+          await window.GymApp.api.put(`/pt/registrations/${activePtReg.id}/cancel`, {
+            ly_do: 'Kết thúc sớm để kích hoạt gói PT mới'
+          });
+        } catch (err) {
+          window.GymApp.toast('Không thể kết thúc gói PT cũ: ' + (err.message || 'Lỗi không xác định'), 'error');
+          return;
+        }
+      }
+
       try {
         await window.GymApp.api.post('/pt/registrations', {
           hoi_vien_id: m.id, pt_id: ptId, goi_pt_id: goiId,
@@ -2329,23 +2563,28 @@ window.GymApp.pages['members-list'] = {
     overlay.id = 'gym-pt-sort-modal';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9100;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);padding:20px;';
     overlay.innerHTML = `
-      <div class="bg-surface-container-lowest rounded-2xl shadow-xl" style="width:360px;max-width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 25px 60px rgba(0,0,0,0.35);">
-        <div class="flex items-center justify-between px-loose py-standard border-b border-outline-variant">
-          <h3 class="text-on-surface font-bold" style="font-size:16px;">Sắp xếp — Huấn luyện viên</h3>
-          <button id="close-pt-sort-modal" class="material-symbols-outlined text-on-surface-variant text-xl p-atom rounded" style="background:transparent;border:none;cursor:pointer;">close</button>
+      <div class="bg-surface-container-lowest rounded-24px shadow-xl" style="width:360px;max-width:100%;max-height:88vh;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,0.4);border-radius:24px;">
+        <div class="flex items-center justify-between px-loose py-standard border-b border-outline-variant flex-shrink-0" style="background:linear-gradient(135deg,#065f46,#10b981);">
+          <div class="flex items-center gap-compact">
+            <span class="material-symbols-outlined text-white text-lg">sort</span>
+            <h3 class="text-white font-bold" style="font-size:16px;">Sắp xếp — Huấn luyện viên</h3>
+          </div>
+          <button id="close-pt-sort-modal" style="background:rgba(255,255,255,0.15);border:none;cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;">
+            <span class="material-symbols-outlined text-white" style="font-size:18px;">close</span>
+          </button>
         </div>
-        <div class="px-loose py-standard border-b border-outline-variant">
+        <div class="px-loose py-standard border-b border-outline-variant overflow-y-auto">
           <div class="flex flex-col gap-xs">
             ${options.map(([value, label]) => `
               <label class="flex items-center gap-compact cursor-pointer py-xs px-compact rounded-lg hover:bg-surface-container-low transition-colors">
-                <input type="radio" name="pt-sort" value="${value}" style="accent-color:#1D9336;width:16px;height:16px;" ${self._ptSortState === value ? 'checked' : ''} />
+                <input type="radio" name="pt-sort" value="${value}" style="accent-color:#10b981;width:16px;height:16px;" ${self._ptSortState === value ? 'checked' : ''} />
                 <span class="text-body-md text-on-surface" style="font-size:13px;">${label}</span>
               </label>`).join('')}
           </div>
         </div>
-        <div class="flex gap-standard px-loose py-standard">
-          <button id="pt-sort-reset-btn" class="flex-1 py-compact rounded-xl border border-outline-variant text-on-surface-variant font-bold hover:bg-surface-container transition-colors text-body-md">Đặt lại</button>
-          <button id="pt-sort-apply-btn" class="flex-1 py-compact rounded-xl font-bold text-white text-body-md transition-all hover:opacity-90" style="background:#1D9336;">Áp dụng</button>
+        <div class="flex gap-standard px-loose py-standard flex-shrink-0">
+          <button id="pt-sort-reset-btn" class="flex-1 py-2.5 rounded-xl border-2 border-outline-variant text-on-surface-variant font-bold hover:bg-surface-container transition-all active:scale-95 text-body-md">Đặt lại</button>
+          <button id="pt-sort-apply-btn" class="flex-1 py-2.5 rounded-xl font-bold text-white text-body-md transition-all active:scale-95 shadow-md hover:shadow-lg hover:opacity-90" style="background:#10b981;">Áp dụng</button>
         </div>
       </div>`;
     document.body.appendChild(overlay);
@@ -2679,23 +2918,23 @@ window.GymApp.pages['members-list'] = {
     overlay.id = 'gym-del-pt-modal';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9001;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);backdrop-filter:blur(3px);padding:16px;';
     overlay.innerHTML = `
-      <div style="border-radius:16px;width:100%;max-width:400px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,0.3);" class="bg-surface-container-lowest">
-        <div class="px-loose py-standard border-b border-outline-variant flex items-center gap-compact" style="background:linear-gradient(135deg,#065f46,#10b981);">
+      <div style="border-radius:24px;width:100%;max-width:440px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,0.4);" class="bg-surface-container-lowest">
+        <div class="px-loose py-standard border-b border-outline-variant flex items-center gap-compact" style="background:linear-gradient(135deg,#991b1b,#dc2626);">
           <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
             <span class="material-symbols-outlined text-white text-xl">person_remove</span>
           </div>
           <h3 class="font-bold text-white" style="font-size:17px">Xác nhận xóa PT</h3>
         </div>
-        <div class="p-loose flex flex-col gap-standard">
+        <div class="p-loose flex flex-col gap-standard bg-surface-container-lowest">
           <p class="text-on-surface text-body-md">Bạn có chắc chắn muốn xóa huấn luyện viên <strong class="text-error">${name}</strong> không?</p>
-          <p class="text-on-surface-variant text-body-sm bg-surface-container rounded-xl px-standard py-compact border border-outline-variant">
-            <span class="material-symbols-outlined text-sm align-middle text-[#e65100]">warning</span>
-            Hành động này sẽ gỡ PT khỏi hệ thống quản lý.
-          </p>
+          <div class="flex items-start gap-xs bg-error/10 p-compact rounded-xl border border-error/20">
+            <span class="material-symbols-outlined text-error text-[18px]">warning</span>
+            <p class="text-error text-body-sm font-medium m-0">Hành động này sẽ gỡ PT khỏi hệ thống quản lý và không thể hoàn tác.</p>
+          </div>
           <div class="flex gap-standard justify-end pt-xs">
-            <button id="cancel-del-pt" class="px-loose py-compact rounded-xl font-bold text-body-sm border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-all">Hủy bỏ</button>
-            <button id="confirm-del-pt" class="bg-error text-white px-loose py-compact rounded-xl font-bold text-body-sm hover:opacity-80 transition-all flex items-center gap-xs">
-              <span class="material-symbols-outlined text-sm">delete</span>Xóa PT
+            <button id="cancel-del-pt" class="px-loose py-2.5 rounded-xl font-bold text-body-sm border-2 border-outline-variant text-on-surface-variant hover:bg-surface-container transition-all active:scale-95">Hủy bỏ</button>
+            <button id="confirm-del-pt" class="bg-error text-white px-loose py-2.5 rounded-xl font-bold text-body-sm transition-all flex items-center gap-xs active:scale-95 shadow-md hover:shadow-lg hover:opacity-90">
+              <span class="material-symbols-outlined text-sm">delete</span> Xóa PT
             </button>
           </div>
         </div>
@@ -2781,7 +3020,6 @@ window.GymApp.pages['members-list'] = {
             <div>
               <span style="font-size:11px;font-weight:800;color:rgba(255,255,255,0.8);text-transform:uppercase;background:rgba(0,0,0,0.2);padding:3px 8px;border-radius:999px;">Chỉnh sửa hồ sơ</span>
               <h3 style="font-size:22px;font-weight:800;color:#fff;margin:6px 0 2px;">${m.ho_ten || '—'}</h3>
-              <p style="font-size:13px;color:rgba(255,255,255,0.9);font-weight:600;margin:0;">${m.ma_ho_so || ''}</p>
             </div>
           </div>
         </div>
@@ -2894,23 +3132,23 @@ window.GymApp.pages['members-list'] = {
     overlay.id = 'gym-del-member-modal';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9001;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);backdrop-filter:blur(3px);padding:16px;';
     overlay.innerHTML = `
-      <div style="border-radius:16px;width:100%;max-width:400px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,0.3);" class="bg-surface-container-lowest">
-        <div class="px-loose py-standard border-b border-outline-variant flex items-center gap-compact">
-          <div class="w-10 h-10 rounded-xl bg-error/10 flex items-center justify-center flex-shrink-0">
-            <span class="material-symbols-outlined text-error text-xl" style="font-variation-settings:'FILL' 1">person_remove</span>
+      <div style="border-radius:24px;width:100%;max-width:440px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,0.4);" class="bg-surface-container-lowest">
+        <div class="px-loose py-standard border-b border-outline-variant flex items-center gap-compact" style="background:linear-gradient(135deg,#991b1b,#dc2626);">
+          <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
+            <span class="material-symbols-outlined text-white text-xl" style="font-variation-settings:'FILL' 1">person_remove</span>
           </div>
-          <h3 class="font-bold text-on-surface" style="font-size:17px">Xác nhận xóa hội viên</h3>
+          <h3 class="font-bold text-white text-[17px]">Xác nhận xóa hội viên</h3>
         </div>
-        <div class="p-loose flex flex-col gap-standard">
+        <div class="p-loose flex flex-col gap-standard bg-surface-container-lowest">
           <p class="text-on-surface text-body-md">Bạn có chắc chắn muốn xóa hội viên <strong class="text-error">${name}</strong> không?</p>
-          <p class="text-on-surface-variant text-body-sm bg-surface-container rounded-xl px-standard py-compact border border-outline-variant">
-            <span class="material-symbols-outlined text-sm align-middle text-[#e65100]">warning</span>
-            Hành động này không thể hoàn tác.
-          </p>
+          <div class="flex items-start gap-xs bg-error/10 p-compact rounded-xl border border-error/20">
+            <span class="material-symbols-outlined text-error text-[18px]">warning</span>
+            <p class="text-error text-body-sm font-medium m-0">Hành động này sẽ xóa hồ sơ vĩnh viễn và không thể hoàn tác.</p>
+          </div>
           <div class="flex gap-standard justify-end pt-xs">
-            <button id="cancel-del-member" class="px-loose py-compact rounded-xl font-bold text-body-sm border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-all">Hủy bỏ</button>
-            <button id="confirm-del-member" class="bg-error text-white px-loose py-compact rounded-xl font-bold text-body-sm hover:opacity-80 transition-all flex items-center gap-xs">
-              <span class="material-symbols-outlined text-sm">delete</span>Xóa hội viên
+            <button id="cancel-del-member" class="px-loose py-2.5 rounded-xl font-bold text-body-sm border-2 border-outline-variant text-on-surface-variant hover:bg-surface-container transition-all active:scale-95">Hủy bỏ</button>
+            <button id="confirm-del-member" class="bg-error text-white px-loose py-2.5 rounded-xl font-bold text-body-sm transition-all flex items-center gap-xs active:scale-95 shadow-md hover:shadow-lg hover:opacity-90">
+              <span class="material-symbols-outlined text-sm">delete</span> Xóa hội viên
             </button>
           </div>
         </div>

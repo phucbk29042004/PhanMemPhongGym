@@ -34,7 +34,7 @@ window.GymApp.pages['expired'] = {
           <div class="flex items-center gap-compact flex-1 max-w-md">
             <div class="relative flex-1 group">
               <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors text-[18px]">search</span>
-              <input id="expired-search" type="text" placeholder="Tìm tên, SĐT..." class="w-full bg-surface-container-low/30 border-2 border-outline-variant/50 text-on-surface pl-10 pr-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none placeholder-outline-variant/60 font-body-md text-body-md transition-all shadow-sm focus:shadow-none" value="${this._searchQuery}">
+              <input id="expired-search" type="text" placeholder="Tìm tên, SĐT..." class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface pl-10 pr-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none placeholder-outline-variant/60 font-body-md text-body-md transition-all shadow-sm focus:shadow-none" value="${this._searchQuery}">
             </div>
             <button id="btn-refresh-expired" class="w-10 h-10 flex items-center justify-center rounded-xl border-2 border-outline-variant/50 bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all shadow-sm active:scale-95 duration-200 cursor-pointer">
               <span class="material-symbols-outlined text-base">refresh</span>
