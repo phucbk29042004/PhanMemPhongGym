@@ -181,6 +181,22 @@ export const getDashboard = (req, res) => {
     `).get(today),
   };
 
+  const yesterday = db.prepare(`SELECT date('now','localtime','-1 days') as d`).get().d;
+  const startOfMonth = today.substring(0, 8) + '01';
+
+  const yesterdayLuotVao = db.prepare(`SELECT COUNT(*) as c FROM luot_vao_ra WHERE date(thoi_diem) = ? AND loai = 'vao'`).get(yesterday).c;
+  const yesterdayDoanhThu = db.prepare(`SELECT tong_tien FROM doanh_thu WHERE ngay = ?`).get(yesterday)?.tong_tien || 0;
+  const newMembersThisMonth = db.prepare(`SELECT COUNT(*) as c FROM ho_so WHERE date(ngay_tao) >= ? AND loai_ho_so = 'hv'`).get(startOfMonth).c;
+
+  const calcPercent = (curr, prev) => prev === 0 ? (curr > 0 ? 100 : 0) : ((curr - prev) / prev * 100);
+
+  stats.percent_changes = {
+    hoi_vien: ((newMembersThisMonth / (stats.hoi_vien.tong || 1)) * 100).toFixed(2), // % tăng trưởng trong tháng
+    luot_vao: calcPercent(stats.luot_vao_ra_hom_nay.luot_vao, yesterdayLuotVao).toFixed(2),
+    doanh_thu: calcPercent(stats.doanh_thu_hom_nay.tong_tien, yesterdayDoanhThu).toFixed(2),
+    sap_het_han: ((stats.hoi_vien.sap_het_han / (stats.hoi_vien.tong || 1)) * 100).toFixed(2)
+  };
+
   // Check-in gần nhất hôm nay (tối đa 8 lượt)
   stats.recent_checkins = db.prepare(`
     SELECT lv.id, lv.thoi_diem, lv.loai,

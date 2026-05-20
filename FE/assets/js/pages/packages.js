@@ -24,13 +24,13 @@ window.GymApp.pages['packages'] = {
         { label: 'Đang hoạt động', value: packages.filter(p => p.trang_thai === 'dang_ban' || p.trang_thai === 'active').length, icon: 'check_circle', iconBg: 'icon-bg-green', color: 'text-brand-primary' },
         { label: 'Tổng hội viên đăng ký', value: total, icon: 'groups', iconBg: 'icon-bg-orange', color: 'text-[#e65100]' },
       ].map(s => `
-            <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-loose shadow-sm flex items-center gap-loose">
+            <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 p-standard shadow-sm flex items-center gap-loose hover:-translate-y-1 hover:shadow-md transition-all duration-300">
               <div class="icon-bg ${s.iconBg}" style="width:48px;height:48px;border-radius:14px">
                 <span class="material-symbols-outlined ${s.color} text-2xl" style="font-variation-settings:'FILL' 1">${s.icon}</span>
               </div>
               <div>
-                <p class="text-on-surface-variant text-body-sm font-bold">${s.label}</p>
-                <p class="${s.color} font-display-lg text-display-lg font-bold">${s.value}</p>
+                <p class="text-on-surface-variant text-body-sm font-bold uppercase tracking-wider">${s.label}</p>
+                <p class="${s.color} text-3xl font-bold tracking-tight">${s.value}</p>
               </div>
             </div>
           `).join('')}
@@ -41,31 +41,31 @@ window.GymApp.pages['packages'] = {
           ${packages.map(p => {
         const popularity = total > 0 ? Math.round(((p.so_nguoi_dang_ky || 0) / total) * 100) : 0;
         return `
-              <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden flex flex-col">
+              <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 shadow-sm overflow-hidden flex flex-col hover:-translate-y-1 hover:shadow-md transition-all duration-300">
                 <!-- Header card -->
-                <div class="p-loose text-white relative overflow-hidden" style="background: linear-gradient(135deg, #1D9336 0%, #157a2a 100%)">
+                <div class="p-loose text-white relative overflow-hidden bg-brand-primary">
                   <div class="absolute top-0 right-0 w-24 h-24 opacity-10" style="background: radial-gradient(circle, white 0%, transparent 70%); transform: translate(20%, -20%)"></div>
                   <div class="flex items-start justify-between relative">
                     <div>
-                      <p class="font-bold text-body-sm opacity-80 uppercase tracking-wider">Gói tập</p>
-                      <h3 class="font-display-2xl text-display-2xl font-bold mt-xs">${p.ten_goi}</h3>
+                      <p class="font-bold text-label-xs opacity-80 uppercase tracking-wider">Gói tập</p>
+                      <h3 class="text-2xl font-bold mt-xs">${p.ten_goi}</h3>
                     </div>
                     <div class="icon-bg" style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.15)">
                       <span class="material-symbols-outlined text-white text-lg" style="font-variation-settings:'FILL' 1">card_membership</span>
                     </div>
                   </div>
-                  <p class="font-display-lg text-display-lg font-bold mt-standard">${window.GymApp.formatCurrency(p.gia)}</p>
-                  <p class="text-body-sm opacity-75 mt-xs">${p.so_thang} tháng ${p.so_ngay_them ? '+ ' + p.so_ngay_them + ' ngày' : ''}</p>
+                  <p class="text-3xl font-bold tracking-tight mt-standard">${window.GymApp.formatCurrency(p.gia)}</p>
+                  <p class="text-body-sm font-medium opacity-75 mt-xs">${p.so_thang} tháng ${p.so_ngay_them ? '+ ' + p.so_ngay_them + ' ngày' : ''}</p>
                 </div>
 
                 <!-- Body card -->
                 <div class="p-loose flex flex-col gap-standard flex-1">
-                  <p class="text-on-surface-variant text-body-sm">${p.mo_ta || 'Không có mô tả'}</p>
+                  <p class="text-on-surface-variant text-body-sm font-semibold">${p.mo_ta || 'Không có mô tả'}</p>
 
                   <!-- Popularity bar -->
                   <div>
                     <div class="flex items-center justify-between mb-xs">
-                      <span class="text-on-surface-variant text-body-sm">Mức độ phổ biến</span>
+                      <span class="text-on-surface-variant text-body-sm font-semibold">Mức độ phổ biến</span>
                       <span class="text-brand-primary font-bold text-body-sm">${popularity}%</span>
                     </div>
                     <div class="h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
@@ -73,19 +73,19 @@ window.GymApp.pages['packages'] = {
                     </div>
                   </div>
 
-                  <div class="flex items-center justify-between mt-auto pt-standard border-t border-outline-variant">
-                    <div class="flex items-center gap-xs text-on-surface-variant">
+                  <div class="flex items-center justify-between mt-auto pt-standard border-t border-outline-variant/50">
+                    <div class="flex items-center gap-xs text-on-surface-variant text-body-sm font-semibold">
                       <span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL' 1">people</span>
-                      <span class="text-body-sm font-bold">${p.so_nguoi_dang_ky || 0} hội viên</span>
+                      <span class="font-bold">${p.so_nguoi_dang_ky || 0} hội viên</span>
                     </div>
                     ${window.GymApp.statusBadge('active')}
                   </div>
                 </div>
 
                 <!-- Footer card -->
-                <div class="px-loose py-compact border-t border-outline-variant flex items-center justify-end gap-atom bg-surface-container-low">
-                  <button class="material-symbols-outlined text-outline hover:text-brand-primary text-xl p-atom rounded-lg hover:bg-surface-container transition-colors btn-edit-pkg" data-id="${p.id}" title="Chỉnh sửa">edit</button>
-                  <button class="material-symbols-outlined text-outline hover:text-error text-xl p-atom rounded-lg hover:bg-error-container transition-colors btn-del-pkg" data-id="${p.id}" data-name="${p.ten_goi}" data-count="${p.so_nguoi_dang_ky || 0}" title="Xóa">delete</button>
+                <div class="px-loose py-2 border-t border-outline-variant/50 flex items-center justify-end gap-1 bg-surface-container-low/10">
+                  <button class="material-symbols-outlined text-outline hover:text-brand-primary text-lg p-1.5 rounded-lg hover:bg-brand-primary/10 transition-colors btn-edit-pkg" data-id="${p.id}" title="Chỉnh sửa">edit</button>
+                  <button class="material-symbols-outlined text-outline hover:text-error text-lg p-1.5 rounded-lg hover:bg-error/10 transition-colors btn-del-pkg" data-id="${p.id}" data-name="${p.ten_goi}" data-count="${p.so_nguoi_dang_ky || 0}" title="Xóa">delete</button>
                 </div>
               </div>
             `;
@@ -93,32 +93,32 @@ window.GymApp.pages['packages'] = {
         </div>
 
         <!-- Bảng so sánh gói tập -->
-        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
-          <div class="section-header px-loose py-standard border-b border-outline-variant flex items-center gap-compact">
+        <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 shadow-sm overflow-hidden">
+          <div class="section-header px-loose py-4 border-b border-outline-variant/50 flex items-center gap-compact bg-surface-container-low/20">
             <div class="icon-bg icon-bg-green">
               <span class="material-symbols-outlined text-brand-primary text-lg" style="font-variation-settings:'FILL' 1">compare_arrows</span>
             </div>
-            <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface">So sánh gói tập</h3>
+            <h3 class="font-bold text-on-surface text-body-lg">So sánh gói tập</h3>
           </div>
           <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse gym-table">
+            <table class="w-full text-left border-collapse">
               <thead>
-                <tr class="h-10">
-                  <th class="px-loose font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Tên gói</th>
-                  <th class="px-loose font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Giá</th>
-                  <th class="px-loose font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Thời hạn</th>
-                  <th class="px-loose font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Giá/ngày</th>
-                  <th class="px-loose font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Hội viên</th>
-                  <th class="px-loose font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Trạng thái</th>
+                <tr class="h-10 border-b border-outline-variant/50 bg-surface-container-low/10">
+                  <th class="px-loose font-bold text-label-bold text-on-surface-variant uppercase tracking-wider">Tên gói</th>
+                  <th class="px-loose font-bold text-label-bold text-on-surface-variant uppercase tracking-wider">Giá</th>
+                  <th class="px-loose font-bold text-label-bold text-on-surface-variant uppercase tracking-wider">Thời hạn</th>
+                  <th class="px-loose font-bold text-label-bold text-on-surface-variant uppercase tracking-wider">Giá/ngày</th>
+                  <th class="px-loose font-bold text-label-bold text-on-surface-variant uppercase tracking-wider">Hội viên</th>
+                  <th class="px-loose font-bold text-label-bold text-on-surface-variant uppercase tracking-wider">Trạng thái</th>
                 </tr>
               </thead>
               <tbody>
                 ${packages.map(p => `
-                  <tr class="h-11 border-b border-outline-variant hover:bg-surface-container-low transition-colors">
+                  <tr class="h-11 border-b border-outline-variant/30 hover:bg-brand-primary/5 transition-colors">
                     <td class="px-loose font-bold text-on-surface text-body-md">${p.ten_goi}</td>
                     <td class="px-loose text-brand-primary font-bold text-body-md">${window.GymApp.formatCurrency(p.gia)}</td>
-                    <td class="px-loose text-on-surface-variant text-body-sm">${p.so_thang} tháng</td>
-                    <td class="px-loose text-on-surface-variant text-body-sm">${window.GymApp.formatCurrency(Math.round(p.gia / (p.so_thang * 30)))}</td>
+                    <td class="px-loose text-on-surface-variant text-body-sm font-semibold">${p.so_thang} tháng</td>
+                    <td class="px-loose text-on-surface-variant text-body-sm font-semibold">${window.GymApp.formatCurrency(Math.round(p.gia / (p.so_thang * 30)))}</td>
                     <td class="px-loose text-body-md font-bold text-on-surface">${p.so_nguoi_dang_ky || 0}</td>
                     <td class="px-loose">${window.GymApp.statusBadge('active')}</td>
                   </tr>
@@ -157,14 +157,14 @@ window.GymApp.pages['packages'] = {
     overlay.id = 'gym-pkg-modal';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);backdrop-filter:blur(3px);padding:16px;';
     overlay.innerHTML = `
-      <div style="border-radius:16px;width:100%;max-width:480px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,0.3);position:relative;">
-        <div class="bg-surface-container-lowest px-loose py-standard border-b border-outline-variant flex items-center justify-between">
-          <h3 class="font-bold text-on-surface" style="font-size:18px">${isEdit ? 'Chỉnh sửa gói tập' : 'Thêm gói tập mới'}</h3>
+      <div style="border-radius:24px;width:100%;max-width:480px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,0.3);position:relative;" class="bg-white dark:bg-[#1e1e1e] border-2 border-outline-variant/50">
+        <div class="px-loose py-standard border-b border-outline-variant/50 flex items-center justify-between">
+          <h3 class="font-bold text-on-surface text-body-lg">${isEdit ? 'Chỉnh sửa gói tập' : 'Thêm gói tập mới'}</h3>
           <button id="close-pkg-modal" style="background:transparent;border:none;cursor:pointer;">
             <span class="material-symbols-outlined text-on-surface-variant">close</span>
           </button>
         </div>
-        <div class="bg-surface-container-lowest p-loose flex flex-col gap-standard">
+        <div class="p-loose flex flex-col gap-standard">
           <div>
             <label class="text-on-surface-variant text-body-sm font-bold block mb-xs">Tên gói <span class="text-error">*</span></label>
             <input id="pkg-ten" type="text" value="${pkg?.ten_goi || ''}" placeholder="VD: Gói 1 tháng" class="w-full bg-surface-container border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none text-body-md" />
@@ -188,8 +188,8 @@ window.GymApp.pages['packages'] = {
             <textarea id="pkg-mota" rows="2" placeholder="Mô tả ngắn về gói tập..." class="w-full bg-surface-container border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none text-body-md resize-none">${pkg?.mo_ta || ''}</textarea>
           </div>
           <div class="flex gap-standard justify-end pt-xs border-t border-outline-variant mt-xs">
-            <button id="cancel-pkg-modal" class="px-loose py-compact rounded-xl font-bold text-body-sm border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-all">Hủy</button>
-            <button id="save-pkg-modal" class="bg-brand-primary text-white px-loose py-compact rounded-xl font-bold text-body-sm hover:bg-primary-container transition-all flex items-center gap-xs">
+            <button id="cancel-pkg-modal" class="px-loose py-compact rounded-xl font-bold text-body-md border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-all">Hủy</button>
+            <button id="save-pkg-modal" class="bg-brand-primary text-white px-loose py-compact rounded-xl font-bold text-body-md hover:bg-primary-container transition-all flex items-center gap-xs">
               <span class="material-symbols-outlined text-sm">save</span>${isEdit ? 'Lưu thay đổi' : 'Tạo gói tập'}
             </button>
           </div>
@@ -264,17 +264,17 @@ window.GymApp.pages['packages'] = {
     overlay.id = 'gym-pkg-del-modal';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9001;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);backdrop-filter:blur(3px);padding:16px;';
     overlay.innerHTML = `
-      <div style="border-radius:16px;width:100%;max-width:400px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,0.3);" class="bg-surface-container-lowest">
-        <div class="px-loose py-standard border-b border-outline-variant flex items-center gap-compact">
+      <div style="border-radius:24px;width:100%;max-width:400px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,0.3);" class="bg-white dark:bg-[#1e1e1e] border-2 border-outline-variant/50">
+        <div class="px-loose py-standard border-b border-outline-variant/50 flex items-center gap-compact">
           <span class="material-symbols-outlined text-error text-2xl">warning</span>
-          <h3 class="font-bold text-on-surface">Xác nhận xóa gói tập</h3>
+          <h3 class="font-bold text-on-surface text-body-lg">Xác nhận xóa gói tập</h3>
         </div>
-        <div class="p-loose">
+        <div class="p-loose bg-white dark:bg-[#1e1e1e]">
           <p class="text-on-surface text-body-md">Bạn có chắc muốn xóa <strong>${name}</strong>?</p>
-          ${count > 0 ? `<p class="text-[#e65100] text-body-sm mt-xs font-bold">Gói này có ${count} hội viên đang đăng ký — sẽ bị ẩn (soft delete), không xóa hẳn.</p>` : ''}
+          ${count > 0 ? `<p class="text-[#e65100] text-body-sm mt-xs font-bold bg-[#e65100]/5 p-2 rounded-xl border border-[#e65100]/20">Gói này có ${count} hội viên đang đăng ký — sẽ bị ẩn (soft delete), không xóa hẳn.</p>` : ''}
           <div class="flex gap-standard justify-end mt-loose">
-            <button id="cancel-pkg-del" class="px-loose py-compact rounded-xl font-bold text-body-sm border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-all">Hủy</button>
-            <button id="confirm-pkg-del" class="bg-error text-white px-loose py-compact rounded-xl font-bold text-body-sm hover:opacity-80 transition-all flex items-center gap-xs">
+            <button id="cancel-pkg-del" class="px-loose py-compact rounded-xl font-bold text-body-md border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-all">Hủy</button>
+            <button id="confirm-pkg-del" class="bg-error text-white px-loose py-compact rounded-xl font-bold text-body-md hover:opacity-80 transition-all flex items-center gap-xs">
               <span class="material-symbols-outlined text-sm">delete</span>Xóa
             </button>
           </div>

@@ -41,29 +41,79 @@ window.GymApp.pages['checkin'] = {
     return hourCounts;
   },
 
+  _formatTrend: function (current, previous) {
+    if (previous === null || previous === undefined) return '';
+    const prevVal = parseFloat(previous);
+    const currVal = parseFloat(current);
+    if (isNaN(prevVal) || isNaN(currVal)) return '';
+    
+    let pct = 0;
+    if (prevVal === 0) {
+      if (currVal > 0) pct = 100;
+      else pct = 0;
+    } else {
+      pct = ((currVal - prevVal) / prevVal) * 100;
+    }
+
+    if (pct === 0) {
+      return `<span class="text-on-surface-variant font-bold text-body-sm flex items-center gap-0.5 ml-2">0.00%</span>`;
+    }
+    if (pct > 0) {
+      return `<span class="text-brand-primary font-bold text-body-sm flex items-center gap-0.5 ml-2"><span class="material-symbols-outlined text-[16px]" style="font-variation-settings:'FILL' 1">trending_up</span>+${pct.toFixed(2)}%</span>`;
+    }
+    return `<span class="text-red-500 font-bold text-body-sm flex items-center gap-0.5 ml-2"><span class="material-symbols-outlined text-[16px]" style="font-variation-settings:'FILL' 1">trending_down</span>${pct.toFixed(2)}%</span>`;
+  },
+
   _buildStats: function (checkins) {
     const s = this._stats || {};
     const hourCounts = this._buildHourCounts(checkins);
-    const peakEntry = Object.entries(hourCounts).sort((a, b) => b[1] - a[1])[0];
+    const sortedHours = Object.entries(hourCounts).sort((a, b) => b[1] - a[1]);
+    const peakHour = sortedHours.length > 0 ? sortedHours[0][0] + ':00' : '—';
 
-    // So sánh hôm nay vs hôm qua
-    const luotVaoHomNay = s.luot_vao ?? checkins.length;
+    const luotVaoHomNay = s.luot_vao ?? checkins.filter(c => c.loai === 'vao').length;
     const luotVaoHomQua = s.luot_vao_hom_qua ?? null;
-    let soSanh = '—';
-    if (luotVaoHomQua !== null && luotVaoHomQua > 0) {
-      const pct = Math.round(((luotVaoHomNay - luotVaoHomQua) / luotVaoHomQua) * 100);
-      soSanh = (pct >= 0 ? '+' : '') + pct + '%';
-    } else if (luotVaoHomQua === 0 && luotVaoHomNay > 0) {
-      soSanh = '+100%';
-    }
+    const luotRaHomNay = s.luot_ra ?? checkins.filter(c => c.loai === 'ra').length;
 
+    const vaoTrendHtml = this._formatTrend(luotVaoHomNay, luotVaoHomQua);
     const dangTrong = s.dang_trong_phong ?? '—';
 
     return [
-      { icon: 'how_to_reg', label: 'Check-in hôm nay', value: luotVaoHomNay, iconBg: 'icon-bg-green', color: 'text-brand-primary' },
-      { icon: 'groups', label: 'Đang trong phòng', value: dangTrong, iconBg: 'icon-bg-blue', color: 'text-secondary' },
-      { icon: 'schedule', label: 'Giờ cao điểm', value: peakEntry[0] + ':00', iconBg: 'icon-bg-orange', color: 'text-[#e65100]' },
-      { icon: 'trending_up', label: 'So với hôm qua', value: soSanh, iconBg: 'icon-bg-green', color: 'text-brand-primary' },
+      {
+        icon: 'how_to_reg',
+        label: 'Check-in hôm nay',
+        value: luotVaoHomNay,
+        iconBg: 'icon-bg-green',
+        color: 'text-brand-primary',
+        trendHtml: vaoTrendHtml,
+        sub: luotVaoHomQua !== null ? `Hôm qua: ${luotVaoHomQua} lượt` : 'Hôm qua: 0 lượt',
+      },
+      {
+        icon: 'logout',
+        label: 'Check-out hôm nay',
+        value: luotRaHomNay,
+        iconBg: 'icon-bg-orange',
+        color: 'text-[#e65100]',
+        trendHtml: '',
+        sub: 'Hội viên đã ra về',
+      },
+      {
+        icon: 'groups',
+        label: 'Đang trong phòng',
+        value: dangTrong,
+        iconBg: 'icon-bg-blue',
+        color: 'text-secondary',
+        trendHtml: '',
+        sub: 'Hội viên đang tập luyện',
+      },
+      {
+        icon: 'schedule',
+        label: 'Giờ cao điểm',
+        value: peakHour,
+        iconBg: 'icon-bg-orange',
+        color: 'text-[#e65100]',
+        trendHtml: '',
+        sub: 'Lượng khách tập trung nhất',
+      },
     ];
   },
 
@@ -77,14 +127,18 @@ window.GymApp.pages['checkin'] = {
         <!-- Stats -->
         <div id="checkin-stats-grid" class="grid grid-cols-2 md:grid-cols-4 gap-standard">
           ${stats.map(s => `
-            <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-standard shadow-sm flex flex-col gap-standard">
+            <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 p-standard shadow-sm flex flex-col gap-standard hover:-translate-y-1 hover:shadow-md transition-all duration-300">
               <div class="flex items-center justify-between">
-                <span class="text-on-surface-variant font-body-sm text-body-sm font-bold uppercase tracking-wider leading-tight" style="max-width:calc(100% - 52px)">${s.label}</span>
+                <span class="text-on-surface-variant text-body-sm font-bold uppercase tracking-wider leading-tight" style="max-width:calc(100% - 52px)">${s.label}</span>
                 <div class="icon-bg ${s.iconBg}">
                   <span class="material-symbols-outlined ${s.color} text-xl" style="font-variation-settings:'FILL' 1">${s.icon}</span>
                 </div>
               </div>
-              <span class="${s.color} font-display-lg text-display-lg font-bold">${s.value}</span>
+              <div class="flex items-baseline flex-wrap gap-x-2 gap-y-1">
+                <span class="text-on-surface text-3xl font-bold tracking-tight truncate max-w-full" title="${s.value}">${s.value}</span>
+                ${s.trendHtml || ''}
+              </div>
+              <span class="text-on-surface-variant text-body-sm font-medium">${s.sub || ''}</span>
             </div>
           `).join('')}
         </div>
@@ -92,7 +146,7 @@ window.GymApp.pages['checkin'] = {
         <div class="grid grid-cols-1 md:grid-cols-3 gap-standard">
 
           <!-- Biểu đồ check-in theo giờ -->
-          <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
+          <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md">
             <div class="section-header px-standard py-compact border-b border-outline-variant flex items-center gap-compact">
               <div class="icon-bg icon-bg-green">
                 <span class="material-symbols-outlined text-brand-primary text-lg" style="font-variation-settings:'FILL' 1">bar_chart_4_bars</span>
@@ -119,8 +173,8 @@ window.GymApp.pages['checkin'] = {
               </div>
               <div class="flex items-center gap-standard">
                 <span class="text-on-surface-variant text-body-sm">${new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'numeric' })}</span>
-                <button id="btn-checkin-reload" class="flex items-center gap-xs px-compact py-xs rounded-lg border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary transition-all text-body-sm font-bold">
-                  <span class="material-symbols-outlined text-sm">refresh</span>Tải lại
+                <button id="btn-checkin-reload" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border-2 border-outline-variant/50 bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer">
+                  <span class="material-symbols-outlined text-base">refresh</span>Tải lại
                 </button>
               </div>
             </div>
@@ -132,7 +186,7 @@ window.GymApp.pages['checkin'] = {
                      <p class="text-on-surface-variant text-body-sm mt-standard">Chưa có check-in hôm nay</p>
                    </div>`;
                 return grouped.map(c => `
-                    <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-standard shadow-sm flex flex-col items-center gap-sm">
+                    <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 p-standard shadow-sm flex flex-col items-center gap-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300">
                       ${window.GymApp.avatarImg(c.avatar_url, c.ho_ten, 'lg')}
                       <div class="text-center">
                         <p class="font-bold text-on-surface text-body-md truncate w-full">${c.ho_ten}</p>
@@ -159,7 +213,7 @@ window.GymApp.pages['checkin'] = {
         </div>
 
         <!-- Bảng chi tiết -->
-        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
+        <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 shadow-sm overflow-hidden">
           <div class="section-header px-standard py-compact border-b border-outline-variant flex items-center gap-compact">
             <div class="icon-bg icon-bg-blue" style="width:32px;height:32px;border-radius:8px">
               <span class="material-symbols-outlined text-secondary text-base" style="font-variation-settings:'FILL' 1">table_rows</span>
@@ -184,7 +238,7 @@ window.GymApp.pages['checkin'] = {
       const globalIdx = start + idx;
       const isLatestVao = c.loai === 'vao' && c.ho_so_id && checkins.findIndex(x => x.ho_so_id === c.ho_so_id) === globalIdx;
       return `
-      <tr class="h-11 border-b border-outline-variant hover:bg-surface-container-low transition-colors">
+      <tr class="h-11 border-b border-outline-variant/30 hover:bg-brand-primary/5 transition-colors">
         <td class="px-standard">
           <div class="flex items-center gap-compact">
             ${window.GymApp.avatarImg(c.avatar_url, c.ho_ten, 'sm')}
@@ -283,14 +337,18 @@ window.GymApp.pages['checkin'] = {
     if (statsGrid) {
       const stats = this._buildStats(checkins);
       statsGrid.innerHTML = stats.map(s => `
-        <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-standard shadow-sm flex flex-col gap-standard">
+        <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 p-standard shadow-sm flex flex-col gap-standard hover:-translate-y-1 hover:shadow-md transition-all duration-300">
           <div class="flex items-center justify-between">
-            <span class="text-on-surface-variant font-body-sm text-body-sm font-bold uppercase tracking-wider leading-tight" style="max-width:calc(100% - 52px)">${s.label}</span>
+            <span class="text-on-surface-variant text-body-sm font-bold uppercase tracking-wider leading-tight" style="max-width:calc(100% - 52px)">${s.label}</span>
             <div class="icon-bg ${s.iconBg}">
               <span class="material-symbols-outlined ${s.color} text-xl" style="font-variation-settings:'FILL' 1">${s.icon}</span>
             </div>
           </div>
-          <span class="${s.color} font-display-lg text-display-lg font-bold">${s.value}</span>
+          <div class="flex items-baseline flex-wrap gap-x-2 gap-y-1">
+            <span class="text-on-surface text-3xl font-bold tracking-tight truncate max-w-full" title="${s.value}">${s.value}</span>
+            ${s.trendHtml || ''}
+          </div>
+          <span class="text-on-surface-variant text-body-sm font-medium">${s.sub || ''}</span>
         </div>
       `).join('');
     }
@@ -309,7 +367,7 @@ window.GymApp.pages['checkin'] = {
              <p class="text-on-surface-variant text-body-sm mt-standard">Chưa có check-in hôm nay</p>
            </div>`
         : grouped.map(c => `
-            <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-standard shadow-sm flex flex-col items-center gap-sm">
+            <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 p-standard shadow-sm flex flex-col items-center gap-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300">
               ${window.GymApp.avatarImg(c.avatar_url, c.ho_ten, 'lg')}
               <div class="text-center">
                 <p class="font-bold text-on-surface text-body-md truncate w-full">${c.ho_ten || 'Khách vãng lai'}</p>

@@ -21,19 +21,19 @@ window.GymApp.pages['members-list'] = {
         <!-- Top Header: Tabs & Add Action -->
         <div class="flex flex-wrap items-center justify-between gap-standard">
           <!-- Tab Bar -->
-          <div class="flex p-1 bg-surface-container-low/50 backdrop-blur-sm rounded-2xl border border-outline-variant w-fit shadow-sm group">
-            <button id="tab-members" class="tab-btn flex items-center gap-compact px-loose py-standard rounded-xl font-bold text-body-md transition-all duration-300 relative overflow-hidden" data-tab="members">
+          <div class="flex p-1 bg-surface-container-low/50 backdrop-blur-sm rounded-2xl border-2 border-outline-variant/50 w-fit shadow-sm group">
+            <button id="tab-members" class="tab-btn flex items-center gap-compact px-loose py-standard rounded-2xl font-bold text-body-md transition-all duration-300 relative overflow-hidden" data-tab="members">
               <span class="material-symbols-outlined text-lg">groups</span>
               <span>Hội viên</span>
             </button>
-            <button id="tab-pts" class="tab-btn flex items-center gap-compact px-loose py-standard rounded-xl font-bold text-body-md transition-all duration-300 relative overflow-hidden" data-tab="pts">
+            <button id="tab-pts" class="tab-btn flex items-center gap-compact px-loose py-standard rounded-2xl font-bold text-body-md transition-all duration-300 relative overflow-hidden" data-tab="pts">
               <span class="material-symbols-outlined text-lg">sports_gymnastics</span>
               <span>Huấn luyện viên</span>
             </button>
           </div>
 
           <!-- Add Action -->
-          <button class="bg-brand-primary text-white px-loose py-standard rounded-2xl font-bold hover:bg-[#187a2d] transition-all flex items-center gap-compact shadow-lg hover:shadow-brand-primary/20 hover:-translate-y-1 active:translate-y-0 active:shadow-sm" data-page="member-add">
+          <button class="bg-brand-primary text-white px-loose py-standard rounded-2xl font-bold hover:bg-brand-primary/90 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center gap-compact shadow-sm" data-page="member-add">
             <span class="material-symbols-outlined text-xl">person_add</span>
             <span>Thêm hội viên mới</span>
           </button>
@@ -45,40 +45,40 @@ window.GymApp.pages['members-list'] = {
           <!-- Tab: Hội viên -->
           <div id="tab-content-members" class="tab-content animate-in slide-in-from-left-4 duration-500">
             <!-- Filter Bar -->
-            <div class="flex flex-wrap items-center gap-standard bg-surface-container-lowest/90 backdrop-blur-xl p-standard rounded-2xl border border-outline-variant shadow-sm mb-standard transition-all hover:shadow-md">
+            <div class="flex flex-wrap items-center gap-standard bg-white dark:bg-[#1e1e1e] p-standard rounded-2xl border-2 border-outline-variant/50 shadow-sm mb-standard transition-all duration-300 hover:shadow-md">
               <!-- Search Box -->
               <div class="relative flex-1 group" style="min-width:300px;">
-                <span class="material-symbols-outlined absolute left-standard top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors">search</span>
-                <input id="member-search" class="w-full bg-surface-container/30 border border-outline-variant text-on-surface pl-11 pr-standard py-standard rounded-xl focus:border-brand-primary focus:bg-surface-container-lowest outline-none placeholder-outline-variant/60 font-body-md text-body-md transition-all shadow-inner focus:shadow-none" placeholder="Tìm theo tên, mã HV, số điện thoại..." type="text" />
+                <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors text-[18px]">search</span>
+                <input id="member-search" class="w-full bg-surface-container-low/30 border-2 border-outline-variant/50 text-on-surface pl-10 pr-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none placeholder-outline-variant/60 font-body-md text-body-md transition-all shadow-sm focus:shadow-none" placeholder="Tìm theo tên, mã HV, số điện thoại..." type="text" />
               </div>
               
               <!-- Filter Actions -->
               <div class="flex items-center gap-compact">
-                <button id="btn-view-all-members" class="group flex items-center gap-xs px-standard py-standard rounded-xl border border-outline-variant text-on-surface-variant text-body-sm font-bold hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all">
-                  <span class="material-symbols-outlined text-sm transition-transform group-hover:rotate-12">format_list_bulleted</span>
+                <button id="btn-view-all-members" class="group flex items-center justify-center gap-xs px-4 py-2 rounded-xl border-2 border-outline-variant/50 bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer">
+                  <span class="material-symbols-outlined text-base transition-transform group-hover:rotate-12">format_list_bulleted</span>
                   <span>Xem tất cả</span>
                 </button>
                 
-                <button id="btn-show-all" class="hidden items-center gap-xs px-standard py-standard rounded-xl border border-error/30 text-error text-body-sm font-bold hover:bg-error/5 transition-all">
-                  <span class="material-symbols-outlined text-sm">filter_alt_off</span>
+                <button id="btn-show-all" class="hidden items-center justify-center gap-xs px-4 py-2 rounded-xl border-2 border-error/20 bg-white dark:bg-[#1e1e1e] text-error hover:bg-error/5 hover:border-error transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer">
+                  <span class="material-symbols-outlined text-base">filter_alt_off</span>
                   <span>Xóa lọc</span>
                 </button>
                 
-                <button id="btn-filter" class="relative flex items-center gap-xs px-standard py-standard rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all group">
-                  <span class="material-symbols-outlined text-sm transition-transform group-hover:scale-110">filter_alt</span>
-                  <span class="text-body-sm font-bold">Lọc dữ liệu</span>
+                <button id="btn-filter" class="relative flex items-center justify-center gap-xs px-4 py-2 rounded-xl border-2 border-outline-variant/50 bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer group">
+                  <span class="material-symbols-outlined text-base transition-transform group-hover:scale-110">filter_alt</span>
+                  <span>Lọc dữ liệu</span>
                   <span id="filter-badge" style="display:none;position:absolute;top:-8px;right:-8px;width:22px;height:22px;background:#1D9336;color:#fff;border-radius:50%;font-size:11px;align-items:center;justify-content:center;font-weight:800;box-shadow:0 2px 8px rgba(29,147,54,0.4);border:2px solid #fff;"></span>
                 </button>
                 
-                <button id="btn-sort-member" class="relative flex items-center gap-xs px-standard py-standard rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all group">
-                  <span class="material-symbols-outlined text-sm transition-transform group-hover:rotate-180 duration-500">sort</span>
-                  <span class="text-body-sm font-bold">Sắp xếp</span>
+                <button id="btn-sort-member" class="relative flex items-center justify-center gap-xs px-4 py-2 rounded-xl border-2 border-outline-variant/50 bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer group">
+                  <span class="material-symbols-outlined text-base transition-transform group-hover:rotate-180 duration-500">sort</span>
+                  <span>Sắp xếp</span>
                   <span id="member-sort-badge" style="display:none;position:absolute;top:-8px;right:-8px;width:22px;height:22px;background:#1D9336;color:#fff;border-radius:50%;font-size:11px;align-items:center;justify-content:center;font-weight:800;box-shadow:0 2px 8px rgba(29,147,54,0.4);border:2px solid #fff;">1</span>
                 </button>
                 
-                <button id="btn-export-members" class="flex items-center gap-xs px-standard py-standard rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all group">
-                  <span class="material-symbols-outlined text-sm text-[#1D9336]">download</span>
-                  <span class="text-body-sm font-bold">Xuất Excel</span>
+                <button id="btn-export-members" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border-2 border-outline-variant/50 bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer group">
+                  <span class="material-symbols-outlined text-base text-[#1D9336]">download</span>
+                  <span>Xuất Excel</span>
                 </button>
               </div>
             </div>
@@ -90,38 +90,38 @@ window.GymApp.pages['members-list'] = {
 
           <!-- Tab: PT / HLV -->
           <div id="tab-content-pts" class="tab-content hidden animate-in slide-in-from-right-4 duration-500">
-            <div class="flex flex-wrap items-center gap-standard bg-surface-container-lowest/90 backdrop-blur-xl p-standard rounded-2xl border border-outline-variant shadow-sm mb-standard transition-all hover:shadow-md">
+            <div class="flex flex-wrap items-center gap-standard bg-white dark:bg-[#1e1e1e] p-standard rounded-2xl border-2 border-outline-variant/50 shadow-sm mb-standard transition-all duration-300 hover:shadow-md">
               <div class="relative flex-1 group" style="min-width:300px;">
-                <span class="material-symbols-outlined absolute left-standard top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors">search</span>
-                <input id="pt-search" class="w-full bg-surface-container/30 border border-outline-variant text-on-surface pl-11 pr-standard py-standard rounded-xl focus:border-brand-primary focus:bg-surface-container-lowest outline-none placeholder-outline-variant/60 font-body-md text-body-md transition-all shadow-inner focus:shadow-none" placeholder="Tìm theo tên, chuyên môn..." type="text" />
+                <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors text-[18px]">search</span>
+                <input id="pt-search" class="w-full bg-surface-container-low/30 border-2 border-outline-variant/50 text-on-surface pl-10 pr-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none placeholder-outline-variant/60 font-body-md text-body-md transition-all shadow-sm focus:shadow-none" placeholder="Tìm theo tên, chuyên môn..." type="text" />
               </div>
               
               <div class="flex items-center gap-compact">
-                <button id="btn-view-all-pts" class="group flex items-center gap-xs px-standard py-standard rounded-xl border border-outline-variant text-on-surface-variant text-body-sm font-bold hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all">
-                  <span class="material-symbols-outlined text-sm transition-transform group-hover:rotate-12">format_list_bulleted</span>
+                <button id="btn-view-all-pts" class="group flex items-center justify-center gap-xs px-4 py-2 rounded-xl border-2 border-outline-variant/50 bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer">
+                  <span class="material-symbols-outlined text-base transition-transform group-hover:rotate-12">format_list_bulleted</span>
                   <span>Xem tất cả</span>
                 </button>
                 
-                <button id="btn-show-all-pt" class="hidden items-center gap-xs px-standard py-standard rounded-xl border border-error/30 text-error text-body-sm font-bold hover:bg-error/5 transition-all">
-                  <span class="material-symbols-outlined text-sm">filter_alt_off</span>
+                <button id="btn-show-all-pt" class="hidden items-center justify-center gap-xs px-4 py-2 rounded-xl border-2 border-error/20 bg-white dark:bg-[#1e1e1e] text-error hover:bg-error/5 hover:border-error transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer">
+                  <span class="material-symbols-outlined text-base">filter_alt_off</span>
                   <span>Xóa lọc</span>
                 </button>
                 
-                <button id="btn-filter-pt" class="relative flex items-center gap-xs px-standard py-standard rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all group">
-                  <span class="material-symbols-outlined text-sm transition-transform group-hover:scale-110">filter_alt</span>
-                  <span class="text-body-sm font-bold">Lọc</span>
+                <button id="btn-filter-pt" class="relative flex items-center justify-center gap-xs px-4 py-2 rounded-xl border-2 border-outline-variant/50 bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer group">
+                  <span class="material-symbols-outlined text-base transition-transform group-hover:scale-110">filter_alt</span>
+                  <span>Lọc</span>
                   <span id="pt-filter-badge" style="display:none;position:absolute;top:-8px;right:-8px;width:22px;height:22px;background:#1D9336;color:#fff;border-radius:50%;font-size:11px;align-items:center;justify-content:center;font-weight:800;box-shadow:0 2px 8px rgba(29,147,54,0.4);border:2px solid #fff;"></span>
                 </button>
                 
-                <button id="btn-sort-pt" class="relative flex items-center gap-xs px-standard py-standard rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all group">
-                  <span class="material-symbols-outlined text-sm transition-transform group-hover:rotate-180 duration-500">sort</span>
-                  <span class="text-body-sm font-bold">Sắp xếp</span>
+                <button id="btn-sort-pt" class="relative flex items-center justify-center gap-xs px-4 py-2 rounded-xl border-2 border-outline-variant/50 bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer group">
+                  <span class="material-symbols-outlined text-base transition-transform group-hover:rotate-180 duration-500">sort</span>
+                  <span>Sắp xếp</span>
                   <span id="pt-sort-badge" style="display:none;position:absolute;top:-8px;right:-8px;width:22px;height:22px;background:#1D9336;color:#fff;border-radius:50%;font-size:11px;align-items:center;justify-content:center;font-weight:800;box-shadow:0 2px 8px rgba(29,147,54,0.4);border:2px solid #fff;">1</span>
                 </button>
-
-                <button id="btn-export-pts" class="flex items-center gap-xs px-standard py-standard rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all group">
-                  <span class="material-symbols-outlined text-sm text-[#1D9336]">download</span>
-                  <span class="text-body-sm font-bold">Xuất Excel</span>
+ 
+                <button id="btn-export-pts" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border-2 border-outline-variant/50 bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer group">
+                  <span class="material-symbols-outlined text-base text-[#1D9336]">download</span>
+                  <span>Xuất Excel</span>
                 </button>
               </div>
             </div>
@@ -130,7 +130,6 @@ window.GymApp.pages['members-list'] = {
             </div>
           </div>
 
-          </div>
         </div>
       </div>
     `;
@@ -184,29 +183,29 @@ window.GymApp.pages['members-list'] = {
 
             <div class="flex flex-col min-w-0 pt-1 flex-1">
               <div class="flex items-start justify-between gap-xs">
-                <button class="member-name-link text-left font-bold text-body-lg truncate cursor-pointer block leading-tight transition-colors"
+                <button class="member-name-link text-left font-bold text-body-md truncate cursor-pointer block leading-tight transition-colors"
                   data-id="${m.id}" title="${m.ho_ten || 'Không rõ'}">
                   ${m.ho_ten || 'Không rõ'}
                 </button>
                 ${m.co_yeu_cau_gia_han ? `
-                  <span class="flex items-center gap-[2px] text-[9px] px-1 rounded font-bold animate-pulse flex-shrink-0"
+                  <span class="flex items-center gap-[2px] text-label-xs px-1 rounded font-bold animate-pulse flex-shrink-0"
                     style="background:#fef9c3;color:#a16207;" title="Có yêu cầu gia hạn từ App">
                     <span class="material-symbols-outlined" style="font-size:11px">app_registration</span>APP
                   </span>
                 ` : ''}
               </div>
-              <span class="text-[11px] font-medium mt-0.5" style="color:#4ade80;letter-spacing:0.03em">${m.ma_ho_so || ''}</span>
+              <span class="text-body-sm font-medium mt-0.5" style="color:#4ade80;letter-spacing:0.03em">${m.ma_ho_so || ''}</span>
             </div>
           </div>
 
           <!-- Info Grid -->
           <div class="grid grid-cols-2 gap-2 px-standard">
             <div class="member-card-info-cell flex flex-col p-2.5 rounded-2xl transition-colors duration-300">
-              <span class="member-card-info-label text-[9px] uppercase font-bold tracking-widest mb-1">Gói tập</span>
+              <span class="member-card-info-label text-label-xs uppercase font-bold tracking-widest mb-1">Gói tập</span>
               <span class="member-card-info-value font-bold text-body-sm truncate" title="${packageName}">${packageName}</span>
             </div>
             <div class="member-card-info-cell flex flex-col p-2.5 rounded-2xl transition-colors duration-300">
-              <span class="member-card-info-label text-[9px] uppercase font-bold tracking-widest mb-1">Trạng thái</span>
+              <span class="member-card-info-label text-label-xs uppercase font-bold tracking-widest mb-1">Trạng thái</span>
               <div class="flex">${window.GymApp.statusBadge(m.trang_thai)}</div>
             </div>
           </div>
@@ -274,22 +273,22 @@ window.GymApp.pages['members-list'] = {
             
             <div class="flex flex-col min-w-0 pt-1 flex-1">
               <div class="flex items-start justify-between gap-xs">
-                <button class="pt-name-link member-name-link text-left font-bold text-body-lg truncate cursor-pointer block leading-tight transition-colors" data-id="${pt.id}" title="${pt.ho_ten}">
+                <button class="pt-name-link member-name-link text-left font-bold text-body-md truncate cursor-pointer block leading-tight transition-colors" data-id="${pt.id}" title="${pt.ho_ten}">
                   ${pt.ho_ten}
                 </button>
               </div>
-              <span class="text-[11px] font-medium mt-0.5" style="color:#4ade80;letter-spacing:0.03em">PT-${pt.id || ''}</span>
+              <span class="text-body-sm font-medium mt-0.5" style="color:#4ade80;letter-spacing:0.03em">PT-${pt.id || ''}</span>
             </div>
           </div>
 
           <!-- Info Grid -->
           <div class="grid grid-cols-2 gap-2 px-standard">
             <div class="member-card-info-cell flex flex-col p-2.5 rounded-2xl transition-colors duration-300">
-              <span class="member-card-info-label text-[9px] uppercase font-bold tracking-widest mb-1">Chuyên môn</span>
+              <span class="member-card-info-label text-label-xs uppercase font-bold tracking-widest mb-1">Chuyên môn</span>
               <span class="member-card-info-value font-bold text-body-sm truncate">${pt.chuyen_mon || pt.specialty || 'Huấn luyện viên'}</span>
             </div>
             <div class="member-card-info-cell flex flex-col p-2.5 rounded-2xl transition-colors duration-300">
-              <span class="member-card-info-label text-[9px] uppercase font-bold tracking-widest mb-1">Kinh nghiệm</span>
+              <span class="member-card-info-label text-label-xs uppercase font-bold tracking-widest mb-1">Kinh nghiệm</span>
               <span class="member-card-info-value font-bold text-body-sm">${pt.kinh_nghiem || 0} năm</span>
             </div>
           </div>
@@ -730,7 +729,7 @@ window.GymApp.pages['members-list'] = {
             </div>
             <div>
               <h3 class="font-bold text-white" style="font-size:16px">Chỉnh sửa PT</h3>
-              <p class="text-white/80 text-[11px] font-medium tracking-wide uppercase">${pt.ma_ho_so || ''}</p>
+              <p class="text-white/80 text-label-xs font-medium tracking-wide uppercase">${pt.ma_ho_so || ''}</p>
             </div>
           </div>
           <button id="close-pt-edit-modal" style="background:rgba(255,255,255,0.15);border:none;cursor:pointer;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative;z-index:10;">
@@ -2743,19 +2742,19 @@ window.GymApp.pages['members-list'] = {
 
     const field = (icon, label, id, type, value, required = false, isFull = false) => `
       <div class="${isFull ? 'col-span-full' : ''}">
-        <label class="text-on-surface-variant text-[11px] uppercase font-bold tracking-wider block mb-1 opacity-80">${label}${required ? ' <span style="color:#ba1a1a;margin-left:2px;font-weight:700;">*</span>' : ''}</label>
+        <label class="text-on-surface-variant text-body-sm uppercase font-bold tracking-wider block mb-1 opacity-80">${label}${required ? ' <span style="color:#ba1a1a;margin-left:2px;font-weight:700;">*</span>' : ''}</label>
         <div class="relative group">
           <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors text-[18px]">${icon}</span>
-          <input id="em-${id}" type="${type}" value="${value || ''}" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-4 py-2.5 rounded-xl focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none text-[14px] font-medium transition-all" />
+          <input id="em-${id}" type="${type}" value="${value || ''}" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-4 py-2.5 rounded-xl focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none text-body-md font-medium transition-all" />
         </div>
       </div>`;
 
     const selectField = (icon, label, id, options, selectedValue, isFull = false) => `
       <div class="${isFull ? 'col-span-full' : ''}">
-        <label class="text-on-surface-variant text-[11px] uppercase font-bold tracking-wider block mb-1 opacity-80">${label}</label>
+        <label class="text-on-surface-variant text-body-sm uppercase font-bold tracking-wider block mb-1 opacity-80">${label}</label>
         <div class="relative group">
           <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors text-[18px] z-10">${icon}</span>
-          <select id="em-${id}" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-10 py-2.5 rounded-xl focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none text-[14px] font-medium transition-all appearance-none cursor-pointer relative z-0">
+          <select id="em-${id}" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-10 py-2.5 rounded-xl focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none text-body-md font-medium transition-all appearance-none cursor-pointer relative z-0">
             ${options.map(o => `<option value="${o.v}" ${o.v === selectedValue ? 'selected' : ''}>${o.l}</option>`).join('')}
           </select>
           <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none z-10">expand_more</span>

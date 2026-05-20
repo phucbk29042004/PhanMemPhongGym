@@ -7,21 +7,21 @@ window.GymApp.pages['revenue'] = {
       <div class="flex flex-col gap-lg">
 
         <!-- Bộ lọc khoảng thời gian -->
-        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant p-standard shadow-sm">
+        <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 p-standard shadow-sm">
           <div class="flex flex-wrap items-center gap-standard">
             <span class="text-on-surface-variant font-bold text-body-sm">Khoảng thời gian:</span>
-            <div class="flex gap-xs">
-              <button class="rev-range-btn px-standard py-xs rounded-xl border border-outline-variant text-body-sm font-bold text-on-surface-variant hover:text-brand-primary hover:border-brand-primary transition-all" data-days="1">Hôm nay</button>
-              <button class="rev-range-btn px-standard py-xs rounded-xl border border-outline-variant text-body-sm font-bold text-on-surface-variant hover:text-brand-primary hover:border-brand-primary transition-all" data-days="7">7 ngày</button>
-              <button class="rev-range-btn px-standard py-xs rounded-xl border border-outline-variant text-body-sm font-bold text-on-surface-variant hover:text-brand-primary hover:border-brand-primary transition-all active-range" data-days="30">30 ngày</button>
+            <div class="flex gap-1.5 p-1 bg-surface-container-low/40 rounded-2xl border border-outline-variant/30">
+              <button class="rev-range-btn px-4 py-1.5 rounded-xl text-body-sm font-bold transition-all duration-300" data-days="1">Hôm nay</button>
+              <button class="rev-range-btn px-4 py-1.5 rounded-xl text-body-sm font-bold transition-all duration-300" data-days="7">7 ngày</button>
+              <button class="rev-range-btn px-4 py-1.5 rounded-xl text-body-sm font-bold transition-all duration-300" data-days="30">30 ngày</button>
             </div>
-            <button id="rev-reload" class="ml-auto flex items-center gap-xs px-standard py-compact rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary transition-all font-body-md whitespace-nowrap">
-              <span class="material-symbols-outlined text-sm">refresh</span>
+            <button id="rev-reload" class="ml-auto flex items-center justify-center gap-xs px-4 py-2 rounded-xl border-2 border-outline-variant/50 bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer whitespace-nowrap">
+              <span class="material-symbols-outlined text-base">refresh</span>
               Tải lại
             </button>
-            <button id="btn-export-revenue" class="flex items-center gap-xs px-standard py-standard rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all group">
-              <span class="material-symbols-outlined text-sm text-[#1D9336]">download</span>
-              <span class="text-body-sm font-bold">Xuất Excel</span>
+            <button id="btn-export-revenue" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border-2 border-outline-variant/50 bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer whitespace-nowrap">
+              <span class="material-symbols-outlined text-base text-[#1D9336]">download</span>
+              Xuất Excel
             </button>
           </div>
         </div>
@@ -35,12 +35,12 @@ window.GymApp.pages['revenue'] = {
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-standard">
 
           <!-- Biểu đồ cột doanh thu theo ngày/tháng -->
-          <div class="lg:col-span-2 bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
-            <div class="section-header px-standard py-compact border-b border-outline-variant flex items-center gap-compact">
+          <div class="lg:col-span-2 bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 shadow-sm overflow-hidden">
+            <div class="section-header px-standard py-compact border-b border-outline-variant/50 flex items-center gap-compact bg-surface-container-low/20">
               <div class="icon-bg icon-bg-green" style="width:32px;height:32px;border-radius:8px">
                 <span class="material-symbols-outlined text-brand-primary text-base" style="font-variation-settings:'FILL' 1">bar_chart</span>
               </div>
-              <h3 id="rev-chart-title" class="font-display-xl text-display-xl font-bold text-on-surface">So sánh doanh thu tháng này / tháng trước</h3>
+              <h3 id="rev-chart-title" class="font-bold text-on-surface text-body-lg">So sánh doanh thu tháng này / tháng trước</h3>
             </div>
             <div class="p-standard" style="height:280px">
               <canvas id="rev-chart"></canvas>
@@ -48,12 +48,12 @@ window.GymApp.pages['revenue'] = {
           </div>
 
           <!-- Gói tập bán chạy -->
-          <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
-            <div class="section-header px-standard py-compact border-b border-outline-variant flex items-center gap-compact">
+          <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 shadow-sm overflow-hidden">
+            <div class="section-header px-standard py-compact border-b border-outline-variant/50 flex items-center gap-compact bg-surface-container-low/20">
               <div class="icon-bg icon-bg-green" style="width:32px;height:32px;border-radius:8px">
                 <span class="material-symbols-outlined text-brand-primary text-base" style="font-variation-settings:'FILL' 1">card_membership</span>
               </div>
-              <h3 class="font-display-xl text-display-xl font-bold text-on-surface">Gói tập bán chạy</h3>
+              <h3 class="font-bold text-on-surface text-body-lg">Gói tập bán chạy</h3>
             </div>
             <div id="rev-package-stats" class="p-standard flex flex-col gap-standard">
               <p class="text-center text-on-surface-variant text-body-sm py-margin">Đang tải...</p>
@@ -62,27 +62,27 @@ window.GymApp.pages['revenue'] = {
         </div>
 
         <!-- Bảng giao dịch hôm nay -->
-        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
-          <div class="section-header px-standard py-compact border-b border-outline-variant flex items-center gap-compact">
+        <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 shadow-sm overflow-hidden">
+          <div class="section-header px-standard py-compact border-b border-outline-variant/50 flex items-center gap-compact bg-surface-container-low/20">
             <div class="icon-bg icon-bg-green" style="width:32px;height:32px;border-radius:8px">
               <span class="material-symbols-outlined text-brand-primary text-base" style="font-variation-settings:'FILL' 1">receipt_long</span>
             </div>
-            <h3 class="font-display-xl text-display-xl font-bold text-on-surface">Giao dịch hôm nay</h3>
-            <span id="rev-today-count" class="ml-auto bg-brand-primary text-white px-compact py-xs rounded-full text-label-xs font-bold">0</span>
+            <h3 class="font-bold text-on-surface text-body-lg">Giao dịch hôm nay</h3>
+            <span id="rev-today-count" class="ml-auto bg-brand-primary text-white px-2.5 py-0.5 rounded-full text-body-sm font-bold">0</span>
           </div>
           <div id="rev-today-table" class="overflow-x-auto">
-            <table class="w-full text-body-sm">
+            <table class="w-full text-body-sm text-left">
               <thead>
-                <tr class="border-b border-outline-variant bg-surface-container-low">
-                  <th class="text-left px-standard py-compact text-on-surface-variant font-bold">Khách hàng</th>
-                  <th class="text-left px-standard py-compact text-on-surface-variant font-bold">Sản phẩm</th>
-                  <th class="text-left px-standard py-compact text-on-surface-variant font-bold">Loại</th>
-                  <th class="text-right px-standard py-compact text-on-surface-variant font-bold">Số tiền</th>
-                  <th class="text-left px-standard py-compact text-on-surface-variant font-bold">Thời gian</th>
+                <tr class="border-b border-outline-variant/50 bg-surface-container-low/10">
+                  <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60">Khách hàng</th>
+                  <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60">Sản phẩm</th>
+                  <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60">Loại</th>
+                  <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60 text-right">Số tiền</th>
+                  <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60">Thời gian</th>
                 </tr>
               </thead>
               <tbody id="rev-today-tbody">
-                <tr><td colspan="5" class="text-center py-margin text-on-surface-variant">Đang tải...</td></tr>
+                <tr><td colspan="5" class="text-center py-margin text-on-surface-variant text-body-sm">Đang tải...</td></tr>
               </tbody>
             </table>
           </div>
@@ -94,7 +94,7 @@ window.GymApp.pages['revenue'] = {
 
   _renderStatsSkeleton: function () {
     return Array(4).fill(0).map(() => `
-      <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-standard shadow-sm animate-pulse">
+      <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 p-standard shadow-sm animate-pulse">
         <div class="h-4 bg-outline-variant rounded w-2/3 mb-standard"></div>
         <div class="h-8 bg-outline-variant rounded w-1/2"></div>
       </div>
@@ -106,6 +106,29 @@ window.GymApp.pages['revenue'] = {
     return new Intl.NumberFormat('vi-VN').format(amount) + ' đ';
   },
 
+  _formatTrend: function (current, previous) {
+    if (previous === null || previous === undefined) return '';
+    const prevVal = parseFloat(previous);
+    const currVal = parseFloat(current);
+    if (isNaN(prevVal) || isNaN(currVal)) return '';
+    
+    let pct = 0;
+    if (prevVal === 0) {
+      if (currVal > 0) pct = 100;
+      else pct = 0;
+    } else {
+      pct = ((currVal - prevVal) / prevVal) * 100;
+    }
+
+    if (pct === 0) {
+      return `<span class="text-on-surface-variant font-bold text-body-sm flex items-center gap-0.5 ml-2">0.00%</span>`;
+    }
+    if (pct > 0) {
+      return `<span class="text-brand-primary font-bold text-body-sm flex items-center gap-0.5 ml-2"><span class="material-symbols-outlined text-[16px]" style="font-variation-settings:'FILL' 1">trending_up</span>+${pct.toFixed(2)}%</span>`;
+    }
+    return `<span class="text-red-500 font-bold text-body-sm flex items-center gap-0.5 ml-2"><span class="material-symbols-outlined text-[16px]" style="font-variation-settings:'FILL' 1">trending_down</span>${pct.toFixed(2)}%</span>`;
+  },
+
   _renderStats: function (summary, todayData, monthComparison) {
     const grid = document.getElementById('rev-stats-grid');
     if (!grid) return;
@@ -113,11 +136,9 @@ window.GymApp.pages['revenue'] = {
     const monthSummary = monthComparison?.summary || {};
     const previousTotal = monthSummary.previous_total || 0;
     const currentTotal = monthSummary.current_total || 0;
-    const diff = currentTotal - previousTotal;
-    const pct = previousTotal > 0 ? Math.round((diff / previousTotal) * 100) : null;
-    const compareText = previousTotal > 0
-      ? `${diff >= 0 ? '+' : ''}${pct}% so với tháng trước (${this._formatMoney(previousTotal)})`
-      : `Tháng trước: ${this._formatMoney(previousTotal)}`;
+
+    const totalTrendHtml = this._formatTrend(currentTotal, previousTotal);
+    const todayTrendHtml = this._formatTrend(todayData?.tong_tien || 0, todayData?.hom_qua || 0);
 
     const cards = [
       {
@@ -126,7 +147,8 @@ window.GymApp.pages['revenue'] = {
         icon: 'payments',
         iconBg: 'icon-bg-green',
         color: 'text-brand-primary',
-        sub: compareText,
+        trendHtml: totalTrendHtml,
+        sub: `Tháng trước: ${this._formatMoney(previousTotal)}`,
       },
       {
         label: 'Doanh thu hôm nay',
@@ -134,7 +156,8 @@ window.GymApp.pages['revenue'] = {
         icon: 'today',
         iconBg: 'icon-bg-green',
         color: 'text-brand-primary',
-        sub: `${todayData?.tong_don || 0} đơn`,
+        trendHtml: todayTrendHtml,
+        sub: `Hôm qua: ${this._formatMoney(todayData?.hom_qua)} • ${todayData?.tong_don || 0} đơn`,
       },
       {
         label: 'Gói tập',
@@ -142,7 +165,8 @@ window.GymApp.pages['revenue'] = {
         icon: 'card_membership',
         iconBg: 'icon-bg-orange',
         color: 'text-[#e65100]',
-        sub: 'Doanh thu gói tập',
+        trendHtml: '',
+        sub: 'Doanh thu từ đăng ký gói tập',
       },
       {
         label: 'Gói PT',
@@ -150,20 +174,24 @@ window.GymApp.pages['revenue'] = {
         icon: 'sports_gymnastics',
         iconBg: 'icon-bg-blue',
         color: 'text-secondary',
-        sub: 'Doanh thu gói PT',
+        trendHtml: '',
+        sub: 'Doanh thu từ đăng ký huấn luyện viên',
       },
     ];
 
     grid.innerHTML = cards.map(c => `
-      <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-standard shadow-sm flex flex-col gap-standard">
+      <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 p-standard shadow-sm flex flex-col gap-standard hover:-translate-y-1 hover:shadow-md transition-all duration-300">
         <div class="flex items-center justify-between">
-          <span class="text-on-surface-variant font-body-sm text-body-sm font-bold uppercase tracking-wider leading-tight" style="max-width:calc(100% - 48px)">${c.label}</span>
+          <span class="text-on-surface-variant text-body-sm font-bold uppercase tracking-wider leading-tight" style="max-width:calc(100% - 48px)">${c.label}</span>
           <div class="icon-bg ${c.iconBg}">
             <span class="material-symbols-outlined ${c.color} text-xl" style="font-variation-settings:'FILL' 1">${c.icon}</span>
           </div>
         </div>
-        <span class="${c.color} font-display-2xl text-display-2xl font-bold">${c.value}</span>
-        <span class="text-on-surface-variant text-body-sm">${c.sub}</span>
+        <div class="flex items-baseline flex-wrap gap-x-2 gap-y-1">
+          <span class="text-on-surface text-3xl font-bold tracking-tight truncate max-w-full" title="${c.value}">${c.value}</span>
+          ${c.trendHtml}
+        </div>
+        <span class="text-on-surface-variant text-body-sm font-medium">${c.sub}</span>
       </div>
     `).join('');
   },
@@ -267,15 +295,15 @@ window.GymApp.pages['revenue'] = {
     el.innerHTML = list.slice(0, 6).map((p, i) => {
       const pct = Math.round(((p.tong_tien || 0) / max) * 100);
       return `
-        <div class="flex flex-col gap-xs">
+        <div class="flex flex-col gap-1 p-2 bg-surface-container-low/10 rounded-xl border border-outline-variant/30 hover:bg-surface-container-low/20 transition-all duration-300">
           <div class="flex items-center justify-between">
-            <span class="font-bold text-on-surface text-body-sm truncate flex-1 pr-xs">${i + 1}. ${p.ten_goi}</span>
+            <span class="font-bold text-on-surface text-body-md truncate flex-1 pr-xs">${i + 1}. ${p.ten_goi}</span>
             <span class="text-brand-primary font-bold text-body-sm whitespace-nowrap">${p.so_dang_ky} đơn</span>
           </div>
-          <div class="h-1.5 bg-surface-container rounded-full overflow-hidden">
+          <div class="h-1.5 bg-surface-container rounded-full overflow-hidden my-0.5">
             <div class="h-full bg-brand-primary rounded-full transition-all" style="width:${pct}%"></div>
           </div>
-          <span class="text-on-surface-variant text-body-sm">${this._formatMoney(p.tong_tien)}</span>
+          <span class="text-on-surface-variant text-body-sm font-medium">${this._formatMoney(p.tong_tien)}</span>
         </div>
       `;
     }).join('');
@@ -290,20 +318,22 @@ window.GymApp.pages['revenue'] = {
     if (countEl) countEl.textContent = list.length;
 
     if (list.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" class="text-center py-margin text-on-surface-variant">Chưa có giao dịch hôm nay</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center py-margin text-on-surface-variant text-body-sm">Chưa có giao dịch hôm nay</td></tr>';
       return;
     }
 
     tbody.innerHTML = list.map(t => {
       const time = t.thoi_gian ? new Date(t.thoi_gian).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '—';
-      const loaiLabel = t.loai === 'goi_tap' ? `<span class="bg-[#e7f5e9] text-[#1D9336] px-compact py-xs rounded-full text-label-xs font-bold">Gói tập</span>` : `<span class="bg-[#e8def8] text-[#6750a4] px-compact py-xs rounded-full text-label-xs font-bold">Gói PT</span>`;
+      const loaiLabel = t.loai === 'goi_tap' 
+        ? `<span class="bg-[#e7f5e9] text-[#1D9336] px-2 py-0.5 rounded-full text-label-xs font-bold border border-[#1D9336]/20">Gói tập</span>` 
+        : `<span class="bg-[#e8def8] text-[#6750a4] px-2 py-0.5 rounded-full text-label-xs font-bold border border-[#6750a4]/20">Gói PT</span>`;
       return `
-        <tr class="border-b border-outline-variant hover:bg-surface-container transition-colors">
-          <td class="px-standard py-compact font-bold text-on-surface">${t.khach_hang || '—'}</td>
-          <td class="px-standard py-compact text-on-surface-variant">${t.san_pham || '—'}</td>
-          <td class="px-standard py-compact">${loaiLabel}</td>
-          <td class="px-standard py-compact text-right font-bold text-brand-primary">${this._formatMoney(t.gia_thuc_te)}</td>
-          <td class="px-standard py-compact text-on-surface-variant">${time}</td>
+        <tr class="border-b border-outline-variant/30 hover:bg-brand-primary/5 transition-colors">
+          <td class="px-standard py-3 font-bold text-on-surface text-body-md">${t.khach_hang || '—'}</td>
+          <td class="px-standard py-3 text-on-surface-variant font-medium text-body-sm">${t.san_pham || '—'}</td>
+          <td class="px-standard py-3">${loaiLabel}</td>
+          <td class="px-standard py-3 text-right font-bold text-brand-primary text-body-md">${this._formatMoney(t.gia_thuc_te)}</td>
+          <td class="px-standard py-3 text-on-surface-variant font-medium text-body-sm">${time}</td>
         </tr>
       `;
     }).join('');
@@ -312,11 +342,9 @@ window.GymApp.pages['revenue'] = {
   _updateRangeButtons: function () {
     document.querySelectorAll('.rev-range-btn').forEach(btn => {
       const active = parseInt(btn.dataset.days) === this._days;
-      btn.classList.toggle('active-range', active);
-      btn.classList.toggle('bg-brand-primary', active);
-      btn.classList.toggle('text-white', active);
-      btn.classList.toggle('border-brand-primary', active);
-      btn.classList.toggle('text-on-surface-variant', !active);
+      btn.className = active
+        ? 'rev-range-btn px-4 py-1.5 rounded-xl text-body-sm font-bold bg-brand-primary text-white shadow-sm transition-all duration-300 border border-brand-primary/20'
+        : 'rev-range-btn px-4 py-1.5 rounded-xl text-body-sm font-bold text-on-surface-variant hover:text-brand-primary hover:bg-brand-primary/5 transition-all duration-300 border border-transparent';
     });
   },
 
