@@ -177,7 +177,7 @@ export const getDashboard = (req, res) => {
       SELECT COUNT(*) AS tong,
              COALESCE(SUM(CASE WHEN trang_thai = 'cho_tap' THEN 1 ELSE 0 END), 0) AS cho_tap,
              COALESCE(SUM(CASE WHEN trang_thai = 'da_tap' THEN 1 ELSE 0 END), 0) AS da_tap
-      FROM lich_tap WHERE ngay_tap = ?
+      FROM lich_tap WHERE ngay_tap = ? AND trang_thai NOT IN ('da_huy', 'hoan_tac')
     `).get(today),
   };
 
@@ -192,6 +192,18 @@ export const getDashboard = (req, res) => {
     ORDER BY lv.thoi_diem DESC
     LIMIT 8
   `).all(today);
+
+  // Top hội viên chăm chỉ (theo tháng hiện tại)
+  const currentMonthStart = today.substring(0, 8) + '01'; // 'YYYY-MM-01'
+  stats.top_hoi_vien = db.prepare(`
+    SELECT h.id, h.ma_ho_so, h.ho_ten, h.avatar_url, COUNT(lv.id) as so_buoi_tap
+    FROM luot_vao_ra lv
+    JOIN ho_so h ON h.id = lv.ho_so_id
+    WHERE lv.loai = 'vao' AND date(lv.thoi_diem) >= ?
+    GROUP BY h.id
+    ORDER BY so_buoi_tap DESC
+    LIMIT 5
+  `).all(currentMonthStart);
 
   return success(res, stats);
 };

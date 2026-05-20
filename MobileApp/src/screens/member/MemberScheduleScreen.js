@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator, RefreshControl, ScrollView,
+  ActivityIndicator, Alert, RefreshControl, ScrollView,
   StatusBar, StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
 import {
@@ -177,7 +177,7 @@ const calStyles = StyleSheet.create({
 });
 
 // ── Card Lịch Tập Chi Tiết ─────────────────────────────────
-function ScheduleCard({ item }) {
+function ScheduleCard({ item, onConfirm, isConfirming }) {
   const { colors } = useTheme();
   return (
     <View style={[styles.schedCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -209,7 +209,18 @@ function ScheduleCard({ item }) {
           </View>
         ) : null}
       </View>
-      <StatusBadge status={item.trang_thai} />
+      <View style={{ alignItems: 'flex-end', gap: 6 }}>
+        <StatusBadge status={item.trang_thai} />
+        {item.trang_thai === 'cho_tap' && (
+          <TouchableOpacity 
+            style={[styles.confirmBtn, { backgroundColor: colors.primary }]}
+            onPress={() => onConfirm && onConfirm(item.id)}
+            disabled={isConfirming}
+          >
+            {isConfirming ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.confirmText}>Xác nhận</Text>}
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 }
@@ -222,6 +233,7 @@ export default function MemberScheduleScreen() {
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [confirmingId, setConfirmingId] = useState(null);
 
   const fetchSchedules = useCallback(async () => {
     try {
@@ -234,6 +246,26 @@ export default function MemberScheduleScreen() {
       setRefreshing(false);
     }
   }, []);
+
+  const handleConfirm = async (id) => {
+    Alert.alert('Xác nhận', 'Bạn có chắc chắn muốn xác nhận đã hoàn thành buổi tập này không?', [
+      { text: 'Hủy', style: 'cancel' },
+      { text: 'Đồng ý', onPress: async () => {
+          setConfirmingId(id);
+          try {
+            const res = await api.put(`/pt/schedules/${id}/confirm`);
+            if (res.data?.success) {
+              fetchSchedules();
+            }
+          } catch (err) {
+            Alert.alert('Lỗi', err?.message || 'Không thể xác nhận buổi tập.');
+          } finally {
+            setConfirmingId(null);
+          }
+        }
+      }
+    ]);
+  };
 
   useEffect(() => { fetchSchedules(); }, [fetchSchedules]);
 
@@ -356,7 +388,12 @@ export default function MemberScheduleScreen() {
                 </View>
               ) : (
                 historyList.map((item) => (
-                  <ScheduleCard key={item.id} item={item} />
+                  <ScheduleCard 
+                    key={item.id} 
+                    item={item} 
+                    onConfirm={handleConfirm} 
+                    isConfirming={confirmingId === item.id} 
+                  />
                 ))
               )}
             </View>
@@ -454,4 +491,6 @@ const styles = StyleSheet.create({
   schedTime: { fontSize: 13, fontWeight: '700', color: G.gray900 },
   schedPt: { fontSize: 12, fontWeight: '600', color: G.primary },
   schedLocation: { fontSize: 11, color: G.gray400, flex: 1 },
+  confirmBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, marginTop: 4, minWidth: 70, alignItems: 'center' },
+  confirmText: { fontSize: 12, fontWeight: '700', color: G.white },
 });

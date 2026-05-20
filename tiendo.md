@@ -678,3 +678,10 @@
 ### 07/05/2026 13:14 — Khởi tạo cấu trúc SPA và Giao diện Premium
 - **Loại**: Khởi tạo
 - **Mô tả**: Xây dựng khung Sidebar (Flexbox) + Content Area. Implement Router.js cho SPA.
+
+### 20/05/2026 - Bổ sung Hội viên tự xác nhận PT & Xóa mốc 3 tháng doanh thu & Seeding 30 hội viên
+- **Loại**: Cập nhật tính năng & Dữ liệu mẫu
+- **Mô tả**: 
+    - Cho phép hội viên vào Member Portal / Mobile App để tự xác nhận buổi tập PT (trạng thái chờ tập).
+    - Xóa nút lọc Doanh thu 3 tháng, chuyển thành Hôm nay, 7 ngày, 30 ngày trên FE Web & Mobile App.
+    - Viết script tự động thêm 30 hội viên (có tài khoản đăng nhập và gói tập) để dễ dàng test giao diện.

@@ -96,6 +96,38 @@
         const scheduleId = noteBtn.dataset.id;
         const oldNote = noteBtn.dataset.ghiChu;
         pages['my-schedule']._showEditNoteModal(scheduleId, oldNote);
+        return;
+      }
+
+      const confirmBtn = e.target.closest('.btn-member-confirm');
+      if (confirmBtn) {
+        const scheduleId = confirmBtn.dataset.id;
+        if (confirm('Bạn có chắc chắn muốn xác nhận đã hoàn thành buổi tập này không?')) {
+          confirmBtn.disabled = true;
+          confirmBtn.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">sync</span>';
+          window.GymApp.api.put('/pt/schedules/' + scheduleId + '/confirm')
+            .then(res => {
+              if (res?.success) {
+                window.GymApp.toast('Đã xác nhận buổi tập thành công!', 'success');
+                return _fetchData();
+              } else {
+                throw new Error(res?.message || 'Không thể xác nhận');
+              }
+            })
+            .then(() => {
+              if (window.GymApp.currentPage === 'my-schedule') {
+                pages['my-schedule']._applyFilter();
+              } else {
+                navigate(window.GymApp.currentPage);
+              }
+            })
+            .catch(err => {
+              console.error(err);
+              window.GymApp.toast(err.message || 'Lỗi kết nối máy chủ!', 'error');
+              confirmBtn.disabled = false;
+              confirmBtn.innerHTML = '<span class="material-symbols-outlined text-[18px]">check</span>';
+            });
+        }
       }
     });
 
@@ -370,6 +402,11 @@
               <span class="material-symbols-outlined text-[20px]">${s.ghi_chu ? 'edit_note' : 'add_notes'}</span>
             </button>
             ${window.GymApp.statusBadge(s.trang_thai)}
+            ${s.trang_thai === 'cho_tap' ? `
+              <button class="btn-member-confirm text-white bg-brand-primary hover:bg-brand-primary/90 flex items-center justify-center p-2 rounded-xl transition-colors shadow-sm ml-s1" data-id="${s.id}" title="Xác nhận đã tập">
+                <span class="material-symbols-outlined text-[18px]">check</span>
+              </button>
+            ` : ''}
           </div>
         </div>
         ${s.ghi_chu ? `

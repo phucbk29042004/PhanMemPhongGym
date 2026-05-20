@@ -11,10 +11,9 @@ window.GymApp.pages['revenue'] = {
           <div class="flex flex-wrap items-center gap-standard">
             <span class="text-on-surface-variant font-bold text-body-sm">Khoảng thời gian:</span>
             <div class="flex gap-xs">
+              <button class="rev-range-btn px-standard py-xs rounded-xl border border-outline-variant text-body-sm font-bold text-on-surface-variant hover:text-brand-primary hover:border-brand-primary transition-all" data-days="1">Hôm nay</button>
               <button class="rev-range-btn px-standard py-xs rounded-xl border border-outline-variant text-body-sm font-bold text-on-surface-variant hover:text-brand-primary hover:border-brand-primary transition-all" data-days="7">7 ngày</button>
               <button class="rev-range-btn px-standard py-xs rounded-xl border border-outline-variant text-body-sm font-bold text-on-surface-variant hover:text-brand-primary hover:border-brand-primary transition-all active-range" data-days="30">30 ngày</button>
-              <button class="rev-range-btn px-standard py-xs rounded-xl border border-outline-variant text-body-sm font-bold text-on-surface-variant hover:text-brand-primary hover:border-brand-primary transition-all" data-days="90">3 tháng</button>
-              <button class="rev-range-btn px-standard py-xs rounded-xl border border-outline-variant text-body-sm font-bold text-on-surface-variant hover:text-brand-primary hover:border-brand-primary transition-all" data-days="365">1 năm</button>
             </div>
             <button id="rev-reload" class="ml-auto flex items-center gap-xs px-standard py-compact rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary transition-all font-body-md whitespace-nowrap">
               <span class="material-symbols-outlined text-sm">refresh</span>

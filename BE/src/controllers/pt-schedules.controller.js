@@ -150,6 +150,13 @@ export const confirmSchedule = (req, res) => {
       return error(res, 'Bạn chỉ có thể xác nhận buổi tập do chính mình phụ trách.', 403);
     }
   }
+  // Nếu là Hội viên: chỉ được xác nhận lịch của chính mình
+  else if (req.user.vai_tro === 'hoi_vien') {
+    const hoSoHv = db.prepare('SELECT id FROM ho_so WHERE tai_khoan_id = ?').get(req.user.id);
+    if (!hoSoHv || schedule.hoi_vien_id !== hoSoHv.id) {
+      return error(res, 'Bạn chỉ có thể xác nhận buổi tập của chính mình.', 403);
+    }
+  }
 
   // Trigger trg_xac_nhan_buoi_tap sẽ tự động tăng so_buoi_da_tap
   db.prepare(`

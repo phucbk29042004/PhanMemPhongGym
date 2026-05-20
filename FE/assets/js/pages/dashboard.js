@@ -7,10 +7,10 @@ window.GymApp.pages['dashboard'] = {
       doanh_thu_hom_nay: { tong_tien: 0, tong_don: 0 },
       luot_vao_ra_hom_nay: { tong_luot: 0, luot_vao: 0 },
       lich_tap_hom_nay: { tong: 0, cho_tap: 0, da_tap: 0 },
-      recent_checkins: []
+      recent_checkins: [],
+      top_hoi_vien: []
     };
 
-    // Đảm bảo các thuộc tính con luôn tồn tại nếu d.stats có giá trị nhưng thiếu thuộc tính
     if (!dbData.hoi_vien) dbData.hoi_vien = { tong: 0, con_han: 0, sap_het_han: 0, het_han: 0, chua_dang_ky: 0 };
     if (!dbData.doanh_thu_hom_nay) dbData.doanh_thu_hom_nay = { tong_tien: 0, tong_don: 0 };
     if (!dbData.luot_vao_ra_hom_nay) dbData.luot_vao_ra_hom_nay = { tong_luot: 0, luot_vao: 0 };
@@ -23,6 +23,8 @@ window.GymApp.pages['dashboard'] = {
       time: c.gio_hien_thi || c.thoi_diem.substring(11, 16),
       avatar: c.avatar_url
     }));
+
+    const topMembers = dbData.top_hoi_vien || [];
 
     const stats = [
       { icon: 'people', label: 'Tổng hội viên', value: dbData.hoi_vien?.tong || 0, sub: `${dbData.hoi_vien?.con_han || 0} đang hoạt động`, iconBg: 'icon-bg-green', color: 'text-brand-primary' },
@@ -80,7 +82,7 @@ window.GymApp.pages['dashboard'] = {
           <div class="lg:col-span-2 gym-card bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl border border-outline-variant shadow-sm overflow-hidden transition-all hover:shadow-lg">
             <div class="section-header px-standard py-compact border-b border-outline-variant flex items-center gap-compact bg-surface-container-lowest/40">
               <div class="w-8 h-8 rounded-lg bg-brand-primary/10 flex items-center justify-center">
-                <span class="material-symbols-outlined text-brand-primary text-lg" style="font-variation-settings:'FILL' 1">bar_chart</span>
+                <span class="material-symbols-outlined text-brand-primary text-lg" style="font-variation-settings:'FILL' 1">show_chart</span>
               </div>
               <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface flex-1">Doanh thu 12 tháng</h3>
               <span class="text-on-surface-variant text-body-sm italic">triệu VNĐ</span>
@@ -104,8 +106,8 @@ window.GymApp.pages['dashboard'] = {
           </div>
         </div>
 
-        <!-- Bottom Row -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-standard">
+        <!-- Lists Row (Check-in, Tình trạng, Top chăm chỉ) -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-standard">
 
           <!-- Check-in gần nhất -->
           <div class="bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl border border-outline-variant shadow-sm overflow-hidden transition-all hover:shadow-lg">
@@ -116,17 +118,17 @@ window.GymApp.pages['dashboard'] = {
                 </div>
                 <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface">Check-in gần nhất</h3>
               </div>
-              <button class="text-brand-primary font-bold text-body-sm hover:underline flex items-center gap-xs transition-all" onclick="window.GymApp.loadPage('checkin')">
+              <button class="text-brand-primary font-bold text-body-sm hover:underline flex items-center gap-xs transition-all" onclick="window.GymApp.navigate('checkin')">
                 Xem tất cả <span class="material-symbols-outlined text-sm">arrow_forward</span>
               </button>
             </div>
             <div class="divide-y divide-outline-variant">
               ${recentCheckins.length === 0
-                ? `<div class="flex flex-col items-center justify-center py-standard text-center opacity-60">
+                ? `<div class="flex flex-col items-center justify-center py-standard text-center opacity-60" style="height:220px">
                      <span class="material-symbols-outlined text-4xl mb-xs">person_off</span>
                      <p class="text-on-surface-variant text-body-sm font-medium">Chưa có check-in hôm nay</p>
                    </div>`
-                : recentCheckins.map(c => `
+                : recentCheckins.slice(0, 5).map(c => `
                     <div class="flex items-center gap-compact px-standard py-compact hover:bg-brand-primary/5 transition-all group cursor-default">
                       <div class="relative">
                         ${window.GymApp.avatarImg(c.avatar, c.name, 'sm')}
@@ -155,7 +157,7 @@ window.GymApp.pages['dashboard'] = {
                 </div>
                 <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface">Tình trạng hội viên</h3>
               </div>
-              <button class="text-brand-primary font-bold text-body-sm hover:underline flex items-center gap-xs transition-all" onclick="window.GymApp.loadPage('members-list')">
+              <button class="text-brand-primary font-bold text-body-sm hover:underline flex items-center gap-xs transition-all" onclick="window.GymApp.navigate('expired')">
                 Chi tiết <span class="material-symbols-outlined text-sm">arrow_forward</span>
               </button>
             </div>
@@ -176,11 +178,46 @@ window.GymApp.pages['dashboard'] = {
               `).join('')}
             </div>
           </div>
+
+          <!-- Top Hội viên chăm chỉ -->
+          <div class="bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl border border-outline-variant shadow-sm overflow-hidden transition-all hover:shadow-lg">
+            <div class="section-header px-standard py-compact border-b border-outline-variant flex items-center justify-between bg-surface-container-lowest/40">
+              <div class="flex items-center gap-compact">
+                <div class="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                  <span class="material-symbols-outlined text-[#e65100] text-lg" style="font-variation-settings:'FILL' 1">local_fire_department</span>
+                </div>
+                <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface">Tập nhiều nhất</h3>
+              </div>
+              <span class="text-on-surface-variant text-body-sm italic">Tháng này</span>
+            </div>
+            <div class="divide-y divide-outline-variant">
+              ${topMembers.length === 0
+                ? `<div class="flex flex-col items-center justify-center py-standard text-center opacity-60" style="height:220px">
+                     <span class="material-symbols-outlined text-4xl mb-xs">sentiment_dissatisfied</span>
+                     <p class="text-on-surface-variant text-body-sm font-medium">Chưa có dữ liệu</p>
+                   </div>`
+                : topMembers.map((m, i) => `
+                    <div class="flex items-center gap-compact px-standard py-compact hover:bg-orange-500/5 transition-all group cursor-default">
+                      <div class="font-bold text-on-surface-variant w-5 text-center group-hover:text-[#e65100]">#${i+1}</div>
+                      ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'sm')}
+                      <div class="flex-1 min-w-0 ml-1">
+                        <p class="font-bold text-on-surface text-body-md truncate group-hover:text-[#e65100] transition-colors">${m.ho_ten}</p>
+                        <p class="text-on-surface-variant text-body-sm font-medium">${m.ma_ho_so}</p>
+                      </div>
+                      <div class="flex items-center gap-xs bg-orange-500/10 px-compact py-xs rounded-full flex-shrink-0 group-hover:bg-[#e65100] group-hover:text-white transition-all">
+                        <span class="text-[#e65100] font-bold text-body-sm group-hover:text-white transition-colors">${m.so_buoi_tap} buổi</span>
+                      </div>
+                    </div>
+                  `).join('')
+              }
+            </div>
+          </div>
+
         </div>
 
         <!-- Footer Info -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-standard">
-          <div class="gym-card bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl border border-outline-variant p-standard shadow-sm flex items-center gap-standard transition-all hover:shadow-lg hover:border-brand-primary/30 group">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-standard mt-2">
+          <div class="gym-card bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl border border-outline-variant p-standard shadow-sm flex items-center gap-standard transition-all hover:shadow-lg hover:border-brand-primary/30 group cursor-pointer" onclick="window.GymApp.navigate('members-list'); setTimeout(() => document.getElementById('tab-pts')?.click(), 100);">
             <div class="w-14 h-14 bg-brand-primary rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
               <span class="material-symbols-outlined text-white text-3xl" style="font-variation-settings:'FILL' 1">sports_gymnastics</span>
             </div>
@@ -192,7 +229,7 @@ window.GymApp.pages['dashboard'] = {
                <span class="material-symbols-outlined text-5xl">diversity_3</span>
             </div>
           </div>
-          <div class="gym-card bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl border border-outline-variant p-standard shadow-sm flex items-center gap-standard transition-all hover:shadow-lg hover:border-secondary/30 group">
+          <div class="gym-card bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl border border-outline-variant p-standard shadow-sm flex items-center gap-standard transition-all hover:shadow-lg hover:border-secondary/30 group cursor-pointer" onclick="window.GymApp.navigate('pt-training')">
             <div class="w-14 h-14 bg-secondary-container rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
               <span class="material-symbols-outlined text-secondary text-3xl" style="font-variation-settings:'FILL' 1">calendar_today</span>
             </div>
@@ -268,6 +305,8 @@ window.GymApp.pages['dashboard'] = {
     const dbData = window.GymApp.data.stats;
     if (!dbData) return;
 
+    const isDark = document.documentElement.classList.contains('dark');
+
     const ctxRev = document.getElementById('chart-revenue');
     if (ctxRev) {
       // Gộp doanh thu theo tháng từ daily data (365 ngày)
@@ -280,32 +319,54 @@ window.GymApp.pages['dashboard'] = {
       const monthLabels = ['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'];
       const monthData = Object.values(monthlyMap).map(v => Math.round(v / 1_000_000));
 
+      const ctx = ctxRev.getContext('2d');
+      const gradientFill = ctx.createLinearGradient(0, 0, 0, 300);
+      gradientFill.addColorStop(0, isDark ? 'rgba(29,147,54,0.6)' : 'rgba(29,147,54,0.3)');
+      gradientFill.addColorStop(1, 'rgba(29,147,54,0.0)');
+
       window.GymApp._activeChart = new Chart(ctxRev, {
-        type: 'bar',
+        type: 'line',
         data: {
           labels: monthLabels,
           datasets: [{
             label: 'Doanh thu',
             data: monthData,
-            backgroundColor: 'rgba(29,147,54,0.15)',
+            backgroundColor: gradientFill,
             borderColor: '#1D9336',
             borderWidth: 2,
-            borderRadius: 6,
-            hoverBackgroundColor: 'rgba(29,147,54,0.3)',
+            pointBackgroundColor: '#fff',
+            pointBorderColor: '#1D9336',
+            pointBorderWidth: 2,
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            fill: true,
+            tension: 0.4 // Đường cong mượt mà
           }]
         },
         options: {
           responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
+          interaction: { mode: 'index', intersect: false },
+          plugins: { 
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) { return context.parsed.y + ' Triệu VNĐ'; }
+              }
+            }
+          },
           scales: {
             x: { 
               grid: { display: false }, 
-              ticks: { color: document.documentElement.classList.contains('dark') ? '#a8b5a5' : '#3f4a3c', font: { size: 10 } } 
+              ticks: { color: isDark ? '#a8b5a5' : '#3f4a3c', font: { size: 10 } } 
             },
             y: { 
               beginAtZero: true, 
-              grid: { color: document.documentElement.classList.contains('dark') ? 'rgba(255,255,255,0.05)' : 'rgba(190,202,185,0.3)' }, 
-              ticks: { color: document.documentElement.classList.contains('dark') ? '#a8b5a5' : '#3f4a3c', font: { size: 10 } } 
+              grid: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(190,202,185,0.3)' }, 
+              ticks: { 
+                color: isDark ? '#a8b5a5' : '#3f4a3c', 
+                font: { size: 10 },
+                callback: function(value) { return value > 0 ? value + 'Tr' : '0'; }
+              } 
             }
           }
         }
@@ -322,7 +383,7 @@ window.GymApp.pages['dashboard'] = {
             data: [dbData.hoi_vien.con_han, dbData.hoi_vien.sap_het_han, dbData.hoi_vien.het_han, dbData.hoi_vien.chua_dang_ky],
             backgroundColor: ['#1D9336', '#f59e0b', '#ba1a1a', '#9ca3af'],
             borderWidth: 2, 
-            borderColor: document.documentElement.classList.contains('dark') ? '#1c2028' : '#ffffff',
+            borderColor: isDark ? '#1c2028' : '#ffffff',
           }]
         },
         options: {
@@ -331,7 +392,7 @@ window.GymApp.pages['dashboard'] = {
             legend: { 
               position: 'bottom', 
               labels: { 
-                color: document.documentElement.classList.contains('dark') ? '#dde1e7' : '#181c20',
+                color: isDark ? '#dde1e7' : '#181c20',
                 font: { size: 11 }, 
                 padding: 12 
               } 

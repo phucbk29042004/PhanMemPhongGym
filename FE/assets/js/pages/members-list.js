@@ -173,8 +173,6 @@ window.GymApp.pages['members-list'] = {
       return `
         <div class="member-card group relative rounded-3xl overflow-hidden flex flex-col gap-standard
           shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-500">
-          <!-- Accent bar top -->
-          <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#1D9336,#4ade80);border-radius:3px 3px 0 0;"></div>
 
           <!-- Card Header: Avatar & Quick Info -->
           <div class="flex items-start gap-standard pt-standard px-standard">
@@ -265,8 +263,6 @@ window.GymApp.pages['members-list'] = {
       return `
         <div class="member-card group relative rounded-3xl overflow-hidden flex flex-col gap-standard
           shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-500">
-          <!-- Accent bar top -->
-          <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#1D9336,#4ade80);border-radius:3px 3px 0 0;"></div>
 
           <!-- Card Header: Avatar & Quick Info -->
           <div class="flex items-start gap-standard pt-standard px-standard">
@@ -2621,12 +2617,34 @@ window.GymApp.pages['members-list'] = {
   // ===== REFRESH =====
   _refreshMemberTable: function () {
     const c = document.getElementById('members-table-container');
-    if (c) { c.innerHTML = this._renderMemberTable(); this._bindMemberTableEvents(); }
+    if (c) { 
+      c.style.transition = 'none';
+      c.style.opacity = '0';
+      c.style.transform = 'translateY(15px)';
+      c.innerHTML = this._renderMemberTable(); 
+      this._bindMemberTableEvents(); 
+      setTimeout(() => {
+        c.style.transition = 'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+        c.style.opacity = '1';
+        c.style.transform = 'translateY(0)';
+      }, 30);
+    }
   },
 
   _refreshPtCards: function () {
     const c = document.getElementById('pt-cards-container');
-    if (c) { c.innerHTML = this._renderPtCards(); this._bindPtCardEvents(); }
+    if (c) { 
+      c.style.transition = 'none';
+      c.style.opacity = '0';
+      c.style.transform = 'translateY(15px)';
+      c.innerHTML = this._renderPtCards(); 
+      this._bindPtCardEvents(); 
+      setTimeout(() => {
+        c.style.transition = 'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+        c.style.opacity = '1';
+        c.style.transform = 'translateY(0)';
+      }, 30);
+    }
   },
 
   _bindMemberTableEvents: function () {
@@ -2938,28 +2956,17 @@ window.GymApp.pages['members-list'] = {
 
   _setupPgHandler: function () {
     const self = this;
-    // Use event delegation for pagination buttons to ensure they work after re-renders
-    document.addEventListener('click', (e) => {
-      const btn = e.target.closest('.pagination-btn');
-      if (!btn) return;
-      
-      const page = parseInt(btn.dataset.page);
-      if (isNaN(page)) return;
-
-      // Identify which section we are paginating
-      const membersContainer = btn.closest('#members-table-container');
-      const ptsContainer = btn.closest('#pt-cards-container');
-
-      if (membersContainer) {
+    window.GymApp._pgHandler = function (page) {
+      if (self._tab === 'members') {
         self._memberPage = page;
         self._refreshMemberTable();
-        membersContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      } else if (ptsContainer) {
+        document.getElementById('members-table-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else if (self._tab === 'pts') {
         self._ptPage = page;
         self._refreshPtCards();
-        ptsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.getElementById('pt-cards-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
-    });
+    };
   },
 
 
