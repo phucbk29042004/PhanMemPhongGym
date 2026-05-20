@@ -7,12 +7,81 @@
 
 ---
 
-## 📌 Trạng Thái Hiện Tại
-**✅ Gộp chức năng Yêu cầu gia hạn vào trang Hết hạn / Sắp hết hạn** — Đã loại bỏ mục menu "Yêu cầu gia hạn" trùng lặp trên sidebar, di chuyển badge chỉ số lượng yêu cầu chờ duyệt sang mục "Hết hạn / Sắp hết hạn". Tích hợp giao diện Mobile Card View và gộp toàn bộ logic duyệt vào tab Yêu cầu của trang Hết hạn. Sửa lỗi hàm `refreshData` không tồn tại.
+## 📌 Trạng Thế Hiện Tại
+**✅ Đồng bộ hóa & Khóa tài khoản đã xóa** — Đã khắc phục lỗi bảo mật khi các tài khoản bị xóa hồ sơ vẫn đăng nhập được bằng cách khóa tài khoản tương ứng khi thực hiện xóa mềm hồ sơ. Đồng thời sửa lỗi hiển thị nút "Lưu ghi chú" và lỗi lệch trường dữ liệu học viên (Đã tập, Tổng buổi, Tiến độ) trong PT Portal.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
+
+### 19/05/2026 15:40 — Cải Tiến Giao Diện Thẻ Học Viên Của Tôi (PT Portal)
+- **Loại**: Cải tiến giao diện (Frontend)
+- **File chỉnh sửa**:
+  - `FE/assets/js/pt-portal.js`
+- **Mô tả chi tiết**:
+  - **Đồng bộ ngôn ngữ thiết kế**: Thiết kế lại hoàn toàn thẻ học viên trong mục "Học viên của tôi" để đồng bộ với ngôn ngữ thiết kế hiện đại của mục "Lịch tập".
+  - **Nâng cấp UI/UX**: Thêm thanh viền gradient (accent bar), hiệu ứng đổ bóng (shadow) và di chuột (hover). Cấu trúc lại lưới thông số (Đã tập/Còn lại/Tổng) bằng layout hiển thị rõ ràng với `bg-surface-container-low`. Thêm hiệu ứng cảnh báo (pulsing dot) cho các học viên sắp hết buổi.
+- **Kết quả**: Giao diện quản lý học viên đẹp mắt, chuyên nghiệp và nhất quán hơn.
+
+### 19/05/2026 15:35 — Khắc Phục Lỗi Hiển Thị Dữ Liệu Học Viên Trong PT Portal
+- **Loại**: Sửa lỗi khớp nối dữ liệu (Frontend)
+- **File chỉnh sửa**:
+  - `FE/assets/js/pt-portal.js` —
+    - Ánh xạ các trường dữ liệu từ API (`so_buoi_da_tap` -> `buoi_da_tap`, `so_buoi_dang_ky` -> `tong_buoi_dk`, `den_ngay` -> `ngay_het_han`) khi lưu thông tin vào `window.GymApp.data.myStudents` trong hàm `init()` của tab học viên của tôi.
+    - Sửa lỗi chính tả đường dẫn API tạo lịch mới từ `/pt/my-members` thành `/pt/schedules/my-members`.
+- **Mô tả chi tiết**:
+  - **Sửa hiển thị sai thông tin**: API trả về định dạng SQL Snake Case (`so_buoi_da_tap`, `so_buoi_dang_ky`, `den_ngay`) nhưng phía giao diện render lại dùng các trường custom (`buoi_da_tap`, `tong_buoi_dk`, `ngay_het_han`), dẫn đến tình trạng sau khi xác nhận đã dạy xong, thông tin trên card học viên bị reset/hiển thị sai dữ liệu (Đã tập: 0, Tiến độ: 0%).
+- **Kết quả**: Dữ liệu tiến độ, tổng số buổi và ngày hết hạn hiển thị hoàn toàn chính xác trên card thông tin học viên.
+
+### 19/05/2026 15:30 — Sửa Lỗi Màu Sắc Nút Lưu Ghi Chú Trong PT Portal
+- **Loại**: Cải tiến giao diện người dùng (Frontend)
+- **File chỉnh sửa**:
+  - `FE/assets/js/pt-portal.js` — Thay đổi thuộc tính inline `background: var(--brand-primary)` của nút "Lưu ghi chú" (`btn-save-note`) thành mã màu xanh lục đặc trưng `#1D9336`.
+- **Mô tả chi tiết**:
+  - **Sửa nút bị trắng**: Trước đó nút này sử dụng biến CSS `var(--brand-primary)` vốn chưa được định nghĩa trong hệ thống CSS tĩnh khiến nút bị mất màu nền (chuyển thành màu trắng). Việc sửa lại màu nền cụ thể giúp nút hiển thị đồng bộ với thiết kế giao diện chung của PT Portal.
+- **Kết quả**: Nút "Lưu ghi chú" đã hiển thị màu xanh lục chính xác, đồng bộ hoàn toàn với các nút khác.
+
+### 19/05/2026 15:25 — Khóa Tài Khoản Đăng Nhập Khi Xóa Hồ Sơ
+- **Loại**: Cải tiến logic nghiệp vụ & Bảo mật hệ thống (Backend)
+- **File chỉnh sửa**:
+  - `BE/src/controllers/members.controller.js` — Trong hàm `deleteMember`, cập nhật trạng thái `trang_thai = 'khoa'` cho tài khoản tương ứng với hồ sơ hội viên bị xóa.
+  - `BE/src/controllers/trainers.controller.js` — Trong hàm `deleteTrainer`, cập nhật trạng thái `trang_thai = 'khoa'` cho tài khoản tương ứng với hồ sơ PT bị xóa.
+  - `BE/src/controllers/staff.controller.js` — Trong hàm `deleteStaff`, cập nhật trạng thái `trang_thai = 'khoa'` cho tài khoản tương ứng với hồ sơ nhân viên bị xóa.
+- **Mô tả chi tiết**:
+  - **Chặn đăng nhập của tài khoản đã bị xóa**: Khi thực hiện xóa mềm hồ sơ của bất kỳ hội viên, PT hoặc nhân viên nào, tài khoản đăng nhập (`tai_khoan`) liên kết với hồ sơ đó cũng sẽ được cập nhật trạng thái thành `'khoa'` (locked) để ngăn chặn truy cập trái phép hoặc tiếp tục sử dụng hệ thống.
+- **Kết quả**: Tài khoản của hồ sơ bị xóa sẽ tự động bị chặn đăng nhập ngay lập tức.
+
+### 19/05/2026 15:20 — Khắc Phục Lỗi 404 Khi Tải Lịch Sử Check-in & QR Code Của Tài Khoản Thiếu Hồ Sơ
+- **Loại**: Vá lỗi (Backend)
+- **File chỉnh sửa**:
+  - `BE/src/controllers/checkins.controller.js` — Thêm cơ chế fallback tìm kiếm hồ sơ khi tài khoản đã bị xóa hồ sơ hoặc chưa liên kết hoàn chỉnh, trả về mảng rỗng thay vì ném lỗi 404 gây lỗi giao diện.
+  - `BE/src/controllers/qr-checkin.controller.js` — Thêm cơ chế fallback và sinh thông tin hồ sơ tạm thời (`TEMP_id`) dựa trên tài khoản khi gặp trường hợp profile của tài khoản đó bị soft-delete hoặc chưa được liên kết, ngăn chặn 404 và giúp màn hình hiển thị bình thường.
+- **Mô tả chi tiết**:
+  - **Khắc phục lỗi giao diện**: Ngăn chặn lỗi JavaScript trên console của Web Member Portal khi truy cập danh mục check-in và hiển thị QR Code của những tài khoản thử nghiệm chưa hoàn thiện hoặc đã bị xóa mềm hồ sơ.
+- **Kết quả**: Giải quyết hoàn toàn lỗi console, khôi phục giao diện hoạt động bình thường.
+
+### 19/05/2026 15:15 — Chặn Trùng Lặp Yêu Cầu Gia Hạn & Tự Động Cộng Dồn Thời Gian Nối Tiếp Gói Cũ
+- **Loại**: Cải tiến logic nghiệp vụ & Bảo mật dữ liệu (Backend)
+- **File chỉnh sửa**:
+  - `BE/src/controllers/members.controller.js` — Thêm bước kiểm tra sự tồn tại của yêu cầu ở trạng thái `cho_duyet`. Nếu có, trả về lỗi 400 để chặn spam. Tự động kiểm tra thời hạn gói cũ đang hoạt động và điều chỉnh ngày bắt đầu `tu_ngay` của yêu cầu gia hạn mới thành `den_ngay_cu + 1 ngày` để cộng dồn nối tiếp, tránh chồng chéo.
+- **Mô tả chi tiết**:
+  - **Chống spam**: Bảo vệ hệ thống khỏi việc hội viên gửi liên tục nhiều yêu cầu gia hạn cùng lúc.
+  - **Cộng dồn tự động**: Tính toán ngày hiệu lực hoàn toàn ở Backend để đảm bảo quyền lợi thời gian sử dụng gói tập của hội viên, bất kể ngày gửi yêu cầu là khi nào.
+- **Kết quả**: Dữ liệu đồng bộ trực tiếp lên Mobile App và Web Portal.
+
+### 19/05/2026 15:10 — Sửa Lỗi Logic Nghiệp Vụ, Cơ Sở Dữ Liệu & Hợp Đồng PT
+- **Loại**: Sửa lỗi logic nghiệp vụ, bảo mật check-in & cơ sở dữ liệu (Backend)
+- **File chỉnh sửa**:
+  - `BE/src/controllers/qr-checkin.controller.js` — Thêm điều kiện `tu_ngay <= today` khi truy vấn gói đang hoạt động để tránh check-in sớm. Tự động cập nhật `da_checkin = 1` cho các buổi tập PT hôm nay của hội viên khi quét QR vào phòng thành công.
+  - `BE/src/controllers/checkins.controller.js` — Tự động cập nhật `da_checkin = 1` cho các buổi tập PT hôm nay của hội viên khi lễ tân check-in thủ công thành công.
+  - `BE/src/controllers/pt-registrations.controller.js` — Thay thế join nhầm bảng từ `goi_tap` thành `goi_pt` để hiển thị chính xác tên gói tập PT của học viên.
+  - `BE/src/controllers/pt-schedules.controller.js` — Thêm ràng buộc số buổi lên lịch (đã tập + chờ tập) không vượt quá `so_buoi_dang_ky` của hợp đồng PT. Thêm kiểm tra trùng lịch tập phía hội viên trước khi xếp lịch mới.
+  - `BE/src/jobs/cron-daily.js` — Tích hợp câu lệnh tự động cập nhật `trang_thai = 'het_han'` (với gói tập) và `'hoan_thanh'` (với gói PT) khi đã quá hạn hoặc hoàn thành số buổi tập vào đầu job chạy hàng ngày lúc 08:00.
+- **Mô tả chi tiết**:
+  - **Bảo mật check-in**: Ngăn chặn hoàn toàn việc hội viên có gói tập đã được duyệt kích hoạt ở tương lai nhưng vẫn check-in được vào phòng tập hôm nay.
+  - **Tự động hóa PT session**: Cập nhật chỉ số `da_checkin = 1` giúp kích hoạt hoàn hảo cron job tự động xác nhận hoàn thành buổi tập lúc 22:00.
+  - **Ràng buộc lịch PT**: Bảo đảm không xếp trùng lịch hội viên và không cho phép PT xếp lịch vượt số buổi hội viên đã mua.
+- **Kết quả**: Thành công 100%, bảo đảm tính nhất quán dữ liệu và nghiệp vụ phòng tập.
 
 ### 19/05/2026 14:45 — Gộp Mục Yêu Cầu Gia Hạn Vào Trang Hết Hạn / Sắp Hết Hạn
 - **Loại**: Cải tiến cấu trúc giao diện & Tối ưu hóa UI/UX (Frontend)

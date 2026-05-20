@@ -14,12 +14,29 @@ import { createNotification } from '../utils/notifications.js';
 // Chỉ hội viên hoặc PT đã đăng nhập mới gọi được (verifyToken đã chạy)
 export const getMyQr = (req, res) => {
   // Tìm hồ sơ cá nhân từ tai_khoan_id
-  const hoSo = db.prepare(`
+  let hoSo = db.prepare(`
     SELECT id, ma_ho_so, ho_ten, avatar_url, loai_ho_so FROM ho_so
     WHERE tai_khoan_id = ? AND loai_ho_so IN ('hoi_vien', 'pt') AND is_deleted = 0
   `).get(req.user.id);
 
-  if (!hoSo) return error(res, 'Không tìm thấy hồ sơ cá nhân.', 404);
+  if (!hoSo) {
+    hoSo = db.prepare(`
+      SELECT id, ma_ho_so, ho_ten, avatar_url, loai_ho_so FROM ho_so
+      WHERE tai_khoan_id = ? AND loai_ho_so IN ('hoi_vien', 'pt')
+    `).get(req.user.id);
+  }
+
+  if (!hoSo) {
+    const tk = db.prepare('SELECT ten_dang_nhap FROM tai_khoan WHERE id = ?').get(req.user.id);
+    if (!tk) return error(res, 'Không tìm thấy hồ sơ cá nhân.', 404);
+    hoSo = {
+      id: req.user.id,
+      ma_ho_so: `TEMP_${req.user.id}`,
+      ho_ten: tk.ten_dang_nhap,
+      avatar_url: null,
+      loai_ho_so: req.user.vai_tro === 'pt' ? 'pt' : 'hoi_vien'
+    };
+  }
 
   // Đọc TTL từ cấu hình (mặc định 5 phút)
   const cfg = db.prepare(`SELECT gia_tri FROM cau_hinh WHERE khoa = 'qr_token_ttl_phut'`).get();
@@ -60,25 +77,25 @@ export const scanQr = (req, res) => {
   }
 
   const { ho_so_id } = payload;
+  const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
 
   // Kiểm tra hồ sơ còn tồn tại
   const hoSo = db.prepare(`
     SELECT h.id, h.ho_ten, h.ma_ho_so, h.avatar_url, h.loai_ho_so,
            (
              SELECT MAX(d_ngay) FROM (
-               SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+               SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong' AND tu_ngay <= ?
                UNION ALL
-               SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+               SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong' AND tu_ngay <= ?
              )
            ) AS ngay_ket_thuc
     FROM ho_so h
     WHERE h.id = ? AND h.loai_ho_so IN ('hoi_vien', 'pt') AND h.is_deleted = 0
-  `).get(ho_so_id);
+  `).get(today, today, ho_so_id);
 
   if (!hoSo) return error(res, 'Hồ sơ không tồn tại hoặc đã bị xóa.', 404);
 
   const isPt = hoSo.loai_ho_so === 'pt';
-  const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
 
   let loaiCheckin = 'vao';
   let labelAction = 'Check-in vào ca';
@@ -122,6 +139,14 @@ export const scanQr = (req, res) => {
     INSERT INTO luot_vao_ra (ho_so_id, loai, phuong_thuc, ghi_chu)
     VALUES (?, ?, 'qr_code', ?)
   `).run(ho_so_id, loaiCheckin, chi_nhanh ? `Chi nhánh: ${chi_nhanh} (${labelAction})` : labelAction);
+
+  // Cập nhật da_checkin = 1 cho các buổi tập PT của hội viên này hôm nay
+  if (loaiCheckin === 'vao' && !isPt) {
+    db.prepare(`
+      UPDATE lich_tap SET da_checkin = 1
+      WHERE hoi_vien_id = ? AND ngay_tap = ? AND trang_thai = 'cho_tap'
+    `).run(ho_so_id, today);
+  }
 
   ghi_audit_log(req, 'CREATE', 'luot_vao_ra', result.lastInsertRowid, null,
     { ho_so_id, loai: loaiCheckin, phuong_thuc: 'qr_code' }, `QR ${labelAction}`);

@@ -178,14 +178,22 @@ export const deleteTrainer = (req, res) => {
   const trainer = db.prepare("SELECT * FROM ho_so WHERE id = ? AND loai_ho_so = 'pt' AND is_deleted = 0").get(id);
   if (!trainer) return error(res, 'Không tìm thấy PT.', 404);
 
-  db.prepare(`
-    UPDATE ho_so SET
-      is_deleted = 1,
-      ngay_xoa = datetime('now','localtime'),
-      nguoi_xoa_id = ?,
-      ly_do_xoa = ?
-    WHERE id = ?
-  `).run(req.user.id, ly_do || 'Xóa PT', id);
+  const tx = db.transaction(() => {
+    db.prepare(`
+      UPDATE ho_so SET
+        is_deleted = 1,
+        ngay_xoa = datetime('now','localtime'),
+        nguoi_xoa_id = ?,
+        ly_do_xoa = ?
+      WHERE id = ?
+    `).run(req.user.id, ly_do || 'Xóa PT', id);
+
+    if (trainer.tai_khoan_id) {
+      db.prepare("UPDATE tai_khoan SET trang_thai = 'khoa' WHERE id = ?").run(trainer.tai_khoan_id);
+    }
+  });
+
+  tx();
 
   ghi_audit_log(req, 'DELETE', 'ho_so', parseInt(id), trainer, null, ly_do || 'Xóa hồ sơ PT');
   return success(res, null, 'Đã xoá hồ sơ PT thành công');

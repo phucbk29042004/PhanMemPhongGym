@@ -81,6 +81,18 @@ export const createSchedule = (req, res) => {
     }
   }
 
+  // Kiểm tra số lượng buổi đã lên lịch (gồm đã tập và chờ tập)
+  if (dkpt.so_buoi_dang_ky !== null) {
+    const scheduledCount = db.prepare(`
+      SELECT COUNT(*) as cnt FROM lich_tap
+      WHERE dang_ky_pt_id = ? AND trang_thai IN ('da_tap', 'cho_tap')
+    `).get(dang_ky_pt_id).cnt;
+
+    if (scheduledCount >= dkpt.so_buoi_dang_ky) {
+      return error(res, `Đăng ký PT đã đặt đủ số buổi tập (${dkpt.so_buoi_dang_ky} buổi). Không thể đặt thêm.`, 400);
+    }
+  }
+
   // Kiểm tra PT có lịch bị trùng không
   const conflict = db.prepare(`
     SELECT id FROM lich_tap
@@ -89,6 +101,15 @@ export const createSchedule = (req, res) => {
   `).get(dkpt.pt_id, ngay_tap, gio_bat_dau, gio_ket_thuc);
 
   if (conflict) return error(res, 'PT đã có lịch tập trong khung giờ này.', 409);
+
+  // Kiểm tra Hội viên có lịch bị trùng không
+  const memberConflict = db.prepare(`
+    SELECT id FROM lich_tap
+    WHERE hoi_vien_id = ? AND ngay_tap = ? AND trang_thai != 'da_huy'
+      AND NOT (gio_ket_thuc <= ? OR gio_bat_dau >= ?)
+  `).get(dkpt.hoi_vien_id, ngay_tap, gio_bat_dau, gio_ket_thuc);
+
+  if (memberConflict) return error(res, 'Hội viên đã có lịch tập khác trong khung giờ này.', 409);
 
   const result = db.prepare(`
     INSERT INTO lich_tap (dang_ky_pt_id, pt_id, hoi_vien_id, ngay_tap, gio_bat_dau, gio_ket_thuc, loai_buoi, ghi_chu, nguoi_tao_id)

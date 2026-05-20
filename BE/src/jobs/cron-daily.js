@@ -13,6 +13,27 @@ function runDailyJob() {
   const today = new Date().toLocaleDateString('sv-SE'); // YYYY-MM-DD
   console.log(`[CRON-DAILY] ${new Date().toLocaleTimeString('vi-VN')} — Đang chạy job thông báo hàng ngày...`);
 
+  // 0. Tự động cập nhật trạng thái gói tập đã hết hạn sang 'het_han' và gói PT sang 'hoan_thanh'
+  const updatedGoiTap = db.prepare(`
+    UPDATE dang_ky_goi_tap
+    SET trang_thai = 'het_han'
+    WHERE trang_thai = 'dang_hoat_dong' AND den_ngay < date('now','localtime')
+  `).run();
+
+  const updatedPt = db.prepare(`
+    UPDATE dang_ky_pt
+    SET trang_thai = 'hoan_thanh'
+    WHERE trang_thai = 'dang_hoat_dong'
+      AND (
+        (den_ngay IS NOT NULL AND den_ngay < date('now','localtime'))
+        OR (so_buoi_dang_ky IS NOT NULL AND so_buoi_da_tap >= so_buoi_dang_ky)
+      )
+  `).run();
+
+  if (updatedGoiTap.changes > 0 || updatedPt.changes > 0) {
+    console.log(`[CRON-DAILY] Đã cập nhật trạng thái hết hạn/hoàn thành cho ${updatedGoiTap.changes} gói tập và ${updatedPt.changes} hợp đồng PT.`);
+  }
+
   // 1. Sắp hết hạn gói tập (còn 1–7 ngày)
   const sapHetHan = db.prepare(`
     SELECT dk.id, dk.ho_so_id, dk.den_ngay, h.ho_ten,

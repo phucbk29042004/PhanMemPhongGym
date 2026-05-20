@@ -40,7 +40,7 @@ export const getRegistrations = (req, res) => {
     FROM dang_ky_pt dp
     JOIN ho_so hv ON hv.id = dp.hoi_vien_id
     JOIN ho_so pt ON pt.id = dp.pt_id
-    LEFT JOIN goi_tap gp ON gp.id = dp.goi_pt_id
+    LEFT JOIN goi_pt gp ON gp.id = dp.goi_pt_id
     ${where} AND hv.is_deleted = 0 AND pt.is_deleted = 0
     ORDER BY dp.ngay_tao DESC
     LIMIT ? OFFSET ?
@@ -79,7 +79,7 @@ export const getRegistrationById = (req, res) => {
     FROM dang_ky_pt dp
     JOIN ho_so hv ON hv.id = dp.hoi_vien_id
     JOIN ho_so pt ON pt.id = dp.pt_id
-    LEFT JOIN goi_tap gp ON gp.id = dp.goi_pt_id
+    LEFT JOIN goi_pt gp ON gp.id = dp.goi_pt_id
     WHERE dp.id = ? AND hv.is_deleted = 0 AND pt.is_deleted = 0
   `).get(id);
 
@@ -133,13 +133,13 @@ export const createRegistration = (req, res) => {
   const result = db.prepare(`
     INSERT INTO dang_ky_pt
       (hoi_vien_id, pt_id, goi_pt_id, so_buoi_dang_ky, so_buoi_da_tap,
-       tu_ngay, den_ngay, gia_thuc_te, phuong_thuc_tt, ma_giao_dich, ghi_chu_tt, nguoi_tao_id)
-    VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?)
+       tu_ngay, den_ngay, gia_thuc_te, phuong_thuc_tt, ma_giao_dich, ghi_chu_tt, nguoi_tao_id, ngay_thanh_toan)
+    VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     hoi_vien_id, pt_id, goi_pt_id,
     soBuoi, tu_ngay, den_ngay || null,
     parseFloat(gia_thuc_te), phuong_thuc_tt,
-    ma_giao_dich || null, ghi_chu_tt || null, req.user.id,
+    ma_giao_dich || null, ghi_chu_tt || null, req.user.id, tu_ngay
   );
 
   ghi_audit_log(req, 'CREATE', 'dang_ky_pt', result.lastInsertRowid, null,
@@ -185,12 +185,13 @@ export const updateRegistration = (req, res) => {
       tu_ngay        = COALESCE(?, tu_ngay),
       den_ngay       = COALESCE(?, den_ngay),
       gia_thuc_te    = COALESCE(?, gia_thuc_te),
-      ghi_chu_tt     = COALESCE(?, ghi_chu_tt)
+      ghi_chu_tt     = COALESCE(?, ghi_chu_tt),
+      ngay_thanh_toan= COALESCE(?, ngay_thanh_toan)
     WHERE id = ?
   `).run(
     pt_id || null, goi_pt_id || null, so_buoi_dang_ky ? parseInt(so_buoi_dang_ky) : null,
     tu_ngay || null, den_ngay || null, gia_thuc_te !== undefined ? parseFloat(gia_thuc_te) : null,
-    ghi_chu || null, id,
+    ghi_chu || null, tu_ngay || null, id,
   );
 
   const updated = db.prepare('SELECT * FROM dang_ky_pt WHERE id = ?').get(id);

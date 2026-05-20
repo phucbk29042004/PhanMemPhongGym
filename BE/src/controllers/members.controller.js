@@ -291,6 +291,10 @@ export const deleteMember = (req, res) => {
       WHERE id = ?
     `).run(req.user.id, reason, id);
 
+    if (member.tai_khoan_id) {
+      db.prepare("UPDATE tai_khoan SET trang_thai = 'khoa' WHERE id = ?").run(member.tai_khoan_id);
+    }
+
     db.prepare(`
       UPDATE dang_ky_goi_tap SET
         trang_thai = 'huy',
@@ -599,9 +603,9 @@ export const registerPackage = (req, res) => {
   const result = db.prepare(`
     INSERT INTO dang_ky_goi_tap
       (ho_so_id, goi_tap_id, tu_ngay, den_ngay, gia_thuc_te, ghi_chu_gia, phuong_thuc_tt, nguoi_thu_id, ma_giao_dich, ghi_chu_tt, nguoi_tao_id, nguoi_cap_nhat_id, trang_thai, ngay_thanh_toan)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'dang_hoat_dong', COALESCE(?, datetime('now','localtime')))
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'dang_hoat_dong', COALESCE(?, ?))
   `).run(id, goi_tap_id, tu_ngay, denNgay, gia_thuc_te, ghi_chu_gia || null,
-    phuong_thuc_tt, req.user.id, ma_giao_dich || null, ghi_chu_tt || null, req.user.id, req.user.id, ngay_thanh_toan || null);
+    phuong_thuc_tt, req.user.id, ma_giao_dich || null, ghi_chu_tt || null, req.user.id, req.user.id, ngay_thanh_toan || null, tu_ngay);
 
   ghi_audit_log(req, 'CREATE', 'dang_ky_goi_tap', result.lastInsertRowid, null,
     { ho_so_id: id, goi_tap_id, gia: gia_thuc_te }, 'Đăng ký gói tập cho hội viên');
@@ -634,9 +638,41 @@ export const requestPackageRenewal = (req, res) => {
     const goiTap = db.prepare('SELECT * FROM goi_tap WHERE id = ? AND is_deleted = 0').get(goi_tap_id);
     if (!goiTap) return error(res, 'Gói tập không tồn tại.', 404);
 
+    const today = new Date().toISOString().split('T')[0];
+
+    // 1. Kiểm tra xem đã có yêu cầu gia hạn nào đang chờ duyệt hay chưa
+    const pendingRequest = db.prepare(`
+      SELECT id FROM dang_ky_goi_tap
+      WHERE ho_so_id = ? AND trang_thai = 'cho_duyet'
+    `).get(hoSo.id);
+
+    if (pendingRequest) {
+      return error(res, 'Bạn đã có một yêu cầu gia hạn đang chờ duyệt. Vui lòng đợi lễ tân phê duyệt hoặc liên hệ quầy lễ tân.', 400);
+    }
+
+    // 2. Lấy gói tập đang hoạt động có ngày hết hạn xa nhất để thực hiện nối tiếp nếu có
+    const activePackage = db.prepare(`
+      SELECT den_ngay FROM dang_ky_goi_tap
+      WHERE ho_so_id = ? AND trang_thai = 'dang_hoat_dong'
+      ORDER BY den_ngay DESC LIMIT 1
+    `).get(hoSo.id);
+
+    let finalTuNgay = tu_ngay;
+    if (activePackage && activePackage.den_ngay >= today) {
+      const nextDayResult = db.prepare("SELECT date(?, '+1 day') AS next_day").get(activePackage.den_ngay);
+      if (nextDayResult && nextDayResult.next_day) {
+        finalTuNgay = nextDayResult.next_day;
+      }
+    } else {
+      // Nếu không có gói đang hoạt động hoặc gói đã hết hạn, ngày bắt đầu không được nhỏ hơn hôm nay
+      if (finalTuNgay < today) {
+        finalTuNgay = today;
+      }
+    }
+
     const dateResult = db.prepare(`
       SELECT date(?, '+' || ? || ' months', '+' || ? || ' days') AS den_ngay
-    `).get(tu_ngay, goiTap.so_thang || 0, goiTap.so_ngay_them || 0);
+    `).get(finalTuNgay, goiTap.so_thang || 0, goiTap.so_ngay_them || 0);
 
     const denNgay = dateResult ? dateResult.den_ngay : null;
     if (!denNgay) return error(res, 'Không thể tính toán ngày hết hạn. Vui lòng kiểm tra lại ngày bắt đầu.', 400);
@@ -645,7 +681,7 @@ export const requestPackageRenewal = (req, res) => {
       INSERT INTO dang_ky_goi_tap
         (ho_so_id, goi_tap_id, tu_ngay, den_ngay, gia_thuc_te, ghi_chu_gia, trang_thai, nguoi_tao_id, nguoi_cap_nhat_id)
       VALUES (?, ?, ?, ?, ?, ?, 'cho_duyet', ?, ?)
-    `).run(hoSo.id, goi_tap_id, tu_ngay, denNgay, goiTap.gia, ghi_chu || 'Yêu cầu gia hạn từ App', req.user.id, req.user.id);
+    `).run(hoSo.id, goi_tap_id, finalTuNgay, denNgay, goiTap.gia, ghi_chu || 'Yêu cầu gia hạn từ App', req.user.id, req.user.id);
 
     createNotification(
       'gia_han_goi_tap',
@@ -726,9 +762,9 @@ export const approvePackageRequest = (req, res) => {
       nguoi_thu_id = ?,
       ghi_chu_tt = ?,
       nguoi_cap_nhat_id = ?,
-      ngay_thanh_toan = datetime('now','localtime')
+      ngay_thanh_toan = ?
     WHERE id = ?
-  `).run(gia_thuc_te, phuong_thuc_tt || 'tien_mat', req.user.id, ghi_chu_tt || 'Duyệt từ App', req.user.id, id);
+  `).run(gia_thuc_te, phuong_thuc_tt || 'tien_mat', req.user.id, ghi_chu_tt || 'Duyệt từ App', req.user.id, request.tu_ngay, id);
 
   ghi_audit_log(req, 'UPDATE', 'dang_ky_goi_tap', id, request, { trang_thai: 'dang_hoat_dong' }, `Duyệt gia hạn gói tập cho ${member.ho_ten}`);
 
@@ -1239,10 +1275,11 @@ export const editPackage = (req, res) => {
         ghi_chu_tt = COALESCE(?, ghi_chu_tt),
         ghi_chu_gia = COALESCE(?, ghi_chu_gia),
         nguoi_cap_nhat_id = ?,
-        ngay_cap_nhat = datetime('now','localtime')
+        ngay_cap_nhat = datetime('now','localtime'),
+        ngay_thanh_toan = COALESCE(?, ngay_thanh_toan)
     WHERE id = ?
   `).run(tu_ngay || null, den_ngay || null, gia_thuc_te || null, phuong_thuc_tt || null,
-         ghi_chu_tt || null, ghi_chu_gia || null, req.user.id, pkgId);
+         ghi_chu_tt || null, ghi_chu_gia || null, req.user.id, tu_ngay || null, pkgId);
 
   ghi_audit_log(req, 'UPDATE', 'dang_ky_goi_tap', pkgId, oldData,
     { tu_ngay, den_ngay, gia_thuc_te, phuong_thuc_tt, ghi_chu_tt, ghi_chu_gia },
@@ -1317,11 +1354,11 @@ export const switchPackage = (req, res) => {
     const ins = db.prepare(`
       INSERT INTO dang_ky_goi_tap
         (ho_so_id, goi_tap_id, tu_ngay, den_ngay, gia_thuc_te, phuong_thuc_tt, ghi_chu_tt,
-         trang_thai, nguoi_tao_id, nguoi_cap_nhat_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'dang_hoat_dong', ?, ?)
+         trang_thai, nguoi_tao_id, nguoi_cap_nhat_id, ngay_thanh_toan)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'dang_hoat_dong', ?, ?, ?)
     `).run(hoSo.id, goi_tap_id_moi, tu_ngay, denNgay,
            gia_thuc_te ?? goiMoi.gia, phuong_thuc_tt || null, ghi_chu_tt || null,
-           req.user.id, req.user.id);
+           req.user.id, req.user.id, tu_ngay);
 
     return ins.lastInsertRowid;
   });
