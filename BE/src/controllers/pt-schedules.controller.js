@@ -7,6 +7,16 @@ import { success, error } from '../utils/response.js';
 import { ghi_audit_log } from '../utils/audit.js';
 import { createNotification, createUserNotification } from '../utils/notifications.js';
 
+const safeJson = (value, fallback = []) => {
+  if (!value) return fallback;
+  try { return JSON.parse(value); } catch (_) { return fallback; }
+};
+
+const toJson = (value) => {
+  if (value == null) return null;
+  return JSON.stringify(value);
+};
+
 // ── GET /api/pt/schedules ─────────────────────────────────
 // Xem lịch tập toàn phòng (admin) hoặc lịch cá nhân (PT/hội viên)
 export const getSchedules = (req, res) => {
@@ -41,14 +51,25 @@ export const getSchedules = (req, res) => {
       hv.id AS hoi_vien_id, hv.ho_ten AS ten_hoi_vien, hv.avatar_url AS avatar_hoi_vien,
       pt.id AS pt_id, pt.ho_ten AS ten_pt, pt.avatar_url AS avatar_pt,
       (dk.so_buoi_dang_ky - dk.so_buoi_da_tap) AS buoi_con_lai,
-      lt.ngay_xac_nhan
+      lt.ngay_xac_nhan,
+      dg.so_sao AS danh_gia_sao,
+      dg.noi_dung AS danh_gia_noi_dung,
+      dg.tag_json AS danh_gia_tags,
+      dg.tieu_chi_json AS danh_gia_tieu_chi,
+      ROUND((SELECT AVG(so_sao) FROM danh_gia_pt WHERE pt_id = lt.pt_id), 1) AS pt_rating,
+      (SELECT COUNT(*) FROM danh_gia_pt WHERE pt_id = lt.pt_id) AS pt_rating_count
     FROM lich_tap lt
     JOIN ho_so hv ON hv.id = lt.hoi_vien_id
     JOIN ho_so pt ON pt.id = lt.pt_id
     JOIN dang_ky_pt dk ON dk.id = lt.dang_ky_pt_id
-    ${where}
+    ${where} AND hv.is_deleted = 0 AND pt.is_deleted = 0
     ORDER BY lt.id DESC
   `).all(...params);
+
+  rows.forEach(row => {
+    row.danh_gia_tags = safeJson(row.danh_gia_tags);
+    row.danh_gia_tieu_chi = safeJson(row.danh_gia_tieu_chi, {});
+  });
 
   return success(res, rows);
 };
@@ -80,6 +101,18 @@ export const createSchedule = (req, res) => {
     }
   }
 
+  // Kiểm tra số lượng buổi đã lên lịch (gồm đã tập và chờ tập)
+  if (dkpt.so_buoi_dang_ky !== null) {
+    const scheduledCount = db.prepare(`
+      SELECT COUNT(*) as cnt FROM lich_tap
+      WHERE dang_ky_pt_id = ? AND trang_thai IN ('da_tap', 'cho_tap')
+    `).get(dang_ky_pt_id).cnt;
+
+    if (scheduledCount >= dkpt.so_buoi_dang_ky) {
+      return error(res, `Đăng ký PT đã đặt đủ số buổi tập (${dkpt.so_buoi_dang_ky} buổi). Không thể đặt thêm.`, 400);
+    }
+  }
+
   // Kiểm tra PT có lịch bị trùng không
   const conflict = db.prepare(`
     SELECT id FROM lich_tap
@@ -88,6 +121,15 @@ export const createSchedule = (req, res) => {
   `).get(dkpt.pt_id, ngay_tap, gio_bat_dau, gio_ket_thuc);
 
   if (conflict) return error(res, 'PT đã có lịch tập trong khung giờ này.', 409);
+
+  // Kiểm tra Hội viên có lịch bị trùng không
+  const memberConflict = db.prepare(`
+    SELECT id FROM lich_tap
+    WHERE hoi_vien_id = ? AND ngay_tap = ? AND trang_thai != 'da_huy'
+      AND NOT (gio_ket_thuc <= ? OR gio_bat_dau >= ?)
+  `).get(dkpt.hoi_vien_id, ngay_tap, gio_bat_dau, gio_ket_thuc);
+
+  if (memberConflict) return error(res, 'Hội viên đã có lịch tập khác trong khung giờ này.', 409);
 
   const result = db.prepare(`
     INSERT INTO lich_tap (dang_ky_pt_id, pt_id, hoi_vien_id, ngay_tap, gio_bat_dau, gio_ket_thuc, loai_buoi, ghi_chu, nguoi_tao_id)
@@ -128,6 +170,13 @@ export const confirmSchedule = (req, res) => {
       return error(res, 'Bạn chỉ có thể xác nhận buổi tập do chính mình phụ trách.', 403);
     }
   }
+  // Nếu là Hội viên: chỉ được xác nhận lịch của chính mình
+  else if (req.user.vai_tro === 'hoi_vien') {
+    const hoSoHv = db.prepare('SELECT id FROM ho_so WHERE tai_khoan_id = ?').get(req.user.id);
+    if (!hoSoHv || schedule.hoi_vien_id !== hoSoHv.id) {
+      return error(res, 'Bạn chỉ có thể xác nhận buổi tập của chính mình.', 403);
+    }
+  }
 
   // Trigger trg_xac_nhan_buoi_tap sẽ tự động tăng so_buoi_da_tap
   db.prepare(`
@@ -136,6 +185,95 @@ export const confirmSchedule = (req, res) => {
 
   ghi_audit_log(req, 'UPDATE', 'lich_tap', parseInt(id), { trang_thai: 'cho_tap' }, { trang_thai: 'da_tap' }, 'Xác nhận buổi tập đã hoàn thành');
   return success(res, null, 'Xác nhận buổi tập thành công');
+};
+
+export const getScheduleRating = (req, res) => {
+  const { id } = req.params;
+  const schedule = db.prepare('SELECT * FROM lich_tap WHERE id = ?').get(id);
+  if (!schedule) return error(res, 'Không tìm thấy lịch tập.', 404);
+
+  const hoSo = db.prepare('SELECT id FROM ho_so WHERE tai_khoan_id = ?').get(req.user.id);
+  if (!hoSo) return error(res, 'Không tìm thấy hồ sơ người dùng.', 404);
+
+  if (req.user.vai_tro === 'hoi_vien' && schedule.hoi_vien_id !== hoSo.id) {
+    return error(res, 'Bạn chỉ có thể xem đánh giá buổi tập của chính mình.', 403);
+  }
+  if (req.user.vai_tro === 'pt' && schedule.pt_id !== hoSo.id) {
+    return error(res, 'Bạn chỉ có thể xem đánh giá buổi tập do mình phụ trách.', 403);
+  }
+
+  const rating = db.prepare(`SELECT * FROM danh_gia_pt WHERE lich_tap_id = ?`).get(id);
+  if (!rating) return success(res, null);
+
+  rating.tag_json = safeJson(rating.tag_json);
+  rating.tieu_chi_json = safeJson(rating.tieu_chi_json, {});
+  return success(res, rating);
+};
+
+export const upsertScheduleRating = (req, res) => {
+  const { id } = req.params;
+  const { so_sao, tieu_chi = {}, tags = [], noi_dung = '' } = req.body;
+  const stars = Number(so_sao);
+
+  if (!Number.isInteger(stars) || stars < 1 || stars > 5) {
+    return error(res, 'Số sao phải nằm trong khoảng 1-5.', 400);
+  }
+
+  const schedule = db.prepare(`
+    SELECT lt.*, hv.ho_ten AS ten_hoi_vien, pt.ho_ten AS ten_pt
+    FROM lich_tap lt
+    JOIN ho_so hv ON hv.id = lt.hoi_vien_id
+    JOIN ho_so pt ON pt.id = lt.pt_id
+    WHERE lt.id = ?
+  `).get(id);
+  if (!schedule) return error(res, 'Không tìm thấy lịch tập.', 404);
+  if (schedule.trang_thai !== 'da_tap') return error(res, 'Chỉ đánh giá được buổi tập đã hoàn thành.', 400);
+
+  const hoSo = db.prepare('SELECT id, ho_ten FROM ho_so WHERE tai_khoan_id = ?').get(req.user.id);
+  if (!hoSo || hoSo.id !== schedule.hoi_vien_id) {
+    return error(res, 'Chỉ hội viên của buổi tập này mới được gửi đánh giá.', 403);
+  }
+
+  const old = db.prepare('SELECT * FROM danh_gia_pt WHERE lich_tap_id = ? AND hoi_vien_id = ?').get(id, hoSo.id);
+  if (old) {
+    db.prepare(`
+      UPDATE danh_gia_pt SET
+        so_sao = ?, tieu_chi_json = ?, tag_json = ?, noi_dung = ?,
+        nguoi_cap_nhat_id = ?, ngay_cap_nhat = datetime('now','localtime')
+      WHERE id = ?
+    `).run(stars, toJson(tieu_chi), toJson(tags), noi_dung || null, req.user.id, old.id);
+  } else {
+    db.prepare(`
+      INSERT INTO danh_gia_pt
+        (lich_tap_id, pt_id, hoi_vien_id, so_sao, tieu_chi_json, tag_json, noi_dung, nguoi_tao_id, nguoi_cap_nhat_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(id, schedule.pt_id, schedule.hoi_vien_id, stars, toJson(tieu_chi), toJson(tags), noi_dung || null, req.user.id, req.user.id);
+  }
+
+  createUserNotification(
+    schedule.pt_id,
+    old ? 'Hội viên đã cập nhật đánh giá PT' : 'Hội viên vừa đánh giá buổi tập',
+    `${schedule.ten_hoi_vien} đánh giá ${stars}/5 sao cho buổi tập ngày ${schedule.ngay_tap}.`,
+    'thong_bao_chung'
+  );
+
+  if (stars < 3) {
+    createNotification(
+      'cap_nhat_buoi_tap',
+      'Đánh giá PT cần xử lý',
+      `${schedule.ten_hoi_vien} đánh giá ${stars}/5 sao cho PT ${schedule.ten_pt}. Nội dung: ${noi_dung || 'Chưa nhập lý do'}`,
+      parseInt(id),
+      'lich_tap',
+      'admin'
+    );
+  }
+
+  ghi_audit_log(req, old ? 'UPDATE' : 'CREATE', 'danh_gia_pt', parseInt(id), old || null, { so_sao: stars, tags, tieu_chi }, old ? 'Cập nhật đánh giá PT' : 'Tạo đánh giá PT');
+
+  const saved = db.prepare('SELECT * FROM danh_gia_pt WHERE lich_tap_id = ? AND hoi_vien_id = ?').get(id, hoSo.id);
+  saved.tag_json = safeJson(saved.tag_json);
+  saved.tieu_chi_json = safeJson(saved.tieu_chi_json, {});
+  return success(res, saved, old ? 'Đã cập nhật đánh giá' : 'Đã gửi đánh giá', old ? 200 : 201);
 };
 
 // ── PUT /api/pt/schedules/:id/cancel ─────────────────────

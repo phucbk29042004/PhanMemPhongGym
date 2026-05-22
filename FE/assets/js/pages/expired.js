@@ -15,29 +15,29 @@ window.GymApp.pages['expired'] = {
 
         <!-- Filter & Tabs Row -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-compact">
-          <div class="flex items-center gap-1 bg-surface-container p-1 rounded-2xl border border-outline-variant w-fit shadow-sm overflow-x-auto max-w-full">
-            <button id="tab-expired-list" class="px-loose py-2.5 rounded-xl font-bold text-body-sm bg-brand-primary text-white shadow-lg shadow-brand-primary/20 transition-all duration-300 flex items-center gap-xs whitespace-nowrap">
+          <div class="flex items-center gap-1 bg-surface-container-low/50 backdrop-blur-sm p-1 rounded-2xl border-2 border-outline-variant/50 w-fit shadow-sm overflow-x-auto max-w-full">
+            <button id="tab-expired-list" class="px-4 py-2 rounded-xl font-bold text-sm bg-brand-primary text-white shadow-sm transition-all duration-300 flex items-center gap-xs whitespace-nowrap border border-brand-primary/20">
               <span class="material-symbols-outlined text-[18px]">cancel</span>
               <span id="tab-expired-count">Hết hạn (0)</span>
             </button>
-            <button id="tab-expiring-list" class="px-loose py-2.5 rounded-xl font-bold text-body-sm text-on-surface-variant hover:text-brand-primary transition-all duration-300 flex items-center gap-xs whitespace-nowrap">
+            <button id="tab-expiring-list" class="px-4 py-2 rounded-xl font-bold text-sm text-on-surface-variant hover:text-brand-primary hover:bg-brand-primary/5 transition-all duration-300 flex items-center gap-xs whitespace-nowrap border border-transparent">
               <span class="material-symbols-outlined text-[18px]">warning_amber</span>
               <span id="tab-expiring-count">Sắp hết (0)</span>
             </button>
-            <button id="tab-requests-list" class="px-loose py-2.5 rounded-xl font-bold text-body-sm text-on-surface-variant hover:text-brand-primary transition-all duration-300 flex items-center gap-xs whitespace-nowrap relative">
+            <button id="tab-requests-list" class="px-4 py-2 rounded-xl font-bold text-sm text-on-surface-variant hover:text-brand-primary hover:bg-brand-primary/5 transition-all duration-300 flex items-center gap-xs whitespace-nowrap relative border border-transparent">
               <span class="material-symbols-outlined text-[18px]">history_edu</span>
               <span id="tab-requests-count">Yêu cầu (0)</span>
-              <div id="requests-badge" class="hidden absolute -top-1 -right-1 w-4 h-4 bg-error text-white text-[10px] rounded-full flex items-center justify-center font-black border-2 border-surface-container-lowest"></div>
+              <div id="requests-badge" class="hidden absolute -top-1 -right-1 w-4 h-4 bg-error text-white text-label-xs rounded-full flex items-center justify-center font-black border-2 border-surface-container-lowest"></div>
             </button>
           </div>
 
-          <div class="flex items-center gap-compact bg-surface-container-low/50 backdrop-blur-md p-2 rounded-2xl border border-outline-variant shadow-sm flex-1 max-w-md">
+          <div class="flex items-center gap-compact flex-1 max-w-md">
             <div class="relative flex-1 group">
-              <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors text-[20px]">search</span>
-              <input id="expired-search" type="text" placeholder="Tìm tên, SĐT..." class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-4 py-2 rounded-xl focus:border-brand-primary outline-none transition-all text-body-sm font-medium" value="${this._searchQuery}">
+              <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors text-[18px]">search</span>
+              <input id="expired-search" type="text" placeholder="Tìm tên, SĐT..." class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface pl-10 pr-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none placeholder-outline-variant/60 font-body-md text-body-md transition-all shadow-sm focus:shadow-none" value="${this._searchQuery}">
             </div>
-            <button id="btn-refresh-expired" class="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-container-lowest border border-outline-variant text-on-surface-variant hover:text-brand-primary transition-all shadow-sm">
-              <span class="material-symbols-outlined text-[20px]">refresh</span>
+            <button id="btn-refresh-expired" class="w-10 h-10 flex items-center justify-center rounded-xl border-2 border-outline-variant/50 bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all shadow-sm active:scale-95 duration-200 cursor-pointer">
+              <span class="material-symbols-outlined text-base">refresh</span>
             </button>
           </div>
         </div>
@@ -193,18 +193,18 @@ window.GymApp.pages['expired'] = {
     ];
 
     return stats.map(s => `
-      <div class="bg-surface-container-lowest/80 backdrop-blur-xl p-loose rounded-[32px] border ${s.border} shadow-sm flex items-center gap-loose transition-all hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-brand-primary/10 group relative overflow-hidden">
-        <div class="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-700 group-hover:scale-150 group-hover:-rotate-12 transform">
-          <span class="material-symbols-outlined text-[120px]">${s.icon}</span>
+      <div class="bg-white dark:bg-[#1e1e1e] p-4 rounded-2xl border-2 border-outline-variant/50 shadow-sm flex items-center gap-3 transition-all duration-300 hover:-translate-y-1 hover:shadow-md group relative overflow-hidden">
+        <div class="absolute -right-4 -bottom-4 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity duration-500 group-hover:scale-125 transform">
+          <span class="material-symbols-outlined text-[100px]">${s.icon}</span>
         </div>
-        <div class="w-16 h-16 rounded-2xl ${s.bg} flex items-center justify-center group-hover:scale-110 transition-all duration-500 shadow-inner">
-          <span class="material-symbols-outlined ${s.color} text-[36px]" style="font-variation-settings:'FILL' 1">${s.icon}</span>
+        <div class="w-11 h-11 rounded-xl ${s.bg} flex items-center justify-center group-hover:scale-105 transition-all duration-300 shadow-sm">
+          <span class="material-symbols-outlined ${s.color} text-[22px]" style="font-variation-settings:'FILL' 1">${s.icon}</span>
         </div>
-        <div class="flex flex-col relative z-10">
-          <span class="text-on-surface-variant text-[11px] uppercase tracking-[0.2em] font-black opacity-40">${s.label}</span>
+        <div class="flex flex-col relative z-10 min-w-0">
+          <span class="text-on-surface-variant text-body-sm font-bold mb-1">${s.label}</span>
           <div class="flex items-baseline gap-1">
-            <span class="${s.color} text-display-sm font-black tracking-tighter leading-none mt-1">${s.value}</span>
-            <span class="text-on-surface-variant text-[12px] font-bold opacity-30">hv</span>
+            <span class="${s.color} text-headline font-bold tracking-tight leading-none">${s.value}</span>
+            <span class="text-on-surface-variant text-label-xs font-bold opacity-40">hv</span>
           </div>
         </div>
       </div>
@@ -218,7 +218,7 @@ window.GymApp.pages['expired'] = {
     const paginated = list.slice(start, start + this._perPage);
 
     const rows = paginated.map(m => `
-      <tr class="group hover:bg-surface-container-low transition-colors border-b border-outline-variant/30">
+      <tr class="group hover:bg-brand-primary/5 transition-colors border-b border-outline-variant/30">
         <td class="px-standard py-3">
           <div class="flex items-center gap-standard">
             ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'lg', 'width:48px;height:48px;border-radius:16px;')}
@@ -226,7 +226,7 @@ window.GymApp.pages['expired'] = {
               <div class="flex items-center gap-xs">
                 <p class="font-black text-on-surface text-body-md truncate">${m.ho_ten}</p>
                 ${m.co_yeu_cau_gia_han ? `
-                  <span class="flex items-center gap-[2px] bg-warning-container text-warning text-[9px] px-1.5 py-0.5 rounded-lg font-black animate-pulse" title="Có yêu cầu gia hạn từ App">
+                  <span class="flex items-center gap-[2px] bg-warning-container text-warning text-label-xs px-1.5 py-0.5 rounded-lg font-black animate-pulse" title="Có yêu cầu gia hạn từ App">
                     <span class="material-symbols-outlined text-[12px]">app_registration</span>
                     APP
                   </span>` : ''}
@@ -236,16 +236,16 @@ window.GymApp.pages['expired'] = {
           </div>
         </td>
         <td class="px-standard py-3">
-          <span class="text-on-surface-variant text-[11px] font-mono font-black bg-surface-container px-2.5 py-1 rounded-xl border border-outline-variant/30">${m.ma_ho_so}</span>
+          <span class="text-on-surface-variant text-body-sm font-mono font-black bg-surface-container px-2.5 py-1 rounded-xl border border-outline-variant/30">${m.ma_ho_so}</span>
         </td>
         <td class="px-standard py-3">
           <div class="flex flex-col gap-1">
-            <div class="inline-flex items-center px-2 py-0.5 rounded-lg bg-surface-container text-on-surface text-[11px] font-black border border-outline-variant/50 w-fit">
+            <div class="inline-flex items-center px-2 py-0.5 rounded-lg bg-surface-container text-on-surface text-body-sm font-black border border-outline-variant/50 w-fit">
               ${m.ten_goi_tap || 'N/A'}
             </div>
             <div class="flex items-center gap-1.5 text-error">
               <span class="material-symbols-outlined text-[16px]">event_busy</span>
-              <span class="text-[11px] font-black">Hết hạn: ${window.GymApp.formatDate(m.ngay_het_han)}</span>
+              <span class="text-body-sm font-black">Hết hạn: ${window.GymApp.formatDate(m.ngay_het_han)}</span>
             </div>
           </div>
         </td>
@@ -263,15 +263,15 @@ window.GymApp.pages['expired'] = {
     `).join('');
 
     return `
-      <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
+      <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse">
             <thead>
               <tr class="bg-surface-container-low/30 border-b border-outline-variant/50">
-                <th class="px-standard py-4 font-black text-[11px] text-on-surface-variant uppercase tracking-widest opacity-60">Hội viên</th>
-                <th class="px-standard py-4 font-black text-[11px] text-on-surface-variant uppercase tracking-widest opacity-60">Mã HV</th>
-                <th class="px-standard py-4 font-black text-[11px] text-on-surface-variant uppercase tracking-widest opacity-60">Gói tập</th>
-                <th class="px-standard py-4 font-black text-[11px] text-on-surface-variant uppercase tracking-widest opacity-60 text-center">Thao tác</th>
+                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60">Hội viên</th>
+                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60">Mã HV</th>
+                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60">Gói tập</th>
+                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60 text-center">Thao tác</th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>
@@ -294,7 +294,7 @@ window.GymApp.pages['expired'] = {
       const urgencyBg = m.daysLeft <= 3 ? 'bg-error/10' : m.daysLeft <= 7 ? 'bg-[#e65100]/10' : 'bg-[#f59e0b]/10';
 
       return `
-        <tr class="group hover:bg-surface-container-low transition-colors border-b border-outline-variant/30">
+        <tr class="group hover:bg-brand-primary/5 transition-colors border-b border-outline-variant/30">
           <td class="px-standard py-3">
             <div class="flex items-center gap-standard">
               ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'lg', 'width:48px;height:48px;border-radius:16px;')}
@@ -307,19 +307,19 @@ window.GymApp.pages['expired'] = {
             </div>
           </td>
           <td class="px-standard py-3">
-            <span class="text-on-surface-variant text-[11px] font-mono font-black bg-surface-container px-2.5 py-1 rounded-xl border border-outline-variant/30">${m.ma_ho_so}</span>
+            <span class="text-on-surface-variant text-body-sm font-mono font-black bg-surface-container px-2.5 py-1 rounded-xl border border-outline-variant/30">${m.ma_ho_so}</span>
           </td>
           <td class="px-standard py-3">
             <div class="flex flex-col gap-1">
-              <div class="inline-flex items-center px-2 py-0.5 rounded-lg bg-surface-container text-on-surface text-[11px] font-black border border-outline-variant/50 w-fit">
+              <div class="inline-flex items-center px-2 py-0.5 rounded-lg bg-surface-container text-on-surface text-body-sm font-black border border-outline-variant/50 w-fit">
                 ${m.ten_goi_tap || 'N/A'}
               </div>
               <div class="flex items-center gap-2">
-                <span class="text-on-surface-variant text-[11px] font-bold opacity-50 flex items-center gap-1">
+                <span class="text-on-surface-variant text-body-sm font-bold opacity-50 flex items-center gap-1">
                   <span class="material-symbols-outlined text-[14px]">event</span>
                   ${window.GymApp.formatDate(m.ngay_het_han)}
                 </span>
-                <span class="${urgency} ${urgencyBg} text-[10px] font-black px-2 py-0.5 rounded-full border border-current/20 flex items-center gap-1">
+                <span class="${urgency} ${urgencyBg} text-label-xs font-black px-2 py-0.5 rounded-full border border-current/20 flex items-center gap-1">
                   <span class="material-symbols-outlined text-[12px]">schedule</span>
                   ${m.daysLeft} ngày
                 </span>
@@ -341,15 +341,15 @@ window.GymApp.pages['expired'] = {
     }).join('');
 
     return `
-      <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
+      <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse">
             <thead>
               <tr class="bg-surface-container-low/30 border-b border-outline-variant/50">
-                <th class="px-standard py-4 font-black text-[11px] text-on-surface-variant uppercase tracking-widest opacity-60">Hội viên</th>
-                <th class="px-standard py-4 font-black text-[11px] text-on-surface-variant uppercase tracking-widest opacity-60">Mã HV</th>
-                <th class="px-standard py-4 font-black text-[11px] text-on-surface-variant uppercase tracking-widest opacity-60">Gói tập</th>
-                <th class="px-standard py-4 font-black text-[11px] text-on-surface-variant uppercase tracking-widest opacity-60 text-center">Thao tác</th>
+                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60">Hội viên</th>
+                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60">Mã HV</th>
+                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60">Gói tập</th>
+                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60 text-center">Thao tác</th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>
@@ -428,8 +428,8 @@ window.GymApp.pages['expired'] = {
       if (!btn) return;
       const isActive = this._tab === t;
       btn.className = isActive
-        ? 'px-loose py-2.5 rounded-xl font-bold text-body-sm bg-brand-primary text-white shadow-lg shadow-brand-primary/20 transition-all duration-300 flex items-center gap-xs whitespace-nowrap'
-        : 'px-loose py-2.5 rounded-xl font-bold text-body-sm text-on-surface-variant hover:text-brand-primary transition-all duration-300 flex items-center gap-xs whitespace-nowrap';
+        ? 'px-4 py-2 rounded-xl font-bold text-sm bg-brand-primary text-white shadow-sm transition-all duration-300 flex items-center gap-xs whitespace-nowrap border border-brand-primary/20'
+        : 'px-4 py-2 rounded-xl font-bold text-sm text-on-surface-variant hover:text-brand-primary hover:bg-brand-primary/5 transition-all duration-300 flex items-center gap-xs whitespace-nowrap border border-transparent';
     });
   },
 
@@ -440,22 +440,29 @@ window.GymApp.pages['expired'] = {
     const paginated = list.slice(start, start + this._perPage);
 
     const rows = paginated.map(req => `
-      <tr class="group hover:bg-surface-container-low transition -colors border-b border-outline-variant/30">
+      <tr class="group hover:bg-brand-primary/5 transition-colors border-b border-outline-variant/30">
         <td class="px-standard py-3">
           <div class="flex items-center gap-standard">
             ${window.GymApp.avatarImg(null, req.ho_ten, 'lg', 'width:48px;height:48px;border-radius:16px;')}
             <div class="flex flex-col min-w-0">
               <p class="font-black text-on-surface text-body-md truncate">${req.ho_ten}</p>
-              <p class="text-on-surface-variant text-[11px] font-mono font-black opacity-60">${req.ma_ho_so}</p>
+              <div class="flex items-center gap-xs">
+                <p class="text-on-surface-variant text-body-sm font-mono font-black opacity-60">${req.ma_ho_so}</p>
+                ${req.chi_nhanh_mua ? `
+                  <span class="flex items-center gap-[2px] bg-surface-container text-on-surface-variant text-label-xs px-1.5 py-0.5 rounded-lg font-black border border-outline-variant/30" title="Chi nhánh đăng ký mua">
+                    <span class="material-symbols-outlined text-[12px]">store</span>
+                    ${req.chi_nhanh_mua}
+                  </span>` : ''}
+              </div>
             </div>
           </div>
         </td>
         <td class="px-standard py-3">
           <div class="flex flex-col gap-1">
-            <div class="inline-flex items-center px-2 py-0.5 rounded-lg bg-brand-primary/10 text-brand-primary text-[11px] font-black border border-brand-primary/20 w-fit">
+            <div class="inline-flex items-center px-2 py-0.5 rounded-lg bg-brand-primary/10 text-brand-primary text-body-sm font-black border border-brand-primary/20 w-fit">
               ${req.ten_goi_tap}
             </div>
-            <div class="flex items-center gap-1 text-on-surface-variant text-[11px] font-bold opacity-50">
+            <div class="flex items-center gap-1 text-on-surface-variant text-body-sm font-bold opacity-50">
               <span class="material-symbols-outlined text-[14px]">calendar_today</span>
               Từ: ${window.GymApp.formatDate(req.tu_ngay)}
             </div>
@@ -465,11 +472,28 @@ window.GymApp.pages['expired'] = {
           <div class="flex flex-col gap-1">
              <div class="flex items-center gap-1.5">
                <span class="text-brand-primary font-black text-body-lg">${Number(req.gia_thuc_te).toLocaleString('vi-VN')}</span>
-               <span class="text-brand-primary/60 text-[10px] font-black uppercase">VND</span>
+               <span class="text-brand-primary/60 text-label-xs font-black uppercase">VND</span>
              </div>
-             <div class="flex items-center gap-1 text-on-surface-variant text-[11px] font-bold opacity-50">
+             <div class="flex items-center gap-1 text-on-surface-variant text-body-sm font-bold opacity-50">
                <span class="material-symbols-outlined text-[14px]">event_repeat</span>
                Hạn: ${window.GymApp.formatDate(req.den_ngay)}
+             </div>
+             <div class="mt-1">
+               ${req.phuong_thuc_tt === 'chuyen_khoan' ? (
+                 req.payos_status === 'PAID' ? `
+                   <span style="background: rgba(29, 147, 54, 0.1); color: #1D9336; border: 1px solid rgba(29, 147, 54, 0.2);" class="inline-flex items-center gap-[4px] text-label-xs px-2 py-0.5 rounded-lg font-black animate-pulse shadow-sm">
+                     <span class="material-symbols-outlined text-[12px] font-black">check_circle</span>
+                     Đã thanh toán (PayOS)
+                   </span>` : `
+                   <span style="background: rgba(230, 81, 0, 0.1); color: #e65100; border: 1px solid rgba(230, 81, 0, 0.2);" class="inline-flex items-center gap-[4px] text-label-xs px-2 py-0.5 rounded-lg font-black">
+                     <span class="material-symbols-outlined text-[12px]">hourglass_empty</span>
+                     Chờ thanh toán (PayOS)
+                   </span>`
+               ) : `
+                 <span style="background: rgba(107, 114, 128, 0.1); color: rgb(107, 114, 128); border: 1px solid rgba(107, 114, 128, 0.2);" class="inline-flex items-center gap-[4px] text-label-xs px-2 py-0.5 rounded-lg font-black">
+                   <span class="material-symbols-outlined text-[12px]">payments</span>
+                   Tiền mặt
+                 </span>`}
              </div>
           </div>
         </td>
@@ -478,7 +502,7 @@ window.GymApp.pages['expired'] = {
             <button class="request-reject-btn w-9 h-9 flex items-center justify-center rounded-xl bg-surface-container-low text-error hover:bg-error hover:text-white transition-all shadow-sm active:scale-95" data-id="${req.id}" title="Từ chối">
               <span class="material-symbols-outlined text-[20px]">close</span>
             </button>
-            <button class="request-approve-btn h-9 px-loose flex items-center justify-center rounded-xl bg-brand-primary text-white hover:shadow-lg hover:shadow-brand-primary/20 transition-all gap-compact font-black text-body-xs active:scale-95" data-id="${req.id}">
+            <button class="request-approve-btn h-9 px-loose flex items-center justify-center rounded-xl bg-brand-primary text-white hover:shadow-lg hover:shadow-brand-primary/20 transition-all gap-compact font-black text-body-md active:scale-95" data-id="${req.id}">
               <span class="material-symbols-outlined text-[18px]">check</span>
               DUYỆT
             </button>
@@ -488,16 +512,16 @@ window.GymApp.pages['expired'] = {
     `).join('');
 
     return `
-      <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
+      <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 shadow-sm overflow-hidden">
         <!-- Desktop Table view -->
         <div class="hidden md:block overflow-x-auto">
           <table class="w-full text-left border-collapse">
             <thead>
               <tr class="bg-surface-container-low/30 border-b border-outline-variant/50">
-                <th class="px-standard py-4 font-black text-[11px] text-on-surface-variant uppercase tracking-widest opacity-60">Hội viên</th>
-                <th class="px-standard py-4 font-black text-[11px] text-on-surface-variant uppercase tracking-widest opacity-60">Gói tập</th>
-                <th class="px-standard py-4 font-black text-[11px] text-on-surface-variant uppercase tracking-widest opacity-60">Thanh toán</th>
-                <th class="px-standard py-4 font-black text-[11px] text-on-surface-variant uppercase tracking-widest opacity-60 text-center">Thao tác</th>
+                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60">Hội viên</th>
+                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60">Gói tập</th>
+                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60">Thanh toán</th>
+                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60 text-center">Thao tác</th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>
@@ -507,39 +531,58 @@ window.GymApp.pages['expired'] = {
         <!-- Mobile Cards view -->
         <div class="md:hidden flex flex-col gap-compact p-compact bg-surface-container-low/10">
           ${paginated.map(req => `
-            <div class="rounded-xl border border-outline-variant bg-surface-container-lowest overflow-hidden shadow-sm" data-req-id="${req.id}">
+            <div class="rounded-xl border-2 border-outline-variant/50 bg-white dark:bg-[#1e1e1e] overflow-hidden shadow-sm hover:shadow-md transition-all duration-300" data-req-id="${req.id}">
               <div class="px-compact py-compact flex items-center gap-compact border-b border-outline-variant">
                 ${window.GymApp.avatarImg(null, req.ho_ten, 'lg', 'width:36px;height:36px;border-radius:12px;')}
                 <div class="flex-1 min-w-0">
                   <p class="font-black text-on-surface text-body-sm truncate">${req.ho_ten || '—'}</p>
-                  <p class="text-on-surface-variant" style="font-size:10px">${req.ma_ho_so || ''}</p>
+                  <p class="text-on-surface-variant text-label-xs">${req.ma_ho_so || ''}</p>
                 </div>
-                <span class="text-[9px] px-2 py-0.5 rounded-full font-black bg-warning-container text-warning border border-warning/20">Chờ duyệt</span>
+                ${req.phuong_thuc_tt === 'chuyen_khoan' ? (
+                  req.payos_status === 'PAID' ? `
+                    <span style="background: rgba(29, 147, 54, 0.1); color: #1D9336; border: 1px solid rgba(29, 147, 54, 0.2);" class="text-label-xs px-2 py-0.5 rounded-full font-black border animate-pulse shadow-sm flex items-center gap-1">
+                      <span class="material-symbols-outlined text-[12px] font-black">check_circle</span>
+                      Đã thanh toán (PayOS)
+                    </span>` : `
+                    <span style="background: rgba(230, 81, 0, 0.1); color: #e65100; border: 1px solid rgba(230, 81, 0, 0.2);" class="text-label-xs px-2 py-0.5 rounded-full font-black border flex items-center gap-1">
+                      <span class="material-symbols-outlined text-[12px]">hourglass_empty</span>
+                      Chờ thanh toán (PayOS)
+                    </span>`
+                ) : `
+                  <span class="text-label-xs px-2 py-0.5 rounded-full font-black bg-warning-container text-warning border border-warning/20">Chờ duyệt</span>`}
               </div>
-              <div class="p-compact grid grid-cols-2 gap-xs text-[12px]">
+              <div class="p-compact grid grid-cols-2 gap-xs text-body-sm">
                 <div>
                   <p class="text-on-surface-variant opacity-60 font-bold">Gói tập</p>
                   <p class="font-black text-brand-primary truncate">${req.ten_goi_tap || '—'}</p>
+                </div>
+                <div>
+                  <p class="text-on-surface-variant opacity-60 font-bold">Chi nhánh mua</p>
+                  <p class="font-bold text-on-surface truncate">${req.chi_nhanh_mua || '—'}</p>
                 </div>
                 <div>
                   <p class="text-on-surface-variant opacity-60 font-bold">Từ ngày</p>
                   <p class="font-bold text-on-surface">${req.tu_ngay ? window.GymApp.formatDate(req.tu_ngay) : '—'}</p>
                 </div>
                 <div>
-                  <p class="text-on-surface-variant opacity-60 font-bold">Giá dự kiến</p>
-                  <p class="font-black text-brand-primary">${req.gia_thuc_te ? Number(req.gia_thuc_te).toLocaleString('vi-VN') + 'đ' : '—'}</p>
-                </div>
-                <div>
                   <p class="text-on-surface-variant opacity-60 font-bold">Hạn dùng</p>
                   <p class="font-bold text-on-surface">${req.den_ngay ? window.GymApp.formatDate(req.den_ngay) : '—'}</p>
                 </div>
+                <div>
+                  <p class="text-on-surface-variant opacity-60 font-bold">Số tiền</p>
+                  <p class="font-black text-brand-primary">${req.gia_thuc_te ? Number(req.gia_thuc_te).toLocaleString('vi-VN') + 'đ' : '—'}</p>
+                </div>
+                <div>
+                  <p class="text-on-surface-variant opacity-60 font-bold">Hình thức</p>
+                  <p class="font-bold text-on-surface">${req.phuong_thuc_tt === 'chuyen_khoan' ? 'Chuyển khoản' : 'Tiền mặt'}</p>
+                </div>
               </div>
               <div class="px-compact pb-compact flex gap-compact border-t border-outline-variant/10 pt-compact mt-xs">
-                <button class="request-reject-btn flex-1 py-1.5 rounded-lg font-bold border border-outline-variant text-error hover:bg-error hover:text-white transition-all text-body-xs active:scale-95 flex items-center justify-center gap-xs"
+                <button class="request-reject-btn flex-1 py-1.5 rounded-lg font-bold border border-outline-variant text-error hover:bg-error hover:text-white transition-all text-body-sm active:scale-95 flex items-center justify-center gap-xs"
                   data-id="${req.id}">
                   <span class="material-symbols-outlined text-sm">close</span> Từ chối
                 </button>
-                <button class="request-approve-btn flex-[1.5] py-1.5 rounded-lg font-black text-white transition-all text-body-xs active:scale-95 flex items-center justify-center gap-xs"
+                <button class="request-approve-btn flex-[1.5] py-1.5 rounded-lg font-black text-white transition-all text-body-sm active:scale-95 flex items-center justify-center gap-xs"
                   style="background:#1D9336" data-id="${req.id}">
                   <span class="material-symbols-outlined text-sm">check</span> Duyệt
                 </button>
@@ -641,6 +684,11 @@ window.GymApp.pages['expired'] = {
                   <span class="text-outline font-bold">Gói tập yêu cầu:</span>
                   <span class="font-black text-brand-primary">${req.ten_goi_tap}</span>
                </div>
+               ${req.chi_nhanh_mua ? `
+               <div class="flex justify-between items-center border-t border-outline-variant/10 pt-xs mt-xs">
+                  <span class="text-outline font-bold">Chi nhánh mua:</span>
+                  <span class="font-bold text-on-surface">${req.chi_nhanh_mua}</span>
+               </div>` : ''}
                <div class="flex justify-between items-center border-t border-outline-variant/10 pt-xs mt-xs">
                   <span class="text-outline font-bold">Thời gian gia hạn:</span>
                   <span class="font-bold text-on-surface">${window.GymApp.formatDate(req.tu_ngay)} - ${window.GymApp.formatDate(req.den_ngay)}</span>
@@ -651,20 +699,20 @@ window.GymApp.pages['expired'] = {
             <div class="space-y-compact">
               <div>
                 <label class="block text-body-xs font-bold text-on-surface-variant mb-xs ml-0.5">Số tiền thực thu (VNĐ)</label>
-                <input type="text" inputmode="numeric" id="approve-price" value="${req.gia_thuc_te > 0 ? new Intl.NumberFormat('vi-VN').format(req.gia_thuc_te) : ''}" class="w-full bg-surface-container-lowest border border-outline-variant px-standard py-2 rounded-xl outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 text-body-sm font-black transition-all" />
+                <input type="number" id="approve-price" value="${req.gia_thuc_te}" class="w-full bg-surface-container-lowest border border-outline-variant px-standard py-2 rounded-xl outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 text-body-sm font-black transition-all" />
               </div>
               
               <div>
                 <label class="block text-body-xs font-bold text-on-surface-variant mb-xs ml-0.5">Phương thức thanh toán</label>
                 <select id="approve-method" class="w-full bg-surface-container-lowest border border-outline-variant px-standard py-2 rounded-xl outline-none focus:border-brand-primary transition-all text-body-sm font-bold">
-                  <option value="tien_mat">Tiền mặt</option>
-                  <option value="chuyen_khoan">Chuyển khoản</option>
+                  <option value="tien_mat" ${req.phuong_thuc_tt === 'tien_mat' ? 'selected' : ''}>Tiền mặt</option>
+                  <option value="chuyen_khoan" ${req.phuong_thuc_tt === 'chuyen_khoan' ? 'selected' : ''}>Chuyển khoản</option>
                 </select>
               </div>
               
               <div>
                 <label class="block text-body-xs font-bold text-on-surface-variant mb-xs ml-0.5">Ghi chú giao dịch</label>
-                <input type="text" id="approve-note" placeholder="Ví dụ: Đã nhận tiền qua chuyển khoản..." class="w-full bg-surface-container-lowest border border-outline-variant px-standard py-2 rounded-xl outline-none focus:border-brand-primary transition-all text-body-sm font-medium" />
+                <input type="text" id="approve-note" value="${req.payos_status === 'PAID' ? 'Đã thanh toán qua PayOS (Order: ' + req.payos_order_code + ')' : ''}" placeholder="Ví dụ: Đã nhận tiền qua chuyển khoản..." class="w-full bg-surface-container-lowest border border-outline-variant px-standard py-2 rounded-xl outline-none focus:border-brand-primary transition-all text-body-sm font-medium" />
               </div>
             </div>
           </div>
@@ -679,6 +727,21 @@ window.GymApp.pages['expired'] = {
     `;
 
     document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Format VNĐ helper — dùng cho field Số tiền thực thu
+    const _fmtVND = n => n > 0 ? new Intl.NumberFormat('vi-VN').format(n) : '0';
+    const _parseVND = s => parseInt((s || '').replace(/\./g, '').replace(/,/g, '')) || 0;
+
+    const priceEl = document.getElementById('approve-price');
+    priceEl?.addEventListener('focus', function () {
+      const raw = _parseVND(this.value);
+      this.value = raw > 0 ? String(raw) : '';
+    });
+    priceEl?.addEventListener('blur', function () {
+      const raw = _parseVND(this.value);
+      this.value = raw > 0 ? _fmtVND(raw) : '0';
+    });
+
     document.getElementById('btn-approve-cancel').onclick = () => document.getElementById('modal-approve-renewal').remove();
 
     const _pVND = s => parseInt((s || '').replace(/\./g, '').replace(/,/g, '')) || 0;
@@ -690,7 +753,7 @@ window.GymApp.pages['expired'] = {
     document.getElementById('btn-approve-submit').onclick = async () => {
       const data = {
         action: 'approve',
-        gia_thuc_te: _pVND(document.getElementById('approve-price').value),
+        gia_thuc_te: document.getElementById('approve-price').value,
         phuong_thuc_tt: document.getElementById('approve-method').value,
         ghi_chu_tt: document.getElementById('approve-note').value
       };

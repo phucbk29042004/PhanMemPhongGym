@@ -1057,43 +1057,46 @@ html.dark .air-datepicker-cell.-selected- {
 
 /* Light mode styles */
 .member-card {
-  background: linear-gradient(135deg, #f0fdf4 0%, #f7fef9 60%, #ffffff 100%);
-  border: 1.5px solid #bbf7d0;
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  background: #ffffff;
+  border: 2px solid rgba(190, 202, 185, 0.5); /* border-outline-variant/50 */
+  border-radius: 1rem !important; /* rounded-2xl */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .member-card:hover {
-  box-shadow: 0 20px 25px -5px rgba(29, 147, 54, 0.12), 0 8px 10px -6px rgba(29, 147, 54, 0.08);
+  transform: translateY(-4px) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03) !important;
 }
 .member-card-avatar-wrapper {
-  background: #dcfce7;
-  border-color: #86efac;
+  background: #f1f5f9;
+  border-color: #e2e8f0;
 }
 .member-card-dot {
-  border: 3px solid #f0fdf4;
+  border: 3px solid #ffffff;
 }
 .member-name-link {
-  color: #14532d;
+  color: #1e293b; /* text-slate-800 */
 }
 .member-name-link:hover {
   color: #1D9336;
 }
 .member-card-info-cell {
-  background: rgba(187, 247, 208, 0.35);
-  border: 1px solid #bbf7d0;
+  background: rgba(241, 245, 249, 0.7);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 0.75rem !important;
 }
 .member-card-info-label {
-  color: #166534;
-  opacity: 0.6;
+  color: #64748b;
+  opacity: 0.8;
 }
 .member-card-info-value {
-  color: #14532d;
+  color: #1e293b;
 }
 .member-card-footer {
-  border-top: 1px solid #bbf7d0;
+  border-top: 1px solid rgba(226, 232, 240, 0.8);
 }
 .member-action-btn {
-  background: #dcfce7;
-  color: #166534;
+  background: rgba(29, 147, 54, 0.1);
+  color: #1D9336;
 }
 .member-action-btn:hover {
   background: #1D9336;
@@ -1110,56 +1113,57 @@ html.dark .air-datepicker-cell.-selected- {
 
 /* Dark mode overrides — Option 2: Premium Space Cyberpunk Mint */
 html.dark .member-card {
-  background: #161a22 !important;
+  background: #1e1e1e !important;
   border-color: rgba(255, 255, 255, 0.08) !important;
-  backdrop-filter: blur(12px);
 }
 html.dark .member-card:hover {
-  box-shadow: 0 20px 30px -5px rgba(34, 197, 94, 0.15), 0 8px 12px -6px rgba(6, 182, 212, 0.15) !important;
-  border-color: rgba(34, 197, 94, 0.4) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2) !important;
+  border-color: rgba(76, 206, 95, 0.3) !important;
 }
 html.dark .member-card-avatar-wrapper {
-  background: rgba(34, 197, 94, 0.05) !important;
-  border-color: rgba(52, 211, 153, 0.2) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
 }
 html.dark .member-card-dot {
-  border-color: #161a22 !important;
+  border-color: #1e1e1e !important;
 }
 html.dark .member-name-link {
-  color: #a7f3d0 !important;
+  color: #dde1e7 !important;
 }
 html.dark .member-name-link:hover {
-  color: #22d3ee !important;
+  color: #4cce5f !important;
 }
 html.dark .member-card-info-cell {
-  background: rgba(34, 197, 94, 0.04) !important;
-  border-color: rgba(52, 211, 153, 0.08) !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-color: rgba(255, 255, 255, 0.05) !important;
 }
 html.dark .member-card-info-label {
-  color: #94a3b8 !important;
+  color: #a8b5a5 !important;
   opacity: 0.7 !important;
 }
 html.dark .member-card-info-value {
-  color: #f8fafc !important;
+  color: #dde1e7 !important;
 }
 html.dark .member-card-footer {
   border-top-color: rgba(255, 255, 255, 0.05) !important;
 }
 html.dark .member-action-btn {
-  background: rgba(34, 197, 94, 0.1) !important;
-  color: #a7f3d0 !important;
+  background: rgba(76, 206, 95, 0.15) !important;
+  color: #4cce5f !important;
 }
 html.dark .member-action-btn:hover {
-  background: #06b6d4 !important;
-  color: #ffffff !important;
+  background: #4cce5f !important;
+  color: #1e1e1e !important;
+  font-weight: 700;
 }
 html.dark .member-delete-btn {
-  background: rgba(239, 68, 68, 0.1) !important;
-  color: #f87171 !important;
+  background: rgba(255, 128, 128, 0.15) !important;
+  color: #ff8080 !important;
 }
 html.dark .member-delete-btn:hover {
-  background: #ef4444 !important;
-  color: #ffffff !important;
+  background: #ff8080 !important;
+  color: #1e1e1e !important;
+  font-weight: 700;
 }
 html.dark .pt-rating-badge {
   background: rgba(34, 197, 94, 0.1) !important;

@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator, RefreshControl, ScrollView,
-  StatusBar, StyleSheet, Text, TouchableOpacity, View,
+  ActivityIndicator, Alert, Modal, RefreshControl, ScrollView,
+  StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
 import {
   CalendarDays, ChevronLeft, ChevronRight,
-  Clock, Dumbbell, MapPin,
+  Clock, Dumbbell, MapPin, Star, X,
 } from 'lucide-react-native';
 import { api } from '../../services/api';
 import { formatDate } from '../../utils/data';
@@ -177,7 +177,7 @@ const calStyles = StyleSheet.create({
 });
 
 // ── Card Lịch Tập Chi Tiết ─────────────────────────────────
-function ScheduleCard({ item }) {
+function ScheduleCard({ item, onConfirm, onRate, isConfirming }) {
   const { colors } = useTheme();
   return (
     <View style={[styles.schedCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -209,7 +209,27 @@ function ScheduleCard({ item }) {
           </View>
         ) : null}
       </View>
-      <StatusBadge status={item.trang_thai} />
+      <View style={{ alignItems: 'flex-end', gap: 6 }}>
+        <StatusBadge status={item.trang_thai} />
+        {item.trang_thai === 'cho_tap' && (
+          <TouchableOpacity 
+            style={[styles.confirmBtn, { backgroundColor: colors.primary }]}
+            onPress={() => onConfirm && onConfirm(item.id)}
+            disabled={isConfirming}
+          >
+            {isConfirming ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.confirmText}>Xác nhận</Text>}
+          </TouchableOpacity>
+        )}
+        {item.trang_thai === 'da_tap' && (
+          <TouchableOpacity
+            style={[styles.rateBtn, { backgroundColor: '#fffbeb', borderColor: '#f59e0b' }]}
+            onPress={() => onRate && onRate(item)}
+          >
+            <Star color="#f59e0b" size={13} fill="#f59e0b" />
+            <Text style={styles.rateText}>{item.danh_gia_sao ? `${item.danh_gia_sao}/5` : 'Đánh giá'}</Text>
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 }
@@ -222,6 +242,11 @@ export default function MemberScheduleScreen() {
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [confirmingId, setConfirmingId] = useState(null);
+  const [ratingModal, setRatingModal] = useState(null);
+  const [ratingStars, setRatingStars] = useState(0);
+  const [ratingNote, setRatingNote] = useState('');
+  const [savingRating, setSavingRating] = useState(false);
 
   const fetchSchedules = useCallback(async () => {
     try {
@@ -234,6 +259,54 @@ export default function MemberScheduleScreen() {
       setRefreshing(false);
     }
   }, []);
+
+  const handleConfirm = async (id) => {
+    Alert.alert('Xác nhận', 'Bạn có chắc chắn muốn xác nhận đã hoàn thành buổi tập này không?', [
+      { text: 'Hủy', style: 'cancel' },
+      { text: 'Đồng ý', onPress: async () => {
+          setConfirmingId(id);
+          try {
+            const res = await api.put(`/pt/schedules/${id}/confirm`);
+            if (res.data?.success) {
+              fetchSchedules();
+            }
+          } catch (err) {
+            Alert.alert('Lỗi', err?.message || 'Không thể xác nhận buổi tập.');
+          } finally {
+            setConfirmingId(null);
+          }
+        }
+      }
+    ]);
+  };
+
+  const openRating = (item) => {
+    setRatingModal(item);
+    setRatingStars(Number(item.danh_gia_sao) || 0);
+    setRatingNote(item.danh_gia_noi_dung || '');
+  };
+
+  const submitRating = async () => {
+    if (!ratingModal || !ratingStars) return Alert.alert('Thiếu đánh giá', 'Vui lòng chọn số sao.');
+    setSavingRating(true);
+    try {
+      const tags = ratingStars === 5 ? ['Tận tâm', 'Bài tập phù hợp'] : ratingStars < 3 ? ['Cần hỗ trợ', 'Cần Admin theo dõi'] : [];
+      const res = await api.post(`/pt/schedules/${ratingModal.id}/rating`, {
+        so_sao: ratingStars,
+        tags,
+        tieu_chi: ratingStars < 3 ? { 'Chuyên môn': 3, 'Thái độ': 3, 'Đúng giờ': 3 } : {},
+        noi_dung: ratingNote,
+      });
+      if (res.data?.success) {
+        setRatingModal(null);
+        await fetchSchedules();
+      }
+    } catch (err) {
+      Alert.alert('Lỗi', err.response?.data?.message || 'Không thể gửi đánh giá.');
+    } finally {
+      setSavingRating(false);
+    }
+  };
 
   useEffect(() => { fetchSchedules(); }, [fetchSchedules]);
 
@@ -356,7 +429,13 @@ export default function MemberScheduleScreen() {
                 </View>
               ) : (
                 historyList.map((item) => (
-                  <ScheduleCard key={item.id} item={item} />
+                  <ScheduleCard 
+                    key={item.id} 
+                    item={item} 
+                    onConfirm={handleConfirm} 
+                    onRate={openRating}
+                    isConfirming={confirmingId === item.id} 
+                  />
                 ))
               )}
             </View>
@@ -364,6 +443,34 @@ export default function MemberScheduleScreen() {
         )}
         <View style={{ height: 20 }} />
       </ScrollView>
+      <Modal visible={!!ratingModal} transparent animationType="slide" onRequestClose={() => setRatingModal(null)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.ratingSheet, { backgroundColor: colors.surface }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Đánh giá PT</Text>
+              <TouchableOpacity onPress={() => setRatingModal(null)}><X color={colors.textMuted} size={22} /></TouchableOpacity>
+            </View>
+            <View style={styles.starRow}>
+              {[1, 2, 3, 4, 5].map(n => (
+                <TouchableOpacity key={n} onPress={() => setRatingStars(n)}>
+                  <Star color="#f59e0b" fill={n <= ratingStars ? '#f59e0b' : 'transparent'} size={38} />
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TextInput
+              style={[styles.ratingInput, { color: colors.text, borderColor: colors.border }]}
+              placeholder={ratingStars > 0 && ratingStars < 3 ? 'Nhập lý do để Admin hỗ trợ xử lý...' : 'Chia sẻ thêm cảm nhận...'}
+              placeholderTextColor={colors.textMuted}
+              multiline
+              value={ratingNote}
+              onChangeText={setRatingNote}
+            />
+            <TouchableOpacity style={[styles.ratingSubmit, { backgroundColor: colors.primary }]} onPress={submitRating} disabled={savingRating}>
+              {savingRating ? <ActivityIndicator color="#fff" /> : <Text style={styles.ratingSubmitText}>Gửi đánh giá</Text>}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -387,6 +494,16 @@ const styles = StyleSheet.create({
     backgroundColor: G.primaryLight, alignItems: 'center', justifyContent: 'center',
   },
   headerTitle: { fontSize: 20, fontWeight: '800', color: G.gray900 },
+  rateBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 999 },
+  rateText: { color: '#b45309', fontSize: 11, fontWeight: '800' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  ratingSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, gap: 16 },
+  modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  modalTitle: { fontSize: 18, fontWeight: '900' },
+  starRow: { flexDirection: 'row', justifyContent: 'center', gap: 10 },
+  ratingInput: { minHeight: 96, borderWidth: 1, borderRadius: 14, padding: 12, textAlignVertical: 'top' },
+  ratingSubmit: { height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  ratingSubmitText: { color: '#fff', fontWeight: '900' },
 
   scrollContent: { padding: 16, paddingBottom: 24 },
   loadingCenter: { paddingTop: 80, alignItems: 'center', gap: 12 },
@@ -454,4 +571,6 @@ const styles = StyleSheet.create({
   schedTime: { fontSize: 13, fontWeight: '700', color: G.gray900 },
   schedPt: { fontSize: 12, fontWeight: '600', color: G.primary },
   schedLocation: { fontSize: 11, color: G.gray400, flex: 1 },
+  confirmBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, marginTop: 4, minWidth: 70, alignItems: 'center' },
+  confirmText: { fontSize: 12, fontWeight: '700', color: G.white },
 });

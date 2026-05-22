@@ -23,65 +23,73 @@ window.GymApp.pages['pt-training'] = {
     ];
 
     return `
+      <style>
+        .custom-scroll::-webkit-scrollbar { height: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #e0e0e0; border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #bdbdbd; }
+        .dark .custom-scroll::-webkit-scrollbar-thumb { background: #424242; }
+        .dark .custom-scroll::-webkit-scrollbar-thumb:hover { background: #616161; }
+      </style>
       <div class="flex flex-col gap-lg">
         <!-- Stats -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-standard">
           ${stats.map(s => `
-            <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-standard shadow-sm flex flex-col gap-standard">
+            <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 p-standard shadow-sm flex flex-col gap-standard hover:-translate-y-1 hover:shadow-md transition-all duration-300">
               <div class="flex items-center justify-between">
-                <span class="text-on-surface-variant font-body-sm text-body-sm font-bold uppercase tracking-wider leading-tight" style="max-width:calc(100% - 48px)">${s.label}</span>
+                <span class="text-on-surface-variant text-body-sm font-bold uppercase tracking-wider leading-tight" style="max-width:calc(100% - 48px)">${s.label}</span>
                 <div class="icon-bg ${s.iconBg}">
                   <span class="material-symbols-outlined ${s.color} text-xl" style="font-variation-settings:'FILL' 1">${s.icon}</span>
                 </div>
               </div>
-              <span class="${s.color} font-display-lg text-display-lg font-bold">${s.value}</span>
+              <span class="${s.color} text-3xl font-bold tracking-tight">${s.value}</span>
             </div>
           `).join('')}
         </div>
 
         <!-- Filter Bar -->
-        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant p-standard shadow-sm">
+        <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 p-standard shadow-sm">
           <div class="flex flex-wrap items-center gap-standard">
-            <div class="relative flex-1 min-w-[200px]">
-              <span class="material-symbols-outlined absolute left-standard top-1/2 -translate-y-1/2 text-outline text-sm">search</span>
+            <div class="relative flex-1 min-w-[200px] group">
+              <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors text-[18px]">search</span>
               <input
                 id="pt-search"
-                class="w-full bg-surface-container-low border border-outline-variant text-on-surface pl-8 pr-standard py-compact rounded-xl focus:border-brand-primary outline-none font-body-md text-body-md transition-colors"
+                class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface pl-10 pr-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none placeholder-outline-variant/60 font-body-md text-body-md transition-all shadow-sm focus:shadow-none"
                 placeholder="Tìm theo tên PT, hội viên..."
                 type="text"
               />
             </div>
 
-            <select id="pt-filter-pt" class="bg-surface-container-low border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none font-body-md text-body-md min-w-[150px] transition-colors">
+            <select id="pt-filter-pt" class="bg-surface-container-low/30 border-2 border-outline-variant/50 text-on-surface px-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none transition-all text-body-md font-semibold min-w-[150px] cursor-pointer shadow-sm">
               <option value="">Tất cả PT</option>
               ${pts.map(p => `<option value="${p.id}">${p.ho_ten || p.name}</option>`).join('')}
             </select>
 
-            <button id="pt-reload" class="flex items-center gap-xs px-standard py-compact rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary transition-all font-body-md whitespace-nowrap">
-              <span class="material-symbols-outlined text-sm">refresh</span>
+            <button id="pt-reload" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border-2 border-outline-variant/50 bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer whitespace-nowrap">
+              <span class="material-symbols-outlined text-base">refresh</span>
               Tải lại
             </button>
 
-            <button id="btn-export-schedules" class="flex items-center gap-xs px-standard py-standard rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all group">
-              <span class="material-symbols-outlined text-sm text-[#1D9336]">download</span>
-              <span class="text-body-sm font-bold">Xuất Excel</span>
+            <button id="btn-export-schedules" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border-2 border-outline-variant/50 bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer whitespace-nowrap">
+              <span class="material-symbols-outlined text-base text-[#1D9336]">download</span>
+              Xuất Excel
             </button>
           </div>
         </div>
 
         <!-- Cards lịch đào tạo -->
-        <div id="pt-schedule-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-standard">
+        <div id="pt-schedule-container" class="w-full">
           ${this._renderCards(schedules)}
         </div>
 
         <!-- Danh sách PT -->
-        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
-          <div class="section-header px-standard py-compact border-b border-outline-variant flex items-center gap-compact">
+        <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 shadow-sm overflow-hidden">
+          <div class="section-header px-standard py-compact border-b border-outline-variant/50 flex items-center gap-compact bg-surface-container-low/20">
             <div class="icon-bg icon-bg-green" style="width:32px;height:32px;border-radius:8px">
               <span class="material-symbols-outlined text-brand-primary text-base" style="font-variation-settings:'FILL' 1">sports_gymnastics</span>
             </div>
-            <h3 class="font-display-xl text-display-xl font-bold text-on-surface">Huấn luyện viên</h3>
-            <span class="ml-auto bg-brand-primary text-white px-compact py-xs rounded-full text-label-xs font-bold">${pts.length} PT</span>
+            <h3 class="font-bold text-on-surface text-body-lg">Huấn luyện viên</h3>
+            <span class="ml-auto bg-brand-primary text-white px-2.5 py-0.5 rounded-full text-body-sm font-bold">${pts.length} PT</span>
           </div>
           <div class="p-standard grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-standard">
             ${pts.length === 0
@@ -89,24 +97,28 @@ window.GymApp.pages['pt-training'] = {
                    <span class="material-symbols-outlined text-4xl text-outline block mb-standard">person_off</span>
                    Chưa có huấn luyện viên nào
                  </div>`
-        : pts.map(pt => `
-                <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-standard shadow-sm flex flex-col items-center gap-standard">
+        : pts.map(pt => {
+          const rating = Number(pt.danh_gia || pt.rating || pt.pt_rating || 0);
+          const ratingCount = Number(pt.so_luot_danh_gia || pt.pt_rating_count || 0);
+          return `
+                <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 p-standard shadow-sm flex flex-col items-center gap-standard hover:-translate-y-1 hover:shadow-md transition-all duration-300">
                   ${window.GymApp.avatarImg(pt.avatar_url, pt.ho_ten, 'lg')}
                   <div class="text-center">
                     <p class="font-bold text-on-surface text-body-md">${pt.ho_ten}</p>
-                    <p class="text-on-surface-variant text-body-sm">${pt.ma_ho_so}</p>
+                    <p class="text-on-surface-variant text-body-sm font-semibold">${pt.ma_ho_so}</p>
                   </div>
                   <div class="flex items-center gap-xs">
                     <span class="material-symbols-outlined text-sm text-[#f59e0b]" style="font-variation-settings:'FILL' 1">star</span>
-                    <span class="font-bold text-on-surface text-body-sm">4.8</span>
-                    <span class="text-on-surface-variant text-body-sm">(${pt.so_hoc_vien || 0})</span>
+                    <span class="font-bold text-on-surface text-body-sm">${rating ? rating.toFixed(1) : '—'}</span>
+                    <span class="text-on-surface-variant text-body-sm font-semibold">(${ratingCount})</span>
                   </div>
-                  <div class="flex items-center gap-xs text-on-surface-variant text-body-sm">
+                  <div class="flex items-center gap-xs text-on-surface-variant text-body-sm font-semibold">
                     <span class="material-symbols-outlined text-sm">work</span>
                     ${pt.tong_buoi_da_day || 0} buổi
                   </div>
                 </div>
-              `).join('')
+              `;
+        }).join('')
       }
           </div>
         </div>
@@ -115,7 +127,7 @@ window.GymApp.pages['pt-training'] = {
 
       <!-- Modal Sửa lịch -->
       <div id="modal-edit-schedule" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-xl w-full max-w-md mx-loose p-standard flex flex-col gap-lg">
+        <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 shadow-xl w-full max-w-md mx-loose p-standard flex flex-col gap-lg">
           <div class="flex items-center justify-between">
             <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface">Sửa lịch tập</h3>
             <button id="close-edit-schedule" class="material-symbols-outlined text-on-surface-variant hover:text-error transition-colors">close</button>
@@ -131,7 +143,7 @@ window.GymApp.pages['pt-training'] = {
               <div id="edit-schedule-time-display" class="text-body-sm mb-compact font-bold" style="min-height:18px;color:#6e7a6b;">Chưa chọn giờ</div>
               <div style="border:1px solid #becab9;border-radius:12px;overflow:hidden;max-height:180px;overflow-y:auto;" class="bg-surface-container-low">
                 <div class="time-slot-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:4px;padding:8px;">
-                  ${timeSlots.map(t => `<button class="edit-time-slot-btn bg-surface-container-lowest text-on-surface border border-outline-variant hover:bg-surface-container transition-all" data-time="${t}" style="padding:6px 2px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;text-align:center;">${t}</button>`).join('')}
+                  ${timeSlots.map(t => `<button class="edit-time-slot-btn bg-surface-container-lowest text-on-surface border border-outline-variant hover:bg-surface-container transition-all text-body-sm" data-time="${t}" style="padding:6px 2px;border-radius:8px;font-weight:600;cursor:pointer;text-align:center;">${t}</button>`).join('')}
                 </div>
               </div>
               <input type="hidden" id="edit-schedule-start" />
@@ -157,7 +169,7 @@ window.GymApp.pages['pt-training'] = {
     const list = Array.isArray(schedules) ? schedules : [];
     if (list.length === 0) {
       return `
-        <div class="md:col-span-3 bg-surface-container-lowest rounded-2xl border border-outline-variant p-standard text-center">
+        <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 p-standard text-center">
           <div class="icon-bg icon-bg-orange mx-auto mb-standard" style="width:56px;height:56px;border-radius:16px">
             <span class="material-symbols-outlined text-[#e65100] text-2xl">event_busy</span>
           </div>
@@ -166,70 +178,114 @@ window.GymApp.pages['pt-training'] = {
         </div>
       `;
     }
-    return list.map(s => `
-      <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden flex flex-col">
-        <!-- Card header -->
-        <div class="px-standard py-compact border-b border-outline-variant flex items-center justify-between section-header">
-          <span class="text-on-surface-variant text-body-sm font-bold">#${s.id}</span>
-          ${window.GymApp.statusBadge(s.trang_thai || s.status)}
-        </div>
 
-        <!-- Card body -->
-        <div class="p-standard flex flex-col gap-standard flex-1">
-          <div class="flex items-center gap-compact">
-            <div class="icon-bg icon-bg-green" style="width:32px;height:32px;border-radius:8px">
-              <span class="material-symbols-outlined text-brand-primary text-sm" style="font-variation-settings:'FILL' 1">sports_gymnastics</span>
-            </div>
-            <div>
-              <p class="text-on-surface-variant text-body-sm">Huấn luyện viên</p>
-              <p class="font-bold text-on-surface text-body-md">${s.ten_pt || s.ptName || '—'}</p>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-compact">
-            <div class="icon-bg icon-bg-blue" style="width:32px;height:32px;border-radius:8px">
-              <span class="material-symbols-outlined text-secondary text-sm" style="font-variation-settings:'FILL' 1">person</span>
-            </div>
-            <div>
-              <p class="text-on-surface-variant text-body-sm">Hội viên</p>
-              <p class="font-bold text-on-surface text-body-md">${s.ten_hoi_vien || s.memberName || '—'}</p>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-compact">
-            <div class="icon-bg icon-bg-orange" style="width:32px;height:32px;border-radius:8px">
-              <span class="material-symbols-outlined text-[#e65100] text-sm" style="font-variation-settings:'FILL' 1">schedule</span>
-            </div>
-            <div>
-              <p class="text-on-surface-variant text-body-sm">${window.GymApp.formatDate(s.ngay_tap || s.date)}</p>
-              <p class="font-bold text-on-surface text-body-md">${s.gio_bat_dau || s.startTime || '—'} — ${s.gio_ket_thuc || s.endTime || '—'}</p>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-standard">
-            <span class="bg-surface-container px-compact py-xs rounded-full text-body-sm text-on-surface-variant font-bold">${window.GymApp.formatEnumLabel(s.loai_buoi || s.type || 'ca_nhan')}</span>
-            ${s.ghi_chu || s.notes ? `<span class="text-on-surface-variant text-body-sm truncate">${s.ghi_chu || s.notes}</span>` : ''}
-          </div>
-        </div>
-
-        <!-- Card footer -->
-        <div class="px-standard py-compact border-t border-outline-variant flex items-center justify-end gap-atom bg-surface-container-low">
-          ${s.trang_thai === 'cho_tap' ? `
-            <button class="btn-edit-schedule material-symbols-outlined text-outline hover:text-brand-primary text-xl p-atom rounded-lg hover:bg-surface-container transition-colors"
-              data-id="${s.id}" data-ngay="${s.ngay_tap || ''}" data-start="${s.gio_bat_dau || ''}" data-end="${s.gio_ket_thuc || ''}" data-ghi-chu="${(s.ghi_chu || '').replace(/"/g, '&quot;')}"
-              title="Sửa lịch">edit</button>
-            <button class="btn-cancel-schedule material-symbols-outlined text-outline hover:text-error text-xl p-atom rounded-lg hover:bg-error-container transition-colors"
-              data-id="${s.id}" title="Hủy lịch">event_busy</button>
-          ` : ''}
-          ${s.trang_thai === 'da_tap' && s.ghi_chu === 'auto_cron'
-        ? `<button class="btn-hoan-tac flex items-center gap-xs px-compact py-xs rounded-lg bg-orange-50 border border-orange-200 text-[#e65100] hover:bg-orange-100 transition-all text-body-sm font-bold" data-id="${s.id}" title="Hoàn tác xác nhận (buổi do hệ thống tự xác nhận)">
-                 <span class="material-symbols-outlined text-sm">undo</span>Hoàn tác
-               </button>`
-        : ''
+    // Sort by date (descending) and time (ascending)
+    const sortedList = [...list].sort((a, b) => {
+      if (a.ngay_tap !== b.ngay_tap) {
+        return new Date(b.ngay_tap || 0) - new Date(a.ngay_tap || 0);
       }
+      return (a.gio_bat_dau || '').localeCompare(b.gio_bat_dau || '');
+    });
+
+    // Group by date
+    const grouped = {};
+    sortedList.forEach(s => {
+      const d = s.ngay_tap || 'Chưa xác định';
+      if (!grouped[d]) grouped[d] = [];
+      grouped[d].push(s);
+    });
+
+    const groupsHtml = Object.entries(grouped).map(([dateStr, items]) => {
+      const dayObj = dateStr !== 'Chưa xác định' ? new Date(dateStr) : null;
+      const weekday = dayObj ? dayObj.toLocaleDateString('vi-VN', { weekday: 'long' }) : '';
+      const formattedDate = dayObj ? dayObj.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : dateStr;
+
+      return `
+      <div class="mb-5">
+        <div class="flex items-center gap-2 mb-2 pl-1">
+          <span class="material-symbols-outlined text-brand-primary text-xl" style="font-variation-settings: 'FILL' 1;">calendar_month</span>
+          <h3 class="font-display-sm text-on-surface font-bold capitalize tracking-tight">${weekday}, ${formattedDate}</h3>
+          <span class="bg-brand-primary/10 text-brand-primary text-[10px] px-2 py-0.5 rounded-full font-bold ml-1">${items.length} buổi</span>
+        </div>
+
+        <div class="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory custom-scroll" style="scroll-behavior: smooth; margin: 0 -4px; padding: 4px; padding-bottom: 12px;">
+          ${items.map(s => {
+            const hasActions = (s.trang_thai === 'cho_tap' || s.status === 'cho_tap') || ((s.trang_thai === 'da_tap' || s.status === 'da_tap') && (s.ghi_chu === 'auto_cron' || s.notes === 'auto_cron'));
+            return `
+            <div class="snap-start shrink-0 group relative rounded-2xl overflow-hidden flex flex-col gap-3 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 bg-surface-container-lowest border border-outline-variant" style="width: calc(33.333% - 16px); min-width: 280px;">
+              <!-- Accent bar top -->
+              <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#1D9336,#4ade80);border-radius:3px 3px 0 0;"></div>
+
+              <!-- Card Header: Time & Status -->
+              <div class="flex items-start justify-between gap-2 pt-4 px-4">
+                <div class="flex flex-col min-w-0">
+                  <span class="text-[10px] uppercase font-bold tracking-widest text-on-surface-variant mb-0.5">Khung giờ</span>
+                  <div class="flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-brand-primary text-[18px] shrink-0">schedule</span>
+                    <span class="font-bold text-on-surface text-body-md truncate whitespace-nowrap">${s.gio_bat_dau || '—'} - ${s.gio_ket_thuc || '—'}</span>
+                  </div>
+                </div>
+                <div class="shrink-0 ml-1">${window.GymApp.statusBadge(s.trang_thai || s.status)}</div>
+              </div>
+
+              <!-- Info (Hội viên & PT xếp chồng) -->
+              <div class="flex flex-col gap-2.5 px-4">
+                <!-- Hội viên -->
+                <div class="flex items-center gap-3">
+                  <div class="relative flex-shrink-0">
+                    ${window.GymApp.avatarImg(s.avatar_hoi_vien, s.ten_hoi_vien || s.memberName, 'sm')}
+                  </div>
+                  <div class="flex flex-col min-w-0 justify-center">
+                    <span class="text-[10px] uppercase font-bold text-on-surface-variant leading-none mb-1">Hội viên</span>
+                    <span class="font-bold text-on-surface text-body-sm truncate leading-none">${s.ten_hoi_vien || s.memberName || 'Không rõ'}</span>
+                  </div>
+                </div>
+
+                <!-- PT -->
+                <div class="flex items-center gap-3">
+                  <div class="relative flex-shrink-0">
+                    ${window.GymApp.avatarImg(s.avatar_pt, s.ten_pt || s.ptName, 'sm')}
+                  </div>
+                  <div class="flex flex-col min-w-0 justify-center">
+                    <span class="text-[10px] uppercase font-bold text-on-surface-variant leading-none mb-1">Huấn luyện viên</span>
+                    <span class="font-bold text-on-surface text-body-sm truncate leading-none">${s.ten_pt || s.ptName || '—'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Notes Area -->
+              <div class="px-4 mt-1 mb-3 flex items-center justify-between gap-2">
+                <span class="bg-surface-container-low px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider font-bold border border-outline-variant/30 text-brand-primary shrink-0">${window.GymApp.formatEnumLabel(s.loai_buoi || s.type || 'ca_nhan')}</span>
+                ${s.ghi_chu || s.notes ? `<span class="text-on-surface-variant text-body-sm truncate" title="${s.ghi_chu || s.notes}">${s.ghi_chu || s.notes}</span>` : ''}
+              </div>
+
+              <!-- Actions Footer -->
+              ${hasActions ? `
+              <div class="mt-auto px-4 pb-3 flex flex-wrap items-center justify-end gap-2 border-t border-outline-variant/30 pt-3 bg-surface-container-low/10">
+                ${s.trang_thai === 'cho_tap' || s.status === 'cho_tap' ? `
+                  <button class="btn-edit-schedule flex items-center justify-center text-outline hover:text-brand-primary p-1.5 rounded-md hover:bg-brand-primary/10 transition-colors"
+                    data-id="${s.id}" data-ngay="${s.ngay_tap || ''}" data-start="${s.gio_bat_dau || ''}" data-end="${s.gio_ket_thuc || ''}" data-ghi-chu="${(s.ghi_chu || '').replace(/"/g, '&quot;')}"
+                    title="Sửa lịch"><span class="material-symbols-outlined text-[18px]">edit</span></button>
+                  <button class="btn-cancel-schedule flex items-center justify-center text-outline hover:text-error p-1.5 rounded-md hover:bg-error/10 transition-colors"
+                    data-id="${s.id}" title="Hủy lịch"><span class="material-symbols-outlined text-[18px]">event_busy</span></button>
+                ` : ''}
+                ${(s.trang_thai === 'da_tap' || s.status === 'da_tap') && (s.ghi_chu === 'auto_cron' || s.notes === 'auto_cron')
+              ? `<button class="btn-hoan-tac flex items-center gap-1 px-2 py-1 rounded-md bg-orange-50 border border-orange-200 text-[#e65100] hover:bg-orange-100 transition-all text-xs font-bold" data-id="${s.id}" title="Hoàn tác xác nhận">
+                       <span class="material-symbols-outlined text-[16px]">undo</span>Hoàn tác
+                     </button>`
+              : ''
+            }
+              </div>
+              ` : ''}
+            </div>
+            `;
+          }).join('')}
         </div>
       </div>
-    `).join('');
+      `;
+    }).join('');
+
+    return groupsHtml;
   },
 
   _applyFilter: function () {
@@ -320,7 +376,7 @@ window.GymApp.pages['pt-training'] = {
       const currStart = startVal.substring(0, 5);
       const timeDisplay = document.getElementById('edit-schedule-time-display');
       const modalEl = document.getElementById('modal-edit-schedule');
-      
+
       // Reset button styles
       modalEl.querySelectorAll('.edit-time-slot-btn').forEach(b => {
         b.style.transform = 'scale(1)';

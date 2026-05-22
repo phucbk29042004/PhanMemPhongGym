@@ -26,182 +26,182 @@ window.GymApp.pages['member-add'] = {
     return `
       ${provinceDatalist}
       ${specialtyDatalist}
-      <div class="flex flex-col gap-standard w-full max-w-none mx-auto animate-in fade-in duration-500">
-
-        <div class="bg-surface-container-lowest rounded-3xl border border-outline-variant shadow-lg flex flex-col">
+      <div class="flex flex-col gap-standard w-full max-w-none mx-auto animate-fadeIn">
+ 
+        <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 shadow-sm flex flex-col">
           
           <!-- Unified Header & Tab Navigation -->
-          <div class="bg-surface-container-low/40 px-standard py-compact border-b border-outline-variant flex flex-wrap items-center justify-between gap-compact" style="border-top-left-radius: 24px; border-top-right-radius: 24px;">
+          <div class="bg-surface-container-low/20 px-standard py-compact border-b-2 border-outline-variant/50 flex flex-wrap items-center justify-between gap-compact" style="border-top-left-radius: 14px; border-top-right-radius: 14px;">
             <div class="flex items-center gap-standard">
-              <button class="flex items-center justify-center w-10 h-10 rounded-2xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-surface-container-lowest transition-all shadow-sm bg-surface-container-lowest" data-page="members-list">
-                <span class="material-symbols-outlined text-xl">arrow_back</span>
+              <button class="flex items-center justify-center w-8 h-8 rounded-xl border-2 border-outline-variant/50 text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-surface-container-low transition-all bg-white dark:bg-[#1e1e1e]" data-page="members-list">
+                <span class="material-symbols-outlined text-lg">arrow_back</span>
               </button>
-              <div class="flex gap-xs p-1 bg-surface-container-low rounded-2xl border border-outline-variant/30">
-                <button id="tab-register" class="tab-btn px-loose py-compact rounded-xl font-bold text-body-md transition-all bg-surface-container-lowest text-brand-primary shadow-sm flex items-center gap-xs">
-                  <span class="material-symbols-outlined text-lg">person_add</span>
+              <div class="flex gap-xs p-1 bg-surface-container-low/40 rounded-full border border-outline-variant/30">
+                <button id="tab-register" class="tab-btn px-4 py-1.5 rounded-full font-bold text-body-md transition-all bg-brand-primary text-white shadow-sm flex items-center gap-xs">
+                  <span class="material-symbols-outlined text-sm">person_add</span>
                   Thông tin hồ sơ
                 </button>
-                <button id="tab-package" class="tab-btn px-loose py-compact rounded-xl font-bold text-body-md transition-all text-on-surface-variant hover:text-brand-primary flex items-center gap-xs">
-                  <span class="material-symbols-outlined text-lg">card_membership</span>
+                <button id="tab-package" class="tab-btn px-4 py-1.5 rounded-full font-bold text-body-md transition-all text-on-surface-variant hover:text-brand-primary hover:bg-brand-primary/5 flex items-center gap-xs">
+                  <span class="material-symbols-outlined text-sm">card_membership</span>
                   Gói tập (Hội viên)
                 </button>
               </div>
             </div>
-
+ 
           </div>
-
+ 
           <!-- Content Areas -->
-          <div id="form-register" class="p-compact">
-
+          <div id="form-register" class="p-standard">
+ 
             <!-- Avatar + Mã/Tên/Loại -->
-            <div class="flex items-start gap-compact mb-2">
+            <div class="flex items-start gap-compact mb-4">
               <div class="flex flex-col items-center gap-xs flex-shrink-0">
                 <div class="relative">
-                  <div id="avatar-area-reg" class="w-20 h-20 md:w-24 md:h-24 bg-surface-container-low border-2 border-dashed border-outline-variant rounded-2xl flex items-center justify-center cursor-pointer overflow-hidden transition-all hover:border-brand-primary">
+                  <div id="avatar-area-reg" class="w-20 h-20 md:w-24 md:h-24 bg-surface-container-low/30 border-2 border-dashed border-outline-variant rounded-2xl flex items-center justify-center cursor-pointer overflow-hidden transition-all hover:border-brand-primary">
                     <span class="material-symbols-outlined text-outline text-4xl" id="avatar-placeholder-reg">person</span>
                     <img id="avatar-preview-reg" class="w-full h-full object-cover absolute inset-0 hidden" alt="preview" />
                   </div>
-                  <button type="button" id="avatar-btn-reg" class="absolute -bottom-2 -right-2 w-8 h-8 btn-primary rounded-full flex items-center justify-center shadow-md z-10">
-                    <span class="material-symbols-outlined text-white text-sm">photo_camera</span>
+                  <button type="button" id="avatar-btn-reg" class="absolute -bottom-1 -right-1 w-7 h-7 bg-brand-primary text-white rounded-full flex items-center justify-center shadow-md z-10 hover:opacity-90 active:scale-95 transition-all">
+                    <span class="material-symbols-outlined text-white text-xs">photo_camera</span>
                   </button>
                   <input type="file" id="avatar-input-reg" class="hidden" accept="image/jpeg,image/png,image/webp" />
                 </div>
               </div>
-
-              <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
+ 
+              <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-standard">
                 ${this._field('Mã số hồ sơ', 'reg-ma-ho-so', 'text', 'Tự động...', true)}
                 ${this._field('Họ và tên *', 'reg-ho-ten', 'text', 'Nhập họ và tên đầy đủ')}
                 ${this._select('Loại hồ sơ *', 'reg-loai-ho-so', [
-      { v: 'hoi_vien', t: 'Hội viên' },
-      { v: 'pt', t: 'Huấn luyện viên (PT)' },
-      { v: 'nhan_vien', t: 'Nhân viên' }
-    ])}
+                  { v: 'hoi_vien', t: 'Hội viên' },
+                  { v: 'pt', t: 'Huấn luyện viên (PT)' },
+                  { v: 'nhan_vien', t: 'Nhân viên' }
+                ])}
               </div>
             </div>
-
+ 
             <!-- Trường đặc thù theo loại -->
-            <div id="extra-fields" class="mb-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 border-y border-outline-variant/30 py-2 hidden"></div>
-
+            <div id="extra-fields" class="mb-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-standard border-y border-outline-variant/30 py-compact hidden"></div>
+ 
             <!-- Thông tin cá nhân -->
-            <div class="mb-3">
-              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="mb-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-standard">
                 ${this._field('Ngày sinh', 'reg-ngay-sinh', 'date')}
                 ${this._select('Giới tính', 'reg-gioi-tinh', [{ v: 'nam', t: 'Nam' }, { v: 'nu', t: 'Nữ' }, { v: 'khac', t: 'Khác' }])}
                 <!-- SĐT với inline error -->
                 <div>
-                  <label class="block text-body-sm text-on-surface-variant font-bold mb-1">Số điện thoại <span style="color:#ba1a1a;">*</span></label>
+                  <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">Số điện thoại <span style="color:#ba1a1a;">*</span></label>
                   <input id="reg-so-dien-thoai" type="tel" placeholder="0912345678" maxlength="10"
-                    class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none transition-colors" />
-                  <p id="err-sdt" class="hidden text-error text-[11px] mt-xs font-medium"></p>
+                    class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all" />
+                  <p id="err-sdt" class="hidden text-error text-body-sm mt-xs font-medium"></p>
                 </div>
                 <!-- Email với inline error -->
                 <div>
-                  <label class="block text-body-sm text-on-surface-variant font-bold mb-1">Email</label>
+                  <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">Email</label>
                   <input id="reg-email" type="email" placeholder="example@email.com"
-                    class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none transition-colors" />
-                  <p id="err-email" class="hidden text-error text-[11px] mt-xs font-medium"></p>
+                    class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all" />
+                  <p id="err-email" class="hidden text-error text-body-sm mt-xs font-medium"></p>
                 </div>
                 <!-- CCCD với inline error -->
                 <div>
-                  <label class="block text-body-sm text-on-surface-variant font-bold mb-1">CCCD / CMND</label>
+                  <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">CCCD / CMND</label>
                   <input id="reg-cccd" type="text" placeholder="012345678901" maxlength="12"
-                    class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none transition-colors" />
-                  <p id="err-cccd" class="hidden text-error text-[11px] mt-xs font-medium"></p>
+                    class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all" />
+                  <p id="err-cccd" class="hidden text-error text-body-sm mt-xs font-medium"></p>
                 </div>
                 ${this._field('Nơi sinh', 'reg-noi-sinh', 'text', 'VD: Hà Nội')}
                 <!-- Quê quán với datalist 63 tỉnh -->
                 <div>
-                  <label class="block text-body-sm text-on-surface-variant font-bold mb-1">Quê quán</label>
+                  <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">Quê quán</label>
                   <input id="reg-que-quan" type="text" list="dl-que-quan" placeholder="Chọn hoặc nhập tỉnh/thành..."
-                    class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none transition-colors" />
+                    class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all" />
                 </div>
-                ${this._select('Chi nhánh', 'reg-chi-nhanh', [{ v: 'CN1', t: 'Chi nhánh 1' }, { v: 'CN2', t: 'Chi nhánh 2' }])}
+                ${this._select('Chi nhánh', 'reg-chi-nhanh', [])}
               </div>
             </div>
-
+ 
             <!-- Địa chỉ -->
-            <div class="mb-3">
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="mb-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-standard">
                 ${this._select('Tỉnh / Thành phố', 'reg-tinh-thanh', [])}
                 ${this._select('Quận / Huyện', 'reg-quan-huyen', [])}
                 ${this._datalistInput('Phường / Xã', 'reg-phuong-xa', 'dl-phuong-xa', 'Chọn hoặc nhập phường/xã...')}
                 ${this._field('Số nhà / Đường', 'reg-dia-chi', 'text', '123 Đường...')}
               </div>
             </div>
-
+ 
             <!-- Tạo tài khoản đăng nhập -->
-            <div class="mb-3 border border-outline-variant rounded-xl p-3 bg-surface-container">
+            <div class="mb-4 border-2 border-outline-variant/50 rounded-xl p-4 bg-surface-container-low/30">
               <label class="flex items-center gap-compact cursor-pointer select-none mb-0" id="label-create-account">
-                <input type="checkbox" id="chk-create-account" class="w-4 h-4 rounded accent-brand-primary cursor-pointer" />
+                <input type="checkbox" id="chk-create-account" class="w-4 h-4 rounded border-2 border-outline-variant/50 accent-brand-primary cursor-pointer" />
                 <span class="material-symbols-outlined text-brand-primary text-base" style="font-variation-settings:'FILL' 1">manage_accounts</span>
                 <span class="font-bold text-on-surface text-body-md">Tạo tài khoản đăng nhập ngay</span>
               </label>
-              <div id="account-fields" class="hidden mt-compact grid grid-cols-1 md:grid-cols-2 gap-compact">
+              <div id="account-fields" class="hidden mt-compact grid grid-cols-1 md:grid-cols-2 gap-standard">
                 ${this._field('Tên đăng nhập *', 'reg-ten-dang-nhap', 'text', 'Số điện thoại hoặc tên đăng nhập')}
                 ${this._field('Mật khẩu *', 'reg-mat-khau', 'password', 'Ít nhất 6 ký tự')}
               </div>
             </div>
-
-            <div class="flex justify-end gap-compact pt-standard border-t border-outline-variant">
-              <button type="button" class="px-loose py-compact rounded-xl border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-colors font-bold" data-page="members-list">Hủy</button>
-              <button type="button" id="btn-save-member" class="btn-primary text-white px-loose py-compact rounded-xl font-bold flex items-center gap-compact">
+ 
+            <div class="flex justify-end gap-compact pt-standard border-t border-outline-variant/50">
+              <button type="button" class="px-5 py-2.5 rounded-xl border-2 border-outline-variant/50 bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:bg-surface-container-low active:scale-95 transition-all font-bold text-body-md" data-page="members-list">Hủy</button>
+              <button type="button" id="btn-save-member" class="px-5 py-2.5 rounded-xl bg-brand-primary text-white hover:shadow-lg hover:shadow-brand-primary/20 active:scale-95 transition-all font-bold text-body-md flex items-center justify-center gap-compact">
                 <span class="material-symbols-outlined text-sm">save</span>
                 Lưu hồ sơ
               </button>
             </div>
           </div> <!-- End form-register -->
-
+ 
           <div id="form-package" class="hidden p-standard">
             
-            <div id="selected-member-info" class="mb-compact p-standard bg-brand-primary/10 border border-brand-primary/20 rounded-xl hidden">
+            <div id="selected-member-info" class="mb-standard p-standard bg-brand-primary/10 border border-brand-primary/20 rounded-xl hidden">
               <div class="flex items-center gap-standard">
-                <div class="w-12 h-12 rounded-full bg-brand-primary text-white flex items-center justify-center font-bold text-xl" id="selected-member-avatar-text">?</div>
+                <div class="w-10 h-10 rounded-full bg-brand-primary text-white flex items-center justify-center font-bold text-body-md" id="selected-member-avatar-text">?</div>
                 <div>
                   <p class="text-body-sm text-brand-primary font-bold">Đang đăng ký gói cho hội viên:</p>
-                  <h4 class="text-on-surface font-bold text-display-xs" id="selected-member-name-display">Chưa chọn hội viên</h4>
+                  <h4 class="text-on-surface font-bold text-body-md" id="selected-member-name-display">Chưa chọn hội viên</h4>
                 </div>
               </div>
             </div>
-
+ 
             <!-- Chọn gói tập -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-standard mb-4">
               <div>
-                <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Chọn gói tập</label>
-                <select id="pkg-select" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none transition-colors">
+                <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">Chọn gói tập</label>
+                <select id="pkg-select" class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all cursor-pointer">
                   <option value="">— Chọn gói tập —</option>
                   ${(window.GymApp.data.packages || []).map(p => `<option value="${p.id}" data-gia="${p.gia}" data-thang="${p.so_thang || 0}" data-them="${p.so_ngay_them || 0}">${p.ten_goi} — ${window.GymApp.formatCurrency(p.gia)}</option>`).join('')}
                 </select>
               </div>
               ${this._field('Giá gói tập (VNĐ)', 'pkg-price', 'text', '0', true)}
             </div>
-
+ 
             <!-- Thời hạn -->
-            <div class="mb-5">
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="mb-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-standard">
                 ${this._field('Từ ngày', 'pkg-from', 'date')}
                 ${this._field('Đến ngày (tự tính)', 'pkg-to', 'date', '', true)}
                 ${this._field('Mã giảm giá', 'pkg-coupon', 'text', 'GYM2026')}
               </div>
             </div>
-
+ 
             <!-- Thanh toán -->
-            <div class="mb-5">
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="mb-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-standard">
                 ${this._field('Tổng tiền', 'pkg-total', 'text', '0', true)}
                 <div>
-                  <label class="block text-body-sm text-on-surface-variant font-bold mb-1">Tiền khách trả <span style="color:#ba1a1a;">*</span></label>
+                  <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">Tiền khách trả <span style="color:#ba1a1a;">*</span></label>
                   <input id="pkg-paid" type="text" inputmode="numeric" placeholder="VD: 1.500.000"
-                    class="w-full border border-outline-variant text-on-surface px-standard py-compact rounded-xl outline-none transition-colors appearance-none bg-surface-container-lowest focus:border-brand-primary" />
-                  <p id="err-pkg-paid" class="hidden text-error text-[11px] mt-xs font-medium"></p>
+                    class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all" />
+                  <p id="err-pkg-paid" class="hidden text-error text-body-sm mt-xs font-medium"></p>
                 </div>
                 ${this._field('Ngày thu', 'pkg-pay-date', 'date')}
                 ${this._select('Phương thức', 'pkg-method', [{ v: 'tien_mat', t: 'Tiền mặt' }, { v: 'chuyen_khoan', t: 'Chuyển khoản' }])}
               </div>
             </div>
-
-            <div class="flex justify-end gap-compact pt-standard border-t border-outline-variant">
-              <button type="button" class="px-loose py-compact rounded-xl border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-colors font-bold" data-page="members-list">Hủy</button>
-              <button type="button" id="btn-save-package" class="btn-primary text-white px-loose py-compact rounded-xl font-bold flex items-center gap-compact">
+ 
+            <div class="flex justify-end gap-compact pt-standard border-t border-outline-variant/50">
+              <button type="button" class="px-5 py-2.5 rounded-xl border-2 border-outline-variant/50 bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:bg-surface-container-low active:scale-95 transition-all font-bold text-body-md" data-page="members-list">Hủy</button>
+              <button type="button" id="btn-save-package" class="px-5 py-2.5 rounded-xl bg-brand-primary text-white hover:shadow-lg hover:shadow-brand-primary/20 active:scale-95 transition-all font-bold text-body-md flex items-center justify-center gap-compact">
                 <span class="material-symbols-outlined text-sm">save</span>
                 Lưu đăng ký gói
               </button>
@@ -210,42 +210,42 @@ window.GymApp.pages['member-add'] = {
       </div>
     `;
   },
-
+ 
   _field: function (label, id, type, placeholder = '', readonly = false) {
     const formattedLabel = label.replace('*', ' <span style="color:#ba1a1a;margin-left:2px;font-weight:700;">*</span>');
-    const base = 'w-full border border-outline-variant text-on-surface px-standard py-compact rounded-xl outline-none transition-colors appearance-none';
+    const base = 'w-full border border-outline-variant/50 text-on-surface px-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all duration-200';
     if (readonly) {
       return `<div>
-        <label class="block text-body-sm text-on-surface-variant font-bold mb-1">${formattedLabel}</label>
+        <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">${formattedLabel}</label>
         <input id="${id}" type="${type}" placeholder="${placeholder}" readonly
-          class="${base} bg-surface-container text-on-surface-variant cursor-not-allowed" />
+          class="${base} bg-surface-container text-on-surface-variant cursor-not-allowed opacity-75" />
       </div>`;
     }
     return `<div>
-      <label class="block text-body-sm text-on-surface-variant font-bold mb-1">${formattedLabel}</label>
+      <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">${formattedLabel}</label>
       <input id="${id}" type="${type}" placeholder="${placeholder}"
-        class="${base} bg-surface-container-lowest focus:border-brand-primary" />
+        class="${base} bg-surface-container-low/30" />
     </div>`;
   },
-
+ 
   _select: function (label, id, options) {
     const formattedLabel = label.replace('*', ' <span style="color:#ba1a1a;margin-left:2px;font-weight:700;">*</span>');
     return `<div>
-      <label class="block text-body-sm text-on-surface-variant font-bold mb-1">${formattedLabel}</label>
-      <select id="${id}" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none transition-colors">
+      <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">${formattedLabel}</label>
+      <select id="${id}" class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all cursor-pointer">
         <option value="">— ${label.replace('*', '').trim()} —</option>
         ${options.map(o => `<option value="${o.v}">${o.t}</option>`).join('')}
       </select>
     </div>`;
   },
-
+ 
   _datalistInput: function (label, id, listId, placeholder = '') {
     const formattedLabel = label.replace('*', ' <span style="color:#ba1a1a;margin-left:2px;font-weight:700;">*</span>');
-    const base = 'w-full border border-outline-variant text-on-surface px-standard py-compact rounded-xl outline-none transition-colors appearance-none';
+    const base = 'w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all duration-200';
     return `<div>
-      <label class="block text-body-sm text-on-surface-variant font-bold mb-1">${formattedLabel}</label>
+      <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">${formattedLabel}</label>
       <input id="${id}" type="text" list="${listId}" placeholder="${placeholder}"
-        class="${base} bg-surface-container-lowest focus:border-brand-primary" autocomplete="off" />
+        class="${base}" autocomplete="off" />
       <datalist id="${listId}"></datalist>
     </div>`;
   },
@@ -320,16 +320,24 @@ window.GymApp.pages['member-add'] = {
     const typeSelect = document.getElementById('reg-loai-ho-so');
     const extraFields = document.getElementById('extra-fields');
 
-    // 1. Tải dữ liệu địa chính
+    // 1. Tải dữ liệu địa chính & chi nhánh
     try {
-      const [pRes, dRes, wRes, hcmcRes] = await Promise.all([
+      const [pRes, dRes, wRes, hcmcRes, branchesRes] = await Promise.all([
         fetch('assets/data/provinces.json').then(r => r.json()),
         fetch('assets/data/districts.json').then(r => r.json()),
         fetch('assets/data/wards.json').then(r => r.json()),
-        fetch('assets/data/hanh_chinh_tphcm.json').then(r => r.json())
+        fetch('assets/data/hanh_chinh_tphcm.json').then(r => r.json()),
+        window.GymApp.api.get('/branches').catch(() => ({ success: false, data: [] }))
       ]);
       self._provinces = pRes; self._districts = dRes; self._wards = wRes;
       self._hcmcWards = hcmcRes;
+
+      const branches = (branchesRes && branchesRes.success) ? (branchesRes.data || []) : [];
+      const branchSelect = document.getElementById('reg-chi-nhanh');
+      if (branchSelect) {
+        branchSelect.innerHTML = '<option value="">— Chi nhánh —</option>' +
+          branches.map(b => `<option value="${b.ten}">${b.ten}</option>`).join('');
+      }
 
       const pSelect = document.getElementById('reg-tinh-thanh');
       pSelect.innerHTML = '<option value="">— Chọn Tỉnh/Thành —</option>' +
@@ -381,8 +389,8 @@ window.GymApp.pages['member-add'] = {
     const tabPkg = document.getElementById('tab-package');
     const formReg = document.getElementById('form-register');
     const formPkg = document.getElementById('form-package');
-    const clsActive = 'tab-btn px-loose py-compact rounded-xl font-bold text-body-md transition-all bg-surface-container-lowest text-brand-primary shadow-sm flex items-center gap-xs';
-    const clsInactive = 'tab-btn px-loose py-compact rounded-xl font-bold text-body-md transition-all text-on-surface-variant hover:text-brand-primary flex items-center gap-xs';
+    const clsActive = 'tab-btn px-4 py-1.5 rounded-full font-bold text-body-md transition-all bg-brand-primary text-white shadow-sm flex items-center gap-xs';
+    const clsInactive = 'tab-btn px-4 py-1.5 rounded-full font-bold text-body-md transition-all text-on-surface-variant hover:text-brand-primary hover:bg-brand-primary/5 flex items-center gap-xs';
 
     tabReg?.addEventListener('click', () => {
       formReg.classList.remove('hidden'); formPkg.classList.add('hidden');
@@ -455,27 +463,27 @@ window.GymApp.pages['member-add'] = {
         // Chuyên môn PT: input + datalist
         extraFields.innerHTML = `
           <div>
-            <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Chuyên môn PT <span style="color:#ba1a1a;">*</span></label>
+            <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">Chuyên môn PT <span style="color:#ba1a1a;">*</span></label>
             <input id="reg-chuyen-mon" type="text" list="dl-chuyen-mon" placeholder="VD: Gym, Yoga, Boxing..."
-              class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none transition-colors" />
+              class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all" />
           </div>
           <div>
-            <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Kinh nghiệm (năm)</label>
+            <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">Kinh nghiệm (năm)</label>
             <input id="reg-kinh-nghiem" type="number" min="0" max="50" placeholder="VD: 3"
-              class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none transition-colors" />
+              class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all" />
           </div>`;
       } else if (type === 'nhan_vien') {
         extraFields.innerHTML = `
           <div>
-            <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Chức vụ <span style="color:#ba1a1a;">*</span></label>
+            <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">Chức vụ <span style="color:#ba1a1a;">*</span></label>
             <input id="reg-chuc-vu" type="text" placeholder="VD: Lễ tân, Quản lý..."
-              class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none transition-colors" />
+              class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all" />
           </div>`;
       } else if (type === 'hoi_vien') {
         extraFields.innerHTML = `
           <div>
-            <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Hạng hội viên</label>
-            <select id="reg-loai-hv" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-standard py-compact rounded-xl focus:border-brand-primary outline-none transition-colors">
+            <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">Hạng hội viên</label>
+            <select id="reg-loai-hv" class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all cursor-pointer">
               <option value="Normal">Thường</option>
               <option value="VIP">VIP</option>
               <option value="Student">Sinh viên</option>
