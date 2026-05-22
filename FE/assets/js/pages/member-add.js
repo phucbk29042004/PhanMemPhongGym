@@ -115,7 +115,7 @@ window.GymApp.pages['member-add'] = {
                   <input id="reg-que-quan" type="text" list="dl-que-quan" placeholder="Chọn hoặc nhập tỉnh/thành..."
                     class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all" />
                 </div>
-                ${this._select('Chi nhánh', 'reg-chi-nhanh', [{ v: 'CN1', t: 'Chi nhánh 1' }, { v: 'CN2', t: 'Chi nhánh 2' }])}
+                ${this._select('Chi nhánh', 'reg-chi-nhanh', [])}
               </div>
             </div>
  
@@ -320,16 +320,24 @@ window.GymApp.pages['member-add'] = {
     const typeSelect = document.getElementById('reg-loai-ho-so');
     const extraFields = document.getElementById('extra-fields');
 
-    // 1. Tải dữ liệu địa chính
+    // 1. Tải dữ liệu địa chính & chi nhánh
     try {
-      const [pRes, dRes, wRes, hcmcRes] = await Promise.all([
+      const [pRes, dRes, wRes, hcmcRes, branchesRes] = await Promise.all([
         fetch('assets/data/provinces.json').then(r => r.json()),
         fetch('assets/data/districts.json').then(r => r.json()),
         fetch('assets/data/wards.json').then(r => r.json()),
-        fetch('assets/data/hanh_chinh_tphcm.json').then(r => r.json())
+        fetch('assets/data/hanh_chinh_tphcm.json').then(r => r.json()),
+        window.GymApp.api.get('/branches').catch(() => ({ success: false, data: [] }))
       ]);
       self._provinces = pRes; self._districts = dRes; self._wards = wRes;
       self._hcmcWards = hcmcRes;
+
+      const branches = (branchesRes && branchesRes.success) ? (branchesRes.data || []) : [];
+      const branchSelect = document.getElementById('reg-chi-nhanh');
+      if (branchSelect) {
+        branchSelect.innerHTML = '<option value="">— Chi nhánh —</option>' +
+          branches.map(b => `<option value="${b.ten}">${b.ten}</option>`).join('');
+      }
 
       const pSelect = document.getElementById('reg-tinh-thanh');
       pSelect.innerHTML = '<option value="">— Chọn Tỉnh/Thành —</option>' +

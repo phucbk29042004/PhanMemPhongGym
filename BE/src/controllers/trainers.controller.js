@@ -23,14 +23,17 @@ export const getTrainers = (req, res) => {
     SELECT
       h.id, h.ma_ho_so, h.ho_ten, h.gioi_tinh, h.ngay_sinh,
       h.so_dien_thoai, h.email, h.avatar_url, h.ghi_chu, h.ngay_tao,
-      h.chi_nhanh, h.phong_tap, h.chuyen_mon, h.tinh_thanh, h.quan_huyen,
+      h.chi_nhanh, h.phong_tap, h.chuyen_mon, h.kinh_nghiem, h.tinh_thanh, h.quan_huyen,
       h.tai_khoan_id,
       -- Số học viên đang tập
       (SELECT COUNT(DISTINCT dp.hoi_vien_id) FROM dang_ky_pt dp WHERE dp.pt_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS so_hoc_vien,
       -- Tổng buổi đã dạy
       (SELECT COUNT(*) FROM lich_tap lt WHERE lt.pt_id = h.id AND lt.trang_thai = 'da_tap') AS tong_buoi_da_day,
       -- Gói PT đang nhận
-      (SELECT COUNT(*) FROM dang_ky_pt dp WHERE dp.pt_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS so_goi_dang_day
+      (SELECT COUNT(*) FROM dang_ky_pt dp WHERE dp.pt_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS so_goi_dang_day,
+      ROUND((SELECT AVG(so_sao) FROM danh_gia_pt dg WHERE dg.pt_id = h.id), 1) AS rating,
+      ROUND((SELECT AVG(so_sao) FROM danh_gia_pt dg WHERE dg.pt_id = h.id), 1) AS danh_gia,
+      (SELECT COUNT(*) FROM danh_gia_pt dg WHERE dg.pt_id = h.id) AS so_luot_danh_gia
     FROM ho_so h
     ${where}
     ORDER BY h.ho_ten ASC
@@ -44,6 +47,9 @@ export const getTrainerById = (req, res) => {
   const { id } = req.params;
   const trainer = db.prepare(`
     SELECT h.*,
+           ROUND((SELECT AVG(so_sao) FROM danh_gia_pt dg WHERE dg.pt_id = h.id), 1) AS rating,
+           ROUND((SELECT AVG(so_sao) FROM danh_gia_pt dg WHERE dg.pt_id = h.id), 1) AS danh_gia,
+           (SELECT COUNT(*) FROM danh_gia_pt dg WHERE dg.pt_id = h.id) AS so_luot_danh_gia,
            (SELECT json_group_array(json_object(
              'hoi_vien_id', dp.hoi_vien_id, 'ten_hoi_vien', hv.ho_ten,
              'avatar_hoi_vien', hv.avatar_url, 'buoi_con_lai', dp.so_buoi_dang_ky - dp.so_buoi_da_tap,
@@ -59,9 +65,8 @@ export const getTrainerById = (req, res) => {
   return success(res, trainer);
 };
 
-// ── POST /api/trainers ────────────────────────────────────
 export const createTrainer = async (req, res) => {
-  const { ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email, ghi_chu } = req.body;
+  const { ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email, chuyen_mon, kinh_nghiem, ghi_chu } = req.body;
   if (!ho_ten) return error(res, 'Họ tên là bắt buộc.', 400);
 
   let avatar_url = null, cloudinary_public_id = null;
@@ -80,9 +85,9 @@ export const createTrainer = async (req, res) => {
   const ma_ho_so = `PT${nextNum}`;
 
   const result = db.prepare(`
-    INSERT INTO ho_so (ma_ho_so, loai_ho_so, ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email, avatar_url, cloudinary_public_id, ghi_chu, nguoi_tao_id)
-    VALUES (?, 'pt', ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(ma_ho_so, ho_ten, gioi_tinh || null, ngay_sinh || null, so_dien_thoai || null, email || null, avatar_url, cloudinary_public_id, ghi_chu || null, req.user.id);
+    INSERT INTO ho_so (ma_ho_so, loai_ho_so, ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email, chuyen_mon, kinh_nghiem, avatar_url, cloudinary_public_id, ghi_chu, nguoi_tao_id)
+    VALUES (?, 'pt', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(ma_ho_so, ho_ten, gioi_tinh || null, ngay_sinh || null, so_dien_thoai || null, email || null, chuyen_mon || null, parseInt(kinh_nghiem) || 0, avatar_url, cloudinary_public_id, ghi_chu || null, req.user.id);
 
   ghi_audit_log(req, 'CREATE', 'ho_so', result.lastInsertRowid, null, { ho_ten, loai_ho_so: 'pt' }, 'Thêm PT mới');
   return success(res, db.prepare('SELECT * FROM ho_so WHERE id = ?').get(result.lastInsertRowid), 'Thêm PT thành công', 201);
@@ -94,15 +99,20 @@ export const updateTrainer = (req, res) => {
   const old = db.prepare(`SELECT * FROM ho_so WHERE id = ? AND loai_ho_so = 'pt' AND is_deleted = 0`).get(id);
   if (!old) return error(res, 'Không tìm thấy PT.', 404);
 
-  const { ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email, chuyen_mon, ghi_chu } = req.body;
+  const { ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email, chuyen_mon, kinh_nghiem, ghi_chu } = req.body;
   db.prepare(`
     UPDATE ho_so SET
       ho_ten = COALESCE(?, ho_ten), gioi_tinh = COALESCE(?, gioi_tinh),
       ngay_sinh = COALESCE(?, ngay_sinh), so_dien_thoai = COALESCE(?, so_dien_thoai),
       email = COALESCE(?, email), chuyen_mon = COALESCE(?, chuyen_mon),
+      kinh_nghiem = COALESCE(?, kinh_nghiem),
       ghi_chu = COALESCE(?, ghi_chu), nguoi_cap_nhat_id = ?
     WHERE id = ?
-  `).run(ho_ten || null, gioi_tinh || null, ngay_sinh || null, so_dien_thoai || null, email || null, chuyen_mon || null, ghi_chu || null, req.user.id, id);
+  `).run(
+    ho_ten || null, gioi_tinh || null, ngay_sinh || null, so_dien_thoai || null, email || null,
+    chuyen_mon || null, kinh_nghiem !== undefined ? parseInt(kinh_nghiem) || 0 : undefined,
+    ghi_chu || null, req.user.id, id
+  );
 
   const updated = db.prepare('SELECT * FROM ho_so WHERE id = ?').get(id);
   ghi_audit_log(req, 'UPDATE', 'ho_so', parseInt(id), old, updated, 'Cập nhật thông tin PT');

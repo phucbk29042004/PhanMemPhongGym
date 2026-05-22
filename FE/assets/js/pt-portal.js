@@ -77,14 +77,18 @@
 
   async function _fetchData() {
     try {
-      const [schedulesRes, profileRes, notifRes] = await Promise.all([
+      const [schedulesRes, profileRes, notifRes, ptMeRes, studentsRes] = await Promise.all([
         window.GymApp.api.get('/pt/schedules'),
         window.GymApp.api.get('/auth/me'),
         window.GymApp.api.get('/members/me/notifications'),
+        window.GymApp.api.get('/pt-me/overview'),
+        window.GymApp.api.get('/pt/schedules/my-members'),
       ]);
       if (schedulesRes?.success) window.GymApp.data.ptSchedules = schedulesRes.data || [];
       if (profileRes?.success) window.GymApp.data.myProfile = profileRes.data;
       if (notifRes?.success) window.GymApp.data.myNotifications = notifRes.data?.notifications || [];
+      if (ptMeRes?.success) window.GymApp.data.ptMeOverview = ptMeRes.data || {};
+      if (studentsRes?.success) window.GymApp.data.ptMeStudents = studentsRes.data || [];
     } catch (err) {
       console.error('PT Portal: fetch data failed', err);
     }
@@ -1231,6 +1235,131 @@
   };
 
   // ── Hồ sơ cá nhân ─────────────────────────────────────────
+  pages['pt-me'] = {
+    async _load(memberId) {
+      const endpoint = memberId ? `/pt-me/thread?hoi_vien_id=${memberId}` : '/pt-me/overview';
+      const res = await window.GymApp.api.get(endpoint);
+      if (res?.success) {
+        if (memberId) window.GymApp.data.ptMeThread = res.data || {};
+        else window.GymApp.data.ptMeOverview = res.data || {};
+      }
+    },
+    render() {
+      const latest = window.GymApp.data.ptMeOverview?.latest || [];
+      const students = (window.GymApp.data.ptMeStudents || []).map(s => ({
+        id: s.hoi_vien_id,
+        name: s.ho_ten || s.ten_hoi_vien || s.ma_ho_so,
+      }));
+      const seen = new Set();
+      latest.forEach(x => {
+        if (x.hoi_vien_id && !seen.has(x.hoi_vien_id)) {
+          seen.add(x.hoi_vien_id);
+          if (!students.some(s => s.id === x.hoi_vien_id)) {
+            students.push({ id: x.hoi_vien_id, name: x.ten_hoi_vien });
+          }
+        }
+      });
+      return `
+        <div class="flex flex-col gap-loose">
+          <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant p-loose shadow-sm">
+            <h2 class="text-display-sm font-bold text-on-surface">PT & Tôi</h2>
+            <p class="text-on-surface-variant mt-1">Xem cập nhật của học viên và gửi lời dặn cho buổi tiếp theo.</p>
+            <div class="mt-4 flex flex-wrap gap-3">
+              <select id="ptme-member" class="bg-surface-container-low border border-outline-variant text-on-surface px-4 py-3 rounded-xl outline-none min-w-[220px]">
+                <option value="">Chọn học viên</option>
+                ${students.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
+              </select>
+              <button id="ptme-load" class="px-5 py-3 rounded-xl bg-brand-primary text-white font-bold">Mở luồng</button>
+            </div>
+          </div>
+          <section id="ptme-thread" class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
+            ${this._renderLatest(latest)}
+          </section>
+        </div>
+      `;
+    },
+    _renderLatest(list) {
+      if (!list.length) return `<div class="p-margin text-center text-on-surface-variant"><span class="material-symbols-outlined text-4xl text-outline block mb-standard">forum</span><p class="font-bold">Chưa có cập nhật PT & Tôi</p></div>`;
+      const currentUserId = window.GymApp.auth?.user?.id;
+      return `<div class="divide-y divide-outline-variant">${list.map(item => `
+        <div class="p-loose">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <p class="font-bold text-on-surface">${item.ten_hoi_vien || item.ten_nguoi_gui || 'Học viên'} ${item.da_chinh_sua ? '<span class="text-label-sm text-on-surface-variant">(đã chỉnh sửa)</span>' : ''}</p>
+              <span class="text-label-sm text-on-surface-variant">${item.ngay_cap_nhat || item.ngay_tao || ''}</span>
+            </div>
+            ${item.nguoi_gui_id === currentUserId ? `<button class="ptme-edit text-brand-primary font-bold text-label-md" data-id="${item.id}">Sửa</button>` : ''}
+          </div>
+          <p class="text-body-sm text-on-surface-variant mt-2">${item.cam_nhan_tap || item.khau_phan_an || item.noi_dung_tap || item.loi_dan || item.ghi_chu || '—'}</p>
+        </div>
+      `).join('')}</div>`;
+    },
+    _renderThread(data) {
+      const entries = data.entries || [];
+      const pair = data.pair || {};
+      return `
+        <div class="p-loose border-b border-outline-variant">
+          <h3 class="font-bold text-on-surface text-display-xs">${pair.ten_hoi_vien || 'Học viên'}</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+            <textarea id="ptme-workout" rows="2" class="bg-surface-container border border-outline-variant rounded-xl px-4 py-3 outline-none" placeholder="Hôm nay/tới buổi sau tập gì?"></textarea>
+            <textarea id="ptme-food" rows="2" class="bg-surface-container border border-outline-variant rounded-xl px-4 py-3 outline-none" placeholder="Cần ăn gì, lưu ý khẩu phần?"></textarea>
+            <input id="ptme-minutes" type="number" min="0" max="600" class="bg-surface-container border border-outline-variant rounded-xl px-4 py-3 outline-none" placeholder="Số phút tập đề xuất" />
+            <textarea id="ptme-note" rows="2" class="bg-surface-container border border-outline-variant rounded-xl px-4 py-3 outline-none" placeholder="Lời dặn thêm"></textarea>
+          </div>
+          <button id="ptme-submit" class="mt-4 px-5 py-3 rounded-xl bg-brand-primary text-white font-bold">Gửi lời dặn</button>
+        </div>
+        ${this._renderLatest(entries)}
+      `;
+    },
+    async init() {
+      await this._load();
+      document.getElementById('ptme-load')?.addEventListener('click', async () => {
+        const memberId = document.getElementById('ptme-member')?.value;
+        if (!memberId) return window.GymApp.toast('Vui lòng chọn học viên', 'error');
+        await this._load(memberId);
+        const wrap = document.getElementById('ptme-thread');
+        if (wrap) wrap.innerHTML = this._renderThread(window.GymApp.data.ptMeThread || {});
+        wrap?.addEventListener('click', e => {
+          const editBtn = e.target.closest('.ptme-edit');
+          if (!editBtn) return;
+          const item = (window.GymApp.data.ptMeThread?.entries || []).find(x => String(x.id) === String(editBtn.dataset.id));
+          if (!item) return;
+          document.getElementById('ptme-workout').value = item.noi_dung_tap || '';
+          document.getElementById('ptme-food').value = item.khau_phan_an || '';
+          document.getElementById('ptme-minutes').value = item.so_phut_tap ?? '';
+          document.getElementById('ptme-note').value = item.loi_dan || '';
+          const submit = document.getElementById('ptme-submit');
+          submit.dataset.editId = item.id;
+          submit.textContent = 'Cập nhật lời dặn';
+          document.getElementById('ptme-workout')?.focus();
+        });
+        document.getElementById('ptme-submit')?.addEventListener('click', async () => {
+          const btn = document.getElementById('ptme-submit');
+          btn.disabled = true; btn.textContent = 'Đang gửi...';
+          try {
+            const payload = {
+              hoi_vien_id: Number(memberId),
+              noi_dung_tap: document.getElementById('ptme-workout')?.value?.trim(),
+              khau_phan_an: document.getElementById('ptme-food')?.value?.trim(),
+              so_phut_tap: document.getElementById('ptme-minutes')?.value ? Number(document.getElementById('ptme-minutes').value) : null,
+              loi_dan: document.getElementById('ptme-note')?.value?.trim(),
+            };
+            const editId = btn.dataset.editId;
+            const res = editId ? await window.GymApp.api.put(`/pt-me/thread/${editId}`, payload) : await window.GymApp.api.post('/pt-me/thread', payload);
+            if (res?.success) {
+              window.GymApp.toast(editId ? 'Đã cập nhật và báo cho hội viên!' : 'Đã gửi lời dặn cho hội viên!', 'success');
+              await this._load(memberId);
+              wrap.innerHTML = this._renderThread(window.GymApp.data.ptMeThread || {});
+            }
+          } finally {
+            delete btn.dataset.editId;
+            btn.disabled = false; btn.textContent = 'Gửi lời dặn';
+          }
+        });
+      });
+    }
+  };
+
   pages['my-profile'] = {
     render() {
       const u = window.GymApp.data.myProfile || window.GymApp.auth.user || {};

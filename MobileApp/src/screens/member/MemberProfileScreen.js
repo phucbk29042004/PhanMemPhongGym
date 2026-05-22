@@ -242,11 +242,18 @@ export default function MemberProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showChangePw, setShowChangePw] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
+  const [heightCm, setHeightCm] = useState('');
+  const [weightKg, setWeightKg] = useState('');
+  const [savingHealth, setSavingHealth] = useState(false);
 
   const fetchProfile = useCallback(async () => {
     try {
       const res = await api.get('/members/me/profile');
-      if (res.data?.success) setProfile(res.data.data);
+      if (res.data?.success) {
+        setProfile(res.data.data);
+        setHeightCm(res.data.data?.chieu_cao_cm ? String(res.data.data.chieu_cao_cm) : '');
+        setWeightKg(res.data.data?.can_nang_kg ? String(res.data.data.can_nang_kg) : '');
+      }
     } catch (err) {
       console.error('[ProfileScreen] fetch error:', err?.message);
     } finally {
@@ -254,6 +261,31 @@ export default function MemberProfileScreen() {
       setRefreshing(false);
     }
   }, []);
+
+  const bmi = (() => {
+    const h = Number(heightCm);
+    const w = Number(weightKg);
+    if (!h || !w) return null;
+    const value = w / Math.pow(h / 100, 2);
+    const category = value < 18.5 ? 'Gầy' : value < 25 ? 'Bình thường' : value < 30 ? 'Thừa cân' : 'Béo phì';
+    const advice = value < 18.5 ? 'Nên tăng năng lượng nạp vào và tập sức mạnh.' : value < 25 ? 'Duy trì lịch tập và dinh dưỡng cân bằng.' : value < 30 ? 'Nên kiểm soát khẩu phần và tăng vận động.' : 'Nên có kế hoạch giảm cân an toàn cùng PT.';
+    return { value, category, advice };
+  })();
+
+  const saveHealth = async () => {
+    setSavingHealth(true);
+    try {
+      const res = await api.patch('/members/me/health', { chieu_cao_cm: heightCm || null, can_nang_kg: weightKg || null });
+      if (res.data?.success) {
+        Alert.alert('Thành công', 'Đã cập nhật BMI.');
+        fetchProfile();
+      }
+    } catch (err) {
+      Alert.alert('Lỗi', err.response?.data?.message || 'Không thể cập nhật BMI.');
+    } finally {
+      setSavingHealth(false);
+    }
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -263,7 +295,7 @@ export default function MemberProfileScreen() {
 
   const onRefresh = () => { setRefreshing(true); fetchProfile(); };
 
-  const activePlan = profile?.goi_tap?.[0] || null;
+  const activePlan = profile?.goi_tap?.find(p => p.trang_thai === 'dang_hoat_dong') || null;
   const activePT = profile?.dang_ky_pt?.[0] || null;
   const ptRemaining = activePT ? Math.max(0, (activePT.so_buoi_dang_ky || 0) - (activePT.so_buoi_da_tap || 0)) : null;
   const diaChiParts = [profile?.dia_chi_tam_tru, profile?.phuong_xa, profile?.quan_huyen, profile?.tinh_thanh].filter(Boolean);
@@ -386,6 +418,23 @@ export default function MemberProfileScreen() {
 
 
         {/* ── CÀI ĐẶT ──────────────────────────── */}
+        <Section title="Chỉ số BMI" colors={colors}>
+          <View style={styles.bmiBox}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.bmiValue, { color: colors.primary }]}>{bmi ? bmi.value.toFixed(1) : '—'}</Text>
+              <Text style={[styles.bmiCategory, { color: colors.text }]}>{bmi ? bmi.category : 'Chưa có dữ liệu'}</Text>
+              <Text style={[styles.bmiAdvice, { color: colors.textMuted }]}>{bmi ? bmi.advice : 'Nhập chiều cao và cân nặng để tính BMI theo chuẩn châu Á.'}</Text>
+            </View>
+          </View>
+          <View style={styles.bmiInputs}>
+            <TextInput style={[styles.bmiInput, { color: colors.text, borderColor: colors.border }]} placeholder="Chiều cao cm" placeholderTextColor={colors.textMuted} keyboardType="numeric" value={heightCm} onChangeText={setHeightCm} />
+            <TextInput style={[styles.bmiInput, { color: colors.text, borderColor: colors.border }]} placeholder="Cân nặng kg" placeholderTextColor={colors.textMuted} keyboardType="numeric" value={weightKg} onChangeText={setWeightKg} />
+          </View>
+          <TouchableOpacity style={[styles.bmiBtn, { backgroundColor: colors.primary }]} onPress={saveHealth} disabled={savingHealth}>
+            {savingHealth ? <ActivityIndicator color="#fff" /> : <Text style={styles.bmiBtnText}>Lưu BMI</Text>}
+          </TouchableOpacity>
+        </Section>
+
         <Section title="Cài đặt" colors={colors}>
           <MenuRow
             icon={KeyRound} iconBg={colors.primaryLight}
@@ -477,6 +526,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20,
   },
   profileBadgeText: { fontSize: 11, fontWeight: '700' },
+  bmiBox: { paddingVertical: 14, paddingHorizontal: 4 },
+  bmiValue: { fontSize: 34, fontWeight: '900' },
+  bmiCategory: { fontSize: 15, fontWeight: '800', marginTop: 2 },
+  bmiAdvice: { fontSize: 12, lineHeight: 18, marginTop: 4 },
+  bmiInputs: { flexDirection: 'row', gap: 10, marginBottom: 12 },
+  bmiInput: { flex: 1, height: 46, borderWidth: 1, borderRadius: 12, paddingHorizontal: 12 },
+  bmiBtn: { height: 46, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  bmiBtnText: { color: '#fff', fontWeight: '900' },
 
   quickStats: {
     flexDirection: 'row',

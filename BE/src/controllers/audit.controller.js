@@ -30,7 +30,8 @@ export const getAuditLogs = (req, res) => {
     SELECT
       a.id, a.ten_dang_nhap, a.vai_tro, a.hanh_dong,
       a.doi_tuong, a.doi_tuong_id, a.gia_tri_cu, a.gia_tri_moi,
-      a.ip_address, a.ghi_chu, a.thoi_diem
+      a.ip_address, a.ghi_chu, a.thoi_diem,
+      (SELECT ho_ten FROM ho_so h WHERE h.tai_khoan_id = a.tai_khoan_id LIMIT 1) as ho_ten
     FROM audit_log a
     ${where}
     ORDER BY a.thoi_diem DESC

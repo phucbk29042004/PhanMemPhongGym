@@ -1,6 +1,6 @@
 # 🏛️ Kiến Trúc Hệ Thống — Paradise GYM
 
-> Cập nhật lần cuối: 14/05/2026 — Đồng bộ hệ thống QR Check-in/out ca làm việc cho PT & Hội viên trên cả Web Portal và Mobile App (tự động làm mới 5 phút, tự nhận diện vào/ra).
+> Cập nhật lần cuối: 22/05/2026 — Nâng cấp thông báo Mobile App (chronological, formatTimeAgo, PulsingDot, blur markAsRead) và khắc phục lỗi z-index đè giao diện dropdown thông báo trên Web Admin & PT Portal.
 
 ---
 
@@ -65,7 +65,7 @@ graph TD
 | `ho_so` | Thông tin cá nhân Hội viên / PT / Nhân viên. |
 | `vai_tro` | Phân quyền hệ thống (JSON-based RBAC). |
 | `goi_tap` | Danh mục gói tập phòng gym. |
-| `dang_ky_goi_tap`| Lịch sử đăng ký và thanh toán của hội viên. |
+| `dang_ky_goi_tap`| Lịch sử đăng ký và thanh toán của hội viên (Thêm cột payos_order_code, payos_status, chi_nhanh_mua ở Migration v11). |
 | `lich_tap` | Chi tiết các buổi tập của hội viên với PT. |
 | `doanh_thu` | Tổng hợp doanh thu tự động qua Triggers. |
 | `audit_log` | Nhật ký thay đổi dữ liệu nhạy cảm. |
@@ -80,6 +80,8 @@ graph TD
 |--------|-----------|-----------------|
 | **Auth** | `/api/auth/login`, `/me`, `/doi-mat-khau` | Xác thực, phân quyền. |
 | **Members** | `/api/members`, `/:id/package`, `/:id/avatar`, `/birthday`, `/me/profile` | Quản lý hội viên, đăng ký gói, sinh nhật, tự xem hồ sơ. |
+| **Members (Gia hạn)** | `/api/members/me/package-request` [POST], `/api/members/me/payos-status/:orderCode` [GET] | Đăng ký gia hạn/mua gói tập (tiền mặt/PayOS) và check trạng thái thanh toán PayOS. |
+| **Branches** | `/api/branches` [GET] | Trả về danh sách 12 chi nhánh từ file JSON dùng chung (công khai). |
 | **Trainers** | `/api/trainers`, `/:id/schedules` | Quản lý PT và lịch dạy. |
 | **PT Schedules** | `/api/pt/schedules`, `PATCH /:id/hoan-tac` | Đặt lịch tập, xác nhận, hủy, hoàn tác buổi tập. |
 | **PT Registrations** | `/api/pt/registrations`, `/:id/cancel` | Đăng ký gói PT, hủy đăng ký. |
@@ -111,6 +113,7 @@ graph TD
 - [x] **PT Portal** (`pt-portal.html`): Dashboard, Lịch tập của tôi, Học viên của tôi, Hồ sơ cá nhân.
 - [x] **Member Portal** (`member-portal.html`): Dashboard dạng bento theo mẫu FE_Hoivien (gói tập + PT + lịch sắp tới + QR Check-in nhanh tự làm mới), Lịch tập, Lịch sử vào/ra, Hồ sơ cá nhân. Sidebar desktop và bottom tab bar mobile-friendly.
 - [x] **Scan QR** (`scan.html`): Trang standalone cho lễ tân quét QR bằng camera hoặc nhập thủ công, hiển thị thông tin hội viên sau khi check-in.
+- [x] **Đồng bộ Chi nhánh & Mua gói tập (Mobile)**: Tích hợp chọn chi nhánh động từ API `/api/branches`, hỗ trợ mua gói qua màn hình PackageDetailScreen và OrderConfirmationScreen.
 - [x] **Redirect theo role** sau login: admin/le_tan → `index.html`, pt → `pt-portal.html`, hoi_vien → `member-portal.html`.
 - [x] **Redesign Modal Chi tiết PT**: Giao diện 3 tab chuyên sâu (Thông tin, Lịch dạy, Học viên) đồng bộ với Hội viên, tích hợp quản lý tài khoản và thống kê học viên realtime.
 
@@ -131,6 +134,7 @@ graph TD
 - [x] **My Profile**: Hội viên/PT tự xem hồ sơ + gói tập/lịch dạy hiện tại.
 - [x] **Hệ thống**: Middleware RBAC (quyen_json), Audit Logging (ghi vết hành động).
 - [x] **Hệ thống thông báo (16 loại)**: Bell icon dropdown trong header admin/lễ tân. Polling 30s. Chỉ hiển thị thông báo chưa đọc (`da_doc=0`), hỗ trợ bấm để đọc (chuyển `da_doc=1`) hoặc bấm Xóa / Xóa tất cả (xóa vĩnh viễn khỏi DB để tránh phình dữ liệu). **Cron 08:00**: sắp hết hạn gói tập, hết hạn hôm nay, sắp hết buổi PT, gói PT theo tháng hết hạn (`het_han_goi_pt_thang`), tổng hợp buổi sáng (`tom_tat_buoi_sang`). **Cron 5 phút**: chưa check-in trước buổi PT. **Realtime**: check-in, hồ sơ mới, gia hạn gói tập, đăng ký gói PT, hủy buổi tập, hoàn tác buổi tập, tài khoản bị khóa, tài khoản mới, **thay đổi giờ tập** (`cap_nhat_buoi_tap`). Toast tổng hợp khi login.
+- [x] **Thanh toán PayOS & Nối tiếp gói tập tự động (Phương án B)**: Tích hợp cổng PayOS để hội viên tự thanh toán qua ứng dụng ngân hàng bằng mã QR động. Tự động tính ngày bắt đầu nối tiếp khi mua gói lúc gói cũ còn hạn. Nâng cấp Cron Job hàng ngày tự động kích hoạt gói khi đến hạn bắt đầu (`tu_ngay`).
 - [x] **Thông báo Realtime Portal (Không lưu DB)**: Endpoint `GET /api/members/me/notifications` — tính toán realtime 6 nghiệp vụ Hội viên / 5 nghiệp vụ PT. **Member Portal**: Banner Card 4 mức (đen đỏ/vàng/xanh dương/xanh lá) hiển thị ngay đầu Dashboard. **PT Portal**: Bell Icon + Dropdown trên Header cạnh nút dark/light, badge badge đỏ số lượng, đóng mở khi click, stateless.
 
 ### Tích hợp Fullstack (Kết nối FE-BE)
@@ -150,3 +154,8 @@ graph TD
 - **08/05/2026**: Triển khai **Memory Storage Multer** để bảo mật (không lưu file tạm) và tối ưu tốc độ upload lên Cloudinary.
 - **08/05/2026**: Áp dụng **RBAC linh hoạt** qua cột `quyen_json`, cho phép thay đổi quyền hạn mà không cần sửa code middleware.
 - **08/05/2026**: Triển khai **Fullstack Persistence Strategy**: Chuyển đổi toàn bộ logic lưu tạm (local array) sang API-driven persistence (SQLite storage), giải quyết vấn đề mất dữ liệu khi cập nhật code hoặc tải lại trang.
+# Cập nhật kiến trúc 22/05/2026 — PT Rating, BMI, PT & Tôi
+
+- **Database**: thêm `ho_so.chieu_cao_cm`, `ho_so.can_nang_kg`, bảng `danh_gia_pt` và bảng `pt_toi_nhat_ky`.
+- **API mới/cập nhật**: `PATCH /api/members/me/health`, `GET/POST /api/pt/schedules/:id/rating`, `GET/POST/PUT /api/pt-me/*`; API trainers và PT schedules trả thêm điểm sao/tổng lượt đánh giá.
+- **Frontend/Mobile**: Member Portal/Mobile có BMI và form đánh giá PT sau buổi hoàn thành; PT Portal/Mobile có tab/luồng `PT & Tôi`; danh sách PT hiển thị rating thật từ dữ liệu đánh giá.

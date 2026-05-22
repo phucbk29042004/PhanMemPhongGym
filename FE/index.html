@@ -256,16 +256,19 @@
 
 
             </div>
-            <!-- Nội quy phòng tập -->
-            <button
-              class="nav-item flex items-center gap-standard w-full px-standard py-compact rounded-xl transition-all duration-150"
-              style="color:#166534"
-              onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}"
-              onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
-              data-page="gym-rules" title="Nội quy phòng tập">
-              <span class="material-symbols-outlined text-xl flex-shrink-0">gavel</span>
-              <span class="sidebar-label font-body-md text-body-md font-medium">Nội quy phòng tập</span>
-            </button>
+            </div>
+          </div>
+        
+        <!-- Nội quy phòng tập -->
+        <button
+          class="nav-item flex items-center gap-standard w-full px-standard py-compact rounded-xl transition-all duration-150"
+          style="color:#166534"
+          onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}"
+          onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
+          data-page="gym-rules" title="Nội quy phòng tập">
+          <span class="material-symbols-outlined text-xl flex-shrink-0">gavel</span>
+          <span class="sidebar-label font-body-md text-body-md font-medium">Nội quy phòng tập</span>
+        </button>
       </nav>
 
       <!-- Đăng xuất -->
@@ -284,15 +287,25 @@
     <div class="flex flex-col flex-1 min-w-0 overflow-hidden">
 
       <!-- Header -->
-      <header
-        class="gym-header flex justify-end items-center px-loose w-full h-12 flex-shrink-0 gap-standard sticky top-0 z-10">
-        <button id="btn-qr-scan"
-          class="flex items-center gap-xs px-compact py-xs rounded-lg bg-brand-primary text-white hover:bg-[#157a2a] transition-all font-bold text-body-sm"
-          title="Quét QR Check-in hội viên" style="font-size:13px">
-          <span class="material-symbols-outlined text-white"
-            style="font-size:16px;font-variation-settings:'FILL' 1">qr_code_scanner</span>
-          Quét QR
-        </button>
+      <header class="gym-header flex items-center justify-between px-loose w-full h-12 flex-shrink-0 gap-standard sticky top-0 z-40 bg-surface-container-lowest/80 backdrop-blur-md border-b border-outline-variant/30">
+        
+        <!-- Breadcrumb -->
+        <div id="breadcrumb" class="flex items-center gap-1.5 text-body-md font-medium text-on-surface-variant flex-1 min-w-0">
+          <span class="material-symbols-outlined text-[18px]">home</span>
+          <span class="hover:text-brand-primary cursor-pointer transition-colors" onclick="window.GymApp.navigate('dashboard')">Trang chủ</span>
+          <span class="material-symbols-outlined text-[16px] text-outline-variant">chevron_right</span>
+          <span class="text-on-surface font-bold truncate" id="breadcrumb-current-page">Tổng quan</span>
+        </div>
+
+        <!-- Right Actions -->
+        <div class="flex items-center gap-standard">
+          <button id="btn-qr-scan"
+            class="flex items-center gap-xs px-compact py-xs rounded-lg bg-brand-primary text-white hover:bg-[#157a2a] transition-all font-bold text-body-sm"
+            title="Quét QR Check-in hội viên" style="font-size:13px">
+            <span class="material-symbols-outlined text-white"
+              style="font-size:16px;font-variation-settings:'FILL' 1">qr_code_scanner</span>
+            Quét QR
+          </button>
 
         <!-- Bell Icon Notifications -->
         <div class="relative" id="notif-wrapper">
@@ -366,6 +379,7 @@
             </div>
           </div>
         </div>
+        </div> <!-- Đóng thẻ div Right Actions -->
       </header>
 
       <!-- Content Area -->

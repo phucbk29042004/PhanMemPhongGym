@@ -446,7 +446,14 @@ window.GymApp.pages['expired'] = {
             ${window.GymApp.avatarImg(null, req.ho_ten, 'lg', 'width:48px;height:48px;border-radius:16px;')}
             <div class="flex flex-col min-w-0">
               <p class="font-black text-on-surface text-body-md truncate">${req.ho_ten}</p>
-              <p class="text-on-surface-variant text-body-sm font-mono font-black opacity-60">${req.ma_ho_so}</p>
+              <div class="flex items-center gap-xs">
+                <p class="text-on-surface-variant text-body-sm font-mono font-black opacity-60">${req.ma_ho_so}</p>
+                ${req.chi_nhanh_mua ? `
+                  <span class="flex items-center gap-[2px] bg-surface-container text-on-surface-variant text-label-xs px-1.5 py-0.5 rounded-lg font-black border border-outline-variant/30" title="Chi nhánh đăng ký mua">
+                    <span class="material-symbols-outlined text-[12px]">store</span>
+                    ${req.chi_nhanh_mua}
+                  </span>` : ''}
+              </div>
             </div>
           </div>
         </td>
@@ -470,6 +477,23 @@ window.GymApp.pages['expired'] = {
              <div class="flex items-center gap-1 text-on-surface-variant text-body-sm font-bold opacity-50">
                <span class="material-symbols-outlined text-[14px]">event_repeat</span>
                Hạn: ${window.GymApp.formatDate(req.den_ngay)}
+             </div>
+             <div class="mt-1">
+               ${req.phuong_thuc_tt === 'chuyen_khoan' ? (
+                 req.payos_status === 'PAID' ? `
+                   <span style="background: rgba(29, 147, 54, 0.1); color: #1D9336; border: 1px solid rgba(29, 147, 54, 0.2);" class="inline-flex items-center gap-[4px] text-label-xs px-2 py-0.5 rounded-lg font-black animate-pulse shadow-sm">
+                     <span class="material-symbols-outlined text-[12px] font-black">check_circle</span>
+                     Đã thanh toán (PayOS)
+                   </span>` : `
+                   <span style="background: rgba(230, 81, 0, 0.1); color: #e65100; border: 1px solid rgba(230, 81, 0, 0.2);" class="inline-flex items-center gap-[4px] text-label-xs px-2 py-0.5 rounded-lg font-black">
+                     <span class="material-symbols-outlined text-[12px]">hourglass_empty</span>
+                     Chờ thanh toán (PayOS)
+                   </span>`
+               ) : `
+                 <span style="background: rgba(107, 114, 128, 0.1); color: rgb(107, 114, 128); border: 1px solid rgba(107, 114, 128, 0.2);" class="inline-flex items-center gap-[4px] text-label-xs px-2 py-0.5 rounded-lg font-black">
+                   <span class="material-symbols-outlined text-[12px]">payments</span>
+                   Tiền mặt
+                 </span>`}
              </div>
           </div>
         </td>
@@ -514,7 +538,18 @@ window.GymApp.pages['expired'] = {
                   <p class="font-black text-on-surface text-body-sm truncate">${req.ho_ten || '—'}</p>
                   <p class="text-on-surface-variant text-label-xs">${req.ma_ho_so || ''}</p>
                 </div>
-                <span class="text-label-xs px-2 py-0.5 rounded-full font-black bg-warning-container text-warning border border-warning/20">Chờ duyệt</span>
+                ${req.phuong_thuc_tt === 'chuyen_khoan' ? (
+                  req.payos_status === 'PAID' ? `
+                    <span style="background: rgba(29, 147, 54, 0.1); color: #1D9336; border: 1px solid rgba(29, 147, 54, 0.2);" class="text-label-xs px-2 py-0.5 rounded-full font-black border animate-pulse shadow-sm flex items-center gap-1">
+                      <span class="material-symbols-outlined text-[12px] font-black">check_circle</span>
+                      Đã thanh toán (PayOS)
+                    </span>` : `
+                    <span style="background: rgba(230, 81, 0, 0.1); color: #e65100; border: 1px solid rgba(230, 81, 0, 0.2);" class="text-label-xs px-2 py-0.5 rounded-full font-black border flex items-center gap-1">
+                      <span class="material-symbols-outlined text-[12px]">hourglass_empty</span>
+                      Chờ thanh toán (PayOS)
+                    </span>`
+                ) : `
+                  <span class="text-label-xs px-2 py-0.5 rounded-full font-black bg-warning-container text-warning border border-warning/20">Chờ duyệt</span>`}
               </div>
               <div class="p-compact grid grid-cols-2 gap-xs text-body-sm">
                 <div>
@@ -522,16 +557,24 @@ window.GymApp.pages['expired'] = {
                   <p class="font-black text-brand-primary truncate">${req.ten_goi_tap || '—'}</p>
                 </div>
                 <div>
+                  <p class="text-on-surface-variant opacity-60 font-bold">Chi nhánh mua</p>
+                  <p class="font-bold text-on-surface truncate">${req.chi_nhanh_mua || '—'}</p>
+                </div>
+                <div>
                   <p class="text-on-surface-variant opacity-60 font-bold">Từ ngày</p>
                   <p class="font-bold text-on-surface">${req.tu_ngay ? window.GymApp.formatDate(req.tu_ngay) : '—'}</p>
                 </div>
                 <div>
-                  <p class="text-on-surface-variant opacity-60 font-bold">Giá dự kiến</p>
+                  <p class="text-on-surface-variant opacity-60 font-bold">Hạn dùng</p>
+                  <p class="font-bold text-on-surface">${req.den_ngay ? window.GymApp.formatDate(req.den_ngay) : '—'}</p>
+                </div>
+                <div>
+                  <p class="text-on-surface-variant opacity-60 font-bold">Số tiền</p>
                   <p class="font-black text-brand-primary">${req.gia_thuc_te ? Number(req.gia_thuc_te).toLocaleString('vi-VN') + 'đ' : '—'}</p>
                 </div>
                 <div>
-                  <p class="text-on-surface-variant opacity-60 font-bold">Hạn dùng</p>
-                  <p class="font-bold text-on-surface">${req.den_ngay ? window.GymApp.formatDate(req.den_ngay) : '—'}</p>
+                  <p class="text-on-surface-variant opacity-60 font-bold">Hình thức</p>
+                  <p class="font-bold text-on-surface">${req.phuong_thuc_tt === 'chuyen_khoan' ? 'Chuyển khoản' : 'Tiền mặt'}</p>
                 </div>
               </div>
               <div class="px-compact pb-compact flex gap-compact border-t border-outline-variant/10 pt-compact mt-xs">
@@ -641,6 +684,11 @@ window.GymApp.pages['expired'] = {
                   <span class="text-outline font-bold">Gói tập yêu cầu:</span>
                   <span class="font-black text-brand-primary">${req.ten_goi_tap}</span>
                </div>
+               ${req.chi_nhanh_mua ? `
+               <div class="flex justify-between items-center border-t border-outline-variant/10 pt-xs mt-xs">
+                  <span class="text-outline font-bold">Chi nhánh mua:</span>
+                  <span class="font-bold text-on-surface">${req.chi_nhanh_mua}</span>
+               </div>` : ''}
                <div class="flex justify-between items-center border-t border-outline-variant/10 pt-xs mt-xs">
                   <span class="text-outline font-bold">Thời gian gia hạn:</span>
                   <span class="font-bold text-on-surface">${window.GymApp.formatDate(req.tu_ngay)} - ${window.GymApp.formatDate(req.den_ngay)}</span>
@@ -651,20 +699,20 @@ window.GymApp.pages['expired'] = {
             <div class="space-y-compact">
               <div>
                 <label class="block text-body-xs font-bold text-on-surface-variant mb-xs ml-0.5">Số tiền thực thu (VNĐ)</label>
-                <input type="number" id="approve-price" value="${req.gia_thuc_te}" class="w-full bg-surface-container-lowest border border-outline-variant px-standard py-2 rounded-xl outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 text-body-sm font-black transition-all" />
+                <input type="text" inputmode="numeric" id="approve-price" value="${new Intl.NumberFormat('vi-VN').format(req.gia_thuc_te || 0)}" class="w-full bg-surface-container-lowest border border-outline-variant px-standard py-2 rounded-xl outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 text-body-sm font-black transition-all" />
               </div>
               
               <div>
                 <label class="block text-body-xs font-bold text-on-surface-variant mb-xs ml-0.5">Phương thức thanh toán</label>
                 <select id="approve-method" class="w-full bg-surface-container-lowest border border-outline-variant px-standard py-2 rounded-xl outline-none focus:border-brand-primary transition-all text-body-sm font-bold">
-                  <option value="tien_mat">Tiền mặt</option>
-                  <option value="chuyen_khoan">Chuyển khoản</option>
+                  <option value="tien_mat" ${req.phuong_thuc_tt === 'tien_mat' ? 'selected' : ''}>Tiền mặt</option>
+                  <option value="chuyen_khoan" ${req.phuong_thuc_tt === 'chuyen_khoan' ? 'selected' : ''}>Chuyển khoản</option>
                 </select>
               </div>
               
               <div>
                 <label class="block text-body-xs font-bold text-on-surface-variant mb-xs ml-0.5">Ghi chú giao dịch</label>
-                <input type="text" id="approve-note" placeholder="Ví dụ: Đã nhận tiền qua chuyển khoản..." class="w-full bg-surface-container-lowest border border-outline-variant px-standard py-2 rounded-xl outline-none focus:border-brand-primary transition-all text-body-sm font-medium" />
+                <input type="text" id="approve-note" value="${req.payos_status === 'PAID' ? 'Đã thanh toán qua PayOS (Order: ' + req.payos_order_code + ')' : ''}" placeholder="Ví dụ: Đã nhận tiền qua chuyển khoản..." class="w-full bg-surface-container-lowest border border-outline-variant px-standard py-2 rounded-xl outline-none focus:border-brand-primary transition-all text-body-sm font-medium" />
               </div>
             </div>
           </div>
@@ -679,11 +727,26 @@ window.GymApp.pages['expired'] = {
     `;
 
     document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Format VNĐ helper — dùng cho field Số tiền thực thu
+    const _fmtVND = n => n > 0 ? new Intl.NumberFormat('vi-VN').format(n) : '0';
+    const _parseVND = s => parseInt((s || '').replace(/\./g, '').replace(/,/g, '')) || 0;
+
+    const priceEl = document.getElementById('approve-price');
+    priceEl?.addEventListener('focus', function () {
+      const raw = _parseVND(this.value);
+      this.value = raw > 0 ? String(raw) : '';
+    });
+    priceEl?.addEventListener('blur', function () {
+      const raw = _parseVND(this.value);
+      this.value = raw > 0 ? _fmtVND(raw) : '0';
+    });
+
     document.getElementById('btn-approve-cancel').onclick = () => document.getElementById('modal-approve-renewal').remove();
     document.getElementById('btn-approve-submit').onclick = async () => {
       const data = {
         action: 'approve',
-        gia_thuc_te: document.getElementById('approve-price').value,
+        gia_thuc_te: _parseVND(document.getElementById('approve-price').value),
         phuong_thuc_tt: document.getElementById('approve-method').value,
         ghi_chu_tt: document.getElementById('approve-note').value
       };

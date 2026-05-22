@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import {
   Award, CalendarCheck, CheckCircle2, ChevronRight, Clock,
-  CreditCard, Dumbbell, MapPin, QrCode, ShieldCheck, TrendingUp, UserCheck, Users, X, Zap,
+  CreditCard, Dumbbell, MapPin, MessageSquare, QrCode, ShieldCheck, TrendingUp, UserCheck, Users, X, Zap,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import ProfileAvatar from '../../components/ProfileAvatar';
@@ -312,6 +312,12 @@ export default function PTHomeScreen({ navigation }) {
               label={'Danh sách\nHọc viên'}
               accent="#0891b2"
               onPress={() => { fetchStudents(); setShowStudentsModal(true); }}
+            />
+            <UtilityChip
+              icon={MessageSquare}
+              label={'PT &\nTôi'}
+              accent="#0f766e"
+              onPress={() => navigation?.navigate?.('PTMe')}
             />
             <UtilityChip
               icon={UserCheck}

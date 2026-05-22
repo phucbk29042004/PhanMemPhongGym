@@ -155,31 +155,13 @@ window.GymApp.pages['dashboard'] = {
               </div>
             </div>
 
-            <!-- Contacts / Lịch PT & Tổng PT -->
-            <div class="${cardClass} p-4">
-              <h3 class="text-sm font-bold text-on-surface mb-4">Thông tin Huấn luyện viên</h3>
-              <div class="flex flex-col gap-4">
-                
-                <div class="flex items-center gap-3 cursor-pointer group" onclick="window.GymApp.navigate('members-list'); setTimeout(() => document.getElementById('tab-pts')?.click(), 100);">
-                  <div class="w-9 h-9 rounded-full bg-brand-primary/10 flex items-center justify-center text-brand-primary group-hover:bg-brand-primary group-hover:text-white transition-colors">
-                    <span class="material-symbols-outlined text-[18px]" style="font-variation-settings:'FILL' 1">sports_gymnastics</span>
-                  </div>
-                  <div class="flex-1">
-                    <p class="text-body-md font-bold text-on-surface group-hover:text-brand-primary transition-colors">Tổng Huấn luyện viên</p>
-                    <p class="text-body-sm font-semibold text-on-surface-variant mt-0.5">${dbData.tong_pt} nhân sự</p>
-                  </div>
-                </div>
 
-                <div class="flex items-center gap-3 cursor-pointer group" onclick="window.GymApp.navigate('pt-training')">
-                  <div class="w-9 h-9 rounded-full bg-brand-primary/10 flex items-center justify-center text-brand-primary group-hover:bg-brand-primary group-hover:text-white transition-colors">
-                    <span class="material-symbols-outlined text-[18px]" style="font-variation-settings:'FILL' 1">calendar_month</span>
-                  </div>
-                  <div class="flex-1">
-                    <p class="text-body-md font-bold text-on-surface group-hover:text-brand-primary transition-colors">Lịch PT hôm nay</p>
-                    <p class="text-body-sm font-semibold text-on-surface-variant mt-0.5">${dbData.lich_tap_hom_nay?.tong || 0} buổi (${dbData.lich_tap_hom_nay?.da_tap || 0} đã hoàn thành)</p>
-                  </div>
-                </div>
 
+            <!-- Hoạt động gần đây -->
+            <div class="${cardClass} p-4 flex flex-col flex-1" style="min-height: 320px;">
+              <h3 class="text-sm font-bold text-on-surface mb-4">Hoạt động gần đây</h3>
+              <div id="dash-audit-logs-container" class="flex-1 overflow-y-auto pr-1 flex flex-col gap-3" style="scrollbar-width: thin; scrollbar-color: var(--outline-variant) transparent;">
+                <p class="text-center text-on-surface-variant text-body-sm mt-10">Đang tải...</p>
               </div>
             </div>
 
@@ -374,16 +356,102 @@ window.GymApp.pages['dashboard'] = {
     });
   },
 
+  _renderAuditLogs: function () {
+    const el = document.getElementById('dash-audit-logs-container');
+    if (!el) return;
+    const logs = window.GymApp.data.auditLogs || [];
+    if (logs.length === 0) {
+      el.innerHTML = '<p class="text-center text-on-surface-variant text-body-sm mt-4">Không có hoạt động nào</p>';
+      return;
+    }
+
+    // Lọc bỏ log system login, chỉ giữ hoạt động thật của người dùng, tối đa 4 mục mới nhất
+    const displayLogs = logs
+      .filter(log => !(log.ten_dang_nhap === 'system' && (log.hanh_dong || '').toUpperCase() === 'LOGIN'))
+      .slice(0, 4);
+
+    if (displayLogs.length === 0) {
+      el.innerHTML = '<p class="text-center text-on-surface-variant text-body-sm mt-4">Không có hoạt động nào</p>';
+      return;
+    }
+
+    el.innerHTML = displayLogs.map(log => {
+      let icon = 'history';
+      let colorClass = 'text-brand-primary bg-brand-primary/10';
+      const action = (log.hanh_dong || '').toLowerCase();
+      
+      if (action.includes('create') || action.includes('them')) { icon = 'add_circle'; colorClass = 'text-[#10b981] bg-[#10b981]/10'; }
+      else if (action.includes('update') || action.includes('sua')) { icon = 'edit'; colorClass = 'text-[#3b82f6] bg-[#3b82f6]/10'; }
+      else if (action.includes('delete') || action.includes('xoa')) { icon = 'delete'; colorClass = 'text-error bg-error/10'; }
+      else if (action.includes('login')) { icon = 'login'; colorClass = 'text-[#8b5cf6] bg-[#8b5cf6]/10'; }
+
+      const timeStr = window.GymApp.formatDate(log.thoi_diem) + ' ' + new Date(log.thoi_diem).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+      
+      // Ưu tiên ho_ten, fallback ten_dang_nhap, chỉ "Hệ thống" khi thực sự là system không có tên
+      let userDisplay;
+      if (log.ten_dang_nhap === 'system' && !log.ho_ten) {
+        userDisplay = 'Hệ thống';
+      } else {
+        userDisplay = log.ho_ten || log.ten_dang_nhap || 'Hệ thống';
+      }
+      
+      const doiTuongMap = {
+        'tai_khoan': 'tài khoản',
+        'ho_so': 'hồ sơ hội viên',
+        'goi_tap': 'gói tập',
+        'goi_pt': 'gói PT',
+        'pt': 'huấn luyện viên',
+        'lich_tap': 'lịch tập',
+        'checkin': 'lượt ra vào',
+        'cau_hinh': 'cấu hình',
+        'thong_bao': 'thông báo',
+        'doanh_thu': 'doanh thu',
+        'system': 'hệ thống',
+        'he_thong': 'hệ thống'
+      };
+      
+      let objDisplay = doiTuongMap[(log.doi_tuong || '').toLowerCase()] || log.doi_tuong || 'dữ liệu';
+      if (action === 'login') {
+         objDisplay = 'hệ thống';
+      }
+
+      let actionText = log.hanh_dong;
+      if (action === 'create') actionText = 'vừa thêm mới';
+      if (action === 'update') actionText = 'vừa cập nhật';
+      if (action === 'delete') actionText = 'vừa xóa';
+      if (action === 'login') actionText = 'vừa đăng nhập vào';
+
+      return `
+        <div class="flex items-start gap-3 border-b border-outline-variant/30 pb-3 last:border-0 last:pb-0">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${colorClass}">
+            <span class="material-symbols-outlined text-[16px]">${icon}</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-body-sm text-on-surface truncate">
+              <span class="font-bold">${userDisplay}</span> ${actionText} <span class="font-semibold">${objDisplay}</span>
+            </p>
+            <p class="text-label-sm text-on-surface-variant truncate mt-0.5" title="${log.ghi_chu || ''}">${log.ghi_chu || ''}</p>
+            <p class="text-[10px] text-outline-variant font-medium mt-1">${timeStr}</p>
+          </div>
+        </div>
+      `;
+    }).join('');
+  },
+
   _fetchAndRender: async function () {
     try {
-      const [statsRes, revRes] = await Promise.all([
+      const [statsRes, revRes, auditRes] = await Promise.all([
         window.GymApp.api.get('/revenue/dashboard'),
         window.GymApp.api.get('/revenue?days=365'),
+        window.GymApp.api.get('/audit?limit=10')
       ]);
       if (statsRes && statsRes.success) window.GymApp.data.stats = statsRes.data;
       if (revRes && revRes.success) {
         window.GymApp.data.revenueDaily = revRes.data.daily || [];
         window.GymApp.data.packageStats = revRes.data.packageStats || [];
+      }
+      if (auditRes && auditRes.success) {
+        window.GymApp.data.auditLogs = auditRes.data.logs || [];
       }
     } catch (err) {
       console.error('Failed to fetch dashboard stats', err);
@@ -393,6 +461,7 @@ window.GymApp.pages['dashboard'] = {
       contentArea.innerHTML = this.render();
       this._renderTopMembers();
       this._renderRecentCheckins();
+      this._renderAuditLogs();
     }
     this._initCharts();
   },

@@ -2,7 +2,7 @@ window.GymApp.pages['pt-register'] = {
   _selectedPT: null,
   _selectedMember: null,
   _bookingPage: 1,
-  _bookingPerPage: 5,
+  _bookingPerPage: 3,
 
   render: function () {
     const pts = Array.isArray(window.GymApp.data.pts) ? window.GymApp.data.pts : [];
@@ -38,7 +38,7 @@ window.GymApp.pages['pt-register'] = {
                       <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline text-[16px] group-focus-within:text-brand-primary transition-colors">search</span>
                       <input id="search-pt" type="text" placeholder="Tìm kiếm PT..." class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface pl-10 pr-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all shadow-sm focus:shadow-none" />
                     </div>
-                    <div id="pt-list" class="flex flex-col gap-xs max-h-64 overflow-y-auto pr-xs border-2 border-outline-variant/50 rounded-xl p-2 bg-surface-container-low/10">
+                    <div id="pt-list" class="flex flex-col gap-xs max-h-[220px] overflow-y-auto pr-xs border-2 border-outline-variant/50 rounded-xl p-2 bg-surface-container-low/10">
                       <p class="text-center py-4 text-on-surface-variant text-body-sm font-semibold">Đang tải danh sách PT...</p>
                     </div>
                   </div>
@@ -60,7 +60,7 @@ window.GymApp.pages['pt-register'] = {
                       <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline text-[16px] group-focus-within:text-brand-primary transition-colors">search</span>
                       <input id="search-member" type="text" placeholder="Tìm kiếm hội viên..." class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface pl-10 pr-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all shadow-sm focus:shadow-none" />
                     </div>
-                    <div id="member-list" class="flex flex-col gap-xs max-h-64 overflow-y-auto pr-xs border-2 border-outline-variant/50 rounded-xl p-2 bg-surface-container-low/10">
+                    <div id="member-list" class="flex flex-col gap-xs max-h-[220px] overflow-y-auto pr-xs border-2 border-outline-variant/50 rounded-xl p-2 bg-surface-container-low/10">
                       <p class="text-center py-4 text-on-surface-variant text-body-sm font-semibold">Vui lòng chọn PT trước</p>
                     </div>
                   </div>
@@ -312,11 +312,11 @@ window.GymApp.pages['pt-register'] = {
 
       list.innerHTML = members.map(m => `
         <div class="member-card flex items-center gap-compact p-compact rounded-xl cursor-pointer hover:bg-surface-container-low transition-all border-2 border-transparent hover:border-outline-variant/50"
-             data-member-id="${m.id}" data-member-name="${m.ho_ten}" data-dang-ky-pt-id="${m.dang_ky_pt_id}">
+             data-member-id="${m.id}" data-member-name="${m.ho_ten}" data-dang-ky-pt-id="${m.dang_ky_pt_id}" data-avatar-url="${m.avatar_url || ''}">
           ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'sm')}
           <div class="flex-1 min-w-0">
-            <p class="font-bold text-on-surface text-body-md">${m.ho_ten}</p>
-            <p class="text-on-surface-variant text-body-sm font-semibold">${m.ma_ho_so} &bull; Còn ${m.buoi_con_lai} buổi</p>
+            <p class="font-bold text-on-surface text-xs">${m.ho_ten}</p>
+            <p class="text-on-surface-variant text-[11px]">${m.ma_ho_so} &bull; <span class="font-bold" style="color:#1D9336;">Còn ${m.buoi_con_lai} buổi</span></p>
           </div>
         </div>
       `).join('');
@@ -333,7 +333,7 @@ window.GymApp.pages['pt-register'] = {
           const display = document.getElementById('selected-member-display');
           display.classList.remove('hidden');
           document.getElementById('selected-member-info').innerHTML = `
-            ${window.GymApp.avatarImg('', card.dataset.memberName, 'sm')}
+            ${window.GymApp.avatarImg(card.dataset.avatarUrl || '', card.dataset.memberName, 'sm')}
             <span class="text-brand-primary font-bold text-body-sm">${card.dataset.memberName}</span>
           `;
         });
@@ -619,11 +619,11 @@ window.GymApp.pages['pt-register'] = {
 
     list.innerHTML = pts.map(pt => `
       <div class="pt-card flex items-center gap-compact p-compact rounded-xl cursor-pointer hover:bg-surface-container-low transition-all border-2 border-transparent hover:border-outline-variant/50"
-           data-pt-id="${pt.id}" data-pt-name="${pt.ho_ten}" data-pt-specialty="${pt.chuyen_mon || ''}">
+           data-pt-id="${pt.id}" data-pt-name="${pt.ho_ten}" data-pt-specialty="${pt.chuyen_mon || ''}" data-avatar-url="${pt.avatar_url || ''}">
         ${window.GymApp.avatarImg(pt.avatar_url, pt.ho_ten, 'sm')}
         <div class="flex-1 min-w-0">
           <p class="font-bold text-on-surface text-xs">${pt.ho_ten}</p>
-          <p class="text-on-surface-variant text-[11px]">${pt.ma_ho_so} &bull; ${pt.chuyen_mon || 'PT'} &bull; ${pt.so_hoc_vien || 0} HV</p>
+          <p class="text-on-surface-variant text-[11px]">${pt.ma_ho_so} &bull; ${pt.chuyen_mon || 'Huấn luyện viên'} &bull; ${pt.so_hoc_vien || 0} HV</p>
         </div>
       </div>
     `).join('');
@@ -639,7 +639,7 @@ window.GymApp.pages['pt-register'] = {
         const display = document.getElementById('selected-pt-display');
         display.classList.remove('hidden');
         document.getElementById('selected-pt-info').innerHTML = `
-          ${window.GymApp.avatarImg('', card.dataset.ptName, 'sm')}
+          ${window.GymApp.avatarImg(card.dataset.avatarUrl || '', card.dataset.ptName, 'sm')}
           <span class="text-brand-primary font-bold text-body-sm">${card.dataset.ptName}</span>
         `;
 

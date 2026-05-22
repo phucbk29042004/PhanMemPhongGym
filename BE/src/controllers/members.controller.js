@@ -9,6 +9,7 @@ import { uploadImage, deleteImage, isCloudinaryReady } from '../utils/cloudinary
 import { ghi_audit_log } from '../utils/audit.js';
 import { createNotification, createUserNotification } from '../utils/notifications.js';
 import bcrypt from 'bcryptjs';
+import { createPaymentLink, getPaymentLinkInformation } from '../utils/payos.js';
 
 // Tự động cập nhật các gói tập/PT đã quá hạn sử dụng sang trạng thái tương ứng
 const autoUpdateExpiredStatuses = () => {
@@ -160,7 +161,7 @@ export const createMember = async (req, res) => {
   const {
     ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email, dia_chi_tam_tru, ghi_chu,
     loai_ho_so, chi_nhanh, phong_tap, noi_sinh, cccd, que_quan,
-    tinh_thanh, quan_huyen, phuong_xa, chuyen_mon, chuc_vu, loai_hv
+    tinh_thanh, quan_huyen, phuong_xa, chuyen_mon, chuc_vu, loai_hv, kinh_nghiem
   } = req.body;
 
   if (!ho_ten) return error(res, 'Họ tên là bắt buộc.', 400);
@@ -202,14 +203,15 @@ export const createMember = async (req, res) => {
       ma_ho_so, loai_ho_so, ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email,
       dia_chi_tam_tru, avatar_url, cloudinary_public_id, ghi_chu, nguoi_tao_id,
       chi_nhanh, phong_tap, noi_sinh, cccd, que_quan, tinh_thanh, quan_huyen, phuong_xa,
-      chuyen_mon, chuc_vu, loai_hv
+      chuyen_mon, chuc_vu, loai_hv, kinh_nghiem
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     ma_ho_so, loai, ho_ten, gioi_tinh || null, ngay_sinh || null, so_dien_thoai || null, email || null,
     dia_chi_tam_tru || null, avatar_url, cloudinary_public_id, ghi_chu || null, req.user.id,
     chi_nhanh || null, phong_tap || null, noi_sinh || null, cccd || null, que_quan || null,
-    tinh_thanh || null, quan_huyen || null, phuong_xa || null, chuyen_mon || null, chuc_vu || null, loai_hv || null
+    tinh_thanh || null, quan_huyen || null, phuong_xa || null, chuyen_mon || null, chuc_vu || null, loai_hv || null,
+    parseInt(kinh_nghiem) || 0
   );
 
   const newMember = db.prepare('SELECT * FROM ho_so WHERE id = ?').get(result.lastInsertRowid);
@@ -238,7 +240,7 @@ export const updateMember = (req, res) => {
   const {
     ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email, dia_chi_tam_tru, ghi_chu,
     chi_nhanh, phong_tap, noi_sinh, cccd, que_quan, tinh_thanh, quan_huyen, phuong_xa,
-    chuyen_mon, chuc_vu, loai_hv
+    chuyen_mon, chuc_vu, loai_hv, kinh_nghiem
   } = req.body;
 
   db.prepare(`
@@ -261,12 +263,13 @@ export const updateMember = (req, res) => {
       chuyen_mon = COALESCE(?, chuyen_mon),
       chuc_vu = COALESCE(?, chuc_vu),
       loai_hv = COALESCE(?, loai_hv),
+      kinh_nghiem = COALESCE(?, kinh_nghiem),
       nguoi_cap_nhat_id = ?
     WHERE id = ?
   `).run(
     ho_ten || null, gioi_tinh || null, ngay_sinh || null, so_dien_thoai || null, email || null, dia_chi_tam_tru || null, ghi_chu || null,
     chi_nhanh || null, phong_tap || null, noi_sinh || null, cccd || null, que_quan || null, tinh_thanh || null, quan_huyen || null, phuong_xa || null,
-    chuyen_mon || null, chuc_vu || null, loai_hv || null, req.user.id, id
+    chuyen_mon || null, chuc_vu || null, loai_hv || null, kinh_nghiem !== undefined ? parseInt(kinh_nghiem) || 0 : undefined, req.user.id, id
   );
 
   const updated = db.prepare('SELECT * FROM ho_so WHERE id = ?').get(id);
@@ -571,15 +574,19 @@ export const getMyProfile = (req, res) => {
              gt.ten_goi, gt.so_thang
       FROM dang_ky_goi_tap dk
       JOIN goi_tap gt ON gt.id = dk.goi_tap_id
-      WHERE dk.ho_so_id = ? AND dk.trang_thai IN ('dang_hoat_dong', 'cho_duyet')
-      ORDER BY 
-        CASE WHEN dk.trang_thai = 'dang_hoat_dong' THEN 0 ELSE 1 END,
+      WHERE dk.ho_so_id = ? AND dk.trang_thai IN ('dang_hoat_dong', 'cho_duyet', 'het_han')
+      ORDER BY
+        CASE WHEN dk.trang_thai = 'dang_hoat_dong' THEN 0
+             WHEN dk.trang_thai = 'cho_duyet' THEN 1
+             ELSE 2 END,
         dk.den_ngay DESC
     `).all(hoSo.id);
 
     hoSo.dang_ky_pt = db.prepare(`
       SELECT dp.id, dp.so_buoi_dang_ky, dp.so_buoi_da_tap, dp.tu_ngay, dp.den_ngay,
              dp.trang_thai, pt.ho_ten AS ten_pt, pt.avatar_url AS avatar_pt, pt.chuyen_mon,
+             ROUND((SELECT AVG(so_sao) FROM danh_gia_pt dg WHERE dg.pt_id = pt.id), 1) AS pt_rating,
+             (SELECT COUNT(*) FROM danh_gia_pt dg WHERE dg.pt_id = pt.id) AS pt_rating_count,
              gp.ten_goi AS ten_goi_pt
       FROM dang_ky_pt dp
       JOIN ho_so pt ON pt.id = dp.pt_id
@@ -606,6 +613,35 @@ export const getMyProfile = (req, res) => {
   }
 
   return success(res, hoSo);
+};
+
+export const updateMyHealth = (req, res) => {
+  const { chieu_cao_cm, can_nang_kg } = req.body;
+  const height = chieu_cao_cm === '' || chieu_cao_cm == null ? null : Number(chieu_cao_cm);
+  const weight = can_nang_kg === '' || can_nang_kg == null ? null : Number(can_nang_kg);
+
+  if (height !== null && (!Number.isFinite(height) || height < 80 || height > 250)) {
+    return error(res, 'Chiều cao phải nằm trong khoảng 80-250 cm.', 400);
+  }
+  if (weight !== null && (!Number.isFinite(weight) || weight < 20 || weight > 300)) {
+    return error(res, 'Cân nặng phải nằm trong khoảng 20-300 kg.', 400);
+  }
+
+  const hoSo = db.prepare('SELECT * FROM ho_so WHERE tai_khoan_id = ? AND is_deleted = 0').get(req.user.id);
+  if (!hoSo) return error(res, 'Không tìm thấy hồ sơ người dùng.', 404);
+
+  db.prepare(`
+    UPDATE ho_so SET
+      chieu_cao_cm = ?,
+      can_nang_kg = ?,
+      nguoi_cap_nhat_id = ?,
+      ngay_cap_nhat = datetime('now','localtime')
+    WHERE id = ?
+  `).run(height, weight, req.user.id, hoSo.id);
+
+  const updated = db.prepare('SELECT id, chieu_cao_cm, can_nang_kg FROM ho_so WHERE id = ?').get(hoSo.id);
+  ghi_audit_log(req, 'UPDATE', 'ho_so', hoSo.id, { chieu_cao_cm: hoSo.chieu_cao_cm, can_nang_kg: hoSo.can_nang_kg }, updated, 'Cập nhật chỉ số BMI');
+  return success(res, updated, 'Đã cập nhật chiều cao/cân nặng');
 };
 
 // ── POST /api/members/:id/package ────────────────────────
@@ -656,9 +692,9 @@ export const registerPackage = (req, res) => {
 };
 
 // ── POST /api/members/me/package-request ──────────────────
-export const requestPackageRenewal = (req, res) => {
+export const requestPackageRenewal = async (req, res) => {
   try {
-    const { goi_tap_id, tu_ngay, ghi_chu } = req.body;
+    const { goi_tap_id, tu_ngay, ghi_chu, phuong_thuc_tt, chi_nhanh_mua } = req.body;
 
     if (!goi_tap_id || !tu_ngay) {
       return error(res, 'Thiếu thông tin: goi_tap_id, tu_ngay', 400);
@@ -676,11 +712,11 @@ export const requestPackageRenewal = (req, res) => {
     // 1. Kiểm tra xem đã có yêu cầu gia hạn nào đang chờ duyệt hay chưa
     const pendingRequest = db.prepare(`
       SELECT id FROM dang_ky_goi_tap
-      WHERE ho_so_id = ? AND trang_thai = 'cho_duyet'
+      WHERE ho_so_id = ? AND trang_thai = 'cho_duyet' AND (payos_status IS NULL OR payos_status = 'PENDING')
     `).get(hoSo.id);
 
     if (pendingRequest) {
-      return error(res, 'Bạn đã có một yêu cầu gia hạn đang chờ duyệt. Vui lòng đợi lễ tân phê duyệt hoặc liên hệ quầy lễ tân.', 400);
+      return error(res, 'Bạn đã có một yêu cầu gia hạn đang chờ duyệt. Vui lòng đợi lễ tân phê duyệt hoặc hoàn thành thanh toán.', 400);
     }
 
     // 2. Lấy gói tập đang hoạt động có ngày hết hạn xa nhất để thực hiện nối tiếp nếu có
@@ -710,25 +746,160 @@ export const requestPackageRenewal = (req, res) => {
     const denNgay = dateResult ? dateResult.den_ngay : null;
     if (!denNgay) return error(res, 'Không thể tính toán ngày hết hạn. Vui lòng kiểm tra lại ngày bắt đầu.', 400);
 
+    let orderCode = null;
+    let payosUrl = null;
+    let qrCodeUrl = null;
+
+    if (phuong_thuc_tt === 'chuyen_khoan') {
+      orderCode = Math.floor(Date.now() / 1000) * 100 + Math.floor(Math.random() * 100);
+      try {
+        const returnUrl = `https://pay.waystation.vn/success?orderCode=${orderCode}`;
+        const cancelUrl = `https://pay.waystation.vn/cancel?orderCode=${orderCode}`;
+        const description = `Gia han ${goiTap.ten_goi}`;
+        const paymentLink = await createPaymentLink(orderCode, goiTap.gia, description, returnUrl, cancelUrl);
+        payosUrl = paymentLink.checkoutUrl;
+        qrCodeUrl = paymentLink.qrCode;
+      } catch (payosErr) {
+        console.error('[BACKEND] Lỗi khi tạo link thanh toán PayOS:', payosErr);
+        return error(res, `Không thể tạo cổng thanh toán PayOS: ${payosErr.message}`, 500);
+      }
+    }
+
     const result = db.prepare(`
       INSERT INTO dang_ky_goi_tap
-        (ho_so_id, goi_tap_id, tu_ngay, den_ngay, gia_thuc_te, ghi_chu_gia, trang_thai, nguoi_tao_id, nguoi_cap_nhat_id)
-      VALUES (?, ?, ?, ?, ?, ?, 'cho_duyet', ?, ?)
-    `).run(hoSo.id, goi_tap_id, finalTuNgay, denNgay, goiTap.gia, ghi_chu || 'Yêu cầu gia hạn từ App', req.user.id, req.user.id);
+        (ho_so_id, goi_tap_id, tu_ngay, den_ngay, gia_thuc_te, ghi_chu_gia, trang_thai, nguoi_tao_id, nguoi_cap_nhat_id, phuong_thuc_tt, payos_order_code, payos_status, chi_nhanh_mua)
+      VALUES (?, ?, ?, ?, ?, ?, 'cho_duyet', ?, ?, ?, ?, ?, ?)
+    `).run(
+      hoSo.id,
+      goi_tap_id,
+      finalTuNgay,
+      denNgay,
+      goiTap.gia,
+      ghi_chu || 'Yêu cầu gia hạn từ App',
+      req.user.id,
+      req.user.id,
+      phuong_thuc_tt || 'tien_mat',
+      orderCode,
+      orderCode ? 'PENDING' : null,
+      chi_nhanh_mua || null
+    );
 
     createNotification(
       'gia_han_goi_tap',
       'Yêu cầu gia hạn mới',
-      `${hoSo.ho_ten} vừa gửi yêu cầu gia hạn gói ${goiTap.ten_goi}. Vui lòng kiểm tra và duyệt.`,
+      `${hoSo.ho_ten} vừa gửi yêu cầu gia hạn gói ${goiTap.ten_goi} qua ${phuong_thuc_tt === 'chuyen_khoan' ? 'chuyển khoản PayOS' : 'tiền mặt'}.`,
       result.lastInsertRowid,
       'dang_ky_goi_tap',
       'admin'
     );
 
-    return success(res, { id: result.lastInsertRowid }, 'Gửi yêu cầu gia hạn thành công. Vui lòng đến quầy lễ tân để hoàn tất thanh toán.', 201);
+    if (phuong_thuc_tt === 'chuyen_khoan') {
+      return success(res, {
+        id: result.lastInsertRowid,
+        orderCode,
+        payosUrl,
+        qrCodeUrl,
+        amount: goiTap.gia,
+        den_ngay: denNgay
+      }, 'Tạo link thanh toán PayOS thành công. Vui lòng thanh toán.', 201);
+    } else {
+      return success(res, {
+        id: result.lastInsertRowid,
+        den_ngay: denNgay
+      }, 'Gửi yêu cầu gia hạn thành công. Vui lòng đến quầy lễ tân để hoàn tất thanh toán.', 201);
+    }
   } catch (err) {
     console.error('[BACKEND] Lỗi requestPackageRenewal:', err);
     return error(res, `Lỗi hệ thống: ${err.message}`, 500);
+  }
+};
+
+// ── GET /api/members/me/payos-status/:orderCode ───────────
+export const checkPayosStatus = async (req, res) => {
+  try {
+    const { orderCode } = req.params;
+
+    if (!orderCode) {
+      return error(res, 'Thiếu orderCode', 400);
+    }
+
+    const request = db.prepare(`
+      SELECT dk.*, h.ho_ten, gt.ten_goi
+      FROM dang_ky_goi_tap dk
+      JOIN ho_so h ON h.id = dk.ho_so_id
+      JOIN goi_tap gt ON gt.id = dk.goi_tap_id
+      WHERE dk.payos_order_code = ?
+    `).get(orderCode);
+
+    if (!request) {
+      return error(res, 'Không tìm thấy yêu cầu gia hạn tương ứng với mã thanh toán này.', 404);
+    }
+
+    if (request.payos_status === 'PAID') {
+      return success(res, { status: 'PAID' }, 'Thanh toán đã được ghi nhận trước đó.');
+    }
+
+    // Gọi PayOS API kiểm tra trạng thái
+    const payosData = await getPaymentLinkInformation(orderCode);
+
+    if (payosData.status === 'PAID') {
+      const today = new Date().toISOString().split('T')[0];
+      // Phương án B: Nếu ngày bắt đầu tu_ngay <= ngày hôm nay thì active ngay (dang_hoat_dong), ngược lại giữ cho_duyet để chờ đến ngày bắt đầu
+      const isActive = request.tu_ngay <= today;
+      const finalStatus = isActive ? 'dang_hoat_dong' : 'cho_duyet';
+
+      db.prepare(`
+        UPDATE dang_ky_goi_tap
+        SET payos_status = 'PAID',
+            trang_thai = ?,
+            ngay_thanh_toan = datetime('now', 'localtime'),
+            phuong_thuc_tt = 'chuyen_khoan',
+            ghi_chu_tt = 'Thanh toán tự động qua PayOS'
+        WHERE id = ?
+      `).run(finalStatus, request.id);
+
+      // Ghi audit log
+      ghi_audit_log(req, 'UPDATE', 'dang_ky_goi_tap', request.id, request,
+        { payos_status: 'PAID', trang_thai: finalStatus },
+        `Hội viên ${request.ho_ten} thanh toán thành công qua PayOS cho gói ${request.ten_goi}`
+      );
+
+      // Tạo thông báo
+      createNotification(
+        'gia_han_goi_tap',
+        'Thanh toán PayOS thành công ✅',
+        `Hội viên ${request.ho_ten} đã thanh toán thành công qua PayOS cho gói ${request.ten_goi} (${Number(request.gia_thuc_te).toLocaleString('vi-VN')}đ). Gói tập đã được kích hoạt tự động.`,
+        request.id,
+        'dang_ky_goi_tap',
+        'admin'
+      );
+
+      createUserNotification(
+        request.ho_so_id,
+        'Thanh toán thành công 🎉',
+        `Thanh toán qua PayOS cho gói "${request.ten_goi}" đã thành công. Gói tập của bạn đã được kích hoạt!`,
+        'thong_bao_chung'
+      );
+
+      return success(res, { status: 'PAID' }, 'Thanh toán thành công. Gói tập đã được kích hoạt.');
+    }
+
+    if (payosData.status === 'CANCELLED') {
+      db.prepare(`
+        UPDATE dang_ky_goi_tap
+        SET payos_status = 'CANCELLED',
+            trang_thai = 'huy'
+        WHERE id = ?
+      `).run(request.id);
+
+      return success(res, { status: 'CANCELLED' }, 'Giao dịch thanh toán đã bị hủy.');
+    }
+
+    return success(res, { status: 'PENDING' }, 'Giao dịch đang chờ thanh toán.');
+  } catch (err) {
+    console.error('[BACKEND] Lỗi checkPayosStatus:', err);
+    // Trả về PENDING nếu gặp lỗi tạm thời
+    return success(res, { status: 'PENDING', message: err.message }, 'Đang kiểm tra trạng thái.');
   }
 };
 
@@ -738,11 +909,14 @@ export const getPackageRequests = (req, res) => {
     SELECT
       dk.id, dk.ho_so_id, dk.goi_tap_id as goi_tap_id, dk.tu_ngay, dk.den_ngay,
       dk.gia_thuc_te, dk.ghi_chu_gia, dk.trang_thai, dk.ngay_tao,
+      dk.phuong_thuc_tt, dk.payos_status, dk.payos_order_code, dk.chi_nhanh_mua,
       h.ho_ten, h.ma_ho_so, gt.ten_goi as ten_goi_tap
     FROM dang_ky_goi_tap dk
     JOIN ho_so h ON h.id = dk.ho_so_id
     JOIN goi_tap gt ON gt.id = dk.goi_tap_id
     WHERE dk.trang_thai = 'cho_duyet'
+      AND (dk.payos_status IS NULL OR dk.payos_status = 'PENDING')
+      AND dk.ngay_thanh_toan IS NULL
     ORDER BY dk.ngay_tao DESC
   `).all();
 
@@ -786,20 +960,24 @@ export const approvePackageRequest = (req, res) => {
     return success(res, null, 'Đã từ chối yêu cầu gia hạn.');
   }
 
-  // Approve: Chuyển sang dang_hoat_dong và cập nhật thông tin thanh toán
+  // Approve: Kích hoạt ngay nếu ngày bắt đầu <= hôm nay, ngược lại giữ 'cho_duyet' chờ kích hoạt tự động
+  const today = new Date().toISOString().split('T')[0];
+  const isActive = request.tu_ngay <= today;
+  const finalStatus = isActive ? 'dang_hoat_dong' : 'cho_duyet';
+
   db.prepare(`
     UPDATE dang_ky_goi_tap SET
-      trang_thai = 'dang_hoat_dong',
+      trang_thai = ?,
       gia_thuc_te = COALESCE(?, gia_thuc_te),
       phuong_thuc_tt = ?,
       nguoi_thu_id = ?,
       ghi_chu_tt = ?,
       nguoi_cap_nhat_id = ?,
-      ngay_thanh_toan = ?
+      ngay_thanh_toan = datetime('now', 'localtime')
     WHERE id = ?
-  `).run(gia_thuc_te, phuong_thuc_tt || 'tien_mat', req.user.id, ghi_chu_tt || 'Duyệt từ App', req.user.id, request.tu_ngay, id);
+  `).run(finalStatus, gia_thuc_te, phuong_thuc_tt || 'tien_mat', req.user.id, ghi_chu_tt || 'Duyệt thủ công', req.user.id, id);
 
-  ghi_audit_log(req, 'UPDATE', 'dang_ky_goi_tap', id, request, { trang_thai: 'dang_hoat_dong' }, `Duyệt gia hạn gói tập cho ${member.ho_ten}`);
+  ghi_audit_log(req, 'UPDATE', 'dang_ky_goi_tap', id, request, { trang_thai: finalStatus }, `Duyệt gia hạn gói tập cho ${member.ho_ten} (${finalStatus === 'dang_hoat_dong' ? 'Kích hoạt ngay' : 'Chờ kích hoạt nối tiếp'})`);
 
   createUserNotification(
     request.ho_so_id,
@@ -896,6 +1074,21 @@ export const getMyNotifications = (req, res) => {
   const notifications = [];
   let da_check_in_hom_nay = false;
 
+  // Helper sinh thời gian hiện tại chuẩn định dạng YYYY-MM-DD HH:mm:ss theo múi giờ địa phương
+  const getLocalNowString = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const date = String(d.getDate()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const seconds = String(d.getSeconds()).padStart(2, '0');
+    return `${year}-${month}-${date} ${hours}:${minutes}:${seconds}`;
+  };
+
+  const nowStr = getLocalNowString();
+  const today = nowStr.split(' ')[0];
+
   // ── HÀNH TRÌNH HỘI VIÊN ─────────────────────────────────
   if (vai_tro === 'hoi_vien') {
 
@@ -915,6 +1108,7 @@ export const getMyNotifications = (req, res) => {
         icon: 'warning',
         tieu_de: 'Gói tập đã hết hạn',
         noi_dung: `Gói "${goiHetHan.ten_goi}" của bạn đã hết hạn từ ${new Date(goiHetHan.den_ngay).toLocaleDateString('vi-VN')}. Liên hệ lễ tân để gia hạn ngay!`,
+        ngay_tao: `${goiHetHan.den_ngay} 23:59:59`,
       });
     }
 
@@ -936,6 +1130,7 @@ export const getMyNotifications = (req, res) => {
         icon: 'hourglass_top',
         tieu_de: 'Gói tập sắp hết hạn',
         noi_dung: `Gói "${goiSapHet.ten_goi}" còn ${goiSapHet.so_ngay_con} ngày (${new Date(goiSapHet.den_ngay).toLocaleDateString('vi-VN')}). Hãy gia hạn sớm để không gián đoạn!`,
+        ngay_tao: nowStr,
       });
     }
 
@@ -985,6 +1180,7 @@ export const getMyNotifications = (req, res) => {
         noi_dung: goiPtSapHet.buoi_con_lai === 0
           ? `Bạn đã dùng hết toàn bộ buổi tập với PT ${goiPtSapHet.ten_pt}. Đăng ký thêm để tiếp tục luyện tập!`
           : `Gói PT với ${goiPtSapHet.ten_pt} còn ${goiPtSapHet.buoi_con_lai} buổi. Liên hệ lễ tân để đăng ký thêm.`,
+        ngay_tao: nowStr,
       });
     }
 
@@ -1008,12 +1204,13 @@ export const getMyNotifications = (req, res) => {
         noi_dung: daCheckin
           ? `Bạn đã check-in thành công. Buổi tập với PT ${buoiHomNay.ten_pt} lúc ${buoiHomNay.gio_bat_dau} đang chờ bạn!`
           : `Buổi tập với PT ${buoiHomNay.ten_pt} vào lúc ${buoiHomNay.gio_bat_dau}–${buoiHomNay.gio_ket_thuc}. Nhớ check-in trước khi vào tập nhé!`,
+        ngay_tao: `${today} ${buoiHomNay.gio_bat_dau}:00`,
       });
     }
 
     // 5. Check-in hôm nay — lấy lượt vào gần nhất trong ngày
     const checkInHomNay = db.prepare(`
-      SELECT id, phuong_thuc, strftime('%H:%M', thoi_diem) AS gio_hien_thi
+      SELECT id, phuong_thuc, thoi_diem, strftime('%H:%M', thoi_diem) AS gio_hien_thi
       FROM luot_vao_ra
       WHERE ho_so_id = ? AND loai = 'vao'
         AND date(thoi_diem) = date('now','localtime')
@@ -1029,12 +1226,13 @@ export const getMyNotifications = (req, res) => {
         icon: 'check_circle',
         tieu_de: 'Check-in thành công',
         noi_dung: `Bạn đã check-in thành công lúc ${checkInHomNay.gio_hien_thi || 'hôm nay'}${checkInHomNay.phuong_thuc === 'qr_code' ? ' bằng mã QR' : ''}. Chúc bạn có một buổi tập hiệu quả!`,
+        ngay_tao: checkInHomNay.thoi_diem,
       });
     }
 
     // 6. Buổi PT bị HỦY trong 7 ngày qua
     const buoiHuy = db.prepare(`
-      SELECT COUNT(*) AS so_buoi_huy
+      SELECT COUNT(*) AS so_buoi_huy, MAX(ngay_huy) AS max_ngay_huy
       FROM lich_tap
       WHERE hoi_vien_id = ? AND trang_thai = 'da_huy'
         AND ngay_huy >= date('now','localtime','-7 days')
@@ -1046,6 +1244,7 @@ export const getMyNotifications = (req, res) => {
         icon: 'event_busy',
         tieu_de: 'Buổi tập bị hủy gần đây',
         noi_dung: `Có ${buoiHuy.so_buoi_huy} buổi tập bị hủy trong 7 ngày qua. Liên hệ lễ tân để sắp xếp lại lịch tập.`,
+        ngay_tao: buoiHuy.max_ngay_huy ? (buoiHuy.max_ngay_huy.includes(' ') ? buoiHuy.max_ngay_huy : `${buoiHuy.max_ngay_huy} 23:59:59`) : nowStr,
       });
     }
   }
@@ -1055,11 +1254,18 @@ export const getMyNotifications = (req, res) => {
 
     // 1. Học viên vừa CHECK-IN có lịch hôm nay (nhắc PT chuẩn bị)
     const hvCheckinHomNay = db.prepare(`
-      SELECT COUNT(DISTINCT lt.hoi_vien_id) AS so_hv
+      SELECT COUNT(DISTINCT lt.hoi_vien_id) AS so_hv,
+             (SELECT MAX(thoi_diem)
+              FROM luot_vao_ra
+              WHERE ho_so_id IN (
+                SELECT hoi_vien_id FROM lich_tap
+                WHERE pt_id = ? AND ngay_tap = date('now','localtime') AND trang_thai = 'cho_tap' AND da_checkin = 1
+              ) AND loai = 'vao' AND date(thoi_diem) = date('now','localtime')
+             ) AS max_thoi_diem
       FROM lich_tap lt
       WHERE lt.pt_id = ? AND lt.ngay_tap = date('now','localtime')
         AND lt.trang_thai = 'cho_tap' AND lt.da_checkin = 1
-    `).get(ho_so_id);
+    `).get(ho_so_id, ho_so_id);
 
     if (hvCheckinHomNay && hvCheckinHomNay.so_hv > 0) {
       notifications.push({
@@ -1067,6 +1273,7 @@ export const getMyNotifications = (req, res) => {
         icon: 'how_to_reg',
         tieu_de: 'Học viên đã vào phòng tập',
         noi_dung: `${hvCheckinHomNay.so_hv} học viên đã check-in và có lịch tập với bạn hôm nay. Hãy chuẩn bị!`,
+        ngay_tao: hvCheckinHomNay.max_thoi_diem || nowStr,
       });
     }
 
@@ -1088,12 +1295,13 @@ export const getMyNotifications = (req, res) => {
         icon: 'schedule',
         tieu_de: 'Học viên chưa check-in',
         noi_dung: `${buoiSapToi.ten_hv} chưa check-in nhưng lịch tập bắt đầu lúc ${buoiSapToi.gio_bat_dau}. Vui lòng xác nhận với lễ tân.`,
+        ngay_tao: `${today} ${buoiSapToi.gio_bat_dau}:00`,
       });
     }
 
     // 3. Lịch tập MỚI được đặt trong 24h qua
     const lichMoi = db.prepare(`
-      SELECT COUNT(*) AS so_lich
+      SELECT COUNT(*) AS so_lich, MAX(ngay_tao) AS max_ngay_tao
       FROM lich_tap
       WHERE pt_id = ? AND trang_thai = 'cho_tap'
         AND ngay_tao >= datetime('now','localtime','-24 hours')
@@ -1105,12 +1313,13 @@ export const getMyNotifications = (req, res) => {
         icon: 'event_available',
         tieu_de: 'Lịch tập mới',
         noi_dung: `Có ${lichMoi.so_lich} buổi tập mới vừa được đặt trong 24 giờ qua. Kiểm tra lịch của bạn!`,
+        ngay_tao: lichMoi.max_ngay_tao || nowStr,
       });
     }
 
     // 4. Buổi tập bị HỦY trong 7 ngày qua
     const buoiHuyPt = db.prepare(`
-      SELECT COUNT(*) AS so_huy
+      SELECT COUNT(*) AS so_huy, MAX(ngay_huy) AS max_ngay_huy
       FROM lich_tap
       WHERE pt_id = ? AND trang_thai = 'da_huy'
         AND ngay_huy >= date('now','localtime','-7 days')
@@ -1122,12 +1331,13 @@ export const getMyNotifications = (req, res) => {
         icon: 'event_busy',
         tieu_de: 'Buổi tập bị hủy gần đây',
         noi_dung: `${buoiHuyPt.so_huy} buổi tập bị hủy trong 7 ngày qua. Xem lại lịch để cập nhật kế hoạch.`,
+        ngay_tao: buoiHuyPt.max_ngay_huy ? (buoiHuyPt.max_ngay_huy.includes(' ') ? buoiHuyPt.max_ngay_huy : `${buoiHuyPt.max_ngay_huy} 23:59:59`) : nowStr,
       });
     }
 
     // 5. Học viên MỚI đăng ký gói PT trong 7 ngày qua
     const hvMoi = db.prepare(`
-      SELECT COUNT(*) AS so_hv
+      SELECT COUNT(*) AS so_hv, MAX(ngay_tao) AS max_ngay_tao
       FROM dang_ky_pt
       WHERE pt_id = ? AND trang_thai = 'dang_hoat_dong'
         AND ngay_tao >= date('now','localtime','-7 days')
@@ -1139,6 +1349,7 @@ export const getMyNotifications = (req, res) => {
         icon: 'person_add',
         tieu_de: 'Học viên mới đăng ký',
         noi_dung: `${hvMoi.so_hv} học viên vừa đăng ký gói PT với bạn trong 7 ngày qua. Hãy liên hệ để lên kế hoạch tập luyện!`,
+        ngay_tao: hvMoi.max_ngay_tao || nowStr,
       });
     }
 
@@ -1168,9 +1379,12 @@ export const getMyNotifications = (req, res) => {
     });
   }
 
-  // Sắp xếp theo mức độ ưu tiên: danger(1) > warning(2) > info(3) > success(4)
-  const MUC_DO_ORDER = { danger: 1, warning: 2, info: 3, success: 4 };
-  notifications.sort((a, b) => (MUC_DO_ORDER[a.muc_do] || 5) - (MUC_DO_ORDER[b.muc_do] || 5));
+  // Sắp xếp theo ngày tạo giảm dần (mới nhất lên trên đầu)
+  notifications.sort((a, b) => {
+    const timeA = a.ngay_tao || '';
+    const timeB = b.ngay_tao || '';
+    return timeB.localeCompare(timeA);
+  });
 
   return success(res, { notifications, da_check_in_hom_nay });
 };
@@ -1202,7 +1416,7 @@ export const markMyNotificationsRead = (req, res) => {
   if (!hoSo) return error(res, 'Không tìm thấy hồ sơ hội viên.', 404);
 
   db.prepare(`
-    UPDATE thong_bao_user SET da_doc = 1 
+    UPDATE thong_bao_user SET da_doc = 1
     WHERE ho_so_id = ? AND da_doc = 0
   `).run(hoSo.id);
 

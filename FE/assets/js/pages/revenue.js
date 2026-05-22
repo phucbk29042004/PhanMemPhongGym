@@ -375,8 +375,8 @@ window.GymApp.pages['revenue'] = {
     tbody.innerHTML = list.map(t => {
       const time = t.thoi_gian ? new Date(t.thoi_gian).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '—';
       const loaiLabel = t.loai === 'goi_tap' 
-        ? `<span class="bg-[#e7f5e9] text-[#1D9336] px-2 py-0.5 rounded-full text-label-xs font-bold border border-[#1D9336]/20">Gói tập</span>` 
-        : `<span class="bg-[#e8def8] text-[#6750a4] px-2 py-0.5 rounded-full text-label-xs font-bold border border-[#6750a4]/20">Gói PT</span>`;
+        ? `<span class="bg-[#e7f5e9] dark:bg-[#0b2010] text-[#1D9336] dark:text-[#4cce5f] px-2 py-0.5 rounded-full text-label-xs font-bold border border-[#1D9336]/20 dark:border-[#4cce5f]/20">Gói tập</span>` 
+        : `<span class="bg-[#e8def8] dark:bg-[#201035] text-[#6750a4] dark:text-[#b89eff] px-2 py-0.5 rounded-full text-label-xs font-bold border border-[#6750a4]/20 dark:border-[#b89eff]/20">Gói PT</span>`;
       return `
         <tr class="border-b border-outline-variant/30 hover:bg-brand-primary/5 transition-colors">
           <td class="px-standard py-3 font-bold text-on-surface text-body-md">${t.khach_hang || '—'}</td>

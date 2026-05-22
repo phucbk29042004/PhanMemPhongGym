@@ -10,6 +10,7 @@ import PTScheduleScreen from '../screens/pt/PTScheduleScreen';
 import PTNotificationScreen from '../screens/pt/PTNotificationScreen';
 import PTProfileScreen from '../screens/pt/PTProfileScreen';
 import GymRulesScreen from '../screens/shared/GymRulesScreen';
+import PTMeScreen from '../screens/shared/PTMeScreen';
 import { useNotificationStore } from '../store/useNotificationStore';
 import { useTheme } from '../context/ThemeContext';
 
@@ -124,6 +125,14 @@ export default function PTNavigator() {
       <Tab.Screen
         name="GymRules"
         component={GymRulesScreen}
+        options={{
+          tabBarItemStyle: { display: 'none' },
+        }}
+      />
+
+      <Tab.Screen
+        name="PTMe"
+        component={PTMeScreen}
         options={{
           tabBarItemStyle: { display: 'none' },
         }}

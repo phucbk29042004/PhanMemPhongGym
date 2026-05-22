@@ -27,9 +27,16 @@ db.pragma('foreign_keys = ON');
 db.pragma('journal_mode = WAL');
 db.pragma('busy_timeout = 5000');
 
+try { db.exec(`ALTER TABLE ho_so ADD COLUMN chieu_cao_cm REAL;`); } catch (_) {}
+try { db.exec(`ALTER TABLE ho_so ADD COLUMN can_nang_kg REAL;`); } catch (_) {}
+
 // ── Migration tự động khi khởi động ───────────────────────
 try {
   db.exec(`ALTER TABLE lich_tap ADD COLUMN da_checkin INTEGER NOT NULL DEFAULT 0 CHECK (da_checkin IN (0,1));`);
+} catch (_) { /* cột đã tồn tại — bỏ qua */ }
+
+try {
+  db.exec(`ALTER TABLE ho_so ADD COLUMN kinh_nghiem INTEGER DEFAULT 0;`);
 } catch (_) { /* cột đã tồn tại — bỏ qua */ }
 
 // Tạo bảng cau_hinh nếu chưa có
@@ -313,6 +320,49 @@ try { db.exec(`ALTER TABLE dang_ky_goi_tap ADD COLUMN ly_do_huy TEXT;`); } catch
 try { db.exec(`ALTER TABLE dang_ky_goi_tap ADD COLUMN so_tien_hoan REAL DEFAULT 0;`); } catch (_) {}
 try { db.exec(`ALTER TABLE dang_ky_goi_tap ADD COLUMN ngay_huy DATETIME;`); } catch (_) {}
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS danh_gia_pt (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    lich_tap_id     INTEGER NOT NULL REFERENCES lich_tap(id) ON DELETE CASCADE,
+    pt_id           INTEGER NOT NULL REFERENCES ho_so(id),
+    hoi_vien_id     INTEGER NOT NULL REFERENCES ho_so(id),
+    so_sao          INTEGER NOT NULL CHECK (so_sao BETWEEN 1 AND 5),
+    tieu_chi_json   TEXT,
+    tag_json        TEXT,
+    noi_dung        TEXT,
+    nguoi_tao_id    INTEGER REFERENCES tai_khoan(id),
+    nguoi_cap_nhat_id INTEGER REFERENCES tai_khoan(id),
+    ngay_tao        DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
+    ngay_cap_nhat   DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
+    UNIQUE(lich_tap_id, hoi_vien_id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_dgpt_pt ON danh_gia_pt(pt_id);
+  CREATE INDEX IF NOT EXISTS idx_dgpt_lich_tap ON danh_gia_pt(lich_tap_id);
+`);
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS pt_toi_nhat_ky (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    hoi_vien_id     INTEGER NOT NULL REFERENCES ho_so(id),
+    pt_id           INTEGER NOT NULL REFERENCES ho_so(id),
+    nguoi_gui_id    INTEGER NOT NULL REFERENCES ho_so(id),
+    vai_tro_gui     TEXT NOT NULL CHECK (vai_tro_gui IN ('hoi_vien','pt')),
+    loai_nhat_ky    TEXT NOT NULL DEFAULT 'cap_nhat'
+                    CHECK (loai_nhat_ky IN ('hoi_vien_cap_nhat','pt_dan_do','cap_nhat')),
+    cam_nhan_tap    TEXT,
+    khau_phan_an    TEXT,
+    so_phut_tap     INTEGER,
+    noi_dung_tap    TEXT,
+    loi_dan         TEXT,
+    ghi_chu         TEXT,
+    da_chinh_sua    INTEGER NOT NULL DEFAULT 0 CHECK (da_chinh_sua IN (0,1)),
+    ngay_tao        DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
+    ngay_cap_nhat   DATETIME NOT NULL DEFAULT (datetime('now','localtime'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_pttoi_pair ON pt_toi_nhat_ky(hoi_vien_id, pt_id, ngay_tao);
+  CREATE INDEX IF NOT EXISTS idx_pttoi_pt ON pt_toi_nhat_ky(pt_id, ngay_tao);
+`);
+
 // ── Sửa lỗi View bị hỏng sau khi migrate (SQLite tự động đổi tên ref sang _old) ──
 const checkView = db.prepare("SELECT sql FROM sqlite_master WHERE type='view' AND name='v_trang_thai_hoi_vien'").get();
 if (checkView && checkView.sql.includes('dang_ky_goi_tap_old')) {
@@ -505,6 +555,28 @@ if (!migratedV10) {
 
   db.prepare(`INSERT OR IGNORE INTO cau_hinh (khoa, gia_tri, mo_ta) VALUES ('db_migration_triggers_revenue_v10', '1', 'Sửa 4 triggers doanh thu: hỗ trợ duyệt từ App và trừ khi hủy gói')`).run();
   console.log('[DB] ✅ Migration triggers doanh thu v10 hoàn thành.');
+}
+
+// ── Migration v11: Thêm cột cho thanh toán PayOS và Chi nhánh mua ─────
+const migratedV11 = db.prepare(`SELECT gia_tri FROM cau_hinh WHERE khoa = 'db_migration_payos_v11'`).get();
+if (!migratedV11) {
+  try {
+    db.exec(`ALTER TABLE dang_ky_goi_tap ADD COLUMN payos_order_code INTEGER;`);
+  } catch (e) {
+    console.log('[DB] payos_order_code already exists or error:', e.message);
+  }
+  try {
+    db.exec(`ALTER TABLE dang_ky_goi_tap ADD COLUMN payos_status TEXT DEFAULT 'PENDING';`);
+  } catch (e) {
+    console.log('[DB] payos_status already exists or error:', e.message);
+  }
+  try {
+    db.exec(`ALTER TABLE dang_ky_goi_tap ADD COLUMN chi_nhanh_mua TEXT;`);
+  } catch (e) {
+    console.log('[DB] chi_nhanh_mua already exists or error:', e.message);
+  }
+  db.prepare(`INSERT OR IGNORE INTO cau_hinh (khoa, gia_tri, mo_ta) VALUES ('db_migration_payos_v11', '1', 'Thêm cột PayOS order code, status và chi nhánh mua vào dang_ky_goi_tap')`).run();
+  console.log('[DB] ✅ Migration v11 hoàn thành.');
 }
 
 export default db;

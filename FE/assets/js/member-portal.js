@@ -42,6 +42,29 @@
     return contracts.find(p => p.trang_thai === 'dang_hoat_dong') || null;
   }
 
+  function calcBmi(heightCm, weightKg) {
+    const h = Number(heightCm);
+    const w = Number(weightKg);
+    if (!h || !w) return null;
+    const value = w / Math.pow(h / 100, 2);
+    const category = value < 18.5 ? 'Gầy' : value < 25 ? 'Bình thường' : value < 30 ? 'Thừa cân' : 'Béo phì';
+    const advice = value < 18.5
+      ? 'Nên tăng năng lượng nạp vào và tập sức mạnh đều đặn.'
+      : value < 25
+        ? 'Duy trì lịch tập, ngủ đủ và cân bằng dinh dưỡng.'
+        : value < 30
+          ? 'Ưu tiên cardio vừa sức, kiểm soát khẩu phần và tăng vận động hằng ngày.'
+          : 'Nên trao đổi với PT/bác sĩ để có kế hoạch giảm cân an toàn.';
+    return { value, category, advice };
+  }
+
+  function ratingStars(value = 0) {
+    const rounded = Math.round(Number(value) || 0);
+    return Array.from({ length: 5 }, (_, i) => `
+      <span class="material-symbols-outlined" style="font-size:18px;color:${i < rounded ? '#f59e0b' : 'var(--outline)'};font-variation-settings:'FILL' 1">star</span>
+    `).join('');
+  }
+
   function nextSchedules(limit = 3) {
     const today = todayKey();
     return sortSchedules(window.GymApp.data.ptSchedules || [])
@@ -99,6 +122,14 @@
         return;
       }
 
+      const ratingBtn = e.target.closest('.btn-member-rating');
+      if (ratingBtn) {
+        const scheduleId = ratingBtn.dataset.id;
+        const schedule = (window.GymApp.data.ptSchedules || []).find(x => String(x.id) === String(scheduleId));
+        _showRatingModal(schedule);
+        return;
+      }
+
       const confirmBtn = e.target.closest('.btn-member-confirm');
       if (confirmBtn) {
         const scheduleId = confirmBtn.dataset.id;
@@ -143,11 +174,12 @@
 
   async function _fetchData() {
     try {
-      const [schedulesRes, profileRes, checkinsRes, notifRes] = await Promise.all([
+      const [schedulesRes, profileRes, checkinsRes, notifRes, ptMeRes] = await Promise.all([
         window.GymApp.api.get('/pt/schedules'),
         window.GymApp.api.get('/members/me/profile'),
         window.GymApp.api.get('/checkins/me?limit=30'),
         window.GymApp.api.get('/members/me/notifications'),
+        window.GymApp.api.get('/pt-me/overview'),
       ]);
 
       if (schedulesRes?.success) window.GymApp.data.ptSchedules = schedulesRes.data || [];
@@ -164,6 +196,7 @@
         window.GymApp.data.myNotifications = notifRes.data?.notifications || [];
         window.GymApp.data.daCheckInHomNay = notifRes.data?.da_check_in_hom_nay || false;
       }
+      if (ptMeRes?.success) window.GymApp.data.ptMeOverview = ptMeRes.data || {};
     } catch (err) {
       console.error('Member Portal: fetch data failed', err);
     }
@@ -402,6 +435,11 @@
               <span class="material-symbols-outlined text-[20px]">${s.ghi_chu ? 'edit_note' : 'add_notes'}</span>
             </button>
             ${window.GymApp.statusBadge(s.trang_thai)}
+            ${s.trang_thai === 'da_tap' ? `
+              <button class="btn-member-rating flex items-center gap-1 text-[#b45309] bg-[#fffbeb] hover:bg-[#fef3c7] border border-[#fbbf24]/40 px-3 py-2 rounded-xl transition-colors text-label-sm font-bold" data-id="${s.id}" title="${s.danh_gia_sao ? 'Sửa đánh giá' : 'Đánh giá PT'}">
+                <span class="material-symbols-outlined text-[18px]" style="font-variation-settings:'FILL' 1">star</span>${s.danh_gia_sao ? `${s.danh_gia_sao}/5` : 'Đánh giá'}
+              </button>
+            ` : ''}
             ${s.trang_thai === 'cho_tap' ? `
               <button class="btn-member-confirm text-white bg-brand-primary hover:bg-brand-primary/90 flex items-center justify-center p-2 rounded-xl transition-colors shadow-sm ml-s1" data-id="${s.id}" title="Xác nhận đã tập">
                 <span class="material-symbols-outlined text-[18px]">check</span>
@@ -417,6 +455,104 @@
         ` : ''}
       </div>
     `;
+  }
+
+  function _showRatingModal(schedule) {
+    if (!schedule) return;
+    const positiveTags = ['Tận tâm', 'Đúng giờ', 'Dễ hiểu', 'Truyền động lực', 'Bài tập phù hợp'];
+    const negativeTags = ['Đi trễ', 'Thiếu tập trung', 'Bài quá nặng', 'Khó hiểu', 'Chưa sát mục tiêu'];
+    let selectedStars = Number(schedule.danh_gia_sao) || 0;
+    let selectedTags = Array.isArray(schedule.danh_gia_tags) ? [...schedule.danh_gia_tags] : [];
+
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:9000;padding:20px;';
+    const renderDynamic = () => {
+      const isLow = selectedStars > 0 && selectedStars < 3;
+      const tags = selectedStars === 5 ? positiveTags : isLow ? negativeTags : positiveTags;
+      return `
+        <div class="space-y-3">
+          <div class="flex flex-wrap gap-2">
+            ${tags.map(tag => `
+              <button type="button" class="rating-tag px-3 py-2 rounded-full border text-label-sm font-bold ${selectedTags.includes(tag) ? 'bg-brand-primary text-white border-brand-primary' : 'border-outline-variant text-on-surface-variant'}" data-tag="${tag}">${tag}</button>
+            `).join('')}
+          </div>
+          ${isLow ? `
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              ${['Chuyên môn', 'Thái độ', 'Đúng giờ'].map(k => `
+                <label class="bg-surface-container rounded-xl p-3 text-label-sm font-bold text-on-surface-variant">${k}
+                  <select class="rating-criterion mt-2 w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-2 py-1" data-key="${k}">
+                    <option value="5">Tốt</option><option value="3">Tạm</option><option value="1">Cần xử lý</option>
+                  </select>
+                </label>
+              `).join('')}
+            </div>
+            <p class="text-error text-body-sm font-bold">Bạn có thể nhập lý do để Admin hỗ trợ xử lý ngay.</p>
+          ` : ''}
+          <textarea id="rating-note" rows="3" class="w-full bg-surface-container border border-outline-variant text-on-surface px-4 py-3 rounded-xl outline-none focus:border-brand-primary resize-none" placeholder="${isLow ? 'Nhập lý do hoặc tình huống cần hỗ trợ...' : 'Chia sẻ thêm cảm nhận của bạn...'}">${schedule.danh_gia_noi_dung || ''}</textarea>
+        </div>
+      `;
+    };
+
+    overlay.innerHTML = `
+      <div class="member-card" style="width:100%;max-width:520px;background:var(--bg-surface-lowest);border-radius:20px;overflow:hidden;">
+        <div class="p-5 border-b border-outline-variant flex items-center justify-between">
+          <div>
+            <h3 class="text-headline-sm font-bold text-on-surface">Đánh giá HLV ${schedule.ten_pt || ''}</h3>
+            <p class="text-body-sm text-on-surface-variant">${window.GymApp.formatDate(schedule.ngay_tap)} · ${schedule.gio_bat_dau || ''}</p>
+          </div>
+          <button id="rating-close" class="p-2 rounded-full hover:bg-surface-container"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <div class="p-5 space-y-4">
+          <div id="rating-stars" class="flex justify-center gap-2">
+            ${[1,2,3,4,5].map(n => `<button type="button" class="rating-star" data-star="${n}" style="font-size:0;border:none;background:none;cursor:pointer;"><span class="material-symbols-outlined" style="font-size:42px;color:${n <= selectedStars ? '#f59e0b' : 'var(--outline)'};font-variation-settings:'FILL' 1">star</span></button>`).join('')}
+          </div>
+          <div id="rating-dynamic">${selectedStars ? renderDynamic() : '<p class="text-center text-on-surface-variant text-body-sm">Chọn số sao để tiếp tục.</p>'}</div>
+        </div>
+        <div class="p-4 border-t border-outline-variant flex justify-end gap-3 bg-surface-container-low">
+          <button id="rating-cancel" class="px-4 py-2 rounded-xl border border-outline-variant font-bold">Hủy</button>
+          <button id="rating-submit" class="px-5 py-2 rounded-xl bg-brand-primary text-white font-bold" ${selectedStars ? '' : 'disabled'}>Gửi</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const close = () => overlay.remove();
+    const rerender = () => {
+      overlay.querySelector('#rating-stars').innerHTML = [1,2,3,4,5].map(n => `<button type="button" class="rating-star" data-star="${n}" style="font-size:0;border:none;background:none;cursor:pointer;"><span class="material-symbols-outlined" style="font-size:42px;color:${n <= selectedStars ? '#f59e0b' : 'var(--outline)'};font-variation-settings:'FILL' 1">star</span></button>`).join('');
+      overlay.querySelector('#rating-dynamic').innerHTML = selectedStars ? renderDynamic() : '<p class="text-center text-on-surface-variant text-body-sm">Chọn số sao để tiếp tục.</p>';
+      overlay.querySelector('#rating-submit').disabled = !selectedStars;
+    };
+
+    overlay.addEventListener('click', async (e) => {
+      if (e.target.id === 'rating-close' || e.target.closest('#rating-close') || e.target.id === 'rating-cancel') close();
+      const starBtn = e.target.closest('.rating-star');
+      if (starBtn) { selectedStars = Number(starBtn.dataset.star); selectedTags = []; rerender(); }
+      const tagBtn = e.target.closest('.rating-tag');
+      if (tagBtn) {
+        const tag = tagBtn.dataset.tag;
+        selectedTags = selectedTags.includes(tag) ? selectedTags.filter(x => x !== tag) : [...selectedTags, tag];
+        rerender();
+      }
+      if (e.target.id === 'rating-submit') {
+        const criteria = {};
+        overlay.querySelectorAll('.rating-criterion').forEach(el => { criteria[el.dataset.key] = Number(el.value); });
+        const note = overlay.querySelector('#rating-note')?.value?.trim() || '';
+        const btn = e.target;
+        btn.disabled = true; btn.textContent = 'Đang gửi...';
+        try {
+          const res = await window.GymApp.api.post(`/pt/schedules/${schedule.id}/rating`, { so_sao: selectedStars, tags: selectedTags, tieu_chi: criteria, noi_dung: note });
+          if (res?.success) {
+            window.GymApp.toast('Đã lưu đánh giá PT!', 'success');
+            close();
+            await _fetchData();
+            if (window.GymApp.currentPage === 'my-schedule') pages['my-schedule']._applyFilter();
+            else navigate(window.GymApp.currentPage);
+          }
+        } catch (err) {
+          btn.disabled = false; btn.textContent = 'Gửi';
+        }
+      }
+    });
   }
 
   pages['dashboard'] = {
@@ -837,6 +973,114 @@
     }
   };
 
+  pages['pt-me'] = {
+    async _load() {
+      const res = await window.GymApp.api.get('/pt-me/thread');
+      if (res?.success) window.GymApp.data.ptMeThread = res.data || { entries: [] };
+    },
+    render() {
+      const data = window.GymApp.data.ptMeThread || window.GymApp.data.ptMeOverview || {};
+      const entries = data.entries || data.latest || [];
+      const pair = data.pair;
+      return `
+        <div class="space-y-s6">
+          <div>
+            <h2 class="text-headline-md font-bold text-on-surface">PT & Tôi</h2>
+            <p class="text-on-surface-variant text-body-md mt-s1">${pair ? `Trao đổi với HLV ${pair.ten_pt || ''}` : 'Bạn chưa có PT đang hoạt động.'}</p>
+          </div>
+          ${pair ? `
+            <section class="member-card p-s5">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-s4">
+                <textarea id="ptme-feeling" rows="3" class="bg-surface-container border border-outline-variant text-on-surface px-4 py-3 rounded-xl outline-none focus:border-brand-primary resize-none" placeholder="Hôm nay bạn tập luyện như thế nào sau khi tập?"></textarea>
+                <textarea id="ptme-food" rows="3" class="bg-surface-container border border-outline-variant text-on-surface px-4 py-3 rounded-xl outline-none focus:border-brand-primary resize-none" placeholder="Khẩu phần ăn hôm nay, bạn đã ăn gì?"></textarea>
+                <input id="ptme-minutes" type="number" min="0" max="600" class="bg-surface-container border border-outline-variant text-on-surface px-4 py-3 rounded-xl outline-none focus:border-brand-primary" placeholder="Hôm nay bạn tập bao nhiêu phút?" />
+                <textarea id="ptme-workout" rows="2" class="bg-surface-container border border-outline-variant text-on-surface px-4 py-3 rounded-xl outline-none focus:border-brand-primary resize-none" placeholder="Nội dung tập luyện / bài tập đã làm"></textarea>
+              </div>
+              <div class="flex justify-end mt-s4">
+                <button id="ptme-submit" class="px-5 py-3 rounded-xl bg-brand-primary text-white font-bold flex items-center gap-2"><span class="material-symbols-outlined">send</span>Gửi cho PT</button>
+              </div>
+            </section>
+            <section class="member-card overflow-hidden">
+              <div class="p-s5 border-b border-outline-variant flex items-center justify-between">
+                <h3 class="text-headline-sm font-bold text-brand-primary">Nhật ký trao đổi</h3>
+                <button id="ptme-reload" class="text-brand-primary font-bold text-label-md">Tải lại</button>
+              </div>
+              <div id="ptme-list" class="divide-y divide-outline-variant">${this._renderEntries(entries)}</div>
+            </section>
+          ` : emptyState('person_search', 'Chưa có PT đang hoạt động', 'Khi đăng ký gói PT, luồng trao đổi sẽ xuất hiện tại đây.')}
+        </div>
+      `;
+    },
+    _renderEntries(entries) {
+      if (!entries?.length) return `<div class="p-s6">${emptyState('forum', 'Chưa có trao đổi nào')}</div>`;
+      const currentUserId = window.GymApp.auth?.user?.id;
+      return entries.map(item => `
+        <div class="p-s5">
+          <div class="flex items-start justify-between gap-s3">
+            <div>
+              <p class="font-bold text-on-surface">${item.vai_tro_gui === 'pt' ? 'PT dặn dò' : 'Bạn cập nhật'} ${item.da_chinh_sua ? '<span class="text-label-sm text-on-surface-variant">(đã chỉnh sửa)</span>' : ''}</p>
+              <p class="text-label-sm text-on-surface-variant">${item.ngay_cap_nhat || item.ngay_tao || ''}</p>
+            </div>
+            ${item.nguoi_gui_id === currentUserId ? `<button class="ptme-edit text-brand-primary font-bold text-label-md" data-id="${item.id}">Sửa</button>` : ''}
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-s3 mt-s3 text-body-sm">
+            ${item.cam_nhan_tap ? `<div class="bg-surface-container rounded-xl p-s3"><b>Cảm nhận:</b> ${item.cam_nhan_tap}</div>` : ''}
+            ${item.khau_phan_an ? `<div class="bg-surface-container rounded-xl p-s3"><b>Ăn uống:</b> ${item.khau_phan_an}</div>` : ''}
+            ${item.so_phut_tap != null ? `<div class="bg-surface-container rounded-xl p-s3"><b>Thời lượng:</b> ${item.so_phut_tap} phút</div>` : ''}
+            ${item.noi_dung_tap ? `<div class="bg-surface-container rounded-xl p-s3"><b>Tập luyện:</b> ${item.noi_dung_tap}</div>` : ''}
+            ${item.loi_dan ? `<div class="bg-[#ecfdf5] text-[#065f46] rounded-xl p-s3 md:col-span-2"><b>Lời dặn:</b> ${item.loi_dan}</div>` : ''}
+          </div>
+        </div>
+      `).join('');
+    },
+    async init() {
+      await this._load();
+      const list = document.getElementById('ptme-list');
+      if (list) list.innerHTML = this._renderEntries(window.GymApp.data.ptMeThread?.entries || []);
+      list?.addEventListener('click', e => {
+        const btn = e.target.closest('.ptme-edit');
+        if (!btn) return;
+        const item = (window.GymApp.data.ptMeThread?.entries || []).find(x => String(x.id) === String(btn.dataset.id));
+        if (!item) return;
+        document.getElementById('ptme-feeling').value = item.cam_nhan_tap || '';
+        document.getElementById('ptme-food').value = item.khau_phan_an || '';
+        document.getElementById('ptme-minutes').value = item.so_phut_tap ?? '';
+        document.getElementById('ptme-workout').value = item.noi_dung_tap || '';
+        const submit = document.getElementById('ptme-submit');
+        submit.dataset.editId = item.id;
+        submit.innerHTML = '<span class="material-symbols-outlined">edit</span>Cập nhật';
+        document.getElementById('ptme-feeling')?.focus();
+      });
+      document.getElementById('ptme-reload')?.addEventListener('click', async () => {
+        await this._load();
+        const listEl = document.getElementById('ptme-list');
+        if (listEl) listEl.innerHTML = this._renderEntries(window.GymApp.data.ptMeThread?.entries || []);
+      });
+      document.getElementById('ptme-submit')?.addEventListener('click', async () => {
+        const btn = document.getElementById('ptme-submit');
+        btn.disabled = true; btn.textContent = 'Đang gửi...';
+        try {
+          const payload = {
+            cam_nhan_tap: document.getElementById('ptme-feeling')?.value?.trim(),
+            khau_phan_an: document.getElementById('ptme-food')?.value?.trim(),
+            so_phut_tap: document.getElementById('ptme-minutes')?.value ? Number(document.getElementById('ptme-minutes').value) : null,
+            noi_dung_tap: document.getElementById('ptme-workout')?.value?.trim(),
+          };
+          const editId = btn.dataset.editId;
+          const res = editId ? await window.GymApp.api.put(`/pt-me/thread/${editId}`, payload) : await window.GymApp.api.post('/pt-me/thread', payload);
+          if (res?.success) {
+            window.GymApp.toast(editId ? 'Đã cập nhật và báo cho PT!' : 'Đã gửi cập nhật cho PT!', 'success');
+            await this._load();
+            navigate('pt-me');
+          }
+        } finally {
+          delete btn.dataset.editId;
+          btn.disabled = false; btn.innerHTML = '<span class="material-symbols-outlined">send</span>Gửi cho PT';
+        }
+      });
+    }
+  };
+
   pages['profile'] = {
     render() {
       const p = window.GymApp.data.myProfile || {};
@@ -877,6 +1121,7 @@
         statusText = '● Đang chờ duyệt';
       }
       const isActive = activePackage?.trang_thai === 'dang_hoat_dong';
+      const bmi = calcBmi(p.chieu_cao_cm, p.can_nang_kg);
 
       return `
         <div class="flex flex-col gap-6">
@@ -934,6 +1179,24 @@
                 <div style="flex:1;height:1px;background:linear-gradient(to right,#1D933640,transparent);margin-left:4px;"></div>
               </div>
 
+              <div class="mb-4 bg-surface-container rounded-xl p-s4 border border-outline-variant">
+                <div class="flex flex-col md:flex-row md:items-center gap-s3">
+                  <div class="flex-1">
+                    <p class="text-label-md font-bold text-on-surface-variant">Chỉ số BMI</p>
+                    <div class="flex items-end gap-s2 mt-s1">
+                      <span class="text-headline-md font-black text-brand-primary">${bmi ? bmi.value.toFixed(1) : '—'}</span>
+                      <span class="font-bold text-on-surface">${bmi ? bmi.category : 'Chưa có dữ liệu'}</span>
+                    </div>
+                    <p class="text-body-sm text-on-surface-variant mt-s1">${bmi ? bmi.advice : 'Nhập chiều cao và cân nặng hiện tại để hệ thống tính BMI.'}</p>
+                  </div>
+                  <div class="flex gap-s2">
+                    <input id="bmi-height" type="number" min="80" max="250" value="${p.chieu_cao_cm || ''}" placeholder="cm" class="w-24 bg-surface-container-lowest border border-outline-variant rounded-xl px-3 py-2 outline-none" />
+                    <input id="bmi-weight" type="number" min="20" max="300" value="${p.can_nang_kg || ''}" placeholder="kg" class="w-24 bg-surface-container-lowest border border-outline-variant rounded-xl px-3 py-2 outline-none" />
+                    <button id="bmi-save" class="px-4 py-2 rounded-xl bg-brand-primary text-white font-bold">Lưu</button>
+                  </div>
+                </div>
+              </div>
+
               <!-- 2-col info grid (exact members-list style) -->
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-[1px] bg-outline-variant rounded-xl overflow-hidden border border-outline-variant">
                 ${fields.map(f => `
@@ -967,6 +1230,26 @@
       } catch (e) {
         console.error(e);
       }
+      document.getElementById('bmi-save')?.addEventListener('click', async () => {
+        const btn = document.getElementById('bmi-save');
+        btn.disabled = true; btn.textContent = 'Đang lưu...';
+        try {
+          const res = await window.GymApp.api.patch('/members/me/health', {
+            chieu_cao_cm: document.getElementById('bmi-height')?.value || null,
+            can_nang_kg: document.getElementById('bmi-weight')?.value || null,
+          });
+          if (res?.success) {
+            window.GymApp.toast('Đã cập nhật BMI!', 'success');
+            const fresh = await window.GymApp.api.get('/members/me/profile');
+            if (fresh?.success) {
+              window.GymApp.data.myProfile = fresh.data;
+              navigate('profile');
+            }
+          }
+        } finally {
+          btn.disabled = false; btn.textContent = 'Lưu';
+        }
+      });
     }
   };
 

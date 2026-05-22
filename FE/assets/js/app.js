@@ -5,8 +5,9 @@
     'expired': 'Danh sách hết hạn', 'pt-training': 'Lịch đào tạo PT',
     'pt-register': 'Đăng ký lịch tập PT', 'packages': 'Danh sách gói tập',
     'birthday': 'Sinh nhật hội viên', 'gym-rules': 'Nội quy phòng tập',
+    'revenue': 'Doanh thu',
   };
-  const SUB_PAGES = ['members-list', 'member-add', 'checkin', 'expired', 'pt-training', 'pt-register', 'packages', 'birthday'];
+  const SUB_PAGES = ['members-list', 'member-add', 'checkin', 'expired', 'pt-training', 'pt-register', 'packages', 'birthday', 'revenue'];
 
   // ===== NAVIGATE =====
   window.GymApp.navigate = function (pageName) {
@@ -44,6 +45,16 @@
 
     // Auto-open accordion for sub-pages
     if (SUB_PAGES.includes(pageName)) _openAccordion('hoi-vien');
+
+    // Update breadcrumb
+    const breadcrumbCurrent = document.getElementById('breadcrumb-current-page');
+    if (breadcrumbCurrent) {
+      if (SUB_PAGES.includes(pageName)) {
+        breadcrumbCurrent.innerHTML = `<span class="text-on-surface-variant font-medium">Quản lý</span> <span class="material-symbols-outlined text-[16px] text-outline-variant align-middle mx-0.5">chevron_right</span> <span class="text-on-surface font-bold">${PAGE_TITLES[pageName] || 'Trang'}</span>`;
+      } else {
+        breadcrumbCurrent.textContent = PAGE_TITLES[pageName] || 'Trang';
+      }
+    }
 
     window.GymApp.currentPage = pageName;
 
@@ -596,11 +607,12 @@
   // ===== DATA SYNC =====
   window.GymApp.fetchInitialData = async function () {
     try {
-      const [membersRes, ptsRes, packagesRes, dashboardRes] = await Promise.all([
+      const [membersRes, ptsRes, packagesRes, dashboardRes, ptPackagesRes] = await Promise.all([
         window.GymApp.api.get('/members?limit=100'),
         window.GymApp.api.get('/trainers'),
         window.GymApp.api.get('/packages'),
-        window.GymApp.api.get('/revenue/dashboard')
+        window.GymApp.api.get('/revenue/dashboard'),
+        window.GymApp.api.get('/packages/pt')
       ]);
 
       if (membersRes?.success) {
@@ -612,6 +624,9 @@
       }
       if (packagesRes?.success) {
         window.GymApp.data.packages = Array.isArray(packagesRes.data) ? packagesRes.data : (packagesRes.data.data || []);
+      }
+      if (ptPackagesRes?.success) {
+        window.GymApp.data.ptPackages = Array.isArray(ptPackagesRes.data) ? ptPackagesRes.data : (ptPackagesRes.data.data || []);
       }
       if (dashboardRes?.success) window.GymApp.data.stats = dashboardRes.data;
 
