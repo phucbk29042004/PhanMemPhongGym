@@ -53,6 +53,15 @@ export const createCheckin = (req, res) => {
     VALUES (?, ?, ?, ?)
   `).run(ho_so_id || null, loai, phuong_thuc, ghi_chu || null);
 
+  // Cập nhật da_checkin = 1 cho các buổi tập PT của hội viên này hôm nay nếu vào
+  if (loai === 'vao' && ho_so_id) {
+    const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
+    db.prepare(`
+      UPDATE lich_tap SET da_checkin = 1
+      WHERE hoi_vien_id = ? AND ngay_tap = ? AND trang_thai = 'cho_tap'
+    `).run(ho_so_id, today);
+  }
+
   const newRow = db.prepare(`
     SELECT lv.*, h.ho_ten, h.ma_ho_so, h.avatar_url FROM luot_vao_ra lv
     LEFT JOIN ho_so h ON h.id = lv.ho_so_id
@@ -130,8 +139,14 @@ export const getMyCheckins = (req, res) => {
   const offset = (parseInt(page) - 1) * parseInt(limit);
 
   // Lấy ho_so_id từ tài khoản đang đăng nhập
-  const hoSo = db.prepare('SELECT id FROM ho_so WHERE tai_khoan_id = ? AND is_deleted = 0').get(req.user.id);
-  if (!hoSo) return error(res, 'Không tìm thấy hồ sơ của bạn.', 404);
+  let hoSo = db.prepare('SELECT id FROM ho_so WHERE tai_khoan_id = ? AND is_deleted = 0').get(req.user.id);
+  if (!hoSo) {
+    hoSo = db.prepare('SELECT id FROM ho_so WHERE tai_khoan_id = ?').get(req.user.id);
+  }
+
+  if (!hoSo) {
+    return success(res, { data: [], pagination: { page: parseInt(page), limit: parseInt(limit), total: 0 } });
+  }
 
   const rows = db.prepare(`
     SELECT id, thoi_diem, loai, phuong_thuc, ghi_chu,

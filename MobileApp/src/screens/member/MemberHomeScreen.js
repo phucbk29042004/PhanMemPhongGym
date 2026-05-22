@@ -60,7 +60,7 @@ function PackageCard({ item, index, colors, onPress }) {
   const accentColor = isDark ? colors.primary : [G.primary, '#1565c0', '#b7791f', '#7c3aed'][index % 4];
 
   return (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={[styles.packageCard, { backgroundColor: cardBg }]}
       onPress={onPress}
       activeOpacity={0.8}
@@ -127,7 +127,7 @@ export default function MemberHomeScreen({ navigation }) {
       if (profileRes.data?.success) setProfile(profileRes.data.data);
       if (pkgRes.data?.success) setGymPackages(pkgRes.data.data || []);
       if (ptPkgRes.data?.success) setPtPackages(ptPkgRes.data.data || []);
-      
+
       // Fetch thông báo ngầm
       fetchNotifications();
     } catch (err) {
@@ -188,14 +188,14 @@ export default function MemberHomeScreen({ navigation }) {
   const openRenewModal = () => {
     const today = new Date().toISOString().split('T')[0];
     let defaultStart = today;
-    
+
     const active = profile?.goi_tap?.[0];
     if (active && active.den_ngay >= today) {
       const d = new Date(active.den_ngay);
       d.setDate(d.getDate() + 1);
       defaultStart = d.toISOString().split('T')[0];
     }
-    
+
     setRenewalStartDate(defaultStart);
     setSelectedPkg(gymPackages[0]?.id || null);
     setRenewModalVisible(true);
@@ -228,7 +228,9 @@ export default function MemberHomeScreen({ navigation }) {
   // ── Dữ liệu đã xử lý ─────────────────────────────────────
   const activePlan = profile?.goi_tap?.find(p => p.trang_thai === 'dang_hoat_dong') || null;
   const pendingPlan = profile?.goi_tap?.find(p => p.trang_thai === 'cho_duyet') || null;
-  const currentPlan = activePlan || pendingPlan;
+  const expiredPlan = profile?.goi_tap?.find(p => p.trang_thai === 'het_han') || null;
+  const currentPlan = activePlan || pendingPlan || expiredPlan;
+  const hasAnyPackage = profile?.goi_tap && profile.goi_tap.length > 0;
   const activePT = profile?.dang_ky_pt?.[0] || null;
   const remaining = daysLeft(currentPlan?.den_ngay);
   const ptRemaining = activePT ? Math.max(0, (activePT.so_buoi_dang_ky || 0) - (activePT.so_buoi_da_tap || 0)) : null;
@@ -302,132 +304,122 @@ export default function MemberHomeScreen({ navigation }) {
         {/* ────────────────────────────────────── */}
         {/* CARD HỢP ĐỒNG / GÓI TẬP ĐANG HOẠT ĐỘNG */}
         {/* ────────────────────────────────────── */}
-        <View style={[styles.section, { backgroundColor: colors.surface }]}>
-          <View style={styles.sectionHeader}>
-            <View style={[styles.sectionIconBox, { backgroundColor: colors.primaryLight }]}>
-              <CreditCard color={colors.primary} size={18} strokeWidth={2} />
-            </View>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Gói Hội Viên</Text>
-          </View>
-
-          {loading ? (
-            <View style={styles.loadingBox}>
-              <ActivityIndicator color={colors.primary} size="small" />
-            </View>
-          ) : currentPlan ? (
-            <TouchableOpacity 
-              style={[styles.contractCard, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
-              onPress={() => {
-                setSelectedDetailPkg(currentPlan);
-                setDetailModalVisible(true);
-              }}
-              activeOpacity={0.8}
-            >
-              {/* Trạng thái + tên gói */}
-              <View style={styles.contractTop}>
-                {activePlan ? (
-                  <View style={styles.contractBadge}>
-                    <ShieldCheck color={colors.primary} size={12} strokeWidth={2.5} />
-                    <Text style={styles.contractBadgeText}>Đang hoạt động</Text>
-                  </View>
-                ) : null}
-                {pendingPlan ? (
-                  <View style={[styles.contractBadge, { backgroundColor: G.warningLight }]}>
-                    <Clock color={G.warning} size={12} strokeWidth={2.5} />
-                    <Text style={[styles.contractBadgeText, { color: G.warning }]}>Đang chờ duyệt</Text>
-                  </View>
-                ) : null}
-                {remaining !== null && remaining <= 7 && activePlan && (
-                  <View style={[styles.contractBadge, { backgroundColor: G.dangerLight }]}>
-                    <Clock color={G.danger} size={12} strokeWidth={2.5} />
-                    <Text style={[styles.contractBadgeText, { color: G.danger }]}>Sắp hết hạn</Text>
-                  </View>
-                )}
+        {hasAnyPackage && (
+          <View style={[styles.section, { backgroundColor: colors.surface }]}>
+            <View style={styles.sectionHeader}>
+              <View style={[styles.sectionIconBox, { backgroundColor: colors.primaryLight }]}>
+                <CreditCard color={colors.primary} size={18} strokeWidth={2} />
               </View>
-              <Text style={[styles.contractPackageName, { color: colors.text }]}>{currentPlan.ten_goi}</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Gói Hội Viên</Text>
+            </View>
 
-              {/* Thông số grid */}
-              <View style={[styles.contractGrid, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <View style={styles.contractGridItem}>
-                  <CalendarCheck color={colors.textMuted} size={14} strokeWidth={2} />
-                  <Text style={[styles.contractGridLabel, { color: colors.textMuted }]}>Từ ngày</Text>
-                  <Text style={[styles.contractGridValue, { color: colors.text }]}>{formatDate(currentPlan.tu_ngay)}</Text>
-                </View>
-                <View style={[styles.contractDivider, { backgroundColor: colors.border }]} />
-                <View style={styles.contractGridItem}>
-                  <Clock color={remaining !== null && remaining <= 7 && activePlan ? G.danger : colors.textMuted} size={14} strokeWidth={2} />
-                  <Text style={[styles.contractGridLabel, { color: colors.textMuted }]}>Hết hạn</Text>
-                  <Text style={[styles.contractGridValue, { color: colors.text }, remaining !== null && remaining <= 7 && activePlan && { color: G.danger }]}>
-                    {formatDate(currentPlan.den_ngay)}
-                  </Text>
-                </View>
-                <View style={[styles.contractDivider, { backgroundColor: colors.border }]} />
-                <View style={styles.contractGridItem}>
-                  <TrendingUp color={colors.primary} size={14} strokeWidth={2} />
-                  <Text style={[styles.contractGridLabel, { color: colors.textMuted }]}>Còn lại</Text>
-                  <Text style={[styles.contractGridValue, { color: remaining !== null && remaining <= 7 && activePlan ? G.danger : colors.primary }]}>
-                    {remaining !== null && activePlan ? `${remaining} ngày` : '—'}
-                  </Text>
-                </View>
+            {loading ? (
+              <View style={styles.loadingBox}>
+                <ActivityIndicator color={colors.primary} size="small" />
               </View>
-
-              {/* HLV PT (nếu có) — bấm để xem lịch tập */}
-              {activePT ? (
-                <TouchableOpacity style={styles.ptRow} onPress={openPtSchedule} activeOpacity={0.75}>
-                  <Dumbbell color={colors.primary} size={15} strokeWidth={2} />
-                  <Text style={[styles.ptRowText, { color: colors.text }]}>
-                    {activePT.ten_goi_pt ? (
-                      <>
-                        <Text style={{ fontWeight: '700', color: colors.text }}>{activePT.ten_goi_pt}</Text>
-                        {'  •  '}
-                      </>
-                    ) : null}
-                    HLV: <Text style={{ fontWeight: '700', color: colors.text }}>{activePT.ten_pt}</Text>
-                    {'  •  '}Còn <Text style={{ fontWeight: '700', color: colors.primary }}>{ptRemaining} buổi</Text>
-                  </Text>
-                  <ChevronRight color={colors.primary} size={16} strokeWidth={2.5} />
-                </TouchableOpacity>
-              ) : null}
-
-              {/* Nút gia hạn nếu hết hạn hoặc không có gói và KHÔNG CÓ yêu cầu chờ duyệt */}
-              {(!activePlan || remaining === 0) && !pendingPlan && (
-                <TouchableOpacity 
-                  style={styles.renewButton}
-                  onPress={openRenewModal}
-                  activeOpacity={0.8}
-                >
-                  <Zap color={G.white} size={16} strokeWidth={2.5} />
-                  <Text style={styles.renewButtonText}>Gia hạn ngay</Text>
-                </TouchableOpacity>
-              )}
-
-              {pendingPlan && (
-                <View style={[styles.renewButton, { backgroundColor: colors.border, shadowOpacity: 0 }]}>
-                  <Clock color={colors.textMuted} size={16} strokeWidth={2.5} />
-                  <Text style={[styles.renewButtonText, { color: colors.textMuted }]}>Đang xử lý yêu cầu...</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity 
-              style={styles.emptyContract}
-              onPress={openRenewModal}
-              activeOpacity={0.7}
-            >
-              <CreditCard color={colors.textMuted} size={32} strokeWidth={1.5} />
-              <Text style={[styles.emptyContractText, { color: colors.text }]}>Chưa đăng ký gói tập</Text>
-              <Text style={[styles.emptyContractSub, { color: colors.textMuted }]}>Nhấn vào đây để xem các gói và đăng ký mua</Text>
-              <TouchableOpacity 
-                style={[styles.renewButton, { marginTop: 12, width: '60%' }]}
-                onPress={openRenewModal}
+            ) : currentPlan ? (
+              <TouchableOpacity
+                style={[styles.contractCard, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
+                onPress={() => {
+                  setSelectedDetailPkg(currentPlan);
+                  setDetailModalVisible(true);
+                }}
                 activeOpacity={0.8}
               >
-                <Zap color={G.white} size={16} strokeWidth={2.5} />
-                <Text style={styles.renewButtonText}>Mua gói ngay</Text>
+                {/* Trạng thái + tên gói */}
+                <View style={styles.contractTop}>
+                  {activePlan ? (
+                    <View style={styles.contractBadge}>
+                      <ShieldCheck color={colors.primary} size={12} strokeWidth={2.5} />
+                      <Text style={styles.contractBadgeText}>Đang hoạt động</Text>
+                    </View>
+                  ) : null}
+                  {pendingPlan ? (
+                    <View style={[styles.contractBadge, { backgroundColor: G.warningLight }]}>
+                      <Clock color={G.warning} size={12} strokeWidth={2.5} />
+                      <Text style={[styles.contractBadgeText, { color: G.warning }]}>Đang chờ duyệt</Text>
+                    </View>
+                  ) : null}
+                  {!activePlan && !pendingPlan && expiredPlan ? (
+                    <View style={[styles.contractBadge, { backgroundColor: G.dangerLight }]}>
+                      <Clock color={G.danger} size={12} strokeWidth={2.5} />
+                      <Text style={[styles.contractBadgeText, { color: G.danger }]}>Đã hết hạn</Text>
+                    </View>
+                  ) : null}
+                  {remaining !== null && remaining <= 7 && activePlan && (
+                    <View style={[styles.contractBadge, { backgroundColor: G.dangerLight }]}>
+                      <Clock color={G.danger} size={12} strokeWidth={2.5} />
+                      <Text style={[styles.contractBadgeText, { color: G.danger }]}>Sắp hết hạn</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={[styles.contractPackageName, { color: colors.text }]}>{currentPlan.ten_goi}</Text>
+
+                {/* Thông số grid */}
+                <View style={[styles.contractGrid, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  <View style={styles.contractGridItem}>
+                    <CalendarCheck color={colors.textMuted} size={14} strokeWidth={2} />
+                    <Text style={[styles.contractGridLabel, { color: colors.textMuted }]}>Từ ngày</Text>
+                    <Text style={[styles.contractGridValue, { color: colors.text }]}>{formatDate(currentPlan.tu_ngay)}</Text>
+                  </View>
+                  <View style={[styles.contractDivider, { backgroundColor: colors.border }]} />
+                  <View style={styles.contractGridItem}>
+                    <Clock color={remaining !== null && remaining <= 7 && activePlan ? G.danger : colors.textMuted} size={14} strokeWidth={2} />
+                    <Text style={[styles.contractGridLabel, { color: colors.textMuted }]}>Hết hạn</Text>
+                    <Text style={[styles.contractGridValue, { color: colors.text }, remaining !== null && remaining <= 7 && activePlan && { color: G.danger }]}>
+                      {formatDate(currentPlan.den_ngay)}
+                    </Text>
+                  </View>
+                  <View style={[styles.contractDivider, { backgroundColor: colors.border }]} />
+                  <View style={styles.contractGridItem}>
+                    <TrendingUp color={colors.primary} size={14} strokeWidth={2} />
+                    <Text style={[styles.contractGridLabel, { color: colors.textMuted }]}>Còn lại</Text>
+                    <Text style={[styles.contractGridValue, { color: remaining !== null && remaining <= 7 && activePlan ? G.danger : colors.primary }]}>
+                      {remaining !== null && activePlan ? `${remaining} ngày` : '—'}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* HLV PT (nếu có) — bấm để xem lịch tập */}
+                {activePT ? (
+                  <TouchableOpacity style={styles.ptRow} onPress={openPtSchedule} activeOpacity={0.75}>
+                    <Dumbbell color={colors.primary} size={15} strokeWidth={2} />
+                    <Text style={[styles.ptRowText, { color: colors.text }]}>
+                      {activePT.ten_goi_pt ? (
+                        <>
+                          <Text style={{ fontWeight: '700', color: colors.text }}>{activePT.ten_goi_pt}</Text>
+                          {'  •  '}
+                        </>
+                      ) : null}
+                      HLV: <Text style={{ fontWeight: '700', color: colors.text }}>{activePT.ten_pt}</Text>
+                      {'  •  '}Còn <Text style={{ fontWeight: '700', color: colors.primary }}>{ptRemaining} buổi</Text>
+                    </Text>
+                    <ChevronRight color={colors.primary} size={16} strokeWidth={2.5} />
+                  </TouchableOpacity>
+                ) : null}
+
+                {/* Nút gia hạn nếu hết hạn và KHÔNG CÓ yêu cầu chờ duyệt */}
+                {expiredPlan && !activePlan && !pendingPlan && (
+                  <TouchableOpacity
+                    style={styles.renewButton}
+                    onPress={openRenewModal}
+                    activeOpacity={0.8}
+                  >
+                    <Zap color={G.white} size={16} strokeWidth={2.5} />
+                    <Text style={styles.renewButtonText}>Gia hạn ngay</Text>
+                  </TouchableOpacity>
+                )}
+
+                {pendingPlan && (
+                  <View style={[styles.renewButton, { backgroundColor: colors.border, shadowOpacity: 0 }]}>
+                    <Clock color={colors.textMuted} size={16} strokeWidth={2.5} />
+                    <Text style={[styles.renewButtonText, { color: colors.textMuted }]}>Đang xử lý yêu cầu...</Text>
+                  </View>
+                )}
               </TouchableOpacity>
-            </TouchableOpacity>
-          )}
-        </View>
+            ) : null}
+          </View>
+        )}
 
         {/* ──────────────────── */}
         {/* TIỆN ÍCH NHANH      */}
@@ -466,6 +458,13 @@ export default function MemberHomeScreen({ navigation }) {
               colors={colors}
             />
             <UtilityChip
+              icon={MessageSquare}
+              label={'PT &\nTôi'}
+              accent="#0f766e"
+              onPress={() => navigation?.navigate?.('PTMe')}
+              colors={colors}
+            />
+            <UtilityChip
               icon={Award}
               label={'Buổi PT\ncòn lại'}
               accent="#b7791f"
@@ -493,24 +492,14 @@ export default function MemberHomeScreen({ navigation }) {
               contentContainerStyle={styles.packageScroll}
             >
               {allPackages.map((item, i) => (
-                <PackageCard 
-                  key={item._key} 
-                  item={item} 
-                  index={i} 
-                  colors={colors} 
+                <PackageCard
+                  key={item._key}
+                  item={item}
+                  index={i}
+                  colors={colors}
                   onPress={() => {
                     if (item.loai_goi !== 'pt' && item.loai_goi !== 'theo_buoi') {
-                      setSelectedPkg(item.id);
-                      const today = new Date().toISOString().split('T')[0];
-                      let defaultStart = today;
-                      const active = profile?.goi_tap?.[0];
-                      if (active && active.den_ngay >= today) {
-                        const d = new Date(active.den_ngay);
-                        d.setDate(d.getDate() + 1);
-                        defaultStart = d.toISOString().split('T')[0];
-                      }
-                      setRenewalStartDate(defaultStart);
-                      setRenewModalVisible(true);
+                      navigation.navigate('PackageDetail', { packageItem: item, profile });
                     } else {
                       alert(`Đây là gói Huấn Luyện Viên cá nhân (PT).\nVui lòng liên hệ quầy lễ tân để đăng ký tập với HLV.`);
                     }
@@ -702,7 +691,7 @@ export default function MemberHomeScreen({ navigation }) {
                       {selectedDetailPkg.ten_goi}
                     </Text>
                     <View style={[
-                      styles.contractBadge, 
+                      styles.contractBadge,
                       selectedDetailPkg.trang_thai === 'dang_hoat_dong' ? { backgroundColor: '#dcfce7' } : { backgroundColor: G.warningLight },
                       { marginTop: 4 }
                     ]}>
@@ -752,7 +741,7 @@ export default function MemberHomeScreen({ navigation }) {
                   )}
 
                   <Text style={{ fontSize: 11, color: colors.textMuted, textAlign: 'center', marginTop: 10, lineHeight: 16 }}>
-                    {selectedDetailPkg.trang_thai === 'cho_duyet' 
+                    {selectedDetailPkg.trang_thai === 'cho_duyet'
                       ? 'Yêu cầu đang được chờ phê duyệt. Vui lòng liên hệ quầy lễ tân để thanh toán.'
                       : 'Chúc bạn có những giờ phút tập luyện tuyệt vời tại Paradise GYM!'}
                   </Text>
@@ -761,14 +750,14 @@ export default function MemberHomeScreen({ navigation }) {
             </View>
 
             <View style={styles.modalFooter}>
-              <TouchableOpacity 
-                style={[styles.modalCancelBtn, { borderColor: colors.border }]} 
+              <TouchableOpacity
+                style={[styles.modalCancelBtn, { borderColor: colors.border }]}
                 onPress={() => setDetailModalVisible(false)}
               >
                 <Text style={[styles.modalCancelText, { color: colors.textMuted }]}>Đóng</Text>
               </TouchableOpacity>
               {selectedDetailPkg?.trang_thai === 'dang_hoat_dong' && (
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.modalSubmitBtn}
                   onPress={() => {
                     setDetailModalVisible(false);
@@ -805,10 +794,10 @@ export default function MemberHomeScreen({ navigation }) {
               <Text style={[styles.inputLabel, { color: colors.text }]}>Chọn gói tập</Text>
               <View style={styles.pkgPicker}>
                 {gymPackages.map(p => (
-                  <TouchableOpacity 
-                    key={p.id} 
+                  <TouchableOpacity
+                    key={p.id}
                     style={[
-                      styles.pkgOption, 
+                      styles.pkgOption,
                       { backgroundColor: colors.surfaceVariant, borderColor: colors.border },
                       selectedPkg === p.id && { borderColor: colors.primary, backgroundColor: colors.primaryLight }
                     ]}
@@ -816,7 +805,7 @@ export default function MemberHomeScreen({ navigation }) {
                   >
                     <View style={{ flex: 1, paddingRight: 8 }}>
                       <Text style={[
-                        styles.pkgOptionText, 
+                        styles.pkgOptionText,
                         { color: colors.text },
                         selectedPkg === p.id && { color: colors.primary, fontWeight: '700' }
                       ]}>{p.ten_goi}</Text>
@@ -827,7 +816,7 @@ export default function MemberHomeScreen({ navigation }) {
                       ) : null}
                     </View>
                     <Text style={[
-                      styles.pkgOptionPrice, 
+                      styles.pkgOptionPrice,
                       { color: colors.textMuted },
                       selectedPkg === p.id && { color: colors.primary, fontWeight: '700' }
                     ]}>{formatPrice(p.gia)}</Text>
@@ -850,8 +839,8 @@ export default function MemberHomeScreen({ navigation }) {
               <TouchableOpacity style={[styles.modalCancelBtn, { borderColor: colors.border }]} onPress={() => setRenewModalVisible(false)}>
                 <Text style={[styles.modalCancelText, { color: colors.textMuted }]}>Hủy</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.modalSubmitBtn} 
+              <TouchableOpacity
+                style={styles.modalSubmitBtn}
                 onPress={submitRenewal}
                 disabled={isSubmitting}
               >
@@ -1223,7 +1212,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   renewButtonText: { color: G.white, fontWeight: '800', fontSize: 14 },
-  
+
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',

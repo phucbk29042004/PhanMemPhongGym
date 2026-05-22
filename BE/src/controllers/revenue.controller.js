@@ -177,8 +177,24 @@ export const getDashboard = (req, res) => {
       SELECT COUNT(*) AS tong,
              COALESCE(SUM(CASE WHEN trang_thai = 'cho_tap' THEN 1 ELSE 0 END), 0) AS cho_tap,
              COALESCE(SUM(CASE WHEN trang_thai = 'da_tap' THEN 1 ELSE 0 END), 0) AS da_tap
-      FROM lich_tap WHERE ngay_tap = ?
+      FROM lich_tap WHERE ngay_tap = ? AND trang_thai NOT IN ('da_huy', 'hoan_tac')
     `).get(today),
+  };
+
+  const yesterday = db.prepare(`SELECT date('now','localtime','-1 days') as d`).get().d;
+  const startOfMonth = today.substring(0, 8) + '01';
+
+  const yesterdayLuotVao = db.prepare(`SELECT COUNT(*) as c FROM luot_vao_ra WHERE date(thoi_diem) = ? AND loai = 'vao'`).get(yesterday).c;
+  const yesterdayDoanhThu = db.prepare(`SELECT tong_tien FROM doanh_thu WHERE ngay = ?`).get(yesterday)?.tong_tien || 0;
+  const newMembersThisMonth = db.prepare(`SELECT COUNT(*) as c FROM ho_so WHERE date(ngay_tao) >= ? AND loai_ho_so = 'hv'`).get(startOfMonth).c;
+
+  const calcPercent = (curr, prev) => prev === 0 ? (curr > 0 ? 100 : 0) : ((curr - prev) / prev * 100);
+
+  stats.percent_changes = {
+    hoi_vien: ((newMembersThisMonth / (stats.hoi_vien.tong || 1)) * 100).toFixed(2), // % tăng trưởng trong tháng
+    luot_vao: calcPercent(stats.luot_vao_ra_hom_nay.luot_vao, yesterdayLuotVao).toFixed(2),
+    doanh_thu: calcPercent(stats.doanh_thu_hom_nay.tong_tien, yesterdayDoanhThu).toFixed(2),
+    sap_het_han: ((stats.hoi_vien.sap_het_han / (stats.hoi_vien.tong || 1)) * 100).toFixed(2)
   };
 
   // Check-in gần nhất hôm nay (tối đa 8 lượt)
@@ -192,6 +208,18 @@ export const getDashboard = (req, res) => {
     ORDER BY lv.thoi_diem DESC
     LIMIT 8
   `).all(today);
+
+  // Top hội viên chăm chỉ (theo tháng hiện tại)
+  const currentMonthStart = today.substring(0, 8) + '01'; // 'YYYY-MM-01'
+  stats.top_hoi_vien = db.prepare(`
+    SELECT h.id, h.ma_ho_so, h.ho_ten, h.avatar_url, COUNT(lv.id) as so_buoi_tap
+    FROM luot_vao_ra lv
+    JOIN ho_so h ON h.id = lv.ho_so_id
+    WHERE lv.loai = 'vao' AND date(lv.thoi_diem) >= ?
+    GROUP BY h.id
+    ORDER BY so_buoi_tap DESC
+    LIMIT 5
+  `).all(currentMonthStart);
 
   return success(res, stats);
 };

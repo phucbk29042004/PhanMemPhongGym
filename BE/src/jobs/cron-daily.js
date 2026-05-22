@@ -13,6 +13,68 @@ function runDailyJob() {
   const today = new Date().toLocaleDateString('sv-SE'); // YYYY-MM-DD
   console.log(`[CRON-DAILY] ${new Date().toLocaleTimeString('vi-VN')} — Đang chạy job thông báo hàng ngày...`);
 
+  // 0a. Tự động kích hoạt các gói tập đã thanh toán (PayOS hoặc được duyệt trước) khi đến ngày bắt đầu (tu_ngay)
+  const newlyActivated = db.prepare(`
+    SELECT dk.id, dk.ho_so_id, gt.ten_goi, h.ho_ten
+    FROM dang_ky_goi_tap dk
+    JOIN ho_so h ON h.id = dk.ho_so_id
+    JOIN goi_tap gt ON gt.id = dk.goi_tap_id
+    WHERE dk.trang_thai = 'cho_duyet'
+      AND (dk.payos_status = 'PAID' OR (dk.phuong_thuc_tt IS NOT NULL AND dk.ngay_thanh_toan IS NOT NULL))
+      AND dk.tu_ngay <= date('now','localtime')
+  `).all();
+
+  for (const row of newlyActivated) {
+    db.prepare(`
+      UPDATE dang_ky_goi_tap
+      SET trang_thai = 'dang_hoat_dong'
+      WHERE id = ?
+    `).run(row.id);
+
+    // Thông báo cho user
+    createUserNotification(
+      row.ho_so_id,
+      'Gói tập được kích hoạt 🎉',
+      `Gói tập "${row.ten_goi}" của bạn đã bắt đầu có hiệu lực từ hôm nay. Chúc bạn tập luyện hiệu quả!`,
+      'thong_bao_chung'
+    );
+
+    // Thông báo cho hệ thống admin
+    createNotification(
+      'gia_han_goi_tap',
+      'Gói tập tự động kích hoạt',
+      `Gói tập ${row.ten_goi} của hội viên ${row.ho_ten} đã tự động kích hoạt hôm nay.`,
+      row.id,
+      'dang_ky_goi_tap',
+      'admin'
+    );
+  }
+
+  if (newlyActivated.length > 0) {
+    console.log(`[CRON-DAILY] Tự động kích hoạt ${newlyActivated.length} gói tập đến hạn.`);
+  }
+
+  // 0b. Tự động cập nhật trạng thái gói tập đã hết hạn sang 'het_han' và gói PT sang 'hoan_thanh'
+  const updatedGoiTap = db.prepare(`
+    UPDATE dang_ky_goi_tap
+    SET trang_thai = 'het_han'
+    WHERE trang_thai = 'dang_hoat_dong' AND den_ngay < date('now','localtime')
+  `).run();
+
+  const updatedPt = db.prepare(`
+    UPDATE dang_ky_pt
+    SET trang_thai = 'hoan_thanh'
+    WHERE trang_thai = 'dang_hoat_dong'
+      AND (
+        (den_ngay IS NOT NULL AND den_ngay < date('now','localtime'))
+        OR (so_buoi_dang_ky IS NOT NULL AND so_buoi_da_tap >= so_buoi_dang_ky)
+      )
+  `).run();
+
+  if (updatedGoiTap.changes > 0 || updatedPt.changes > 0) {
+    console.log(`[CRON-DAILY] Đã cập nhật trạng thái hết hạn/hoàn thành cho ${updatedGoiTap.changes} gói tập và ${updatedPt.changes} hợp đồng PT.`);
+  }
+
   // 1. Sắp hết hạn gói tập (còn 1–7 ngày)
   const sapHetHan = db.prepare(`
     SELECT dk.id, dk.ho_so_id, dk.den_ngay, h.ho_ten,

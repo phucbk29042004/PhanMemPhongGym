@@ -11,6 +11,9 @@ import MemberNotificationScreen from '../screens/member/MemberNotificationScreen
 import MemberProfileScreen from '../screens/member/MemberProfileScreen';
 import MemberCheckinsScreen from '../screens/member/MemberCheckinsScreen';
 import GymRulesScreen from '../screens/shared/GymRulesScreen';
+import PTMeScreen from '../screens/shared/PTMeScreen';
+import PackageDetailScreen from '../screens/member/PackageDetailScreen';
+import OrderConfirmationScreen from '../screens/member/OrderConfirmationScreen';
 import { useNotificationStore } from '../store/useNotificationStore';
 import { useTheme } from '../context/ThemeContext';
 
@@ -134,6 +137,32 @@ export default function MemberNavigator() {
       <Tab.Screen
         name="GymRules"
         component={GymRulesScreen}
+        options={{
+          tabBarItemStyle: { display: 'none' },
+        }}
+      />
+
+      <Tab.Screen
+        name="PTMe"
+        component={PTMeScreen}
+        options={{
+          tabBarItemStyle: { display: 'none' },
+        }}
+      />
+
+      {/* Màn hình ẩn khỏi tab bar: Chi tiết gói tập */}
+      <Tab.Screen
+        name="PackageDetail"
+        component={PackageDetailScreen}
+        options={{
+          tabBarItemStyle: { display: 'none' },
+        }}
+      />
+
+      {/* Màn hình ẩn khỏi tab bar: Xác nhận đơn hàng */}
+      <Tab.Screen
+        name="OrderConfirmation"
+        component={OrderConfirmationScreen}
         options={{
           tabBarItemStyle: { display: 'none' },
         }}

@@ -8,8 +8,8 @@ import {
   getMembers, getMemberById, createMember, updateMember,
   deleteMember, updateAvatar, getExpiringMembers,
   getExpiredMembers, getMemberHistory, registerPackage,
-  getBirthday, getMyProfile, createAccount, checkDuplicate,
-  getMyNotifications, requestPackageRenewal, getPackageRequests, approvePackageRequest,
+  getBirthday, getMyProfile, updateMyHealth, createAccount, checkDuplicate,
+  getMyNotifications, requestPackageRenewal, checkPayosStatus, getPackageRequests, approvePackageRequest,
   notifyMember, markMyNotificationsRead, clearMyNotifications,
   cancelPackage, editPackage, switchPackage,
   lookupMember, getMyPayments, requestPackagePause, getInvoice,
@@ -32,11 +32,13 @@ router.get('/birthday',         requireRole('admin', 'le_tan'), getBirthday);
 router.get('/check-duplicate',  requireRole('admin', 'le_tan'), checkDuplicate);
 router.get('/package-requests', requireRole('admin', 'le_tan'), getPackageRequests); // Xem các yêu cầu chờ duyệt
 router.get('/me/profile', verifyToken, getMyProfile);
+router.patch('/me/health', updateMyHealth);
 router.get('/me/notifications', getMyNotifications); // Thông báo realtime + inbox
 router.post('/me/notifications/read', markMyNotificationsRead); // Đánh dấu đã đọc
 router.delete('/me/notifications', clearMyNotifications); // Xoá sạch thông báo inbox
 router.get('/me/payments',         getMyPayments);          // HV xem lịch sử thanh toán
 router.post('/me/package-request', requestPackageRenewal); // Yêu cầu gia hạn từ App
+router.get('/me/payos-status/:orderCode', checkPayosStatus); // Kiểm tra trạng thái thanh toán PayOS
 router.post('/me/package-pause-request', requestPackagePause); // HV yêu cầu tạm dừng gói
 router.put('/package-requests/:id/approve', requireRole('admin', 'le_tan'), approvePackageRequest); // Duyệt yêu cầu gia hạn
 

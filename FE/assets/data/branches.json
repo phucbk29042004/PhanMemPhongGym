@@ -1,0 +1,74 @@
+[
+  {
+    "id": "go-vap",
+    "ten": "Chi nhánh Gò Vấp",
+    "dia_chi": "Paradise Gym - Gò Vấp, TP. Hồ Chí Minh",
+    "quan": "Gò Vấp"
+  },
+  {
+    "id": "binh-thanh",
+    "ten": "Chi nhánh Bình Thạnh",
+    "dia_chi": "Paradise Gym - Bình Thạnh, TP. Hồ Chí Minh",
+    "quan": "Bình Thạnh"
+  },
+  {
+    "id": "tan-binh",
+    "ten": "Chi nhánh Tân Bình",
+    "dia_chi": "Paradise Gym - Tân Bình, TP. Hồ Chí Minh",
+    "quan": "Tân Bình"
+  },
+  {
+    "id": "phu-nhuan",
+    "ten": "Chi nhánh Phú Nhuận",
+    "dia_chi": "Paradise Gym - Phú Nhuận, TP. Hồ Chí Minh",
+    "quan": "Phú Nhuận"
+  },
+  {
+    "id": "quan-1",
+    "ten": "Chi nhánh Quận 1",
+    "dia_chi": "Paradise Gym - Quận 1, TP. Hồ Chí Minh",
+    "quan": "Quận 1"
+  },
+  {
+    "id": "quan-3",
+    "ten": "Chi nhánh Quận 3",
+    "dia_chi": "Paradise Gym - Quận 3, TP. Hồ Chí Minh",
+    "quan": "Quận 3"
+  },
+  {
+    "id": "quan-5",
+    "ten": "Chi nhánh Quận 5",
+    "dia_chi": "Paradise Gym - Quận 5, TP. Hồ Chí Minh",
+    "quan": "Quận 5"
+  },
+  {
+    "id": "quan-7",
+    "ten": "Chi nhánh Quận 7",
+    "dia_chi": "Paradise Gym - Quận 7, TP. Hồ Chí Minh",
+    "quan": "Quận 7"
+  },
+  {
+    "id": "quan-10",
+    "ten": "Chi nhánh Quận 10",
+    "dia_chi": "Paradise Gym - Quận 10, TP. Hồ Chí Minh",
+    "quan": "Quận 10"
+  },
+  {
+    "id": "binh-tan",
+    "ten": "Chi nhánh Bình Tân",
+    "dia_chi": "Paradise Gym - Bình Tân, TP. Hồ Chí Minh",
+    "quan": "Bình Tân"
+  },
+  {
+    "id": "thu-duc",
+    "ten": "Chi nhánh Thủ Đức",
+    "dia_chi": "Paradise Gym - TP. Thủ Đức, TP. Hồ Chí Minh",
+    "quan": "Thủ Đức"
+  },
+  {
+    "id": "nha-be",
+    "ten": "Chi nhánh Nhà Bè",
+    "dia_chi": "Paradise Gym - Nhà Bè, TP. Hồ Chí Minh",
+    "quan": "Nhà Bè"
+  }
+]

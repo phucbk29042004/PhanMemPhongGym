@@ -9,6 +9,9 @@ import { error } from '../utils/response.js';
 function escapeCSV(val) {
   if (val == null) return '';
   const s = String(val);
+  if (s.startsWith('="') && s.endsWith('"')) {
+    return s;
+  }
   if (s.includes(';') || s.includes('"') || s.includes('\n')) {
     return `"${s.replace(/"/g, '""')}"`;
   }
@@ -38,9 +41,19 @@ function formatDate(dateStr) {
   // Định dạng YYYY-MM-DD -> DD/MM/YYYY
   const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (match) {
-    return `${match[3]}/${match[2]}/${match[1]}`;
+    return `="${match[3]}/${match[2]}/${match[1]}"`;
   }
   return dateStr;
+}
+
+function formatPhone(phoneStr) {
+  if (!phoneStr) return '';
+  return `="${phoneStr}"`;
+}
+
+function formatTime(timeStr) {
+  if (!timeStr) return '';
+  return `="${timeStr}"`;
 }
 
 function translateGender(g) {
@@ -87,6 +100,7 @@ export const exportMembers = (req, res) => {
     ...r,
     gioi_tinh: translateGender(r.gioi_tinh),
     ngay_sinh: formatDate(r.ngay_sinh),
+    so_dien_thoai: formatPhone(r.so_dien_thoai),
     het_han_goi_tap: formatDate(r.het_han_goi_tap),
     ngay_tao: r.ngay_tao ? formatDate(r.ngay_tao.slice(0, 10)) : ''
   }));
@@ -160,16 +174,16 @@ export const exportPTSchedules = (req, res) => {
 
   let where = `WHERE 1=1`;
   const params = [];
-  if (tu_ngay) { where += ` AND date(lt.thoi_gian_bat_dau) >= ?`; params.push(tu_ngay); }
-  if (den_ngay) { where += ` AND date(lt.thoi_gian_bat_dau) <= ?`; params.push(den_ngay); }
+  if (tu_ngay) { where += ` AND lt.ngay_tap >= ?`; params.push(tu_ngay); }
+  if (den_ngay) { where += ` AND lt.ngay_tap <= ?`; params.push(den_ngay); }
   if (pt_id) { where += ` AND lt.pt_id = ?`; params.push(pt_id); }
 
   const rows = db.prepare(`
     SELECT
       lt.id,
-      strftime('%Y-%m-%d', lt.thoi_gian_bat_dau) AS ngay,
-      strftime('%H:%M', lt.thoi_gian_bat_dau) AS gio_bat_dau,
-      strftime('%H:%M', lt.thoi_gian_ket_thuc) AS gio_ket_thuc,
+      lt.ngay_tap AS ngay,
+      lt.gio_bat_dau AS gio_bat_dau,
+      lt.gio_ket_thuc AS gio_ket_thuc,
       hv.ho_ten AS ten_hoi_vien, hv.ma_ho_so AS ma_hv,
       pt.ho_ten AS ten_pt, pt.ma_ho_so AS ma_pt,
       lt.trang_thai, lt.loai_buoi, lt.ghi_chu
@@ -177,7 +191,7 @@ export const exportPTSchedules = (req, res) => {
     JOIN ho_so hv ON hv.id = lt.hoi_vien_id
     JOIN ho_so pt ON pt.id = lt.pt_id
     ${where}
-    ORDER BY lt.thoi_gian_bat_dau ASC
+    ORDER BY lt.ngay_tap ASC, lt.gio_bat_dau ASC
   `).all(...params);
 
   const formattedRows = rows.map(r => {
@@ -193,6 +207,8 @@ export const exportPTSchedules = (req, res) => {
     return {
       ...r,
       ngay: formatDate(r.ngay),
+      gio_bat_dau: formatTime(r.gio_bat_dau),
+      gio_ket_thuc: formatTime(r.gio_ket_thuc),
       trang_thai: trangThaiText,
       loai_buoi: loaiBuoiText
     };

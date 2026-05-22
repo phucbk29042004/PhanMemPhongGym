@@ -86,6 +86,8 @@ CREATE TABLE IF NOT EXISTS ho_so (
     chuyen_mon      TEXT, -- Dành cho PT
     chuc_vu         TEXT, -- Dành cho Nhân viên
     loai_hv         TEXT, -- Dành cho Hội viên (VIP, Thường...)
+    chieu_cao_cm    REAL,
+    can_nang_kg     REAL,
     -- Soft Delete — KHÔNG bao giờ xóa thật hồ sơ
     is_deleted      INTEGER NOT NULL DEFAULT 0 CHECK (is_deleted IN (0,1)),
     ngay_xoa        DATETIME,
@@ -231,6 +233,41 @@ CREATE TABLE IF NOT EXISTS lich_tap (
     ngay_cap_nhat   DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
     CHECK (gio_ket_thuc > gio_bat_dau),
     CHECK (pt_id != hoi_vien_id)
+);
+
+CREATE TABLE IF NOT EXISTS danh_gia_pt (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    lich_tap_id     INTEGER NOT NULL REFERENCES lich_tap(id) ON DELETE CASCADE,
+    pt_id           INTEGER NOT NULL REFERENCES ho_so(id),
+    hoi_vien_id     INTEGER NOT NULL REFERENCES ho_so(id),
+    so_sao          INTEGER NOT NULL CHECK (so_sao BETWEEN 1 AND 5),
+    tieu_chi_json   TEXT,
+    tag_json        TEXT,
+    noi_dung        TEXT,
+    nguoi_tao_id    INTEGER REFERENCES tai_khoan(id),
+    nguoi_cap_nhat_id INTEGER REFERENCES tai_khoan(id),
+    ngay_tao        DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
+    ngay_cap_nhat   DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
+    UNIQUE(lich_tap_id, hoi_vien_id)
+);
+
+CREATE TABLE IF NOT EXISTS pt_toi_nhat_ky (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    hoi_vien_id     INTEGER NOT NULL REFERENCES ho_so(id),
+    pt_id           INTEGER NOT NULL REFERENCES ho_so(id),
+    nguoi_gui_id    INTEGER NOT NULL REFERENCES ho_so(id),
+    vai_tro_gui     TEXT NOT NULL CHECK (vai_tro_gui IN ('hoi_vien','pt')),
+    loai_nhat_ky    TEXT NOT NULL DEFAULT 'cap_nhat'
+                    CHECK (loai_nhat_ky IN ('hoi_vien_cap_nhat','pt_dan_do','cap_nhat')),
+    cam_nhan_tap    TEXT,
+    khau_phan_an    TEXT,
+    so_phut_tap     INTEGER,
+    noi_dung_tap    TEXT,
+    loi_dan         TEXT,
+    ghi_chu         TEXT,
+    da_chinh_sua    INTEGER NOT NULL DEFAULT 0 CHECK (da_chinh_sua IN (0,1)),
+    ngay_tao        DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
+    ngay_cap_nhat   DATETIME NOT NULL DEFAULT (datetime('now','localtime'))
 );
 
 -- ============================================================

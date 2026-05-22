@@ -8,11 +8,128 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
-**✅ Gộp chức năng Yêu cầu gia hạn vào trang Hết hạn / Sắp hết hạn** — Đã loại bỏ mục menu "Yêu cầu gia hạn" trùng lặp trên sidebar, di chuyển badge chỉ số lượng yêu cầu chờ duyệt sang mục "Hết hạn / Sắp hết hạn". Tích hợp giao diện Mobile Card View và gộp toàn bộ logic duyệt vào tab Yêu cầu của trang Hết hạn. Sửa lỗi hàm `refreshData` không tồn tại.
+**✅ Thiết kế lưới Card HLV trực quan & Đồng bộ cơ chế chọn trên toàn bộ Web** — Đã chuyển đổi toàn bộ giao diện chọn Huấn luyện viên (PT/HLV) từ dạng danh sách cuộn dọc/dropdown select sang dạng lưới các thẻ (Grid Cards) trực quan, responsive trên mọi thiết bị (mobile 1 cột, tablet 2 cột, desktop 2-3 cột). Đồng bộ cơ chế tích chọn/xóa chọn: click card → ẩn lưới, hiện card đã chọn kèm nút xóa "x"; click "x" → hiện lại lưới chọn lại. Áp dụng trên 5 vị trí: 4 modal trong members-list.js và trang pt-register.js.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
+
+### 22/05/2026 10:48 — Thiết Kế Lưới Card HLV Trực Quan & Đồng Bộ Cơ Chế Chọn Trên Toàn Bộ Web
+- **Loại**: Cải tiến giao diện UI/UX (Frontend)
+- **File/Thành phần liên quan**: `FE/assets/js/pages/members-list.js`, `FE/assets/js/pages/pt-register.js`
+- **Mô tả**:
+  - **members-list.js**: Chuyển đổi giao diện chọn PT trong 3 modal (Đăng ký, Sửa, Đổi gói PT) từ danh sách dọc `flex flex-col` sang `grid grid-cols-1 sm:grid-cols-2` responsive. Thẻ PT chuyển từ hàng ngang sang card dọc: avatar 'md' to hơn, text căn giữa, chuyên môn và mã số rõ ràng, hover nổi bật (shadow + lift + border xanh). Modal Đăng ký lịch tập PT: thay thế hoàn toàn `<select>` dropdown bằng Grid card + hidden input + card đã chọn kèm nút xóa "x", tự động chọn nếu chỉ có 1 PT.
+  - **pt-register.js**: Chuyển đổi cả danh sách PT (`#pt-list`) và danh sách Hội viên (`#member-list`) sang `grid grid-cols-2 lg:grid-cols-3` responsive. Thẻ PT/Hội viên thiết kế lại dạng card dọc đẹp mắt tương tự.
+- **Kết quả**: Giao diện chọn PT/HLV trên toàn bộ hệ thống Web Admin trở nên trực quan, hiện đại, responsive và đồng bộ cơ chế tích chọn/xóa chọn nhất quán.
+
+### 22/05/2026 10:30 — Thiết Kế Lại Chọn PT Trực Quan Trong Các Modal & Sửa Lỗi Định Dạng Excel
+- **Loại**: Cải tiến giao diện UI/UX & Sửa lỗi hệ thống (Fullstack)
+- **File/Thành phần liên quan**: `BE/src/controllers/export.controller.js`, `FE/assets/js/pages/members-list.js`, `task.md`
+- **Mô tả**:
+  - **Sửa lỗi xuất Excel**: Cập nhật file `export.controller.js` giúp định dạng số điện thoại (bọc dạng chuỗi `="0..."` để không mất số 0 ở đầu) và ngày tháng (bọc dạng chuỗi `="DD/MM/YYYY"`) trong tất cả các file xuất Excel/CSV trên toàn hệ thống Web Admin. Sửa logic escape CSV tránh phá vỡ định dạng công thức Excel này.
+  - **Chọn PT trực quan**: Thiết kế lại giao diện chọn Huấn luyện viên (PT) dạng card trong cả 3 modal: Đăng ký gói PT (`_showAddPtRegistrationModal`), Chỉnh sửa gói PT (`_showEditPtRegistrationModal`), và Đổi gói PT mới (`_showSwitchPtRegistrationModal`) trong trang Danh sách hội viên (`members-list.js`). Thay thế thẻ select dropdown đơn điệu bằng thanh tìm kiếm trực quan và danh sách cuộn hiển thị thẻ PT sinh động bao gồm avatar, tên, mã số, chuyên môn, số học viên hiện tại. Tự động hiển thị và chọn PT đang được gán cho hợp đồng hiện tại khi mở modal chỉnh sửa hoặc đổi gói.
+- **Kết quả**: Giao diện quản lý gói PT trở nên cực kỳ cao cấp, nhất quán với ngôn ngữ thiết kế Material 3 Glassmorphism của hệ thống, đồng thời file Excel xuất ra không còn bị lỗi mất số 0 đầu số điện thoại hay đảo ngày tháng.
+
+### 22/05/2026 10:15 — Nâng Cấp Thông Báo Mobile App & Khắc Phục Lỗi Z-Index Giao Diện Web
+- **Loại**: Cải tiến giao diện, Sửa lỗi & Nâng cấp nghiệp vụ (Fullstack)
+- **File/Thành phần liên quan**: `BE/src/controllers/members.controller.js`, `MobileApp/src/screens/member/MemberNotificationScreen.js`, `MobileApp/src/screens/pt/PTNotificationScreen.js`, `FE/index.html`, `FE/pt-portal.html`, `kientruchethong.md`
+- **Mô tả**:
+  - **Backend**: Thêm helper `getLocalNowString()` gán thời gian `ngay_tao` (định dạng `YYYY-MM-DD HH:mm:ss`) cho tất cả thông báo realtime. Sắp xếp danh sách thông báo theo `ngay_tao` giảm dần để đảm bảo thông báo mới nhất hiển thị trên đầu.
+  - **Mobile App**: Thiết kế component `PulsingDot` bằng React Native Animated API nhấp nháy mượt mà cho thông báo chưa đọc. Làm phẳng danh sách thông báo (không phân nhóm) và hiển thị thời gian tương đối qua hàm `formatTimeAgo()`. Trì hoãn cuộc gọi API `markAsRead` đến khi người dùng chuyển trang/thoát màn hình (cleanup function của `useFocusEffect`).
+  - **Web Frontend**: Nâng chỉ số `z-index` của header từ `z-10` lên `z-40` trong cả `index.html` và `pt-portal.html` để dropdown thông báo luôn hiển thị đè lên trên các thẻ đếm và các thành phần giao diện khác phía dưới.
+- **Kết quả**: Hoàn thành xuất sắc, giao diện dropdown trên web hiển thị đúng vị trí chồng xếp lớp, thông báo trên mobile app sinh động, thân thiện và tối ưu trải nghiệm đọc.
+
+### 22/05/2026 09:00 — Tích Hợp Cổng Thanh Toán PayOS, Đồng Bộ Chi Nhánh & Tự Động Kích Hoạt Gói Tập Nối Tiếp
+- **Loại**: Tính năng mới & Đồng bộ hệ thống (Fullstack)
+- **File chỉnh sửa/thêm mới**:
+  - `FE/assets/data/branches.json` [NEW] — Định nghĩa danh sách 12 chi nhánh dùng chung tại TP.HCM.
+  - `BE/src/utils/payos.js` [NEW] — Khởi tạo SDK PayOS và định nghĩa các hàm helper xử lý mô tả đơn hàng, tạo link thanh toán, kiểm tra trạng thái giao dịch.
+  - `BE/src/controllers/branches.controller.js` [NEW] — Controller trả về danh sách chi nhánh từ file JSON dùng chung.
+  - `BE/src/routes/branches.routes.js` [NEW] — Route công khai `/api/branches` để Mobile App và Web Admin cùng fetch dữ liệu.
+  - `BE/src/config/db.js` — Thực hiện Migration v11 thêm 3 cột `payos_order_code`, `payos_status` và `chi_nhanh_mua` vào bảng `dang_ky_goi_tap`.
+  - `BE/src/controllers/members.controller.js` —
+    - Nâng cấp `requestPackageRenewal` tự động kiểm tra thời hạn gói cũ và cộng dồn nối tiếp (`tu_ngay = den_ngay_goi_cu + 1`), hỗ trợ chọn chi nhánh và tạo link thanh toán PayOS.
+    - Bổ sung hàm `checkPayosStatus` cho phép polling trạng thái giao dịch từ Mobile App, tự kích hoạt gói nếu bắt đầu hôm nay hoặc giữ trạng thái chờ để kích hoạt nối tiếp sau này.
+    - Cập nhật `approvePackageRequest` tự động giữ trạng thái `'cho_duyet'` thay vì kích hoạt ngay nếu ngày bắt đầu gói duyệt thủ công nằm ở tương lai.
+    - Tối ưu hóa `getPackageRequests` để loại trừ những yêu cầu đã thanh toán hoặc đã duyệt thành công nhưng đang chờ đến ngày kích hoạt.
+  - `BE/src/jobs/cron-daily.js` — Nâng cấp công việc hàng ngày lúc 08:00 tự động quét và kích hoạt các gói tập đã thanh toán/được duyệt khi đến ngày bắt đầu (`tu_ngay`), kèm thông báo đến người dùng và admin.
+  - `MobileApp/src/screens/member/PackageDetailScreen.js` [NEW] — Giao diện hiển thị chi tiết gói tập, quyền lợi hội viên và nút mua ngay.
+  - `MobileApp/src/screens/member/OrderConfirmationScreen.js` [NEW] — Màn hình xác nhận thanh toán, hỗ trợ chọn chi nhánh từ API, chọn phương thức thanh toán, hiển thị QR code của PayOS và polling kiểm tra giao dịch tự động.
+  - `FE/assets/js/pages/member-add.js` & `FE/assets/js/pages/members-list.js` — Thay thế danh sách chi nhánh tĩnh bằng cách gọi API động `/api/branches`.
+  - `FE/assets/js/pages/expired.js` — Cập nhật giao diện lễ tân hiển thị badge PayOS (Đã thanh toán / Chờ thanh toán) và chi nhánh mua gói, tự động chọn phương thức chuyển khoản và điền ghi chú giao dịch khi duyệt gói đã thanh toán qua PayOS.
+- **Mô tả chi tiết**:
+  - **Tự động nối tiếp**: Giải quyết triệt để vấn đề chồng chéo thời gian khi hội viên mua gói mới lúc gói cũ còn hạn. Gói mới sẽ tự động được đặt ngày bắt đầu nối tiếp và chỉ chuyển sang trạng thái hoạt động vào đúng ngày bắt đầu thông qua Cron Job hàng ngày.
+  - **Thanh toán PayOS**: Tích hợp thanh toán QR VietQR tự động, phản hồi realtime giúp hội viên mua gói và tự kích hoạt không cần lễ tân duyệt thủ công.
+- **Kết quả**: Hệ thống mua gói và thanh toán tự động hoạt động mượt mà, đồng bộ hoàn hảo dữ liệu chi nhánh và luồng nghiệp vụ trên toàn hệ thống.
+
+### 19/05/2026 15:40 — Cải Tiến Giao Diện Thẻ Học Viên Của Tôi (PT Portal)
+- **Loại**: Cải tiến giao diện (Frontend)
+- **File chỉnh sửa**:
+  - `FE/assets/js/pt-portal.js`
+- **Mô tả chi tiết**:
+  - **Đồng bộ ngôn ngữ thiết kế**: Thiết kế lại hoàn toàn thẻ học viên trong mục "Học viên của tôi" để đồng bộ với ngôn ngữ thiết kế hiện đại của mục "Lịch tập".
+  - **Nâng cấp UI/UX**: Thêm thanh viền gradient (accent bar), hiệu ứng đổ bóng (shadow) và di chuột (hover). Cấu trúc lại lưới thông số (Đã tập/Còn lại/Tổng) bằng layout hiển thị rõ ràng với `bg-surface-container-low`. Thêm hiệu ứng cảnh báo (pulsing dot) cho các học viên sắp hết buổi.
+- **Kết quả**: Giao diện quản lý học viên đẹp mắt, chuyên nghiệp và nhất quán hơn.
+
+### 19/05/2026 15:35 — Khắc Phục Lỗi Hiển Thị Dữ Liệu Học Viên Trong PT Portal
+- **Loại**: Sửa lỗi khớp nối dữ liệu (Frontend)
+- **File chỉnh sửa**:
+  - `FE/assets/js/pt-portal.js` —
+    - Ánh xạ các trường dữ liệu từ API (`so_buoi_da_tap` -> `buoi_da_tap`, `so_buoi_dang_ky` -> `tong_buoi_dk`, `den_ngay` -> `ngay_het_han`) khi lưu thông tin vào `window.GymApp.data.myStudents` trong hàm `init()` của tab học viên của tôi.
+    - Sửa lỗi chính tả đường dẫn API tạo lịch mới từ `/pt/my-members` thành `/pt/schedules/my-members`.
+- **Mô tả chi tiết**:
+  - **Sửa hiển thị sai thông tin**: API trả về định dạng SQL Snake Case (`so_buoi_da_tap`, `so_buoi_dang_ky`, `den_ngay`) nhưng phía giao diện render lại dùng các trường custom (`buoi_da_tap`, `tong_buoi_dk`, `ngay_het_han`), dẫn đến tình trạng sau khi xác nhận đã dạy xong, thông tin trên card học viên bị reset/hiển thị sai dữ liệu (Đã tập: 0, Tiến độ: 0%).
+- **Kết quả**: Dữ liệu tiến độ, tổng số buổi và ngày hết hạn hiển thị hoàn toàn chính xác trên card thông tin học viên.
+
+### 19/05/2026 15:30 — Sửa Lỗi Màu Sắc Nút Lưu Ghi Chú Trong PT Portal
+- **Loại**: Cải tiến giao diện người dùng (Frontend)
+- **File chỉnh sửa**:
+  - `FE/assets/js/pt-portal.js` — Thay đổi thuộc tính inline `background: var(--brand-primary)` của nút "Lưu ghi chú" (`btn-save-note`) thành mã màu xanh lục đặc trưng `#1D9336`.
+- **Mô tả chi tiết**:
+  - **Sửa nút bị trắng**: Trước đó nút này sử dụng biến CSS `var(--brand-primary)` vốn chưa được định nghĩa trong hệ thống CSS tĩnh khiến nút bị mất màu nền (chuyển thành màu trắng). Việc sửa lại màu nền cụ thể giúp nút hiển thị đồng bộ với thiết kế giao diện chung của PT Portal.
+- **Kết quả**: Nút "Lưu ghi chú" đã hiển thị màu xanh lục chính xác, đồng bộ hoàn toàn với các nút khác.
+
+### 19/05/2026 15:25 — Khóa Tài Khoản Đăng Nhập Khi Xóa Hồ Sơ
+- **Loại**: Cải tiến logic nghiệp vụ & Bảo mật hệ thống (Backend)
+- **File chỉnh sửa**:
+  - `BE/src/controllers/members.controller.js` — Trong hàm `deleteMember`, cập nhật trạng thái `trang_thai = 'khoa'` cho tài khoản tương ứng với hồ sơ hội viên bị xóa.
+  - `BE/src/controllers/trainers.controller.js` — Trong hàm `deleteTrainer`, cập nhật trạng thái `trang_thai = 'khoa'` cho tài khoản tương ứng với hồ sơ PT bị xóa.
+  - `BE/src/controllers/staff.controller.js` — Trong hàm `deleteStaff`, cập nhật trạng thái `trang_thai = 'khoa'` cho tài khoản tương ứng với hồ sơ nhân viên bị xóa.
+- **Mô tả chi tiết**:
+  - **Chặn đăng nhập của tài khoản đã bị xóa**: Khi thực hiện xóa mềm hồ sơ của bất kỳ hội viên, PT hoặc nhân viên nào, tài khoản đăng nhập (`tai_khoan`) liên kết với hồ sơ đó cũng sẽ được cập nhật trạng thái thành `'khoa'` (locked) để ngăn chặn truy cập trái phép hoặc tiếp tục sử dụng hệ thống.
+- **Kết quả**: Tài khoản của hồ sơ bị xóa sẽ tự động bị chặn đăng nhập ngay lập tức.
+
+### 19/05/2026 15:20 — Khắc Phục Lỗi 404 Khi Tải Lịch Sử Check-in & QR Code Của Tài Khoản Thiếu Hồ Sơ
+- **Loại**: Vá lỗi (Backend)
+- **File chỉnh sửa**:
+  - `BE/src/controllers/checkins.controller.js` — Thêm cơ chế fallback tìm kiếm hồ sơ khi tài khoản đã bị xóa hồ sơ hoặc chưa liên kết hoàn chỉnh, trả về mảng rỗng thay vì ném lỗi 404 gây lỗi giao diện.
+  - `BE/src/controllers/qr-checkin.controller.js` — Thêm cơ chế fallback và sinh thông tin hồ sơ tạm thời (`TEMP_id`) dựa trên tài khoản khi gặp trường hợp profile của tài khoản đó bị soft-delete hoặc chưa được liên kết, ngăn chặn 404 và giúp màn hình hiển thị bình thường.
+- **Mô tả chi tiết**:
+  - **Khắc phục lỗi giao diện**: Ngăn chặn lỗi JavaScript trên console của Web Member Portal khi truy cập danh mục check-in và hiển thị QR Code của những tài khoản thử nghiệm chưa hoàn thiện hoặc đã bị xóa mềm hồ sơ.
+- **Kết quả**: Giải quyết hoàn toàn lỗi console, khôi phục giao diện hoạt động bình thường.
+
+### 19/05/2026 15:15 — Chặn Trùng Lặp Yêu Cầu Gia Hạn & Tự Động Cộng Dồn Thời Gian Nối Tiếp Gói Cũ
+- **Loại**: Cải tiến logic nghiệp vụ & Bảo mật dữ liệu (Backend)
+- **File chỉnh sửa**:
+  - `BE/src/controllers/members.controller.js` — Thêm bước kiểm tra sự tồn tại của yêu cầu ở trạng thái `cho_duyet`. Nếu có, trả về lỗi 400 để chặn spam. Tự động kiểm tra thời hạn gói cũ đang hoạt động và điều chỉnh ngày bắt đầu `tu_ngay` của yêu cầu gia hạn mới thành `den_ngay_cu + 1 ngày` để cộng dồn nối tiếp, tránh chồng chéo.
+- **Mô tả chi tiết**:
+  - **Chống spam**: Bảo vệ hệ thống khỏi việc hội viên gửi liên tục nhiều yêu cầu gia hạn cùng lúc.
+  - **Cộng dồn tự động**: Tính toán ngày hiệu lực hoàn toàn ở Backend để đảm bảo quyền lợi thời gian sử dụng gói tập của hội viên, bất kể ngày gửi yêu cầu là khi nào.
+- **Kết quả**: Dữ liệu đồng bộ trực tiếp lên Mobile App và Web Portal.
+
+### 19/05/2026 15:10 — Sửa Lỗi Logic Nghiệp Vụ, Cơ Sở Dữ Liệu & Hợp Đồng PT
+- **Loại**: Sửa lỗi logic nghiệp vụ, bảo mật check-in & cơ sở dữ liệu (Backend)
+- **File chỉnh sửa**:
+  - `BE/src/controllers/qr-checkin.controller.js` — Thêm điều kiện `tu_ngay <= today` khi truy vấn gói đang hoạt động để tránh check-in sớm. Tự động cập nhật `da_checkin = 1` cho các buổi tập PT hôm nay của hội viên khi quét QR vào phòng thành công.
+  - `BE/src/controllers/checkins.controller.js` — Tự động cập nhật `da_checkin = 1` cho các buổi tập PT hôm nay của hội viên khi lễ tân check-in thủ công thành công.
+  - `BE/src/controllers/pt-registrations.controller.js` — Thay thế join nhầm bảng từ `goi_tap` thành `goi_pt` để hiển thị chính xác tên gói tập PT của học viên.
+  - `BE/src/controllers/pt-schedules.controller.js` — Thêm ràng buộc số buổi lên lịch (đã tập + chờ tập) không vượt quá `so_buoi_dang_ky` của hợp đồng PT. Thêm kiểm tra trùng lịch tập phía hội viên trước khi xếp lịch mới.
+  - `BE/src/jobs/cron-daily.js` — Tích hợp câu lệnh tự động cập nhật `trang_thai = 'het_han'` (với gói tập) và `'hoan_thanh'` (với gói PT) khi đã quá hạn hoặc hoàn thành số buổi tập vào đầu job chạy hàng ngày lúc 08:00.
+- **Mô tả chi tiết**:
+  - **Bảo mật check-in**: Ngăn chặn hoàn toàn việc hội viên có gói tập đã được duyệt kích hoạt ở tương lai nhưng vẫn check-in được vào phòng tập hôm nay.
+  - **Tự động hóa PT session**: Cập nhật chỉ số `da_checkin = 1` giúp kích hoạt hoàn hảo cron job tự động xác nhận hoàn thành buổi tập lúc 22:00.
+  - **Ràng buộc lịch PT**: Bảo đảm không xếp trùng lịch hội viên và không cho phép PT xếp lịch vượt số buổi hội viên đã mua.
+- **Kết quả**: Thành công 100%, bảo đảm tính nhất quán dữ liệu và nghiệp vụ phòng tập.
 
 ### 19/05/2026 14:45 — Gộp Mục Yêu Cầu Gia Hạn Vào Trang Hết Hạn / Sắp Hết Hạn
 - **Loại**: Cải tiến cấu trúc giao diện & Tối ưu hóa UI/UX (Frontend)
@@ -118,7 +235,7 @@
   - `FE/assets/js/app.js` — Cấu hình lại ngôn ngữ hiển thị tiếng Việt, các nhãn hiển thị tháng và hàm tùy chỉnh tiêu đề lịch cho bộ chọn ngày `AirDatepicker`.
   - `FE/assets/css/main.css` — Thay đổi bo góc các ô chọn lịch (cells) từ hình tròn sang hình vuông bo góc mềm mại.
 - **Mô tả chi tiết**:
-  - **Sự cố / Yêu cầu**: 
+  - **Sự cố / Yêu cầu**:
     - Tiêu đề tháng hiển thị định dạng cũ có dấu phẩy và in hoa (ví dụ: "Tháng 5, 2026") làm mất đi sự tối giản.
     - Trong lưới chọn tháng nhanh, các tháng hiển thị viết tắt dạng "Th 1", "Th 2",... thay vì viết đầy đủ và không in hoa.
     - Các ô chọn ngày, tháng, năm hiển thị dưới dạng hình tròn thay vì hình vuông bo góc mềm mại.
@@ -134,7 +251,7 @@
   - `FE/assets/js/pages/expired.js` — Thiết kế lại hoàn toàn cấu trúc HTML và CSS của modal xác nhận duyệt gia hạn gói tập (`modal-approve-renewal`).
 - **Mô tả chi tiết**:
   - **Sự cố**: Các ô nhập liệu (`input`, `select`), khoảng đệm (`padding`), cỡ chữ (`font-size`), và nút bấm trong modal duyệt gia hạn cũ hiển thị quá to so với chuẩn chung của hệ thống, phá vỡ trải nghiệm thống nhất.
-  - **Giải pháp**: 
+  - **Giải pháp**:
     - Thu nhỏ các input từ `py-4 text-headline-sm` về `py-2 text-body-sm font-black` (bằng chuẩn form chung).
     - Thay thế bo góc thô `rounded-[28px]` bằng `rounded-2xl` mượt mà, chuyên nghiệp.
     - Cải tiến phần thẻ thông tin yêu cầu gói tập (`Gói tập`, `Thời gian gia hạn`) thành dạng bento box thu nhỏ với viền mảnh sang trọng.
@@ -151,7 +268,7 @@
 ### 15/05/2026 09:30 — Tối Ưu Hóa Mật Độ Thông Tin Dashboard (Toàn Diện)
 - **Loại**: Cải thiện UI/UX (Frontend)
 - **File chỉnh sửa**:
-  - `FE/assets/js/pages/expired.js`, `FE/assets/js/pages/birthday.js`, `FE/assets/js/pages/pt-register.js`, `FE/assets/js/pages/pt-training.js` — Đồng bộ hóa việc giảm khoảng trắng bằng cách thay thế các class utility `gap-loose/margin` và `p-loose/margin` sang `gap-standard/lg` và `p-standard/compact`. 
+  - `FE/assets/js/pages/expired.js`, `FE/assets/js/pages/birthday.js`, `FE/assets/js/pages/pt-register.js`, `FE/assets/js/pages/pt-training.js` — Đồng bộ hóa việc giảm khoảng trắng bằng cách thay thế các class utility `gap-loose/margin` và `p-loose/margin` sang `gap-standard/lg` và `p-standard/compact`.
   - Tinh gọn Section Headers, Card padding, và Table cell padding trên toàn bộ các module còn lại.
   - Đảm bảo tính tương thích đa thiết bị (Responsive) sau khi thu hẹp khoảng cách spacing.
 - **Mô tả**: Hoàn tất chiến dịch chuẩn hóa mật độ thông tin cho toàn bộ Dashboard Admin, giúp giao diện chuyên nghiệp hơn và hiển thị được nhiều dữ liệu hơn trên cùng một khung hình.
@@ -572,7 +689,7 @@
 ### 07/05/2026 14:10 — Khôi phục UI bị thiếu (Icons, Search Bar, Sidebar Toggle)
 - **Loại**: Cải thiện Giao diện (UI) & Chức năng (Frontend)
 - **File/Thành phần liên quan**: `public/index.html`, `public/css/styles.css`, `public/js/main.js`
-- **Mô tả**: 
+- **Mô tả**:
     - Khôi phục icon menu con trong Sidebar.
     - Tích hợp thanh tìm kiếm hiện đại lên Header (Top Bar).
     - Thêm nút Toggle Sidebar (Hamburger) và logic thu gọn/mở rộng mượt mà.
@@ -581,7 +698,7 @@
 ### 07/05/2026 14:05 — Khôi phục Thiết kế Material 3 (Bo góc tròn) và Fix lỗi UI
 - **Loại**: Cải thiện & Sửa lỗi (Reversion)
 - **File/Thành phần liên quan**: `public/index.html`, `public/css/styles.css`, `public/js/router.js`
-- **Mô tả**: 
+- **Mô tả**:
     - Quay lại phong cách Material 3 Glassmorphism bo góc tròn.
     - Fix lỗi nút Toggle Sidebar bị "hựng" hoặc mất icon.
     - Đảm bảo Form Thêm mới hội viên đầy đủ >25 trường dữ liệu.
@@ -609,3 +726,15 @@
 ### 07/05/2026 13:14 — Khởi tạo cấu trúc SPA và Giao diện Premium
 - **Loại**: Khởi tạo
 - **Mô tả**: Xây dựng khung Sidebar (Flexbox) + Content Area. Implement Router.js cho SPA.
+
+### 20/05/2026 - Bổ sung Hội viên tự xác nhận PT & Xóa mốc 3 tháng doanh thu & Seeding 30 hội viên
+- **Loại**: Cập nhật tính năng & Dữ liệu mẫu
+- **Mô tả**:
+    - Cho phép hội viên vào Member Portal / Mobile App để tự xác nhận buổi tập PT (trạng thái chờ tập).
+    - Xóa nút lọc Doanh thu 3 tháng, chuyển thành Hôm nay, 7 ngày, 30 ngày trên FE Web & Mobile App.
+    - Viết script tự động thêm 30 hội viên (có tài khoản đăng nhập và gói tập) để dễ dàng test giao diện.
+# Cập nhật 22/05/2026 — Đánh giá PT, BMI và luồng PT & Tôi
+
+- **Loại**: Tính năng mới & đồng bộ Web/Mobile/Backend
+- **Phạm vi**: `danh_gia_pt`, `pt_toi_nhat_ky`, BMI hồ sơ, rating PT, Web Member/PT Portal và Mobile App.
+- **Kết quả**: Hội viên có thể đánh giá/sửa đánh giá PT sau buổi đã hoàn thành; điểm sao PT đồng bộ lên danh sách chọn PT; hồ sơ lưu chiều cao/cân nặng hiện tại để tính BMI; hai bên có luồng trao đổi chung `PT & Tôi` kèm thông báo khi tạo/chỉnh sửa.

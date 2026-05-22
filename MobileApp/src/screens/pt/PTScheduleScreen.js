@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import {
   CalendarCheck, Clock, Dumbbell,
-  Filter, Info, MapPin, X, Zap,
+  Filter, Info, MapPin, Plus, X, Zap,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../services/api';
@@ -32,6 +32,8 @@ const G = {
   warningLight: '#fffbeb',
 };
 
+const todayYMD = () => new Date().toISOString().slice(0, 10);
+
 export default function PTScheduleScreen() {
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -41,6 +43,14 @@ export default function PTScheduleScreen() {
   const [noteEditingId, setNoteEditingId] = useState(null);
   const [noteText, setNoteText] = useState('');
   const [noteSaving, setNoteSaving] = useState(false);
+  const [members, setMembers] = useState([]);
+  const [createModalVisible, setCreateModalVisible] = useState(false);
+  const [selectedRegistration, setSelectedRegistration] = useState(null);
+  const [newDate, setNewDate] = useState(todayYMD());
+  const [newStart, setNewStart] = useState('08:00');
+  const [newEnd, setNewEnd] = useState('09:00');
+  const [newNote, setNewNote] = useState('');
+  const [creating, setCreating] = useState(false);
 
   const fetchSchedules = useCallback(async () => {
     try {
@@ -54,10 +64,22 @@ export default function PTScheduleScreen() {
     }
   }, []);
 
+  const fetchMembers = useCallback(async () => {
+    try {
+      const res = await api.get('/pt/schedules/my-members');
+      if (res.data?.success) {
+        setMembers(res.data.data || []);
+      }
+    } catch (err) {
+      console.error('[PTScheduleScreen] fetchMembers error:', err?.message);
+    }
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       fetchSchedules();
-    }, [fetchSchedules])
+      fetchMembers();
+    }, [fetchSchedules, fetchMembers])
   );
 
   const onRefresh = () => { setRefreshing(true); fetchSchedules(); };
@@ -150,9 +172,14 @@ export default function PTScheduleScreen() {
           <Text style={styles.headerTitle}>Lịch dạy cá nhân</Text>
           <Text style={styles.headerSubtitle}>Quản lý các buổi tập 1 kèm 1</Text>
         </View>
-        <TouchableOpacity style={styles.filterBtn}>
-          <Filter color={G.primary} size={20} strokeWidth={2} />
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={styles.iconBtn} onPress={() => setCreateModalVisible(true)} activeOpacity={0.8}>
+            <Plus color={G.primary} size={18} strokeWidth={2.5} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.filterBtn}>
+            <Filter color={G.primary} size={20} strokeWidth={2} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -334,6 +361,129 @@ export default function PTScheduleScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      <Modal
+        visible={createModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setCreateModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Thêm lịch tập</Text>
+            <Text style={styles.modalLabel}>Học viên</Text>
+            <ScrollView style={styles.memberList} nestedScrollEnabled>
+              {members.length === 0 ? (
+                <Text style={styles.memberEmpty}>Không có học viên đang đăng ký PT</Text>
+              ) : members.map((member) => (
+                <TouchableOpacity
+                  key={member.dang_ky_id}
+                  style={[
+                    styles.memberItem,
+                    selectedRegistration === member.dang_ky_id && styles.memberItemActive,
+                  ]}
+                  onPress={() => setSelectedRegistration(member.dang_ky_id)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.memberName}>{member.ho_ten}</Text>
+                  <Text style={styles.memberSub}>{member.ten_goi_pt || 'Gói PT'} • Còn {member.buoi_con_lai ?? '—'} buổi</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <Text style={styles.modalLabel}>Ngày</Text>
+            <TextInput
+              style={styles.modalTextInput}
+              value={newDate}
+              onChangeText={setNewDate}
+              placeholder="YYYY-MM-DD"
+            />
+            <View style={styles.rowInputs}>
+              <View style={styles.halfInput}>
+                <Text style={styles.modalLabel}>Giờ bắt đầu</Text>
+                <TextInput
+                  style={styles.modalTextInput}
+                  value={newStart}
+                  onChangeText={setNewStart}
+                  placeholder="HH:MM"
+                />
+              </View>
+              <View style={styles.halfInput}>
+                <Text style={styles.modalLabel}>Giờ kết thúc</Text>
+                <TextInput
+                  style={styles.modalTextInput}
+                  value={newEnd}
+                  onChangeText={setNewEnd}
+                  placeholder="HH:MM"
+                />
+              </View>
+            </View>
+            <Text style={styles.modalLabel}>Ghi chú</Text>
+            <TextInput
+              style={[styles.modalInput, { minHeight: 80 }]}
+              value={newNote}
+              onChangeText={setNewNote}
+              placeholder="Ghi chú tùy chọn"
+              multiline
+              textAlignVertical="top"
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalBtnCancel}
+                onPress={() => setCreateModalVisible(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.modalBtnCancelText}>Hủy</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalBtnSave, { opacity: creating || !selectedRegistration ? 0.7 : 1 }]}
+                onPress={async () => {
+                  if (!selectedRegistration) {
+                    return;
+                  }
+                  setCreating(true);
+                  try {
+                    const res = await api.post('/pt/schedules', {
+                      dang_ky_pt_id: selectedRegistration,
+                      ngay_tap: newDate,
+                      gio_bat_dau: newStart,
+                      gio_ket_thuc: newEnd,
+                      ghi_chu: newNote || null,
+                    });
+                    if (res.data?.success) {
+                      setCreateModalVisible(false);
+                      setSelectedRegistration(null);
+                      setNewDate(todayYMD());
+                      setNewStart('08:00');
+                      setNewEnd('09:00');
+                      setNewNote('');
+                      fetchSchedules();
+                      fetchMembers();
+                    } else {
+                      alert(res.data?.message || 'Không thể tạo lịch mới');
+                    }
+                  } catch (err) {
+                    alert(err.response?.data?.message || 'Lỗi kết nối khi tạo lịch.');
+                  } finally {
+                    setCreating(false);
+                  }
+                }}
+                disabled={creating || !selectedRegistration}
+                activeOpacity={0.8}
+              >
+                {creating ? (
+                  <ActivityIndicator color={G.white} size="small" />
+                ) : (
+                  <Text style={styles.modalBtnSaveText}>Tạo lịch</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
@@ -354,6 +504,15 @@ const styles = StyleSheet.create({
   headerLeft: { flex: 1 },
   headerTitle: { fontSize: 20, fontWeight: '800', color: G.gray900 },
   headerSubtitle: { fontSize: 12, color: G.gray400, fontWeight: '500', marginTop: 2 },
+  headerActions: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+  iconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: G.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   filterBtn: {
     width: 40,
     height: 40,
@@ -504,6 +663,32 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 18,
   },
+  modalTextInput: {
+    borderWidth: 1,
+    borderColor: G.gray200,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    backgroundColor: G.gray50,
+    color: G.gray900,
+    fontSize: 14,
+    marginBottom: 14,
+  },
+  modalLabel: { fontSize: 12, color: G.gray500, fontWeight: '700', marginBottom: 6 },
+  rowInputs: { flexDirection: 'row', gap: 12 },
+  halfInput: { flex: 1 },
+  memberList: { maxHeight: 160, marginBottom: 14 },
+  memberItem: {
+    borderWidth: 1,
+    borderColor: G.gray200,
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 10,
+  },
+  memberItemActive: { borderColor: G.primary, backgroundColor: '#e6f4ea' },
+  memberName: { fontSize: 14, fontWeight: '700', color: G.gray900 },
+  memberSub: { fontSize: 12, color: G.gray500, marginTop: 4 },
+  memberEmpty: { fontSize: 12, color: G.gray500, textAlign: 'center', paddingVertical: 20 },
   modalActions: { flexDirection: 'row', gap: 12 },
   modalBtnCancel: {
     flex: 1,

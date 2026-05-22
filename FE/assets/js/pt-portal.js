@@ -77,14 +77,18 @@
 
   async function _fetchData() {
     try {
-      const [schedulesRes, profileRes, notifRes] = await Promise.all([
+      const [schedulesRes, profileRes, notifRes, ptMeRes, studentsRes] = await Promise.all([
         window.GymApp.api.get('/pt/schedules'),
         window.GymApp.api.get('/auth/me'),
         window.GymApp.api.get('/members/me/notifications'),
+        window.GymApp.api.get('/pt-me/overview'),
+        window.GymApp.api.get('/pt/schedules/my-members'),
       ]);
       if (schedulesRes?.success) window.GymApp.data.ptSchedules = schedulesRes.data || [];
       if (profileRes?.success) window.GymApp.data.myProfile = profileRes.data;
       if (notifRes?.success) window.GymApp.data.myNotifications = notifRes.data?.notifications || [];
+      if (ptMeRes?.success) window.GymApp.data.ptMeOverview = ptMeRes.data || {};
+      if (studentsRes?.success) window.GymApp.data.ptMeStudents = studentsRes.data || [];
     } catch (err) {
       console.error('PT Portal: fetch data failed', err);
     }
@@ -452,7 +456,7 @@
   // ── PT Schedules Actions Modals ─────────────────────────────────
   async function _showCreateScheduleModal() {
     try {
-      const res = await window.GymApp.api.get('/pt/my-members');
+      const res = await window.GymApp.api.get('/pt/schedules/my-members');
       if (!res?.success) {
         window.GymApp.toast('Không thể lấy danh sách học viên!', 'error');
         return;
@@ -1062,7 +1066,7 @@
           <!-- Footer -->
           <div style="padding:12px 20px;border-top:1px solid var(--outline-variant);display:flex;justify-content:flex-end;gap:10px;background:var(--bg-surface-low);">
             <button id="btn-cancel-note" class="px-loose py-compact rounded-xl border border-outline-variant text-on-surface text-body-sm font-bold" style="padding:8px 16px; border-radius:8px; border:1px solid var(--outline-variant); cursor:pointer;">Hủy</button>
-            <button id="btn-save-note" class="px-loose py-compact rounded-xl bg-brand-primary text-white text-body-sm font-bold" style="padding:8px 18px; border-radius:8px; border:none; background:var(--brand-primary); color:white; cursor:pointer;">Lưu ghi chú</button>
+            <button id="btn-save-note" class="px-loose py-compact rounded-xl bg-brand-primary text-white text-body-sm font-bold" style="padding:8px 18px; border-radius:8px; border:none; background:#1D9336; color:white; cursor:pointer;">Lưu ghi chú</button>
           </div>
         </div>
       `;
@@ -1119,7 +1123,14 @@
     async init() {
       try {
         const res = await window.GymApp.api.get('/pt/schedules/my-members');
-        if (res?.success) window.GymApp.data.myStudents = res.data || [];
+        if (res?.success) {
+          window.GymApp.data.myStudents = (res.data || []).map(m => ({
+            ...m,
+            buoi_da_tap: m.so_buoi_da_tap || 0,
+            tong_buoi_dk: m.so_buoi_dang_ky || 0,
+            ngay_het_han: m.den_ngay || null
+          }));
+        }
       } catch (e) {
         // Fallback: tổng hợp từ ptSchedules nếu API chưa sẵn sàng
         const schedules = window.GymApp.data.ptSchedules || [];
@@ -1164,48 +1175,58 @@
         const isAlmost = pct >= 80;
 
         const progressColor = pct >= 80 ? '#e65100' : pct >= 50 ? '#f59e0b' : '#1D9336';
+        const progressGradient = pct >= 80 ? 'linear-gradient(90deg,#ea580c,#f97316)' : pct >= 50 ? 'linear-gradient(90deg,#d97706,#fbbf24)' : 'linear-gradient(90deg,#15803d,#4ade80)';
         const hetHan = sv.ngay_het_han ? window.GymApp.formatDate(sv.ngay_het_han) : null;
 
         return `
-          <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden flex flex-col"
-            style="${isAlmost ? 'border-color:#fdba74' : ''}">
-            <!-- Header gradient -->
-            <div class="px-loose pt-loose pb-standard flex flex-col items-center gap-compact section-header"
-              style="border-bottom:1px solid var(--outline-variant)">
-              ${window.GymApp.avatarImg(sv.avatar_url, sv.ho_ten, 'lg')}
-              <div class="text-center mt-xs">
-                <p class="font-bold text-on-surface font-display-xl text-display-xl">${sv.ho_ten || '—'}</p>
-                <p class="text-on-surface-variant font-body-sm text-body-sm">${sv.ten_goi_pt || 'Gói PT'}</p>
+          <div class="group relative rounded-3xl overflow-hidden flex flex-col gap-4 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-500 bg-surface-container-lowest border ${isAlmost ? 'border-[#fdba74]' : 'border-outline-variant'}">
+            <!-- Accent bar top -->
+            <div style="position:absolute;top:0;left:0;right:0;height:4px;background:${progressGradient};border-radius:4px 4px 0 0;"></div>
+            
+            <!-- Card Header: Avatar & Info -->
+            <div class="flex items-start gap-4 pt-6 px-5 relative">
+              <div class="relative flex-shrink-0">
+                ${window.GymApp.avatarImg(sv.avatar_url, sv.ho_ten, 'lg')}
+                ${isAlert ? `<span class="absolute -top-1 -right-1 w-3.5 h-3.5 bg-[#e65100] border-2 border-surface-lowest rounded-full shadow-sm animate-pulse" title="Sắp hết buổi"></span>` : ''}
               </div>
-              ${isAlert ? `<span style="padding:2px 10px;border-radius:999px;font-size:10px;font-weight:700;background:#fff3e0;color:#e65100;">⚠ Còn ${left} buổi</span>` : ''}
-            </div>
-
-            <!-- Stats -->
-            <div class="p-standard grid grid-cols-3 gap-xs text-center">
-              <div class="bg-surface-container rounded-xl p-compact">
-                <p class="text-on-surface-variant font-body-sm text-body-sm">Đã tập</p>
-                <p class="font-bold text-brand-primary font-display-xl text-display-xl">${done}</p>
-              </div>
-              <div class="bg-surface-container rounded-xl p-compact">
-                <p class="text-on-surface-variant font-body-sm text-body-sm">Còn lại</p>
-                <p class="font-bold font-display-xl text-display-xl" style="color:${left <= 3 ? '#e65100' : 'var(--text-on-surface)'}">${left}</p>
-              </div>
-              <div class="bg-surface-container rounded-xl p-compact">
-                <p class="text-on-surface-variant font-body-sm text-body-sm">Tổng</p>
-                <p class="font-bold text-on-surface font-display-xl text-display-xl">${total}</p>
+              <div class="flex flex-col min-w-0 flex-1 pt-1">
+                <span class="font-bold text-on-surface text-body-lg truncate block leading-tight mb-1" title="${sv.ho_ten || '—'}">${sv.ho_ten || '—'}</span>
+                <span class="text-on-surface-variant font-body-sm truncate block mb-1">${sv.ten_goi_pt || 'Gói PT'}</span>
+                ${isAlert ? `<span class="inline-flex w-fit items-center px-2 py-0.5 rounded-md font-bold text-[10px] uppercase tracking-wider bg-[#fff7ed] text-[#ea580c] border border-[#ffedd5]">Còn ${left} buổi</span>` : ''}
               </div>
             </div>
 
-            <!-- Progress bar -->
-            <div class="px-standard pb-standard">
-              <div class="flex justify-between items-center mb-xs">
-                <p class="font-body-sm text-body-sm text-on-surface-variant">Tiến độ</p>
-                <p class="font-body-sm text-body-sm font-bold" style="color:${progressColor}">${pct}%</p>
+            <!-- Stats Grid -->
+            <div class="px-5 mt-2">
+              <div class="grid grid-cols-3 gap-2 p-1 bg-surface-container-low rounded-2xl border border-outline-variant/30 text-center relative overflow-hidden">
+                <div class="py-2 z-10 flex flex-col items-center justify-center">
+                  <span class="text-[10px] uppercase font-bold tracking-widest text-on-surface-variant mb-0.5">Đã tập</span>
+                  <span class="font-bold text-brand-primary text-body-lg leading-none">${done}</span>
+                </div>
+                <div class="py-2 z-10 flex flex-col items-center justify-center border-x border-outline-variant/30">
+                  <span class="text-[10px] uppercase font-bold tracking-widest text-on-surface-variant mb-0.5">Còn lại</span>
+                  <span class="font-bold text-body-lg leading-none ${left <= 3 ? 'text-[#e65100]' : 'text-on-surface'}">${left}</span>
+                </div>
+                <div class="py-2 z-10 flex flex-col items-center justify-center">
+                  <span class="text-[10px] uppercase font-bold tracking-widest text-on-surface-variant mb-0.5">Tổng</span>
+                  <span class="font-bold text-on-surface text-body-lg leading-none">${total}</span>
+                </div>
               </div>
-              <div class="h-2 rounded-full bg-surface-container overflow-hidden">
-                <div class="h-full rounded-full transition-all duration-500" style="width:${pct}%;background:${progressColor}"></div>
+            </div>
+
+            <!-- Progress section -->
+            <div class="px-5 pb-6 mt-auto">
+              <div class="flex justify-between items-end mb-2">
+                <span class="text-[11px] uppercase font-bold tracking-widest text-on-surface-variant">Tiến độ</span>
+                <span class="font-bold text-body-sm leading-none" style="color:${progressColor}">${pct}%</span>
               </div>
-              ${hetHan ? `<p class="font-body-sm text-body-sm text-on-surface-variant mt-xs">Hết hạn: ${hetHan}</p>` : ''}
+              <div class="h-2.5 rounded-full bg-surface-container overflow-hidden shadow-inner">
+                <div class="h-full rounded-full transition-all duration-1000 ease-out" style="width:${pct}%;background:${progressGradient};box-shadow:inset 0 1px 2px rgba(255,255,255,0.3)"></div>
+              </div>
+              ${hetHan ? `<div class="mt-4 flex items-center gap-1.5 text-on-surface-variant bg-surface-container-low/50 w-fit px-3 py-1.5 rounded-lg border border-outline-variant/30">
+                <span class="material-symbols-outlined text-[14px]">event</span>
+                <span class="text-[11px] font-medium">Hết hạn: ${hetHan}</span>
+              </div>` : ''}
             </div>
           </div>
         `;
@@ -1214,6 +1235,131 @@
   };
 
   // ── Hồ sơ cá nhân ─────────────────────────────────────────
+  pages['pt-me'] = {
+    async _load(memberId) {
+      const endpoint = memberId ? `/pt-me/thread?hoi_vien_id=${memberId}` : '/pt-me/overview';
+      const res = await window.GymApp.api.get(endpoint);
+      if (res?.success) {
+        if (memberId) window.GymApp.data.ptMeThread = res.data || {};
+        else window.GymApp.data.ptMeOverview = res.data || {};
+      }
+    },
+    render() {
+      const latest = window.GymApp.data.ptMeOverview?.latest || [];
+      const students = (window.GymApp.data.ptMeStudents || []).map(s => ({
+        id: s.hoi_vien_id,
+        name: s.ho_ten || s.ten_hoi_vien || s.ma_ho_so,
+      }));
+      const seen = new Set();
+      latest.forEach(x => {
+        if (x.hoi_vien_id && !seen.has(x.hoi_vien_id)) {
+          seen.add(x.hoi_vien_id);
+          if (!students.some(s => s.id === x.hoi_vien_id)) {
+            students.push({ id: x.hoi_vien_id, name: x.ten_hoi_vien });
+          }
+        }
+      });
+      return `
+        <div class="flex flex-col gap-loose">
+          <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant p-loose shadow-sm">
+            <h2 class="text-display-sm font-bold text-on-surface">PT & Tôi</h2>
+            <p class="text-on-surface-variant mt-1">Xem cập nhật của học viên và gửi lời dặn cho buổi tiếp theo.</p>
+            <div class="mt-4 flex flex-wrap gap-3">
+              <select id="ptme-member" class="bg-surface-container-low border border-outline-variant text-on-surface px-4 py-3 rounded-xl outline-none min-w-[220px]">
+                <option value="">Chọn học viên</option>
+                ${students.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
+              </select>
+              <button id="ptme-load" class="px-5 py-3 rounded-xl bg-brand-primary text-white font-bold">Mở luồng</button>
+            </div>
+          </div>
+          <section id="ptme-thread" class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
+            ${this._renderLatest(latest)}
+          </section>
+        </div>
+      `;
+    },
+    _renderLatest(list) {
+      if (!list.length) return `<div class="p-margin text-center text-on-surface-variant"><span class="material-symbols-outlined text-4xl text-outline block mb-standard">forum</span><p class="font-bold">Chưa có cập nhật PT & Tôi</p></div>`;
+      const currentUserId = window.GymApp.auth?.user?.id;
+      return `<div class="divide-y divide-outline-variant">${list.map(item => `
+        <div class="p-loose">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <p class="font-bold text-on-surface">${item.ten_hoi_vien || item.ten_nguoi_gui || 'Học viên'} ${item.da_chinh_sua ? '<span class="text-label-sm text-on-surface-variant">(đã chỉnh sửa)</span>' : ''}</p>
+              <span class="text-label-sm text-on-surface-variant">${item.ngay_cap_nhat || item.ngay_tao || ''}</span>
+            </div>
+            ${item.nguoi_gui_id === currentUserId ? `<button class="ptme-edit text-brand-primary font-bold text-label-md" data-id="${item.id}">Sửa</button>` : ''}
+          </div>
+          <p class="text-body-sm text-on-surface-variant mt-2">${item.cam_nhan_tap || item.khau_phan_an || item.noi_dung_tap || item.loi_dan || item.ghi_chu || '—'}</p>
+        </div>
+      `).join('')}</div>`;
+    },
+    _renderThread(data) {
+      const entries = data.entries || [];
+      const pair = data.pair || {};
+      return `
+        <div class="p-loose border-b border-outline-variant">
+          <h3 class="font-bold text-on-surface text-display-xs">${pair.ten_hoi_vien || 'Học viên'}</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+            <textarea id="ptme-workout" rows="2" class="bg-surface-container border border-outline-variant rounded-xl px-4 py-3 outline-none" placeholder="Hôm nay/tới buổi sau tập gì?"></textarea>
+            <textarea id="ptme-food" rows="2" class="bg-surface-container border border-outline-variant rounded-xl px-4 py-3 outline-none" placeholder="Cần ăn gì, lưu ý khẩu phần?"></textarea>
+            <input id="ptme-minutes" type="number" min="0" max="600" class="bg-surface-container border border-outline-variant rounded-xl px-4 py-3 outline-none" placeholder="Số phút tập đề xuất" />
+            <textarea id="ptme-note" rows="2" class="bg-surface-container border border-outline-variant rounded-xl px-4 py-3 outline-none" placeholder="Lời dặn thêm"></textarea>
+          </div>
+          <button id="ptme-submit" class="mt-4 px-5 py-3 rounded-xl bg-brand-primary text-white font-bold">Gửi lời dặn</button>
+        </div>
+        ${this._renderLatest(entries)}
+      `;
+    },
+    async init() {
+      await this._load();
+      document.getElementById('ptme-load')?.addEventListener('click', async () => {
+        const memberId = document.getElementById('ptme-member')?.value;
+        if (!memberId) return window.GymApp.toast('Vui lòng chọn học viên', 'error');
+        await this._load(memberId);
+        const wrap = document.getElementById('ptme-thread');
+        if (wrap) wrap.innerHTML = this._renderThread(window.GymApp.data.ptMeThread || {});
+        wrap?.addEventListener('click', e => {
+          const editBtn = e.target.closest('.ptme-edit');
+          if (!editBtn) return;
+          const item = (window.GymApp.data.ptMeThread?.entries || []).find(x => String(x.id) === String(editBtn.dataset.id));
+          if (!item) return;
+          document.getElementById('ptme-workout').value = item.noi_dung_tap || '';
+          document.getElementById('ptme-food').value = item.khau_phan_an || '';
+          document.getElementById('ptme-minutes').value = item.so_phut_tap ?? '';
+          document.getElementById('ptme-note').value = item.loi_dan || '';
+          const submit = document.getElementById('ptme-submit');
+          submit.dataset.editId = item.id;
+          submit.textContent = 'Cập nhật lời dặn';
+          document.getElementById('ptme-workout')?.focus();
+        });
+        document.getElementById('ptme-submit')?.addEventListener('click', async () => {
+          const btn = document.getElementById('ptme-submit');
+          btn.disabled = true; btn.textContent = 'Đang gửi...';
+          try {
+            const payload = {
+              hoi_vien_id: Number(memberId),
+              noi_dung_tap: document.getElementById('ptme-workout')?.value?.trim(),
+              khau_phan_an: document.getElementById('ptme-food')?.value?.trim(),
+              so_phut_tap: document.getElementById('ptme-minutes')?.value ? Number(document.getElementById('ptme-minutes').value) : null,
+              loi_dan: document.getElementById('ptme-note')?.value?.trim(),
+            };
+            const editId = btn.dataset.editId;
+            const res = editId ? await window.GymApp.api.put(`/pt-me/thread/${editId}`, payload) : await window.GymApp.api.post('/pt-me/thread', payload);
+            if (res?.success) {
+              window.GymApp.toast(editId ? 'Đã cập nhật và báo cho hội viên!' : 'Đã gửi lời dặn cho hội viên!', 'success');
+              await this._load(memberId);
+              wrap.innerHTML = this._renderThread(window.GymApp.data.ptMeThread || {});
+            }
+          } finally {
+            delete btn.dataset.editId;
+            btn.disabled = false; btn.textContent = 'Gửi lời dặn';
+          }
+        });
+      });
+    }
+  };
+
   pages['my-profile'] = {
     render() {
       const u = window.GymApp.data.myProfile || window.GymApp.auth.user || {};

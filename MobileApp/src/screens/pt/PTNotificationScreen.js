@@ -1,7 +1,8 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
 import {
   ActivityIndicator, Alert, RefreshControl, ScrollView,
   StatusBar, StyleSheet, Text, TouchableOpacity, View,
+  Animated,
 } from 'react-native';
 import {
   AlertCircle, AlertTriangle, Bell, BellOff,
@@ -59,6 +60,114 @@ const LEVEL_CONFIG = {
   },
 };
 
+// ── Hàm helper định dạng thời gian tương đối ───────────────
+function formatTimeAgo(dateStr) {
+  if (!dateStr) return '';
+  const parts = dateStr.split(/[- :]/);
+  if (parts.length < 6) return dateStr;
+  
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1;
+  const day = parseInt(parts[2], 10);
+  const hour = parseInt(parts[3], 10);
+  const minute = parseInt(parts[4], 10);
+  const second = parseInt(parts[5], 10);
+  
+  const date = new Date(year, month, day, hour, minute, second);
+  const now = new Date();
+  const diffMs = now - date;
+  
+  if (diffMs < 0) return 'vừa xong';
+  
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHr = Math.floor(diffMin / 60);
+  const diffDays = Math.floor(diffHr / 24);
+  
+  if (diffSec < 60) return 'vừa xong';
+  if (diffMin < 60) return `${diffMin} phút trước`;
+  if (diffHr < 24) return `${diffHr} giờ trước`;
+  if (diffDays === 1) return 'hôm qua';
+  if (diffDays < 7) return `${diffDays} ngày trước`;
+  
+  return `${String(day).padStart(2, '0')}/${String(month + 1).padStart(2, '0')}/${year} ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+}
+
+// ── Component: Chấm xanh nhấp nháy cho thông báo chưa đọc ──
+function PulsingDot() {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const opacityAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.parallel([
+        Animated.sequence([
+          Animated.timing(scaleAnim, {
+            toValue: 2,
+            duration: 1200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scaleAnim, {
+            toValue: 1,
+            duration: 0,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.sequence([
+          Animated.timing(opacityAnim, {
+            toValue: 0,
+            duration: 1200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacityAnim, {
+            toValue: 1,
+            duration: 0,
+            useNativeDriver: true,
+          }),
+        ]),
+      ])
+    ).start();
+  }, [scaleAnim, opacityAnim]);
+
+  return (
+    <View style={pulseStyles.container}>
+      <Animated.View
+        style={[
+          pulseStyles.pulse,
+          {
+            transform: [{ scale: scaleAnim }],
+            opacity: opacityAnim,
+          },
+        ]}
+      />
+      <View style={pulseStyles.dot} />
+    </View>
+  );
+}
+
+const pulseStyles = StyleSheet.create({
+  container: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 12,
+    height: 12,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#16a34a',
+    position: 'absolute',
+  },
+  pulse: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#16a34a',
+    position: 'absolute',
+  },
+});
+
 // ── Component: Card thông báo ──────────────────────────────
 function NotificationCard({ item }) {
   const { colors } = useTheme();
@@ -81,18 +190,26 @@ function NotificationCard({ item }) {
       </View>
       <View style={notifStyles.content}>
         <View style={notifStyles.titleRow}>
-          <Text style={[notifStyles.title, { color: colors.isDark ? colors.text : cfg.textColor }]} numberOfLines={2}>
-            {item.tieu_de}
-          </Text>
+          <View style={notifStyles.titleContainer}>
+            {item.is_custom && item.da_doc === 0 && <PulsingDot />}
+            <Text style={[notifStyles.title, { color: colors.isDark ? colors.text : cfg.textColor }]} numberOfLines={2}>
+              {item.tieu_de}
+            </Text>
+          </View>
           {cfg.badge && (
             <View style={[notifStyles.badge, { backgroundColor: cfg.badgeBg }]}>
               <Text style={notifStyles.badgeText}>{cfg.badge}</Text>
             </View>
           )}
         </View>
-        <Text style={[notifStyles.body, { color: colors.isDark ? colors.textMuted : cfg.textColor }]} numberOfLines={4}>
+        <Text style={[notifStyles.body, { color: colors.isDark ? colors.textMuted : cfg.textColor, marginBottom: item.ngay_tao ? 6 : 0 }]} numberOfLines={4}>
           {item.noi_dung}
         </Text>
+        {item.ngay_tao && (
+          <Text style={[notifStyles.timeText, { color: colors.isDark ? colors.textMuted : cfg.textColor, opacity: 0.6 }]}>
+            {formatTimeAgo(item.ngay_tao)}
+          </Text>
+        )}
       </View>
     </View>
   );
@@ -112,10 +229,17 @@ const notifStyles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'flex-start',
     justifyContent: 'space-between', gap: 8, marginBottom: 5,
   },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 6,
+  },
   title: { fontSize: 13, fontWeight: '700', flex: 1, lineHeight: 18 },
   badge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8, flexShrink: 0 },
   badgeText: { fontSize: 9, fontWeight: '800', color: '#fff', letterSpacing: 0.5 },
   body: { fontSize: 12, lineHeight: 18, opacity: 0.85 },
+  timeText: { fontSize: 10, fontWeight: '600' },
 });
 
 // ── Màn hình chính ─────────────────────────────────────────
@@ -127,20 +251,23 @@ export default function PTNotificationScreen() {
   const syncNotifications = useCallback(async () => {
     try {
       await fetchNotifications();
-      await markAsRead();
     } catch (err) {
       console.error('[PTNotificationScreen] sync error:', err?.message);
     } finally {
       setRefreshing(false);
     }
-  }, [fetchNotifications, markAsRead]);
+  }, [fetchNotifications]);
 
   useFocusEffect(
     useCallback(() => {
       syncNotifications();
       const intervalId = setInterval(fetchNotifications, 15000);
-      return () => clearInterval(intervalId);
-    }, [syncNotifications, fetchNotifications])
+      return () => {
+        clearInterval(intervalId);
+        // Đánh dấu đã đọc khi rời màn hình (blur)
+        markAsRead();
+      };
+    }, [syncNotifications, fetchNotifications, markAsRead])
   );
 
   const onRefresh = () => { setRefreshing(true); syncNotifications(); };
@@ -165,11 +292,6 @@ export default function PTNotificationScreen() {
       ]
     );
   };
-
-  const dangerItems = notifications.filter(n => n.muc_do === 'danger');
-  const warningItems = notifications.filter(n => n.muc_do === 'warning');
-  const infoItems = notifications.filter(n => n.muc_do === 'info');
-  const successItems = notifications.filter(n => n.muc_do === 'success');
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -221,44 +343,9 @@ export default function PTNotificationScreen() {
             </Text>
           </View>
         ) : (
-          <>
-            {dangerItems.length > 0 && (
-              <View style={styles.group}>
-                <View style={styles.groupHeader}>
-                  <AlertCircle color={G.danger} size={14} strokeWidth={2.5} />
-                  <Text style={[styles.groupTitle, { color: G.danger }]}>Cần xử lý ngay</Text>
-                </View>
-                {dangerItems.map((n, i) => <NotificationCard key={i} item={n} />)}
-              </View>
-            )}
-            {warningItems.length > 0 && (
-              <View style={styles.group}>
-                <View style={styles.groupHeader}>
-                  <AlertTriangle color={colors.isDark ? '#fbbf24' : G.warning} size={14} strokeWidth={2.5} />
-                  <Text style={[styles.groupTitle, { color: colors.isDark ? '#fbbf24' : G.warning }]}>Cần chú ý</Text>
-                </View>
-                {warningItems.map((n, i) => <NotificationCard key={i} item={n} />)}
-              </View>
-            )}
-            {infoItems.length > 0 && (
-              <View style={styles.group}>
-                <View style={styles.groupHeader}>
-                  <Info color={colors.isDark ? '#2196f3' : G.info} size={14} strokeWidth={2.5} />
-                  <Text style={[styles.groupTitle, { color: colors.isDark ? '#2196f3' : G.info }]}>Thông tin</Text>
-                </View>
-                {infoItems.map((n, i) => <NotificationCard key={i} item={n} />)}
-              </View>
-            )}
-            {successItems.length > 0 && (
-              <View style={styles.group}>
-                <View style={styles.groupHeader}>
-                  <CheckCircle color={colors.primary} size={14} strokeWidth={2.5} />
-                  <Text style={[styles.groupTitle, { color: colors.primary }]}>Tích cực</Text>
-                </View>
-                {successItems.map((n, i) => <NotificationCard key={i} item={n} />)}
-              </View>
-            )}
-          </>
+          <View style={styles.listContainer}>
+            {notifications.map((n, i) => <NotificationCard key={i} item={n} />)}
+          </View>
         )}
         <View style={{ height: 20 }} />
       </ScrollView>
@@ -290,7 +377,5 @@ const styles = StyleSheet.create({
   emptyBox: { paddingTop: 60, alignItems: 'center', gap: 10 },
   emptyTitle: { fontSize: 18, fontWeight: '800', color: G.gray500 },
   emptySubText: { fontSize: 13, color: G.gray400, textAlign: 'center', lineHeight: 20 },
-  group: { marginBottom: 16 },
-  groupHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
-  groupTitle: { fontSize: 13, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
+  listContainer: { flexDirection: 'column' },
 });

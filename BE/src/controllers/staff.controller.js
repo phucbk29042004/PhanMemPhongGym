@@ -186,14 +186,22 @@ export const deleteStaff = (req, res) => {
   const staff = db.prepare("SELECT * FROM ho_so WHERE id = ? AND loai_ho_so IN ('le_tan','nhan_vien') AND is_deleted = 0").get(id);
   if (!staff) return error(res, 'Không tìm thấy nhân viên.', 404);
 
-  db.prepare(`
-    UPDATE ho_so SET
-      is_deleted = 1,
-      ngay_xoa = datetime('now','localtime'),
-      nguoi_xoa_id = ?,
-      ly_do_xoa = ?
-    WHERE id = ?
-  `).run(req.user.id, ly_do || 'Không có lý do', id);
+  const tx = db.transaction(() => {
+    db.prepare(`
+      UPDATE ho_so SET
+        is_deleted = 1,
+        ngay_xoa = datetime('now','localtime'),
+        nguoi_xoa_id = ?,
+        ly_do_xoa = ?
+      WHERE id = ?
+    `).run(req.user.id, ly_do || 'Không có lý do', id);
+
+    if (staff.tai_khoan_id) {
+      db.prepare("UPDATE tai_khoan SET trang_thai = 'khoa' WHERE id = ?").run(staff.tai_khoan_id);
+    }
+  });
+
+  tx();
 
   ghi_audit_log(req, 'DELETE', 'ho_so', parseInt(id), staff, null, ly_do || 'Xóa hồ sơ nhân viên');
   return success(res, null, 'Đã xóa nhân viên (Soft Delete)');
