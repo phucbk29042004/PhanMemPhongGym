@@ -50,7 +50,7 @@ window.GymApp.pages['pt-training'] = {
         <!-- Filter Bar -->
         <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 p-standard shadow-sm">
           <div class="flex flex-wrap items-center gap-standard">
-            <div class="relative flex-1 min-w-[200px] group">
+            <div class="relative flex-1 min-w-[min(200px,100%)] group">
               <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors text-[18px]">search</span>
               <input
                 id="pt-search"
@@ -91,7 +91,7 @@ window.GymApp.pages['pt-training'] = {
             <h3 class="font-bold text-on-surface text-body-lg">Huấn luyện viên</h3>
             <span class="ml-auto bg-brand-primary text-white px-2.5 py-0.5 rounded-full text-body-sm font-bold">${pts.length} PT</span>
           </div>
-          <div class="p-standard grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-standard">
+          <div class="p-standard grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-standard">
             ${pts.length === 0
         ? `<div class="col-span-5 py-margin text-center text-on-surface-variant">
                    <span class="material-symbols-outlined text-4xl text-outline block mb-standard">person_off</span>
@@ -142,7 +142,7 @@ window.GymApp.pages['pt-training'] = {
               <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Chọn giờ bắt đầu</label>
               <div id="edit-schedule-time-display" class="text-body-sm mb-compact font-bold" style="min-height:18px;color:#6e7a6b;">Chưa chọn giờ</div>
               <div style="border:1px solid #becab9;border-radius:12px;overflow:hidden;max-height:180px;overflow-y:auto;" class="bg-surface-container-low">
-                <div class="time-slot-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:4px;padding:8px;">
+                <div class="time-slot-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:4px;padding:8px;">
                   ${timeSlots.map(t => `<button class="edit-time-slot-btn bg-surface-container-lowest text-on-surface border border-outline-variant hover:bg-surface-container transition-all text-body-sm" data-time="${t}" style="padding:6px 2px;border-radius:8px;font-weight:600;cursor:pointer;text-align:center;">${t}</button>`).join('')}
                 </div>
               </div>
@@ -361,12 +361,41 @@ window.GymApp.pages['pt-training'] = {
       if (ok) window.GymApp.toast('Đã tải xuống file Excel lịch tập PT!', 'success');
     });
 
+    // Cập nhật trạng thái disable cho các nút giờ dựa theo ngày đã chọn
+    const _updateTimeSlotDisabled = (selectedDate) => {
+      const modalEl = document.getElementById('modal-edit-schedule');
+      if (!modalEl) return;
+      const todayStr = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' });
+      const isToday = selectedDate === todayStr;
+      const nowHour = new Date().getHours();
+      const nowMin = new Date().getMinutes();
+      modalEl.querySelectorAll('.edit-time-slot-btn').forEach(b => {
+        const t = b.dataset.time || '';
+        const [h, mn] = t.split(':').map(Number);
+        const isPast = isToday && (h < nowHour || (h === nowHour && mn <= nowMin));
+        if (isPast) {
+          b.disabled = true;
+          b.style.opacity = '0.35';
+          b.style.cursor = 'not-allowed';
+          b.style.background = '';
+          b.style.color = '';
+          b.title = 'Giờ đã qua';
+        } else {
+          b.disabled = false;
+          b.style.opacity = '';
+          b.style.cursor = 'pointer';
+          b.title = '';
+        }
+      });
+    };
+
     // Sửa lịch tập (event delegation)
     document.getElementById('pt-schedule-container')?.addEventListener('click', function (e) {
       const btn = e.target.closest('.btn-edit-schedule');
       if (!btn) return;
+      const selectedDate = btn.dataset.ngay || '';
       document.getElementById('edit-schedule-id').value = btn.dataset.id;
-      document.getElementById('edit-schedule-date').value = btn.dataset.ngay || '';
+      document.getElementById('edit-schedule-date').value = selectedDate;
       const startVal = btn.dataset.start || '';
       const endVal = btn.dataset.end || '';
       document.getElementById('edit-schedule-start').value = startVal;
@@ -377,19 +406,21 @@ window.GymApp.pages['pt-training'] = {
       const timeDisplay = document.getElementById('edit-schedule-time-display');
       const modalEl = document.getElementById('modal-edit-schedule');
 
-      // Reset button styles
+      // Reset button styles then apply disabled state for past hours
       modalEl.querySelectorAll('.edit-time-slot-btn').forEach(b => {
         b.style.transform = 'scale(1)';
         b.style.background = '';
         b.style.color = '';
       });
+      _updateTimeSlotDisabled(selectedDate);
 
       let matchedBtn = null;
       if (currStart) {
-        matchedBtn = modalEl.querySelector(`.edit-time-slot-btn[data-time="${currStart}"]`);
+        matchedBtn = modalEl.querySelector(`.edit-time-slot-btn[data-time="${currStart}"]:not([disabled])`);
+        if (!matchedBtn) matchedBtn = modalEl.querySelector(`.edit-time-slot-btn[data-time="${currStart}"]`);
       }
 
-      if (matchedBtn) {
+      if (matchedBtn && !matchedBtn.disabled) {
         matchedBtn.style.transform = 'scale(1.05)';
         matchedBtn.style.background = '#1D9336';
         matchedBtn.style.color = '#fff';
@@ -409,6 +440,25 @@ window.GymApp.pages['pt-training'] = {
       modalEl.classList.remove('hidden');
     });
 
+    // Khi đổi ngày, cập nhật lại trạng thái disable của các nút giờ
+    document.getElementById('edit-schedule-date')?.addEventListener('change', function () {
+      _updateTimeSlotDisabled(this.value);
+      // Reset giờ đã chọn nếu giờ cũ là giờ đã qua
+      const startEl = document.getElementById('edit-schedule-start');
+      const timeDisplay = document.getElementById('edit-schedule-time-display');
+      const selectedTime = startEl?.value?.substring(0, 5);
+      if (selectedTime) {
+        const modalEl = document.getElementById('modal-edit-schedule');
+        const btn = modalEl?.querySelector(`.edit-time-slot-btn[data-time="${selectedTime}"]`);
+        if (btn?.disabled) {
+          startEl.value = '';
+          document.getElementById('edit-schedule-end').value = '';
+          if (timeDisplay) { timeDisplay.textContent = 'Chưa chọn giờ'; timeDisplay.style.color = ''; timeDisplay.style.fontWeight = ''; }
+          modalEl.querySelectorAll('.edit-time-slot-btn').forEach(b => { b.style.transform = 'scale(1)'; b.style.background = ''; b.style.color = ''; });
+        }
+      }
+    });
+
     // Custom time slot buttons interaction
     const calculateEndTime = (startStr) => {
       const [h, min] = startStr.split(':').map(Number);
@@ -419,16 +469,15 @@ window.GymApp.pages['pt-training'] = {
 
     document.querySelectorAll('.edit-time-slot-btn').forEach(btn => {
       btn.addEventListener('click', () => {
+        if (btn.disabled) return;
         const t = btn.dataset.time;
         const startEl = document.getElementById('edit-schedule-start');
         const endEl = document.getElementById('edit-schedule-end');
         const timeDisplay = document.getElementById('edit-schedule-time-display');
 
-        // Reset all buttons style
+        // Reset all buttons style (skip disabled ones)
         document.querySelectorAll('.edit-time-slot-btn').forEach(b => {
-          b.style.transform = 'scale(1)';
-          b.style.background = '';
-          b.style.color = '';
+          if (!b.disabled) { b.style.transform = 'scale(1)'; b.style.background = ''; b.style.color = ''; }
         });
 
         // Style active button

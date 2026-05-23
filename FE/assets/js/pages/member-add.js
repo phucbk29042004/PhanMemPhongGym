@@ -756,7 +756,8 @@ window.GymApp.pages['member-add'] = {
           gia_thuc_te: giaThucTe,
           phuong_thuc_tt: phuongThucTT,
           ma_giao_dich: document.getElementById('pkg-coupon')?.value || '',
-          ngay_thanh_toan: ngayThu
+          ngay_thanh_toan: ngayThu,
+          so_tien_da_thu: paidRaw
         });
 
         if (res.success) {

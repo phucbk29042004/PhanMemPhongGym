@@ -8,11 +8,57 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
-**✅ Thiết kế lưới Card HLV trực quan & Đồng bộ cơ chế chọn trên toàn bộ Web** — Đã chuyển đổi toàn bộ giao diện chọn Huấn luyện viên (PT/HLV) từ dạng danh sách cuộn dọc/dropdown select sang dạng lưới các thẻ (Grid Cards) trực quan, responsive trên mọi thiết bị (mobile 1 cột, tablet 2 cột, desktop 2-3 cột). Đồng bộ cơ chế tích chọn/xóa chọn: click card → ẩn lưới, hiện card đã chọn kèm nút xóa "x"; click "x" → hiện lại lưới chọn lại. Áp dụng trên 5 vị trí: 4 modal trong members-list.js và trang pt-register.js.
+**✅ Fix 3 bug UX + tích hợp Mobile PayOS gia hạn gói tập** — (1) Validate số tiền đăng ký gói không cho nợ nếu chưa chọn "Còn nợ"; (2) Tính tiền hoàn gợi ý khi đổi gói PT; (3) Mobile gia hạn gói tập dùng PayOS thay modal cũ.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
+
+### 23/05/2026 — Redesign Modal Header (members-list.js)
+- **Loại**: UI/UX Design
+- **File/Thành phần liên quan**: `FE/assets/js/pages/members-list.js`
+- **Mô tả**: Redesign toàn bộ modal trong trang Danh sách hội viên:
+  - Modal chính (hội viên): Banner gradient đổi từ `#1a5e2a → #1D9336 → #22c55e` sang `#2d6a4f → #40916c → #52b788` (sage forest, dịu hơn). Stats bar dưới dùng `rgba(255,255,255,0.08)` thay `rgba(0,0,0,0.15)`. Avatar border, badge status, dot check-in đều nhẹ hơn.
+  - Modal phụ thêm/sửa/hủy gói tập: Header gradient xanh sage (`#2d6a4f → #40916c`). Nút X dạng circle glass. Overlay từ `rgba(0,0,0,0.65)` → `rgba(0,0,0,0.45)`, blur tăng từ 4px → 6px.
+  - Modal hủy gói tập: Header gradient đỏ (`#b91c1c → #dc2626`) để phân biệt hành động nguy hiểm.
+  - Modal đổi gói tập: Header gradient xanh dương (`#1e40af → #2563eb`).
+  - Tất cả modal: shadow giảm từ `0 30px 80px rgba(0,0,0,0.4)` → `0 20px 60px rgba(0,0,0,0.2)`.
+- **Kết quả**: Thành công
+
+### 23/05/2026 — Fix Bug Validate + Đổi Gói PT + Mobile PayOS (Task A–C)
+- **Loại**: Sửa lỗi UX / Thêm tính năng
+- **File/Thành phần liên quan**:
+  - `FE/assets/js/pages/members-list.js`
+  - `MobileApp/src/screens/member/MemberHomeScreen.js`
+  - `MobileApp/src/screens/member/OrderConfirmationScreen.js`
+- **Mô tả**:
+  - **Task A — FE Validate đăng ký gói**: `calcDebt()` đổi màu nền ô nợ/dư (đỏ/xanh). Handler `#pkg-save-btn` thêm check: nếu `regStatus !== 'debt'` và `paid < needToPay` → toast lỗi, block submit.
+  - **Task B — FE Đổi gói PT**: Thêm info panel tính tiền hoàn gợi ý (`credit = gia_thuc_te × buoi_con_lai / tong_buoi`). Thêm ô "Hoàn tiền gói cũ" (tự điền, sửa được) và ô "Tiền đóng thêm" (readonly, cập nhật realtime = giá mới − hoàn).
+  - **Task C — Mobile Gia hạn PayOS**: Xóa modal renewal cũ (dùng `alert()`, không PayOS). `openRenewModal` nay navigate thẳng sang `OrderConfirmationScreen`. `OrderConfirmationScreen` hỗ trợ thêm luồng vào không có `packageItem` — tự fetch danh sách gói cho user chọn trước khi thanh toán.
+- **Kết quả**: Thành công
+
+
+
+### 23/05/2026 — Fix Luồng Logic Duyệt Gia Hạn Gói Tập (Task 1–4)
+- **Loại**: Sửa lỗi logic nghiệp vụ (Fullstack)
+- **File/Thành phần liên quan**:
+  - `BE/src/controllers/members.controller.js`
+  - `BE/src/jobs/cron-daily.js`
+  - `FE/assets/js/member-portal.js`
+  - `FE/assets/js/pages/members-list.js`
+- **Mô tả**:
+  - **Task 1 — BE `approvePackageRequest`**: Đổi `finalStatus = 'cho_duyet'` → `'cho_kich_hoat'` khi admin duyệt gói nối tiếp (tu_ngay > hôm nay). Gói `cho_kich_hoat` sẽ không xuất hiện lại trong danh sách chờ duyệt. Thông báo gửi cho hội viên cũng được điều chỉnh theo 2 trường hợp: kích hoạt ngay vs chờ kích hoạt.
+  - **Task 1 — BE `checkPayosStatus`**: Cùng logic — PayOS PAID + tu_ngay tương lai → `cho_kich_hoat` thay vì `cho_duyet`.
+  - **Task 2 — BE cron-daily.js**: Cập nhật query kích hoạt hàng ngày nhận cả `trang_thai IN ('cho_kich_hoat', 'cho_duyet')` + `ngay_thanh_toan IS NOT NULL`.
+  - **Task 3 — BE `requestPackageRenewal`**: Kiểm tra duplicate bao gồm cả `cho_kich_hoat` để tránh hội viên đăng ký trùng khi đã có gói chờ kích hoạt. Sửa thông báo lỗi rõ ràng theo từng trường hợp.
+  - **Task 3 — BE `co_yeu_cau_gia_han`**: Cập nhật 3 chỗ trong SQL để nhận cả `cho_kich_hoat`.
+  - **Task 3 — BE `getMemberById`**: Thêm `cho_kich_hoat` vào `trang_thai IN (...)` để trả về gói này cho FE.
+  - **Task 3 — BE `approvePackageRequest` validation**: Cho phép admin xử lý cả `cho_kich_hoat` (edge case: cần sửa gói đã duyệt).
+  - **Task 4 — FE member-portal.js**: Thêm hàm `getScheduledPackage()`, hiển thị badge + thông báo "sẽ kích hoạt ngày X" cho gói `cho_kich_hoat` trong dashboard.
+  - **Task 4 — FE members-list.js**: Phân biệt label "Đã duyệt — Chờ kích hoạt nối tiếp" vs "Gói nối tiếp — Chờ kích hoạt" theo `trang_thai`. Loại trừ `cho_kich_hoat` khỏi section "Lịch sử & Gói khác".
+- **Kết quả**: Luồng gia hạn gói tập nối tiếp hoạt động đúng end-to-end: hội viên gửi yêu cầu → admin duyệt → gói chuyển `cho_kich_hoat` → cron job kích hoạt đúng ngày → gói `dang_hoat_dong`.
+
+
 
 ### 22/05/2026 10:48 — Thiết Kế Lưới Card HLV Trực Quan & Đồng Bộ Cơ Chế Chọn Trên Toàn Bộ Web
 - **Loại**: Cải tiến giao diện UI/UX (Frontend)

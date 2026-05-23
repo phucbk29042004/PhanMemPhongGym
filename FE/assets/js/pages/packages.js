@@ -49,25 +49,28 @@ window.GymApp.pages['packages'] = {
 
     return `
       <div class="flex flex-col gap-margin">
-      <div class="flex items-center border-b border-outline-variant/30 pb-2 gap-loose">
-  <button id="tab-gym" class="relative pb-2 px-4 text-body-md font-bold transition-all focus:outline-none flex items-center gap-compact ${self.activeTab === 'gym' ? 'text-brand-primary border-b-2 border-brand-primary' : 'text-on-surface-variant hover:text-on-surface'}">
-    <span class="material-symbols-outlined text-[20px]">fitness_center</span>
-    Gói tập Gym
-    <span class="px-2 py-0.5 rounded-full text-xs font-bold ${self.activeTab === 'gym' ? 'bg-brand-primary/10 text-brand-primary' : 'bg-surface-container-high text-on-surface-variant'}">${gymPackages.length}</span>
-  </button>
-  
-  <button id="tab-pt" class="relative pb-2 px-4 text-body-md font-bold transition-all focus:outline-none flex items-center gap-compact ${self.activeTab === 'pt' ? 'text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400' : 'text-on-surface-variant hover:text-on-surface'}">
-    <span class="material-symbols-outlined text-[20px]">sports_gymnastics</span>
-    Gói dịch vụ PT
-    <span class="px-2 py-0.5 rounded-full text-xs font-bold ${self.activeTab === 'pt' ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : 'bg-surface-container-high text-on-surface-variant'}">${ptPackages.length}</span>
+      <div class="flex flex-wrap items-center border-b border-outline-variant/30 pb-2 gap-3">
+  <button id="tab-gym" class="relative pb-2 px-3 text-body-md font-bold transition-all focus:outline-none flex items-center gap-compact ${self.activeTab === 'gym' ? 'text-brand-primary border-b-2 border-brand-primary' : 'text-on-surface-variant hover:text-on-surface'}">
+    <span class="material-symbols-outlined text-[18px]">fitness_center</span>
+    <span class="hidden xs:inline">Gói tập Gym</span>
+    <span class="xs:hidden">Gym</span>
+    <span class="px-1.5 py-0.5 rounded-full text-xs font-bold ${self.activeTab === 'gym' ? 'bg-brand-primary/10 text-brand-primary' : 'bg-surface-container-high text-on-surface-variant'}">${gymPackages.length}</span>
   </button>
 
-  <div class="ml-auto flex flex-col items-end sm:flex-row sm:justify-end gap-standard">
-    <button id="btn-add-pkg" class="btn-primary text-white px-loose py-compact rounded-xl font-bold flex items-center gap-compact shadow-md hover:shadow-lg transition-all active:scale-95">
+  <button id="tab-pt" class="relative pb-2 px-3 text-body-md font-bold transition-all focus:outline-none flex items-center gap-compact ${self.activeTab === 'pt' ? 'text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400' : 'text-on-surface-variant hover:text-on-surface'}">
+    <span class="material-symbols-outlined text-[18px]">sports_gymnastics</span>
+    <span class="hidden xs:inline">Gói dịch vụ PT</span>
+    <span class="xs:hidden">PT</span>
+    <span class="px-1.5 py-0.5 rounded-full text-xs font-bold ${self.activeTab === 'pt' ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : 'bg-surface-container-high text-on-surface-variant'}">${ptPackages.length}</span>
+  </button>
+
+  <div class="ml-auto">
+    <button id="btn-add-pkg" class="btn-primary text-white px-3 py-2 rounded-xl font-bold flex items-center gap-1.5 shadow-md hover:shadow-lg transition-all active:scale-95 text-sm">
       <span class="material-symbols-outlined text-sm">add</span>
-      Thêm gói mới
+      <span class="hidden sm:inline">Thêm gói mới</span>
+      <span class="sm:hidden">Thêm</span>
     </button>
-  </div> 
+  </div>
 </div>
 
         <!-- Stats Cards Grid -->
@@ -125,7 +128,7 @@ window.GymApp.pages['packages'] = {
               }
 
               return `
-                <div class="snap-start shrink-0 group relative rounded-xl overflow-hidden flex flex-col gap-2 p-3 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 bg-white dark:bg-[#1e1e1e] border border-outline-variant/60" style="width: calc(33.333% - 11px); min-width: 280px;">
+                <div class="snap-start shrink-0 group relative rounded-xl overflow-hidden flex flex-col gap-2 p-3 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 bg-white dark:bg-[#1e1e1e] border border-outline-variant/60" style="width:clamp(260px, calc(50% - 8px), 320px);">
                   <!-- Accent bar top -->
                   <div style="position:absolute;top:0;left:0;right:0;height:3px;background:${accentBarBg};border-radius:3px 3px 0 0;"></div>
 

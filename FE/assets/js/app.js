@@ -107,8 +107,34 @@
   // ===== SIDEBAR TOGGLE =====
   function _toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
-    sidebar.classList.toggle('sidebar-collapsed');
+    const isMobile = window.innerWidth < 768;
+    if (isMobile) {
+      sidebar.classList.toggle('mobile-open');
+      let overlay = document.getElementById('sidebar-overlay');
+      if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'sidebar-overlay';
+        document.body.appendChild(overlay);
+        overlay.addEventListener('click', () => {
+          sidebar.classList.remove('mobile-open');
+          overlay.style.display = 'none';
+        });
+      }
+      overlay.style.display = sidebar.classList.contains('mobile-open') ? 'block' : 'none';
+    } else {
+      sidebar.classList.toggle('sidebar-collapsed');
+    }
   }
+
+  // Đóng sidebar khi resize lên desktop
+  window.addEventListener('resize', () => {
+    if (window.innerWidth >= 768) {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebar-overlay');
+      sidebar?.classList.remove('mobile-open');
+      if (overlay) overlay.style.display = 'none';
+    }
+  });
 
   // ===== BIRTHDAY EFFECT =====
   window.GymApp.showBirthdayEffect = function (callback) {

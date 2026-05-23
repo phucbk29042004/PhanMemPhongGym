@@ -35,7 +35,12 @@ function formatPrice(val) {
 
 export default function OrderConfirmationScreen({ route, navigation }) {
   const { colors } = useTheme();
-  const { packageItem, profile } = route.params || {};
+  const { packageItem: packageItemProp, profile } = route.params || {};
+
+  // Khi không có packageItem (vào từ nút Gia hạn), cho user tự chọn gói
+  const [gymPackages, setGymPackages] = useState([]);
+  const [selectedPackage, setSelectedPackage] = useState(packageItemProp || null);
+  const packageItem = selectedPackage;
 
   const [branches, setBranches] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState(null);
@@ -53,7 +58,7 @@ export default function OrderConfirmationScreen({ route, navigation }) {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
-  // 1. Fetch danh sách chi nhánh và tính ngày bắt đầu
+  // 1. Fetch danh sách chi nhánh, gói tập và tính ngày bắt đầu
   useEffect(() => {
     let active = true;
 
@@ -63,7 +68,6 @@ export default function OrderConfirmationScreen({ route, navigation }) {
         const res = await api.get('/branches');
         if (res.data?.success && active) {
           setBranches(res.data.data);
-          // Set mặc định chi nhánh trùng với chi nhánh trong hồ sơ hội viên nếu khớp
           if (profile?.chi_nhanh) {
             const matched = res.data.data.find(b => b.ten.toLowerCase().includes(profile.chi_nhanh.toLowerCase()));
             if (matched) setSelectedBranch(matched);
@@ -71,40 +75,55 @@ export default function OrderConfirmationScreen({ route, navigation }) {
         }
       } catch (err) {
         console.error('Lỗi lấy chi nhánh:', err);
-        // Fallback local list
         if (active) {
-          const localBranches = [
+          setBranches([
             { id: 'go-vap', ten: 'Chi nhánh Gò Vấp' },
             { id: 'binh-thanh', ten: 'Chi nhánh Bình Thạnh' },
             { id: 'tan-binh', ten: 'Chi nhánh Tân Bình' }
-          ];
-          setBranches(localBranches);
+          ]);
         }
       }
 
-      // Tính toán ngày bắt đầu dựa vào gói cũ của hội viên
+      // Fetch danh sách gói tập nếu không có packageItem được truyền vào
+      if (!packageItemProp) {
+        try {
+          const pkgRes = await api.get('/packages');
+          if (pkgRes.data?.success && active) {
+            const list = Array.isArray(pkgRes.data.data) ? pkgRes.data.data : [];
+            setGymPackages(list);
+            if (list.length > 0) setSelectedPackage(list[0]);
+          }
+        } catch (err) {
+          console.error('Lỗi lấy danh sách gói:', err);
+        }
+      }
+
+      // Tính toán ngày bắt đầu
       if (active) {
         const today = new Date().toISOString().split('T')[0];
         let defaultStart = today;
-        const activePkg = profile?.goi_tap?.[0]; // Lấy gói hiện tại đang hoạt động
+        const activePkg = profile?.goi_tap?.[0];
         if (activePkg && activePkg.den_ngay >= today) {
           const d = new Date(activePkg.den_ngay);
-          d.setDate(d.getDate() + 1); // bắt đầu ngay ngày hôm sau ngày hết hạn gói cũ
+          d.setDate(d.getDate() + 1);
           defaultStart = d.toISOString().split('T')[0];
         }
         setStartDate(defaultStart);
-
-        // Tính ngày kết thúc tạm thời hiển thị trên mobile
-        const d = new Date(defaultStart);
-        d.setMonth(d.getMonth() + (packageItem.so_thang || 0));
-        d.setDate(d.getDate() + (packageItem.so_ngay_them || 0));
-        setEndDate(d.toISOString().split('T')[0]);
       }
     };
 
     initData();
     return () => { active = false; };
-  }, [profile, packageItem]);
+  }, [profile, packageItemProp]);
+
+  // Tính lại endDate mỗi khi packageItem hoặc startDate thay đổi
+  useEffect(() => {
+    if (!packageItem || !startDate) return;
+    const d = new Date(startDate);
+    d.setMonth(d.getMonth() + (packageItem.so_thang || 0));
+    d.setDate(d.getDate() + (packageItem.so_ngay_them || 0));
+    setEndDate(d.toISOString().split('T')[0]);
+  }, [packageItem, startDate]);
 
   // 2. Polling kiểm tra trạng thái thanh toán PayOS
   useEffect(() => {
@@ -146,6 +165,10 @@ export default function OrderConfirmationScreen({ route, navigation }) {
 
   // 3. Xử lý mua gói tập
   const handleConfirmPurchase = async () => {
+    if (!packageItem) {
+      Alert.alert('Thông báo', 'Vui lòng chọn gói tập.');
+      return;
+    }
     if (!selectedBranch) {
       Alert.alert('Thông báo', 'Vui lòng chọn chi nhánh đăng ký tập.');
       return;
@@ -201,7 +224,40 @@ export default function OrderConfirmationScreen({ route, navigation }) {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {/* Chọn gói tập (khi không có packageItem truyền vào) */}
+        {!packageItemProp && (
+          <View style={[styles.summaryCard, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.summaryTitle, { color: colors.textMuted }]}>Chọn gói tập</Text>
+            {gymPackages.length === 0
+              ? <ActivityIndicator color={BRAND.primary} style={{ marginVertical: 12 }} />
+              : gymPackages.map(p => (
+                <TouchableOpacity
+                  key={p.id}
+                  style={{
+                    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+                    padding: 12, marginBottom: 8, borderRadius: 10, borderWidth: 2,
+                    borderColor: selectedPackage?.id === p.id ? BRAND.primary : colors.border,
+                    backgroundColor: selectedPackage?.id === p.id ? BRAND.primaryLight : colors.surfaceVariant,
+                  }}
+                  onPress={() => setSelectedPackage(p)}
+                  activeOpacity={0.8}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontWeight: '700', color: selectedPackage?.id === p.id ? BRAND.primary : colors.text, fontSize: 14 }}>{p.ten_goi}</Text>
+                    {p.mo_ta ? <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }} numberOfLines={2}>{p.mo_ta}</Text> : null}
+                    <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>
+                      {p.so_thang ? `${p.so_thang} tháng` : ''}{p.so_ngay_them > 0 ? ` +${p.so_ngay_them} ngày` : ''}
+                    </Text>
+                  </View>
+                  <Text style={{ fontWeight: '700', color: BRAND.primary, fontSize: 15, marginLeft: 8 }}>{formatPrice(p.gia)}</Text>
+                </TouchableOpacity>
+              ))
+            }
+          </View>
+        )}
+
         {/* Tóm tắt gói đã chọn */}
+        {packageItem && (
         <View style={[styles.summaryCard, { backgroundColor: colors.surface }]}>
           <Text style={[styles.summaryTitle, { color: colors.textMuted }]}>Gói tập đã chọn</Text>
           <Text style={[styles.packageName, { color: colors.text }]}>{packageItem.ten_goi}</Text>
@@ -234,6 +290,7 @@ export default function OrderConfirmationScreen({ route, navigation }) {
             </View>
           )}
         </View>
+        )}
 
         {/* Chọn chi nhánh */}
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Chi nhánh tập luyện</Text>
@@ -308,7 +365,7 @@ export default function OrderConfirmationScreen({ route, navigation }) {
       <View style={[styles.bottomBar, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
         <View style={styles.priceContainer}>
           <Text style={[styles.priceLabel, { color: colors.textMuted }]}>Tổng tiền</Text>
-          <Text style={[styles.priceValue, { color: BRAND.primary }]}>{formatPrice(packageItem.gia)}</Text>
+          <Text style={[styles.priceValue, { color: BRAND.primary }]}>{formatPrice(packageItem?.gia)}</Text>
         </View>
 
         <TouchableOpacity
