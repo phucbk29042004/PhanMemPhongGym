@@ -91,7 +91,7 @@ window.GymApp.pages['members-list'] = {
             <!-- Filter Bar -->
             <div class="flex flex-wrap items-center justify-between gap-standard bg-white dark:bg-[#1e1e1e] p-standard rounded-2xl border-2 border-outline-variant/50 shadow-sm mb-standard transition-all duration-300 hover:shadow-md">
               <!-- Search Box -->
-              <div class="relative flex-1 group" style="min-width:280px; max-width:450px;">
+              <div class="relative flex-1 group" style="min-width:min(280px,100%); max-width:450px;">
                 <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors text-[18px]">search</span>
                 <input id="member-search" class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface pl-10 pr-4 py-2.5 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none placeholder-outline-variant/60 font-body-md text-body-md transition-all shadow-sm focus:shadow-none" placeholder="Tìm theo tên, mã HV, số điện thoại..." type="text" />
               </div>
@@ -135,7 +135,7 @@ window.GymApp.pages['members-list'] = {
           <!-- Tab: PT / HLV -->
           <div id="tab-content-pts" class="tab-content hidden animate-in slide-in-from-right-4 duration-500">
             <div class="flex flex-wrap items-center justify-between gap-standard bg-white dark:bg-[#1e1e1e] p-standard rounded-2xl border-2 border-outline-variant/50 shadow-sm mb-standard transition-all duration-300 hover:shadow-md">
-              <div class="relative flex-1 group" style="min-width:280px; max-width:450px;">
+              <div class="relative flex-1 group" style="min-width:min(280px,100%); max-width:450px;">
                 <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors text-[18px]">search</span>
                 <input id="pt-search" class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface pl-10 pr-4 py-2.5 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none placeholder-outline-variant/60 font-body-md text-body-md transition-all shadow-sm focus:shadow-none" placeholder="Tìm theo tên, chuyên môn..." type="text" />
               </div>
@@ -248,29 +248,29 @@ window.GymApp.pages['members-list'] = {
             </td>
 
             <!-- Cell 2: Mã HV -->
-            <td style="padding:8px 14px; font-size:14px; font-weight:700; color:var(--text-on-surface-variant); white-space:nowrap;">
+            <td class="member-table-col-mahv" style="padding:8px 14px; font-size:14px; font-weight:700; color:var(--text-on-surface-variant); white-space:nowrap;">
               ${m.ma_ho_so || '—'}
             </td>
 
             <!-- Cell 3: SĐT -->
-            <td style="padding:8px 14px; font-size:14px; font-weight:500; color:var(--text-on-surface-variant); white-space:nowrap;">
+            <td class="member-table-col-sdt" style="padding:8px 14px; font-size:14px; font-weight:500; color:var(--text-on-surface-variant); white-space:nowrap;">
               ${m.so_dien_thoai || '—'}
             </td>
 
             <!-- Cell 4: Gói tập -->
-            <td style="padding:8px 14px;">
+            <td class="member-table-col-goi" style="padding:8px 14px;">
               <span style="font-size:13px;font-weight:600;color:var(--text-on-surface-variant);
                 white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:140px;"
                 title="${m.ten_goi_tap || 'Chưa đăng ký'}">
-                ${m.ten_goi_tap || 
+                ${m.ten_goi_tap ||
                   '<span class="text-outline-variant font-medium italic">Chưa đăng ký</span>'}
               </span>
             </td>
 
             <!-- Cell 5: PT -->
-            <td style="padding:8px 14px; text-align:center;">
-              ${m.co_pt > 0 
-                ? '<span class="inline-flex items-center gap-1 px-2 py-1 bg-[#f0fdf4] dark:bg-[#0b2010] text-[#16a34a] dark:text-[#4cce5f] rounded-full text-xs font-bold"><span class="material-symbols-outlined" style="font-size:14px;">sports_gymnastics</span>Có PT</span>' 
+            <td class="member-table-col-pt" style="padding:8px 14px; text-align:center;">
+              ${m.co_pt > 0
+                ? '<span class="inline-flex items-center gap-1 px-2 py-1 bg-[#f0fdf4] dark:bg-[#0b2010] text-[#16a34a] dark:text-[#4cce5f] rounded-full text-xs font-bold"><span class="material-symbols-outlined" style="font-size:14px;">sports_gymnastics</span>Có PT</span>'
                 : '<span class="text-outline-variant font-medium">—</span>'}
             </td>
 
@@ -280,7 +280,7 @@ window.GymApp.pages['members-list'] = {
             </td>
 
             <!-- Cell 7: Hết hạn -->
-            <td style="padding:8px 14px; white-space:nowrap;">
+            <td class="member-table-col-han" style="padding:8px 14px; white-space:nowrap;">
               <span style="font-size:13px;font-weight:600;
                 color:${isExpiringSoon ? '#d97706' : 'var(--text-on-surface-variant)'};">
                 ${m.ngay_het_han ? window.GymApp.formatDate(m.ngay_het_han) : '—'}
@@ -313,43 +313,103 @@ window.GymApp.pages['members-list'] = {
       }).join('');
     }
 
+    // Card layout cho mobile (≤640px)
+    const cardRowsHtml = paginated.length === 0 ? `
+      <div style="padding:40px 16px;text-align:center;color:var(--text-on-surface-variant);">
+        <div style="display:flex;flex-direction:column;align-items:center;opacity:0.4;">
+          <span class="material-symbols-outlined" style="font-size:40px;margin-bottom:8px;">person_search</span>
+          <p style="font-weight:600;margin:0;">Không tìm thấy hội viên nào</p>
+        </div>
+      </div>
+    ` : paginated.map(m => {
+      const isExpiringSoon = m.trang_thai === 'sap_het_han';
+      return `
+        <div class="member-row" data-id="${m.id}" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--outline-variant,#e2e8f0);cursor:pointer;transition:background 0.12s;background:var(--bg-surface-lowest,#fff);" onmouseover="this.style.background='rgba(29,147,54,0.04)'" onmouseout="this.style.background='var(--bg-surface-lowest,#fff)'">
+          <div style="flex-shrink:0;">
+            <div style="width:38px;height:38px;border-radius:50%;overflow:hidden;border:2px solid #e2e8f0;">
+              ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'sm', 'width:100%;height:100%;')}
+            </div>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:14px;font-weight:700;color:var(--text-on-surface);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.ho_ten || '—'}</div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:2px;flex-wrap:wrap;">
+              <span style="font-size:11px;font-weight:600;color:var(--text-on-surface-variant);">${m.ma_ho_so || '—'}</span>
+              ${m.so_dien_thoai ? `<span style="font-size:11px;color:var(--text-on-surface-variant);">· ${m.so_dien_thoai}</span>` : ''}
+            </div>
+            <div style="display:flex;align-items:center;gap:5px;margin-top:3px;flex-wrap:wrap;">
+              ${window.GymApp.statusBadge(m.trang_thai)}
+              ${m.ten_goi_tap ? `<span style="font-size:11px;font-weight:600;color:var(--text-on-surface-variant);background:var(--bg-surface-container,#ebeef3);padding:1px 6px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px;" title="${m.ten_goi_tap}">${m.ten_goi_tap}</span>` : ''}
+              ${m.ngay_het_han ? `<span style="font-size:11px;font-weight:600;color:${isExpiringSoon ? '#d97706' : 'var(--text-on-surface-variant)'};">HH: ${window.GymApp.formatDate(m.ngay_het_han)}</span>` : ''}
+            </div>
+          </div>
+          <div style="display:flex;gap:4px;align-items:center;flex-shrink:0;">
+            <button class="member-view-btn" data-id="${m.id}" title="Xem" style="width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#f0fdf4;color:#1D9336;border:none;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='#1D9336';this.style.color='#fff'" onmouseout="this.style.background='#f0fdf4';this.style.color='#1D9336'">
+              <span class="material-symbols-outlined" style="font-size:15px;">visibility</span>
+            </button>
+            <button class="member-edit-btn" data-id="${m.id}" title="Sửa" style="width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#eff6ff;color:#3b82f6;border:none;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='#3b82f6';this.style.color='#fff'" onmouseout="this.style.background='#eff6ff';this.style.color='#3b82f6'">
+              <span class="material-symbols-outlined" style="font-size:15px;">edit</span>
+            </button>
+            <button class="member-delete-btn" data-id="${m.id}" data-name="${m.ho_ten || ''}" title="Xóa" style="width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#fff1f2;color:#f43f5e;border:none;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='#f43f5e';this.style.color='#fff'" onmouseout="this.style.background='#fff1f2';this.style.color='#f43f5e'">
+              <span class="material-symbols-outlined" style="font-size:15px;">delete</span>
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
     return `
+      <style>
+        .member-table-col-mahv   { display: table-cell; }
+        .member-table-col-sdt    { display: table-cell; }
+        .member-table-col-goi    { display: table-cell; }
+        .member-table-col-pt     { display: table-cell; }
+        .member-table-col-han    { display: table-cell; }
+        .member-table-desktop    { display: block; }
+        .member-table-mobile     { display: none; }
+        @media (max-width: 900px) {
+          .member-table-col-pt   { display: none; }
+          .member-table-col-han  { display: none; }
+        }
+        @media (max-width: 700px) {
+          .member-table-col-mahv { display: none; }
+          .member-table-col-sdt  { display: none; }
+          .member-table-col-goi  { display: none; }
+        }
+        @media (max-width: 640px) {
+          .member-table-desktop  { display: none; }
+          .member-table-mobile   { display: block; }
+        }
+      </style>
       <div class="col-span-full w-full rounded-2xl overflow-hidden border border-outline-variant shadow-sm">
-        
-        <!-- Wrapper scroll ngang cho mobile -->
-        <div style="overflow-x: auto;">
-          <table style="width:100%; border-collapse:collapse; min-width:600px;">
-            
-            <!-- STICKY HEADER -->
+
+        <!-- TABLE (≥641px) -->
+        <div class="member-table-desktop" style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;min-width:480px;">
             <thead>
-              <tr style="
-                position:sticky; top:0; z-index:10;
-                background:linear-gradient(135deg, #6dac7b 0%, #1D9336 100%);
-              ">
-                <th style="padding: 12px 14px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(255,255,255,0.85); text-align: left; white-space: nowrap; border: none;">Họ và tên</th>
-                <th style="padding: 12px 14px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(255,255,255,0.85); text-align: left; white-space: nowrap; border: none;">Mã HV</th>
-                <th style="padding: 12px 14px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(255,255,255,0.85); text-align: left; white-space: nowrap; border: none;">Số ĐT</th>
-                <th style="padding: 12px 14px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(255,255,255,0.85); text-align: left; white-space: nowrap; border: none;">Gói tập</th>
-                <th style="padding: 12px 14px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(255,255,255,0.85); text-align: center; white-space: nowrap; border: none;">Có PT</th>
-                <th style="padding: 12px 14px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(255,255,255,0.85); text-align: left; white-space: nowrap; border: none;">Trạng thái</th>
-                <th style="padding: 12px 14px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(255,255,255,0.85); text-align: left; white-space: nowrap; border: none;">Hết hạn</th>
-                <th style="padding: 12px 14px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(255,255,255,0.85); text-align: center; white-space: nowrap; border: none;">Thao tác</th>
+              <tr style="position:sticky;top:0;z-index:10;background:linear-gradient(135deg,#6dac7b 0%,#1D9336 100%);">
+                <th style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:left;white-space:nowrap;border:none;">Họ và tên</th>
+                <th class="member-table-col-mahv" style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:left;white-space:nowrap;border:none;">Mã HV</th>
+                <th class="member-table-col-sdt" style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:left;white-space:nowrap;border:none;">Số ĐT</th>
+                <th class="member-table-col-goi" style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:left;white-space:nowrap;border:none;">Gói tập</th>
+                <th class="member-table-col-pt" style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Có PT</th>
+                <th style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:left;white-space:nowrap;border:none;">Trạng thái</th>
+                <th class="member-table-col-han" style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:left;white-space:nowrap;border:none;">Hết hạn</th>
+                <th style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Thao tác</th>
               </tr>
             </thead>
-
-            <!-- BODY -->
-            <tbody>
-              ${rowsHtml}
-            </tbody>
-
+            <tbody>${rowsHtml}</tbody>
           </table>
+        </div>
+
+        <!-- CARD LIST (≤640px) -->
+        <div class="member-table-mobile">
+          ${cardRowsHtml}
         </div>
 
         <!-- PAGINATION -->
         <div class="px-standard py-standard border-t border-outline-variant bg-white dark:bg-[#1e1e1e]">
           ${window.GymApp.renderPagination(self._memberPage, self._memberFiltered.length, self._perPage)}
         </div>
-
       </div>
     `;
   },
@@ -471,7 +531,7 @@ window.GymApp.pages['members-list'] = {
     document.getElementById('gym-pt-modal')?.remove();
     const overlay = document.createElement('div');
     overlay.id = 'gym-pt-modal';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);backdrop-filter:blur(3px);padding:16px;';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);backdrop-filter:blur(6px);padding:16px;';
 
     const rating = pt.danh_gia || pt.rating || 0;
     const isActive = pt.trang_thai === 'hoat_dong' || pt.trang_thai === 'active';
@@ -481,7 +541,7 @@ window.GymApp.pages['members-list'] = {
     ).join('');
 
     overlay.innerHTML = `
-      <div class="modal-card" style="border-radius:20px;width:100%;max-width:780px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:0 32px 80px rgba(0,0,0,0.35);">
+      <div class="modal-card" style="border-radius:20px;width:100%;max-width:780px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:0 24px 60px rgba(0,0,0,0.2);">
 
         <!-- Banner Header -->
         <div style="background:linear-gradient(135deg,#065f46 0%,#10b981 60%,#34d399 100%);padding:20px 24px 0;flex-shrink:0;position:relative;overflow:hidden;">
@@ -816,7 +876,7 @@ window.GymApp.pages['members-list'] = {
     document.getElementById('gym-pt-edit-modal')?.remove();
     const overlay = document.createElement('div');
     overlay.id = 'gym-pt-edit-modal';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);backdrop-filter:blur(3px);padding:16px;';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);backdrop-filter:blur(6px);padding:16px;';
 
     const field = (icon, label, fid, type, value, required = false, readonly = false, isFull = false) => `
       <div class="${isFull ? 'col-span-full' : ''}">
@@ -835,7 +895,7 @@ window.GymApp.pages['members-list'] = {
         <label class="text-on-surface-variant text-body-sm uppercase font-bold tracking-wider block mb-1 opacity-80">${label}</label>
         <div class="relative group">
           <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors text-[18px] z-10">${icon}</span>
-          <select id="pte-${fid}" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-10 py-2.5 rounded-xl focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none text-body-md font-medium transition-all cursor-pointer relative z-0" style="appearance:none !important;-webkit-appearance:none !important;-moz-appearance:none !important;">
+          <select id="pte-${fid}" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-10 py-2.5 rounded-xl focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none text-body-md font-medium transition-all cursor-pointer relative z-0" style="appearance:none !important;-webkit-appearance:none !important;-moz-appearance:none !important;background-image:none !important;">
             ${options.map(o => `<option value="${o.v}" ${o.v === selectedValue ? 'selected' : ''}>${o.l}</option>`).join('')}
           </select>
           <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none z-10">expand_more</span>
@@ -854,7 +914,7 @@ window.GymApp.pages['members-list'] = {
     `;
 
     overlay.innerHTML = `
-      <div style="border-radius:24px;width:100%;max-width:560px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,0.4);background:var(--bg-surface-lowest);">
+      <div style="border-radius:24px;width:100%;max-width:560px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.2);background:var(--bg-surface-lowest);">
         <div style="padding:24px 24px 16px;flex-shrink:0;position:relative;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--outline-variant);border-top-left-radius:24px;border-top-right-radius:24px;">
           <div>
             <h3 style="font-size:20px;font-weight:800;color:var(--text-on-surface);margin:0 0 4px;">Chỉnh sửa hồ sơ HLV</h3>
@@ -976,7 +1036,7 @@ window.GymApp.pages['members-list'] = {
     document.getElementById('gym-pt-add-modal')?.remove();
     const overlay = document.createElement('div');
     overlay.id = 'gym-pt-add-modal';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);backdrop-filter:blur(3px);padding:16px;';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);backdrop-filter:blur(6px);padding:16px;';
 
     const field = (icon, label, fid, type, required = false, isFull = false) => `
       <div class="${isFull ? 'col-span-full' : ''}">
@@ -993,7 +1053,7 @@ window.GymApp.pages['members-list'] = {
         <label class="text-on-surface-variant text-body-sm uppercase font-bold tracking-wider block mb-1 opacity-80">${label}</label>
         <div class="relative group">
           <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors text-[18px] z-10">${icon}</span>
-          <select id="pta-${fid}" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-10 py-2.5 rounded-xl focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none text-body-md font-medium transition-all cursor-pointer relative z-0" style="appearance:none !important;-webkit-appearance:none !important;-moz-appearance:none !important;">
+          <select id="pta-${fid}" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-10 py-2.5 rounded-xl focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none text-body-md font-medium transition-all cursor-pointer relative z-0" style="appearance:none !important;-webkit-appearance:none !important;-moz-appearance:none !important;background-image:none !important;">
             ${options.map(o => `<option value="${o.v}">${o.l}</option>`).join('')}
           </select>
           <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none z-10">expand_more</span>
@@ -1012,7 +1072,7 @@ window.GymApp.pages['members-list'] = {
     `;
 
     overlay.innerHTML = `
-      <div style="border-radius:24px;width:100%;max-width:560px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,0.4);background:var(--bg-surface-lowest);">
+      <div style="border-radius:24px;width:100%;max-width:560px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.2);background:var(--bg-surface-lowest);">
         <div style="padding:24px 24px 16px;flex-shrink:0;position:relative;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--outline-variant);border-top-left-radius:24px;border-top-right-radius:24px;">
           <div>
             <h3 style="font-size:20px;font-weight:800;color:var(--text-on-surface);margin:0 0 4px;">Thêm mới HLV</h3>
@@ -1165,7 +1225,7 @@ window.GymApp.pages['members-list'] = {
 
     const overlay = document.createElement('div');
     overlay.id = 'gym-member-modal';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);backdrop-filter:blur(3px);padding:16px;';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);backdrop-filter:blur(6px);padding:16px;';
 
     const isActive = m.trang_thai === 'con_han' || m.trang_thai === 'sap_het_han' || m.trang_thai === 'active' || m.trang_thai === 'dang_tap';
     const isCheckedIn = m.da_check_in_hom_nay == 1;
@@ -1189,53 +1249,58 @@ window.GymApp.pages['members-list'] = {
 
     overlay.innerHTML = `
       <div class="modal-card" style="border-radius:20px;width:100%;max-width:780px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:0 32px 80px rgba(0,0,0,0.35);">
-        <div style="background:linear-gradient(135deg,#1a5e2a 0%,#1D9336 60%,#22c55e 100%);padding:20px 24px 0;flex-shrink:0;position:relative;overflow:hidden;">
-          <div style="position:absolute;top:-30px;right:-30px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,0.07);"></div>
-          <div style="position:absolute;top:20px;right:60px;width:70px;height:70px;border-radius:50%;background:rgba(255,255,255,0.05);"></div>
-          <button id="close-member-modal" style="position:absolute;top:12px;right:12px;background:rgba(255,255,255,0.15);border:none;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'" title="Đóng">
-            <span class="material-symbols-outlined" style="color:#fff;font-size:18px;">close</span>
+        <div style="background:linear-gradient(160deg,#2d6a4f 0%,#40916c 55%,#52b788 100%);padding:20px 24px 0;flex-shrink:0;position:relative;overflow:hidden;">
+          <!-- Decorative blobs nhẹ -->
+          <div style="position:absolute;top:-40px;right:-20px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,0.06);pointer-events:none;"></div>
+          <div style="position:absolute;bottom:0;left:-30px;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,0.04);pointer-events:none;"></div>
+          <button id="close-member-modal" style="position:absolute;top:12px;right:12px;background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.25);cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.18)'" title="Đóng">
+            <span class="material-symbols-outlined" style="color:#fff;font-size:17px;">close</span>
           </button>
-          <div style="display:flex;align-items:flex-end;gap:16px;margin-bottom:16px;">
+          <!-- Avatar + tên -->
+          <div style="display:flex;align-items:center;gap:16px;margin-bottom:18px;">
             <div style="position:relative;flex-shrink:0;">
-              <div style="width:72px;height:72px;border-radius:50%;border:3px solid rgba(255,255,255,0.6);overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.25);">
+              <div style="width:68px;height:68px;border-radius:50%;border:2.5px solid rgba(255,255,255,0.55);overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,0.18);">
                 ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'lg', 'width:100%;height:100%;')}
               </div>
-              <span style="position:absolute;bottom:2px;right:2px;width:14px;height:14px;border-radius:50%;background:${isCheckedIn ? '#4ade80' : '#94a3b8'};border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.2);"></span>
+              <span style="position:absolute;bottom:2px;right:2px;width:13px;height:13px;border-radius:50%;background:${isCheckedIn ? '#74c69d' : '#adb5bd'};border:2px solid #fff;"></span>
             </div>
-            <div style="flex:1;min-width:0;padding-bottom:4px;">
-              <div style="display:flex;align-items:center;gap:8px;">
-                <h3 style="font-size:20px;font-weight:800;color:#fff;line-height:1.2;margin:0 0 4px;text-shadow:0 1px 4px rgba(0,0,0,0.2);">${m.ho_ten || '—'}</h3>
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:5px;">
+                <h3 style="font-size:19px;font-weight:800;color:#fff;margin:0;letter-spacing:-0.01em;">${m.ho_ten || '—'}</h3>
                 ${m.co_yeu_cau_gia_han ? `
-                  <span style="display:flex;align-items:center;gap:2px;background:rgba(255,193,7,0.3);color:#ffc107;font-size:10px;padding:2px 6px;border-radius:6px;font-weight:800;backdrop-filter:blur(4px);border:1px solid rgba(255,193,7,0.5);margin-bottom:4px;" class="animate-pulse">
-                    <span class="material-symbols-outlined" style="font-size:12px;">app_registration</span>APP
+                  <span style="display:inline-flex;align-items:center;gap:3px;background:rgba(255,214,0,0.22);color:#fde68a;font-size:10px;padding:2px 7px;border-radius:20px;font-weight:700;border:1px solid rgba(255,214,0,0.35);" class="animate-pulse">
+                    <span class="material-symbols-outlined" style="font-size:11px;">app_registration</span>Chờ duyệt
                   </span>
                 ` : ''}
               </div>
-              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                <span style="font-size:12px;color:rgba(255,255,255,0.8);">${window.GymApp.formatEnumLabel(m.loai_ho_so || 'hoi_vien')}</span>
-                <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:${isActive ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'};color:#fff;border:1px solid rgba(255,255,255,0.3);">${statusText}</span>
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <span style="font-size:11px;color:rgba(255,255,255,0.75);font-weight:500;">${window.GymApp.formatEnumLabel(m.loai_ho_so || 'hoi_vien')}</span>
+                <span style="width:3px;height:3px;border-radius:50%;background:rgba(255,255,255,0.4);"></span>
+                <span style="font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;background:${isActive ? 'rgba(116,198,157,0.3)' : 'rgba(255,255,255,0.12)'};color:${isActive ? '#d8f3dc' : 'rgba(255,255,255,0.75)'};border:1px solid ${isActive ? 'rgba(116,198,157,0.4)' : 'rgba(255,255,255,0.2)'};">${statusText}</span>
               </div>
             </div>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(255,255,255,0.15);border-radius:12px 12px 0 0;overflow:hidden;">
-            <div style="background:rgba(0,0,0,0.15);padding:10px 14px;backdrop-filter:blur(4px);">
-              <div style="font-size:10px;color:rgba(255,255,255,0.65);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Gói tập</div>
-              <div style="font-size:13px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${pkgName}">${pkgName}</div>
+          <!-- Stats bar -->
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;background:rgba(255,255,255,0.08);border-radius:10px 10px 0 0;overflow:hidden;border:1px solid rgba(255,255,255,0.12);border-bottom:none;">
+            <div style="padding:9px 14px;border-right:1px solid rgba(255,255,255,0.1);">
+              <div style="font-size:9.5px;color:rgba(255,255,255,0.6);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">Gói tập</div>
+              <div style="font-size:13px;font-weight:700;color:#d8f3dc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${pkgName}">${pkgName}</div>
             </div>
-            <div style="background:rgba(0,0,0,0.15);padding:10px 14px;backdrop-filter:blur(4px);">
-              <div style="font-size:10px;color:rgba(255,255,255,0.65);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Hết hạn</div>
-              <div style="font-size:13px;font-weight:800;color:#fff;">${expDate}</div>
+            <div style="padding:9px 14px;border-right:1px solid rgba(255,255,255,0.1);">
+              <div style="font-size:9.5px;color:rgba(255,255,255,0.6);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">Hết hạn</div>
+              <div style="font-size:13px;font-weight:700;color:#d8f3dc;">${expDate}</div>
             </div>
-            <div style="background:rgba(0,0,0,0.15);padding:10px 14px;backdrop-filter:blur(4px);">
-              <div style="font-size:10px;color:rgba(255,255,255,0.65);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Giới tính</div>
-              <div style="font-size:13px;font-weight:800;color:#fff;">${genderLabel}</div>
+            <div style="padding:9px 14px;">
+              <div style="font-size:9.5px;color:rgba(255,255,255,0.6);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">Giới tính</div>
+              <div style="font-size:13px;font-weight:700;color:#d8f3dc;">${genderLabel}</div>
             </div>
           </div>
         </div>
-        <div style="display:flex;background:var(--bg-surface-lowest);border-bottom:1px solid var(--outline-variant);flex-shrink:0;padding:0 16px;">
-          ${[['info', 'Thông tin', 'info'], ['package', 'Gói tập', 'fitness_center'], ['schedule', 'Lịch PT', 'event_note']].map(([t, l, ic]) => `
-            <button class="member-detail-tab" data-mtab="${t}" style="display:flex;align-items:center;gap:6px;padding:12px 16px;font-size:13px;font-weight:700;border:none;background:transparent;cursor:pointer;border-bottom:2.5px solid transparent;transition:all 0.2s;color:var(--text-on-surface-variant);white-space:nowrap;">
-              <span class="material-symbols-outlined" style="font-size:16px;">${ic}</span>${l}
+        <!-- Tabs -->
+        <div style="display:flex;background:var(--bg-surface-lowest);border-bottom:1px solid var(--outline-variant);flex-shrink:0;padding:0 8px;">
+          ${[['info', 'Thông tin', 'person'], ['package', 'Gói tập', 'fitness_center'], ['schedule', 'Lịch PT', 'event_note']].map(([t, l, ic]) => `
+            <button class="member-detail-tab" data-mtab="${t}" style="display:flex;align-items:center;gap:5px;padding:11px 14px;font-size:13px;font-weight:600;border:none;background:transparent;cursor:pointer;border-bottom:2.5px solid transparent;transition:all 0.18s;color:var(--text-on-surface-variant);white-space:nowrap;border-radius:0;">
+              <span class="material-symbols-outlined" style="font-size:15px;">${ic}</span>${l}
             </button>
           `).join('')}
         </div>
@@ -1428,6 +1493,8 @@ window.GymApp.pages['members-list'] = {
       const otherPackages = pkgHistory.filter(p => {
         if (activePkg && p.id === activePkg.id) return false;
         if (pendingPkgs.some(pg => pg.id === p.id)) return false;
+        // Không hiển thị cho_kich_hoat trong lịch sử (đã được hiển thị riêng ở pendingPkgs)
+        if (p.trang_thai === 'cho_kich_hoat') return false;
         return true;
       });
 
@@ -1531,17 +1598,22 @@ window.GymApp.pages['members-list'] = {
             <p style="font-size:13px;font-weight:700;color:var(--text-on-surface-variant);margin:4px 0 0;">Chưa có gói tập đang hoạt động</p>
           </div>`}
 
-        ${pendingPkgs.length > 0 ? pendingPkgs.map(g => `
-          <div style="border:2px dashed #d97706;border-radius:12px;padding:12px 16px;margin-bottom:16px;background:#fffbeb;">
-            <div style="font-size:9px;font-weight:800;text-transform:uppercase;color:#d97706;margin-bottom:4px;">
-              Gói nối tiếp — Chờ kích hoạt
+        ${pendingPkgs.length > 0 ? pendingPkgs.map(g => {
+          const isDuyet = g.trang_thai === 'cho_kich_hoat';
+          const labelTop = isDuyet ? 'Đã duyệt — Chờ kích hoạt nối tiếp' : 'Gói nối tiếp — Chờ kích hoạt';
+          const icon = isDuyet ? 'event_available' : 'schedule';
+          return `
+          <div style="border:2px dashed #d97706;border-radius:12px;padding:12px 16px;margin-bottom:16px;background:#fffbeb;display:flex;align-items:flex-start;gap:10px;">
+            <span class="material-symbols-outlined" style="font-size:20px;color:#d97706;margin-top:2px;flex-shrink:0;">${icon}</span>
+            <div>
+              <div style="font-size:9px;font-weight:800;text-transform:uppercase;color:#d97706;margin-bottom:4px;">${labelTop}</div>
+              <div style="font-size:15px;font-weight:800;color:#92400e;">${g.ten_goi || '—'}</div>
+              <div style="font-size:11px;color:#a16207;margin-top:3px;">
+                Bắt đầu: ${window.GymApp.formatDate(g.tu_ngay)} — Kết thúc: ${window.GymApp.formatDate(g.den_ngay)}
+              </div>
             </div>
-            <div style="font-size:15px;font-weight:800;color:#92400e;">${g.ten_goi || '—'}</div>
-            <div style="font-size:11px;color:#a16207;margin-top:3px;">
-              Bắt đầu: ${window.GymApp.formatDate(g.tu_ngay)} — Kết thúc: ${window.GymApp.formatDate(g.den_ngay)}
-            </div>
-          </div>
-        `).join('') : ''}
+          </div>`;
+        }).join('') : ''}
 
         <div>
           ${sectionLabel('Lịch sử & Gói khác')}
@@ -1793,12 +1865,15 @@ window.GymApp.pages['members-list'] = {
     
     const overlay = document.createElement('div');
     overlay.id = 'gym-sub-modal';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);padding:16px;';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);backdrop-filter:blur(6px);padding:16px;';
     overlay.innerHTML = `
-      <div class="modal-card" style="border-radius:16px;width:100%;max-width:660px;max-height:92vh;overflow-y:auto;position:relative;box-shadow:0 30px 80px rgba(0,0,0,0.4);">
-        <div class="bg-surface-container-lowest border-b border-outline-variant px-loose py-standard flex items-center justify-between" style="position:sticky;top:0;z-index:1;">
-          <div><h3 class="font-bold text-on-surface" style="font-size:16px;">Thêm gói tập</h3><p class="text-on-surface-variant text-body-sm">Hội viên: <strong>${m.ho_ten || m.name}</strong></p></div>
-          <button id="close-sub-modal" style="background:transparent;border:none;cursor:pointer;"><span class="material-symbols-outlined text-on-surface-variant text-xl">close</span></button>
+      <div class="modal-card" style="border-radius:18px;width:100%;max-width:660px;max-height:92vh;overflow-y:auto;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <div style="background:linear-gradient(135deg,#2d6a4f,#40916c);padding:16px 20px;position:sticky;top:0;z-index:1;border-radius:18px 18px 0 0;display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <h3 style="font-size:15px;font-weight:800;color:#fff;margin:0 0 2px;">Thêm gói tập</h3>
+            <p style="font-size:11px;color:rgba(255,255,255,0.75);margin:0;">Hội viên: <strong style="color:#d8f3dc;">${m.ho_ten || m.name}</strong></p>
+          </div>
+          <button id="close-sub-modal" style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.25);cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.18)'"><span class="material-symbols-outlined" style="color:#fff;font-size:16px;">close</span></button>
         </div>
         <div class="p-loose bg-surface-container-lowest">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-standard">
@@ -1826,7 +1901,7 @@ window.GymApp.pages['members-list'] = {
             <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Ngày thanh toán</label><input id="pkg-payment-date" type="date" value="${new Date().toISOString().split('T')[0]}" ${inputCls} /></div>
             <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Cần thanh toán (VNĐ)</label><input id="pkg-need-pay" type="text" readonly class="bg-surface-container text-on-surface border border-outline-variant" style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;cursor:not-allowed;" /></div>
             <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Tiền khách đưa (VNĐ) ${REQ}</label><input id="pkg-paid" type="text" inputmode="numeric" placeholder="VD: 1.500.000" ${inputCls} /><p id="err-pkg-paid-modal" class="hidden" style="color:#ba1a1a;font-size:11px;margin-top:4px;font-weight:600;"></p></div>
-            <div class="col-span-1 sm:col-span-2"><label class="block text-body-sm font-bold mb-xs" style="color:#93000a;">Khách nợ (VNĐ)</label><input id="pkg-debt" type="text" value="0" readonly style="width:100%;background:#ffdad6;border:1px solid #f2b8b5;color:#93000a;font-weight:700;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;cursor:not-allowed;" /></div>
+            <div class="col-span-1 sm:col-span-2"><label id="pkg-balance-label" class="block text-body-sm font-bold mb-xs" style="color:#93000a;">Khách nợ (VNĐ)</label><input id="pkg-debt" type="text" value="0" readonly style="width:100%;background:#ffdad6;border:1px solid #f2b8b5;color:#93000a;font-weight:700;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;cursor:not-allowed;" /></div>
             <div class="col-span-1 sm:col-span-2"><label class="block text-body-sm font-bold text-on-surface mb-xs">Ghi chú</label><textarea id="pkg-note" rows="3" placeholder="Ghi chú thêm..." class="bg-surface-container-lowest text-on-surface border border-outline-variant" style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;resize:vertical;font-family:inherit;"></textarea></div>
           </div>
           <div class="flex gap-standard mt-standard">
@@ -1885,8 +1960,26 @@ window.GymApp.pages['members-list'] = {
       const discount = discountCode ? Math.round(price * 0.1) : 0;
       const need = Math.max(0, price - discount);
       const paid = parseVND(document.getElementById('pkg-paid').value);
+      const diff = paid - need;
       document.getElementById('pkg-need-pay').value = fmtVND(need);
-      document.getElementById('pkg-debt').value = fmtVND(Math.max(0, need - paid));
+      const balanceLabel = document.getElementById('pkg-balance-label');
+      const debtEl = document.getElementById('pkg-debt');
+      if (balanceLabel) {
+        if (diff > 0) {
+          balanceLabel.textContent = 'Khách dư (VNĐ)';
+          balanceLabel.style.color = '#166534';
+          if (debtEl) { debtEl.style.background = '#dcfce7'; debtEl.style.color = '#166534'; }
+        } else if (diff < 0) {
+          balanceLabel.textContent = 'Khách nợ (VNĐ)';
+          balanceLabel.style.color = '#93000a';
+          if (debtEl) { debtEl.style.background = '#fce4e4'; debtEl.style.color = '#93000a'; }
+        } else {
+          balanceLabel.textContent = 'Số dư (VNĐ)';
+          balanceLabel.style.color = '';
+          if (debtEl) { debtEl.style.background = ''; debtEl.style.color = ''; }
+        }
+      }
+      if (debtEl) debtEl.value = fmtVND(Math.abs(diff));
     }
 
     const pkgPriceEl = document.getElementById('pkg-price');
@@ -1945,6 +2038,24 @@ window.GymApp.pages['members-list'] = {
         window.GymApp.toast('Ngày thanh toán không được vượt quá ngày kết thúc gói tập', 'error');
         return;
       }
+
+      // Validate: số tiền khách đưa phải đủ (trừ khi chọn "Còn nợ")
+      {
+        const discountCode = document.getElementById('pkg-discount-code').value.trim();
+        const discount = discountCode ? Math.round(price * 0.1) : 0;
+        const needToPay = Math.max(0, price - discount);
+        const paidAmt = parseVND(paidVal);
+        if (regStatus !== 'debt' && paidAmt < needToPay) {
+          const fmt = n => new Intl.NumberFormat('vi-VN').format(n);
+          window.GymApp.toast(
+            `Số tiền khách đưa (${fmt(paidAmt)} ₫) chưa đủ so với cần thanh toán (${fmt(needToPay)} ₫). Chọn trạng thái "Còn nợ" nếu muốn cho phép nợ.`,
+            'error'
+          );
+          hlField('pkg-paid', true);
+          return;
+        }
+      }
+
       const pkg = (window.GymApp.data.packages || []).find(p => (p.ten_goi || p.name) === name);
       if (!pkg) { window.GymApp.toast('Gói tập không hợp lệ', 'error'); return; }
 
@@ -1976,7 +2087,8 @@ window.GymApp.pages['members-list'] = {
           phuong_thuc_tt: document.getElementById('pkg-payment-method').value,
           ghi_chu_tt: document.getElementById('pkg-note').value.trim(),
           ma_giao_dich: document.getElementById('pkg-discount-code').value.trim(),
-          ngay_thanh_toan: paymentDate
+          ngay_thanh_toan: paymentDate,
+          so_tien_da_thu: parseVND(paidVal)
         });
         window.GymApp.toast('Đăng ký gói tập thành công!', 'success');
         if (window.GymApp.fetchInitialData) await window.GymApp.fetchInitialData();
@@ -1993,15 +2105,15 @@ window.GymApp.pages['members-list'] = {
     const iCls = `class="bg-surface-container-lowest text-on-surface border border-outline-variant" style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;"`;
     const overlay = document.createElement('div');
     overlay.id = 'gym-sub-modal';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);padding:16px;';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);backdrop-filter:blur(6px);padding:16px;';
     overlay.innerHTML = `
-      <div class="modal-card bg-surface-container-lowest" style="border-radius:16px;width:100%;max-width:400px;position:relative;box-shadow:0 30px 80px rgba(0,0,0,0.4);">
-        <div class="border-b border-outline-variant px-loose py-standard flex items-center justify-between">
+      <div class="modal-card bg-surface-container-lowest" style="border-radius:18px;width:100%;max-width:400px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.2);overflow:hidden;">
+        <div style="background:linear-gradient(135deg,#b91c1c,#dc2626);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">
           <div>
-            <h3 class="font-bold text-on-surface" style="font-size:16px;margin:0;">Hủy gói tập</h3>
-            <p class="text-on-surface-variant text-body-sm" style="margin:2px 0 0;">Gói: <strong>${pkg.ten_goi}</strong></p>
+            <h3 style="font-size:15px;font-weight:800;color:#fff;margin:0 0 2px;">Hủy gói tập</h3>
+            <p style="font-size:11px;color:rgba(255,255,255,0.75);margin:0;">Gói: <strong style="color:#fecaca;">${pkg.ten_goi}</strong></p>
           </div>
-          <button id="cancel-pkg-close" style="background:transparent;border:none;cursor:pointer;"><span class="material-symbols-outlined text-on-surface-variant text-xl">close</span></button>
+          <button id="cancel-pkg-close" style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.25);cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.18)'"><span class="material-symbols-outlined" style="color:#fff;font-size:16px;">close</span></button>
         </div>
         <div class="p-loose" style="display:flex;flex-direction:column;gap:14px;">
           <div class="grid gap-standard">
@@ -2057,19 +2169,19 @@ window.GymApp.pages['members-list'] = {
     const PM = {tien_mat:'Tiền mặt',chuyen_khoan:'Chuyển khoản',the:'Thẻ',momo:'MoMo',zalopay:'ZaloPay',khac:'Khác'};
     const overlay = document.createElement('div');
     overlay.id = 'gym-sub-modal';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);padding:16px;';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);backdrop-filter:blur(6px);padding:16px;';
     overlay.innerHTML = `
-      <div class="modal-card bg-surface-container-lowest border border-outline-variant" style="border-radius:24px;width:100%;max-width:440px;position:relative;box-shadow:0 30px 80px rgba(0,0,0,0.4);">
-        <div class="border-b border-outline-variant px-loose py-standard flex items-center justify-between bg-surface-container/20" style="border-top-left-radius: 24px; border-top-right-radius: 24px;">
+      <div class="modal-card bg-surface-container-lowest" style="border-radius:18px;width:100%;max-width:440px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.2);overflow:hidden;">
+        <div style="background:linear-gradient(135deg,#2d6a4f,#40916c);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">
           <div>
-            <h3 class="font-bold text-on-surface" style="font-size:17px;margin:0;">Chỉnh sửa gói tập</h3>
-            <div class="flex items-center gap-xs mt-xs">
-              <span class="text-body-xs font-bold px-compact py-3xs bg-brand-primary/10 text-brand-primary rounded-full">Gói tập</span>
-              <p class="text-on-surface-variant text-body-xs font-bold" style="margin:0;">${pkg.ten_goi}</p>
-            </div>
+            <h3 style="font-size:15px;font-weight:800;color:#fff;margin:0 0 2px;">Chỉnh sửa gói tập</h3>
+            <p style="font-size:11px;color:rgba(255,255,255,0.75);margin:0;display:flex;align-items:center;gap:5px;">
+              <span style="background:rgba(255,255,255,0.18);padding:1px 7px;border-radius:20px;font-size:10px;">Gói tập</span>
+              <strong style="color:#d8f3dc;">${pkg.ten_goi}</strong>
+            </p>
           </div>
-          <button id="edit-pkg-close" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container transition-colors" style="background:transparent;border:none;cursor:pointer;">
-            <span class="material-symbols-outlined text-on-surface-variant text-lg">close</span>
+          <button id="edit-pkg-close" style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.25);cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.18)'">
+            <span class="material-symbols-outlined" style="color:#fff;font-size:16px;">close</span>
           </button>
         </div>
         <div class="p-loose" style="display:flex;flex-direction:column;gap:16px;">
@@ -2101,7 +2213,7 @@ window.GymApp.pages['members-list'] = {
               <label class="block text-body-sm font-bold text-on-surface-variant mb-xs">Phương thức TT</label>
               <div class="relative w-full">
                 <span class="material-symbols-outlined absolute left-standard top-1/2 -translate-y-1/2 text-outline text-sm">credit_card</span>
-                <select id="edit-pkg-payment" ${iCls} style="padding:10px 32px 10px 36px; box-sizing:border-box; width:100%; appearance:none;">
+                <select id="edit-pkg-payment" ${iCls} style="padding:10px 32px 10px 36px; box-sizing:border-box; width:100%; appearance:none; background-image:none !important;">
                   ${Object.entries(PM).map(([v,l]) => `<option value="${v}" ${pkg.phuong_thuc_tt === v ? 'selected' : ''}>${l}</option>`).join('')}
                 </select>
                 <span class="material-symbols-outlined absolute right-standard top-1/2 -translate-y-1/2 text-outline pointer-events-none text-sm">keyboard_arrow_down</span>
@@ -2159,27 +2271,56 @@ window.GymApp.pages['members-list'] = {
       const res = await window.GymApp.api.get('/packages');
       goiTapList = (res.data || []).filter(g => !g.is_deleted && g.id !== pkg.goi_tap_id);
     } catch (_) {}
+
+    // Tính số ngày còn lại và tiền hoàn gợi ý
+    const _calcRemainingCredit = () => {
+      const today = new Date(); today.setHours(0,0,0,0);
+      const denNgay = pkg.den_ngay ? new Date(pkg.den_ngay) : null;
+      if (!denNgay) return { remainingDays: 0, credit: 0 };
+      denNgay.setHours(0,0,0,0);
+      const remainingDays = Math.max(0, Math.round((denNgay - today) / 86400000));
+      const giaThucTe = pkg.gia_thuc_te || pkg.gia || 0;
+      const credit = Math.round((giaThucTe * remainingDays) / 30);
+      return { remainingDays, credit };
+    };
+    const { remainingDays, credit } = _calcRemainingCredit();
+
     const iCls = `class="bg-surface-container-lowest text-on-surface border border-outline-variant" style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;"`;
     const PM = {tien_mat:'Tiền mặt',chuyen_khoan:'Chuyển khoản',the:'Thẻ',momo:'MoMo',zalopay:'ZaloPay',khac:'Khác'};
     const overlay = document.createElement('div');
     overlay.id = 'gym-sub-modal';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);padding:16px;';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);backdrop-filter:blur(6px);padding:16px;';
     overlay.innerHTML = `
-      <div class="modal-card bg-surface-container-lowest" style="border-radius:16px;width:100%;max-width:440px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:0 30px 80px rgba(0,0,0,0.4);">
-        <div class="border-b border-outline-variant px-loose py-standard flex items-center justify-between flex-shrink-0">
+      <div class="modal-card bg-surface-container-lowest" style="border-radius:18px;width:100%;max-width:460px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <div style="background:linear-gradient(135deg,#1e40af,#2563eb);padding:16px 20px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
           <div>
-            <h3 class="font-bold text-on-surface" style="font-size:16px;margin:0;">Đổi gói tập</h3>
-            <p class="text-on-surface-variant text-body-sm" style="margin:2px 0 0;">Đang hủy: <strong>${pkg.ten_goi}</strong></p>
+            <h3 style="font-size:15px;font-weight:800;color:#fff;margin:0 0 2px;">Đổi gói tập</h3>
+            <p style="font-size:11px;color:rgba(255,255,255,0.75);margin:0;">Đang hủy: <strong style="color:#bfdbfe;">${pkg.ten_goi}</strong></p>
           </div>
-          <button id="switch-pkg-close" style="background:transparent;border:none;cursor:pointer;"><span class="material-symbols-outlined text-on-surface-variant text-xl">close</span></button>
+          <button id="switch-pkg-close" style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.25);cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.18)'"><span class="material-symbols-outlined" style="color:#fff;font-size:16px;">close</span></button>
         </div>
         <div class="p-loose flex-grow overflow-y-auto" style="display:flex;flex-direction:column;gap:14px;">
+          <!-- Thông tin gói cũ & tiền hoàn gợi ý -->
+          <div class="rounded-xl" style="padding:10px 14px;background:#eff6ff;border:1px solid #bfdbfe;">
+            <div style="font-size:12px;font-weight:700;color:#1d4ed8;margin-bottom:4px;">Thông tin gói hiện tại</div>
+            <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:#1e40af;">
+              <span>Giá đã đóng: <strong>${window.GymApp.formatCurrency(pkg.gia_thuc_te || pkg.gia || 0)}</strong></span>
+              <span>Còn lại: <strong>${remainingDays} ngày</strong></span>
+              <span>Tiền hoàn gợi ý: <strong id="switch-credit-hint">${window.GymApp.formatCurrency(credit)}</strong></span>
+            </div>
+            <div style="font-size:11px;color:#3b82f6;margin-top:3px;">Công thức: giá × ngày còn lại ÷ 30</div>
+          </div>
           <div>
             <label class="block text-body-sm font-bold text-on-surface mb-xs">Gói tập mới <span style="color:#ba1a1a;">*</span></label>
             <select id="switch-pkg-new" ${iCls}>
               <option value="">— Chọn gói tập —</option>
               ${goiTapList.map(g => `<option value="${g.id}" data-gia="${g.gia}">${g.ten_goi} — ${window.GymApp.formatCurrency(g.gia)}</option>`).join('')}
             </select>
+          </div>
+          <!-- Gợi ý tiền đóng thêm -->
+          <div id="switch-extra-hint" style="display:none;padding:8px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;font-size:12px;color:#166534;">
+            Tiền đóng thêm gợi ý: <strong id="switch-extra-amount">—</strong>
+            <span style="color:#4ade80;font-size:11px;"> (= giá gói mới − tiền hoàn)</span>
           </div>
           <div>
             <label class="block text-body-sm font-bold text-on-surface mb-xs">Ngày bắt đầu <span style="color:#ba1a1a;">*</span></label>
@@ -2198,7 +2339,7 @@ window.GymApp.pages['members-list'] = {
             </div>
             <div>
               <label class="block text-body-sm font-bold text-on-surface mb-xs">Hoàn tiền gói cũ (VNĐ)</label>
-              <input id="switch-pkg-refund" type="text" inputmode="numeric" placeholder="0" ${iCls} />
+              <input id="switch-pkg-refund" type="text" inputmode="numeric" placeholder="0" ${iCls} value="${credit > 0 ? credit : ''}" />
             </div>
             <div>
               <label class="block text-body-sm font-bold text-on-surface mb-xs">Lý do đổi</label>
@@ -2225,14 +2366,31 @@ window.GymApp.pages['members-list'] = {
     const _fVND = n => n > 0 ? new Intl.NumberFormat('vi-VN').format(n) : '';
     const swPriceEl = overlay.querySelector('#switch-pkg-price');
     const swRefundEl = overlay.querySelector('#switch-pkg-refund');
+    const extraHintEl = overlay.querySelector('#switch-extra-hint');
+    const extraAmountEl = overlay.querySelector('#switch-extra-amount');
+    if (credit > 0) swRefundEl.value = _fVND(credit);
     swPriceEl?.addEventListener('focus', function () { const v = _pVND(this.value); this.value = v > 0 ? String(v) : ''; });
     swPriceEl?.addEventListener('blur', function () { this.value = _fVND(_pVND(this.value)); });
     swRefundEl?.addEventListener('focus', function () { const v = _pVND(this.value); this.value = v > 0 ? String(v) : ''; });
     swRefundEl?.addEventListener('blur', function () { this.value = _fVND(_pVND(this.value)); });
+
+    const _updateExtraHint = () => {
+      const newGia = _pVND(swPriceEl?.value);
+      const hoan = _pVND(swRefundEl?.value);
+      if (newGia > 0 && extraHintEl && extraAmountEl) {
+        const extra = Math.max(0, newGia - hoan);
+        extraAmountEl.textContent = window.GymApp.formatCurrency(extra);
+        extraHintEl.style.display = 'block';
+      }
+    };
+
     overlay.querySelector('#switch-pkg-new')?.addEventListener('change', function () {
       const gia = parseFloat(this.options[this.selectedIndex]?.dataset?.gia) || 0;
       if (gia > 0 && swPriceEl) swPriceEl.value = _fVND(gia);
+      _updateExtraHint();
     });
+    swPriceEl?.addEventListener('blur', _updateExtraHint);
+    swRefundEl?.addEventListener('blur', _updateExtraHint);
     overlay.querySelector('#switch-pkg-confirm').addEventListener('click', async () => {
       const goi_tap_id_moi = overlay.querySelector('#switch-pkg-new').value;
       const tu_ngay = overlay.querySelector('#switch-pkg-from').value;
@@ -2285,12 +2443,15 @@ window.GymApp.pages['members-list'] = {
     
     const overlay = document.createElement('div');
     overlay.id = 'gym-sub-modal';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);padding:16px;';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);backdrop-filter:blur(6px);padding:16px;';
     overlay.innerHTML = `
-      <div class="modal-card" style="border-radius:16px;width:100%;max-width:540px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:0 30px 80px rgba(0,0,0,0.4);">
-        <div class="bg-surface-container-lowest border-b border-outline-variant px-loose py-standard flex items-center justify-between flex-shrink-0">
-          <div><h3 class="font-bold text-on-surface" style="font-size:16px;">Đăng ký gói PT</h3><p class="text-on-surface-variant text-body-sm">Hội viên: <strong>${m.ho_ten}</strong></p></div>
-          <button id="close-sub-modal" style="background:transparent;border:none;cursor:pointer;"><span class="material-symbols-outlined text-on-surface-variant text-xl">close</span></button>
+      <div class="modal-card" style="border-radius:18px;width:100%;max-width:540px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <div style="background:linear-gradient(135deg,#2d6a4f,#40916c);padding:16px 20px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <h3 style="font-size:15px;font-weight:800;color:#fff;margin:0 0 2px;">Đăng ký gói PT</h3>
+            <p style="font-size:11px;color:rgba(255,255,255,0.75);margin:0;">Hội viên: <strong style="color:#d8f3dc;">${m.ho_ten}</strong></p>
+          </div>
+          <button id="close-sub-modal" style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.25);cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.18)'"><span class="material-symbols-outlined" style="color:#fff;font-size:16px;">close</span></button>
         </div>
         <div class="p-loose flex-grow overflow-y-auto bg-surface-container-lowest flex flex-col gap-standard">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-standard">
@@ -2509,7 +2670,7 @@ window.GymApp.pages['members-list'] = {
     try { const res = await window.GymApp.api.get('/packages/pt'); goiPtList = Array.isArray(res.data) ? res.data : []; } catch (_) { }
     const overlay = document.createElement('div');
     overlay.id = 'gym-sub-modal';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);padding:16px;';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);backdrop-filter:blur(6px);padding:16px;';
     
     const formatInputDate = (dStr) => {
       if (!dStr) return '';
@@ -2517,10 +2678,13 @@ window.GymApp.pages['members-list'] = {
     };
 
     overlay.innerHTML = `
-      <div class="modal-card" style="border-radius:16px;width:100%;max-width:540px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:0 30px 80px rgba(0,0,0,0.4);">
-        <div class="bg-surface-container-lowest border-b border-outline-variant px-loose py-standard flex items-center justify-between flex-shrink-0">
-          <div><h3 class="font-bold text-on-surface" style="font-size:16px;">Chỉnh sửa gói PT</h3><p class="text-on-surface-variant text-body-sm">Hội viên: <strong>${m.ho_ten}</strong></p></div>
-          <button id="close-sub-modal" style="background:transparent;border:none;cursor:pointer;"><span class="material-symbols-outlined text-on-surface-variant text-xl">close</span></button>
+      <div class="modal-card" style="border-radius:18px;width:100%;max-width:540px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <div style="background:linear-gradient(135deg,#2d6a4f,#40916c);padding:16px 20px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <h3 style="font-size:15px;font-weight:800;color:#fff;margin:0 0 2px;">Chỉnh sửa gói PT</h3>
+            <p style="font-size:11px;color:rgba(255,255,255,0.75);margin:0;">Hội viên: <strong style="color:#d8f3dc;">${m.ho_ten}</strong></p>
+          </div>
+          <button id="close-sub-modal" style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.25);cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.18)'"><span class="material-symbols-outlined" style="color:#fff;font-size:16px;">close</span></button>
         </div>
         <div class="p-loose flex-grow overflow-y-auto bg-surface-container-lowest flex flex-col gap-standard">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-standard">
@@ -2704,19 +2868,35 @@ window.GymApp.pages['members-list'] = {
     try { const res = await window.GymApp.api.get('/packages/pt'); goiPtList = Array.isArray(res.data) ? res.data : []; } catch (_) { }
     const overlay = document.createElement('div');
     overlay.id = 'gym-sub-modal';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);padding:16px;';
-    
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);backdrop-filter:blur(6px);padding:16px;';
+
     overlay.innerHTML = `
-      <div class="modal-card" style="border-radius:16px;width:100%;max-width:540px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:0 30px 80px rgba(0,0,0,0.4);">
-        <div class="bg-surface-container-lowest border-b border-outline-variant px-loose py-standard flex items-center justify-between flex-shrink-0">
-          <div><h3 class="font-bold text-on-surface" style="font-size:16px;">Đổi gói PT mới</h3><p class="text-on-surface-variant text-body-sm">Hội viên: <strong>${m.ho_ten}</strong></p></div>
-          <button id="close-sub-modal" style="background:transparent;border:none;cursor:pointer;"><span class="material-symbols-outlined text-on-surface-variant text-xl">close</span></button>
+      <div class="modal-card" style="border-radius:18px;width:100%;max-width:540px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <div style="background:linear-gradient(135deg,#2d6a4f,#40916c);padding:16px 20px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <h3 style="font-size:15px;font-weight:800;color:#fff;margin:0 0 2px;">Đổi gói PT mới</h3>
+            <p style="font-size:11px;color:rgba(255,255,255,0.75);margin:0;">Hội viên: <strong style="color:#d8f3dc;">${m.ho_ten}</strong></p>
+          </div>
+          <button id="close-sub-modal" style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.25);cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.18)'"><span class="material-symbols-outlined" style="color:#fff;font-size:16px;">close</span></button>
         </div>
         <div class="p-loose flex-grow overflow-y-auto bg-surface-container-lowest flex flex-col gap-standard">
           <div style="padding:10px 12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;">
             <p style="margin:0;font-size:12px;color:#1e4ed8;line-height:1.4;">
               Gói đang dùng: <b>${c.ten_goi_pt || 'Gói PT'}</b> (PT: ${c.ten_pt || '—'}) · Còn <b>${(c.buoi_dang_ky || 0) - (c.buoi_da_tap || 0)}</b> buổi tập.
             </p>
+            ${(() => {
+              const buoiCon = (c.buoi_dang_ky || 0) - (c.buoi_da_tap || 0);
+              const tongBuoi = c.buoi_dang_ky || 0;
+              const giaThucTe = c.gia_thuc_te || 0;
+              const credit = tongBuoi > 0 ? Math.round(giaThucTe * buoiCon / tongBuoi) : 0;
+              const giaBuoi = tongBuoi > 0 ? Math.round(giaThucTe / tongBuoi) : 0;
+              const fmt = n => new Intl.NumberFormat('vi-VN').format(n);
+              return `<div style="margin-top:8px;padding-top:8px;border-top:1px solid #bfdbfe;display:flex;flex-wrap:wrap;gap:8px;">
+                <span style="font-size:11px;color:#1e4ed8;">💰 Giá gói cũ: <b>${fmt(giaThucTe)} ₫</b></span>
+                <span style="font-size:11px;color:#1e4ed8;">📅 Giá/buổi: <b>${fmt(giaBuoi)} ₫</b></span>
+                <span style="font-size:11px;color:#166534;background:#dcfce7;padding:1px 6px;border-radius:4px;">💵 Tiền hoàn gợi ý: <b>${fmt(credit)} ₫</b></span>
+              </div>`;
+            })()}
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-standard">
             <div class="col-span-1 sm:col-span-2"><label class="block text-body-sm font-bold text-on-surface mb-xs">Gói PT mới ${REQ}</label><select id="ptswitch-goi" ${inputCls}><option value="">— Chọn gói PT mới —</option>${goiPtList.map(g => `<option value="${g.id}" data-price="${g.gia || 0}" data-buoi="${g.so_buoi || ''}" data-thang="${g.so_thang || 0}">${g.ten_goi} — ${window.GymApp.formatCurrency(g.gia || 0)}${g.so_buoi ? ' / ' + g.so_buoi + ' buổi' : ''}</option>`).join('')}</select></div>
@@ -2741,6 +2921,8 @@ window.GymApp.pages['members-list'] = {
             <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Giá thực tế mới (VNĐ) ${REQ}</label><input id="ptswitch-price" type="text" inputmode="numeric" ${inputCls} /></div>
             <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Từ ngày ${REQ}</label><input id="ptswitch-from" type="date" value="${new Date().toISOString().split('T')[0]}" ${inputCls} /></div>
             <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Đến ngày</label><input id="ptswitch-to" type="date" ${inputCls} /></div>
+            <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Hoàn tiền gói cũ (VNĐ)</label><input id="ptswitch-refund" type="text" inputmode="numeric" placeholder="Tự động tính hoặc nhập tay" ${inputCls} /></div>
+            <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Tiền đóng thêm (gợi ý)</label><input id="ptswitch-additional" type="text" readonly style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;background:#f0fdf4;color:#166534;font-weight:700;border:1px solid #bbf7d0;" /></div>
             <div class="col-span-1 sm:col-span-2"><label class="block text-body-sm font-bold text-on-surface mb-xs">Ghi chú đổi gói</label><textarea id="ptswitch-note" rows="2" placeholder="Nhập lý do đổi gói..." class="bg-surface-container-lowest text-on-surface border border-outline-variant" style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;resize:vertical;font-family:inherit;">Đổi sang gói PT mới</textarea></div>
           </div>
         </div>
@@ -2827,9 +3009,33 @@ window.GymApp.pages['members-list'] = {
     }
     const _pVND = s => parseInt((s || '').replace(/\./g, '').replace(/,/g, '')) || 0;
     const _fVND = n => n > 0 ? new Intl.NumberFormat('vi-VN').format(n) : '';
+
+    // Tính tiền hoàn gợi ý từ gói PT cũ
+    const buoiCon = (c.buoi_dang_ky || 0) - (c.buoi_da_tap || 0);
+    const tongBuoi = c.buoi_dang_ky || 0;
+    const giaThucTeCu = c.gia_thuc_te || 0;
+    const creditGoiCu = tongBuoi > 0 ? Math.round(giaThucTeCu * buoiCon / tongBuoi) : 0;
+
+    // Điền sẵn tiền hoàn gợi ý
+    const refundEl = document.getElementById('ptswitch-refund');
+    if (refundEl && creditGoiCu > 0) refundEl.value = _fVND(creditGoiCu);
+
+    const updateAdditionalHint = () => {
+      const newPrice = _pVND(document.getElementById('ptswitch-price').value);
+      const refund = _pVND(document.getElementById('ptswitch-refund').value);
+      const additional = Math.max(0, newPrice - refund);
+      const addEl = document.getElementById('ptswitch-additional');
+      if (addEl) addEl.value = newPrice > 0 ? _fVND(additional) + ' ₫' : '';
+    };
+
     const ptswitchPriceEl = document.getElementById('ptswitch-price');
     ptswitchPriceEl?.addEventListener('focus', function () { const v = _pVND(this.value); this.value = v > 0 ? String(v) : ''; });
-    ptswitchPriceEl?.addEventListener('blur', function () { this.value = _fVND(_pVND(this.value)); });
+    ptswitchPriceEl?.addEventListener('blur', function () { this.value = _fVND(_pVND(this.value)); updateAdditionalHint(); });
+    ptswitchPriceEl?.addEventListener('input', updateAdditionalHint);
+
+    refundEl?.addEventListener('focus', function () { const v = _pVND(this.value); this.value = v > 0 ? String(v) : ''; });
+    refundEl?.addEventListener('blur', function () { this.value = _fVND(_pVND(this.value)); updateAdditionalHint(); });
+    refundEl?.addEventListener('input', updateAdditionalHint);
 
     const updatePtSwitchDuration = () => {
       const goiSel = document.getElementById('ptswitch-goi');
@@ -2899,12 +3105,15 @@ window.GymApp.pages['members-list'] = {
     for (let h = 0; h < 24; h++) { for (let mn = 0; mn < 60; mn += 15) { timeSlots.push(`${String(h).padStart(2, '0')}:${String(mn).padStart(2, '0')}`); } }
     const overlay = document.createElement('div');
     overlay.id = 'gym-sub-modal';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);padding:16px;';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);backdrop-filter:blur(6px);padding:16px;';
     overlay.innerHTML = `
-      <div class="modal-card" style="border-radius:16px;width:100%;max-width:560px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:0 30px 80px rgba(0,0,0,0.4);">
-        <div class="bg-surface-container-lowest border-b border-outline-variant px-loose py-standard flex items-center justify-between flex-shrink-0">
-          <div><h3 class="font-bold text-on-surface" style="font-size:16px;">Đăng ký lịch tập PT</h3><p class="text-on-surface-variant text-body-sm">Hội viên: <strong>${m.ho_ten || m.name}</strong></p></div>
-          <button id="close-sub-modal" style="background:transparent;border:none;cursor:pointer;"><span class="material-symbols-outlined text-on-surface-variant text-xl">close</span></button>
+      <div class="modal-card" style="border-radius:18px;width:100%;max-width:560px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <div style="background:linear-gradient(135deg,#2d6a4f,#40916c);padding:16px 20px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <h3 style="font-size:15px;font-weight:800;color:#fff;margin:0 0 2px;">Đăng ký lịch tập PT</h3>
+            <p style="font-size:11px;color:rgba(255,255,255,0.75);margin:0;">Hội viên: <strong style="color:#d8f3dc;">${m.ho_ten || m.name}</strong></p>
+          </div>
+          <button id="close-sub-modal" style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.25);cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.18)'"><span class="material-symbols-outlined" style="color:#fff;font-size:16px;">close</span></button>
         </div>
         <div class="p-loose flex-grow overflow-y-auto bg-surface-container-lowest flex flex-col gap-standard">
           <div>
@@ -3125,7 +3334,7 @@ window.GymApp.pages['members-list'] = {
     overlay.id = 'gym-pt-sort-modal';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9100;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);padding:20px;';
     overlay.innerHTML = `
-      <div class="bg-surface-container-lowest rounded-24px shadow-xl" style="width:360px;max-width:100%;max-height:88vh;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,0.4);border-radius:24px;">
+      <div class="bg-surface-container-lowest rounded-24px shadow-xl" style="width:360px;max-width:100%;max-height:88vh;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.2);border-radius:24px;">
         <div class="flex items-center justify-between px-loose py-standard border-b border-outline-variant flex-shrink-0" style="background:linear-gradient(135deg,#065f46,#10b981);">
           <div class="flex items-center gap-compact">
             <span class="material-symbols-outlined text-white text-lg">sort</span>
@@ -3485,9 +3694,9 @@ window.GymApp.pages['members-list'] = {
     document.getElementById('gym-del-pt-modal')?.remove();
     const overlay = document.createElement('div');
     overlay.id = 'gym-del-pt-modal';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:9001;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);backdrop-filter:blur(3px);padding:16px;';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9001;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);backdrop-filter:blur(6px);padding:16px;';
     overlay.innerHTML = `
-      <div style="border-radius:24px;width:100%;max-width:440px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,0.4);" class="bg-surface-container-lowest">
+      <div style="border-radius:24px;width:100%;max-width:440px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.2);" class="bg-surface-container-lowest">
         <div class="px-loose py-standard border-b border-outline-variant flex items-center gap-compact" style="background:linear-gradient(135deg,#991b1b,#dc2626);">
           <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
             <span class="material-symbols-outlined text-white text-xl">person_remove</span>
@@ -3554,7 +3763,7 @@ window.GymApp.pages['members-list'] = {
     document.getElementById('gym-edit-member-modal')?.remove();
     const overlay = document.createElement('div');
     overlay.id = 'gym-edit-member-modal';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);backdrop-filter:blur(3px);padding:16px;';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);backdrop-filter:blur(6px);padding:16px;';
 
     const field = (icon, label, id, type, value, required = false, isFull = false) => `
       <div class="${isFull ? 'col-span-full' : ''}">
@@ -3570,7 +3779,7 @@ window.GymApp.pages['members-list'] = {
         <label class="text-on-surface-variant text-body-sm uppercase font-bold tracking-wider block mb-1 opacity-80">${label}</label>
         <div class="relative group">
           <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors text-[18px] z-10">${icon}</span>
-          <select id="em-${id}" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-10 py-2.5 rounded-xl focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none text-body-md font-medium transition-all cursor-pointer relative z-0" style="appearance:none !important;-webkit-appearance:none !important;-moz-appearance:none !important;">
+          <select id="em-${id}" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-10 py-2.5 rounded-xl focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none text-body-md font-medium transition-all cursor-pointer relative z-0" style="appearance:none !important;-webkit-appearance:none !important;-moz-appearance:none !important;background-image:none !important;">
             ${options.map(o => `<option value="${o.v}" ${o.v === selectedValue ? 'selected' : ''}>${o.l}</option>`).join('')}
           </select>
           <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none z-10">expand_more</span>
@@ -3578,7 +3787,7 @@ window.GymApp.pages['members-list'] = {
       </div>`;
 
     overlay.innerHTML = `
-      <div style="border-radius:24px;width:100%;max-width:560px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,0.4);background:var(--bg-surface-lowest);">
+      <div style="border-radius:24px;width:100%;max-width:560px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.2);background:var(--bg-surface-lowest);">
         <div style="padding:24px 24px 16px;flex-shrink:0;position:relative;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--outline-variant);border-top-left-radius:24px;border-top-right-radius:24px;">
           <div>
             <h3 style="font-size:20px;font-weight:800;color:var(--text-on-surface);margin:0 0 4px;">Chỉnh sửa hồ sơ</h3>
@@ -3706,9 +3915,9 @@ window.GymApp.pages['members-list'] = {
     document.getElementById('gym-del-member-modal')?.remove();
     const overlay = document.createElement('div');
     overlay.id = 'gym-del-member-modal';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:9001;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);backdrop-filter:blur(3px);padding:16px;';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9001;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);backdrop-filter:blur(6px);padding:16px;';
     overlay.innerHTML = `
-      <div style="border-radius:24px;width:100%;max-width:440px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,0.4);" class="bg-surface-container-lowest">
+      <div style="border-radius:24px;width:100%;max-width:440px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.2);" class="bg-surface-container-lowest">
         <div class="px-loose py-standard border-b border-outline-variant flex items-center gap-compact" style="background:linear-gradient(135deg,#991b1b,#dc2626);">
           <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
             <span class="material-symbols-outlined text-white text-xl" style="font-variation-settings:'FILL' 1">person_remove</span>

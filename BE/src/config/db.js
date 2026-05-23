@@ -272,6 +272,7 @@ if (!migratedV6 || !hasAuditCol) {
           ma_giao_dich    TEXT,
           ghi_chu_tt      TEXT,
           ngay_thanh_toan DATETIME,
+          so_tien_da_thu REAL DEFAULT 0,
           nguoi_tao_id    INTEGER REFERENCES tai_khoan(id),
           nguoi_cap_nhat_id INTEGER REFERENCES tai_khoan(id),
           ngay_tao        DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
