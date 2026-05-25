@@ -9,14 +9,14 @@ window.GymApp.pages['members-list'] = {
   _memberSortState: '',
   _memberPackageHistory: {},
 
-  _parseLocalDate: function(dateStr) {
+  _parseLocalDate: function (dateStr) {
     if (!dateStr) return null;
     const [y, m, d] = dateStr.split('T')[0].split('-').map(Number);
     return new Date(y, m - 1, d, 0, 0, 0, 0);
   },
 
-  _syncExpiredPackages: function(member) {
-    const today = new Date(); today.setHours(0,0,0,0);
+  _syncExpiredPackages: function (member) {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
     const self = this;
     if (Array.isArray(member.goi_tap_hien_tai)) {
       member.goi_tap_hien_tai.forEach(g => {
@@ -263,15 +263,15 @@ window.GymApp.pages['members-list'] = {
                 white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:140px;"
                 title="${m.ten_goi_tap || 'Chưa đăng ký'}">
                 ${m.ten_goi_tap ||
-                  '<span class="text-outline-variant font-medium italic">Chưa đăng ký</span>'}
+          '<span class="text-outline-variant font-medium italic">Chưa đăng ký</span>'}
               </span>
             </td>
 
             <!-- Cell 5: PT -->
             <td class="member-table-col-pt" style="padding:8px 14px; text-align:center;">
               ${m.co_pt > 0
-                ? '<span class="inline-flex items-center gap-1 px-2 py-1 bg-[#f0fdf4] dark:bg-[#0b2010] text-[#16a34a] dark:text-[#4cce5f] rounded-full text-xs font-bold"><span class="material-symbols-outlined" style="font-size:14px;">sports_gymnastics</span>Có PT</span>'
-                : '<span class="text-outline-variant font-medium">—</span>'}
+            ? '<span class="inline-flex items-center gap-1 px-2 py-1 bg-[#f0fdf4] dark:bg-[#0b2010] text-[#16a34a] dark:text-[#4cce5f] rounded-full text-xs font-bold"><span class="material-symbols-outlined" style="font-size:14px;">sports_gymnastics</span>Có PT</span>'
+            : '<span class="text-outline-variant font-medium">—</span>'}
             </td>
 
             <!-- Cell 6: Trạng thái -->
@@ -433,7 +433,7 @@ window.GymApp.pages['members-list'] = {
       const rating = pt.danh_gia || pt.rating || 0;
       const ratingDisplay = rating ? rating.toFixed(1) : '—';
       const isActive = pt.trang_thai === 'hoat_dong' || pt.trang_thai === 'active';
-      
+
       return `
         <div class="member-card group relative rounded-3xl overflow-hidden flex flex-col gap-standard
           shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-500">
@@ -944,7 +944,7 @@ window.GymApp.pages['members-list'] = {
             ${field('mail', 'Email', 'email', 'email', pt.email, false)}
             ${field('fitness_center', 'Chuyên môn', 'chuyen_mon', 'text', pt.chuyen_mon || pt.specialty, false)}
             ${field('work_history', 'Kinh nghiệm (năm)', 'kinh_nghiem', 'number', pt.kinh_nghiem || 0, false)}
-            ${selectField('toggle_on', 'Trạng thái', 'trang_thai', [{v:'hoat_dong', l:'Đang làm việc'}, {v:'tam_nghi', l:'Tạm nghỉ'}], pt.trang_thai === 'active' ? 'hoat_dong' : pt.trang_thai === 'inactive' ? 'tam_nghi' : pt.trang_thai, true)}
+            ${selectField('toggle_on', 'Trạng thái', 'trang_thai', [{ v: 'hoat_dong', l: 'Đang làm việc' }, { v: 'tam_nghi', l: 'Tạm nghỉ' }], pt.trang_thai === 'active' ? 'hoat_dong' : pt.trang_thai === 'inactive' ? 'tam_nghi' : pt.trang_thai, true)}
             ${textareaField('description', 'Ghi chú', 'ghi_chu', pt.ghi_chu, true)}
           </div>
         </div>
@@ -1098,7 +1098,7 @@ window.GymApp.pages['members-list'] = {
           
           <div class="grid grid-cols-2 gap-x-standard gap-y-4">
             ${field('person', 'Họ và tên', 'ho_ten', 'text', true, true)}
-            ${selectField('wc', 'Giới tính', 'gioi_tinh', [{v: 'nam', l: 'Nam'}, {v: 'nu', l: 'Nữ'}, {v: 'khac', l: 'Khác'}], false)}
+            ${selectField('wc', 'Giới tính', 'gioi_tinh', [{ v: 'nam', l: 'Nam' }, { v: 'nu', l: 'Nữ' }, { v: 'khac', l: 'Khác' }], false)}
             ${field('cake', 'Ngày sinh', 'ngay_sinh', 'date', false)}
             ${field('call', 'Số điện thoại', 'so_dien_thoai', 'tel', false)}
             ${field('mail', 'Email', 'email', 'email', false)}
@@ -1231,12 +1231,12 @@ window.GymApp.pages['members-list'] = {
     const isCheckedIn = m.da_check_in_hom_nay == 1;
     const activePkg = Array.isArray(m.goi_tap_hien_tai)
       ? (m.goi_tap_hien_tai.find(g => {
-          if (g.trang_thai !== 'dang_hoat_dong') return false;
-          if (!g.tu_ngay) return true;
-          const tuNgayVal = self._parseLocalDate(g.tu_ngay);
-          const today = new Date(); today.setHours(0,0,0,0);
-          return tuNgayVal && tuNgayVal <= today;
-        }) || null)
+        if (g.trang_thai !== 'dang_hoat_dong') return false;
+        if (!g.tu_ngay) return true;
+        const tuNgayVal = self._parseLocalDate(g.tu_ngay);
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        return tuNgayVal && tuNgayVal <= today;
+      }) || null)
       : null;
     const pkgName = activePkg ? (activePkg.ten_goi || activePkg.ten_goi_tap) : (m.ten_goi_tap || 'Chưa đăng ký');
     const hetHanVal = activePkg ? activePkg.den_ngay : m.ngay_het_han;
@@ -1380,12 +1380,12 @@ window.GymApp.pages['members-list'] = {
       const self = this;
       const activePkg = Array.isArray(m.goi_tap_hien_tai)
         ? (m.goi_tap_hien_tai.find(g => {
-            if (g.trang_thai !== 'dang_hoat_dong') return false;
-            if (!g.tu_ngay) return true;
-            const tuNgayVal = self._parseLocalDate(g.tu_ngay);
-            const today = new Date(); today.setHours(0,0,0,0);
-            return tuNgayVal && tuNgayVal <= today;
-          }) || null)
+          if (g.trang_thai !== 'dang_hoat_dong') return false;
+          if (!g.tu_ngay) return true;
+          const tuNgayVal = self._parseLocalDate(g.tu_ngay);
+          const today = new Date(); today.setHours(0, 0, 0, 0);
+          return tuNgayVal && tuNgayVal <= today;
+        }) || null)
         : null;
       const pkgName = activePkg ? (activePkg.ten_goi || activePkg.ten_goi_tap) : (m.ten_goi_tap || 'Chưa đăng ký');
       const hetHanVal = activePkg ? activePkg.den_ngay : m.ngay_het_han;
@@ -1471,23 +1471,23 @@ window.GymApp.pages['members-list'] = {
       const today = new Date(); today.setHours(0, 0, 0, 0);
       const activePkg = Array.isArray(m.goi_tap_hien_tai)
         ? (m.goi_tap_hien_tai.find(g => {
-            if (g.trang_thai !== 'dang_hoat_dong') return false;
-            if (!g.tu_ngay) return true;
-            const tuNgayVal = self._parseLocalDate(g.tu_ngay);
-            return tuNgayVal && tuNgayVal <= today;
-          }) || null)
+          if (g.trang_thai !== 'dang_hoat_dong') return false;
+          if (!g.tu_ngay) return true;
+          const tuNgayVal = self._parseLocalDate(g.tu_ngay);
+          return tuNgayVal && tuNgayVal <= today;
+        }) || null)
         : null;
 
       // Tìm các gói đang chờ kích hoạt (nối tiếp)
       const pendingPkgs = Array.isArray(m.goi_tap_hien_tai)
         ? m.goi_tap_hien_tai.filter(g => {
-            if (g.trang_thai === 'cho_kich_hoat') return true;
-            if (g.trang_thai === 'dang_hoat_dong' && g.tu_ngay) {
-              const tuNgayVal = self._parseLocalDate(g.tu_ngay);
-              return tuNgayVal && tuNgayVal > today;
-            }
-            return false;
-          })
+          if (g.trang_thai === 'cho_kich_hoat') return true;
+          if (g.trang_thai === 'dang_hoat_dong' && g.tu_ngay) {
+            const tuNgayVal = self._parseLocalDate(g.tu_ngay);
+            return tuNgayVal && tuNgayVal > today;
+          }
+          return false;
+        })
         : [];
 
       const otherPackages = pkgHistory.filter(p => {
@@ -1515,9 +1515,9 @@ window.GymApp.pages['members-list'] = {
             <span class="material-symbols-outlined" style="font-size:13px;">${icon}</span>${label}
           </button>`;
         return `<div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;">
-          ${btn('btn-edit-pkg',   'edit',       'Sửa',     base)}
+          ${btn('btn-edit-pkg', 'edit', 'Sửa', base)}
           ${btn('btn-switch-pkg', 'swap_horiz', 'Đổi gói', blue)}
-          ${btn('btn-cancel-pkg', 'cancel',     'Hủy gói', danger)}
+          ${btn('btn-cancel-pkg', 'cancel', 'Hủy gói', danger)}
         </div>`;
       };
 
@@ -1525,27 +1525,27 @@ window.GymApp.pages['members-list'] = {
         const tuNgayVal = self._parseLocalDate(p.tu_ngay || p.from);
         const isUpcoming = tuNgayVal && tuNgayVal > today && p.trang_thai !== 'huy' && p.trang_thai !== 'het_han';
         const isCanceled = p.trang_thai === 'huy';
-        
+
         let statusForBadge = p.trang_thai || (isUpcoming ? 'cho_kich_hoat' : 'het_han');
         let accentColor = isCanceled ? '#dc2626' : (isUpcoming ? '#d97706' : '#94a3b8');
         let borderColor = isCanceled ? 'var(--outline-variant, #fecaca)' : (isUpcoming ? 'var(--outline-variant, #fde68a)' : 'var(--outline-variant, #e2e8f0)');
-        let icon        = isCanceled ? 'cancel'  : (isUpcoming ? 'schedule' : 'history');
+        let icon = isCanceled ? 'cancel' : (isUpcoming ? 'schedule' : 'history');
 
         if (isCanceled) {
-            const reason = (p.ly_do_huy || '').toLowerCase();
-            if (reason.includes('đổi gói') || reason.includes('đổi sang')) {
-                statusForBadge = 'Đổi gói';
-                accentColor = '#1d4ed8';
-                borderColor = '#bfdbfe';
-                icon = 'swap_horiz';
-            } else if (reason.includes('sửa gói') || reason.includes('chỉnh sửa')) {
-                statusForBadge = 'Sửa gói';
-                accentColor = '#c026d3';
-                borderColor = '#f5d0fe';
-                icon = 'edit';
-            } else {
-                statusForBadge = 'Hủy gói';
-            }
+          const reason = (p.ly_do_huy || '').toLowerCase();
+          if (reason.includes('đổi gói') || reason.includes('đổi sang')) {
+            statusForBadge = 'Đổi gói';
+            accentColor = '#1d4ed8';
+            borderColor = '#bfdbfe';
+            icon = 'swap_horiz';
+          } else if (reason.includes('sửa gói') || reason.includes('chỉnh sửa')) {
+            statusForBadge = 'Sửa gói';
+            accentColor = '#c026d3';
+            borderColor = '#f5d0fe';
+            icon = 'edit';
+          } else {
+            statusForBadge = 'Hủy gói';
+          }
         }
 
         return `
@@ -1599,10 +1599,10 @@ window.GymApp.pages['members-list'] = {
           </div>`}
 
         ${pendingPkgs.length > 0 ? pendingPkgs.map(g => {
-          const isDuyet = g.trang_thai === 'cho_kich_hoat';
-          const labelTop = isDuyet ? 'Đã duyệt — Chờ kích hoạt nối tiếp' : 'Gói nối tiếp — Chờ kích hoạt';
-          const icon = isDuyet ? 'event_available' : 'schedule';
-          return `
+        const isDuyet = g.trang_thai === 'cho_kich_hoat';
+        const labelTop = isDuyet ? 'Đã duyệt — Chờ kích hoạt nối tiếp' : 'Gói nối tiếp — Chờ kích hoạt';
+        const icon = isDuyet ? 'event_available' : 'schedule';
+        return `
           <div style="border:2px dashed #d97706;border-radius:12px;padding:12px 16px;margin-bottom:16px;background:#fffbeb;display:flex;align-items:flex-start;gap:10px;">
             <span class="material-symbols-outlined" style="font-size:20px;color:#d97706;margin-top:2px;flex-shrink:0;">${icon}</span>
             <div>
@@ -1613,7 +1613,7 @@ window.GymApp.pages['members-list'] = {
               </div>
             </div>
           </div>`;
-        }).join('') : ''}
+      }).join('') : ''}
 
         <div>
           ${sectionLabel('Lịch sử & Gói khác')}
@@ -1843,26 +1843,26 @@ window.GymApp.pages['members-list'] = {
       : [...new Set(window.GymApp.data.members.map(x => x.ten_goi_tap || x.package))].map(n => ({ name: n, price: 0 }));
     const REQ = `<span style="color:#ba1a1a;margin-left:2px;font-weight:700;">*</span>`;
     const inputCls = `class="bg-surface-container-lowest text-on-surface border border-outline-variant" style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;"`;
-    
+
     // Tìm gói tập hiện tại đang hoạt động
     const activePkg = Array.isArray(m.goi_tap_hien_tai)
       ? (m.goi_tap_hien_tai.find(g => {
-          if (g.trang_thai !== 'dang_hoat_dong') return false;
-          if (!g.tu_ngay) return true;
-          const tuNgayVal = self._parseLocalDate(g.tu_ngay);
-          const today = new Date(); today.setHours(0,0,0,0);
-          return tuNgayVal && tuNgayVal <= today;
-        }) || null)
+        if (g.trang_thai !== 'dang_hoat_dong') return false;
+        if (!g.tu_ngay) return true;
+        const tuNgayVal = self._parseLocalDate(g.tu_ngay);
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        return tuNgayVal && tuNgayVal <= today;
+      }) || null)
       : null;
-    
+
     const getNextDayStr = (dateStr) => {
       const d = new Date(dateStr);
       d.setDate(d.getDate() + 1);
       return d.toISOString().split('T')[0];
     };
-    
+
     const defaultFromDate = activePkg ? getNextDayStr(activePkg.den_ngay) : new Date().toISOString().split('T')[0];
-    
+
     const overlay = document.createElement('div');
     overlay.id = 'gym-sub-modal';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);backdrop-filter:blur(6px);padding:16px;';
@@ -1911,7 +1911,7 @@ window.GymApp.pages['members-list'] = {
         </div>
       </div>`;
     document.body.appendChild(overlay);
-    
+
     const stackCheckbox = document.getElementById('pkg-stack-mode');
     if (stackCheckbox && activePkg) {
       stackCheckbox.addEventListener('change', function () {
@@ -1924,7 +1924,7 @@ window.GymApp.pages['members-list'] = {
         fromEl.dispatchEvent(new Event('change'));
       });
     }
-    
+
     const close = () => overlay.remove();
     document.getElementById('close-sub-modal').addEventListener('click', close);
     document.getElementById('pkg-cancel-btn').addEventListener('click', close);
@@ -2166,7 +2166,7 @@ window.GymApp.pages['members-list'] = {
     document.getElementById('gym-sub-modal')?.remove();
     const d0 = s => s ? s.substring(0, 10) : '';
     const iCls = `class="w-full bg-surface-container/30 border border-outline-variant text-on-surface rounded-xl focus:border-brand-primary focus:bg-surface-container-lowest outline-none transition-all placeholder-outline-variant/60 font-body-md text-body-md shadow-inner focus:shadow-none"`;
-    const PM = {tien_mat:'Tiền mặt',chuyen_khoan:'Chuyển khoản',the:'Thẻ',momo:'MoMo',zalopay:'ZaloPay',khac:'Khác'};
+    const PM = { tien_mat: 'Tiền mặt', chuyen_khoan: 'Chuyển khoản', the: 'Thẻ', momo: 'MoMo', zalopay: 'ZaloPay', khac: 'Khác' };
     const overlay = document.createElement('div');
     overlay.id = 'gym-sub-modal';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);backdrop-filter:blur(6px);padding:16px;';
@@ -2214,7 +2214,7 @@ window.GymApp.pages['members-list'] = {
               <div class="relative w-full">
                 <span class="material-symbols-outlined absolute left-standard top-1/2 -translate-y-1/2 text-outline text-sm">credit_card</span>
                 <select id="edit-pkg-payment" ${iCls} style="padding:10px 32px 10px 36px; box-sizing:border-box; width:100%; appearance:none; background-image:none !important;">
-                  ${Object.entries(PM).map(([v,l]) => `<option value="${v}" ${pkg.phuong_thuc_tt === v ? 'selected' : ''}>${l}</option>`).join('')}
+                  ${Object.entries(PM).map(([v, l]) => `<option value="${v}" ${pkg.phuong_thuc_tt === v ? 'selected' : ''}>${l}</option>`).join('')}
                 </select>
                 <span class="material-symbols-outlined absolute right-standard top-1/2 -translate-y-1/2 text-outline pointer-events-none text-sm">keyboard_arrow_down</span>
               </div>
@@ -2270,23 +2270,23 @@ window.GymApp.pages['members-list'] = {
     try {
       const res = await window.GymApp.api.get('/packages');
       goiTapList = (res.data || []).filter(g => !g.is_deleted && g.id !== pkg.goi_tap_id);
-    } catch (_) {}
+    } catch (_) { }
 
     // Tính số ngày còn lại và tiền hoàn gợi ý
     const _calcRemainingCredit = () => {
-      const today = new Date(); today.setHours(0,0,0,0);
+      const today = new Date(); today.setHours(0, 0, 0, 0);
       const tuNgay = pkg.tu_ngay ? new Date(pkg.tu_ngay) : null;
       const denNgay = pkg.den_ngay ? new Date(pkg.den_ngay) : null;
       if (!denNgay) return { remainingDays: 0, credit: 0, totalDays: 30 };
-      denNgay.setHours(0,0,0,0);
+      denNgay.setHours(0, 0, 0, 0);
       const remainingDays = Math.max(0, Math.round((denNgay - today) / 86400000));
-      
+
       let totalDays = 30; // fallback mặc định
       if (tuNgay) {
-        tuNgay.setHours(0,0,0,0);
+        tuNgay.setHours(0, 0, 0, 0);
         totalDays = Math.max(1, Math.round((denNgay - tuNgay) / 86400000));
       }
-      
+
       const giaThucTe = pkg.gia_thuc_te || pkg.gia || 0;
       const credit = Math.round((giaThucTe * remainingDays) / totalDays);
       return { remainingDays, credit, totalDays };
@@ -2294,7 +2294,7 @@ window.GymApp.pages['members-list'] = {
     const { remainingDays, credit, totalDays } = _calcRemainingCredit();
 
     const iCls = `class="bg-surface-container-lowest text-on-surface border border-outline-variant" style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;"`;
-    const PM = {tien_mat:'Tiền mặt',chuyen_khoan:'Chuyển khoản',the:'Thẻ',momo:'MoMo',zalopay:'ZaloPay',khac:'Khác'};
+    const PM = { tien_mat: 'Tiền mặt', chuyen_khoan: 'Chuyển khoản', the: 'Thẻ', momo: 'MoMo', zalopay: 'ZaloPay', khac: 'Khác' };
     const overlay = document.createElement('div');
     overlay.id = 'gym-sub-modal';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);backdrop-filter:blur(6px);padding:16px;';
@@ -2327,7 +2327,7 @@ window.GymApp.pages['members-list'] = {
           </div>
           <div>
             <label class="block text-body-sm font-bold text-on-surface mb-xs">Ngày bắt đầu <span style="color:#ba1a1a;">*</span></label>
-            <input id="switch-pkg-from" type="date" value="${new Date().toISOString().substring(0,10)}" ${iCls} />
+            <input id="switch-pkg-from" type="date" value="${new Date().toISOString().substring(0, 10)}" ${iCls} />
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-standard">
             <div>
@@ -2337,7 +2337,7 @@ window.GymApp.pages['members-list'] = {
             <div>
               <label class="block text-body-sm font-bold text-on-surface mb-xs">Phương thức TT</label>
               <select id="switch-pkg-payment" ${iCls}>
-                ${Object.entries(PM).map(([v,l]) => `<option value="${v}">${l}</option>`).join('')}
+                ${Object.entries(PM).map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}
               </select>
             </div>
             <div>
@@ -2381,10 +2381,10 @@ window.GymApp.pages['members-list'] = {
       const newGia = _pVND(swPriceEl?.value);
       const hoan = _pVND(swRefundEl?.value);
       const diff = newGia - hoan;
-      
+
       const diffLabelEl = overlay.querySelector('#switch-diff-label');
       const diffInputEl = overlay.querySelector('#switch-pkg-diff');
-      
+
       if (diffLabelEl && diffInputEl) {
         if (!swPriceEl?.value) {
           diffLabelEl.textContent = 'Tiền thanh toán thêm (VNĐ)';
@@ -2464,20 +2464,20 @@ window.GymApp.pages['members-list'] = {
     const pts = (window.GymApp.data.pts || []);
     let goiPtList = [];
     try { const res = await window.GymApp.api.get('/packages/pt'); goiPtList = Array.isArray(res.data) ? res.data : []; } catch (_) { }
-    
+
     // Tìm hợp đồng PT đang hoạt động có den_ngay
     const activePtReg = Array.isArray(m.pt_hien_tai)
       ? (m.pt_hien_tai.find(p => p.trang_thai === 'dang_hoat_dong' && p.den_ngay) || null)
       : null;
-    
+
     const getNextDayStr = (dateStr) => {
       const d = new Date(dateStr);
       d.setDate(d.getDate() + 1);
       return d.toISOString().split('T')[0];
     };
-    
+
     const defaultFromDate = activePtReg ? getNextDayStr(activePtReg.den_ngay) : new Date().toISOString().split('T')[0];
-    
+
     const overlay = document.createElement('div');
     overlay.id = 'gym-sub-modal';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);backdrop-filter:blur(6px);padding:16px;';
@@ -2567,7 +2567,7 @@ window.GymApp.pages['members-list'] = {
             const ptId = card.dataset.ptId;
             const ptName = card.dataset.ptName;
             const avatarUrl = card.dataset.avatarUrl || '';
-            
+
             ptregHiddenInputEl.value = ptId;
             ptregSelectionAreaEl.classList.add('hidden');
             ptregSelectedDisplayEl.classList.remove('hidden');
@@ -2600,7 +2600,7 @@ window.GymApp.pages['members-list'] = {
       });
       ptregHiddenInputEl.dispatchEvent(new Event('change'));
     });
-    
+
     const stackCheckbox = document.getElementById('ptreg-stack-mode');
     if (stackCheckbox && activePtReg) {
       stackCheckbox.addEventListener('change', function () {
@@ -2639,7 +2639,7 @@ window.GymApp.pages['members-list'] = {
         const to = new Date(fromVal);
         to.setMonth(to.getMonth() + soThang);
         document.getElementById('ptreg-to').value = to.toISOString().split('T')[0];
-        
+
         // Tự động tính số buổi mặc định theo số ngày trong tháng/chu kỳ
         const diffDays = Math.ceil((to - from) / (1000 * 60 * 60 * 24));
         document.getElementById('ptreg-sessions').value = diffDays;
@@ -2708,7 +2708,7 @@ window.GymApp.pages['members-list'] = {
     const overlay = document.createElement('div');
     overlay.id = 'gym-sub-modal';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);backdrop-filter:blur(6px);padding:16px;';
-    
+
     const formatInputDate = (dStr) => {
       if (!dStr) return '';
       return dStr.split('T')[0];
@@ -2857,7 +2857,7 @@ window.GymApp.pages['members-list'] = {
         const to = new Date(fromVal);
         to.setMonth(to.getMonth() + soThang);
         document.getElementById('ptedit-to').value = to.toISOString().split('T')[0];
-        
+
         const diffDays = Math.ceil((to - from) / (1000 * 60 * 60 * 24));
         document.getElementById('ptedit-sessions').value = diffDays;
       } else {
@@ -2922,18 +2922,18 @@ window.GymApp.pages['members-list'] = {
               Gói đang dùng: <b>${c.ten_goi_pt || 'Gói PT'}</b> (PT: ${c.ten_pt || '—'}) · Còn <b>${(c.buoi_dang_ky || 0) - (c.buoi_da_tap || 0)}</b> buổi tập.
             </p>
             ${(() => {
-              const buoiCon = (c.buoi_dang_ky || 0) - (c.buoi_da_tap || 0);
-              const tongBuoi = c.buoi_dang_ky || 0;
-              const giaThucTe = c.gia_thuc_te || 0;
-              const credit = tongBuoi > 0 ? Math.round(giaThucTe * buoiCon / tongBuoi) : 0;
-              const giaBuoi = tongBuoi > 0 ? Math.round(giaThucTe / tongBuoi) : 0;
-              const fmt = n => new Intl.NumberFormat('vi-VN').format(n);
-              return `<div style="margin-top:8px;padding-top:8px;border-top:1px solid #bfdbfe;display:flex;flex-wrap:wrap;gap:8px;">
+        const buoiCon = (c.buoi_dang_ky || 0) - (c.buoi_da_tap || 0);
+        const tongBuoi = c.buoi_dang_ky || 0;
+        const giaThucTe = c.gia_thuc_te || 0;
+        const credit = tongBuoi > 0 ? Math.round(giaThucTe * buoiCon / tongBuoi) : 0;
+        const giaBuoi = tongBuoi > 0 ? Math.round(giaThucTe / tongBuoi) : 0;
+        const fmt = n => new Intl.NumberFormat('vi-VN').format(n);
+        return `<div style="margin-top:8px;padding-top:8px;border-top:1px solid #bfdbfe;display:flex;flex-wrap:wrap;gap:8px;">
                 <span style="font-size:11px;color:#1e4ed8;">💰 Giá gói cũ: <b>${fmt(giaThucTe)} ₫</b></span>
                 <span style="font-size:11px;color:#1e4ed8;">📅 Giá/buổi: <b>${fmt(giaBuoi)} ₫</b></span>
                 <span style="font-size:11px;color:#166534;background:#dcfce7;padding:1px 6px;border-radius:4px;">💵 Tiền hoàn gợi ý: <b>${fmt(credit)} ₫</b></span>
               </div>`;
-            })()}
+      })()}
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-standard">
             <div class="col-span-1 sm:col-span-2"><label class="block text-body-sm font-bold text-on-surface mb-xs">Gói PT mới ${REQ}</label><select id="ptswitch-goi" ${inputCls}><option value="">— Chọn gói PT mới —</option>${goiPtList.map(g => `<option value="${g.id}" data-price="${g.gia || 0}" data-buoi="${g.so_buoi || ''}" data-thang="${g.so_thang || 0}">${g.ten_goi} — ${window.GymApp.formatCurrency(g.gia || 0)}${g.so_buoi ? ' / ' + g.so_buoi + ' buổi' : ''}</option>`).join('')}</select></div>
@@ -3094,7 +3094,7 @@ window.GymApp.pages['members-list'] = {
         const to = new Date(fromVal);
         to.setMonth(to.getMonth() + soThang);
         document.getElementById('ptswitch-to').value = to.toISOString().split('T')[0];
-        
+
         const diffDays = Math.ceil((to - from) / (1000 * 60 * 60 * 24));
         document.getElementById('ptswitch-sessions').value = diffDays;
       } else {
@@ -3663,12 +3663,12 @@ window.GymApp.pages['members-list'] = {
   // ===== REFRESH =====
   _refreshMemberTable: function () {
     const c = document.getElementById('members-table-container');
-    if (c) { 
+    if (c) {
       c.style.transition = 'none';
       c.style.opacity = '0';
       c.style.transform = 'translateY(15px)';
-      c.innerHTML = this._renderMemberTable(); 
-      this._bindMemberTableEvents(); 
+      c.innerHTML = this._renderMemberTable();
+      this._bindMemberTableEvents();
       setTimeout(() => {
         c.style.transition = 'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
         c.style.opacity = '1';
@@ -3679,12 +3679,12 @@ window.GymApp.pages['members-list'] = {
 
   _refreshPtCards: function () {
     const c = document.getElementById('pt-cards-container');
-    if (c) { 
+    if (c) {
       c.style.transition = 'none';
       c.style.opacity = '0';
       c.style.transform = 'translateY(15px)';
-      c.innerHTML = this._renderPtCards(); 
-      this._bindPtCardEvents(); 
+      c.innerHTML = this._renderPtCards();
+      this._bindPtCardEvents();
       setTimeout(() => {
         c.style.transition = 'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
         c.style.opacity = '1';
@@ -4052,7 +4052,7 @@ window.GymApp.pages['members-list'] = {
       if (window.GymApp.fetchInitialData) {
         await window.GymApp.fetchInitialData();
       }
-    } catch (_) {}
+    } catch (_) { }
 
     this._memberFiltered = [...(window.GymApp.data.members || [])];
     this._ptFiltered = [...(window.GymApp.data.pts || [])];
