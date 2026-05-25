@@ -744,12 +744,6 @@ window.GymApp.pages['expired'] = {
 
     document.getElementById('btn-approve-cancel').onclick = () => document.getElementById('modal-approve-renewal').remove();
 
-    const _pVND = s => parseInt((s || '').replace(/\./g, '').replace(/,/g, '')) || 0;
-    const _fVND = n => n > 0 ? new Intl.NumberFormat('vi-VN').format(n) : '';
-    const priceEl = document.getElementById('approve-price');
-    priceEl?.addEventListener('focus', function () { const v = _pVND(this.value); this.value = v > 0 ? String(v) : ''; });
-    priceEl?.addEventListener('blur', function () { this.value = _fVND(_pVND(this.value)); });
-
     document.getElementById('btn-approve-submit').onclick = async () => {
       const data = {
         action: 'approve',

@@ -62,6 +62,7 @@ export const getSchedules = (req, res) => {
     JOIN ho_so hv ON hv.id = lt.hoi_vien_id
     JOIN ho_so pt ON pt.id = lt.pt_id
     JOIN dang_ky_pt dk ON dk.id = lt.dang_ky_pt_id
+    LEFT JOIN danh_gia_pt dg ON dg.lich_tap_id = lt.id
     ${where} AND hv.is_deleted = 0 AND pt.is_deleted = 0
     ORDER BY lt.id DESC
   `).all(...params);

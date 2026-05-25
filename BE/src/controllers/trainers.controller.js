@@ -84,13 +84,18 @@ export const createTrainer = async (req, res) => {
   const nextNum = lastMaHoSo ? String(parseInt(lastMaHoSo.ma_ho_so.replace('PT', '')) + 1).padStart(3, '0') : '001';
   const ma_ho_so = `PT${nextNum}`;
 
-  const result = db.prepare(`
-    INSERT INTO ho_so (ma_ho_so, loai_ho_so, ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email, chuyen_mon, kinh_nghiem, avatar_url, cloudinary_public_id, ghi_chu, nguoi_tao_id)
-    VALUES (?, 'pt', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(ma_ho_so, ho_ten, gioi_tinh || null, ngay_sinh || null, so_dien_thoai || null, email || null, chuyen_mon || null, parseInt(kinh_nghiem) || 0, avatar_url, cloudinary_public_id, ghi_chu || null, req.user.id);
+  try {
+    const result = db.prepare(`
+      INSERT INTO ho_so (ma_ho_so, loai_ho_so, ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email, chuyen_mon, kinh_nghiem, avatar_url, cloudinary_public_id, ghi_chu, nguoi_tao_id)
+      VALUES (?, 'pt', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(ma_ho_so, ho_ten, gioi_tinh || null, ngay_sinh || null, so_dien_thoai || null, email || null, chuyen_mon || null, parseInt(kinh_nghiem) || 0, avatar_url, cloudinary_public_id, ghi_chu || null, req.user.id);
 
-  ghi_audit_log(req, 'CREATE', 'ho_so', result.lastInsertRowid, null, { ho_ten, loai_ho_so: 'pt' }, 'Thêm PT mới');
-  return success(res, db.prepare('SELECT * FROM ho_so WHERE id = ?').get(result.lastInsertRowid), 'Thêm PT thành công', 201);
+    ghi_audit_log(req, 'CREATE', 'ho_so', result.lastInsertRowid, null, { ho_ten, loai_ho_so: 'pt' }, 'Thêm PT mới');
+    return success(res, db.prepare('SELECT * FROM ho_so WHERE id = ?').get(result.lastInsertRowid), 'Thêm PT thành công', 201);
+  } catch (err) {
+    console.error('Lỗi khi thêm PT:', err);
+    return error(res, `Lỗi khi thêm PT: ${err.message}`, 500);
+  }
 };
 
 // ── PUT /api/trainers/:id ─────────────────────────────────
