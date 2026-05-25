@@ -195,7 +195,7 @@ export default function AdminAddEditMemberScreen({ route, navigation }) {
     setErrSdt(''); setErrEmail(''); setErrCccd('');
 
     if (!hoTen.trim()) {
-      Alert.alert('Lỗi', 'Vui lòng nhập họ và tên hội viên.');
+      Alert.alert('Lỗi', 'Vui lòng nhập họ và tên.');
       return false;
     }
     if (!soDienThoai.trim()) {
@@ -213,9 +213,27 @@ export default function AdminAddEditMemberScreen({ route, navigation }) {
       setErrCccd('CCCD phải có 12 chữ số (CMND 9 chữ số)');
       ok = false;
     }
+    if (ngaySinh.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(ngaySinh.trim())) {
+      Alert.alert('Lỗi', 'Ngày sinh phải đúng định dạng YYYY-MM-DD (VD: 1998-05-20).');
+      return false;
+    }
     if (loaiHoSo === 'pt' && !chuyenMon.trim()) {
       Alert.alert('Lỗi', 'Vui lòng nhập chuyên môn PT.');
       return false;
+    }
+    if (loaiHoSo === 'nhan_vien' && !chucVu.trim()) {
+      Alert.alert('Lỗi', 'Vui lòng nhập chức vụ nhân viên.');
+      return false;
+    }
+    if (!isEdit && createAcc) {
+      if (!username.trim()) {
+        Alert.alert('Lỗi', 'Vui lòng nhập tên đăng nhập cho tài khoản mới.');
+        return false;
+      }
+      if (!password || password.length < 6) {
+        Alert.alert('Lỗi', 'Mật khẩu phải chứa ít nhất 6 ký tự.');
+        return false;
+      }
     }
     return ok;
   };
