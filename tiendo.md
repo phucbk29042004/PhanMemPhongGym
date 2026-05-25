@@ -7,12 +7,125 @@
 
 ---
 
-## 📌 Trạng Thái Hiện Tại
-**✅ Thiết kế lưới Card HLV trực quan & Đồng bộ cơ chế chọn trên toàn bộ Web** — Đã chuyển đổi toàn bộ giao diện chọn Huấn luyện viên (PT/HLV) từ dạng danh sách cuộn dọc/dropdown select sang dạng lưới các thẻ (Grid Cards) trực quan, responsive trên mọi thiết bị (mobile 1 cột, tablet 2 cột, desktop 2-3 cột). Đồng bộ cơ chế tích chọn/xóa chọn: click card → ẩn lưới, hiện card đã chọn kèm nút xóa "x"; click "x" → hiện lại lưới chọn lại. Áp dụng trên 5 vị trí: 4 modal trong members-list.js và trang pt-register.js.
+## 📌 Trạng Thế Hiện Tại
+**✅ Tối ưu Lịch tập PT & Bố cục Form gói tập Hội viên 3-3-3-1** — Phân trang 3 ngày/trang cho Lịch tập PT với thanh cuộn ngang (tối đa 4 card/ngày), rút gọn bộ lọc và danh sách PT. Tái cấu trúc Form đăng ký gói tập thành lưới 3-3-3-1 gọn gàng, giãn khoảng cách input và label để tăng tính thẩm mỹ.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
+
+### 25/05/2026 — Phân Trang Lịch Tập PT (3 Ngày/Trang) & Redesign Form Gói Tập Hội Viên (Lưới 3-3-3-1)
+- **Loại**: Cải tiến giao diện UI/UX, Bố cục hiển thị
+- **File/Thành phần liên quan**:
+  - [pt-training.js](file:///d:/UI%20GYM/FE/assets/js/pages/pt-training.js)
+  - [member-add.js](file:///d:/UI%20GYM/FE/assets/js/pages/member-add.js)
+- **Mô tả**:
+  - **Lịch đào tạo PT**: 
+    - Thiết lập số ngày hiển thị mỗi trang `_daysPerPage` thành 3 ngày để tránh danh sách quá dài khi lượng dữ liệu lớn. Mặc định tự động mở rộng 3 ngày có lịch tập gần nhất ở trang đầu tiên.
+    - Giới hạn hiển thị tối đa 4 card lịch tập trên 1 ngày theo chiều ngang, tự động tạo thanh cuộn ngang (`flex flex-row overflow-x-auto`) nếu số lượng lịch tập nhiều hơn.
+    - Loại bỏ dropdown chọn "Trạng thái" trong bộ lọc và xóa bỏ phần "Danh sách Huấn luyện viên" ở phía cuối trang theo yêu cầu rút gọn giao diện.
+  - **Form đăng ký Gói tập**:
+    - Sắp xếp lại toàn bộ form đăng ký gói tập hội viên theo cấu trúc lưới **3-3-3-1** cân đối (Dòng 1: Chọn gói, Giá gói, Từ ngày; Dòng 2: Đến ngày, Mã giảm giá, Tổng tiền; Dòng 3: Tiền khách trả, Ngày thu, Phương thức; Dòng 4: Ghi chú thanh toán full-width).
+    - Giãn khoảng cách các input lên 1 cấp: tăng padding dọc của input/select từ `py-1.5` lên `py-2`, tăng margin-bottom của nhãn label từ `mb-1` lên `mb-1.5` trong các helper và biểu mẫu tĩnh. Thay đổi khoảng cách grid gap từ `gap-3` lên `gap-standard` (1rem / 16px).
+- **Kết quả**: Thành công 100%. Giao diện hiển thị cực kỳ cân đối, hiện đại và tối ưu hóa không gian trên mọi thiết bị.
+
+### 25/05/2026 — Hoàn Thiện Nghiệp Vụ Đổi Gói Tập (Nâng Cấp/Hạ Cấp) & Đồng Bộ Dynamic UI (Web & Mobile)
+- **Loại**: Cải tiến logic nghiệp vụ, UI/UX, Đồng bộ hệ thống (Web & Mobile)
+- **File/Thành phần liên quan**:
+  - [members-list.js](file:///d:/UI%20GYM/FE/assets/js/pages/members-list.js)
+  - [AdminMemberDetailScreen.js](file:///d:/UI%20GYM/MobileApp/src/screens/admin/AdminMemberDetailScreen.js)
+  - [AdminRegisterPackageScreen.js](file:///d:/UI%20GYM/MobileApp/src/screens/admin/AdminRegisterPackageScreen.js)
+  - [db.js (BE)](file:///d:/UI%20GYM/BE/src/config/db.js)
+- **Mô tả**:
+  - **Database & Trigger (BE)**: Bổ sung Migration v12 cập nhật trigger `trg_doanh_thu_goi_tap_update` để trừ doanh thu dựa trên số tiền hoàn thực tế `COALESCE(NEW.so_tien_hoan, OLD.gia_thuc_te)` khi hủy hoặc đổi gói tập, ngăn lỗi thất thoát doanh thu của số ngày đã sử dụng.
+  - **Mobile App**:
+    - Nâng cấp `AdminMemberDetailScreen` để truyền `activePkg` sang màn hình đăng ký gói.
+    - Cải tiến `AdminRegisterPackageScreen` nhận `activePkg` để hiển thị Banner thông tin gói đang hoạt động kèm số tiền hoàn bảo lưu gợi ý (tính toán thực tế theo số ngày còn lại / tổng số ngày của gói cũ).
+    - Thêm chức năng lựa chọn "Loại giao dịch" (Đổi gói tập vs Đăng ký song song) khi hội viên đang có gói hoạt động.
+    - Phát triển logic tính chênh lệch thu tiền động: nếu nâng cấp (tiền đóng thêm >= 0) hiển thị màu xanh và nhãn "Tiền đóng thêm (đ)"; nếu hạ cấp (tiền đóng thêm < 0) hiển thị màu đỏ và nhãn "Tiền hoàn trả khách (đ)", đồng bộ hoàn toàn với logic trên Web Frontend theo mong muốn của khách hàng.
+    - Tích hợp gọi đúng API `POST /api/members/:id/package/switch` khi xác nhận đổi gói.
+  - **Web Frontend**: Nhãn và phong cách của trường chênh lệch được đồng bộ linh hoạt giữa "Tiền thanh toán thêm" và "Tiền hoàn trả khách" tùy theo chênh lệch âm dương khi thực hiện đổi gói (nâng cấp/hạ cấp).
+- **Kết quả**: Thành công 100%.
+
+### 25/05/2026 — Ràng Buộc Thanh Toán Đầy Đủ Gói Tập & Khóa Ngày Thu Tiền
+- **Loại**: Cải tiến logic nghiệp vụ, UX, Đồng bộ hệ thống (Fullstack)
+- **File/Thành phần liên quan**:
+  - `FE/assets/js/pages/member-add.js`
+  - `MobileApp/src/screens/admin/AdminRegisterPackageScreen.js`
+- **Mô tả**:
+  - **Web Frontend**: Khóa ô "Ngày thu" thành chỉ đọc (read-only) và tự động đồng bộ hóa giá trị với ô "Từ ngày" (ngày bắt đầu gói tập). Bổ sung điều kiện validation khi nhấn nút "Lưu đăng ký gói" để đảm bảo số tiền khách trả không được nhỏ hơn giá trị thực tế của gói tập, ngăn chặn ghi nhận nợ ngoài ý muốn.
+  - **Mobile App**: Bổ sung validation tương ứng trong `handleRegister` để chặn đăng ký gói tập nếu số tiền thu thực tế (`paidAmount`) nhỏ hơn giá gói tập thực tế (`actualPrice`), đảm bảo tính nhất quán nghiệp vụ giữa nền tảng Web và Di động.
+- **Kết quả**: Thành công 100%.
+
+### 25/05/2026 — Tích Hợp Đầy Đủ Chức Năng Admin & Đồng Bộ Hóa Dark Mode Trên MobileApp
+- **Loại**: Cải tiến tính năng, UI/UX, Đồng bộ hệ thống (Mobile)
+- **File/Thành phần liên quan**:
+  - `MobileApp/src/navigation/AdminNavigator.js`
+  - `MobileApp/src/screens/admin/AdminDashboardScreen.js`
+  - `MobileApp/src/screens/admin/AdminMembersScreen.js`
+  - `MobileApp/src/screens/admin/AdminPTScreen.js`
+  - `MobileApp/src/screens/admin/AdminPackagesScreen.js`
+  - `MobileApp/src/screens/admin/AdminPackageRequestsScreen.js`
+  - `MobileApp/src/screens/admin/AdminMemberDetailScreen.js`
+  - `MobileApp/src/screens/admin/AdminAddEditMemberScreen.js`
+  - `MobileApp/src/screens/admin/AdminRegisterPackageScreen.js`
+  - `MobileApp/src/screens/admin/AdminRegisterPTScreen.js`
+  - `MobileApp/src/screens/admin/AdminAddEditPTScreen.js`
+  - `MobileApp/src/screens/admin/AdminAddEditPackageScreen.js`
+- **Mô tả**:
+  - Đồng bộ hóa 100% Dark Mode trên toàn bộ các màn hình quản trị của Admin bằng cách chuyển từ các mã màu tĩnh sang context `useTheme()`.
+  - Tích hợp đầy đủ luồng nghiệp vụ quản trị Admin: duyệt yêu cầu gia hạn gói tập, xem chi tiết hồ sơ hội viên và lịch sử check-in/lịch sử gói, CRUD hội viên, CRUD PT, CRUD gói tập (Gym & PT), và thực hiện các giao dịch đăng ký gói tập/hợp đồng PT trực tiếp trên thiết bị di động.
+  - Cấu hình lại thanh bottom tab navigator ẩn các màn hình stack phụ để đảm bảo trải nghiệm điều hướng tự nhiên, mượt mà trên di động.
+  - Sửa lỗi `ReferenceError: Property 'Platform' doesn't exist` tại [AdminMembersScreen.js](file:///d:/UI%20GYM/MobileApp/src/screens/admin/AdminMembersScreen.js) bằng cách import `Platform` từ `react-native`.
+  - Sửa lỗi `ReferenceError: Property 'ScrollView' doesn't exist` tại [AdminMembersScreen.js](file:///d:/UI%20GYM/MobileApp/src/screens/admin/AdminMembersScreen.js) bằng cách import `ScrollView` từ `react-native`.
+  - Sửa lỗi 500 do thiếu cột `so_tien_da_thu` trong bảng `dang_ky_goi_tap` bằng cách bổ sung migration tự động khi Backend khởi chạy tại [db.js](file:///d:/UI%20GYM/BE/src/config/db.js).
+- **Kết quả**: Thành công 100%.
+
+### 23/05/2026 — Redesign Modal Header (members-list.js)
+- **Loại**: UI/UX Design
+- **File/Thành phần liên quan**: `FE/assets/js/pages/members-list.js`
+- **Mô tả**: Redesign toàn bộ modal trong trang Danh sách hội viên:
+  - Modal chính (hội viên): Banner gradient đổi từ `#1a5e2a → #1D9336 → #22c55e` sang `#2d6a4f → #40916c → #52b788` (sage forest, dịu hơn). Stats bar dưới dùng `rgba(255,255,255,0.08)` thay `rgba(0,0,0,0.15)`. Avatar border, badge status, dot check-in đều nhẹ hơn.
+  - Modal phụ thêm/sửa/hủy gói tập: Header gradient xanh sage (`#2d6a4f → #40916c`). Nút X dạng circle glass. Overlay từ `rgba(0,0,0,0.65)` → `rgba(0,0,0,0.45)`, blur tăng từ 4px → 6px.
+  - Modal hủy gói tập: Header gradient đỏ (`#b91c1c → #dc2626`) để phân biệt hành động nguy hiểm.
+  - Modal đổi gói tập: Header gradient xanh dương (`#1e40af → #2563eb`).
+  - Tất cả modal: shadow giảm từ `0 30px 80px rgba(0,0,0,0.4)` → `0 20px 60px rgba(0,0,0,0.2)`.
+- **Kết quả**: Thành công
+
+### 23/05/2026 — Fix Bug Validate + Đổi Gói PT + Mobile PayOS (Task A–C)
+- **Loại**: Sửa lỗi UX / Thêm tính năng
+- **File/Thành phần liên quan**:
+  - `FE/assets/js/pages/members-list.js`
+  - `MobileApp/src/screens/member/MemberHomeScreen.js`
+  - `MobileApp/src/screens/member/OrderConfirmationScreen.js`
+- **Mô tả**:
+  - **Task A — FE Validate đăng ký gói**: `calcDebt()` đổi màu nền ô nợ/dư (đỏ/xanh). Handler `#pkg-save-btn` thêm check: nếu `regStatus !== 'debt'` và `paid < needToPay` → toast lỗi, block submit.
+  - **Task B — FE Đổi gói PT**: Thêm info panel tính tiền hoàn gợi ý (`credit = gia_thuc_te × buoi_con_lai / tong_buoi`). Thêm ô "Hoàn tiền gói cũ" (tự điền, sửa được) và ô "Tiền đóng thêm" (readonly, cập nhật realtime = giá mới − hoàn).
+  - **Task C — Mobile Gia hạn PayOS**: Xóa modal renewal cũ (dùng `alert()`, không PayOS). `openRenewModal` nay navigate thẳng sang `OrderConfirmationScreen`. `OrderConfirmationScreen` hỗ trợ thêm luồng vào không có `packageItem` — tự fetch danh sách gói cho user chọn trước khi thanh toán.
+- **Kết quả**: Thành công
+
+
+
+### 23/05/2026 — Fix Luồng Logic Duyệt Gia Hạn Gói Tập (Task 1–4)
+- **Loại**: Sửa lỗi logic nghiệp vụ (Fullstack)
+- **File/Thành phần liên quan**:
+  - `BE/src/controllers/members.controller.js`
+  - `BE/src/jobs/cron-daily.js`
+  - `FE/assets/js/member-portal.js`
+  - `FE/assets/js/pages/members-list.js`
+- **Mô tả**:
+  - **Task 1 — BE `approvePackageRequest`**: Đổi `finalStatus = 'cho_duyet'` → `'cho_kich_hoat'` khi admin duyệt gói nối tiếp (tu_ngay > hôm nay). Gói `cho_kich_hoat` sẽ không xuất hiện lại trong danh sách chờ duyệt. Thông báo gửi cho hội viên cũng được điều chỉnh theo 2 trường hợp: kích hoạt ngay vs chờ kích hoạt.
+  - **Task 1 — BE `checkPayosStatus`**: Cùng logic — PayOS PAID + tu_ngay tương lai → `cho_kich_hoat` thay vì `cho_duyet`.
+  - **Task 2 — BE cron-daily.js**: Cập nhật query kích hoạt hàng ngày nhận cả `trang_thai IN ('cho_kich_hoat', 'cho_duyet')` + `ngay_thanh_toan IS NOT NULL`.
+  - **Task 3 — BE `requestPackageRenewal`**: Kiểm tra duplicate bao gồm cả `cho_kich_hoat` để tránh hội viên đăng ký trùng khi đã có gói chờ kích hoạt. Sửa thông báo lỗi rõ ràng theo từng trường hợp.
+  - **Task 3 — BE `co_yeu_cau_gia_han`**: Cập nhật 3 chỗ trong SQL để nhận cả `cho_kich_hoat`.
+  - **Task 3 — BE `getMemberById`**: Thêm `cho_kich_hoat` vào `trang_thai IN (...)` để trả về gói này cho FE.
+  - **Task 3 — BE `approvePackageRequest` validation**: Cho phép admin xử lý cả `cho_kich_hoat` (edge case: cần sửa gói đã duyệt).
+  - **Task 4 — FE member-portal.js**: Thêm hàm `getScheduledPackage()`, hiển thị badge + thông báo "sẽ kích hoạt ngày X" cho gói `cho_kich_hoat` trong dashboard.
+  - **Task 4 — FE members-list.js**: Phân biệt label "Đã duyệt — Chờ kích hoạt nối tiếp" vs "Gói nối tiếp — Chờ kích hoạt" theo `trang_thai`. Loại trừ `cho_kich_hoat` khỏi section "Lịch sử & Gói khác".
+- **Kết quả**: Luồng gia hạn gói tập nối tiếp hoạt động đúng end-to-end: hội viên gửi yêu cầu → admin duyệt → gói chuyển `cho_kich_hoat` → cron job kích hoạt đúng ngày → gói `dang_hoat_dong`.
+
+
 
 ### 22/05/2026 10:48 — Thiết Kế Lưới Card HLV Trực Quan & Đồng Bộ Cơ Chế Chọn Trên Toàn Bộ Web
 - **Loại**: Cải tiến giao diện UI/UX (Frontend)

@@ -59,33 +59,45 @@ export const getMembers = (req, res) => {
       h.tinh_thanh, h.quan_huyen, h.phuong_xa, h.loai_hv,
       -- Tính trạng thái màu sắc
       CASE
-        WHEN NOT EXISTS (SELECT 1 FROM dang_ky_goi_tap dk WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong')
-             AND NOT EXISTS (SELECT 1 FROM dang_ky_pt dp WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong')
-          THEN 'chua_dang_ky'
-        WHEN (SELECT MAX(d_ngay) FROM (
-                SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
-                UNION ALL
-                SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
-             )) < date('now','localtime')
+        WHEN EXISTS (SELECT 1 FROM dang_ky_goi_tap dk WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong')
+             OR EXISTS (SELECT 1 FROM dang_ky_pt dp WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong')
+          THEN CASE
+            WHEN (SELECT MAX(d_ngay) FROM (
+                    SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+                    UNION ALL
+                    SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+                 )) < date('now','localtime')
+              THEN 'het_han'
+            WHEN (SELECT MAX(d_ngay) FROM (
+                    SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+                    UNION ALL
+                    SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+                 )) <= date('now','localtime','+7 days')
+              THEN 'sap_het_han'
+            ELSE 'con_han'
+          END
+        WHEN EXISTS (SELECT 1 FROM dang_ky_goi_tap dk WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'het_han')
+             OR EXISTS (SELECT 1 FROM dang_ky_pt dp WHERE dp.hoi_vien_id = h.id AND dp.trang_thai IN ('het_han','hoan_thanh'))
           THEN 'het_han'
-        WHEN (SELECT MAX(d_ngay) FROM (
-                SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
-                UNION ALL
-                SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
-             )) <= date('now','localtime','+7 days')
-          THEN 'sap_het_han'
-        ELSE 'con_han'
+        ELSE 'chua_dang_ky'
       END AS trang_thai,
-      (SELECT MAX(d_ngay) FROM (
-         SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
-         UNION ALL
-         SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
-      )) AS ngay_het_han,
-      (SELECT gt.ten_goi FROM dang_ky_goi_tap dk JOIN goi_tap gt ON gt.id = dk.goi_tap_id
-       WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong' ORDER BY dk.den_ngay DESC LIMIT 1) AS ten_goi_tap,
+      COALESCE(
+        (SELECT MAX(d_ngay) FROM (
+           SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+           UNION ALL
+           SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+        )),
+        (SELECT MAX(den_ngay) FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'het_han')
+      ) AS ngay_het_han,
+      COALESCE(
+        (SELECT gt.ten_goi FROM dang_ky_goi_tap dk JOIN goi_tap gt ON gt.id = dk.goi_tap_id
+         WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong' ORDER BY dk.den_ngay DESC LIMIT 1),
+        (SELECT gt.ten_goi FROM dang_ky_goi_tap dk JOIN goi_tap gt ON gt.id = dk.goi_tap_id
+         WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'het_han' ORDER BY dk.den_ngay DESC LIMIT 1)
+      ) AS ten_goi_tap,
       (SELECT COUNT(*) FROM dang_ky_pt dp WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS co_pt,
       ((SELECT loai FROM luot_vao_ra WHERE ho_so_id = h.id AND date(thoi_diem) = date('now','localtime') ORDER BY id DESC LIMIT 1) = 'vao') AS da_check_in_hom_nay,
-      EXISTS (SELECT 1 FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'cho_duyet') AS co_yeu_cau_gia_han
+      EXISTS (SELECT 1 FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai IN ('cho_duyet', 'cho_kich_hoat')) AS co_yeu_cau_gia_han
     FROM ho_so h
     ${where}
     ORDER BY h.ngay_tao DESC
@@ -399,7 +411,7 @@ export const getExpiringMembers = (req, res) => {
        JOIN goi_tap gt ON gt.id = dk.goi_tap_id
        WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong'
        ORDER BY dk.den_ngay DESC LIMIT 1) AS ten_goi_tap,
-      EXISTS (SELECT 1 FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'cho_duyet') AS co_yeu_cau_gia_han
+      EXISTS (SELECT 1 FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai IN ('cho_duyet', 'cho_kich_hoat')) AS co_yeu_cau_gia_han
     FROM ho_so h
     WHERE h.loai_ho_so = 'hoi_vien'
       AND h.is_deleted = 0
@@ -436,7 +448,7 @@ export const getExpiredMembers = (req, res) => {
        JOIN goi_tap gt ON gt.id = dk.goi_tap_id
        WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong'
        ORDER BY dk.den_ngay DESC LIMIT 1) AS ten_goi_tap,
-      EXISTS (SELECT 1 FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'cho_duyet') AS co_yeu_cau_gia_han
+      EXISTS (SELECT 1 FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai IN ('cho_duyet', 'cho_kich_hoat')) AS co_yeu_cau_gia_han
     FROM ho_so h
     WHERE h.loai_ho_so = 'hoi_vien'
       AND h.is_deleted = 0
@@ -570,15 +582,19 @@ export const getMyProfile = (req, res) => {
 
   if (hoSo.loai_ho_so === 'hoi_vien') {
     hoSo.goi_tap = db.prepare(`
+<<<<<<< HEAD
       SELECT dk.id, dk.tu_ngay, dk.den_ngay, dk.gia_thuc_te,
              CASE 
                WHEN dk.trang_thai = 'dang_hoat_dong' AND dk.den_ngay < date('now', 'localtime') THEN 'het_han'
                ELSE dk.trang_thai
              END AS trang_thai,
+=======
+      SELECT dk.id, dk.tu_ngay, dk.den_ngay, dk.gia_thuc_te, dk.so_tien_da_thu, dk.trang_thai,
+>>>>>>> main
              gt.ten_goi, gt.so_thang
       FROM dang_ky_goi_tap dk
       JOIN goi_tap gt ON gt.id = dk.goi_tap_id
-      WHERE dk.ho_so_id = ? AND dk.trang_thai IN ('dang_hoat_dong', 'cho_duyet', 'het_han')
+      WHERE dk.ho_so_id = ? AND dk.trang_thai IN ('dang_hoat_dong', 'cho_kich_hoat', 'cho_duyet', 'het_han')
       ORDER BY
         CASE WHEN dk.trang_thai = 'dang_hoat_dong' THEN 0
              WHEN dk.trang_thai = 'cho_duyet' THEN 1
@@ -652,7 +668,7 @@ export const updateMyHealth = (req, res) => {
 export const registerPackage = (req, res) => {
   autoUpdateExpiredStatuses();
   const { id } = req.params;
-  const { goi_tap_id, tu_ngay, gia_thuc_te, phuong_thuc_tt, ma_giao_dich, ghi_chu_tt, ghi_chu_gia, ngay_thanh_toan } = req.body;
+  const { goi_tap_id, tu_ngay, gia_thuc_te, phuong_thuc_tt, ma_giao_dich, ghi_chu_tt, ghi_chu_gia, ngay_thanh_toan, so_tien_da_thu } = req.body;
 
   if (!goi_tap_id || !tu_ngay || gia_thuc_te === undefined || !phuong_thuc_tt) {
     return error(res, 'Thiếu thông tin bắt buộc: goi_tap_id, tu_ngay, gia_thuc_te, phuong_thuc_tt', 400);
@@ -661,6 +677,11 @@ export const registerPackage = (req, res) => {
   const validTT = ['tien_mat', 'chuyen_khoan'];
   if (!validTT.includes(phuong_thuc_tt)) {
     return error(res, `phuong_thuc_tt phải là: ${validTT.join(', ')}`, 400);
+  }
+
+  const paidAmount = so_tien_da_thu === undefined || so_tien_da_thu === null ? 0 : Number(so_tien_da_thu);
+  if (!Number.isFinite(paidAmount) || paidAmount < 0) {
+    return error(res, 'so_tien_da_thu phải là số hợp lệ và lớn hơn hoặc bằng 0', 400);
   }
 
   const member = db.prepare('SELECT * FROM ho_so WHERE id = ? AND is_deleted = 0').get(id);
@@ -675,10 +696,11 @@ export const registerPackage = (req, res) => {
 
   const result = db.prepare(`
     INSERT INTO dang_ky_goi_tap
-      (ho_so_id, goi_tap_id, tu_ngay, den_ngay, gia_thuc_te, ghi_chu_gia, phuong_thuc_tt, nguoi_thu_id, ma_giao_dich, ghi_chu_tt, nguoi_tao_id, nguoi_cap_nhat_id, trang_thai, ngay_thanh_toan)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'dang_hoat_dong', COALESCE(?, ?))
+      (ho_so_id, goi_tap_id, tu_ngay, den_ngay, gia_thuc_te, ghi_chu_gia, phuong_thuc_tt, nguoi_thu_id, ma_giao_dich, ghi_chu_tt, ngay_thanh_toan, so_tien_da_thu, nguoi_tao_id, nguoi_cap_nhat_id, trang_thai)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'dang_hoat_dong')
   `).run(id, goi_tap_id, tu_ngay, denNgay, gia_thuc_te, ghi_chu_gia || null,
-    phuong_thuc_tt, req.user.id, ma_giao_dich || null, ghi_chu_tt || null, req.user.id, req.user.id, ngay_thanh_toan || null, tu_ngay);
+    phuong_thuc_tt, req.user.id, ma_giao_dich || null, ghi_chu_tt || null, ngay_thanh_toan || null,
+    paidAmount, req.user.id, req.user.id);
 
   ghi_audit_log(req, 'CREATE', 'dang_ky_goi_tap', result.lastInsertRowid, null,
     { ho_so_id: id, goi_tap_id, gia: gia_thuc_te }, 'Đăng ký gói tập cho hội viên');
@@ -692,7 +714,7 @@ export const registerPackage = (req, res) => {
     'admin'
   );
 
-  return success(res, { id: result.lastInsertRowid, den_ngay: denNgay }, 'Đăng ký gói tập thành công', 201);
+  return success(res, { id: result.lastInsertRowid, den_ngay: denNgay, so_tien_da_thu: paidAmount }, 'Đăng ký gói tập thành công', 201);
 };
 
 // ── POST /api/members/me/package-request ──────────────────
@@ -713,14 +735,19 @@ export const requestPackageRenewal = async (req, res) => {
 
     const today = new Date().toISOString().split('T')[0];
 
-    // 1. Kiểm tra xem đã có yêu cầu gia hạn nào đang chờ duyệt hay chưa
+    // 1. Kiểm tra xem đã có yêu cầu gia hạn nào đang chờ duyệt hoặc đã duyệt chờ kích hoạt hay chưa
     const pendingRequest = db.prepare(`
-      SELECT id FROM dang_ky_goi_tap
-      WHERE ho_so_id = ? AND trang_thai = 'cho_duyet' AND (payos_status IS NULL OR payos_status = 'PENDING')
+      SELECT id, trang_thai FROM dang_ky_goi_tap
+      WHERE ho_so_id = ?
+        AND trang_thai IN ('cho_duyet', 'cho_kich_hoat')
+        AND (payos_status IS NULL OR payos_status IN ('PENDING', 'PAID'))
     `).get(hoSo.id);
 
     if (pendingRequest) {
-      return error(res, 'Bạn đã có một yêu cầu gia hạn đang chờ duyệt. Vui lòng đợi lễ tân phê duyệt hoặc hoàn thành thanh toán.', 400);
+      const msg = pendingRequest.trang_thai === 'cho_kich_hoat'
+        ? 'Bạn đã có một gói tập đã được duyệt và đang chờ kích hoạt. Không thể đăng ký thêm.'
+        : 'Bạn đã có một yêu cầu gia hạn đang chờ duyệt. Vui lòng đợi lễ tân phê duyệt hoặc hoàn thành thanh toán.';
+      return error(res, msg, 400);
     }
 
     // 2. Lấy gói tập đang hoạt động có ngày hết hạn xa nhất để thực hiện nối tiếp nếu có
@@ -847,10 +874,10 @@ export const checkPayosStatus = async (req, res) => {
     const payosData = await getPaymentLinkInformation(orderCode);
 
     if (payosData.status === 'PAID') {
-      const today = new Date().toISOString().split('T')[0];
-      // Phương án B: Nếu ngày bắt đầu tu_ngay <= ngày hôm nay thì active ngay (dang_hoat_dong), ngược lại giữ cho_duyet để chờ đến ngày bắt đầu
+      const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
+      // Kích hoạt ngay nếu tu_ngay <= hôm nay, ngược lại chuyển 'cho_kich_hoat' — cron job sẽ kích hoạt khi đến ngày
       const isActive = request.tu_ngay <= today;
-      const finalStatus = isActive ? 'dang_hoat_dong' : 'cho_duyet';
+      const finalStatus = isActive ? 'dang_hoat_dong' : 'cho_kich_hoat';
 
       db.prepare(`
         UPDATE dang_ky_goi_tap
@@ -946,7 +973,7 @@ export const approvePackageRequest = (req, res) => {
     WHERE dk.id = ?
   `).get(id);
   if (!request) return error(res, 'Không tìm thấy yêu cầu.', 404);
-  if (request.trang_thai !== 'cho_duyet') return error(res, 'Yêu cầu này đã được xử lý.', 400);
+  if (!['cho_duyet', 'cho_kich_hoat'].includes(request.trang_thai)) return error(res, 'Yêu cầu này đã được xử lý.', 400);
 
   const member = db.prepare('SELECT ho_ten FROM ho_so WHERE id = ?').get(request.ho_so_id);
 
@@ -964,10 +991,10 @@ export const approvePackageRequest = (req, res) => {
     return success(res, null, 'Đã từ chối yêu cầu gia hạn.');
   }
 
-  // Approve: Kích hoạt ngay nếu ngày bắt đầu <= hôm nay, ngược lại giữ 'cho_duyet' chờ kích hoạt tự động
-  const today = new Date().toISOString().split('T')[0];
+  // Approve: Kích hoạt ngay nếu ngày bắt đầu <= hôm nay, ngược lại chuyển 'cho_kich_hoat' — cron job sẽ kích hoạt khi đến ngày
+  const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
   const isActive = request.tu_ngay <= today;
-  const finalStatus = isActive ? 'dang_hoat_dong' : 'cho_duyet';
+  const finalStatus = isActive ? 'dang_hoat_dong' : 'cho_kich_hoat';
 
   db.prepare(`
     UPDATE dang_ky_goi_tap SET
@@ -983,12 +1010,21 @@ export const approvePackageRequest = (req, res) => {
 
   ghi_audit_log(req, 'UPDATE', 'dang_ky_goi_tap', id, request, { trang_thai: finalStatus }, `Duyệt gia hạn gói tập cho ${member.ho_ten} (${finalStatus === 'dang_hoat_dong' ? 'Kích hoạt ngay' : 'Chờ kích hoạt nối tiếp'})`);
 
-  createUserNotification(
-    request.ho_so_id,
-    'Gia hạn thành công 🎉',
-    `Gói tập "${request.ten_goi}" của bạn đã được kích hoạt thành công. Chúc bạn có những buổi tập hiệu quả!`,
-    'thong_bao_chung'
-  );
+  if (finalStatus === 'dang_hoat_dong') {
+    createUserNotification(
+      request.ho_so_id,
+      'Gói tập được kích hoạt 🎉',
+      `Gói tập "${request.ten_goi}" của bạn đã được kích hoạt thành công. Chúc bạn có những buổi tập hiệu quả!`,
+      'thong_bao_chung'
+    );
+  } else {
+    createUserNotification(
+      request.ho_so_id,
+      'Yêu cầu gia hạn được duyệt ✅',
+      `Gói tập "${request.ten_goi}" của bạn đã được duyệt. Gói sẽ tự động kích hoạt vào ngày ${request.tu_ngay}.`,
+      'thong_bao_chung'
+    );
+  }
 
   return success(res, null, 'Duyệt gia hạn gói tập thành công.');
 };
@@ -1604,11 +1640,11 @@ export const switchPackage = (req, res) => {
     // Đăng ký gói mới
     const ins = db.prepare(`
       INSERT INTO dang_ky_goi_tap
-        (ho_so_id, goi_tap_id, tu_ngay, den_ngay, gia_thuc_te, phuong_thuc_tt, ghi_chu_tt,
+        (ho_so_id, goi_tap_id, tu_ngay, den_ngay, gia_thuc_te, so_tien_da_thu, phuong_thuc_tt, ghi_chu_tt,
          trang_thai, nguoi_tao_id, nguoi_cap_nhat_id, ngay_thanh_toan)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'dang_hoat_dong', ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'dang_hoat_dong', ?, ?, ?)
     `).run(hoSo.id, goi_tap_id_moi, tu_ngay, denNgay,
-           gia_thuc_te ?? goiMoi.gia, phuong_thuc_tt || null, ghi_chu_tt || null,
+           gia_thuc_te ?? goiMoi.gia, gia_thuc_te ?? goiMoi.gia, phuong_thuc_tt || null, ghi_chu_tt || null,
            req.user.id, req.user.id, tu_ngay);
 
     return ins.lastInsertRowid;
@@ -1739,7 +1775,7 @@ export const getInvoice = (req, res) => {
   if (!hoSo) return error(res, 'Không tìm thấy hồ sơ.', 404);
 
   const pkg = db.prepare(`
-    SELECT dk.id, dk.tu_ngay, dk.den_ngay, dk.gia_thuc_te, dk.phuong_thuc_tt,
+    SELECT dk.id, dk.tu_ngay, dk.den_ngay, dk.gia_thuc_te, dk.so_tien_da_thu, dk.phuong_thuc_tt,
            dk.ghi_chu_tt, dk.trang_thai, dk.ngay_tao,
            gt.ten_goi, gt.loai_goi, gt.gia AS gia_niem_yet,
            tc.ten_dang_nhap AS thu_ngan

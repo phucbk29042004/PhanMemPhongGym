@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import {
   Bell, CalendarCheck, Dumbbell, Home, QrCode, User,
 } from 'lucide-react-native';
@@ -9,15 +10,19 @@ import MemberQRCodeScreen from '../screens/member/MemberQRCodeScreen';
 import MemberScheduleScreen from '../screens/member/MemberScheduleScreen';
 import MemberNotificationScreen from '../screens/member/MemberNotificationScreen';
 import MemberProfileScreen from '../screens/member/MemberProfileScreen';
+
+// Màn hình ẩn / stack phụ
 import MemberCheckinsScreen from '../screens/member/MemberCheckinsScreen';
 import GymRulesScreen from '../screens/shared/GymRulesScreen';
 import PTMeScreen from '../screens/shared/PTMeScreen';
 import PackageDetailScreen from '../screens/member/PackageDetailScreen';
 import OrderConfirmationScreen from '../screens/member/OrderConfirmationScreen';
+
 import { useNotificationStore } from '../store/useNotificationStore';
 import { useTheme } from '../context/ThemeContext';
 
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
 
 // Icon container với nền khi active
 function TabIcon({ IconComponent, color, focused, colors }) {
@@ -38,7 +43,8 @@ function TabLabel({ label, color, focused }) {
   );
 }
 
-export default function MemberNavigator() {
+// ── 5 Tab chính ──────────────────────────────────────────────────────
+function MemberTabs() {
   const unreadCount = useNotificationStore(state => state.unreadCount);
   const { colors } = useTheme();
 
@@ -123,51 +129,21 @@ export default function MemberNavigator() {
           tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={User} color={color} focused={focused} colors={colors} />,
         }}
       />
-
-      {/* Màn hình ẩn khỏi tab bar: Thống kê Vào/Ra */}
-      <Tab.Screen
-        name="Checkins"
-        component={MemberCheckinsScreen}
-        options={{
-          tabBarItemStyle: { display: 'none' },
-        }}
-      />
-
-      {/* Màn hình ẩn khỏi tab bar: Nội quy phòng tập */}
-      <Tab.Screen
-        name="GymRules"
-        component={GymRulesScreen}
-        options={{
-          tabBarItemStyle: { display: 'none' },
-        }}
-      />
-
-      <Tab.Screen
-        name="PTMe"
-        component={PTMeScreen}
-        options={{
-          tabBarItemStyle: { display: 'none' },
-        }}
-      />
-
-      {/* Màn hình ẩn khỏi tab bar: Chi tiết gói tập */}
-      <Tab.Screen
-        name="PackageDetail"
-        component={PackageDetailScreen}
-        options={{
-          tabBarItemStyle: { display: 'none' },
-        }}
-      />
-
-      {/* Màn hình ẩn khỏi tab bar: Xác nhận đơn hàng */}
-      <Tab.Screen
-        name="OrderConfirmation"
-        component={OrderConfirmationScreen}
-        options={{
-          tabBarItemStyle: { display: 'none' },
-        }}
-      />
     </Tab.Navigator>
+  );
+}
+
+// ── Stack bao ngoài: Tab + màn hình phụ không có tab bar ─────────────
+export default function MemberNavigator() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MemberTabs" component={MemberTabs} />
+      <Stack.Screen name="Checkins" component={MemberCheckinsScreen} />
+      <Stack.Screen name="GymRules" component={GymRulesScreen} />
+      <Stack.Screen name="PTMe" component={PTMeScreen} />
+      <Stack.Screen name="PackageDetail" component={PackageDetailScreen} />
+      <Stack.Screen name="OrderConfirmation" component={OrderConfirmationScreen} />
+    </Stack.Navigator>
   );
 }
 
@@ -176,9 +152,7 @@ const styles = StyleSheet.create({
     height: 70,
     paddingBottom: 10,
     paddingTop: 6,
-    backgroundColor: '#ffffff',
     borderTopWidth: 1,
-    borderTopColor: '#f0f2f5',
     elevation: 16,
     shadowColor: '#000',
     shadowOpacity: 0.08,
@@ -203,24 +177,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 14,
   },
-  iconContainerActive: {
-    backgroundColor: '#e6f4ea',
-  },
   // Tab QR giữa — nổi bật cao hơn
   centerTabIcon: {
     width: 50,
     height: 34,
     borderRadius: 17,
-    backgroundColor: '#e6f4ea',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: -6,
-  },
-  centerTabIconActive: {
-    backgroundColor: '#1D9336',
-    shadowColor: '#1D9336',
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 8,
   },
 });

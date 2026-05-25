@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import {
   BarChart3, Package, Users, User, LayoutDashboard,
 } from 'lucide-react-native';
@@ -10,14 +11,24 @@ import AdminPTScreen from '../screens/admin/AdminPTScreen';
 import AdminPackagesScreen from '../screens/admin/AdminPackagesScreen';
 import AdminProfileScreen from '../screens/admin/AdminProfileScreen';
 
+// Màn hình stack phụ (không có tab bar)
+import AdminPackageRequestsScreen from '../screens/admin/AdminPackageRequestsScreen';
+import AdminMemberDetailScreen from '../screens/admin/AdminMemberDetailScreen';
+import AdminAddEditMemberScreen from '../screens/admin/AdminAddEditMemberScreen';
+import AdminRegisterPackageScreen from '../screens/admin/AdminRegisterPackageScreen';
+import AdminRegisterPTScreen from '../screens/admin/AdminRegisterPTScreen';
+import AdminAddEditPTScreen from '../screens/admin/AdminAddEditPTScreen';
+import AdminAddEditPackageScreen from '../screens/admin/AdminAddEditPackageScreen';
+
+import { useTheme } from '../context/ThemeContext';
+
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
 
-const BRAND_GREEN = '#1D9336';
-const INACTIVE_COLOR = '#9CA3AF';
-
-function TabIcon({ IconComponent, color, focused }) {
+function TabIcon({ IconComponent, color, focused, colors }) {
+  const activeBg = colors?.primaryLight || '#e6f4ea';
   return (
-    <View style={[styles.iconContainer, focused && styles.iconContainerActive]}>
+    <View style={[styles.iconContainer, focused && { backgroundColor: activeBg }]}>
       <IconComponent color={color} size={22} strokeWidth={focused ? 2.5 : 1.8} />
     </View>
   );
@@ -31,15 +42,18 @@ function TabLabel({ label, color, focused }) {
   );
 }
 
-export default function AdminNavigator() {
+// ── Tab Navigator (5 tab chính, KHÔNG có màn hình phụ) ──────────────
+function AdminTabs() {
+  const { colors } = useTheme();
+
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: true,
-        tabBarActiveTintColor: BRAND_GREEN,
-        tabBarInactiveTintColor: INACTIVE_COLOR,
-        tabBarStyle: styles.tabBar,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textMuted,
+        tabBarStyle: [styles.tabBar, { backgroundColor: colors.surface, borderTopColor: colors.border }],
       }}
     >
       <Tab.Screen
@@ -47,7 +61,7 @@ export default function AdminNavigator() {
         component={AdminDashboardScreen}
         options={{
           tabBarLabel: ({ color, focused }) => <TabLabel label="Tổng quan" color={color} focused={focused} />,
-          tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={LayoutDashboard} color={color} focused={focused} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={LayoutDashboard} color={color} focused={focused} colors={colors} />,
         }}
       />
       <Tab.Screen
@@ -55,7 +69,7 @@ export default function AdminNavigator() {
         component={AdminMembersScreen}
         options={{
           tabBarLabel: ({ color, focused }) => <TabLabel label="Hội viên" color={color} focused={focused} />,
-          tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={Users} color={color} focused={focused} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={Users} color={color} focused={focused} colors={colors} />,
         }}
       />
       <Tab.Screen
@@ -63,7 +77,7 @@ export default function AdminNavigator() {
         component={AdminPTScreen}
         options={{
           tabBarLabel: ({ color, focused }) => <TabLabel label="PT" color={color} focused={focused} />,
-          tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={BarChart3} color={color} focused={focused} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={BarChart3} color={color} focused={focused} colors={colors} />,
         }}
       />
       <Tab.Screen
@@ -71,7 +85,7 @@ export default function AdminNavigator() {
         component={AdminPackagesScreen}
         options={{
           tabBarLabel: ({ color, focused }) => <TabLabel label="Gói tập" color={color} focused={focused} />,
-          tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={Package} color={color} focused={focused} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={Package} color={color} focused={focused} colors={colors} />,
         }}
       />
       <Tab.Screen
@@ -79,10 +93,29 @@ export default function AdminNavigator() {
         component={AdminProfileScreen}
         options={{
           tabBarLabel: ({ color, focused }) => <TabLabel label="Tài khoản" color={color} focused={focused} />,
-          tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={User} color={color} focused={focused} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={User} color={color} focused={focused} colors={colors} />,
         }}
       />
     </Tab.Navigator>
+  );
+}
+
+// ── Stack Navigator bao ngoài (gồm Tab + các màn hình detail/form) ──
+export default function AdminNavigator() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {/* Màn hình chính với Tab bar */}
+      <Stack.Screen name="AdminTabs" component={AdminTabs} />
+
+      {/* Màn hình phụ — KHÔNG có tab bar */}
+      <Stack.Screen name="AdminPackageRequests" component={AdminPackageRequestsScreen} />
+      <Stack.Screen name="AdminMemberDetail" component={AdminMemberDetailScreen} />
+      <Stack.Screen name="AdminAddEditMember" component={AdminAddEditMemberScreen} />
+      <Stack.Screen name="AdminRegisterPackage" component={AdminRegisterPackageScreen} />
+      <Stack.Screen name="AdminRegisterPT" component={AdminRegisterPTScreen} />
+      <Stack.Screen name="AdminAddEditPT" component={AdminAddEditPTScreen} />
+      <Stack.Screen name="AdminAddEditPackage" component={AdminAddEditPackageScreen} />
+    </Stack.Navigator>
   );
 }
 
@@ -91,9 +124,6 @@ const styles = StyleSheet.create({
     height: 70,
     paddingBottom: 10,
     paddingTop: 6,
-    backgroundColor: '#ffffff',
-    borderTopWidth: 1,
-    borderTopColor: '#f0f2f5',
     elevation: 16,
     shadowColor: '#000',
     shadowOpacity: 0.08,
@@ -105,5 +135,4 @@ const styles = StyleSheet.create({
     width: 40, height: 28,
     alignItems: 'center', justifyContent: 'center', borderRadius: 14,
   },
-  iconContainerActive: { backgroundColor: '#e6f4ea' },
 });

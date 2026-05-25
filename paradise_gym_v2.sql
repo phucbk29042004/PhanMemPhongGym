@@ -611,11 +611,11 @@ CREATE TRIGGER IF NOT EXISTS trg_doanh_thu_goi_tap_update
         tong_don     = tong_don + 1,
         tien_goi_tap = tien_goi_tap + NEW.gia_thuc_te,
         ngay_cap_nhat = datetime('now','localtime');
-    -- Hủy gói đang active: trừ doanh thu khỏi ngày tạo
+    -- Hủy gói đang active: trừ doanh thu khỏi ngày tạo theo số tiền hoàn thực tế (nếu hoàn 1 phần thì chỉ trừ số tiền hoàn trả)
     UPDATE doanh_thu SET
-        tong_tien    = MAX(0, tong_tien - OLD.gia_thuc_te),
+        tong_tien    = MAX(0, tong_tien - COALESCE(NEW.so_tien_hoan, OLD.gia_thuc_te)),
         tong_don     = MAX(0, tong_don - 1),
-        tien_goi_tap = MAX(0, tien_goi_tap - OLD.gia_thuc_te),
+        tien_goi_tap = MAX(0, tien_goi_tap - COALESCE(NEW.so_tien_hoan, OLD.gia_thuc_te)),
         ngay_cap_nhat = datetime('now','localtime')
     WHERE ngay = date(OLD.ngay_tao)
       AND OLD.trang_thai IN ('dang_hoat_dong', 'het_han')

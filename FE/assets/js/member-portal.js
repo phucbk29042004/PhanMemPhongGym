@@ -29,15 +29,28 @@
 
   function getActivePackage() {
     const packages = window.GymApp.data.myPackages || [];
+<<<<<<< HEAD
     const today = todayKey();
     const active = packages.find(p => p.trang_thai === 'dang_hoat_dong' && p.den_ngay >= today);
     if (active) return active;
     return packages[0] || null;
+=======
+    // Ưu tiên gói đang hoạt động, KHÔNG dùng gói cho_duyet làm fallback
+    const active = packages.find(p => p.trang_thai === 'dang_hoat_dong');
+    if (active) return active;
+    // Fallback: gói hết hạn gần nhất (không dùng cho_duyet)
+    return packages.find(p => p.trang_thai === 'het_han') || null;
+>>>>>>> main
   }
 
   function getPendingPackage() {
     const packages = window.GymApp.data.myPackages || [];
     return packages.find(p => p.trang_thai === 'cho_duyet') || null;
+  }
+
+  function getScheduledPackage() {
+    const packages = window.GymApp.data.myPackages || [];
+    return packages.find(p => p.trang_thai === 'cho_kich_hoat') || null;
   }
 
   function getActivePt() {
@@ -566,6 +579,7 @@
       const user = window.GymApp.auth.user || {};
       const activePackage = getActivePackage();
       const pendingPackage = getPendingPackage();
+      const scheduledPackage = getScheduledPackage();
       const activePt = getActivePt();
       const upcoming = nextSchedules(3);
       const next = upcoming[0] || null;
@@ -679,10 +693,12 @@
                   <div class="mt-s2 flex items-center gap-s2 flex-wrap">
                     ${activePackage ? window.GymApp.statusBadge(activePackage.trang_thai) : window.GymApp.statusBadge('chua_dang_ky')}
                     ${pendingPackage ? window.GymApp.statusBadge('cho_duyet') : ''}
+                    ${scheduledPackage ? window.GymApp.statusBadge('cho_kich_hoat') : ''}
                   </div>
                   <p class="text-body-sm text-on-surface-variant mt-s3">
                     ${activePackage ? `${window.GymApp.formatDate(activePackage.tu_ngay)} - ${window.GymApp.formatDate(activePackage.den_ngay)}` : 'Chưa có gói đang hoạt động'}
                     ${pendingPackage ? `<br><span class="text-[#e65100] font-semibold flex items-center gap-1 mt-1"><span class="material-symbols-outlined text-[14px]">schedule</span> Chờ duyệt: ${pendingPackage.ten_goi}</span>` : ''}
+                    ${scheduledPackage ? `<br><span class="text-[#e65100] font-semibold flex items-center gap-1 mt-1"><span class="material-symbols-outlined text-[14px]">event_available</span> Sẽ kích hoạt ${window.GymApp.formatDate(scheduledPackage.tu_ngay)}: ${scheduledPackage.ten_goi}</span>` : ''}
                   </p>
                 </div>
                 <div class="bg-surface-container rounded-xl p-s4">
@@ -694,7 +710,7 @@
               <div class="bg-surface-container rounded-xl p-s4">
                 <p class="text-on-surface-variant text-label-md">Ghi chú</p>
                 <p class="text-body-md text-on-surface mt-s2">
-                  ${pendingPackage ? `Yêu cầu gia hạn gói "${pendingPackage.ten_goi}" đang chờ duyệt. Vui lòng thanh toán tại quầy hoặc chuyển khoản để kích hoạt.` : isExpiringSoon ? `Gói tập còn ${daysLeft} ngày. Bạn có thể gia hạn ngay trên App hoặc liên hệ lễ tân.` : 'Tất cả dữ liệu trên được lấy từ hệ thống hiện tại.'}
+                  ${pendingPackage ? `Yêu cầu gia hạn gói "${pendingPackage.ten_goi}" đang chờ duyệt. Vui lòng thanh toán tại quầy hoặc chuyển khoản để kích hoạt.` : scheduledPackage ? `Gói tập "${scheduledPackage.ten_goi}" đã được duyệt và sẽ tự động kích hoạt vào ngày ${window.GymApp.formatDate(scheduledPackage.tu_ngay)}.` : isExpiringSoon ? `Gói tập còn ${daysLeft} ngày. Bạn có thể gia hạn ngay trên App hoặc liên hệ lễ tân.` : 'Tất cả dữ liệu trên được lấy từ hệ thống hiện tại.'}
                 </p>
               </div>
             </section>

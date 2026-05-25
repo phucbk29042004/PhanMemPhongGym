@@ -13,14 +13,15 @@ function runDailyJob() {
   const today = new Date().toLocaleDateString('sv-SE'); // YYYY-MM-DD
   console.log(`[CRON-DAILY] ${new Date().toLocaleTimeString('vi-VN')} — Đang chạy job thông báo hàng ngày...`);
 
-  // 0a. Tự động kích hoạt các gói tập đã thanh toán (PayOS hoặc được duyệt trước) khi đến ngày bắt đầu (tu_ngay)
+  // 0a. Tự động kích hoạt các gói tập đã thanh toán/được duyệt khi đến ngày bắt đầu (tu_ngay)
+  // Bao gồm cả 'cho_kich_hoat' (đã duyệt thủ công, chờ kích hoạt nối tiếp) và 'cho_duyet' đã thanh toán PayOS
   const newlyActivated = db.prepare(`
     SELECT dk.id, dk.ho_so_id, gt.ten_goi, h.ho_ten
     FROM dang_ky_goi_tap dk
     JOIN ho_so h ON h.id = dk.ho_so_id
     JOIN goi_tap gt ON gt.id = dk.goi_tap_id
-    WHERE dk.trang_thai = 'cho_duyet'
-      AND (dk.payos_status = 'PAID' OR (dk.phuong_thuc_tt IS NOT NULL AND dk.ngay_thanh_toan IS NOT NULL))
+    WHERE dk.trang_thai IN ('cho_kich_hoat', 'cho_duyet')
+      AND dk.ngay_thanh_toan IS NOT NULL
       AND dk.tu_ngay <= date('now','localtime')
   `).all();
 

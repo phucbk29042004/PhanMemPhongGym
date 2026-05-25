@@ -102,10 +102,6 @@ export default function MemberHomeScreen({ navigation }) {
   const [ptPackages, setPtPackages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [renewModalVisible, setRenewModalVisible] = useState(false);
-  const [selectedPkg, setSelectedPkg] = useState(null);
-  const [renewalStartDate, setRenewalStartDate] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // ── State modal lịch PT ───────────────────────────────────
   const [ptScheduleVisible, setPtScheduleVisible] = useState(false);
@@ -186,43 +182,7 @@ export default function MemberHomeScreen({ navigation }) {
   };
 
   const openRenewModal = () => {
-    const today = new Date().toISOString().split('T')[0];
-    let defaultStart = today;
-
-    const active = profile?.goi_tap?.[0];
-    if (active && active.den_ngay >= today) {
-      const d = new Date(active.den_ngay);
-      d.setDate(d.getDate() + 1);
-      defaultStart = d.toISOString().split('T')[0];
-    }
-
-    setRenewalStartDate(defaultStart);
-    setSelectedPkg(gymPackages[0]?.id || null);
-    setRenewModalVisible(true);
-  };
-
-  const submitRenewal = async () => {
-    if (!selectedPkg || !renewalStartDate) return;
-    setIsSubmitting(true);
-    try {
-      const res = await api.post('/members/me/package-request', {
-        goi_tap_id: selectedPkg,
-        tu_ngay: renewalStartDate
-      });
-      if (res.data?.success) {
-        setRenewModalVisible(false);
-        fetchAll();
-        alert('Đã gửi yêu cầu gia hạn! Vui lòng liên hệ lễ tân để hoàn tất thanh toán.');
-      } else {
-        alert(res.data?.message || 'Lỗi khi gửi yêu cầu');
-      }
-    } catch (e) {
-      console.log('Submit Renewal Error:', e);
-      const msg = e.response?.data?.message || 'Lỗi kết nối máy chủ';
-      alert(msg);
-    } finally {
-      setIsSubmitting(false);
-    }
+    navigation.navigate('OrderConfirmation', { profile });
   };
 
   // ── Dữ liệu đã xử lý ─────────────────────────────────────
@@ -772,90 +732,6 @@ export default function MemberHomeScreen({ navigation }) {
         </View>
       </Modal>
 
-      {/* ── Modal Đăng ký/Gia hạn gói tập ────────────────────── */}
-      <Modal
-        visible={renewModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setRenewModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>
-                {activePlan ? 'Gia hạn gói tập' : 'Đăng ký gói tập'}
-              </Text>
-              <TouchableOpacity onPress={() => setRenewModalVisible(false)}>
-                <Text style={[styles.modalCloseX, { color: colors.textMuted }]}>✕</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.modalBody}>
-              <Text style={[styles.inputLabel, { color: colors.text }]}>Chọn gói tập</Text>
-              <View style={styles.pkgPicker}>
-                {gymPackages.map(p => (
-                  <TouchableOpacity
-                    key={p.id}
-                    style={[
-                      styles.pkgOption,
-                      { backgroundColor: colors.surfaceVariant, borderColor: colors.border },
-                      selectedPkg === p.id && { borderColor: colors.primary, backgroundColor: colors.primaryLight }
-                    ]}
-                    onPress={() => setSelectedPkg(p.id)}
-                  >
-                    <View style={{ flex: 1, paddingRight: 8 }}>
-                      <Text style={[
-                        styles.pkgOptionText,
-                        { color: colors.text },
-                        selectedPkg === p.id && { color: colors.primary, fontWeight: '700' }
-                      ]}>{p.ten_goi}</Text>
-                      {p.mo_ta ? (
-                        <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }} numberOfLines={2}>
-                          {p.mo_ta}
-                        </Text>
-                      ) : null}
-                    </View>
-                    <Text style={[
-                      styles.pkgOptionPrice,
-                      { color: colors.textMuted },
-                      selectedPkg === p.id && { color: colors.primary, fontWeight: '700' }
-                    ]}>{formatPrice(p.gia)}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <Text style={[styles.inputLabel, { marginTop: 16, color: colors.text }]}>Ngày bắt đầu (YYYY-MM-DD)</Text>
-              <TextInput
-                style={[styles.dateInput, { backgroundColor: colors.surfaceVariant, borderColor: colors.border, color: colors.text }]}
-                value={renewalStartDate}
-                onChangeText={setRenewalStartDate}
-                placeholder="2024-01-01"
-                placeholderTextColor={colors.textMuted}
-              />
-              <Text style={[styles.inputHint, { color: colors.textMuted }]}>Mặc định: Ngày tiếp nối gói cũ hoặc hôm nay</Text>
-            </View>
-
-            <View style={styles.modalFooter}>
-              <TouchableOpacity style={[styles.modalCancelBtn, { borderColor: colors.border }]} onPress={() => setRenewModalVisible(false)}>
-                <Text style={[styles.modalCancelText, { color: colors.textMuted }]}>Hủy</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.modalSubmitBtn}
-                onPress={submitRenewal}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <ActivityIndicator color={G.white} size="small" />
-                ) : (
-                  <Text style={styles.modalSubmitText}>
-                    {activePlan ? 'Gia hạn ngay' : 'Đăng ký mua'}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }

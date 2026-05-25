@@ -1315,3 +1315,78 @@ html.dark #sidebar h1[style*="color:#14532d"] {
 html.dark #sidebar p[style*="color:#16a34a"] {
   color: rgba(255,255,255,0.5) !important;
 }
+
+/* ===== RESPONSIVE GLOBAL UTILITIES ===== */
+
+/* Sidebar ẩn hoàn toàn trên mobile, overlay khi mở */
+@media (max-width: 767px) {
+  #sidebar {
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    z-index: 200;
+    transform: translateX(-100%);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.18);
+  }
+  #sidebar.mobile-open {
+    transform: translateX(0);
+  }
+  #sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 199;
+    background: rgba(0,0,0,0.35);
+    backdrop-filter: blur(2px);
+  }
+  #sidebar.mobile-open ~ #sidebar-overlay,
+  body.sidebar-open #sidebar-overlay {
+    display: block;
+  }
+  /* Main content chiếm full width trên mobile */
+  #main-area {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+}
+
+/* Bảng: luôn có wrapper scroll ngang */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Filter bar wrap gọn trên mobile */
+@media (max-width: 640px) {
+  .filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filter-bar > * {
+    width: 100%;
+  }
+}
+
+/* Select, input full width trên mobile */
+@media (max-width: 480px) {
+  select.min-w-\[150px\],
+  select.min-w-\[180px\],
+  select.min-w-\[200px\] {
+    min-width: 0 !important;
+    width: 100%;
+  }
+}
+
+/* Card grid collapse về 1 cột trên màn rất nhỏ */
+@media (max-width: 360px) {
+  .grid-cols-2 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Header: ẩn text dài trên mobile */
+@media (max-width: 480px) {
+  .gym-header .header-title {
+    display: none;
+  }
+}

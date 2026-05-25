@@ -10,28 +10,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuthStore } from '../../store/useAuthStore';
 import { api } from '../../services/api';
-
-const G = {
-  primary: '#1D9336',
-  primaryDark: '#155f27',
-  primaryLight: '#e6f4ea',
-  primaryMid: '#4db870',
-  white: '#ffffff',
-  gray50: '#f8faf8',
-  gray100: '#f0f4f0',
-  gray200: '#e4ebe4',
-  gray400: '#9cad9c',
-  gray700: '#2d3c2d',
-  gray900: '#141c14',
-  danger: '#dc2626',
-  dangerLight: '#fef2f2',
-  warning: '#d97706',
-  warningLight: '#fffbeb',
-  blue: '#1565c0',
-  blueLight: '#e3f2fd',
-  purple: '#7c3aed',
-  purpleLight: '#f3e8ff',
-};
+import { useTheme } from '../../context/ThemeContext';
 
 function formatPrice(val) {
   if (val == null || val === 0) return '0đ';
@@ -48,14 +27,14 @@ function formatDate(val) {
 }
 
 // ── KPI Card ──────────────────────────────────────────────
-function KpiCard({ icon: Icon, iconBg, iconColor, label, value, sub, subColor }) {
+function KpiCard({ icon: Icon, iconBg, iconColor, label, value, sub, subColor, colors }) {
   return (
-    <View style={kpi.card}>
+    <View style={[kpi.card, { backgroundColor: colors.surface }]}>
       <View style={[kpi.iconBox, { backgroundColor: iconBg }]}>
         <Icon color={iconColor} size={20} strokeWidth={2} />
       </View>
-      <Text style={kpi.value}>{value}</Text>
-      <Text style={kpi.label}>{label}</Text>
+      <Text style={[kpi.value, { color: colors.text }]}>{value}</Text>
+      <Text style={[kpi.label, { color: colors.textMuted }]}>{label}</Text>
       {sub ? <Text style={[kpi.sub, subColor && { color: subColor }]}>{sub}</Text> : null}
     </View>
   );
@@ -64,33 +43,37 @@ function KpiCard({ icon: Icon, iconBg, iconColor, label, value, sub, subColor })
 const kpi = StyleSheet.create({
   card: {
     flex: 1, minWidth: '45%',
-    backgroundColor: G.white,
     borderRadius: 16, padding: 16,
     alignItems: 'flex-start',
-    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, elevation: 3,
+    shadowColor: '#000', shadowOpacity: 0.02, shadowRadius: 8, elevation: 2,
     margin: 4,
   },
   iconBox: {
     width: 38, height: 38, borderRadius: 12,
     alignItems: 'center', justifyContent: 'center', marginBottom: 10,
   },
-  value: { fontSize: 22, fontWeight: '800', color: G.gray900 },
-  label: { fontSize: 11, color: G.gray400, marginTop: 2, fontWeight: '600' },
-  sub: { fontSize: 10, color: G.primary, marginTop: 4, fontWeight: '700' },
+  value: { fontSize: 22, fontWeight: '800' },
+  label: { fontSize: 11, marginTop: 2, fontWeight: '600' },
+  sub: { fontSize: 10, marginTop: 4, fontWeight: '700' },
 });
 
 // ── Alert Row ─────────────────────────────────────────────
-function AlertRow({ icon: Icon, iconColor, iconBg, label, count, color }) {
+function AlertRow({ icon: Icon, iconColor, iconBg, label, count, color, onPress, colors }) {
+  const Container = onPress ? TouchableOpacity : View;
   return (
-    <View style={alertRow.row}>
+    <Container 
+      style={[alertRow.row, { borderBottomColor: colors.borderLight }]} 
+      onPress={onPress} 
+      activeOpacity={0.7}
+    >
       <View style={[alertRow.iconBox, { backgroundColor: iconBg }]}>
         <Icon color={iconColor} size={16} strokeWidth={2} />
       </View>
-      <Text style={alertRow.label}>{label}</Text>
+      <Text style={[alertRow.label, { color: colors.textSecondary }]}>{label}</Text>
       <View style={[alertRow.badge, { backgroundColor: color + '22' }]}>
         <Text style={[alertRow.badgeText, { color }]}>{count}</Text>
       </View>
-    </View>
+    </Container>
   );
 }
 
@@ -98,40 +81,40 @@ const alertRow = StyleSheet.create({
   row: {
     flexDirection: 'row', alignItems: 'center',
     paddingVertical: 10, gap: 12,
-    borderBottomWidth: 1, borderBottomColor: G.gray100,
+    borderBottomWidth: 1,
   },
   iconBox: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  label: { flex: 1, fontSize: 13, fontWeight: '600', color: G.gray700 },
+  label: { flex: 1, fontSize: 13, fontWeight: '600' },
   badge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10 },
   badgeText: { fontSize: 12, fontWeight: '800' },
 });
 
 // ── Revenue Row ───────────────────────────────────────────
-function RevenueRow({ label, value, percent, isPositive }) {
+function RevenueRow({ label, value, colors }) {
   return (
-    <View style={revRow.row}>
-      <View style={revRow.dot} />
-      <Text style={revRow.label}>{label}</Text>
-      <Text style={revRow.value}>{value}</Text>
+    <View style={[revRow.row, { borderBottomColor: colors.borderLight }]}>
+      <View style={[revRow.dot, { backgroundColor: colors.primary }]} />
+      <Text style={[revRow.label, { color: colors.textSecondary }]}>{label}</Text>
+      <Text style={[revRow.value, { color: colors.text }]}>{value}</Text>
     </View>
   );
 }
 
 const revRow = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, gap: 10, borderBottomWidth: 1, borderBottomColor: G.gray100 },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: G.primary },
-  label: { flex: 1, fontSize: 13, color: G.gray700, fontWeight: '600' },
-  value: { fontSize: 13, fontWeight: '800', color: G.gray900 },
+  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, gap: 10, borderBottomWidth: 1 },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  label: { flex: 1, fontSize: 13, fontWeight: '600' },
+  value: { fontSize: 13, fontWeight: '800' },
 });
 
 // ── Màn hình chính ────────────────────────────────────────
-export default function AdminDashboardScreen() {
+export default function AdminDashboardScreen({ navigation }) {
   const { user } = useAuthStore();
+  const { colors, isDark } = useTheme();
   const [dash, setDash] = useState(null);
   const [todayRevenue, setTodayRevenue] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [period, setPeriod] = useState('30'); // '7' | '30' | '90'
 
   const fetchData = useCallback(async () => {
     try {
@@ -156,11 +139,11 @@ export default function AdminDashboardScreen() {
   const greeting = now.getHours() < 12 ? 'Chào buổi sáng' : now.getHours() < 18 ? 'Chào buổi chiều' : 'Chào buổi tối';
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={G.primaryDark} />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colors.statusBar} backgroundColor={colors.statusBarBg} />
 
       {/* ── Header ── */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.primaryDark }]}>
         <View>
           <Text style={styles.headerSub}>{greeting}, Admin</Text>
           <Text style={styles.headerTitle}>Paradise GYM</Text>
@@ -174,86 +157,98 @@ export default function AdminDashboardScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[G.primary]} tintColor={G.primary} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
         contentContainerStyle={styles.scroll}
       >
         {loading ? (
           <View style={styles.loadingBox}>
-            <ActivityIndicator size="large" color={G.primary} />
-            <Text style={styles.loadingText}>Đang tải dữ liệu…</Text>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={[styles.loadingText, { color: colors.textMuted }]}>Đang tải dữ liệu…</Text>
           </View>
         ) : (
           <>
             {/* ── Doanh thu hôm nay ── */}
-            <View style={styles.revenueBanner}>
+            <View style={[styles.revenueBanner, { backgroundColor: colors.primary }]}>
               <View style={styles.revenueBannerLeft}>
                 <Text style={styles.revenueBannerLabel}>Doanh thu hôm nay</Text>
                 <Text style={styles.revenueBannerValue}>
-                  {formatPrice(todayRevenue?.tong_doanh_thu || 0)}
+                  {formatPrice(todayRevenue?.tong_tien || 0)}
                 </Text>
                 <Text style={styles.revenueBannerSub}>
-                  {todayRevenue?.so_giao_dich || 0} giao dịch • {todayRevenue?.so_hv_moi || 0} HV mới
+                  {todayRevenue?.tong_don || 0} giao dịch • {todayRevenue?.so_hv_moi || 0} HV mới
                 </Text>
               </View>
               <View style={styles.revenueBannerIcon}>
-                <DollarSign color={G.white} size={32} strokeWidth={1.5} />
+                <DollarSign color="#ffffff" size={32} strokeWidth={1.5} />
               </View>
             </View>
 
             {/* ── KPI Grid ── */}
-            <Text style={styles.sectionTitle}>Tổng quan</Text>
+            <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Tổng quan</Text>
             <View style={styles.kpiGrid}>
               <KpiCard
                 icon={Users}
-                iconBg={G.primaryLight} iconColor={G.primary}
+                iconBg={colors.primaryLight} iconColor={colors.primary}
                 label="Hội viên đang HĐ"
-                value={dash?.tong_hoi_vien ?? '—'}
-                sub={`+${dash?.hv_moi_trong_thang ?? 0} tháng này`}
+                value={dash?.hoi_vien?.con_han ?? '—'}
+                sub={`+${dash?.percent_changes?.hoi_vien || 0}% tháng này`}
+                colors={colors}
+                subColor={colors.primary}
               />
               <KpiCard
                 icon={CheckCircle2}
-                iconBg={G.blueLight} iconColor={G.blue}
+                iconBg={isDark ? '#1a3040' : '#e3f2fd'} iconColor={isDark ? '#60a5fa' : '#1565c0'}
                 label="Check-in hôm nay"
-                value={dash?.check_in_hom_nay ?? '—'}
+                value={dash?.luot_vao_ra_hom_nay?.luot_vao ?? '—'}
                 sub={`${dash?.check_in_tuan_nay ?? 0} lượt tuần này`}
+                colors={colors}
+                subColor={isDark ? '#60a5fa' : '#1565c0'}
               />
               <KpiCard
                 icon={CalendarCheck}
-                iconBg="#f3e8ff" iconColor={G.purple}
+                iconBg={isDark ? '#2e1c4a' : '#f3e8ff'} iconColor="#c084fc"
                 label="Lịch PT hôm nay"
-                value={dash?.lich_pt_hom_nay ?? '—'}
-                sub={`${dash?.lich_pt_da_tap ?? 0} đã xác nhận`}
+                value={dash?.lich_tap_hom_nay?.tong ?? '—'}
+                sub={`${dash?.lich_tap_hom_nay?.da_tap || 0} đã tập`}
+                colors={colors}
+                subColor="#c084fc"
               />
               <KpiCard
                 icon={TrendingUp}
-                iconBg={G.warningLight} iconColor={G.warning}
+                iconBg={isDark ? '#3d250c' : '#fffbeb'} iconColor="#fbbf24"
                 label="Doanh thu tháng"
                 value={formatPrice(dash?.doanh_thu_thang ?? 0)}
                 sub={`${dash?.so_goi_ban_thang ?? 0} gói bán`}
+                colors={colors}
+                subColor="#fbbf24"
               />
             </View>
 
             {/* ── Cảnh báo ── */}
-            {((dash?.sap_het_han ?? 0) > 0 || (dash?.het_han ?? 0) > 0 || (dash?.yeu_cau_cho_duyet ?? 0) > 0) && (
+            {((dash?.hoi_vien?.sap_het_han ?? 0) > 0 || (dash?.hoi_vien?.het_han ?? 0) > 0 || (dash?.yeu_cau_cho_duyet ?? 0) > 0) && (
               <>
-                <Text style={styles.sectionTitle}>Cần xử lý</Text>
-                <View style={styles.card}>
-                  {(dash?.sap_het_han ?? 0) > 0 && (
+                <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Cần xử lý</Text>
+                <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  {(dash?.hoi_vien?.sap_het_han ?? 0) > 0 && (
                     <AlertRow
-                      icon={Clock} iconBg={G.warningLight} iconColor={G.warning}
-                      label="Gói sắp hết hạn (7 ngày)" count={dash.sap_het_han} color={G.warning}
+                      icon={Clock} iconBg={isDark ? '#3d250c' : '#fffbeb'} iconColor="#fbbf24"
+                      label="Gói sắp hết hạn (7 ngày)" count={dash.hoi_vien.sap_het_han} color="#fbbf24"
+                      colors={colors}
                     />
                   )}
-                  {(dash?.het_han ?? 0) > 0 && (
+                  {(dash?.hoi_vien?.het_han ?? 0) > 0 && (
                     <AlertRow
-                      icon={AlertTriangle} iconBg={G.dangerLight} iconColor={G.danger}
-                      label="Gói đã hết hạn" count={dash.het_han} color={G.danger}
+                      icon={AlertTriangle} iconBg={colors.dangerLight} iconColor={colors.danger}
+                      label="Gói đã hết hạn" count={dash.hoi_vien.het_han} color={colors.danger}
+                      colors={colors}
                     />
                   )}
                   {(dash?.yeu_cau_cho_duyet ?? 0) > 0 && (
                     <AlertRow
-                      icon={UserCheck} iconBg={G.primaryLight} iconColor={G.primary}
-                      label="Yêu cầu gia hạn chờ duyệt" count={dash.yeu_cau_cho_duyet} color={G.primary}
+                      icon={UserCheck} iconBg={colors.primaryLight} iconColor={colors.primary}
+                      label="Yêu cầu gia hạn chờ duyệt" count={dash.yeu_cau_cho_duyet} color={colors.primary}
+                      onPress={() => navigation.navigate('AdminPackageRequests')}
+                      colors={colors}
                     />
                   )}
                 </View>
@@ -263,20 +258,24 @@ export default function AdminDashboardScreen() {
             {/* ── Doanh thu theo loại ── */}
             {todayRevenue && (
               <>
-                <Text style={styles.sectionTitle}>Phân loại doanh thu hôm nay</Text>
-                <View style={styles.card}>
-                  {(todayRevenue.doanh_thu_goi_gym ?? 0) > 0 && (
-                    <RevenueRow label="Gói Gym" value={formatPrice(todayRevenue.doanh_thu_goi_gym)} />
+                <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Phân loại doanh thu hôm nay</Text>
+                <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  {(todayRevenue.tien_goi_tap ?? 0) > 0 && (
+                    <RevenueRow label="Gói Gym" value={formatPrice(todayRevenue.tien_goi_tap)} colors={colors} />
                   )}
-                  {(todayRevenue.doanh_thu_goi_pt ?? 0) > 0 && (
-                    <RevenueRow label="Gói PT" value={formatPrice(todayRevenue.doanh_thu_goi_pt)} />
+                  {(todayRevenue.tien_goi_pt ?? 0) > 0 && (
+                    <RevenueRow label="Gói PT" value={formatPrice(todayRevenue.tien_goi_pt)} colors={colors} />
                   )}
-                  {(todayRevenue.doanh_thu_khac ?? 0) > 0 && (
-                    <RevenueRow label="Khác" value={formatPrice(todayRevenue.doanh_thu_khac)} />
+                  {((todayRevenue.tong_tien || 0) - (todayRevenue.tien_goi_tap || 0) - (todayRevenue.tien_goi_pt || 0)) > 0 && (
+                    <RevenueRow
+                      label="Khác"
+                      value={formatPrice((todayRevenue.tong_tien || 0) - (todayRevenue.tien_goi_tap || 0) - (todayRevenue.tien_goi_pt || 0))}
+                      colors={colors}
+                    />
                   )}
-                  {!todayRevenue.doanh_thu_goi_gym && !todayRevenue.doanh_thu_goi_pt && (
+                  {!todayRevenue.tien_goi_tap && !todayRevenue.tien_goi_pt && ((todayRevenue.tong_tien || 0) - (todayRevenue.tien_goi_tap || 0) - (todayRevenue.tien_goi_pt || 0)) <= 0 && (
                     <View style={{ paddingVertical: 16, alignItems: 'center' }}>
-                      <Text style={{ fontSize: 12, color: G.gray400 }}>Chưa có doanh thu hôm nay</Text>
+                      <Text style={{ fontSize: 12, color: colors.textMuted }}>Chưa có doanh thu hôm nay</Text>
                     </View>
                   )}
                 </View>
@@ -286,19 +285,19 @@ export default function AdminDashboardScreen() {
             {/* ── Thống kê nhanh ── */}
             {dash && (
               <>
-                <Text style={styles.sectionTitle}>Thống kê thêm</Text>
+                <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Thống kê thêm</Text>
                 <View style={styles.statsRow}>
-                  <View style={[styles.statBox, { backgroundColor: G.primaryLight }]}>
-                    <Text style={[styles.statVal, { color: G.primary }]}>{dash.tong_pt ?? '—'}</Text>
-                    <Text style={styles.statLabel}>Huấn luyện viên</Text>
+                  <View style={[styles.statBox, { backgroundColor: colors.primaryLight }]}>
+                    <Text style={[styles.statVal, { color: colors.primary }]}>{dash.tong_pt ?? '—'}</Text>
+                    <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Huấn luyện viên</Text>
                   </View>
-                  <View style={[styles.statBox, { backgroundColor: G.blueLight }]}>
-                    <Text style={[styles.statVal, { color: G.blue }]}>{dash.tong_nhan_vien ?? '—'}</Text>
-                    <Text style={styles.statLabel}>Nhân viên</Text>
+                  <View style={[styles.statBox, { backgroundColor: isDark ? '#1a3040' : '#e3f2fd' }]}>
+                    <Text style={[styles.statVal, { color: isDark ? '#60a5fa' : '#1565c0' }]}>{dash.tong_nhan_vien ?? '—'}</Text>
+                    <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Nhân viên</Text>
                   </View>
-                  <View style={[styles.statBox, { backgroundColor: '#f3e8ff' }]}>
-                    <Text style={[styles.statVal, { color: G.purple }]}>{dash.tong_goi_tap ?? '—'}</Text>
-                    <Text style={styles.statLabel}>Gói đang BH</Text>
+                  <View style={[styles.statBox, { backgroundColor: isDark ? '#2e1c4a' : '#f3e8ff' }]}>
+                    <Text style={[styles.statVal, { color: '#c084fc' }]}>{dash.tong_goi_tap ?? '—'}</Text>
+                    <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Gói đang BH</Text>
                   </View>
                 </View>
               </>
@@ -313,9 +312,8 @@ export default function AdminDashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: G.gray50 },
+  container: { flex: 1 },
   header: {
-    backgroundColor: G.primaryDark,
     paddingTop: 52,
     paddingBottom: 20,
     paddingHorizontal: 20,
@@ -324,47 +322,47 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginBottom: 2 },
-  headerTitle: { fontSize: 22, fontWeight: '800', color: G.white },
+  headerTitle: { fontSize: 22, fontWeight: '800', color: '#ffffff' },
   headerDate: {
     backgroundColor: 'rgba(255,255,255,0.15)',
     paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20,
   },
-  headerDateText: { fontSize: 12, color: G.white, fontWeight: '600' },
+  headerDateText: { fontSize: 12, color: '#ffffff', fontWeight: '600' },
   scroll: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24 },
   loadingBox: { paddingVertical: 60, alignItems: 'center', gap: 12 },
-  loadingText: { fontSize: 13, color: G.gray400 },
+  loadingText: { fontSize: 13 },
 
   revenueBanner: {
-    backgroundColor: G.primary,
     borderRadius: 20,
     padding: 20,
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
-    shadowColor: G.primary,
-    shadowOpacity: 0.3, shadowRadius: 12, elevation: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.1, shadowRadius: 12, elevation: 4,
   },
   revenueBannerLeft: { flex: 1 },
   revenueBannerLabel: { fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: '600', marginBottom: 4 },
-  revenueBannerValue: { fontSize: 32, fontWeight: '900', color: G.white },
+  revenueBannerValue: { fontSize: 32, fontWeight: '900', color: '#ffffff' },
   revenueBannerSub: { fontSize: 11, color: 'rgba(255,255,255,0.75)', marginTop: 4 },
   revenueBannerIcon: { opacity: 0.5 },
 
   sectionTitle: {
-    fontSize: 12, fontWeight: '700', color: G.gray400,
+    fontSize: 11, fontWeight: '700',
     textTransform: 'uppercase', letterSpacing: 0.8,
     marginBottom: 8, marginTop: 4, paddingLeft: 2,
   },
   kpiGrid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -4, marginBottom: 16 },
 
   card: {
-    backgroundColor: G.white, borderRadius: 16, paddingHorizontal: 16,
-    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, elevation: 3,
+    borderRadius: 16, paddingHorizontal: 16,
+    shadowColor: '#000', shadowOpacity: 0.02, shadowRadius: 8, elevation: 2,
+    borderWidth: 1,
     marginBottom: 16,
   },
 
   statsRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   statBox: { flex: 1, borderRadius: 14, padding: 14, alignItems: 'center', gap: 4 },
   statVal: { fontSize: 22, fontWeight: '800' },
-  statLabel: { fontSize: 10, fontWeight: '600', color: G.gray500, textAlign: 'center' },
+  statLabel: { fontSize: 10, fontWeight: '600', textAlign: 'center' },
 });
