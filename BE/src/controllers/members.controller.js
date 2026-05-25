@@ -1632,11 +1632,11 @@ export const switchPackage = (req, res) => {
     // Đăng ký gói mới
     const ins = db.prepare(`
       INSERT INTO dang_ky_goi_tap
-        (ho_so_id, goi_tap_id, tu_ngay, den_ngay, gia_thuc_te, phuong_thuc_tt, ghi_chu_tt,
+        (ho_so_id, goi_tap_id, tu_ngay, den_ngay, gia_thuc_te, so_tien_da_thu, phuong_thuc_tt, ghi_chu_tt,
          trang_thai, nguoi_tao_id, nguoi_cap_nhat_id, ngay_thanh_toan)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'dang_hoat_dong', ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'dang_hoat_dong', ?, ?, ?)
     `).run(hoSo.id, goi_tap_id_moi, tu_ngay, denNgay,
-           gia_thuc_te ?? goiMoi.gia, phuong_thuc_tt || null, ghi_chu_tt || null,
+           gia_thuc_te ?? goiMoi.gia, gia_thuc_te ?? goiMoi.gia, phuong_thuc_tt || null, ghi_chu_tt || null,
            req.user.id, req.user.id, tu_ngay);
 
     return ins.lastInsertRowid;

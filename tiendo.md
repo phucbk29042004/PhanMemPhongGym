@@ -7,12 +7,40 @@
 
 ---
 
-## 📌 Trạng Thái Hiện Tại
-**✅ Fix 3 bug UX + tích hợp Mobile PayOS gia hạn gói tập** — (1) Validate số tiền đăng ký gói không cho nợ nếu chưa chọn "Còn nợ"; (2) Tính tiền hoàn gợi ý khi đổi gói PT; (3) Mobile gia hạn gói tập dùng PayOS thay modal cũ.
+## 📌 Trạng Thế Hiện Tại
+**✅ Đồng bộ ràng buộc thanh toán gói tập & khóa ngày thu trên Web & Mobile** — Khóa ngày thu tiền trùng ngày bắt đầu gói tập, chặn đăng ký gói tập nếu số tiền khách trả không đủ.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
+
+### 25/05/2026 — Hoàn Thiện Nghiệp Vụ Đổi Gói Tập (Nâng Cấp/Hạ Cấp) & Đồng Bộ Dynamic UI (Web & Mobile)
+- **Loại**: Cải tiến logic nghiệp vụ, UI/UX, Đồng bộ hệ thống (Web & Mobile)
+- **File/Thành phần liên quan**:
+  - [members-list.js](file:///d:/UI%20GYM/FE/assets/js/pages/members-list.js)
+  - [AdminMemberDetailScreen.js](file:///d:/UI%20GYM/MobileApp/src/screens/admin/AdminMemberDetailScreen.js)
+  - [AdminRegisterPackageScreen.js](file:///d:/UI%20GYM/MobileApp/src/screens/admin/AdminRegisterPackageScreen.js)
+  - [db.js (BE)](file:///d:/UI%20GYM/BE/src/config/db.js)
+- **Mô tả**:
+  - **Database & Trigger (BE)**: Bổ sung Migration v12 cập nhật trigger `trg_doanh_thu_goi_tap_update` để trừ doanh thu dựa trên số tiền hoàn thực tế `COALESCE(NEW.so_tien_hoan, OLD.gia_thuc_te)` khi hủy hoặc đổi gói tập, ngăn lỗi thất thoát doanh thu của số ngày đã sử dụng.
+  - **Mobile App**:
+    - Nâng cấp `AdminMemberDetailScreen` để truyền `activePkg` sang màn hình đăng ký gói.
+    - Cải tiến `AdminRegisterPackageScreen` nhận `activePkg` để hiển thị Banner thông tin gói đang hoạt động kèm số tiền hoàn bảo lưu gợi ý (tính toán thực tế theo số ngày còn lại / tổng số ngày của gói cũ).
+    - Thêm chức năng lựa chọn "Loại giao dịch" (Đổi gói tập vs Đăng ký song song) khi hội viên đang có gói hoạt động.
+    - Phát triển logic tính chênh lệch thu tiền động: nếu nâng cấp (tiền đóng thêm >= 0) hiển thị màu xanh và nhãn "Tiền đóng thêm (đ)"; nếu hạ cấp (tiền đóng thêm < 0) hiển thị màu đỏ và nhãn "Tiền hoàn trả khách (đ)", đồng bộ hoàn toàn với logic trên Web Frontend theo mong muốn của khách hàng.
+    - Tích hợp gọi đúng API `POST /api/members/:id/package/switch` khi xác nhận đổi gói.
+  - **Web Frontend**: Nhãn và phong cách của trường chênh lệch được đồng bộ linh hoạt giữa "Tiền thanh toán thêm" và "Tiền hoàn trả khách" tùy theo chênh lệch âm dương khi thực hiện đổi gói (nâng cấp/hạ cấp).
+- **Kết quả**: Thành công 100%.
+
+### 25/05/2026 — Ràng Buộc Thanh Toán Đầy Đủ Gói Tập & Khóa Ngày Thu Tiền
+- **Loại**: Cải tiến logic nghiệp vụ, UX, Đồng bộ hệ thống (Fullstack)
+- **File/Thành phần liên quan**:
+  - `FE/assets/js/pages/member-add.js`
+  - `MobileApp/src/screens/admin/AdminRegisterPackageScreen.js`
+- **Mô tả**:
+  - **Web Frontend**: Khóa ô "Ngày thu" thành chỉ đọc (read-only) và tự động đồng bộ hóa giá trị với ô "Từ ngày" (ngày bắt đầu gói tập). Bổ sung điều kiện validation khi nhấn nút "Lưu đăng ký gói" để đảm bảo số tiền khách trả không được nhỏ hơn giá trị thực tế của gói tập, ngăn chặn ghi nhận nợ ngoài ý muốn.
+  - **Mobile App**: Bổ sung validation tương ứng trong `handleRegister` để chặn đăng ký gói tập nếu số tiền thu thực tế (`paidAmount`) nhỏ hơn giá gói tập thực tế (`actualPrice`), đảm bảo tính nhất quán nghiệp vụ giữa nền tảng Web và Di động.
+- **Kết quả**: Thành công 100%.
 
 ### 25/05/2026 — Tích Hợp Đầy Đủ Chức Năng Admin & Đồng Bộ Hóa Dark Mode Trên MobileApp
 - **Loại**: Cải tiến tính năng, UI/UX, Đồng bộ hệ thống (Mobile)

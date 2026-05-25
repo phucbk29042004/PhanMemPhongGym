@@ -2275,15 +2275,23 @@ window.GymApp.pages['members-list'] = {
     // Tính số ngày còn lại và tiền hoàn gợi ý
     const _calcRemainingCredit = () => {
       const today = new Date(); today.setHours(0,0,0,0);
+      const tuNgay = pkg.tu_ngay ? new Date(pkg.tu_ngay) : null;
       const denNgay = pkg.den_ngay ? new Date(pkg.den_ngay) : null;
-      if (!denNgay) return { remainingDays: 0, credit: 0 };
+      if (!denNgay) return { remainingDays: 0, credit: 0, totalDays: 30 };
       denNgay.setHours(0,0,0,0);
       const remainingDays = Math.max(0, Math.round((denNgay - today) / 86400000));
+      
+      let totalDays = 30; // fallback mặc định
+      if (tuNgay) {
+        tuNgay.setHours(0,0,0,0);
+        totalDays = Math.max(1, Math.round((denNgay - tuNgay) / 86400000));
+      }
+      
       const giaThucTe = pkg.gia_thuc_te || pkg.gia || 0;
-      const credit = Math.round((giaThucTe * remainingDays) / 30);
-      return { remainingDays, credit };
+      const credit = Math.round((giaThucTe * remainingDays) / totalDays);
+      return { remainingDays, credit, totalDays };
     };
-    const { remainingDays, credit } = _calcRemainingCredit();
+    const { remainingDays, credit, totalDays } = _calcRemainingCredit();
 
     const iCls = `class="bg-surface-container-lowest text-on-surface border border-outline-variant" style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;"`;
     const PM = {tien_mat:'Tiền mặt',chuyen_khoan:'Chuyển khoản',the:'Thẻ',momo:'MoMo',zalopay:'ZaloPay',khac:'Khác'};
@@ -2308,7 +2316,7 @@ window.GymApp.pages['members-list'] = {
               <span>Còn lại: <strong>${remainingDays} ngày</strong></span>
               <span>Tiền hoàn gợi ý: <strong id="switch-credit-hint">${window.GymApp.formatCurrency(credit)}</strong></span>
             </div>
-            <div style="font-size:11px;color:#3b82f6;margin-top:3px;">Công thức: giá × ngày còn lại ÷ 30</div>
+            <div style="font-size:11px;color:#3b82f6;margin-top:3px;">Công thức: giá × ngày còn lại ÷ ${totalDays}</div>
           </div>
           <div>
             <label class="block text-body-sm font-bold text-on-surface mb-xs">Gói tập mới <span style="color:#ba1a1a;">*</span></label>
@@ -2317,18 +2325,13 @@ window.GymApp.pages['members-list'] = {
               ${goiTapList.map(g => `<option value="${g.id}" data-gia="${g.gia}">${g.ten_goi} — ${window.GymApp.formatCurrency(g.gia)}</option>`).join('')}
             </select>
           </div>
-          <!-- Gợi ý tiền đóng thêm -->
-          <div id="switch-extra-hint" style="display:none;padding:8px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;font-size:12px;color:#166534;">
-            Tiền đóng thêm gợi ý: <strong id="switch-extra-amount">—</strong>
-            <span style="color:#4ade80;font-size:11px;"> (= giá gói mới − tiền hoàn)</span>
-          </div>
           <div>
             <label class="block text-body-sm font-bold text-on-surface mb-xs">Ngày bắt đầu <span style="color:#ba1a1a;">*</span></label>
             <input id="switch-pkg-from" type="date" value="${new Date().toISOString().substring(0,10)}" ${iCls} />
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-standard">
             <div>
-              <label class="block text-body-sm font-bold text-on-surface mb-xs">Giá thực tế (VNĐ)</label>
+              <label class="block text-body-sm font-bold text-on-surface mb-xs">Giá thực tế gói mới (VNĐ)</label>
               <input id="switch-pkg-price" type="text" inputmode="numeric" placeholder="Mặc định = giá gói" ${iCls} />
             </div>
             <div>
@@ -2338,12 +2341,18 @@ window.GymApp.pages['members-list'] = {
               </select>
             </div>
             <div>
-              <label class="block text-body-sm font-bold text-on-surface mb-xs">Hoàn tiền gói cũ (VNĐ)</label>
+              <label class="block text-body-sm font-bold text-on-surface mb-xs">Khấu trừ gói cũ (VNĐ)</label>
               <input id="switch-pkg-refund" type="text" inputmode="numeric" placeholder="0" ${iCls} value="${credit > 0 ? credit : ''}" />
             </div>
             <div>
               <label class="block text-body-sm font-bold text-on-surface mb-xs">Lý do đổi</label>
-              <input id="switch-pkg-reason" type="text" placeholder="Nâng cấp, sai gói..." ${iCls} />
+              <input id="switch-pkg-reason" type="text" ${iCls} />
+            </div>
+            <div class="col-span-1 sm:col-span-2">
+              <label id="switch-diff-label" class="block text-body-sm font-bold mb-xs" style="color:#166534;">Tiền thanh toán thêm (VNĐ)</label>
+              <input id="switch-pkg-diff" type="text" readonly value="—" 
+                class="w-full font-bold px-3 py-2 rounded-lg border outline-none cursor-not-allowed text-body-sm" 
+                style="background:#dcfce7; border-color:#bbf7d0; color:#166534; box-sizing:border-box;" />
             </div>
           </div>
           <div class="rounded-xl" style="padding:10px 12px;background:#f0fdf4;border:1px solid #bbf7d0;">
@@ -2366,23 +2375,51 @@ window.GymApp.pages['members-list'] = {
     const _fVND = n => n > 0 ? new Intl.NumberFormat('vi-VN').format(n) : '';
     const swPriceEl = overlay.querySelector('#switch-pkg-price');
     const swRefundEl = overlay.querySelector('#switch-pkg-refund');
-    const extraHintEl = overlay.querySelector('#switch-extra-hint');
-    const extraAmountEl = overlay.querySelector('#switch-extra-amount');
     if (credit > 0) swRefundEl.value = _fVND(credit);
-    swPriceEl?.addEventListener('focus', function () { const v = _pVND(this.value); this.value = v > 0 ? String(v) : ''; });
-    swPriceEl?.addEventListener('blur', function () { this.value = _fVND(_pVND(this.value)); });
-    swRefundEl?.addEventListener('focus', function () { const v = _pVND(this.value); this.value = v > 0 ? String(v) : ''; });
-    swRefundEl?.addEventListener('blur', function () { this.value = _fVND(_pVND(this.value)); });
 
     const _updateExtraHint = () => {
       const newGia = _pVND(swPriceEl?.value);
       const hoan = _pVND(swRefundEl?.value);
-      if (newGia > 0 && extraHintEl && extraAmountEl) {
-        const extra = Math.max(0, newGia - hoan);
-        extraAmountEl.textContent = window.GymApp.formatCurrency(extra);
-        extraHintEl.style.display = 'block';
+      const diff = newGia - hoan;
+      
+      const diffLabelEl = overlay.querySelector('#switch-diff-label');
+      const diffInputEl = overlay.querySelector('#switch-pkg-diff');
+      
+      if (diffLabelEl && diffInputEl) {
+        if (!swPriceEl?.value) {
+          diffLabelEl.textContent = 'Tiền thanh toán thêm (VNĐ)';
+          diffLabelEl.style.color = '';
+          diffInputEl.style.background = '';
+          diffInputEl.style.borderColor = '';
+          diffInputEl.style.color = '';
+          diffInputEl.value = '—';
+          return;
+        }
+        if (diff >= 0) {
+          diffLabelEl.textContent = 'Tiền thanh toán thêm (VNĐ)';
+          diffLabelEl.style.color = '#166534';
+          diffInputEl.style.background = '#dcfce7';
+          diffInputEl.style.borderColor = '#bbf7d0';
+          diffInputEl.style.color = '#166534';
+          diffInputEl.value = _fVND(diff) || '0';
+        } else {
+          diffLabelEl.textContent = 'Tiền hoàn trả khách (VNĐ)';
+          diffLabelEl.style.color = '#ba1a1a';
+          diffInputEl.style.background = '#ffdad6';
+          diffInputEl.style.borderColor = '#fecaca';
+          diffInputEl.style.color = '#ba1a1a';
+          diffInputEl.value = _fVND(Math.abs(diff)) || '0';
+        }
       }
     };
+
+    swPriceEl?.addEventListener('focus', function () { const v = _pVND(this.value); this.value = v > 0 ? String(v) : ''; });
+    swPriceEl?.addEventListener('blur', function () { this.value = _fVND(_pVND(this.value)); _updateExtraHint(); });
+    swRefundEl?.addEventListener('focus', function () { const v = _pVND(this.value); this.value = v > 0 ? String(v) : ''; });
+    swRefundEl?.addEventListener('blur', function () { this.value = _fVND(_pVND(this.value)); _updateExtraHint(); });
+    swPriceEl?.addEventListener('input', _updateExtraHint);
+    swRefundEl?.addEventListener('input', _updateExtraHint);
+
 
     overlay.querySelector('#switch-pkg-new')?.addEventListener('change', function () {
       const gia = parseFloat(this.options[this.selectedIndex]?.dataset?.gia) || 0;

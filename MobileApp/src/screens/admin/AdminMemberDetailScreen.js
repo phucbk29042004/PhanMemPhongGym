@@ -221,7 +221,7 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
           )}
           <TouchableOpacity 
             style={[styles.actionBtn, { backgroundColor: colors.primaryLight, marginTop: activePkg ? 12 : 0 }]}
-            onPress={() => navigation.navigate('AdminRegisterPackage', { member })}
+            onPress={() => navigation.navigate('AdminRegisterPackage', { member, activePkg })}
           >
             <Text style={[styles.actionBtnText, { color: colors.primary }]}>
               {activePkg ? 'Gia hạn / Đổi gói Gym' : 'Đăng ký gói Gym mới'}

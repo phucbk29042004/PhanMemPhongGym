@@ -1,6 +1,6 @@
 # 🏛️ Kiến Trúc Hệ Thống — Paradise GYM
 
-> Cập nhật lần cuối: 25/05/2026 — Tích hợp đầy đủ tính năng Admin & Dark Mode trên MobileApp.
+> Cập nhật lần cuối: 25/05/2026 — Đồng bộ ràng buộc thanh toán gói tập & khóa ngày thu tiền.
 
 ---
 
@@ -155,8 +155,22 @@ graph TD
 - **08/05/2026**: Triển khai **Memory Storage Multer** để bảo mật (không lưu file tạm) và tối ưu tốc độ upload lên Cloudinary.
 - **08/05/2026**: Áp dụng **RBAC linh hoạt** qua cột `quyen_json`, cho phép thay đổi quyền hạn mà không cần sửa code middleware.
 - **08/05/2026**: Triển khai **Fullstack Persistence Strategy**: Chuyển đổi toàn bộ logic lưu tạm (local array) sang API-driven persistence (SQLite storage), giải quyết vấn đề mất dữ liệu khi cập nhật code hoặc tải lại trang.
+
 # Cập nhật kiến trúc 22/05/2026 — PT Rating, BMI, PT & Tôi
 
 - **Database**: thêm `ho_so.chieu_cao_cm`, `ho_so.can_nang_kg`, bảng `danh_gia_pt` và bảng `pt_toi_nhat_ky`.
 - **API mới/cập nhật**: `PATCH /api/members/me/health`, `GET/POST /api/pt/schedules/:id/rating`, `GET/POST/PUT /api/pt-me/*`; API trainers và PT schedules trả thêm điểm sao/tổng lượt đánh giá.
 - **Frontend/Mobile**: Member Portal/Mobile có BMI và form đánh giá PT sau buổi hoàn thành; PT Portal/Mobile có tab/luồng `PT & Tôi`; danh sách PT hiển thị rating thật từ dữ liệu đánh giá.
+
+# Cập nhật kiến trúc 25/05/2026 — Nghiệp vụ Đổi Gói Tập (Web & Mobile) & Doanh Thu Tự Động
+
+- **Quy tắc nghiệp vụ**:
+  - Khóa trường "Ngày thu" tự động đồng bộ theo ngày bắt đầu gói tập ("Từ ngày") trên cả Web. Chặn hoàn toàn việc đăng ký gói tập có số tiền khách trả nhỏ hơn giá trị thực tế của gói tập trên cả hai nền tảng Web và Di động.
+  - Hỗ trợ đổi gói tập (Gym) nâng cấp hoặc hạ cấp: Tiền hoàn gói cũ được tính chính xác dựa trên số ngày còn lại chia cho tổng số ngày thực tế của gói cũ (`totalDays = den_ngay - tu_ngay`).
+  - Giao diện chênh lệch số tiền được hiển thị và đổi tên động:
+    - Nếu nâng cấp (tiền đóng thêm >= 0): Hiển thị màu xanh và nhãn "Tiền thanh toán thêm (VNĐ)" (Web) / "Tiền đóng thêm (đ)" (Mobile).
+    - Nếu hạ cấp (tiền đóng thêm < 0): Hiển thị màu đỏ và nhãn "Tiền hoàn trả khách (VNĐ)" (Web) / "Tiền hoàn trả khách (đ)" (Mobile).
+- **Database & Trigger (BE)**: Bổ sung Migration v12 cập nhật trigger `trg_doanh_thu_goi_tap_update` để trừ doanh thu dựa trên số tiền hoàn thực tế `COALESCE(NEW.so_tien_hoan, OLD.gia_thuc_te)` thay vì trừ 100% giá gói cũ ban đầu khi hủy/đổi gói.
+- **Frontend/Mobile**:
+  - Cập nhật validation tại màn hình thêm hội viên (`member-add.js` trên Web) và đăng ký gói tập (`AdminRegisterPackageScreen.js` trên Mobile) để hiển thị thông báo lỗi và chặn lưu nếu số tiền không hợp lệ.
+  - Tích hợp giao diện đổi gói tập trên Mobile: Hiển thị banner chi tiết gói tập đang hoạt động, cho phép chọn giữa "Đổi gói" và "Đăng ký song song", tự động hiển thị số tiền đóng thêm / hoàn trả động và gọi API `POST /api/members/:id/package/switch`.

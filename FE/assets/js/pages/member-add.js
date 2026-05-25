@@ -194,7 +194,7 @@ window.GymApp.pages['member-add'] = {
                     class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all" />
                   <p id="err-pkg-paid" class="hidden text-error text-body-sm mt-xs font-medium"></p>
                 </div>
-                ${this._field('Ngày thu', 'pkg-pay-date', 'date')}
+                ${this._field('Ngày thu *', 'pkg-pay-date', 'date', '', true)}
                 ${this._select('Phương thức', 'pkg-method', [{ v: 'tien_mat', t: 'Tiền mặt' }, { v: 'chuyen_khoan', t: 'Chuyển khoản' }])}
               </div>
             </div>
@@ -433,7 +433,13 @@ window.GymApp.pages['member-add'] = {
       }
       calcPkgEndDate();
     });
-    pkgFrom?.addEventListener('change', calcPkgEndDate);
+    pkgFrom?.addEventListener('change', () => {
+      calcPkgEndDate();
+      const payDateEl = document.getElementById('pkg-pay-date');
+      if (payDateEl) {
+        payDateEl.value = pkgFrom.value;
+      }
+    });
 
     // Format tiền khách trả khi blur
     document.getElementById('pkg-paid')?.addEventListener('blur', function () {
@@ -736,6 +742,15 @@ window.GymApp.pages['member-add'] = {
 
       if (!pkgId || !tuNgay || !phuongThucTT || paidMissing || !ngayThu) {
         return window.GymApp.toast('Vui lòng điền đủ các trường bắt buộc (*)', 'error');
+      }
+
+      if (paidRaw < priceRaw) {
+        if (paidErrEl) {
+          paidErrEl.textContent = `Số tiền khách trả không được nhỏ hơn giá gói tập (${window.GymApp.formatCurrency(priceRaw)})`;
+          paidErrEl.classList.remove('hidden');
+        }
+        if (paidInput) paidInput.classList.add('border-error');
+        return window.GymApp.toast('Số tiền khách trả không đủ!', 'error');
       }
 
       if (denNgay && ngayThu > denNgay) {
