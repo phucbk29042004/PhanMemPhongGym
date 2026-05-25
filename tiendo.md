@@ -14,6 +14,30 @@
 
 ## 📋 Danh Sách Thay Đổi
 
+### 25/05/2026 — Tích Hợp Đầy Đủ Chức Năng Admin & Đồng Bộ Hóa Dark Mode Trên MobileApp
+- **Loại**: Cải tiến tính năng, UI/UX, Đồng bộ hệ thống (Mobile)
+- **File/Thành phần liên quan**:
+  - `MobileApp/src/navigation/AdminNavigator.js`
+  - `MobileApp/src/screens/admin/AdminDashboardScreen.js`
+  - `MobileApp/src/screens/admin/AdminMembersScreen.js`
+  - `MobileApp/src/screens/admin/AdminPTScreen.js`
+  - `MobileApp/src/screens/admin/AdminPackagesScreen.js`
+  - `MobileApp/src/screens/admin/AdminPackageRequestsScreen.js`
+  - `MobileApp/src/screens/admin/AdminMemberDetailScreen.js`
+  - `MobileApp/src/screens/admin/AdminAddEditMemberScreen.js`
+  - `MobileApp/src/screens/admin/AdminRegisterPackageScreen.js`
+  - `MobileApp/src/screens/admin/AdminRegisterPTScreen.js`
+  - `MobileApp/src/screens/admin/AdminAddEditPTScreen.js`
+  - `MobileApp/src/screens/admin/AdminAddEditPackageScreen.js`
+- **Mô tả**:
+  - Đồng bộ hóa 100% Dark Mode trên toàn bộ các màn hình quản trị của Admin bằng cách chuyển từ các mã màu tĩnh sang context `useTheme()`.
+  - Tích hợp đầy đủ luồng nghiệp vụ quản trị Admin: duyệt yêu cầu gia hạn gói tập, xem chi tiết hồ sơ hội viên và lịch sử check-in/lịch sử gói, CRUD hội viên, CRUD PT, CRUD gói tập (Gym & PT), và thực hiện các giao dịch đăng ký gói tập/hợp đồng PT trực tiếp trên thiết bị di động.
+  - Cấu hình lại thanh bottom tab navigator ẩn các màn hình stack phụ để đảm bảo trải nghiệm điều hướng tự nhiên, mượt mà trên di động.
+  - Sửa lỗi `ReferenceError: Property 'Platform' doesn't exist` tại [AdminMembersScreen.js](file:///d:/UI%20GYM/MobileApp/src/screens/admin/AdminMembersScreen.js) bằng cách import `Platform` từ `react-native`.
+  - Sửa lỗi `ReferenceError: Property 'ScrollView' doesn't exist` tại [AdminMembersScreen.js](file:///d:/UI%20GYM/MobileApp/src/screens/admin/AdminMembersScreen.js) bằng cách import `ScrollView` từ `react-native`.
+  - Sửa lỗi 500 do thiếu cột `so_tien_da_thu` trong bảng `dang_ky_goi_tap` bằng cách bổ sung migration tự động khi Backend khởi chạy tại [db.js](file:///d:/UI%20GYM/BE/src/config/db.js).
+- **Kết quả**: Thành công 100%.
+
 ### 23/05/2026 — Redesign Modal Header (members-list.js)
 - **Loại**: UI/UX Design
 - **File/Thành phần liên quan**: `FE/assets/js/pages/members-list.js`

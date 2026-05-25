@@ -2,32 +2,14 @@ import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator, FlatList, RefreshControl,
   StatusBar, StyleSheet, Text, TextInput,
-  TouchableOpacity, View,
+  TouchableOpacity, View, Platform, ScrollView,
 } from 'react-native';
 import {
-  AlertCircle, CheckCircle2, Clock, Search, User, Users, X,
+  AlertCircle, CheckCircle2, Clock, Search, User, Users, X, Plus,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../services/api';
-
-const G = {
-  primary: '#1D9336',
-  primaryDark: '#155f27',
-  primaryLight: '#e6f4ea',
-  white: '#ffffff',
-  gray50: '#f8faf8',
-  gray100: '#f0f4f0',
-  gray200: '#e4ebe4',
-  gray300: '#cdd8cd',
-  gray400: '#9cad9c',
-  gray500: '#6b7c6b',
-  gray700: '#2d3c2d',
-  gray900: '#141c14',
-  danger: '#dc2626',
-  dangerLight: '#fef2f2',
-  warning: '#d97706',
-  warningLight: '#fffbeb',
-};
+import { useTheme } from '../../context/ThemeContext';
 
 function formatDate(val) {
   if (!val) return '—';
@@ -43,28 +25,28 @@ function daysLeft(den_ngay) {
   return Math.ceil((end - today) / 86400000);
 }
 
-function StatusBadge({ days }) {
+function StatusBadge({ days, colors }) {
   if (days === null) return (
-    <View style={[badge.wrap, { backgroundColor: G.gray100 }]}>
-      <Text style={[badge.text, { color: G.gray400 }]}>Chưa có gói</Text>
+    <View style={[badge.wrap, { backgroundColor: colors.borderLight }]}>
+      <Text style={[badge.text, { color: colors.textMuted }]}>Chưa có gói</Text>
     </View>
   );
   if (days < 0) return (
-    <View style={[badge.wrap, { backgroundColor: G.dangerLight }]}>
-      <AlertCircle color={G.danger} size={10} strokeWidth={2.5} />
-      <Text style={[badge.text, { color: G.danger }]}>Hết hạn</Text>
+    <View style={[badge.wrap, { backgroundColor: colors.dangerLight }]}>
+      <AlertCircle color={colors.danger} size={10} strokeWidth={2.5} />
+      <Text style={[badge.text, { color: colors.danger }]}>Hết hạn</Text>
     </View>
   );
   if (days <= 7) return (
-    <View style={[badge.wrap, { backgroundColor: G.warningLight }]}>
-      <Clock color={G.warning} size={10} strokeWidth={2.5} />
-      <Text style={[badge.text, { color: G.warning }]}>Còn {days}N</Text>
+    <View style={[badge.wrap, { backgroundColor: '#fffbeb' }]}>
+      <Clock color="#d97706" size={10} strokeWidth={2.5} />
+      <Text style={[badge.text, { color: '#d97706' }]}>Còn {days}N</Text>
     </View>
   );
   return (
-    <View style={[badge.wrap, { backgroundColor: G.primaryLight }]}>
-      <CheckCircle2 color={G.primary} size={10} strokeWidth={2.5} />
-      <Text style={[badge.text, { color: G.primary }]}>Còn {days}N</Text>
+    <View style={[badge.wrap, { backgroundColor: colors.primaryLight }]}>
+      <CheckCircle2 color={colors.primary} size={10} strokeWidth={2.5} />
+      <Text style={[badge.text, { color: colors.primary }]}>Còn {days}N</Text>
     </View>
   );
 }
@@ -78,9 +60,9 @@ const badge = StyleSheet.create({
 function Avatar({ name, size = 44 }) {
   const safeName = name || '?';
   const initials = safeName.split(' ').slice(-2).map(w => w[0] || '').join('').toUpperCase().slice(0, 2);
-  const colors = ['#1D9336', '#1565c0', '#7c3aed', '#d97706', '#dc2626'];
+  const colorsList = ['#1D9336', '#1565c0', '#7c3aed', '#d97706', '#dc2626'];
   const charCode = safeName.charCodeAt(0) || 0;
-  const color = colors[charCode % colors.length];
+  const color = colorsList[charCode % colorsList.length];
   return (
     <View style={[av.box, { width: size, height: size, borderRadius: size / 2, backgroundColor: color + '22' }]}>
       <Text style={[av.text, { color, fontSize: size * 0.35 }]}>{initials}</Text>
@@ -93,68 +75,73 @@ const av = StyleSheet.create({
 });
 
 // ── Member Card ───────────────────────────────────────────
-function MemberCard({ item }) {
+function MemberCard({ item, colors, onPress }) {
   const activePkg = Array.isArray(item.goi_tap_hien_tai) && item.goi_tap_hien_tai.length > 0 && item.goi_tap_hien_tai[0].trang_thai !== 'het_han' && item.goi_tap_hien_tai[0].trang_thai !== 'huy' ? item.goi_tap_hien_tai[0] : null;
   const days = activePkg ? daysLeft(activePkg.den_ngay) : null;
 
   return (
-    <View style={card.wrap}>
+    <TouchableOpacity
+      style={[card.wrap, { backgroundColor: colors.surface, borderColor: colors.border }]}
+      onPress={onPress}
+      activeOpacity={0.8}
+    >
       <Avatar name={item.ho_ten} />
       <View style={card.info}>
         <View style={card.nameRow}>
-          <Text style={card.name} numberOfLines={1}>{item.ho_ten}</Text>
-          <StatusBadge days={days} />
+          <Text style={[card.name, { color: colors.text }]} numberOfLines={1}>{item.ho_ten}</Text>
+          <StatusBadge days={days} colors={colors} />
         </View>
-        <Text style={card.sub} numberOfLines={1}>
+        <Text style={[card.sub, { color: colors.textSecondary }]} numberOfLines={1}>
           {item.ma_ho_so} • {item.so_dien_thoai || '—'}
         </Text>
         {activePkg ? (
-          <Text style={card.pkg} numberOfLines={1}>
+          <Text style={[card.pkg, { color: colors.primary }]} numberOfLines={1}>
             {activePkg.ten_goi} · HH {formatDate(activePkg.den_ngay)}
           </Text>
         ) : (
-          <Text style={[card.pkg, { color: G.gray300 }]}>Chưa đăng ký gói tập</Text>
+          <Text style={[card.pkg, { color: colors.textMuted }]}>Chưa đăng ký gói tập</Text>
         )}
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
 const card = StyleSheet.create({
   wrap: {
-    backgroundColor: G.white,
     borderRadius: 14, padding: 14,
     flexDirection: 'row', alignItems: 'center', gap: 12,
     marginBottom: 8,
-    shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 6, elevation: 2,
+    borderWidth: 1,
+    shadowColor: '#000', shadowOpacity: 0.02, shadowRadius: 6, elevation: 1,
   },
   info: { flex: 1 },
   nameRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 },
-  name: { fontSize: 14, fontWeight: '700', color: G.gray900, flex: 1, marginRight: 8 },
-  sub: { fontSize: 11, color: G.gray400, marginBottom: 3 },
-  pkg: { fontSize: 11, color: G.primary, fontWeight: '600' },
+  name: { fontSize: 14, fontWeight: '700', flex: 1, marginRight: 8 },
+  sub: { fontSize: 11, marginBottom: 3 },
+  pkg: { fontSize: 11, fontWeight: '600' },
 });
 
 // ── Filter Chip ───────────────────────────────────────────
-function FilterChip({ label, active, onPress }) {
+function FilterChip({ label, active, onPress, colors }) {
   return (
     <TouchableOpacity
-      style={[chip.wrap, active && chip.active]}
+      style={[
+        chip.wrap, 
+        { backgroundColor: active ? colors.primary : colors.surface, borderColor: active ? colors.primary : colors.border }
+      ]}
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <Text style={[chip.text, active && chip.textActive]}>{label}</Text>
+      <Text style={[chip.text, { color: active ? '#ffffff' : colors.textSecondary }]}>{label}</Text>
     </TouchableOpacity>
   );
 }
 const chip = StyleSheet.create({
   wrap: {
     paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20,
-    backgroundColor: G.white, borderWidth: 1, borderColor: G.gray200, marginRight: 8,
+    borderWidth: 1, marginRight: 8,
   },
-  active: { backgroundColor: G.primary, borderColor: G.primary },
-  text: { fontSize: 12, fontWeight: '600', color: G.gray500 },
-  textActive: { color: G.white },
+  text: { fontSize: 12, fontWeight: '600' },
 });
 
 const FILTERS = [
@@ -165,7 +152,8 @@ const FILTERS = [
   { key: 'no_pkg', label: 'Chưa có gói' },
 ];
 
-export default function AdminMembersScreen() {
+export default function AdminMembersScreen({ navigation }) {
+  const { colors } = useTheme();
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -206,35 +194,43 @@ export default function AdminMembersScreen() {
   });
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={G.primaryDark} />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colors.statusBar} backgroundColor={colors.statusBarBg} />
 
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.primaryDark }]}>
         <View>
           <Text style={styles.headerTitle}>Hội viên</Text>
           <Text style={styles.headerSub}>{members.length} tổng · {filtered.length} hiển thị</Text>
         </View>
-        <View style={styles.headerBadge}>
-          <Users color={G.white} size={18} strokeWidth={2} />
+        <View style={styles.headerActions}>
+          <TouchableOpacity 
+            style={[styles.addBtn, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
+            onPress={() => navigation.navigate('AdminAddEditMember')}
+          >
+            <Plus color="#ffffff" size={20} />
+          </TouchableOpacity>
+          <View style={styles.headerBadge}>
+            <Users color="#ffffff" size={18} strokeWidth={2} />
+          </View>
         </View>
       </View>
 
       {/* Search */}
       <View style={styles.searchWrap}>
-        <View style={styles.searchBox}>
-          <Search color={G.gray400} size={16} strokeWidth={2} />
+        <View style={[styles.searchBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Search color={colors.textMuted} size={16} strokeWidth={2} />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: colors.text }]}
             placeholder="Tìm tên, SĐT, mã hồ sơ…"
-            placeholderTextColor={G.gray400}
+            placeholderTextColor={colors.textMuted}
             value={search}
             onChangeText={setSearch}
             returnKeyType="search"
           />
           {search ? (
             <TouchableOpacity onPress={() => setSearch('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <X color={G.gray400} size={14} strokeWidth={2} />
+              <X color={colors.textMuted} size={14} strokeWidth={2} />
             </TouchableOpacity>
           ) : null}
         </View>
@@ -242,27 +238,35 @@ export default function AdminMembersScreen() {
 
       {/* Filter chips */}
       <View style={styles.filterRow}>
-        {FILTERS.map(f => (
-          <FilterChip key={f.key} label={f.label} active={filter === f.key} onPress={() => setFilter(f.key)} />
-        ))}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {FILTERS.map(f => (
+            <FilterChip key={f.key} label={f.label} active={filter === f.key} onPress={() => setFilter(f.key)} colors={colors} />
+          ))}
+        </ScrollView>
       </View>
 
       {/* List */}
       {loading ? (
         <View style={styles.loadingBox}>
-          <ActivityIndicator size="large" color={G.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
         <FlatList
           data={filtered}
           keyExtractor={item => String(item.id)}
-          renderItem={({ item }) => <MemberCard item={item} />}
+          renderItem={({ item }) => (
+            <MemberCard 
+              item={item} 
+              colors={colors}
+              onPress={() => navigation.navigate('AdminMemberDetail', { memberId: item.id })}
+            />
+          )}
           contentContainerStyle={styles.listContent}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[G.primary]} tintColor={G.primary} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
           ListEmptyComponent={
             <View style={styles.emptyBox}>
-              <User color={G.gray300} size={48} strokeWidth={1} />
-              <Text style={styles.emptyText}>Không tìm thấy hội viên</Text>
+              <User color={colors.textMuted} size={48} strokeWidth={1} />
+              <Text style={[styles.emptyText, { color: colors.textMuted }]}>Không tìm thấy hội viên</Text>
             </View>
           }
           showsVerticalScrollIndicator={false}
@@ -273,15 +277,19 @@ export default function AdminMembersScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: G.gray50 },
+  container: { flex: 1 },
   header: {
-    backgroundColor: G.primaryDark,
     paddingTop: 52, paddingBottom: 16,
     paddingHorizontal: 20,
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end',
   },
-  headerTitle: { fontSize: 22, fontWeight: '800', color: G.white },
+  headerTitle: { fontSize: 22, fontWeight: '800', color: '#ffffff' },
   headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 2 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  addBtn: {
+    width: 40, height: 40, borderRadius: 20,
+    alignItems: 'center', justifyContent: 'center'
+  },
   headerBadge: {
     width: 40, height: 40, borderRadius: 20,
     backgroundColor: 'rgba(255,255,255,0.15)',
@@ -290,17 +298,16 @@ const styles = StyleSheet.create({
   searchWrap: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 6 },
   searchBox: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: G.white, borderRadius: 14,
-    paddingHorizontal: 14, paddingVertical: 10,
-    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 2,
+    borderRadius: 14, borderWidth: 1,
+    paddingHorizontal: 14, paddingVertical: Platform.OS === 'ios' ? 12 : 6,
+    shadowColor: '#000', shadowOpacity: 0.01, shadowRadius: 6, elevation: 1,
   },
-  searchInput: { flex: 1, fontSize: 14, color: G.gray900 },
+  searchInput: { flex: 1, fontSize: 14 },
   filterRow: {
     flexDirection: 'row', paddingHorizontal: 16, paddingBottom: 10,
-    overflow: 'scroll',
   },
   listContent: { paddingHorizontal: 16, paddingBottom: 24 },
   loadingBox: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   emptyBox: { paddingVertical: 60, alignItems: 'center', gap: 12 },
-  emptyText: { fontSize: 14, color: G.gray400, fontWeight: '600' },
+  emptyText: { fontSize: 14, fontWeight: '600' },
 });

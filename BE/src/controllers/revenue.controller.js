@@ -130,6 +130,12 @@ export const getRevenueToday = (req, res) => {
 
   const giaoDichHomNay = [...goiTapToday, ...goiPTToday].sort((a, b) => b.thoi_gian.localeCompare(a.thoi_gian));
 
+  // Hội viên mới đăng ký hôm nay
+  const soHvMoiHomNay = db.prepare(`
+    SELECT COUNT(*) as c FROM ho_so 
+    WHERE date(ngay_tao) = ? AND loai_ho_so = 'hoi_vien' AND is_deleted = 0
+  `).get(today).c;
+
   return success(res, {
     ngay: today,
     tong_tien:       todayRevenue?.tong_tien || 0,
@@ -138,6 +144,7 @@ export const getRevenueToday = (req, res) => {
     tien_goi_pt:     todayRevenue?.tien_goi_pt || 0,
     hom_qua:         yesterdayRevenue?.tong_tien || 0,
     thang_truoc_cung_ngay: lastMonthSameDay?.tong_tien || 0,
+    so_hv_moi:       soHvMoiHomNay,
     giao_dich:       giaoDichHomNay,
   });
 };
@@ -186,7 +193,8 @@ export const getDashboard = (req, res) => {
 
   const yesterdayLuotVao = db.prepare(`SELECT COUNT(*) as c FROM luot_vao_ra WHERE date(thoi_diem) = ? AND loai = 'vao'`).get(yesterday).c;
   const yesterdayDoanhThu = db.prepare(`SELECT tong_tien FROM doanh_thu WHERE ngay = ?`).get(yesterday)?.tong_tien || 0;
-  const newMembersThisMonth = db.prepare(`SELECT COUNT(*) as c FROM ho_so WHERE date(ngay_tao) >= ? AND loai_ho_so = 'hv'`).get(startOfMonth).c;
+  // Sửa lỗi 'hv' thành 'hoi_vien' để đếm đúng số hội viên mới trong tháng
+  const newMembersThisMonth = db.prepare(`SELECT COUNT(*) as c FROM ho_so WHERE date(ngay_tao) >= ? AND loai_ho_so = 'hoi_vien' AND is_deleted = 0`).get(startOfMonth).c;
 
   const calcPercent = (curr, prev) => prev === 0 ? (curr > 0 ? 100 : 0) : ((curr - prev) / prev * 100);
 
@@ -196,6 +204,39 @@ export const getDashboard = (req, res) => {
     doanh_thu: calcPercent(stats.doanh_thu_hom_nay.tong_tien, yesterdayDoanhThu).toFixed(2),
     sap_het_han: ((stats.hoi_vien.sap_het_han / (stats.hoi_vien.tong || 1)) * 100).toFixed(2)
   };
+
+  // Tính các trường doanh thu và số lượng phục vụ mobile dashboard
+  stats.doanh_thu_thang = db.prepare(`
+    SELECT SUM(tong_tien) AS sum FROM doanh_thu 
+    WHERE ngay >= ? AND ngay <= ?
+  `).get(startOfMonth, today).sum || 0;
+
+  stats.so_goi_ban_thang = db.prepare(`
+    SELECT COUNT(*) AS c FROM dang_ky_goi_tap 
+    WHERE date(ngay_tao) >= ? AND trang_thai != 'huy'
+  `).get(startOfMonth).c;
+
+  stats.yeu_cau_cho_duyet = db.prepare(`
+    SELECT COUNT(*) AS c FROM dang_ky_goi_tap 
+    WHERE trang_thai = 'cho_duyet'
+      AND (payos_status IS NULL OR payos_status = 'PENDING')
+      AND ngay_thanh_toan IS NULL
+  `).get().c;
+
+  stats.check_in_tuan_nay = db.prepare(`
+    SELECT COUNT(*) AS c FROM luot_vao_ra 
+    WHERE date(thoi_diem) >= date('now', 'localtime', '-6 days') AND loai = 'vao'
+  `).get().c;
+
+  stats.tong_nhan_vien = db.prepare(`
+    SELECT COUNT(*) AS c FROM ho_so 
+    WHERE loai_ho_so = 'nhan_vien' AND is_deleted = 0
+  `).get().c;
+
+  stats.tong_goi_tap = db.prepare(`
+    SELECT COUNT(*) AS c FROM dang_ky_goi_tap 
+    WHERE trang_thai = 'dang_hoat_dong'
+  `).get().c;
 
   // Check-in gần nhất hôm nay (tối đa 8 lượt)
   stats.recent_checkins = db.prepare(`

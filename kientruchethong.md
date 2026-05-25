@@ -1,6 +1,6 @@
 # 🏛️ Kiến Trúc Hệ Thống — Paradise GYM
 
-> Cập nhật lần cuối: 22/05/2026 — Nâng cấp thông báo Mobile App (chronological, formatTimeAgo, PulsingDot, blur markAsRead) và khắc phục lỗi z-index đè giao diện dropdown thông báo trên Web Admin & PT Portal.
+> Cập nhật lần cuối: 25/05/2026 — Tích hợp đầy đủ tính năng Admin & Dark Mode trên MobileApp.
 
 ---
 
@@ -98,6 +98,7 @@ graph TD
 ## 6. Chức Năng Đã Hoàn Thành
 
 ### Frontend (UI/UX)
+- [x] **Tích hợp đầy đủ tính năng Admin & Dark Mode trên MobileApp**: CRUD Hội viên, CRUD PT, CRUD Gói tập, Đăng ký dịch vụ, Phê duyệt yêu cầu gia hạn, xem chi tiết lịch sử tập luyện/check-in hội viên trên ứng dụng di động.
 - [x] Giao diện SPA Material 3 (Glassmorphism).
 - [x] Sidebar đóng/mở mượt mà, hỗ trợ Tooltip.
 - [x] Dark/Light mode (Persistence).
