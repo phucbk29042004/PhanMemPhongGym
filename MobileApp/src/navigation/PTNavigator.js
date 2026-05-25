@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import {
   Bell, Calendar, Home, QrCode, User,
 } from 'lucide-react-native';
@@ -9,12 +10,16 @@ import PTQRCodeScreen from '../screens/pt/PTQRCodeScreen';
 import PTScheduleScreen from '../screens/pt/PTScheduleScreen';
 import PTNotificationScreen from '../screens/pt/PTNotificationScreen';
 import PTProfileScreen from '../screens/pt/PTProfileScreen';
+
+// Màn hình stack phụ (không tab bar)
 import GymRulesScreen from '../screens/shared/GymRulesScreen';
 import PTMeScreen from '../screens/shared/PTMeScreen';
+
 import { useNotificationStore } from '../store/useNotificationStore';
 import { useTheme } from '../context/ThemeContext';
 
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
 
 // Icon container
 function TabIcon({ IconComponent, color, focused, colors }) {
@@ -35,7 +40,8 @@ function TabLabel({ label, color, focused }) {
   );
 }
 
-export default function PTNavigator() {
+// ── 5 Tab chính ──────────────────────────────────────────────────────
+function PTTabs() {
   const { colors } = useTheme();
   const unreadCount = useNotificationStore(state => state.unreadCount);
 
@@ -120,24 +126,18 @@ export default function PTNavigator() {
           tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={User} color={color} focused={focused} colors={colors} />,
         }}
       />
-
-      {/* Màn hình ẩn khỏi tab bar: Nội quy phòng tập */}
-      <Tab.Screen
-        name="GymRules"
-        component={GymRulesScreen}
-        options={{
-          tabBarItemStyle: { display: 'none' },
-        }}
-      />
-
-      <Tab.Screen
-        name="PTMe"
-        component={PTMeScreen}
-        options={{
-          tabBarItemStyle: { display: 'none' },
-        }}
-      />
     </Tab.Navigator>
+  );
+}
+
+// ── Stack bao ngoài: Tab + màn hình phụ không có tab bar ─────────────
+export default function PTNavigator() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="PTTabs" component={PTTabs} />
+      <Stack.Screen name="GymRules" component={GymRulesScreen} />
+      <Stack.Screen name="PTMe" component={PTMeScreen} />
+    </Stack.Navigator>
   );
 }
 
@@ -146,9 +146,7 @@ const styles = StyleSheet.create({
     height: 70,
     paddingBottom: 10,
     paddingTop: 6,
-    backgroundColor: '#ffffff',
     borderTopWidth: 1,
-    borderTopColor: '#f0f2f5',
     elevation: 16,
     shadowColor: '#000',
     shadowOpacity: 0.08,
@@ -173,23 +171,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 14,
   },
-  iconContainerActive: {
-    backgroundColor: '#e6f4ea',
-  },
   centerTabIcon: {
     width: 50,
     height: 34,
     borderRadius: 17,
-    backgroundColor: '#e6f4ea',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: -6,
-  },
-  centerTabIconActive: {
-    backgroundColor: '#1D9336',
-    shadowColor: '#1D9336',
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 8,
   },
 });

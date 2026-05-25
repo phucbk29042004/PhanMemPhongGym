@@ -1,0 +1,464 @@
+import React, { useCallback, useState } from 'react';
+import {
+  ActivityIndicator, Alert, RefreshControl, ScrollView,
+  StatusBar, StyleSheet, Text, TouchableOpacity, View,
+  FlatList
+} from 'react-native';
+import {
+  Award, Calendar, CalendarCheck, CheckCircle2, ChevronRight,
+  Clock, CreditCard, Dumbbell, Shield, Trash2, Edit3, User,
+  Users, Check, X, Phone, Mail, MapPin, Map, Building2, UserPlus
+} from 'lucide-react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { api } from '../../services/api';
+import { useTheme } from '../../context/ThemeContext';
+import ProfileAvatar from '../../components/ProfileAvatar';
+
+function formatPrice(val) {
+  if (val == null) return '0đ';
+  return Number(val).toLocaleString('vi-VN') + 'đ';
+}
+
+function formatDate(val) {
+  if (!val) return '—';
+  const d = new Date(val);
+  if (isNaN(d)) return val;
+  return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+export default function AdminMemberDetailScreen({ route, navigation }) {
+  const { memberId } = route.params;
+  const { colors, isDark } = useTheme();
+  const [member, setMember] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [checkins, setCheckins] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchDetail = useCallback(async () => {
+    try {
+      const [detailRes, historyRes, checkinRes] = await Promise.all([
+        api.get(`/members/${memberId}`),
+        api.get(`/members/${memberId}/history`),
+        api.get(`/checkins/stats?ho_so_id=${memberId}&limit=10`) // get recent check-ins
+      ]);
+
+      if (detailRes.data?.success) {
+        setMember(detailRes.data.data);
+      }
+      if (historyRes.data?.success) {
+        setHistory(historyRes.data.data || []);
+      }
+      if (checkinRes.data?.success) {
+        setCheckins(checkinRes.data.data?.recent_checkins || checkinRes.data.data || []);
+      }
+    } catch (err) {
+      console.error('[AdminMemberDetail] fetch error:', err?.message);
+      Alert.alert('Lỗi', 'Không thể lấy thông tin chi tiết hội viên.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [memberId]);
+
+  useFocusEffect(useCallback(() => {
+    fetchDetail();
+  }, [fetchDetail]));
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchDetail();
+  };
+
+  const handleDelete = () => {
+    Alert.alert(
+      'Cảnh báo xóa',
+      `Bạn có chắc chắn muốn xóa hội viên ${member?.ho_ten}? Tài khoản đăng nhập của hội viên này cũng sẽ bị khóa.`,
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Xóa',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const res = await api.delete(`/members/${memberId}`, {
+                data: { ly_do: 'Xóa bởi Admin qua ứng dụng di động' }
+              });
+              if (res.data?.success) {
+                Alert.alert('Thành công', 'Đã xóa hội viên.');
+                navigation.goBack();
+              }
+            } catch (err) {
+              Alert.alert('Lỗi', err?.response?.data?.message || 'Không thể xóa hội viên.');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const handleCreateAccount = async () => {
+    // Navigate to Create Account page or prompt for username/password
+    Alert.prompt(
+      'Cấp tài khoản',
+      'Nhập Tên đăng nhập (mật khẩu mặc định: 123456)',
+      async (username) => {
+        if (!username || !username.trim()) return;
+        try {
+          const res = await api.post(`/members/${memberId}/create-account`, {
+            ten_dang_nhap: username.trim(),
+            mat_khau: '123456'
+          });
+          if (res.data?.success) {
+            Alert.alert('Thành công', 'Đã tạo tài khoản cho hội viên!');
+            fetchDetail();
+          }
+        } catch (err) {
+          Alert.alert('Lỗi', err?.response?.data?.message || 'Tên đăng nhập đã được sử dụng.');
+        }
+      }
+    );
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.center, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  const activePkg = member?.goi_tap_hien_tai?.length > 0 ? member.goi_tap_hien_tai[0] : null;
+  const activePT = member?.pt_hien_tai?.length > 0 ? member.pt_hien_tai[0] : null;
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colors.statusBar} backgroundColor={colors.statusBarBg} />
+      
+      {/* Header */}
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
+          <X color={colors.text} size={22} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Chi tiết Hội viên</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('AdminAddEditMember', { memberId })} style={styles.headerBtn}>
+          <Edit3 color={colors.primary} size={20} />
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scroll}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />}
+      >
+        {/* Profile Card */}
+        <View style={[styles.profileCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <ProfileAvatar uri={member?.avatar_url} name={member?.ho_ten} size={64} />
+          <Text style={[styles.name, { color: colors.text }]}>{member?.ho_ten}</Text>
+          <Text style={[styles.sub, { color: colors.textSecondary }]}>
+            {member?.ma_ho_so} • {member?.loai_hv === 'vip' ? 'Thành viên VIP' : member?.loai_hv === 'premium' ? 'Premium' : 'Standard'}
+          </Text>
+
+          <View style={[styles.contactInfo, { backgroundColor: colors.surfaceVariant }]}>
+            <View style={styles.contactRow}>
+              <Phone color={colors.textSecondary} size={14} />
+              <Text style={[styles.contactText, { color: colors.text }]}>{member?.so_dien_thoai || 'Chưa cập nhật SĐT'}</Text>
+            </View>
+            <View style={styles.contactRow}>
+              <Mail color={colors.textSecondary} size={14} />
+              <Text style={[styles.contactText, { color: colors.text }]} numberOfLines={1}>{member?.email || 'Chưa cập nhật Email'}</Text>
+            </View>
+            <View style={styles.contactRow}>
+              <Building2 color={colors.textSecondary} size={14} />
+              <Text style={[styles.contactText, { color: colors.text }]}>{member?.chi_nhanh || 'Chưa gán chi nhánh'}</Text>
+            </View>
+          </View>
+
+          {/* Account status */}
+          {!member?.ten_dang_nhap ? (
+            <TouchableOpacity 
+              style={[styles.accountBtn, { borderColor: colors.primary }]}
+              onPress={handleCreateAccount}
+            >
+              <UserPlus color={colors.primary} size={14} />
+              <Text style={[styles.accountBtnText, { color: colors.primary }]}>Cấp tài khoản đăng nhập</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.accountStatus}>
+              <Check color={colors.primary} size={14} />
+              <Text style={[styles.accountStatusText, { color: colors.textSecondary }]}>
+                Tài khoản: <Text style={{ fontWeight: '700', color: colors.text }}>{member.ten_dang_nhap}</Text>
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Gói Gym hiện tại */}
+        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Gói tập Gym</Text>
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          {activePkg ? (
+            <View>
+              <View style={styles.cardHeader}>
+                <Award color={colors.primary} size={20} />
+                <Text style={[styles.cardTitle, { color: colors.text }]}>{activePkg.ten_goi}</Text>
+                <View style={[styles.badge, { backgroundColor: colors.primaryLight }]}>
+                  <Text style={[styles.badgeText, { color: colors.primary }]}>Đang hoạt động</Text>
+                </View>
+              </View>
+              <View style={styles.cardInfo}>
+                <Text style={[styles.cardText, { color: colors.textSecondary }]}>
+                  Thời hạn: {formatDate(activePkg.tu_ngay)} - {formatDate(activePkg.den_ngay)}
+                </Text>
+                <Text style={[styles.cardText, { color: colors.textSecondary }]}>
+                  Đã thanh toán: <Text style={{ fontWeight: '700', color: colors.text }}>{formatPrice(activePkg.gia_thuc_te)}</Text>
+                </Text>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.emptyCard}>
+              <Text style={[styles.emptyCardText, { color: colors.textMuted }]}>Chưa đăng ký gói Gym</Text>
+            </View>
+          )}
+          <TouchableOpacity 
+            style={[styles.actionBtn, { backgroundColor: colors.primaryLight, marginTop: activePkg ? 12 : 0 }]}
+            onPress={() => navigation.navigate('AdminRegisterPackage', { member })}
+          >
+            <Text style={[styles.actionBtnText, { color: colors.primary }]}>
+              {activePkg ? 'Gia hạn / Đổi gói Gym' : 'Đăng ký gói Gym mới'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Hợp đồng PT hiện tại */}
+        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Hợp đồng PT</Text>
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          {activePT ? (
+            <View>
+              <View style={styles.cardHeader}>
+                <Dumbbell color={colors.primary} size={20} />
+                <Text style={[styles.cardTitle, { color: colors.text }]}>{activePT.ten_goi_pt || 'Đăng ký PT'}</Text>
+                <View style={[styles.badge, { backgroundColor: colors.primaryLight }]}>
+                  <Text style={[styles.badgeText, { color: colors.primary }]}>Đang hoạt động</Text>
+                </View>
+              </View>
+              <View style={styles.cardInfo}>
+                <Text style={[styles.cardText, { color: colors.textSecondary }]}>
+                  HLV gán: <Text style={{ fontWeight: '700', color: colors.text }}>{activePT.ten_pt}</Text>
+                </Text>
+                <Text style={[styles.cardText, { color: colors.textSecondary }]}>
+                  Số buổi tập: {activePT.buoi_da_tap}/{activePT.buoi_dang_ky} buổi (còn {activePT.buoi_dang_ky - activePT.buoi_da_tap} buổi)
+                </Text>
+                <Text style={[styles.cardText, { color: colors.textSecondary }]}>
+                  Thời hạn: {formatDate(activePT.tu_ngay)} - {formatDate(activePT.den_ngay)}
+                </Text>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.emptyCard}>
+              <Text style={[styles.emptyCardText, { color: colors.textMuted }]}>Chưa đăng ký HLV cá nhân (PT)</Text>
+            </View>
+          )}
+          <TouchableOpacity 
+            style={[styles.actionBtn, { backgroundColor: colors.primaryLight, marginTop: activePT ? 12 : 0 }]}
+            onPress={() => navigation.navigate('AdminRegisterPT', { member })}
+          >
+            <Text style={[styles.actionBtnText, { color: colors.primary }]}>
+              Đăng ký gói tập với HLV (PT)
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Lịch sử check-in */}
+        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Lịch sử Check-in (10 lượt gần nhất)</Text>
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, padding: 8 }]}>
+          {checkins.length === 0 ? (
+            <View style={styles.emptySection}>
+              <Text style={[styles.emptyCardText, { color: colors.textMuted }]}>Chưa có lịch sử vào/ra phòng tập</Text>
+            </View>
+          ) : (
+            checkins.map((item, idx) => (
+              <View 
+                key={idx} 
+                style={[
+                  styles.checkinRow, 
+                  { borderBottomColor: colors.borderLight }, 
+                  idx === checkins.length - 1 && { borderBottomWidth: 0 }
+                ]}
+              >
+                <View style={styles.checkinIconBox}>
+                  <CheckCircle2 color={item.loai === 'vao' ? colors.primary : colors.textMuted} size={14} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.checkinTime, { color: colors.text }]}>
+                    {formatDate(item.thoi_diem)} lúc {new Date(item.thoi_diem).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                  </Text>
+                  <Text style={[styles.checkinType, { color: colors.textSecondary }]}>
+                    {item.loai === 'vao' ? 'Vào phòng tập' : 'Ra khỏi phòng'} • Lễ tân: {item.ten_le_tan || 'Tự động QR'}
+                  </Text>
+                </View>
+              </View>
+            ))
+          )}
+        </View>
+
+        {/* Lịch sử đăng ký gói tập */}
+        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Lịch sử gói tập</Text>
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, padding: 8 }]}>
+          {history.length === 0 ? (
+            <View style={styles.emptySection}>
+              <Text style={[styles.emptyCardText, { color: colors.textMuted }]}>Chưa đăng ký gói tập nào</Text>
+            </View>
+          ) : (
+            history.map((item, idx) => (
+              <View 
+                key={item.id} 
+                style={[
+                  styles.historyRow, 
+                  { borderBottomColor: colors.borderLight }, 
+                  idx === history.length - 1 && { borderBottomWidth: 0 }
+                ]}
+              >
+                <View style={styles.historyInfo}>
+                  <Text style={[styles.historyName, { color: colors.text }]}>{item.ten_goi}</Text>
+                  <Text style={[styles.historyDates, { color: colors.textSecondary }]}>
+                    {formatDate(item.tu_ngay)} - {formatDate(item.den_ngay)}
+                  </Text>
+                  <Text style={[styles.historyPrice, { color: colors.textMuted }]}>
+                    Giá thực tế: {formatPrice(item.gia_thuc_te)} • Đã đóng: {formatPrice(item.so_tien_da_thu)}
+                  </Text>
+                </View>
+                <View style={[
+                  styles.historyBadge, 
+                  { backgroundColor: item.trang_thai === 'dang_hoat_dong' ? colors.primaryLight : colors.borderLight }
+                ]}>
+                  <Text style={[
+                    styles.historyBadgeText, 
+                    { color: item.trang_thai === 'dang_hoat_dong' ? colors.primary : colors.textSecondary }
+                  ]}>
+                    {item.trang_thai === 'dang_hoat_dong' ? 'Đang HĐ' : item.trang_thai === 'het_han' ? 'Hết hạn' : item.trang_thai === 'cho_kich_hoat' ? 'Chờ KH' : 'Đã hủy'}
+                  </Text>
+                </View>
+              </View>
+            ))
+          )}
+        </View>
+
+        {/* Delete button */}
+        <TouchableOpacity 
+          style={[styles.deleteBtn, { borderColor: colors.danger }]}
+          onPress={handleDelete}
+        >
+          <Trash2 color={colors.danger} size={16} />
+          <Text style={[styles.deleteBtnText, { color: colors.danger }]}>Xóa hội viên</Text>
+        </TouchableOpacity>
+
+        <View style={{ height: 40 }} />
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  header: {
+    height: 60,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 10,
+    borderBottomWidth: 1,
+  },
+  headerBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { fontSize: 16, fontWeight: '700' },
+  scroll: { padding: 16 },
+
+  profileCard: {
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.02,
+    shadowRadius: 8,
+    elevation: 2,
+    marginBottom: 20
+  },
+  name: { fontSize: 18, fontWeight: '800', marginTop: 12 },
+  sub: { fontSize: 12, marginTop: 4 },
+  contactInfo: {
+    width: '100%',
+    borderRadius: 14,
+    padding: 12,
+    gap: 8,
+    marginTop: 16
+  },
+  contactRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  contactText: { fontSize: 12, fontWeight: '500' },
+  accountBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginTop: 14
+  },
+  accountBtnText: { fontSize: 12, fontWeight: '700' },
+  accountStatus: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 14 },
+  accountStatusText: { fontSize: 12, fontWeight: '500' },
+
+  sectionTitle: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, marginTop: 16, marginBottom: 8, paddingLeft: 4 },
+  card: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.02,
+    shadowRadius: 6,
+    elevation: 1
+  },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  cardTitle: { fontSize: 14, fontWeight: '700', flex: 1 },
+  badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
+  badgeText: { fontSize: 10, fontWeight: '700' },
+  cardInfo: { gap: 4, marginTop: 10 },
+  cardText: { fontSize: 12, fontWeight: '500' },
+  emptyCard: { paddingVertical: 20, alignItems: 'center' },
+  emptyCardText: { fontSize: 12, fontWeight: '500' },
+  actionBtn: {
+    borderRadius: 12,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  actionBtnText: { fontSize: 12, fontWeight: '700' },
+
+  emptySection: { paddingVertical: 20, alignItems: 'center' },
+  checkinRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, borderBottomWidth: 1 },
+  checkinIconBox: { width: 24, alignItems: 'center' },
+  checkinTime: { fontSize: 12, fontWeight: '700' },
+  checkinType: { fontSize: 11, marginTop: 1 },
+
+  historyRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, borderBottomWidth: 1 },
+  historyInfo: { flex: 1, gap: 2 },
+  historyName: { fontSize: 13, fontWeight: '700' },
+  historyDates: { fontSize: 11 },
+  historyPrice: { fontSize: 11 },
+  historyBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+  historyBadgeText: { fontSize: 9, fontWeight: '700' },
+
+  deleteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderWidth: 1.5,
+    height: 46,
+    borderRadius: 12,
+    marginTop: 20
+  },
+  deleteBtnText: { fontSize: 14, fontWeight: '800' }
+});
