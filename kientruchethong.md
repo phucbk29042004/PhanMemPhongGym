@@ -1,6 +1,6 @@
 # 🏛️ Kiến Trúc Hệ Thống — Paradise GYM
 
-> Cập nhật lần cuối: 25/05/2026 — Đồng bộ ràng buộc thanh toán gói tập & khóa ngày thu tiền.
+> Cập nhật lần cuối: 25/05/2026 — Tối ưu phân trang và scroll ngang Lịch tập PT, rút gọn bộ lọc và danh sách HLV.
 
 ---
 

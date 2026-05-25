@@ -8,11 +8,26 @@
 ---
 
 ## 📌 Trạng Thế Hiện Tại
-**✅ Đồng bộ ràng buộc thanh toán gói tập & khóa ngày thu trên Web & Mobile** — Khóa ngày thu tiền trùng ngày bắt đầu gói tập, chặn đăng ký gói tập nếu số tiền khách trả không đủ.
+**✅ Tối ưu Lịch tập PT & Bố cục Form gói tập Hội viên 3-3-3-1** — Phân trang 3 ngày/trang cho Lịch tập PT với thanh cuộn ngang (tối đa 4 card/ngày), rút gọn bộ lọc và danh sách PT. Tái cấu trúc Form đăng ký gói tập thành lưới 3-3-3-1 gọn gàng, giãn khoảng cách input và label để tăng tính thẩm mỹ.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
+
+### 25/05/2026 — Phân Trang Lịch Tập PT (3 Ngày/Trang) & Redesign Form Gói Tập Hội Viên (Lưới 3-3-3-1)
+- **Loại**: Cải tiến giao diện UI/UX, Bố cục hiển thị
+- **File/Thành phần liên quan**:
+  - [pt-training.js](file:///d:/UI%20GYM/FE/assets/js/pages/pt-training.js)
+  - [member-add.js](file:///d:/UI%20GYM/FE/assets/js/pages/member-add.js)
+- **Mô tả**:
+  - **Lịch đào tạo PT**: 
+    - Thiết lập số ngày hiển thị mỗi trang `_daysPerPage` thành 3 ngày để tránh danh sách quá dài khi lượng dữ liệu lớn. Mặc định tự động mở rộng 3 ngày có lịch tập gần nhất ở trang đầu tiên.
+    - Giới hạn hiển thị tối đa 4 card lịch tập trên 1 ngày theo chiều ngang, tự động tạo thanh cuộn ngang (`flex flex-row overflow-x-auto`) nếu số lượng lịch tập nhiều hơn.
+    - Loại bỏ dropdown chọn "Trạng thái" trong bộ lọc và xóa bỏ phần "Danh sách Huấn luyện viên" ở phía cuối trang theo yêu cầu rút gọn giao diện.
+  - **Form đăng ký Gói tập**:
+    - Sắp xếp lại toàn bộ form đăng ký gói tập hội viên theo cấu trúc lưới **3-3-3-1** cân đối (Dòng 1: Chọn gói, Giá gói, Từ ngày; Dòng 2: Đến ngày, Mã giảm giá, Tổng tiền; Dòng 3: Tiền khách trả, Ngày thu, Phương thức; Dòng 4: Ghi chú thanh toán full-width).
+    - Giãn khoảng cách các input lên 1 cấp: tăng padding dọc của input/select từ `py-1.5` lên `py-2`, tăng margin-bottom của nhãn label từ `mb-1` lên `mb-1.5` trong các helper và biểu mẫu tĩnh. Thay đổi khoảng cách grid gap từ `gap-3` lên `gap-standard` (1rem / 16px).
+- **Kết quả**: Thành công 100%. Giao diện hiển thị cực kỳ cân đối, hiện đại và tối ưu hóa không gian trên mọi thiết bị.
 
 ### 25/05/2026 — Hoàn Thiện Nghiệp Vụ Đổi Gói Tập (Nâng Cấp/Hạ Cấp) & Đồng Bộ Dynamic UI (Web & Mobile)
 - **Loại**: Cải tiến logic nghiệp vụ, UI/UX, Đồng bộ hệ thống (Web & Mobile)

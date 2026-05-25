@@ -58,7 +58,7 @@ window.GymApp.pages['member-add'] = {
               <div class="flex flex-col items-center gap-xs flex-shrink-0">
                 <div class="relative">
                   <div id="avatar-area-reg" class="w-20 h-20 md:w-24 md:h-24 bg-surface-container-low/30 border-2 border-dashed border-outline-variant rounded-2xl flex items-center justify-center cursor-pointer overflow-hidden transition-all hover:border-brand-primary">
-                    <span class="material-symbols-outlined text-outline text-4xl" id="avatar-placeholder-reg">person</span>
+                    <span class="material-symbols-outlined text-on-surface-variant text-4xl" id="avatar-placeholder-reg">person</span>
                     <img id="avatar-preview-reg" class="w-full h-full object-cover absolute inset-0 hidden" alt="preview" />
                   </div>
                   <button type="button" id="avatar-btn-reg" class="absolute -bottom-1 -right-1 w-7 h-7 bg-brand-primary text-white rounded-full flex items-center justify-center shadow-md z-10 hover:opacity-90 active:scale-95 transition-all">
@@ -72,10 +72,10 @@ window.GymApp.pages['member-add'] = {
                 ${this._field('Mã số hồ sơ', 'reg-ma-ho-so', 'text', 'Tự động...', true)}
                 ${this._field('Họ và tên *', 'reg-ho-ten', 'text', 'Nhập họ và tên đầy đủ')}
                 ${this._select('Loại hồ sơ *', 'reg-loai-ho-so', [
-                  { v: 'hoi_vien', t: 'Hội viên' },
-                  { v: 'pt', t: 'Huấn luyện viên (PT)' },
-                  { v: 'nhan_vien', t: 'Nhân viên' }
-                ])}
+      { v: 'hoi_vien', t: 'Hội viên' },
+      { v: 'pt', t: 'Huấn luyện viên (PT)' },
+      { v: 'nhan_vien', t: 'Nhân viên' }
+    ])}
               </div>
             </div>
  
@@ -91,29 +91,29 @@ window.GymApp.pages['member-add'] = {
                 <div>
                   <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">Số điện thoại <span style="color:#ba1a1a;">*</span></label>
                   <input id="reg-so-dien-thoai" type="tel" placeholder="0912345678" maxlength="10"
-                    class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all" />
-                  <p id="err-sdt" class="hidden text-error text-body-sm mt-xs font-medium"></p>
+                    class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-3 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all" />
+                  <p id="err-sdt" class="hidden text-body-sm mt-xs font-medium" style="color:#ba1a1a"></p>
                 </div>
                 <!-- Email với inline error -->
                 <div>
                   <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">Email</label>
                   <input id="reg-email" type="email" placeholder="example@email.com"
-                    class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all" />
-                  <p id="err-email" class="hidden text-error text-body-sm mt-xs font-medium"></p>
+                    class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-3 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all" />
+                  <p id="err-email" class="hidden text-body-sm mt-xs font-medium" style="color:#ba1a1a"></p>
                 </div>
                 <!-- CCCD với inline error -->
                 <div>
                   <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">CCCD / CMND</label>
                   <input id="reg-cccd" type="text" placeholder="012345678901" maxlength="12"
-                    class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all" />
-                  <p id="err-cccd" class="hidden text-error text-body-sm mt-xs font-medium"></p>
+                    class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-3 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all" />
+                  <p id="err-cccd" class="hidden text-body-sm mt-xs font-medium" style="color:#ba1a1a"></p>
                 </div>
                 ${this._field('Nơi sinh', 'reg-noi-sinh', 'text', 'VD: Hà Nội')}
                 <!-- Quê quán với datalist 63 tỉnh -->
                 <div>
                   <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">Quê quán</label>
                   <input id="reg-que-quan" type="text" list="dl-que-quan" placeholder="Chọn hoặc nhập tỉnh/thành..."
-                    class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all" />
+                    class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-3 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all" />
                 </div>
                 ${this._select('Chi nhánh', 'reg-chi-nhanh', [])}
               </div>
@@ -163,39 +163,37 @@ window.GymApp.pages['member-add'] = {
               </div>
             </div>
  
-            <!-- Chọn gói tập -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-standard mb-4">
+            <!-- Khung Grid gọn gàng nhập thông tin gói tập -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-standard mb-4">
               <div>
-                <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">Chọn gói tập</label>
-                <select id="pkg-select" class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all cursor-pointer">
+                <label class="block text-body-sm font-bold text-on-surface-variant mb-2">Chọn gói tập <span style="color:#ba1a1a;">*</span></label>
+                <select id="pkg-select" class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-3 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all cursor-pointer">
                   <option value="">— Chọn gói tập —</option>
                   ${(window.GymApp.data.packages || []).map(p => `<option value="${p.id}" data-gia="${p.gia}" data-thang="${p.so_thang || 0}" data-them="${p.so_ngay_them || 0}">${p.ten_goi} — ${window.GymApp.formatCurrency(p.gia)}</option>`).join('')}
                 </select>
               </div>
               ${this._field('Giá gói tập (VNĐ)', 'pkg-price', 'text', '0', true)}
-            </div>
- 
-            <!-- Thời hạn -->
-            <div class="mb-4">
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-standard">
-                ${this._field('Từ ngày', 'pkg-from', 'date')}
-                ${this._field('Đến ngày (tự tính)', 'pkg-to', 'date', '', true)}
-                ${this._field('Mã giảm giá', 'pkg-coupon', 'text', 'GYM2026')}
+              ${this._field('Mã giảm giá', 'pkg-coupon', 'text', 'GYM2026')}
+              ${this._field('Từ ngày', 'pkg-from', 'date')}
+
+              ${this._field('Đến ngày (tự tính)', 'pkg-to', 'date', '', true)}
+              
+              ${this._field('Tổng tiền', 'pkg-total', 'text', '0', true)}
+
+              <div>
+                <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">Tiền khách trả <span style="color:#ba1a1a;">*</span></label>
+                <input id="pkg-paid" type="text" inputmode="numeric" placeholder="VD: 1.500.000"
+                  class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-3 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all" />
+                <p id="err-pkg-paid" class="hidden text-body-sm mt-xs font-medium" style="color:#ba1a1a"></p>
               </div>
-            </div>
- 
-            <!-- Thanh toán -->
-            <div class="mb-4">
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-standard">
-                ${this._field('Tổng tiền', 'pkg-total', 'text', '0', true)}
-                <div>
-                  <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">Tiền khách trả <span style="color:#ba1a1a;">*</span></label>
-                  <input id="pkg-paid" type="text" inputmode="numeric" placeholder="VD: 1.500.000"
-                    class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all" />
-                  <p id="err-pkg-paid" class="hidden text-error text-body-sm mt-xs font-medium"></p>
-                </div>
-                ${this._field('Ngày thu *', 'pkg-pay-date', 'date', '', true)}
-                ${this._select('Phương thức', 'pkg-method', [{ v: 'tien_mat', t: 'Tiền mặt' }, { v: 'chuyen_khoan', t: 'Chuyển khoản' }])}
+              ${this._field('Ngày thu *', 'pkg-pay-date', 'date', '', true)}
+              ${this._select('Phương thức', 'pkg-method', [{ v: 'tien_mat', t: 'Tiền mặt' }, { v: 'chuyen_khoan', t: 'Chuyển khoản' }])}
+              
+              <!-- Ghi chú thanh toán -->
+              <div class="col-span-full">
+                <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">Ghi chú thanh toán</label>
+                <textarea id="pkg-note" rows="2" placeholder="Nhập ghi chú thanh toán, khuyến mãi hoặc thông tin thêm..."
+                  class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-3 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold resize-none transition-all"></textarea>
               </div>
             </div>
  
@@ -210,39 +208,39 @@ window.GymApp.pages['member-add'] = {
       </div>
     `;
   },
- 
+
   _field: function (label, id, type, placeholder = '', readonly = false) {
     const formattedLabel = label.replace('*', ' <span style="color:#ba1a1a;margin-left:2px;font-weight:700;">*</span>');
-    const base = 'w-full border border-outline-variant/50 text-on-surface px-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all duration-200';
+    const base = 'w-full border border-outline-variant/50 text-on-surface px-4 py-3 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all duration-200';
     if (readonly) {
-      return `<div>
+      return `<div class="mb-3">
         <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">${formattedLabel}</label>
         <input id="${id}" type="${type}" placeholder="${placeholder}" readonly
           class="${base} bg-surface-container text-on-surface-variant cursor-not-allowed opacity-75" />
       </div>`;
     }
-    return `<div>
+    return `<div class="mb-3">
       <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">${formattedLabel}</label>
       <input id="${id}" type="${type}" placeholder="${placeholder}"
         class="${base} bg-surface-container-low/30" />
     </div>`;
   },
- 
+
   _select: function (label, id, options) {
     const formattedLabel = label.replace('*', ' <span style="color:#ba1a1a;margin-left:2px;font-weight:700;">*</span>');
-    return `<div>
+    return `<div class="mb-3">
       <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">${formattedLabel}</label>
-      <select id="${id}" class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all cursor-pointer">
+      <select id="${id}" class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-3 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all cursor-pointer">
         <option value="">— ${label.replace('*', '').trim()} —</option>
         ${options.map(o => `<option value="${o.v}">${o.t}</option>`).join('')}
       </select>
     </div>`;
   },
- 
+
   _datalistInput: function (label, id, listId, placeholder = '') {
     const formattedLabel = label.replace('*', ' <span style="color:#ba1a1a;margin-left:2px;font-weight:700;">*</span>');
-    const base = 'w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all duration-200';
-    return `<div>
+    const base = 'w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-3 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all duration-200';
+    return `<div class="mb-3">
       <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">${formattedLabel}</label>
       <input id="${id}" type="text" list="${listId}" placeholder="${placeholder}"
         class="${base}" autocomplete="off" />
@@ -468,28 +466,28 @@ window.GymApp.pages['member-add'] = {
       if (type === 'pt') {
         // Chuyên môn PT: input + datalist
         extraFields.innerHTML = `
-          <div>
+            <div>
             <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">Chuyên môn PT <span style="color:#ba1a1a;">*</span></label>
             <input id="reg-chuyen-mon" type="text" list="dl-chuyen-mon" placeholder="VD: Gym, Yoga, Boxing..."
-              class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all" />
+              class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-3 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all" />
           </div>
           <div>
             <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">Kinh nghiệm (năm)</label>
             <input id="reg-kinh-nghiem" type="number" min="0" max="50" placeholder="VD: 3"
-              class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all" />
+              class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-3 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all" />
           </div>`;
       } else if (type === 'nhan_vien') {
-        extraFields.innerHTML = `
+            extraFields.innerHTML = `
           <div>
             <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">Chức vụ <span style="color:#ba1a1a;">*</span></label>
             <input id="reg-chuc-vu" type="text" placeholder="VD: Lễ tân, Quản lý..."
-              class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all" />
+              class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-3 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all" />
           </div>`;
       } else if (type === 'hoi_vien') {
         extraFields.innerHTML = `
           <div>
             <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">Hạng hội viên</label>
-            <select id="reg-loai-hv" class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all cursor-pointer">
+            <select id="reg-loai-hv" class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-3 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all cursor-pointer">
               <option value="Normal">Thường</option>
               <option value="VIP">VIP</option>
               <option value="Student">Sinh viên</option>
@@ -765,6 +763,7 @@ window.GymApp.pages['member-add'] = {
       btn.innerHTML = '<span class="animate-spin material-symbols-outlined text-sm">sync</span> Đang lưu...';
 
       try {
+        const ghiChuTT = document.getElementById('pkg-note')?.value.trim() || '';
         const res = await window.GymApp.api.post(`/members/${self._currentMemberId}/package`, {
           goi_tap_id: pkgId,
           tu_ngay: tuNgay,
@@ -772,7 +771,8 @@ window.GymApp.pages['member-add'] = {
           phuong_thuc_tt: phuongThucTT,
           ma_giao_dich: document.getElementById('pkg-coupon')?.value || '',
           ngay_thanh_toan: ngayThu,
-          so_tien_da_thu: paidRaw
+          so_tien_da_thu: paidRaw,
+          ghi_chu_tt: ghiChuTT
         });
 
         if (res.success) {

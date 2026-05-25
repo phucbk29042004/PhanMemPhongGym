@@ -289,8 +289,8 @@
 
   // ===== UTILITIES =====
   window.GymApp.toast = function (message, type = 'success') {
-    const colors = { success: 'background:#1D9336', error: 'background:#ba1a1a', info: 'background:#575f67' };
-    const icons = { success: 'check_circle', error: 'error', info: 'info' };
+    const colors = { success: 'background:#1D9336', error: 'background:#ba1a1a', info: 'background:#575f67', warning: 'background:#e65100' };
+    const icons = { success: 'check_circle', error: 'error', info: 'info', warning: 'warning' };
     const el = document.createElement('div');
     el.className = 'gym-toast';
     el.style.cssText = `position:fixed;bottom:20px;right:20px;z-index:9997;${colors[type]};color:#fff;padding:10px 20px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.2);font-size:14px;display:flex;align-items:center;gap:8px;font-weight:500;`;
