@@ -86,7 +86,7 @@ export const createTrainer = async (req, res) => {
 
   const result = db.prepare(`
     INSERT INTO ho_so (ma_ho_so, loai_ho_so, ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email, chuyen_mon, kinh_nghiem, avatar_url, cloudinary_public_id, ghi_chu, nguoi_tao_id)
-    VALUES (?, 'pt', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, 'pt', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(ma_ho_so, ho_ten, gioi_tinh || null, ngay_sinh || null, so_dien_thoai || null, email || null, chuyen_mon || null, parseInt(kinh_nghiem) || 0, avatar_url, cloudinary_public_id, ghi_chu || null, req.user.id);
 
   ghi_audit_log(req, 'CREATE', 'ho_so', result.lastInsertRowid, null, { ho_ten, loai_ho_so: 'pt' }, 'Thêm PT mới');

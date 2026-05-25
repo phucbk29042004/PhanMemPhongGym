@@ -37,8 +37,8 @@ window.GymApp.pages['packages'] = {
       ];
     } else {
       stats = [
-        { label: 'Tổng số gói PT', value: ptPackages.length, icon: 'sports_gymnastics', iconBg: 'bg-indigo-500/10 dark:bg-indigo-500/20', color: 'text-indigo-600 dark:text-indigo-400' },
-        { label: 'Đang hoạt động', value: activePtCount, icon: 'check_circle', iconBg: 'bg-indigo-500/10 dark:bg-indigo-500/20', color: 'text-indigo-600 dark:text-indigo-400' },
+        { label: 'Tổng số gói PT', value: ptPackages.length, icon: 'sports_gymnastics', iconBg: 'bg-emerald-500/10 dark:bg-emerald-500/20', color: 'text-emerald-600 dark:text-emerald-400' },
+        { label: 'Đang hoạt động', value: activePtCount, icon: 'check_circle', iconBg: 'bg-emerald-500/10 dark:bg-emerald-500/20', color: 'text-emerald-600 dark:text-emerald-400' },
         { label: 'Tổng hội viên tập PT', value: totalPtReg, icon: 'groups', iconBg: 'bg-orange-500/10 dark:bg-orange-500/20', color: 'text-orange-600 dark:text-orange-400' },
         { label: 'Gói PT phổ biến nhất', value: popularPt, icon: 'trending_up', iconBg: 'bg-pink-500/10 dark:bg-pink-500/20', color: 'text-pink-600 dark:text-pink-400', isText: true }
       ];
@@ -49,25 +49,28 @@ window.GymApp.pages['packages'] = {
 
     return `
       <div class="flex flex-col gap-margin">
-      <div class="flex items-center border-b border-outline-variant/30 pb-2 gap-loose">
-  <button id="tab-gym" class="relative pb-2 px-4 text-body-md font-bold transition-all focus:outline-none flex items-center gap-compact ${self.activeTab === 'gym' ? 'text-brand-primary border-b-2 border-brand-primary' : 'text-on-surface-variant hover:text-on-surface'}">
-    <span class="material-symbols-outlined text-[20px]">fitness_center</span>
-    Gói tập Gym
-    <span class="px-2 py-0.5 rounded-full text-xs font-bold ${self.activeTab === 'gym' ? 'bg-brand-primary/10 text-brand-primary' : 'bg-surface-container-high text-on-surface-variant'}">${gymPackages.length}</span>
-  </button>
-  
-  <button id="tab-pt" class="relative pb-2 px-4 text-body-md font-bold transition-all focus:outline-none flex items-center gap-compact ${self.activeTab === 'pt' ? 'text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400' : 'text-on-surface-variant hover:text-on-surface'}">
-    <span class="material-symbols-outlined text-[20px]">sports_gymnastics</span>
-    Gói dịch vụ PT
-    <span class="px-2 py-0.5 rounded-full text-xs font-bold ${self.activeTab === 'pt' ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : 'bg-surface-container-high text-on-surface-variant'}">${ptPackages.length}</span>
+      <div class="flex flex-wrap items-center border-b border-outline-variant/30 pb-2 gap-3">
+  <button id="tab-gym" class="relative pb-2 px-3 text-body-md font-bold transition-all focus:outline-none flex items-center gap-compact ${self.activeTab === 'gym' ? 'text-brand-primary border-b-2 border-brand-primary' : 'text-on-surface-variant hover:text-on-surface'}">
+    <span class="material-symbols-outlined text-[18px]">fitness_center</span>
+    <span class="hidden xs:inline">Gói tập Gym</span>
+    <span class="xs:hidden">Gym</span>
+    <span class="px-1.5 py-0.5 rounded-full text-xs font-bold ${self.activeTab === 'gym' ? 'bg-brand-primary/10 text-brand-primary' : 'bg-surface-container-high text-on-surface-variant'}">${gymPackages.length}</span>
   </button>
 
-  <div class="ml-auto flex flex-col items-end sm:flex-row sm:justify-end gap-standard">
-    <button id="btn-add-pkg" class="btn-primary text-white px-loose py-compact rounded-xl font-bold flex items-center gap-compact shadow-md hover:shadow-lg transition-all active:scale-95">
+  <button id="tab-pt" class="relative pb-2 px-3 text-body-md font-bold transition-all focus:outline-none flex items-center gap-compact ${self.activeTab === 'pt' ? 'text-brand-primary border-b-2 border-brand-primary' : 'text-on-surface-variant hover:text-on-surface'}">
+    <span class="material-symbols-outlined text-[18px]">sports_gymnastics</span>
+    <span class="hidden xs:inline">Gói dịch vụ PT</span>
+    <span class="xs:hidden">PT</span>
+    <span class="px-1.5 py-0.5 rounded-full text-xs font-bold ${self.activeTab === 'pt' ? 'bg-brand-primary/10 text-brand-primary' : 'bg-surface-container-high text-on-surface-variant'}">${ptPackages.length}</span>
+  </button>
+
+  <div class="ml-auto">
+    <button id="btn-add-pkg" class="btn-primary text-white px-3 py-2 rounded-xl font-bold flex items-center gap-1.5 shadow-md hover:shadow-lg transition-all active:scale-95 text-sm">
       <span class="material-symbols-outlined text-sm">add</span>
-      Thêm gói mới
+      <span class="hidden sm:inline">Thêm gói mới</span>
+      <span class="sm:hidden">Thêm</span>
     </button>
-  </div> 
+  </div>
 </div>
 
         <!-- Stats Cards Grid -->
@@ -97,20 +100,17 @@ window.GymApp.pages['packages'] = {
             <p class="text-on-surface-variant text-body-sm mt-xs">Hãy nhấn nút "Thêm gói mới" ở góc phải để tạo gói tập đầu tiên.</p>
           </div>
         ` : `
-          <div class="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory custom-scrollbar" style="scroll-behavior: smooth; margin: 0 -4px; padding: 4px; padding-bottom: 12px;">
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             ${currentPackages.map(p => {
               const popularity = currentTotalReg > 0 ? Math.round(((p.so_nguoi_dang_ky || 0) / currentTotalReg) * 100) : 0;
               const isGym = self.activeTab === 'gym';
               
-              const accentBarBg = isGym 
-                ? 'linear-gradient(90deg, #1D9336, #4ade80)' 
-                : 'linear-gradient(90deg, #4338ca, #818cf8)';
               const themeColor = isGym 
                 ? (document.documentElement.classList.contains('dark') ? '#4ade80' : '#1D9336') 
-                : (document.documentElement.classList.contains('dark') ? '#818cf8' : '#4338ca');
+                : (document.documentElement.classList.contains('dark') ? '#34d399' : '#047857');
               const badgeBgClass = isGym
                 ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                : 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20';
+                : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20';
               
               // Details string
               let detailsStr = '';
@@ -125,12 +125,10 @@ window.GymApp.pages['packages'] = {
               }
 
               return `
-                <div class="snap-start shrink-0 group relative rounded-xl overflow-hidden flex flex-col gap-2 p-3 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 bg-white dark:bg-[#1e1e1e] border border-outline-variant/60" style="width: calc(33.333% - 11px); min-width: 280px;">
-                  <!-- Accent bar top -->
-                  <div style="position:absolute;top:0;left:0;right:0;height:3px;background:${accentBarBg};border-radius:3px 3px 0 0;"></div>
+                <div class="group relative rounded-xl overflow-hidden flex flex-col gap-2 p-3 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 bg-white dark:bg-[#1e1e1e] border border-outline-variant/60 w-full">
 
                   <!-- Header Section: Title & Actions -->
-                  <div class="flex items-center justify-between gap-2 mt-1">
+                  <div class="flex items-center justify-between gap-2">
                     <h3 class="font-bold text-on-surface text-body-sm truncate max-w-[70%]" title="${p.ten_goi}">${p.ten_goi}</h3>
                     <div class="flex items-center gap-0.5">
                       <button class="material-symbols-outlined text-outline hover:text-brand-primary text-base p-1 rounded-lg hover:bg-brand-primary/10 transition-colors btn-edit-pkg" data-id="${p.id}" data-type="${isGym ? 'gym' : 'pt'}" title="Chỉnh sửa">edit</button>
@@ -221,7 +219,7 @@ window.GymApp.pages['packages'] = {
                     return `
                       <tr class="h-10 border-b border-outline-variant/30 hover:bg-surface-container-high/40 transition-colors">
                         <td class="px-loose font-bold text-on-surface text-body-md">${p.ten_goi}</td>
-                        <td class="px-loose font-extrabold text-body-md" style="color: ${isGym ? '#1D9336' : '#4338ca'}">${window.GymApp.formatCurrency(p.gia)}</td>
+                        <td class="px-loose font-extrabold text-body-md" style="color: ${isGym ? '#1D9336' : '#047857'}">${window.GymApp.formatCurrency(p.gia)}</td>
                         <td class="px-loose text-on-surface-variant text-body-sm font-bold">${durationStr}</td>
                         <td class="px-loose text-on-surface-variant text-body-sm font-extrabold">${rateStr}</td>
                         <td class="px-loose text-body-md font-bold text-on-surface text-center">${p.so_nguoi_dang_ky || 0}</td>
@@ -323,7 +321,7 @@ window.GymApp.pages['packages'] = {
     // Dynamic initial title/gradient based on pkgType
     const headerGradient = pkgType === 'gym' 
       ? 'linear-gradient(135deg,#15803d 0%,#1D9336 60%,#22c55e 100%)' 
-      : 'linear-gradient(135deg,#312e81 0%,#4338ca 60%,#6366f1 100%)';
+      : 'linear-gradient(135deg,#047857 0%,#10b981 60%,#34d399 100%)';
     
     const titleText = isEdit 
       ? (pkgType === 'gym' ? 'Chỉnh sửa gói tập Gym' : 'Chỉnh sửa gói PT')
@@ -404,7 +402,7 @@ window.GymApp.pages['packages'] = {
         <!-- Modal Footer -->
         <div class="bg-surface-container-lowest px-loose py-standard border-t border-outline-variant flex gap-standard justify-end flex-shrink-0" style="border-bottom-left-radius:24px;border-bottom-right-radius:24px;">
           <button id="cancel-pkg-modal" class="px-loose py-2.5 rounded-xl border-2 border-outline-variant text-on-surface-variant font-bold hover:bg-surface-container transition-all active:scale-95">Hủy</button>
-          <button id="save-pkg-modal" class="px-loose py-2.5 rounded-xl font-bold text-white transition-all flex items-center gap-xs active:scale-95 shadow-md hover:shadow-lg hover:opacity-90" style="background:#4338ca;">
+          <button id="save-pkg-modal" class="px-loose py-2.5 rounded-xl font-bold text-white transition-all flex items-center gap-xs active:scale-95 shadow-md hover:shadow-lg hover:opacity-90" style="background:#10b981;">
             <span class="material-symbols-outlined text-sm">save</span>${isEdit ? 'Lưu thay đổi' : 'Tạo gói mới'}
           </button>
         </div>
@@ -450,9 +448,9 @@ window.GymApp.pages['packages'] = {
       } else {
         gymFieldsContainer.style.display = 'none';
         ptFieldsContainer.style.display = 'contents';
-        headerBg.style.background = 'linear-gradient(135deg, #312e81 0%, #4338ca 60%, #6366f1 100%)';
+        headerBg.style.background = 'linear-gradient(135deg, #047857 0%, #10b981 60%, #34d399 100%)';
         titleTextEl.textContent = isEdit ? 'Chỉnh sửa gói PT' : 'Thêm gói PT mới';
-        saveBtn.style.background = '#4338ca';
+        saveBtn.style.background = '#10b981';
 
         const ptLoai = ptLoaiSelect.value;
         if (ptLoai === 'theo_buoi') {

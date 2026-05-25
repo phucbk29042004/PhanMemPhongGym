@@ -342,14 +342,15 @@ window.GymApp.pages['gym-rules'] = {
         if (res?.success) {
           window.GymApp.toast(isEdit ? 'Đã cập nhật quy tắc thành công!' : 'Đã tạo quy tắc mới thành công!', 'success');
           close();
-          // Reload từ server để có dữ liệu chính xác nhất
-          self._loadRules();
+          // Xoá cache, load lại từ server, đồng bộ màn hình
+          self.rules = [];
+          await self._loadRules();
         } else {
           window.GymApp.toast(res?.message || 'Có lỗi xảy ra!', 'error');
+          btn.disabled = false; btn.classList.remove('opacity-50');
         }
       } catch (err) {
         window.GymApp.toast('Lỗi kết nối máy chủ!', 'error');
-      } finally {
         btn.disabled = false; btn.classList.remove('opacity-50');
       }
     });
