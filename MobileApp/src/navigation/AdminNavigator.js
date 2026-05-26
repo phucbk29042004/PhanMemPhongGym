@@ -20,6 +20,7 @@ import AdminRegisterPTScreen from '../screens/admin/AdminRegisterPTScreen';
 import AdminAddEditPTScreen from '../screens/admin/AdminAddEditPTScreen';
 import AdminAddEditPackageScreen from '../screens/admin/AdminAddEditPackageScreen';
 import AdminRevenueScreen from '../screens/admin/AdminRevenueScreen';
+import AdminRegisterPTScheduleScreen from '../screens/admin/AdminRegisterPTScheduleScreen';
 
 import { useTheme } from '../context/ThemeContext';
 
@@ -117,6 +118,7 @@ export default function AdminNavigator() {
       <Stack.Screen name="AdminAddEditPT" component={AdminAddEditPTScreen} />
       <Stack.Screen name="AdminAddEditPackage" component={AdminAddEditPackageScreen} />
       <Stack.Screen name="AdminRevenue" component={AdminRevenueScreen} />
+      <Stack.Screen name="AdminRegisterPTSchedule" component={AdminRegisterPTScheduleScreen} />
     </Stack.Navigator>
   );
 }

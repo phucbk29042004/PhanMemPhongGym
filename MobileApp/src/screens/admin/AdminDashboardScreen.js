@@ -17,9 +17,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function formatPrice(val) {
-  if (val == null || val === 0) return '0đ';
-  if (val >= 1_000_000) return (val / 1_000_000).toFixed(1).replace('.0', '') + 'M';
-  if (val >= 1_000) return (val / 1_000).toFixed(0) + 'K';
+  if (val == null) return '0đ';
   return Number(val).toLocaleString('vi-VN') + 'đ';
 }
 
@@ -285,7 +283,7 @@ export default function AdminDashboardScreen({ navigation }) {
       {/* ── Header ── */}
       <View style={[styles.header, { backgroundColor: colors.primaryDark, paddingTop: Math.max(insets.top, 16) + 8 }]}>
         <View>
-          <Text style={styles.headerSub}>{greeting}, Admin</Text>
+          <Text style={styles.headerSub}>{greeting}, {user?.ho_ten || (user?.role === 'le_tan' ? 'Lễ tân' : 'Admin')}</Text>
           <Text style={styles.headerTitle}>Paradise GYM</Text>
         </View>
         <View style={styles.headerActions}>
@@ -424,6 +422,12 @@ export default function AdminDashboardScreen({ navigation }) {
               <>
                 <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Phân loại doanh thu hôm nay</Text>
                 <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  {/* Doanh thu hôm qua để so sánh */}
+                  <View style={[revRow.row, { borderBottomColor: colors.borderLight }]}>
+                    <View style={[revRow.dot, { backgroundColor: colors.textMuted }]} />
+                    <Text style={[revRow.label, { color: colors.textSecondary }]}>Doanh thu hôm qua</Text>
+                    <Text style={[revRow.value, { color: colors.textSecondary }]}>{formatPrice(todayRevenue.hom_qua || 0)}</Text>
+                  </View>
                   {(todayRevenue.tien_goi_tap ?? 0) > 0 && (
                     <RevenueRow label="Gói Gym" value={formatPrice(todayRevenue.tien_goi_tap)} colors={colors} />
                   )}

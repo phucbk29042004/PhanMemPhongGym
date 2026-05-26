@@ -8,6 +8,7 @@ import {
   AlertCircle, CheckCircle2, Clock, Search, User, Users, X, Plus,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -153,6 +154,7 @@ const FILTERS = [
 
 export default function AdminMembersScreen({ navigation, route }) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -202,7 +204,7 @@ export default function AdminMembersScreen({ navigation, route }) {
       <StatusBar barStyle={colors.statusBar} backgroundColor={colors.statusBarBg} />
 
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.primaryDark }]}>
+      <View style={[styles.header, { backgroundColor: colors.primaryDark, paddingTop: insets.top + 16 }]}>
         <View>
           <Text style={styles.headerTitle}>Hội viên</Text>
           <Text style={styles.headerSub}>{members.length} tổng · {filtered.length} hiển thị</Text>
@@ -283,7 +285,7 @@ export default function AdminMembersScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: {
-    paddingTop: 52, paddingBottom: 16,
+    paddingTop: 0, paddingBottom: 16,
     paddingHorizontal: 20,
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end',
   },

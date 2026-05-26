@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator, Alert, Modal, RefreshControl, ScrollView,
   StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View,
+  KeyboardAvoidingView, Platform
 } from 'react-native';
 import {
   CalendarDays, ChevronLeft, ChevronRight,
@@ -455,7 +456,10 @@ export default function MemberScheduleScreen() {
         <View style={{ height: 20 }} />
       </ScrollView>
       <Modal visible={!!ratingModal} transparent animationType="slide" onRequestClose={() => setRatingModal(null)}>
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+          style={styles.modalOverlay}
+        >
           <View style={[styles.ratingSheet, { backgroundColor: colors.surface }]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>Đánh giá PT</Text>
@@ -480,7 +484,7 @@ export default function MemberScheduleScreen() {
               {savingRating ? <ActivityIndicator color="#fff" /> : <Text style={styles.ratingSubmitText}>Gửi đánh giá</Text>}
             </TouchableOpacity>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );

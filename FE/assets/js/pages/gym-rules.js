@@ -133,7 +133,9 @@ window.GymApp.pages['gym-rules'] = {
 
                     <div class="flex items-center gap-xs">
                       <button class="material-symbols-outlined text-outline hover:text-brand-primary text-lg p-1.5 rounded-lg hover:bg-surface-container-low transition-colors btn-edit-rule" data-id="${r.id}" title="Chỉnh sửa">edit</button>
-                      <button class="material-symbols-outlined text-outline hover:text-error text-lg p-1.5 rounded-lg hover:bg-error/10 transition-colors btn-del-rule" data-id="${r.id}" data-title="${r.tieu_de}" title="Xóa">delete</button>
+                      ${window.GymApp.auth.user?.vai_tro === 'admin' ? `
+                        <button class="material-symbols-outlined text-outline hover:text-error text-lg p-1.5 rounded-lg hover:bg-error/10 transition-colors btn-del-rule" data-id="${r.id}" data-title="${r.tieu_de}" title="Xóa">delete</button>
+                      ` : ''}
                     </div>
                   </div>
 

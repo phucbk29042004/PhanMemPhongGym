@@ -133,9 +133,9 @@ export default function MemberHomeScreen({ navigation }) {
   const handleResumePayment = async (plan) => {
     setLoading(true);
     try {
-      const res = await api.get(`/members/me/payos-status/${plan.payos_order_code}`);
+      const res = await api.get(`/members/me/payos-status/${plan.payos_order_code}?resume=true`);
       if (res.data?.success) {
-        const { status, qrCode, checkoutUrl } = res.data.data;
+        const { status, qrCode, checkoutUrl, orderCode } = res.data.data;
         if (status === 'PAID') {
           Alert.alert('Thông báo', 'Giao dịch này đã được thanh toán thành công trước đó.');
           fetchAll();
@@ -144,7 +144,7 @@ export default function MemberHomeScreen({ navigation }) {
           fetchAll();
         } else {
           setPaymentInfo({
-            orderCode: plan.payos_order_code,
+            orderCode: orderCode || plan.payos_order_code,
             qrCodeUrl: qrCode || checkoutUrl,
             amount: plan.gia_thuc_te,
             checkoutUrl: checkoutUrl
