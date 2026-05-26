@@ -9,6 +9,7 @@ import {
 import ProfileAvatar from '../../components/ProfileAvatar';
 import { api } from '../../services/api';
 import { unwrapData } from '../../utils/data';
+import { useTheme } from '../../context/ThemeContext';
 
 // ── Màu sắc ────────────────────────────────────────────────
 const G = {
@@ -30,6 +31,7 @@ const G = {
 };
 
 export default function PTQRCodeScreen() {
+  const { colors, isDark } = useTheme();
   const [qrData, setQrData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -96,8 +98,8 @@ export default function PTQRCodeScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={G.primaryDark} />
+    <View style={[styles.container, { backgroundColor: isDark ? colors.background : G.primaryDark }]}>
+      <StatusBar barStyle="light-content" backgroundColor={isDark ? colors.background : G.primaryDark} />
 
       {/* ── Header ────────────────────────────── */}
       <View style={styles.header}>
@@ -105,8 +107,8 @@ export default function PTQRCodeScreen() {
           <QrCode color={G.white} size={20} strokeWidth={2} />
         </View>
         <View>
-          <Text style={styles.headerTitle}>QR Check-in PT</Text>
-          <Text style={styles.headerSubtitle}>Quét tại lễ tân để vào / ra ca làm việc</Text>
+          <Text style={[styles.headerTitle, { color: G.white }]}>QR Check-in PT</Text>
+          <Text style={[styles.headerSubtitle, { color: 'rgba(255,255,255,0.65)' }]}>Quét tại lễ tân để vào / ra ca làm việc</Text>
         </View>
       </View>
 
@@ -116,7 +118,7 @@ export default function PTQRCodeScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={[G.primary]}
+            colors={[colors.primary]}
             tintColor={G.white}
           />
         }
@@ -126,26 +128,26 @@ export default function PTQRCodeScreen() {
         {loading && (
           <View style={styles.loadingCenter}>
             <ActivityIndicator color={G.white} size="large" />
-            <Text style={styles.loadingText}>Đang tạo mã QR ca làm việc...</Text>
+            <Text style={[styles.loadingText, { color: isDark ? colors.textMuted : 'rgba(255,255,255,0.7)' }]}>Đang tạo mã QR ca làm việc...</Text>
           </View>
         )}
 
         {/* ── Error ──────────────────────────── */}
         {!loading && errorText ? (
-          <View style={styles.errorBox}>
+          <View style={[styles.errorBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <QrCode color={G.danger} size={40} strokeWidth={1.5} />
-            <Text style={styles.errorTitle}>Không tải được mã QR</Text>
-            <Text style={styles.errorText}>{errorText}</Text>
+            <Text style={[styles.errorTitle, { color: colors.text }]}>Không tải được mã QR</Text>
+            <Text style={[styles.errorText, { color: colors.textSecondary }]}>{errorText}</Text>
             <TouchableOpacity style={styles.retryBtn} onPress={fetchQr} activeOpacity={0.8}>
               <RefreshCw color={G.white} size={16} strokeWidth={2} />
-              <Text style={styles.retryBtnText}>Thử lại</Text>
+              <Text style={retryBtnText}>Thử lại</Text>
             </TouchableOpacity>
           </View>
         ) : null}
 
         {/* ── QR Card ────────────────────────── */}
         {!loading && qrData && !errorText ? (
-          <View style={styles.qrCard}>
+          <View style={[styles.qrCard, { backgroundColor: colors.surface }]}>
             {/* Thông tin HLV */}
             <View style={styles.memberInfo}>
               <ProfileAvatar
@@ -154,32 +156,32 @@ export default function PTQRCodeScreen() {
                 size={56}
               />
               <View style={styles.memberText}>
-                <Text style={styles.memberName}>{qrData.ho_ten}</Text>
+                <Text style={[styles.memberName, { color: colors.text }]}>{qrData.ho_ten}</Text>
                 <View style={styles.memberCodeRow}>
-                  <ShieldCheck color={G.primary} size={13} strokeWidth={2} />
-                  <Text style={styles.memberCode}>{qrData.ma_ho_so || 'Huấn luyện viên'}</Text>
+                  <ShieldCheck color={colors.primary} size={13} strokeWidth={2} />
+                  <Text style={[styles.memberCode, { color: colors.primary }]}>{qrData.ma_ho_so || 'Huấn luyện viên'}</Text>
                 </View>
               </View>
-              <View style={styles.activeBadge}>
-                <UserCheck color={G.primary} size={12} strokeWidth={2.5} />
-                <Text style={styles.activeBadgeText}>PT Shift</Text>
+              <View style={[styles.activeBadge, { backgroundColor: colors.primaryLight }]}>
+                <UserCheck color={colors.primary} size={12} strokeWidth={2.5} />
+                <Text style={[styles.activeBadgeText, { color: colors.primary }]}>PT Shift</Text>
               </View>
             </View>
 
             {/* Đường kẻ phân cách */}
             <View style={styles.separator}>
-              <View style={styles.separatorCircleLeft} />
-              <View style={styles.separatorDash} />
-              <View style={styles.separatorCircleRight} />
+              <View style={[styles.separatorCircleLeft, { backgroundColor: isDark ? colors.background : G.primaryDark }]} />
+              <View style={[styles.separatorDash, { borderColor: colors.border }]} />
+              <View style={[styles.separatorCircleRight, { backgroundColor: isDark ? colors.background : G.primaryDark }]} />
             </View>
 
             {/* QR Image */}
-            <View style={styles.qrWrapper}>
+            <View style={[styles.qrWrapper, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
               {isExpired ? (
                 <View style={styles.expiredOverlay}>
                   <Clock color={G.danger} size={32} strokeWidth={1.5} />
                   <Text style={styles.expiredText}>Mã đã hết hạn</Text>
-                  <Text style={styles.expiredSub}>Nhấn làm mới để tạo mã mới</Text>
+                  <Text style={[styles.expiredSub, { color: colors.textMuted }]}>Nhấn làm mới để tạo mã mới</Text>
                 </View>
               ) : (
                 <Image
@@ -193,16 +195,18 @@ export default function PTQRCodeScreen() {
             {/* Countdown */}
             <View style={[
               styles.countdownBox,
+              { backgroundColor: colors.primaryLight },
               isUrgent && !isExpired && styles.countdownBoxUrgent,
               isExpired && styles.countdownBoxExpired,
             ]}>
               <Clock
-                color={isExpired ? G.danger : isUrgent ? G.warning : G.primary}
+                color={isExpired ? G.danger : isUrgent ? G.warning : colors.primary}
                 size={16}
                 strokeWidth={2}
               />
               <Text style={[
                 styles.countdownText,
+                { color: colors.primary },
                 isUrgent && !isExpired && styles.countdownTextUrgent,
                 isExpired && styles.countdownTextExpired,
               ]}>
@@ -223,7 +227,7 @@ export default function PTQRCodeScreen() {
             </TouchableOpacity>
 
             {/* Ghi chú nhỏ */}
-            <Text style={styles.hint}>
+            <Text style={[styles.hint, { color: colors.textMuted }]}>
               Sử dụng mã QR này quét tại quầy lễ tân để check-in hoặc check-out ca làm việc của bạn.
             </Text>
           </View>

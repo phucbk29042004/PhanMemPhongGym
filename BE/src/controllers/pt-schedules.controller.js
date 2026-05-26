@@ -48,6 +48,7 @@ export const getSchedules = (req, res) => {
     SELECT
       lt.id, lt.ngay_tap, lt.gio_bat_dau, lt.gio_ket_thuc,
       lt.loai_buoi, lt.trang_thai, lt.ghi_chu, lt.ly_do_huy,
+      lt.pt_xac_nhan, lt.hv_xac_nhan,
       hv.id AS hoi_vien_id, hv.ho_ten AS ten_hoi_vien, hv.avatar_url AS avatar_hoi_vien,
       pt.id AS pt_id, pt.ho_ten AS ten_pt, pt.avatar_url AS avatar_pt,
       (dk.so_buoi_dang_ky - dk.so_buoi_da_tap) AS buoi_con_lai,
@@ -157,35 +158,73 @@ export const createSchedule = (req, res) => {
 };
 
 // ── PUT /api/pt/schedules/:id/confirm ────────────────────
-// Xác nhận buổi đã tập (admin/lễ tân hoặc PT tự xác nhận lịch của mình)
+// Xác nhận buổi đã tập (cơ chế xác nhận kép: PT + Hội viên)
 export const confirmSchedule = (req, res) => {
   const { id } = req.params;
   const schedule = db.prepare('SELECT * FROM lich_tap WHERE id = ?').get(id);
   if (!schedule) return error(res, 'Không tìm thấy lịch tập.', 404);
   if (schedule.trang_thai !== 'cho_tap') return error(res, `Buổi tập đang ở trạng thái: ${schedule.trang_thai}. Chỉ xác nhận được buổi "cho_tap".`, 400);
 
-  // Nếu là PT: chỉ được xác nhận lịch của chính mình
-  if (req.user.vai_tro === 'pt') {
+  const vai_tro = req.user.vai_tro;
+
+  if (vai_tro === 'pt') {
     const hoSoPt = db.prepare('SELECT id FROM ho_so WHERE tai_khoan_id = ?').get(req.user.id);
     if (!hoSoPt || schedule.pt_id !== hoSoPt.id) {
       return error(res, 'Bạn chỉ có thể xác nhận buổi tập do chính mình phụ trách.', 403);
     }
-  }
-  // Nếu là Hội viên: chỉ được xác nhận lịch của chính mình
-  else if (req.user.vai_tro === 'hoi_vien') {
+    if (schedule.pt_xac_nhan === 1) {
+      return error(res, 'Bạn đã xác nhận buổi tập này rồi.', 400);
+    }
+    db.prepare(`UPDATE lich_tap SET pt_xac_nhan = 1 WHERE id = ?`).run(id);
+  } else if (vai_tro === 'hoi_vien') {
     const hoSoHv = db.prepare('SELECT id FROM ho_so WHERE tai_khoan_id = ?').get(req.user.id);
     if (!hoSoHv || schedule.hoi_vien_id !== hoSoHv.id) {
       return error(res, 'Bạn chỉ có thể xác nhận buổi tập của chính mình.', 403);
     }
+    if (schedule.hv_xac_nhan === 1) {
+      return error(res, 'Bạn đã xác nhận buổi tập này rồi.', 400);
+    }
+    db.prepare(`UPDATE lich_tap SET hv_xac_nhan = 1 WHERE id = ?`).run(id);
+  } else {
+    // Admin / lễ tân: xác nhận thay cho cả 2
+    db.prepare(`UPDATE lich_tap SET pt_xac_nhan = 1, hv_xac_nhan = 1 WHERE id = ?`).run(id);
   }
 
-  // Trigger trg_xac_nhan_buoi_tap sẽ tự động tăng so_buoi_da_tap
-  db.prepare(`
-    UPDATE lich_tap SET trang_thai = 'da_tap', confirmed_by_id = ?, ngay_xac_nhan = datetime('now','localtime') WHERE id = ?
-  `).run(req.user.id, id);
+  const updated = db.prepare('SELECT * FROM lich_tap WHERE id = ?').get(id);
+  const bothConfirmed = updated.pt_xac_nhan === 1 && updated.hv_xac_nhan === 1;
 
-  ghi_audit_log(req, 'UPDATE', 'lich_tap', parseInt(id), { trang_thai: 'cho_tap' }, { trang_thai: 'da_tap' }, 'Xác nhận buổi tập đã hoàn thành');
-  return success(res, null, 'Xác nhận buổi tập thành công');
+  if (bothConfirmed) {
+    // Trigger trg_xac_nhan_buoi_tap sẽ tự động tăng so_buoi_da_tap
+    db.prepare(`
+      UPDATE lich_tap SET trang_thai = 'da_tap', confirmed_by_id = ?, ngay_xac_nhan = datetime('now','localtime') WHERE id = ?
+    `).run(req.user.id, id);
+
+    const schedInfo = db.prepare(`
+      SELECT hv.id AS hv_id, hv.ho_ten AS ten_hv, pt.id AS pt_id, pt.ho_ten AS ten_pt, lt.ngay_tap
+      FROM lich_tap lt JOIN ho_so hv ON hv.id = lt.hoi_vien_id JOIN ho_so pt ON pt.id = lt.pt_id WHERE lt.id = ?
+    `).get(id);
+    if (schedInfo) {
+      createUserNotification(schedInfo.hv_id, '✅ Buổi tập hoàn thành', `Buổi tập ngày ${schedInfo.ngay_tap} với HLV ${schedInfo.ten_pt} đã được xác nhận hoàn thành.`, 'thong_bao_chung');
+      createUserNotification(schedInfo.pt_id, '✅ Buổi dạy hoàn thành', `Buổi dạy ngày ${schedInfo.ngay_tap} với học viên ${schedInfo.ten_hv} đã được xác nhận hoàn thành.`, 'thong_bao_chung');
+    }
+    ghi_audit_log(req, 'UPDATE', 'lich_tap', parseInt(id), { trang_thai: 'cho_tap' }, { trang_thai: 'da_tap' }, 'Xác nhận buổi tập (cả 2 bên)');
+    return success(res, { bothConfirmed: true, pt_xac_nhan: 1, hv_xac_nhan: 1 }, 'Cả hai đã xác nhận. Buổi tập hoàn thành!');
+  }
+
+  // Chỉ 1 bên xác nhận — thông báo bên kia
+  const schedInfo = db.prepare(`
+    SELECT hv.id AS hv_id, hv.ho_ten AS ten_hv, pt.id AS pt_id, pt.ho_ten AS ten_pt, lt.ngay_tap
+    FROM lich_tap lt JOIN ho_so hv ON hv.id = lt.hoi_vien_id JOIN ho_so pt ON pt.id = lt.pt_id WHERE lt.id = ?
+  `).get(id);
+  if (schedInfo) {
+    if (vai_tro === 'pt') {
+      createUserNotification(schedInfo.hv_id, '⏳ Xác nhận buổi tập', `PT ${schedInfo.ten_pt} đã xác nhận buổi tập ngày ${schedInfo.ngay_tap}. Vui lòng xác nhận để hoàn thành.`, 'thong_bao_chung');
+    } else if (vai_tro === 'hoi_vien') {
+      createUserNotification(schedInfo.pt_id, '⏳ Xác nhận buổi tập', `Học viên ${schedInfo.ten_hv} đã xác nhận buổi tập ngày ${schedInfo.ngay_tap}. Vui lòng xác nhận để hoàn thành.`, 'thong_bao_chung');
+    }
+  }
+  ghi_audit_log(req, 'UPDATE', 'lich_tap', parseInt(id), null, { pt_xac_nhan: updated.pt_xac_nhan, hv_xac_nhan: updated.hv_xac_nhan }, `Ghi nhận xác nhận từ ${vai_tro}`);
+  return success(res, { bothConfirmed: false, pt_xac_nhan: updated.pt_xac_nhan, hv_xac_nhan: updated.hv_xac_nhan }, 'Đã ghi nhận xác nhận của bạn. Đang chờ bên còn lại xác nhận.');
 };
 
 export const getScheduleRating = (req, res) => {
@@ -371,6 +410,7 @@ export const revertSchedule = (req, res) => {
       UPDATE lich_tap SET
         trang_thai = 'cho_tap', confirmed_by_id = NULL,
         ngay_xac_nhan = NULL, da_checkin = 0,
+        pt_xac_nhan = 0, hv_xac_nhan = 0,
         ghi_chu = ?
       WHERE id = ?
     `).run(ly_do ? `Hoàn tác: ${ly_do}` : 'Hoàn tác bởi admin', id);

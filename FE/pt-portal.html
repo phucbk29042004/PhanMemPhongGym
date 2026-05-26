@@ -81,14 +81,32 @@
           <span class="material-symbols-outlined text-on-surface-variant text-xl">menu</span>
         </button>
         <div class="sidebar-label flex items-center gap-compact overflow-hidden flex-1">
-          <div class="w-8 h-8 bg-brand-primary rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
-            <span class="material-symbols-outlined text-white"
-              style="font-size:16px;font-variation-settings:'FILL' 1,'wght' 500">sports_gymnastics</span>
-          </div>
+          <!-- White Hexagon Logo -->
+          <svg viewBox="0 0 45 45" width="32" height="32" class="flex-shrink-0">
+             <polygon points="22.5,2 42,13 42,35 22.5,46 3,35 3,13" fill="#ffffff" stroke="#166534" stroke-width="1.5"/>
+             <path d="M19,37 C19,31 18,24 20,15" fill="none" stroke="#14532d" stroke-width="3" stroke-linecap="round"/>
+             <path d="M20,15 C23,11 31,11 34,15 C36,18 35,24 29,26 C24,27 20,26.5 20,26.5" fill="none" stroke="#14532d" stroke-width="2.5" stroke-linecap="round"/>
+             <path d="M20.5,19 C24,18 28.5,18.5 30,21" fill="none" stroke="#14532d" stroke-width="1.2" stroke-linecap="round"/>
+             <path d="M20,23.5 C23.5,23 27,24 28.5,22.5" fill="none" stroke="#14532d" stroke-width="1" stroke-linecap="round"/>
+          </svg>
           <div class="min-w-0">
-            <h1 class="font-display-xl text-display-xl text-brand-primary font-bold leading-tight whitespace-nowrap">PT
-              Portal</h1>
-            <p class="text-on-surface-variant font-body-sm text-body-sm" style="font-size:10px">Paradise GYM</p>
+            <svg viewBox="0 0 190 40" width="140" height="30" style="display:block;">
+              <g font-family="'Outfit', 'Inter', 'Roboto', sans-serif" font-weight="800" font-size="22">
+                <text x="5" y="27" fill="#1D9336" letter-spacing="-0.5">arad</text>
+                <text x="53" y="27" fill="#1D9336" letter-spacing="-0.5">ı</text>
+                <path d="M54.5,10 C56.5,8 59,8 59.5,10 C59.5,12.5 57,14 55.5,14 C54.5,14 53.5,12.5 54.5,10 Z" fill="#16a34a"/>
+                <text x="64" y="27" fill="#14532d" letter-spacing="-0.5">seGy</text>
+                <text x="112" y="27" fill="#14532d" letter-spacing="-0.5">m</text>
+                <g transform="translate(116, 9) rotate(15)">
+                  <line x1="1" y1="8" x2="13" y2="2" stroke="#1D9336" stroke-width="1.5" stroke-linecap="round"/>
+                  <rect x="0" y="5" width="2.5" height="5" rx="0.8" fill="#14532d"/>
+                  <rect x="-2" y="4" width="2" height="7" rx="0.8" fill="#1D9336"/>
+                  <rect x="11.5" y="0" width="2.5" height="5" rx="0.8" fill="#14532d"/>
+                  <rect x="14" y="-1" width="2" height="7" rx="0.8" fill="#1D9336"/>
+                </g>
+              </g>
+              <text x="5" y="38" font-family="'Inter', sans-serif" font-weight="500" font-size="9" fill="#16a34a">HUẤN LUYỆN VIÊN (PT)</text>
+            </svg>
           </div>
         </div>
       </div>
@@ -259,10 +277,10 @@
   <!-- Scripts -->
   <script>
     window.GymApp.toast = function (message, type = 'success') {
-      const colors = { success: 'background:#1D9336', error: 'background:#ba1a1a', info: 'background:#575f67' };
-      const icons = { success: 'check_circle', error: 'error', info: 'info' };
+      const colors = { success: 'background:#1D9336', error: 'background:#ba1a1a', info: 'background:#575f67', warning: 'background:#e65100' };
+      const icons = { success: 'check_circle', error: 'error', info: 'info', warning: 'warning' };
       const el = document.createElement('div');
-      el.style.cssText = `position:fixed;bottom:20px;right:20px;z-index:9997;${colors[type]};color:#fff;padding:10px 20px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.2);font-size:14px;display:flex;align-items:center;gap:8px;font-weight:500;`;
+      el.style.cssText = `position:fixed;bottom:20px;right:20px;z-index:9997;${colors[type] || colors.info};color:#fff;padding:10px 20px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.2);font-size:14px;display:flex;align-items:center;gap:8px;font-weight:500;`;
       el.innerHTML = `<span class="material-symbols-outlined" style="font-size:18px">${icons[type]}</span>${message}`;
       document.body.appendChild(el);
       setTimeout(() => el.remove(), 3000);

@@ -244,9 +244,12 @@
 
             <div class="p-loose space-y-standard">
               <div>
-                <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Giá thực thu (đ)</label>
-                <input type="number" id="approve-price" value="${gia}"
-                  class="w-full bg-surface-container-low border border-outline-variant px-standard py-compact rounded-xl outline-none focus:border-brand-primary transition-all font-bold text-on-surface text-body-md" />
+                <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Giá thực thu (VNĐ)</label>
+                <div class="relative">
+                  <input type="text" inputmode="numeric" id="approve-price" value="${new Intl.NumberFormat('vi-VN').format(gia || 0)}"
+                    class="w-full bg-surface-container-low border border-outline-variant pl-standard pr-12 py-compact rounded-xl outline-none focus:border-brand-primary transition-all font-bold text-on-surface text-body-md" />
+                  <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-outline text-label-xs font-black opacity-50">VNĐ</span>
+                </div>
               </div>
               <div>
                 <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Phương thức thanh toán</label>
@@ -279,6 +282,21 @@
       `;
 
       document.body.insertAdjacentHTML('beforeend', html);
+
+      // Format VNĐ helper
+      const _fmtVND = n => n > 0 ? new Intl.NumberFormat('vi-VN').format(n) : '0';
+      const _parseVND = s => parseInt((s || '').replace(/\./g, '').replace(/,/g, '')) || 0;
+
+      const priceEl = document.getElementById('approve-price');
+      priceEl?.addEventListener('focus', function () {
+        const raw = _parseVND(this.value);
+        this.value = raw > 0 ? String(raw) : '';
+      });
+      priceEl?.addEventListener('blur', function () {
+        const raw = _parseVND(this.value);
+        this.value = raw > 0 ? _fmtVND(raw) : '0';
+      });
+
       const closeModal = () => document.getElementById('modal-approve-req')?.remove();
       document.getElementById('btn-close-approve').onclick = closeModal;
       document.getElementById('btn-cancel-approve').onclick = closeModal;
@@ -287,7 +305,7 @@
       });
 
       document.getElementById('btn-confirm-approve').onclick = async () => {
-        const gia_thuc_te = document.getElementById('approve-price').value;
+        const gia_thuc_te = _parseVND(document.getElementById('approve-price').value);
         const phuong_thuc_tt = document.getElementById('approve-method').value;
         const ghi_chu_tt = document.getElementById('approve-note').value;
         const confirmBtn = document.getElementById('btn-confirm-approve');

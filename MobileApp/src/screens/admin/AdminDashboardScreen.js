@@ -1,16 +1,20 @@
-import React, { useCallback, useState } from 'react';
+// Force Metro bundler re-read
+import React, { useCallback, useState, useEffect } from 'react';
 import {
   ActivityIndicator, RefreshControl, ScrollView,
   StatusBar, StyleSheet, Text, TouchableOpacity, View,
+  Modal, FlatList,
 } from 'react-native';
 import {
   AlertTriangle, BarChart3, CalendarCheck, CheckCircle2,
   Clock, CreditCard, DollarSign, TrendingUp, UserCheck, Users,
+  Bell, Trash2, Check, X,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuthStore } from '../../store/useAuthStore';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function formatPrice(val) {
   if (val == null || val === 0) return '0đ';
@@ -27,16 +31,21 @@ function formatDate(val) {
 }
 
 // ── KPI Card ──────────────────────────────────────────────
-function KpiCard({ icon: Icon, iconBg, iconColor, label, value, sub, subColor, colors }) {
+function KpiCard({ icon: Icon, iconBg, iconColor, label, value, sub, subColor, colors, onPress }) {
+  const Container = onPress ? TouchableOpacity : View;
   return (
-    <View style={[kpi.card, { backgroundColor: colors.surface }]}>
+    <Container 
+      style={[kpi.card, { backgroundColor: colors.surface }]} 
+      onPress={onPress} 
+      activeOpacity={onPress ? 0.7 : 1}
+    >
       <View style={[kpi.iconBox, { backgroundColor: iconBg }]}>
         <Icon color={iconColor} size={20} strokeWidth={2} />
       </View>
       <Text style={[kpi.value, { color: colors.text }]}>{value}</Text>
       <Text style={[kpi.label, { color: colors.textMuted }]}>{label}</Text>
       {sub ? <Text style={[kpi.sub, subColor && { color: subColor }]}>{sub}</Text> : null}
-    </View>
+    </Container>
   );
 }
 
@@ -108,22 +117,46 @@ const revRow = StyleSheet.create({
 });
 
 // ── Màn hình chính ────────────────────────────────────────
+// ── Màn hình chính ────────────────────────────────────────
 export default function AdminDashboardScreen({ navigation }) {
   const { user } = useAuthStore();
   const { colors, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const [dash, setDash] = useState(null);
   const [todayRevenue, setTodayRevenue] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  // States for notifications
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifModal, setShowNotifModal] = useState(false);
+  const [notifPage, setNotifPage] = useState(1);
+
+  // States for today's transactions detail modal
+  const [showTransactionsModal, setShowTransactionsModal] = useState(false);
+  const [txPage, setTxPage] = useState(1);
+
+  // States for today's check-ins detail modal
+  const [todayCheckins, setTodayCheckins] = useState([]);
+  const [checkinsLoading, setCheckinsLoading] = useState(false);
+  const [showCheckinsModal, setShowCheckinsModal] = useState(false);
+  const [checkinPage, setCheckinPage] = useState(1);
+
+  const PAGE_SIZE = 10;
+
   const fetchData = useCallback(async () => {
     try {
-      const [dashRes, todayRes] = await Promise.all([
+      const [dashRes, todayRes, notifsRes, unreadRes] = await Promise.all([
         api.get('/revenue/dashboard'),
         api.get('/revenue/today'),
+        api.get('/notifications'),
+        api.get('/notifications/unread-count'),
       ]);
       if (dashRes.data?.success) setDash(dashRes.data.data);
       if (todayRes.data?.success) setTodayRevenue(todayRes.data.data);
+      if (notifsRes.data?.success) setNotifications(notifsRes.data.data || []);
+      if (unreadRes.data?.success) setUnreadCount(unreadRes.data.data?.count || 0);
     } catch (err) {
       console.error('[AdminDashboard] fetch error:', err?.message);
     } finally {
@@ -132,26 +165,147 @@ export default function AdminDashboardScreen({ navigation }) {
     }
   }, []);
 
+  const fetchCheckinsToday = async () => {
+    setCheckinsLoading(true);
+    try {
+      const res = await api.get('/checkins?limit=100');
+      if (res.data?.success) {
+        setTodayCheckins(res.data.data || []);
+      }
+    } catch (err) {
+      console.error('[AdminDashboard] checkins fetch error:', err?.message);
+    } finally {
+      setCheckinsLoading(false);
+    }
+  };
+
   useFocusEffect(useCallback(() => { fetchData(); }, [fetchData]));
   const onRefresh = () => { setRefreshing(true); fetchData(); };
 
+  const handleMarkAsRead = async (id) => {
+    try {
+      const res = await api.patch(`/notifications/${id}/read`);
+      if (res.data?.success) {
+        setNotifications(prev => prev.map(n => n.id === id ? { ...n, da_doc: 1 } : n));
+        const unreadRes = await api.get('/notifications/unread-count');
+        if (unreadRes.data?.success) setUnreadCount(unreadRes.data.data?.count || 0);
+      }
+    } catch (err) {
+      console.error('[AdminDashboard] mark read error:', err?.message);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      const res = await api.patch('/notifications/read-all');
+      if (res.data?.success) {
+        setNotifications(prev => prev.map(n => ({ ...n, da_doc: 1 })));
+        setUnreadCount(0);
+      }
+    } catch (err) {
+      console.error('[AdminDashboard] mark all read error:', err?.message);
+    }
+  };
+
+  const handleDeleteNotif = async (id) => {
+    try {
+      const res = await api.delete(`/notifications/${id}`);
+      if (res.data?.success) {
+        setNotifications(prev => prev.filter(n => n.id !== id));
+        const unreadRes = await api.get('/notifications/unread-count');
+        if (unreadRes.data?.success) setUnreadCount(unreadRes.data.data?.count || 0);
+      }
+    } catch (err) {
+      console.error('[AdminDashboard] delete notif error:', err?.message);
+    }
+  };
+
+  const handleDeleteAllNotifs = async () => {
+    try {
+      const res = await api.delete('/notifications');
+      if (res.data?.success) {
+        setNotifications([]);
+        setUnreadCount(0);
+      }
+    } catch (err) {
+      console.error('[AdminDashboard] delete all notifs error:', err?.message);
+    }
+  };
+
+  const getNotifStyle = (loai) => {
+    const l = (loai || '').toLowerCase();
+    if (l.includes('danger') || l.includes('error') || l.includes('het_han')) {
+      return { bg: isDark ? '#2d1818' : '#fff0f0', border: isDark ? '#4c1c1c' : '#fca5a5', text: isDark ? '#fecaca' : '#7f1d1d' };
+    }
+    if (l.includes('warning') || l.includes('sap_het')) {
+      return { bg: isDark ? '#2d2218' : '#fffbeb', border: isDark ? '#4c321c' : '#fcd34d', text: isDark ? '#fef3c7' : '#78350f' };
+    }
+    if (l.includes('success') || l.includes('check_in')) {
+      return { bg: isDark ? '#182d1f' : '#f0fdf4', border: isDark ? '#1c4c2d' : '#86efac', text: isDark ? '#d1fae5' : '#14532d' };
+    }
+    return { bg: isDark ? '#182235' : '#eff6ff', border: isDark ? '#1c355e' : '#93c5fd', text: isDark ? '#dbeafe' : '#1e3a5f' };
+  };
+
   const now = new Date();
   const greeting = now.getHours() < 12 ? 'Chào buổi sáng' : now.getHours() < 18 ? 'Chào buổi chiều' : 'Chào buổi tối';
+
+  // Pagination controls component
+  const Pagination = ({ currentPage, totalItems, onPageChange }) => {
+    const totalPages = Math.ceil(totalItems / PAGE_SIZE) || 1;
+    if (totalPages <= 1) return null;
+    return (
+      <View style={pagination.container}>
+        <Text style={[pagination.text, { color: colors.textSecondary }]}>
+          Trang {currentPage}/{totalPages} ({totalItems} mục)
+        </Text>
+        <View style={pagination.buttons}>
+          <TouchableOpacity
+            disabled={currentPage === 1}
+            style={[pagination.btn, { borderColor: colors.border }, currentPage === 1 && { opacity: 0.3 }]}
+            onPress={() => onPageChange(currentPage - 1)}
+          >
+            <Text style={[pagination.btnText, { color: colors.textSecondary }]}>Trước</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            disabled={currentPage === totalPages}
+            style={[pagination.btn, { borderColor: colors.border }, currentPage === totalPages && { opacity: 0.3 }]}
+            onPress={() => onPageChange(currentPage + 1)}
+          >
+            <Text style={[pagination.btnText, { color: colors.textSecondary }]}>Sau</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={colors.statusBar} backgroundColor={colors.statusBarBg} />
 
       {/* ── Header ── */}
-      <View style={[styles.header, { backgroundColor: colors.primaryDark }]}>
+      <View style={[styles.header, { backgroundColor: colors.primaryDark, paddingTop: Math.max(insets.top, 16) + 8 }]}>
         <View>
           <Text style={styles.headerSub}>{greeting}, Admin</Text>
           <Text style={styles.headerTitle}>Paradise GYM</Text>
         </View>
-        <View style={styles.headerDate}>
-          <Text style={styles.headerDateText}>
-            {now.toLocaleDateString('vi-VN', { weekday: 'short', day: 'numeric', month: 'numeric' })}
-          </Text>
+        <View style={styles.headerActions}>
+          <TouchableOpacity 
+            style={styles.bellBtn} 
+            onPress={() => { setShowNotifModal(true); setNotifPage(1); }}
+            activeOpacity={0.7}
+          >
+            <Bell color="#ffffff" size={22} strokeWidth={2} />
+            {unreadCount > 0 && (
+              <View style={[styles.bellBadge, { backgroundColor: colors.danger }]}>
+                <Text style={styles.bellBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          <View style={styles.headerDate}>
+            <Text style={styles.headerDateText}>
+              {now.toLocaleDateString('vi-VN', { weekday: 'short', day: 'numeric', month: 'numeric' })}
+            </Text>
+          </View>
         </View>
       </View>
 
@@ -168,9 +322,13 @@ export default function AdminDashboardScreen({ navigation }) {
         ) : (
           <>
             {/* ── Doanh thu hôm nay ── */}
-            <View style={[styles.revenueBanner, { backgroundColor: colors.primary }]}>
+            <TouchableOpacity 
+              style={[styles.revenueBanner, { backgroundColor: colors.primary }]}
+              onPress={() => { setShowTransactionsModal(true); setTxPage(1); }}
+              activeOpacity={0.9}
+            >
               <View style={styles.revenueBannerLeft}>
-                <Text style={styles.revenueBannerLabel}>Doanh thu hôm nay</Text>
+                <Text style={styles.revenueBannerLabel}>Doanh thu hôm nay (Click xem chi tiết)</Text>
                 <Text style={styles.revenueBannerValue}>
                   {formatPrice(todayRevenue?.tong_tien || 0)}
                 </Text>
@@ -181,10 +339,10 @@ export default function AdminDashboardScreen({ navigation }) {
               <View style={styles.revenueBannerIcon}>
                 <DollarSign color="#ffffff" size={32} strokeWidth={1.5} />
               </View>
-            </View>
+            </TouchableOpacity>
 
             {/* ── KPI Grid ── */}
-            <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Tổng quan</Text>
+            <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Tổng quan (Click xem chi tiết)</Text>
             <View style={styles.kpiGrid}>
               <KpiCard
                 icon={Users}
@@ -194,6 +352,7 @@ export default function AdminDashboardScreen({ navigation }) {
                 sub={`+${dash?.percent_changes?.hoi_vien || 0}% tháng này`}
                 colors={colors}
                 subColor={colors.primary}
+                onPress={() => navigation.navigate('AdminMembers', { filter: 'active' })}
               />
               <KpiCard
                 icon={CheckCircle2}
@@ -203,6 +362,7 @@ export default function AdminDashboardScreen({ navigation }) {
                 sub={`${dash?.check_in_tuan_nay ?? 0} lượt tuần này`}
                 colors={colors}
                 subColor={isDark ? '#60a5fa' : '#1565c0'}
+                onPress={() => { fetchCheckinsToday(); setShowCheckinsModal(true); setCheckinPage(1); }}
               />
               <KpiCard
                 icon={CalendarCheck}
@@ -212,6 +372,7 @@ export default function AdminDashboardScreen({ navigation }) {
                 sub={`${dash?.lich_tap_hom_nay?.da_tap || 0} đã tập`}
                 colors={colors}
                 subColor="#c084fc"
+                onPress={() => navigation.navigate('AdminPT', { tab: 'schedule' })}
               />
               <KpiCard
                 icon={TrendingUp}
@@ -221,6 +382,7 @@ export default function AdminDashboardScreen({ navigation }) {
                 sub={`${dash?.so_goi_ban_thang ?? 0} gói bán`}
                 colors={colors}
                 subColor="#fbbf24"
+                onPress={() => navigation.navigate('AdminRevenue')}
               />
             </View>
 
@@ -232,15 +394,17 @@ export default function AdminDashboardScreen({ navigation }) {
                   {(dash?.hoi_vien?.sap_het_han ?? 0) > 0 && (
                     <AlertRow
                       icon={Clock} iconBg={isDark ? '#3d250c' : '#fffbeb'} iconColor="#fbbf24"
-                      label="Gói sắp hết hạn (7 ngày)" count={dash.hoi_vien.sap_het_han} color="#fbbf24"
+                      label="Hội viên sắp hết hạn (7 ngày)" count={dash.hoi_vien.sap_het_han} color="#fbbf24"
                       colors={colors}
+                      onPress={() => navigation.navigate('AdminMembers', { filter: 'expiring' })}
                     />
                   )}
                   {(dash?.hoi_vien?.het_han ?? 0) > 0 && (
                     <AlertRow
                       icon={AlertTriangle} iconBg={colors.dangerLight} iconColor={colors.danger}
-                      label="Gói đã hết hạn" count={dash.hoi_vien.het_han} color={colors.danger}
+                      label="Hội viên đã hết hạn" count={dash.hoi_vien.het_han} color={colors.danger}
                       colors={colors}
+                      onPress={() => navigation.navigate('AdminMembers', { filter: 'expired' })}
                     />
                   )}
                   {(dash?.yeu_cau_cho_duyet ?? 0) > 0 && (
@@ -307,14 +471,337 @@ export default function AdminDashboardScreen({ navigation }) {
           </>
         )}
       </ScrollView>
+
+      {/* ── MODAL CHI TIẾT GIAO DỊCH DOANH THU ── */}
+      <Modal visible={showTransactionsModal} transparent animationType="slide" onRequestClose={() => setShowTransactionsModal(false)}>
+        <View style={modalStyles.backdrop}>
+          <View style={[modalStyles.container, { backgroundColor: colors.surface }]}>
+            <View style={modalStyles.header}>
+              <Text style={[modalStyles.title, { color: colors.text }]}>Giao dịch hôm nay</Text>
+              <TouchableOpacity onPress={() => setShowTransactionsModal(false)} style={modalStyles.closeBtn}>
+                <X color={colors.text} size={20} />
+              </TouchableOpacity>
+            </View>
+            
+            {!(todayRevenue?.giao_dich) || todayRevenue.giao_dich.length === 0 ? (
+              <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+                <Text style={{ color: colors.textMuted, fontSize: 13 }}>Chưa có giao dịch nào hôm nay</Text>
+              </View>
+            ) : (
+              <>
+                <FlatList
+                  data={todayRevenue.giao_dich.slice((txPage - 1) * PAGE_SIZE, txPage * PAGE_SIZE)}
+                  keyExtractor={(item, idx) => String(idx)}
+                  contentContainerStyle={modalStyles.list}
+                  renderItem={({ item }) => (
+                    <View style={modalStyles.row}>
+                      <View style={modalStyles.rowHeader}>
+                        <Text style={[modalStyles.rowTitle, { color: colors.text }]}>{item.khach_hang}</Text>
+                        <Text style={[modalStyles.rowTitle, { color: colors.primary }]}>{formatPrice(item.gia_thuc_te)}</Text>
+                      </View>
+                      <View style={modalStyles.rowHeader}>
+                        <Text style={[modalStyles.rowText, { color: colors.textSecondary }]}>
+                          {item.san_pham} • <Text style={{ fontWeight: '700', color: item.loai === 'goi_tap' ? colors.primary : '#8b5cf6' }}>{item.loai === 'goi_tap' ? 'Gym' : 'PT'}</Text>
+                        </Text>
+                        <Text style={[modalStyles.rowText, { color: colors.textMuted }]}>
+                          {new Date(item.thoi_gian).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                        </Text>
+                      </View>
+                    </View>
+                  )}
+                />
+                <Pagination 
+                  currentPage={txPage} 
+                  totalItems={todayRevenue.giao_dich.length} 
+                  onPageChange={setTxPage} 
+                />
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── MODAL CHI TIẾT CHECK-IN HÔM NAY ── */}
+      <Modal visible={showCheckinsModal} transparent animationType="slide" onRequestClose={() => setShowCheckinsModal(false)}>
+        <View style={modalStyles.backdrop}>
+          <View style={[modalStyles.container, { backgroundColor: colors.surface }]}>
+            <View style={modalStyles.header}>
+              <Text style={[modalStyles.title, { color: colors.text }]}>Check-in hôm nay</Text>
+              <TouchableOpacity onPress={() => setShowCheckinsModal(false)} style={modalStyles.closeBtn}>
+                <X color={colors.text} size={20} />
+              </TouchableOpacity>
+            </View>
+            
+            {checkinsLoading ? (
+              <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+                <ActivityIndicator size="small" color={colors.primary} />
+              </View>
+            ) : todayCheckins.length === 0 ? (
+              <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+                <Text style={{ color: colors.textMuted, fontSize: 13 }}>Chưa có lượt vào ra nào hôm nay</Text>
+              </View>
+            ) : (
+              <>
+                <FlatList
+                  data={todayCheckins.slice((checkinPage - 1) * PAGE_SIZE, checkinPage * PAGE_SIZE)}
+                  keyExtractor={(item, idx) => String(idx)}
+                  contentContainerStyle={modalStyles.list}
+                  renderItem={({ item }) => (
+                    <View style={modalStyles.row}>
+                      <View style={modalStyles.rowHeader}>
+                        <Text style={[modalStyles.rowTitle, { color: colors.text }]}>{item.ho_ten}</Text>
+                        <View style={[
+                          modalStyles.badge, 
+                          { backgroundColor: item.loai === 'vao' ? colors.primaryLight : colors.dangerLight }
+                        ]}>
+                          <Text style={[
+                            modalStyles.badgeText, 
+                            { color: item.loai === 'vao' ? colors.primary : colors.danger }
+                          ]}>
+                            {item.loai === 'vao' ? 'VÀO' : 'RA'}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={modalStyles.rowHeader}>
+                        <Text style={[modalStyles.rowText, { color: colors.textSecondary }]}>
+                          Phương thức: {item.phuong_thuc === 'thu_cong' ? 'Thủ công' : item.phuong_thuc === 'qr_code' ? 'QR Code' : 'Thẻ từ'}
+                        </Text>
+                        <Text style={[modalStyles.rowText, { color: colors.textMuted }]}>{item.gio_hien_thi || '—'}</Text>
+                      </View>
+                    </View>
+                  )}
+                />
+                <Pagination 
+                  currentPage={checkinPage} 
+                  totalItems={todayCheckins.length} 
+                  onPageChange={setCheckinPage} 
+                />
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── MODAL THÔNG BÁO HỆ THỐNG ── */}
+      <Modal visible={showNotifModal} transparent animationType="slide" onRequestClose={() => setShowNotifModal(false)}>
+        <View style={modalStyles.backdrop}>
+          <View style={[modalStyles.container, { backgroundColor: colors.surface, maxHeight: '85%' }]}>
+            <View style={modalStyles.header}>
+              <View>
+                <Text style={[modalStyles.title, { color: colors.text }]}>Thông báo ({unreadCount})</Text>
+                <Text style={{ fontSize: 10, color: colors.textMuted }}>Mới nhận gần đây</Text>
+              </View>
+              <View style={modalStyles.headerActions}>
+                {notifications.length > 0 && (
+                  <>
+                    <TouchableOpacity onPress={handleMarkAllRead} style={[modalStyles.actionBtn, { borderColor: colors.primary }]}>
+                      <Text style={[modalStyles.actionBtnText, { color: colors.primary }]}>Đọc tất cả</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={handleDeleteAllNotifs} style={[modalStyles.actionBtn, { borderColor: colors.danger }]}>
+                      <Text style={[modalStyles.actionBtnText, { color: colors.danger }]}>Xóa tất cả</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+                <TouchableOpacity onPress={() => setShowNotifModal(false)} style={modalStyles.closeBtn}>
+                  <X color={colors.text} size={20} />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {notifications.length === 0 ? (
+              <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+                <Text style={{ color: colors.textMuted, fontSize: 13 }}>Không có thông báo nào</Text>
+              </View>
+            ) : (
+              <>
+                <FlatList
+                  data={notifications.slice((notifPage - 1) * PAGE_SIZE, notifPage * PAGE_SIZE)}
+                  keyExtractor={(item) => String(item.id)}
+                  contentContainerStyle={modalStyles.list}
+                  renderItem={({ item }) => {
+                    const s = getNotifStyle(item.loai);
+                    return (
+                      <View style={[modalStyles.notifItem, { backgroundColor: s.bg, borderColor: s.border }]}>
+                        <Text style={[modalStyles.notifTitle, { color: s.text }]}>{item.tieu_de}</Text>
+                        <Text style={[modalStyles.notifContent, { color: s.text }]}>{item.noi_dung}</Text>
+                        <View style={modalStyles.notifFooter}>
+                          {!item.da_doc && (
+                            <TouchableOpacity 
+                              style={[modalStyles.notifBtn, { backgroundColor: colors.primary + '22' }]} 
+                              onPress={() => handleMarkAsRead(item.id)}
+                            >
+                              <Check color={colors.primary} size={12} strokeWidth={2.5} />
+                              <Text style={[modalStyles.notifBtnText, { color: colors.primary }]}>Đã đọc</Text>
+                            </TouchableOpacity>
+                          )}
+                          <TouchableOpacity 
+                            style={[modalStyles.notifBtn, { backgroundColor: colors.danger + '22' }]} 
+                            onPress={() => handleDeleteNotif(item.id)}
+                          >
+                            <Trash2 color={colors.danger} size={12} strokeWidth={2.5} />
+                            <Text style={[modalStyles.notifBtnText, { color: colors.danger }]}>Xóa</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    );
+                  }}
+                />
+                <Pagination 
+                  currentPage={notifPage} 
+                  totalItems={notifications.length} 
+                  onPageChange={setNotifPage} 
+                />
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
+const modalStyles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  container: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: '85%',
+    minHeight: '40%',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  closeBtn: {
+    padding: 4,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  actionBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  actionBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  list: {
+    paddingBottom: 20,
+  },
+  row: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+  },
+  rowHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  rowTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  rowText: {
+    fontSize: 12,
+  },
+  badge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  badgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  notifItem: {
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  notifTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  notifContent: {
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  notifFooter: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
+    marginTop: 8,
+  },
+  notifBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  notifBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+});
+
+const pagination = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.05)',
+    marginTop: 8,
+  },
+  text: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  buttons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  btn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  btnText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+});
+
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: {
-    paddingTop: 52,
     paddingBottom: 20,
     paddingHorizontal: 20,
     flexDirection: 'row',
@@ -323,6 +810,34 @@ const styles = StyleSheet.create({
   },
   headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginBottom: 2 },
   headerTitle: { fontSize: 22, fontWeight: '800', color: '#ffffff' },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  bellBtn: {
+    position: 'relative',
+    padding: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bellBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#dc2626',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 2,
+  },
+  bellBadgeText: {
+    color: '#ffffff',
+    fontSize: 9,
+    fontWeight: '800',
+  },
   headerDate: {
     backgroundColor: 'rgba(255,255,255,0.15)',
     paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20,

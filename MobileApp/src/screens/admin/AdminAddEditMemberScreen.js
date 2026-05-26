@@ -4,6 +4,7 @@ import {
   ScrollView, StatusBar, StyleSheet, Text, TextInput,
   TouchableOpacity, View
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ChevronDown, X, Save, User, Phone, Mail, MapPin,
   Building2, Shield, CreditCard, Briefcase
@@ -106,6 +107,7 @@ export default function AdminAddEditMemberScreen({ route, navigation }) {
   const memberId = route.params?.memberId;
   const isEdit = memberId != null;
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -310,7 +312,7 @@ export default function AdminAddEditMemberScreen({ route, navigation }) {
       <StatusBar barStyle={colors.statusBar} backgroundColor={colors.statusBarBg} />
 
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border, paddingTop: insets.top, height: 60 + insets.top }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
           <X color={colors.text} size={22} />
         </TouchableOpacity>

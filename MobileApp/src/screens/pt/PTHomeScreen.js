@@ -5,13 +5,14 @@ import {
 } from 'react-native';
 import {
   Award, CalendarCheck, CheckCircle2, ChevronRight, Clock,
-  CreditCard, Dumbbell, MapPin, MessageSquare, QrCode, ShieldCheck, TrendingUp, UserCheck, Users, X, Zap,
+  CreditCard, Dumbbell, MapPin, MessageSquare, QrCode, ShieldCheck, TrendingUp, UserCheck, Users, X, Zap, Info, Star, Phone,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import ProfileAvatar from '../../components/ProfileAvatar';
 import { useAuthStore } from '../../store/useAuthStore';
 import { api } from '../../services/api';
 import { formatDate } from '../../utils/data';
+import { useTheme } from '../../context/ThemeContext';
 
 // ── Hằng số màu sắc Paradise Gym ─────────────────────────
 const G = {
@@ -35,20 +36,21 @@ const G = {
 };
 
 // ── Component: Chip Tiện Ích ──────────────────────────────
-function UtilityChip({ icon: Icon, label, onPress, accent = G.primary }) {
+function UtilityChip({ icon: Icon, label, onPress, accent = G.primary, colors }) {
   return (
-    <TouchableOpacity style={styles.utilChip} onPress={onPress} activeOpacity={0.75}>
+    <TouchableOpacity style={[styles.utilChip, { backgroundColor: colors?.surface }]} onPress={onPress} activeOpacity={0.75}>
       <View style={[styles.utilIcon, { backgroundColor: accent + '18' }]}>
         <Icon color={accent} size={22} strokeWidth={2} />
       </View>
-      <Text style={[styles.utilLabel, { color: G.gray700 }]} numberOfLines={2}>{label}</Text>
+      <Text style={[styles.utilLabel, { color: colors?.text || G.gray700 }]} numberOfLines={2}>{label}</Text>
     </TouchableOpacity>
   );
 }
 
 // ── Màn hình chính HLV (PT Home Screen) ───────────────────
 export default function PTHomeScreen({ navigation }) {
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
+  const { colors, isDark } = useTheme();
   const [profile, setProfile] = useState(null);
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -57,13 +59,14 @@ export default function PTHomeScreen({ navigation }) {
   const [showStudentsModal, setShowStudentsModal] = useState(false);
   const [students, setStudents] = useState([]);
   const [studentsLoading, setStudentsLoading] = useState(false);
+  const [gymInfoVisible, setGymInfoVisible] = useState(false);
 
   // ── Fetch dữ liệu thực tế từ API Backend ─────────────────
   const fetchAll = useCallback(async () => {
     try {
       const [profileRes, schedRes] = await Promise.all([
         api.get('/members/me/profile'),
-        api.get('/pt/schedules'), // Backend tự động filter theo PT đăng nhập
+        api.get('/pt/schedules'),
       ]);
 
       if (profileRes.data?.success) setProfile(profileRes.data.data);
@@ -100,7 +103,7 @@ export default function PTHomeScreen({ navigation }) {
   const handleConfirmSchedule = async (id) => {
     Alert.alert(
       'Xác nhận buổi tập',
-      'Bạn có chắc chắn xác nhận học viên đã hoàn thành buổi tập này? Khóa học sẽ tự động trừ 1 buổi trong gói PT tương ứng.',
+      'Bạn có chắc chắn xác nhận học viên đã hoàn thành buổi tập này?',
       [
         { text: 'Hủy', style: 'cancel' },
         {
@@ -110,12 +113,18 @@ export default function PTHomeScreen({ navigation }) {
             try {
               const res = await api.put(`/pt/schedules/${id}/confirm`);
               if (res.data?.success || res.status === 200) {
+                const { bothConfirmed } = res.data.data || {};
+                if (bothConfirmed) {
+                  Alert.alert('Thành công', 'Buổi tập đã được cả 2 bên xác nhận hoàn thành!');
+                } else {
+                  Alert.alert('Đã ghi nhận', 'Đã ghi nhận xác nhận của bạn. Buổi tập sẽ hoàn thành khi học viên xác nhận.');
+                }
                 await fetchAll();
               } else {
                 Alert.alert('Lỗi', res.data?.message || 'Không thể xác nhận buổi tập.');
               }
             } catch (err) {
-              Alert.alert('Lỗi', err.response?.data?.message || 'Có lỗi xảy ra khi cập nhật DB.');
+              Alert.alert('Lỗi', err.response?.data?.message || err?.message || 'Có lỗi xảy ra khi cập nhật DB.');
             } finally {
               setActionLoadingId(null);
             }
@@ -125,23 +134,106 @@ export default function PTHomeScreen({ navigation }) {
     );
   };
 
+  // ── Render buổi tập tiếp theo (Tránh nested ternary/IIFE trong JSX) ──
+  const renderNextSchedule = () => {
+    if (loading) {
+      return (
+        <View style={styles.loadingBox}>
+          <ActivityIndicator color={colors.primary} size="small" />
+        </View>
+      );
+    }
+
+    const pending = schedules.filter(s => s.trang_thai === 'cho_tap');
+    if (pending.length === 0) {
+      return (
+        <View style={styles.emptyBox}>
+          <CalendarCheck color={colors.textMuted} size={48} strokeWidth={1} />
+          <Text style={[styles.emptyText, { color: colors.textMuted }]}>
+            Hôm nay bạn không có lịch dạy nào sắp tới.
+          </Text>
+        </View>
+      );
+    }
+
+    const next = pending[0];
+    return (
+      <View style={[styles.contractCard, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
+        <View style={styles.contractTop}>
+          <View style={[styles.contractBadge, { backgroundColor: colors.primaryLight }]}>
+            <Clock color={colors.primary} size={12} strokeWidth={2.5} />
+            <Text style={[styles.contractBadgeText, { color: colors.primary }]}>Sắp diễn ra</Text>
+          </View>
+          <Text style={[styles.contractDateText, { color: colors.textMuted }]}>{formatDate(next.ngay_tap)}</Text>
+        </View>
+        
+        <View style={styles.memberRowMain}>
+          <ProfileAvatar uri={next.avatar_hoi_vien} name={next.ten_hoi_vien} size={50} />
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.contractPackageName, { color: colors.text }]}>{next.ten_hoi_vien || 'Học viên'}</Text>
+            <Text style={[styles.contractSubText, { color: colors.textSecondary }]}>{next.ten_goi_pt || 'Gói tập PT'}</Text>
+          </View>
+        </View>
+
+        <View style={[styles.contractGrid, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={styles.contractGridItem}>
+            <Clock color={colors.textMuted} size={14} strokeWidth={2} />
+            <Text style={[styles.contractGridLabel, { color: colors.textMuted }]}>Bắt đầu</Text>
+            <Text style={[styles.contractGridValue, { color: colors.text }]}>{next.gio_bat_dau}</Text>
+          </View>
+          <View style={[styles.contractDivider, { backgroundColor: colors.border }]} />
+          <View style={styles.contractGridItem}>
+            <Dumbbell color={colors.textMuted} size={14} strokeWidth={2} />
+            <Text style={[styles.contractGridLabel, { color: colors.textMuted }]}>Buổi thứ</Text>
+            <Text style={[styles.contractGridValue, { color: colors.text }]}>{(next.so_buoi_da_tap ?? 0) + 1}/{next.so_buoi_dang_ky ?? '—'}</Text>
+          </View>
+          <View style={[styles.contractDivider, { backgroundColor: colors.border }]} />
+          <View style={styles.contractGridItem}>
+            <MapPin color={colors.textMuted} size={14} strokeWidth={2} />
+            <Text style={[styles.contractGridLabel, { color: colors.textMuted }]}>Địa điểm</Text>
+            <Text style={[styles.contractGridValue, { color: colors.text }]} numberOfLines={1}>{next.chi_nhanh || 'Paradise'}</Text>
+          </View>
+        </View>
+
+        {next.pt_xac_nhan === 0 ? (
+          <TouchableOpacity 
+            style={styles.confirmBtnMain}
+            onPress={() => handleConfirmSchedule(next.id)}
+            disabled={actionLoadingId === next.id}
+          >
+            {actionLoadingId === next.id ? (
+              <ActivityIndicator color={G.white} size="small" />
+            ) : (
+              <>
+                <CheckCircle2 color={G.white} size={16} strokeWidth={2.5} />
+                <Text style={styles.confirmBtnTextMain}>Xác nhận hoàn thành</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        ) : (
+          <View style={[styles.confirmBtnMain, { backgroundColor: colors.surfaceVariant, borderWidth: 1, borderColor: colors.border }]}>
+            <Clock color={colors.textMuted} size={16} strokeWidth={2.5} />
+            <Text style={[styles.confirmBtnTextMain, { color: colors.textMuted, marginLeft: 8 }]}>Chờ học viên xác nhận</Text>
+          </View>
+        )}
+      </View>
+    );
+  };
+
   // ── Thống kê nhanh từ danh sách ──────────────────────────
   const pendingSchedules = schedules.filter(s => s.trang_thai === 'cho_tap');
   const completedCount = schedules.filter(s => s.trang_thai === 'da_tap').length;
   const uniqueStudents = new Set(schedules.map(s => s.hoi_vien_id).filter(Boolean)).size;
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={G.primaryDark} />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={isDark ? colors.background : G.primaryDark} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[G.primary]} tintColor={G.primary} />}
-        contentContainerStyle={styles.scrollContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
+        contentContainerStyle={[styles.scrollContent, { backgroundColor: colors.background }]}
       >
-        {/* ──────────────────────────────────────────────── */}
-        {/* TOP BANNER — Paradise Gym với hiệu ứng tia nắng  */}
-        {/* ──────────────────────────────────────────────── */}
         <View style={styles.banner}>
           {Array.from({ length: 12 }).map((_, i) => (
             <View
@@ -181,120 +273,48 @@ export default function PTHomeScreen({ navigation }) {
           </View>
         </View>
 
-        {/* ──────────────────────────────────────────────── */}
-        {/* THỐNG KÊ TỔNG QUAN (PREMIUM CARDS)               */}
-        {/* ──────────────────────────────────────────────── */}
         <View style={styles.statsWrapper}>
-          <View style={[styles.statCard, { backgroundColor: G.primary }]}>
+          <View style={[styles.statCard, { backgroundColor: colors.primary }]}>
             <Users color="rgba(255,255,255,0.25)" size={42} style={styles.statBgIcon} />
             <Text style={styles.statNum}>{uniqueStudents}</Text>
             <Text style={styles.statLabel}>Học viên</Text>
           </View>
-          <View style={[styles.statCard, { backgroundColor: G.primaryMid }]}>
+          <View style={[styles.statCard, { backgroundColor: colors.primaryMid }]}>
             <Clock color="rgba(255,255,255,0.25)" size={42} style={styles.statBgIcon} />
             <Text style={styles.statNum}>{pendingSchedules.length}</Text>
             <Text style={styles.statLabel}>Ca chờ tập</Text>
           </View>
-          <View style={[styles.statCard, { backgroundColor: G.white, shadowColor: G.shadow }]}>
-            <CheckCircle2 color={G.primaryLight} size={42} style={styles.statBgIcon} />
-            <Text style={[styles.statNum, { color: G.gray900 }]}>{completedCount}</Text>
-            <Text style={[styles.statLabel, { color: G.gray500 }]}>Đã dạy</Text>
+          <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: isDark ? 1 : 0, shadowColor: colors.primary }]}>
+            <CheckCircle2 color={colors.primaryLight} size={42} style={styles.statBgIcon} />
+            <Text style={[styles.statNum, { color: colors.text }]}>{completedCount}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Đã dạy</Text>
           </View>
         </View>
 
-        {/* ────────────────────────────────────── */}
-        {/* TIÊU ĐIỂM: BUỔI TẬP SẮP TỚI            */}
-        {/* ────────────────────────────────────── */}
-        <View style={styles.section}>
+        <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: isDark ? 1 : 0 }]}>
           <View style={styles.sectionHeader}>
-            <View style={styles.sectionIconBox}>
-              <CalendarCheck color={G.primary} size={18} strokeWidth={2} />
+            <View style={[styles.sectionIconBox, { backgroundColor: colors.primaryLight }]}>
+              <CalendarCheck color={colors.primary} size={18} strokeWidth={2} />
             </View>
+<<<<<<< HEAD
             <Text style={styles.sectionTitle}>Buổi tập tiếp theo</Text>
             <TouchableOpacity onPress={() => navigation.navigate('Lịch dạy')}>
               <Text style={styles.viewAllText}>Tất cả</Text>
             </TouchableOpacity>
+=======
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Buổi tập tiếp theo</Text>
+>>>>>>> main
           </View>
 
-          {loading ? (
-            <View style={styles.loadingBox}>
-              <ActivityIndicator color={G.primary} size="small" />
-            </View>
-          ) : pendingSchedules.length > 0 ? (
-            (() => {
-              const next = pendingSchedules[0];
-              return (
-                <View style={styles.contractCard}>
-                  <View style={styles.contractTop}>
-                    <View style={styles.contractBadge}>
-                      <Clock color={G.primary} size={12} strokeWidth={2.5} />
-                      <Text style={styles.contractBadgeText}>Sắp diễn ra</Text>
-                    </View>
-                    <Text style={styles.contractDateText}>{formatDate(next.ngay_tap)}</Text>
-                  </View>
-                  
-                  <View style={styles.memberRowMain}>
-                    <ProfileAvatar uri={next.avatar_hoi_vien} name={next.ten_hoi_vien} size={50} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.contractPackageName}>{next.ten_hoi_vien || 'Học viên'}</Text>
-                      <Text style={styles.contractSubText}>{next.ten_goi_pt || 'Gói tập PT'}</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.contractGrid}>
-                    <View style={styles.contractGridItem}>
-                      <Clock color={G.gray400} size={14} strokeWidth={2} />
-                      <Text style={styles.contractGridLabel}>Bắt đầu</Text>
-                      <Text style={styles.contractGridValue}>{next.gio_bat_dau}</Text>
-                    </View>
-                    <View style={styles.contractDivider} />
-                    <View style={styles.contractGridItem}>
-                      <Dumbbell color={G.gray400} size={14} strokeWidth={2} />
-                      <Text style={styles.contractGridLabel}>Buổi thứ</Text>
-                      <Text style={styles.contractGridValue}>{(next.so_buoi_da_tap ?? 0) + 1}/{next.so_buoi_dang_ky ?? '—'}</Text>
-                    </View>
-                    <View style={styles.contractDivider} />
-                    <View style={styles.contractGridItem}>
-                      <MapPin color={G.gray400} size={14} strokeWidth={2} />
-                      <Text style={styles.contractGridLabel}>Địa điểm</Text>
-                      <Text style={styles.contractGridValue} numberOfLines={1}>{next.chi_nhanh || 'Paradise'}</Text>
-                    </View>
-                  </View>
-
-                  <TouchableOpacity 
-                    style={styles.confirmBtnMain}
-                    onPress={() => handleConfirmSchedule(next.id)}
-                    disabled={actionLoadingId === next.id}
-                  >
-                    {actionLoadingId === next.id ? (
-                      <ActivityIndicator color={G.white} size="small" />
-                    ) : (
-                      <>
-                        <CheckCircle2 color={G.white} size={16} strokeWidth={2.5} />
-                        <Text style={styles.confirmBtnTextMain}>Xác nhận hoàn thành</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              );
-            })()
-          ) : (
-            <View style={styles.emptyBox}>
-              <CalendarCheck color={G.gray300} size={48} strokeWidth={1} />
-              <Text style={styles.emptyText}>Hôm nay bạn không có lịch dạy nào sắp tới.</Text>
-            </View>
-          )}
+          {renderNextSchedule()}
         </View>
 
-        {/* ──────────────────────────────────────────────── */}
-        {/* TIỆN ÍCH NHANH CHO HLV                           */}
-        {/* ──────────────────────────────────────────────── */}
-        <View style={styles.section}>
+        <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: isDark ? 1 : 0 }]}>
           <View style={styles.sectionHeader}>
-            <View style={styles.sectionIconBox}>
-              <Zap color={G.primary} size={18} strokeWidth={2} />
+            <View style={[styles.sectionIconBox, { backgroundColor: colors.primaryLight }]}>
+              <Zap color={colors.primary} size={18} strokeWidth={2} />
             </View>
-            <Text style={styles.sectionTitle}>Quản lý & Tiện ích</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Quản lý & Tiện ích</Text>
           </View>
 
           <View style={styles.utilGrid}>
@@ -303,204 +323,140 @@ export default function PTHomeScreen({ navigation }) {
               label={'Mã QR\nCheck-in'}
               accent="#7c3aed"
               onPress={() => navigation?.navigate?.('QRCode')}
+              colors={colors}
             />
             <UtilityChip
               icon={CalendarCheck}
               label={'Lịch dạy\ncủa tôi'}
-              accent={G.primary}
+              accent={colors.primary}
               onPress={() => navigation?.navigate?.('Schedule')}
+              colors={colors}
             />
             <UtilityChip
               icon={Users}
               label={'Danh sách\nHọc viên'}
               accent="#0891b2"
               onPress={() => { fetchStudents(); setShowStudentsModal(true); }}
+              colors={colors}
             />
             <UtilityChip
               icon={MessageSquare}
-              label={'PT &\nTôi'}
+              label={'PT và\nTôi'}
               accent="#0f766e"
               onPress={() => navigation?.navigate?.('PTMe')}
-            />
-            <UtilityChip
-              icon={UserCheck}
-              label={'Hồ sơ\nchuyên môn'}
-              accent="#b7791f"
-              onPress={() => navigation?.navigate?.('Profile')}
+              colors={colors}
             />
           </View>
         </View>
 
-        {/* ──────────────────────────────────────────────── */}
-        {/* DANH SÁCH CA DẠY CHỜ HOÀN THÀNH                  */}
-        {/* ──────────────────────────────────────────────── */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionIconBox}>
-              <Clock color={G.primary} size={18} strokeWidth={2} />
-            </View>
-            <Text style={styles.sectionTitle}>Ca dạy tiếp theo</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Schedule')}>
-              <Text style={styles.viewAllText}>Xem tất cả</Text>
-            </TouchableOpacity>
-          </View>
-
-          {loading ? (
-            <View style={styles.loadingBox}>
-              <ActivityIndicator color={G.primary} size="small" />
-            </View>
-          ) : pendingSchedules.length === 0 ? (
-            <View style={styles.emptyBox}>
-              <CalendarCheck color={G.gray400} size={32} strokeWidth={1.5} />
-              <Text style={styles.emptyText}>Tuyệt vời! Không còn ca dạy nào đang chờ xác nhận.</Text>
-            </View>
-          ) : (
-            <View style={styles.schedulesList}>
-              {pendingSchedules.slice(0, 5).map((item) => (
-                <View key={item.id} style={styles.scheduleItem}>
-                  <View style={styles.schedHeader}>
-                    <View style={styles.schedTimeBadge}>
-                      <Text style={styles.schedTimeBadgeText}>
-                        {item.gio_bat_dau} - {item.gio_ket_thuc}
-                      </Text>
-                    </View>
-                    <Text style={styles.schedDateText}>{formatDate(item.ngay_tap)}</Text>
+        {/* Gym Info Card (tappable banner) */}
+        <TouchableOpacity
+          style={[styles.gymInfoCard, { backgroundColor: colors.primaryDark }]}
+          onPress={() => setGymInfoVisible(true)}
+          activeOpacity={0.85}
+        >
+          {/* Sun rays */}
+          {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+            <View
+              key={i}
+              style={[
+                styles.gymInfoRay,
+                { transform: [{ rotate: (i * 45) + 'deg' }] },
+              ]}
+            />
+          ))}
+          <View style={styles.gymInfoCardContent}>
+            <View style={styles.gymInfoCardLeft}>
+              <View style={styles.gymInfoBadge}>
+                <ShieldCheck color={G.white} size={11} strokeWidth={2} />
+                <Text style={styles.gymInfoBadgeText}>PREMIUM GYM</Text>
+              </View>
+              <Text style={styles.gymInfoCardTitle}>Paradise GYM</Text>
+              <Text style={styles.gymInfoCardDesc}>
+                Không gian hiện đại · HLV chuyên nghiệp
+              </Text>
+              <View style={styles.gymInfoStatsRow}>
+                {[
+                  { v: '100+', l: 'Hội viên' },
+                  { v: '15+', l: 'HLV' },
+                  { v: '3+', l: 'Năm' },
+                ].map(({ v, l }) => (
+                  <View key={l} style={styles.gymInfoStat}>
+                    <Text style={styles.gymInfoStatValue}>{v}</Text>
+                    <Text style={styles.gymInfoStatLabel}>{l}</Text>
                   </View>
-
-                  <View style={styles.schedBody}>
-                    <View style={styles.schedMemberInfo}>
-                      <ProfileAvatar uri={item.avatar_hoi_vien} name={item.ten_hoi_vien} size={40} />
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.schedMemberName}>{item.ten_hoi_vien}</Text>
-                        <Text style={styles.schedPackageType}>
-                          {item.loai_buoi === 'ca_nhan' ? 'Cá nhân (1 kèm 1)' : 'Tập nhóm'} • Đã tập: <Text style={{ color: G.primary, fontWeight: '700' }}>{item.so_buoi_da_tap ?? 0}/{item.so_buoi_dang_ky ?? '—'}</Text> • Còn: <Text style={{ color: G.primary, fontWeight: '700' }}>{item.buoi_con_lai ?? '—'} buổi</Text>
-                        </Text>
-                      </View>
-                    </View>
-
-                    {item.ghi_chu ? (
-                      <Text style={styles.schedNote} numberOfLines={2}>Ghi chú: {item.ghi_chu}</Text>
-                    ) : null}
-                  </View>
-
-                  <View style={styles.schedFooter}>
-                    <View style={styles.statusPill}>
-                      <Text style={styles.statusPillText}>Chờ tập</Text>
-                    </View>
-
-                    <TouchableOpacity
-                      style={styles.confirmActionBtn}
-                      onPress={() => handleConfirmSchedule(item.id)}
-                      disabled={actionLoadingId === item.id}
-                      activeOpacity={0.8}
-                    >
-                      {actionLoadingId === item.id ? (
-                        <ActivityIndicator size="small" color={G.white} />
-                      ) : (
-                        <>
-                          <Zap color={G.white} size={14} strokeWidth={2.5} />
-                          <Text style={styles.confirmActionBtnText}>Hoàn thành</Text>
-                        </>
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ))}
+                ))}
+              </View>
             </View>
-          )}
-        </View>
-
-        {/* ──────────────────────────────────────────────── */}
-        {/* PANEL PARADISE GYM PREMIUM                       */}
-        {/* ──────────────────────────────────────────────── */}
-        <View style={styles.paradisePanel}>
-          <View style={styles.paradisePanelInner}>
-            <View style={styles.paradiseBadge}>
-              <ShieldCheck color={G.white} size={12} strokeWidth={2} />
-              <Text style={styles.paradiseBadgeText}>TRAINER PORTAL</Text>
-            </View>
-            <Text style={styles.paradiseTitle}>Paradise GYM</Text>
-            <Text style={styles.paradiseDesc}>
-              Đồng hành cùng sự thay đổi và bứt phá giới hạn thể chất của học viên
-            </Text>
-            <View style={styles.paradiseStats}>
-              {[
-                { icon: Users, label: 'Học viên tin tưởng', value: '100%' },
-                { icon: Dumbbell, label: 'Chương trình chuẩn', value: '5 sao' },
-                { icon: Award, label: 'Hỗ trợ tận tâm', value: '24/7' },
-              ].map(({ icon: Icon, label, value }) => (
-                <View key={label} style={styles.paradiseStat}>
-                  <Icon color={G.primaryMid} size={18} strokeWidth={2} />
-                  <Text style={styles.paradiseStatValue}>{value}</Text>
-                  <Text style={styles.paradiseStatLabel}>{label}</Text>
-                </View>
-              ))}
+            <View style={styles.gymInfoCardRight}>
+              <View style={styles.gymInfoBtn}>
+                <Info color={G.white} size={16} strokeWidth={2} />
+                <Text style={styles.gymInfoBtnText}>Xem chi tiết</Text>
+              </View>
             </View>
           </View>
-        </View>
+        </TouchableOpacity>
 
+        <View style={{ height: 16 }} />
       </ScrollView>
 
-      {/* ── MODAL DANH SÁCH HỌC VIÊN ──────────────────── */}
-      <Modal visible={showStudentsModal} animationType="slide" transparent onRequestClose={() => setShowStudentsModal(false)}>
+      {/* Modal Học viên */}
+      <Modal
+        visible={showStudentsModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowStudentsModal(false)}
+      >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
+          <View style={[styles.modalSheet, { backgroundColor: colors.surface }]}>
             <View style={styles.modalHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <View style={[styles.sectionIconBox, { backgroundColor: '#0891b218' }]}>
-                  <Users color="#0891b2" size={18} strokeWidth={2} />
-                </View>
-                <View>
-                  <Text style={styles.modalTitle}>Học viên của tôi</Text>
-                  <Text style={styles.modalSubtitle}>{students.length} học viên đang hướng dẫn</Text>
-                </View>
+              <View>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>Học viên của tôi</Text>
+                <Text style={[styles.modalSubtitle, { color: colors.textMuted }]}>Danh sách học viên đang hoạt động</Text>
               </View>
-              <TouchableOpacity onPress={() => setShowStudentsModal(false)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <X color={G.gray400} size={22} strokeWidth={2} />
+              <TouchableOpacity onPress={() => setShowStudentsModal(false)}>
+                <X color={colors.text} size={22} />
               </TouchableOpacity>
             </View>
 
             {studentsLoading ? (
-              <View style={{ paddingVertical: 40, alignItems: 'center' }}>
-                <ActivityIndicator color={G.primary} size="large" />
-              </View>
+              <ActivityIndicator color={colors.primary} style={{ marginVertical: 40 }} />
             ) : students.length === 0 ? (
-              <View style={{ paddingVertical: 40, alignItems: 'center', gap: 8 }}>
-                <Users color={G.gray300} size={48} strokeWidth={1} />
-                <Text style={{ fontSize: 14, color: G.gray400 }}>Chưa có học viên nào</Text>
-              </View>
+              <Text style={{ textAlign: 'center', marginVertical: 40, color: colors.textMuted }}>Bạn chưa có học viên nào.</Text>
             ) : (
               <FlatList
                 data={students}
-                keyExtractor={(item) => String(item.dang_ky_id || item.hoi_vien_id)}
+                keyExtractor={(item) => String(item.dang_ky_id)}
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: 20 }}
                 renderItem={({ item }) => (
-                  <View style={styles.studentCard}>
+                  <View style={[styles.studentCard, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
                     <View style={styles.studentTop}>
-                      <ProfileAvatar uri={item.avatar_url} name={item.ho_ten} size={48} />
+                      <ProfileAvatar uri={item.avatar_url} name={item.ho_ten} size={42} />
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.studentName}>{item.ho_ten || 'Hội viên'}</Text>
-                        <Text style={styles.studentMeta}>{item.ten_goi_pt || 'Gói PT'} • {item.so_dien_thoai || ''}</Text>
+                        <Text style={[styles.studentName, { color: colors.text }]}>{item.ho_ten}</Text>
+                        <Text style={[styles.studentMeta, { color: colors.textSecondary }]}>
+                          Mã số: {item.ma_ho_so} • {item.so_dien_thoai}
+                        </Text>
                       </View>
                     </View>
-                    <View style={styles.studentStats}>
+                    
+                    <View style={[styles.studentStats, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                       <View style={styles.studentStatItem}>
-                        <Dumbbell color={G.primary} size={14} strokeWidth={2} />
-                        <Text style={styles.studentStatVal}>{item.so_buoi_da_tap}/{item.so_buoi_dang_ky}</Text>
-                        <Text style={styles.studentStatLabel}>Đã tập</Text>
+                        <Dumbbell color={colors.primary} size={14} strokeWidth={2} />
+                        <Text style={[styles.studentStatVal, { color: colors.primary }]}>{item.so_buoi_da_tap}/{item.so_buoi_dang_ky}</Text>
+                        <Text style={[styles.studentStatLabel, { color: colors.textMuted }]}>Đã tập</Text>
                       </View>
-                      <View style={[styles.studentStatDivider]} />
+                      <View style={[styles.studentStatDivider, { backgroundColor: colors.border }]} />
                       <View style={styles.studentStatItem}>
                         <Clock color={G.warning} size={14} strokeWidth={2} />
                         <Text style={[styles.studentStatVal, { color: G.warning }]}>{item.buoi_con_lai ?? '—'}</Text>
-                        <Text style={styles.studentStatLabel}>Còn lại</Text>
+                        <Text style={[styles.studentStatLabel, { color: colors.textMuted }]}>Còn lại</Text>
                       </View>
-                      <View style={[styles.studentStatDivider]} />
+                      <View style={[styles.studentStatDivider, { backgroundColor: colors.border }]} />
                       <View style={styles.studentStatItem}>
-                        <CalendarCheck color={G.gray500} size={14} strokeWidth={2} />
-                        <Text style={[styles.studentStatVal, { color: G.gray700 }]}>{item.buoi_tap_sap_toi ? formatDate(item.buoi_tap_sap_toi) : '—'}</Text>
-                        <Text style={styles.studentStatLabel}>Buổi tới</Text>
+                        <CalendarCheck color={colors.textSecondary} size={14} strokeWidth={2} />
+                        <Text style={[styles.studentStatVal, { color: colors.text }]}>{item.buoi_tap_sap_toi ? formatDate(item.buoi_tap_sap_toi) : '—'}</Text>
+                        <Text style={[styles.studentStatLabel, { color: colors.textMuted }]}>Buổi tới</Text>
                       </View>
                     </View>
                   </View>
@@ -508,6 +464,111 @@ export default function PTHomeScreen({ navigation }) {
               />
             )}
           </View>
+        </View>
+      </Modal>
+
+      {/* Modal thông tin phòng tập */}
+      <Modal
+        visible={gymInfoVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setGymInfoVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <ScrollView style={[styles.modalSheet, { backgroundColor: colors.surface, paddingHorizontal: 0 }]}>
+            <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
+              {/* Header */}
+              <View style={styles.modalHeader}>
+                <View>
+                  <Text style={[styles.modalTitle, { color: colors.text }]}>Thông tin Paradise GYM</Text>
+                  <Text style={[styles.modalSubtitle, { color: colors.textMuted }]}>Chi tiết tiện ích & nội quy phòng tập</Text>
+                </View>
+                <TouchableOpacity onPress={() => setGymInfoVisible(false)}>
+                  <X color={colors.text} size={22} />
+                </TouchableOpacity>
+              </View>
+
+              <View style={{ gap: 16, paddingBottom: 40 }}>
+                {/* Stats */}
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <View style={[styles.gymStatCard, { backgroundColor: colors.surfaceVariant, borderColor: colors.border, flex: 1 }]}>
+                    <Text style={[styles.gymStatValue, { color: colors.primary }]}>100+</Text>
+                    <Text style={[styles.gymStatLabel, { color: colors.textSecondary }]}>Hội viên đang tập</Text>
+                  </View>
+                  <View style={[styles.gymStatCard, { backgroundColor: colors.surfaceVariant, borderColor: colors.border, flex: 1 }]}>
+                    <Text style={[styles.gymStatValue, { color: colors.primary }]}>15+</Text>
+                    <Text style={[styles.gymStatLabel, { color: colors.textSecondary }]}>HLV chuyên nghiệp</Text>
+                  </View>
+                  <View style={[styles.gymStatCard, { backgroundColor: colors.surfaceVariant, borderColor: colors.border, flex: 1 }]}>
+                    <Text style={[styles.gymStatValue, { color: colors.primary }]}>3+</Text>
+                    <Text style={[styles.gymStatLabel, { color: colors.textSecondary }]}>Chi nhánh hoạt động</Text>
+                  </View>
+                </View>
+
+                {/* Section: Liên hệ */}
+                <View style={[styles.gymInfoSection, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
+                  <Text style={[styles.gymInfoSectionTitle, { color: colors.text }]}>Hệ thống phòng tập</Text>
+                  <View style={styles.gymInfoRow}>
+                    <MapPin color={colors.primary} size={16} style={{ marginTop: 2 }} />
+                    <Text style={[styles.gymInfoRowText, { color: colors.textSecondary }]}>
+                      Chi nhánh Gò Vấp: 123 Nguyễn Oanh, P.10, Gò Vấp, TP.HCM{'\n'}
+                      Chi nhánh Bình Thạnh: 456 Điện Biên Phủ, P.25, Bình Thạnh, TP.HCM{'\n'}
+                      Chi nhánh Tân Bình: 789 Cộng Hòa, P.12, Tân Bình, TP.HCM
+                    </Text>
+                  </View>
+                  <View style={styles.gymInfoRow}>
+                    <Phone color={colors.primary} size={16} />
+                    <Text style={[styles.gymInfoRowText, { color: colors.textSecondary }]}>Hotline: 1900 6868</Text>
+                  </View>
+                  <View style={styles.gymInfoRow}>
+                    <Clock color={colors.primary} size={16} />
+                    <Text style={[styles.gymInfoRowText, { color: colors.textSecondary }]}>Giờ mở cửa: 05:00 - 22:00 (Hằng ngày)</Text>
+                  </View>
+                </View>
+
+                {/* Section: Tiện ích */}
+                <View style={[styles.gymInfoSection, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
+                  <Text style={[styles.gymInfoSectionTitle, { color: colors.text }]}>Dịch vụ & Tiện ích miễn phí</Text>
+                  {[
+                    'Tủ đồ cá nhân thông minh bảo mật cao',
+                    'Nước uống tinh khiết miễn phí tại các máy lọc nước',
+                    'Phòng tắm nóng lạnh, máy sấy tóc hiện đại',
+                    'Đo chỉ số cơ thể BMI miễn phí hàng tháng',
+                    'Bãi giữ xe máy & ô tô rộng rãi, an toàn',
+                  ].map((text, idx) => (
+                    <View key={idx} style={styles.gymBulletRow}>
+                      <View style={[styles.gymBulletDot, { backgroundColor: colors.primary }]} />
+                      <Text style={[styles.gymBulletText, { color: colors.textSecondary }]}>{text}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                {/* Section: Quy định */}
+                <View style={[styles.gymInfoSection, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
+                  <Text style={[styles.gymInfoSectionTitle, { color: colors.text }]}>Nội quy phòng tập</Text>
+                  {[
+                    'Vui lòng xuất trình mã QR cá nhân để check-in tại quầy trước khi vào tập.',
+                    'Mang giày thể thao sạch và trang phục tập luyện phù hợp.',
+                    'Sử dụng khăn cá nhân để trải trên các thiết bị khi sử dụng.',
+                    'Cất tạ và dụng cụ về đúng vị trí sau khi tập xong.',
+                    'Không làm ồn, nói tục, hoặc gây ảnh hưởng đến người tập khác.',
+                  ].map((text, idx) => (
+                    <View key={idx} style={styles.gymBulletRow}>
+                      <View style={[styles.gymBulletDot, { backgroundColor: colors.danger }]} />
+                      <Text style={[styles.gymBulletText, { color: colors.textSecondary }]}>{text}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.gymInfoCloseBtn, { backgroundColor: colors.primary }]}
+                  onPress={() => setGymInfoVisible(false)}
+                >
+                  <Text style={{ color: G.white, fontWeight: '800', fontSize: 15 }}>Đóng</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
         </View>
       </Modal>
     </View>
@@ -786,37 +847,6 @@ const styles = StyleSheet.create({
   },
   confirmActionBtnText: { color: G.white, fontSize: 11, fontWeight: '800' },
 
-  // Paradise panel
-  paradisePanel: { marginHorizontal: 16, marginTop: 16 },
-  paradisePanelInner: {
-    backgroundColor: G.primaryDark,
-    borderRadius: 20,
-    padding: 20,
-    overflow: 'hidden',
-  },
-  paradiseBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-    marginBottom: 10,
-  },
-  paradiseBadgeText: { color: G.white, fontSize: 10, fontWeight: '800', letterSpacing: 1 },
-  paradiseTitle: { fontSize: 22, fontWeight: '800', color: G.white, marginBottom: 6 },
-  paradiseDesc: {
-    fontSize: 12, color: 'rgba(255,255,255,0.7)', lineHeight: 18, marginBottom: 18,
-  },
-  paradiseStats: {
-    flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 14, overflow: 'hidden',
-  },
-  paradiseStat: { flex: 1, alignItems: 'center', paddingVertical: 14, gap: 4 },
-  paradiseStatValue: { fontSize: 15, fontWeight: '800', color: G.white },
-  paradiseStatLabel: { fontSize: 10, color: 'rgba(255,255,255,0.6)', textAlign: 'center' },
-
   // Modal Học viên
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   modalSheet: {
@@ -863,4 +893,99 @@ const styles = StyleSheet.create({
   studentStatDivider: { width: 1, height: 24, backgroundColor: G.gray100, alignSelf: 'center' },
   studentStatVal: { fontSize: 13, fontWeight: '800', color: G.primary },
   studentStatLabel: { fontSize: 9, color: G.gray400, fontWeight: '600' },
+
+  // Gym Info Card (tappable banner)
+  gymInfoCard: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 20,
+    paddingVertical: 22,
+    paddingHorizontal: 20,
+    overflow: 'hidden',
+    position: 'relative',
+    shadowColor: G.shadow,
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  gymInfoRay: {
+    position: 'absolute',
+    width: 2,
+    height: 300,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    top: -80,
+    left: '50%',
+    transformOrigin: 'bottom center',
+  },
+  gymInfoCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  gymInfoCardLeft: { flex: 1 },
+  gymInfoBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  gymInfoBadgeText: { color: G.white, fontSize: 9, fontWeight: '800', letterSpacing: 0.8 },
+  gymInfoCardTitle: { fontSize: 22, fontWeight: '900', color: G.white, letterSpacing: 0.3 },
+  gymInfoCardDesc: { fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 2, fontWeight: '500' },
+  gymInfoStatsRow: { flexDirection: 'row', gap: 16, marginTop: 12 },
+  gymInfoStat: { alignItems: 'center' },
+  gymInfoStatValue: { fontSize: 15, fontWeight: '900', color: G.white },
+  gymInfoStatLabel: { fontSize: 9, color: 'rgba(255,255,255,0.65)', fontWeight: '600' },
+  gymInfoCardRight: { marginLeft: 12 },
+  gymInfoBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+  },
+  gymInfoBtnText: { color: G.white, fontSize: 12, fontWeight: '800' },
+
+  // Gym Info Modal content styles
+  gymStatCard: {
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 12,
+    alignItems: 'center',
+    gap: 4,
+  },
+  gymStatValue: { fontSize: 18, fontWeight: '900' },
+  gymStatLabel: { fontSize: 10, fontWeight: '600', textAlign: 'center' },
+  gymInfoSection: {
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 14,
+    gap: 8,
+  },
+  gymInfoSectionTitle: { fontSize: 14, fontWeight: '800', marginBottom: 4 },
+  gymInfoRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  gymInfoRowText: { flex: 1, fontSize: 13, lineHeight: 19, fontWeight: '500' },
+  gymBulletRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  gymBulletDot: { width: 6, height: 6, borderRadius: 3 },
+  gymBulletText: { flex: 1, fontSize: 13, lineHeight: 19 },
+  gymInfoCloseBtn: {
+    height: 50,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  phone: {},
 });

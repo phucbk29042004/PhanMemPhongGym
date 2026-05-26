@@ -582,11 +582,16 @@ export const getMyProfile = (req, res) => {
 
   if (hoSo.loai_ho_so === 'hoi_vien') {
     hoSo.goi_tap = db.prepare(`
+<<<<<<< HEAD
       SELECT dk.id, dk.tu_ngay, dk.den_ngay, dk.gia_thuc_te, dk.so_tien_da_thu,
              CASE
                WHEN dk.trang_thai = 'dang_hoat_dong' AND dk.den_ngay < date('now', 'localtime') THEN 'het_han'
                ELSE dk.trang_thai
              END AS trang_thai,
+=======
+      SELECT dk.id, dk.tu_ngay, dk.den_ngay, dk.gia_thuc_te, dk.so_tien_da_thu, dk.trang_thai,
+             dk.phuong_thuc_tt, dk.payos_status, dk.payos_order_code,
+>>>>>>> main
              gt.ten_goi, gt.so_thang
       FROM dang_ky_goi_tap dk
       JOIN goi_tap gt ON gt.id = dk.goi_tap_id
@@ -841,6 +846,44 @@ export const requestPackageRenewal = async (req, res) => {
   }
 };
 
+// ── POST /api/members/me/package-request/:id/cancel ───────
+// Hội viên tự hủy yêu cầu gia hạn đang chờ duyệt (trạng thái 'cho_duyet')
+export const cancelPackageRequest = (req, res) => {
+  try {
+    const { id } = req.params;
+    const hoSo = db.prepare('SELECT id, ho_ten FROM ho_so WHERE tai_khoan_id = ?').get(req.user.id);
+    if (!hoSo) return error(res, 'Không tìm thấy hồ sơ hội viên.', 404);
+
+    // Chỉ cho hủy yêu cầu thuộc về hội viên này và đang ở trạng thái chờ duyệt
+    const request = db.prepare(`
+      SELECT dk.*, gt.ten_goi
+      FROM dang_ky_goi_tap dk
+      LEFT JOIN goi_tap gt ON gt.id = dk.goi_tap_id
+      WHERE dk.id = ? AND dk.ho_so_id = ? AND dk.trang_thai = 'cho_duyet'
+    `).get(id, hoSo.id);
+
+    if (!request) {
+      return error(res, 'Không tìm thấy yêu cầu gia hạn hợp lệ để hủy.', 404);
+    }
+
+    db.prepare(`
+      UPDATE dang_ky_goi_tap
+      SET trang_thai = 'huy', nguoi_cap_nhat_id = ?
+      WHERE id = ?
+    `).run(req.user.id, id);
+
+    ghi_audit_log(req, 'UPDATE', 'dang_ky_goi_tap', id, request,
+      { trang_thai: 'huy' },
+      `Hội viên ${hoSo.ho_ten} tự hủy yêu cầu gia hạn gói "${request.ten_goi || 'Hội viên'}"`
+    );
+
+    return success(res, null, 'Đã hủy yêu cầu gia hạn thành công.');
+  } catch (err) {
+    console.error('[BACKEND] Lỗi cancelPackageRequest:', err);
+    return error(res, `Lỗi hệ thống: ${err.message}`, 500);
+  }
+};
+
 // ── GET /api/members/me/payos-status/:orderCode ───────────
 export const checkPayosStatus = async (req, res) => {
   try {
@@ -894,7 +937,7 @@ export const checkPayosStatus = async (req, res) => {
       // Tạo thông báo
       createNotification(
         'gia_han_goi_tap',
-        'Thanh toán PayOS thành công ✅',
+        'Thanh toán PayOS thành công',
         `Hội viên ${request.ho_ten} đã thanh toán thành công qua PayOS cho gói ${request.ten_goi} (${Number(request.gia_thuc_te).toLocaleString('vi-VN')}đ). Gói tập đã được kích hoạt tự động.`,
         request.id,
         'dang_ky_goi_tap',
@@ -903,7 +946,7 @@ export const checkPayosStatus = async (req, res) => {
 
       createUserNotification(
         request.ho_so_id,
-        'Thanh toán thành công 🎉',
+        'Thanh toán thành công',
         `Thanh toán qua PayOS cho gói "${request.ten_goi}" đã thành công. Gói tập của bạn đã được kích hoạt!`,
         'thong_bao_chung'
       );
@@ -922,7 +965,7 @@ export const checkPayosStatus = async (req, res) => {
       return success(res, { status: 'CANCELLED' }, 'Giao dịch thanh toán đã bị hủy.');
     }
 
-    return success(res, { status: 'PENDING' }, 'Giao dịch đang chờ thanh toán.');
+    return success(res, { status: 'PENDING', checkoutUrl: payosData.checkoutUrl, qrCode: payosData.qrCode || payosData.qrCodeUrl }, 'Giao dịch đang chờ thanh toán.');
   } catch (err) {
     console.error('[BACKEND] Lỗi checkPayosStatus:', err);
     // Trả về PENDING nếu gặp lỗi tạm thời
@@ -1469,6 +1512,18 @@ export const clearMyNotifications = (req, res) => {
   return success(res, null, 'Đã xoá sạch thông báo cá nhân.');
 };
 
+// ── DELETE /api/members/me/notifications/:id ──────────────────
+export const deleteMyNotification = (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+  const hoSo = db.prepare('SELECT id FROM ho_so WHERE tai_khoan_id = ?').get(userId);
+  if (!hoSo) return error(res, 'Không tìm thấy hồ sơ hội viên.', 404);
+
+  db.prepare('DELETE FROM thong_bao_user WHERE id = ? AND ho_so_id = ?').run(id, hoSo.id);
+  return success(res, null, 'Đã xoá thông báo cá nhân.');
+};
+
+
 // ── PATCH /api/members/:id/package/:pkgId/cancel ──────────────
 export const cancelPackage = (req, res) => {
   const { id, pkgId } = req.params;
@@ -1562,7 +1617,7 @@ export const editPackage = (req, res) => {
         ngay_thanh_toan = COALESCE(?, ngay_thanh_toan)
     WHERE id = ?
   `).run(tu_ngay || null, den_ngay || null, gia_thuc_te || null, phuong_thuc_tt || null,
-         ghi_chu_tt || null, ghi_chu_gia || null, req.user.id, tu_ngay || null, pkgId);
+    ghi_chu_tt || null, ghi_chu_gia || null, req.user.id, tu_ngay || null, pkgId);
 
   ghi_audit_log(req, 'UPDATE', 'dang_ky_goi_tap', pkgId, oldData,
     { tu_ngay, den_ngay, gia_thuc_te, phuong_thuc_tt, ghi_chu_tt, ghi_chu_gia },
@@ -1583,7 +1638,7 @@ export const editPackage = (req, res) => {
 export const switchPackage = (req, res) => {
   const { id } = req.params;
   const { pkg_id_cu, goi_tap_id_moi, tu_ngay, ly_do_huy = 'Đổi sang gói mới', so_tien_hoan = 0,
-          gia_thuc_te, phuong_thuc_tt, ghi_chu_tt } = req.body;
+    gia_thuc_te, phuong_thuc_tt, ghi_chu_tt } = req.body;
 
   if (phuong_thuc_tt) {
     const validTT = ['tien_mat', 'chuyen_khoan'];
@@ -1640,8 +1695,8 @@ export const switchPackage = (req, res) => {
          trang_thai, nguoi_tao_id, nguoi_cap_nhat_id, ngay_thanh_toan)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'dang_hoat_dong', ?, ?, ?)
     `).run(hoSo.id, goi_tap_id_moi, tu_ngay, denNgay,
-           gia_thuc_te ?? goiMoi.gia, gia_thuc_te ?? goiMoi.gia, phuong_thuc_tt || null, ghi_chu_tt || null,
-           req.user.id, req.user.id, tu_ngay);
+      gia_thuc_te ?? goiMoi.gia, gia_thuc_te ?? goiMoi.gia, phuong_thuc_tt || null, ghi_chu_tt || null,
+      req.user.id, req.user.id, tu_ngay);
 
     return ins.lastInsertRowid;
   });

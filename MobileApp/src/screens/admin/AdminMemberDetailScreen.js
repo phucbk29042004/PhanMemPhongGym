@@ -40,7 +40,7 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
       const [detailRes, historyRes, checkinRes] = await Promise.all([
         api.get(`/members/${memberId}`),
         api.get(`/members/${memberId}/history`),
-        api.get(`/checkins/stats?ho_so_id=${memberId}&limit=10`) // get recent check-ins
+        api.get(`/checkins?ho_so_id=${memberId}&date=all&limit=10`) // get recent check-ins
       ]);
 
       if (detailRes.data?.success) {
@@ -50,7 +50,7 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
         setHistory(historyRes.data.data || []);
       }
       if (checkinRes.data?.success) {
-        setCheckins(checkinRes.data.data?.recent_checkins || checkinRes.data.data || []);
+        setCheckins(checkinRes.data.data || []);
       }
     } catch (err) {
       console.error('[AdminMemberDetail] fetch error:', err?.message);

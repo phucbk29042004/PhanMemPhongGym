@@ -57,15 +57,27 @@ function todayYMD() {
 }
 
 // ── Badge trạng thái ───────────────────────────────────────
-function StatusBadge({ status }) {
+function StatusBadge({ item }) {
   const { colors } = useTheme();
-  const cfg = {
-    cho_tap: { bg: G.warningLight, color: G.warning, label: 'Chờ tập' },
+  const status = item.trang_thai;
+  const pt_xac_nhan = item.pt_xac_nhan;
+  const hv_xac_nhan = item.hv_xac_nhan;
+
+  let cfg = {
+    cho_tap: { bg: colors.warningLight, color: colors.warning, label: 'Chờ tập' },
     da_tap: { bg: colors.primaryLight, color: colors.primary, label: 'Đã hoàn thành' },
     da_xac_nhan: { bg: colors.primaryLight, color: colors.primary, label: 'Đã xác nhận' },
-    da_huy: { bg: '#fef2f2', color: G.danger, label: 'Đã hủy' },
-    vang: { bg: '#faf5ff', color: '#7c3aed', label: 'Vắng' },
+    da_huy: { bg: colors.dangerLight, color: colors.danger, label: 'Đã hủy' },
+    vang: { bg: colors.isDark ? 'rgba(124,58,237,0.15)' : '#faf5ff', color: colors.isDark ? '#a78bfa' : '#7c3aed', label: 'Vắng' },
   }[status] || { bg: colors.surfaceVariant, color: colors.textMuted, label: status || 'Chưa rõ' };
+
+  if (status === 'cho_tap') {
+    if (pt_xac_nhan === 1 && hv_xac_nhan === 0) {
+      cfg = { bg: colors.warningLight, color: colors.warning, label: 'Chờ bạn xác nhận' };
+    } else if (hv_xac_nhan === 1 && pt_xac_nhan === 0) {
+      cfg = { bg: colors.warningLight, color: colors.warning, label: 'Chờ PT xác nhận' };
+    }
+  }
 
   return (
     <View style={[badgeStyles.badge, { backgroundColor: cfg.bg }]}>
@@ -101,8 +113,6 @@ function MiniCalendar({ year, month, trainedDays, today, onPrevMonth, onNextMont
   for (let i = 1; i <= remaining; i++) {
     cells.push({ day: i, type: 'next' });
   }
-
-  const todayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
 
   return (
     <View>
@@ -160,20 +170,15 @@ function MiniCalendar({ year, month, trainedDays, today, onPrevMonth, onNextMont
 
 const calStyles = StyleSheet.create({
   navRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  navBtn: { width: 32, height: 32, borderRadius: 10, backgroundColor: G.gray100, alignItems: 'center', justifyContent: 'center' },
-  monthLabel: { fontSize: 15, fontWeight: '800', color: G.gray900 },
+  navBtn: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  monthLabel: { fontSize: 15, fontWeight: '800' },
   weekRow: { flexDirection: 'row', marginBottom: 4 },
   weekCell: { flex: 1, alignItems: 'center', paddingVertical: 4 },
-  weekText: { fontSize: 11, fontWeight: '700', color: G.gray400 },
+  weekText: { fontSize: 11, fontWeight: '700' },
   daysGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   dayCell: { width: `${100 / 7}%`, alignItems: 'center', marginBottom: 4 },
   dayInner: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  dayTrained: { backgroundColor: G.primary },
-  dayToday: { borderWidth: 1.5, borderColor: G.primary },
-  dayText: { fontSize: 13, fontWeight: '600', color: G.gray700 },
-  dayTextOther: { color: G.gray300 },
-  dayTextTrained: { color: G.white, fontWeight: '800' },
-  dayTextToday: { color: G.primary, fontWeight: '800' },
+  dayText: { fontSize: 13, fontWeight: '600' },
 });
 
 // ── Card Lịch Tập Chi Tiết ─────────────────────────────────
@@ -210,8 +215,8 @@ function ScheduleCard({ item, onConfirm, onRate, isConfirming }) {
         ) : null}
       </View>
       <View style={{ alignItems: 'flex-end', gap: 6 }}>
-        <StatusBadge status={item.trang_thai} />
-        {item.trang_thai === 'cho_tap' && (
+        <StatusBadge item={item} />
+        {item.trang_thai === 'cho_tap' && item.hv_xac_nhan === 0 && (
           <TouchableOpacity 
             style={[styles.confirmBtn, { backgroundColor: colors.primary }]}
             onPress={() => onConfirm && onConfirm(item.id)}
@@ -222,11 +227,11 @@ function ScheduleCard({ item, onConfirm, onRate, isConfirming }) {
         )}
         {item.trang_thai === 'da_tap' && (
           <TouchableOpacity
-            style={[styles.rateBtn, { backgroundColor: '#fffbeb', borderColor: '#f59e0b' }]}
+            style={[styles.rateBtn, { backgroundColor: colors.warningLight, borderColor: colors.warning }]}
             onPress={() => onRate && onRate(item)}
           >
-            <Star color="#f59e0b" size={13} fill="#f59e0b" />
-            <Text style={styles.rateText}>{item.danh_gia_sao ? `${item.danh_gia_sao}/5` : 'Đánh giá'}</Text>
+            <Star color={colors.warning} size={13} fill={colors.warning} />
+            <Text style={[styles.rateText, { color: colors.warning }]}>{item.danh_gia_sao ? `${item.danh_gia_sao}/5` : 'Đánh giá'}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -268,10 +273,16 @@ export default function MemberScheduleScreen() {
           try {
             const res = await api.put(`/pt/schedules/${id}/confirm`);
             if (res.data?.success) {
+              const { bothConfirmed } = res.data.data;
+              if (bothConfirmed) {
+                Alert.alert('Thành công', 'Buổi tập đã được cả 2 bên xác nhận hoàn thành!');
+              } else {
+                Alert.alert('Đã ghi nhận', 'Đã ghi nhận xác nhận của bạn. Buổi tập sẽ hoàn thành khi PT xác nhận.');
+              }
               fetchSchedules();
             }
           } catch (err) {
-            Alert.alert('Lỗi', err?.message || 'Không thể xác nhận buổi tập.');
+            Alert.alert('Lỗi', err.response?.data?.message || err?.message || 'Không thể xác nhận buổi tập.');
           } finally {
             setConfirmingId(null);
           }
@@ -418,7 +429,7 @@ export default function MemberScheduleScreen() {
               />
             </View>
 
-            {/* ── Lịch Sử Tập Luyện ──────────────────────── */}
+            {/* ── Lịch Sự Tập Luyện ──────────────────────── */}
             <View style={styles.historySection}>
               <Text style={[styles.historyTitle, { color: colors.text }]}>Lịch sử tập luyện</Text>
               {historyList.length === 0 ? (
@@ -493,9 +504,9 @@ const styles = StyleSheet.create({
     width: 36, height: 36, borderRadius: 12,
     backgroundColor: G.primaryLight, alignItems: 'center', justifyContent: 'center',
   },
-  headerTitle: { fontSize: 20, fontWeight: '800', color: G.gray900 },
+  headerTitle: { fontSize: 20, fontWeight: '800' },
   rateBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 999 },
-  rateText: { color: '#b45309', fontSize: 11, fontWeight: '800' },
+  rateText: { fontSize: 11, fontWeight: '800' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   ratingSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, gap: 16 },
   modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -511,7 +522,6 @@ const styles = StyleSheet.create({
 
   // Card container
   card: {
-    backgroundColor: G.white,
     borderRadius: 18,
     padding: 16,
     marginBottom: 16,
@@ -524,30 +534,29 @@ const styles = StyleSheet.create({
   cardHeaderRow: {
     flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14,
   },
-  cardTitle: { fontSize: 15, fontWeight: '800', color: G.gray900 },
+  cardTitle: { fontSize: 15, fontWeight: '800' },
 
   // Stats row
   statsRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
   statBox: {
     flex: 1, padding: 12, borderRadius: 14, gap: 4,
   },
-  statLabel: { fontSize: 11, fontWeight: '600', color: G.gray500 },
+  statLabel: { fontSize: 11, fontWeight: '600' },
   statValue: { fontSize: 28, fontWeight: '800', lineHeight: 34 },
 
   // History
   historySection: { gap: 10 },
-  historyTitle: { fontSize: 16, fontWeight: '800', color: G.gray900, marginBottom: 4 },
+  historyTitle: { fontSize: 16, fontWeight: '800', marginBottom: 4 },
   emptyBox: {
-    backgroundColor: G.white, borderRadius: 18, padding: 32,
+    borderRadius: 18, padding: 32,
     alignItems: 'center', gap: 8,
     shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 10, elevation: 2,
   },
-  emptyText: { fontSize: 15, fontWeight: '700', color: G.gray500 },
-  emptySubText: { fontSize: 12, color: G.gray400 },
+  emptyText: { fontSize: 15, fontWeight: '700' },
+  emptySubText: { fontSize: 12 },
 
   // Schedule card
   schedCard: {
-    backgroundColor: G.white,
     borderRadius: 16,
     padding: 14,
     flexDirection: 'row',
@@ -558,19 +567,19 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
+    borderWidth: 1,
   },
   schedDateBox: {
     width: 44, height: 52, borderRadius: 12,
-    backgroundColor: G.primaryLight,
     alignItems: 'center', justifyContent: 'center',
   },
-  schedDay: { fontSize: 18, fontWeight: '800', color: G.primary, lineHeight: 22 },
-  schedMonth: { fontSize: 10, fontWeight: '600', color: G.primary },
+  schedDay: { fontSize: 18, fontWeight: '800', lineHeight: 22 },
+  schedMonth: { fontSize: 10, fontWeight: '600' },
   schedInfo: { flex: 1, gap: 4 },
   schedRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  schedTime: { fontSize: 13, fontWeight: '700', color: G.gray900 },
-  schedPt: { fontSize: 12, fontWeight: '600', color: G.primary },
-  schedLocation: { fontSize: 11, color: G.gray400, flex: 1 },
+  schedTime: { fontSize: 13, fontWeight: '700' },
+  schedPt: { fontSize: 12, fontWeight: '600' },
+  schedLocation: { fontSize: 11, flex: 1 },
   confirmBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, marginTop: 4, minWidth: 70, alignItems: 'center' },
-  confirmText: { fontSize: 12, fontWeight: '700', color: G.white },
+  confirmText: { fontSize: 12, fontWeight: '700', color: '#fff' },
 });

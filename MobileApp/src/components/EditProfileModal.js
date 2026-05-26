@@ -30,6 +30,15 @@ export default function EditProfileModal({ visible, onClose, profile, onSaved, c
   const [email, setEmail] = useState('');
   const [avatarUri, setAvatarUri] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [gioiTinh, setGioiTinh] = useState('nam');
+  const [ngaySinh, setNgaySinh] = useState('');
+  const [cccd, setCccd] = useState('');
+  const [queQuan, setQueQuan] = useState('');
+  const [noiSinh, setNoiSinh] = useState('');
+  const [tinhThanh, setTinhThanh] = useState('');
+  const [quanHuyen, setQuanHuyen] = useState('');
+  const [phuongXa, setPhuongXa] = useState('');
+  const [diaChiTamTru, setDiaChiTamTru] = useState('');
 
   useEffect(() => {
     if (visible && profile) {
@@ -37,6 +46,15 @@ export default function EditProfileModal({ visible, onClose, profile, onSaved, c
       setSoDienThoai(profile.so_dien_thoai || '');
       setEmail(profile.email || '');
       setAvatarUri(profile.avatar_url || null);
+      setGioiTinh(profile.gioi_tinh || 'nam');
+      setNgaySinh(profile.ngay_sinh ? profile.ngay_sinh.split('T')[0] : '');
+      setCccd(profile.cccd || '');
+      setQueQuan(profile.que_quan || '');
+      setNoiSinh(profile.noi_sinh || '');
+      setTinhThanh(profile.tinh_thanh || '');
+      setQuanHuyen(profile.quan_huyen || '');
+      setPhuongXa(profile.phuong_xa || '');
+      setDiaChiTamTru(profile.dia_chi_tam_tru || '');
     }
   }, [visible, profile]);
 
@@ -66,7 +84,16 @@ export default function EditProfileModal({ visible, onClose, profile, onSaved, c
       await api.put('/auth/me', {
         ho_ten: hoTen,
         so_dien_thoai: soDienThoai,
-        email: email
+        email: email,
+        gioi_tinh: gioiTinh,
+        ngay_sinh: ngaySinh || null,
+        cccd: cccd || null,
+        que_quan: queQuan || null,
+        noi_sinh: noiSinh || null,
+        tinh_thanh: tinhThanh || null,
+        quan_huyen: quanHuyen || null,
+        phuong_xa: phuongXa || null,
+        dia_chi_tam_tru: diaChiTamTru || null
       });
 
       // 2. Cập nhật ảnh đại diện nếu có thay đổi và là ảnh local (không bắt đầu bằng http)
@@ -157,6 +184,139 @@ export default function EditProfileModal({ visible, onClose, profile, onSaved, c
               </View>
             ))}
 
+            {/* Giới tính */}
+            <View style={styles.fieldWrap}>
+              <Text style={[styles.fieldLabel, { color: labelColor }]}>Giới tính</Text>
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                {['nam', 'nu'].map(g => (
+                  <TouchableOpacity
+                    key={g}
+                    style={[
+                      styles.genderBtn,
+                      { backgroundColor: inputBg, borderColor: inputBorder },
+                      gioiTinh === g && { backgroundColor: BRAND.primary, borderColor: BRAND.primary }
+                    ]}
+                    onPress={() => setGioiTinh(g)}
+                  >
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: gioiTinh === g ? '#fff' : textColor }}>
+                      {g === 'nam' ? 'Nam' : 'Nữ'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Ngày sinh */}
+            <View style={styles.fieldWrap}>
+              <Text style={[styles.fieldLabel, { color: labelColor }]}>Ngày sinh (YYYY-MM-DD)</Text>
+              <View style={[styles.inputRow, { backgroundColor: inputBg, borderColor: inputBorder }]}>
+                <TextInput
+                  style={[styles.input, { color: textColor }]}
+                  value={ngaySinh}
+                  onChangeText={setNgaySinh}
+                  placeholder="Ví dụ: 1995-08-25"
+                  placeholderTextColor={C.textMuted || '#9cad9c'}
+                />
+              </View>
+            </View>
+
+            {/* Số CCCD/CMND */}
+            <View style={styles.fieldWrap}>
+              <Text style={[styles.fieldLabel, { color: labelColor }]}>Số CCCD / CMND</Text>
+              <View style={[styles.inputRow, { backgroundColor: inputBg, borderColor: inputBorder }]}>
+                <TextInput
+                  style={[styles.input, { color: textColor }]}
+                  value={cccd}
+                  onChangeText={setCccd}
+                  placeholder="Nhập số CCCD..."
+                  placeholderTextColor={C.textMuted || '#9cad9c'}
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+
+            {/* Nơi sinh & Quê quán */}
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <View style={[styles.fieldWrap, { flex: 1 }]}>
+                <Text style={[styles.fieldLabel, { color: labelColor }]}>Nơi sinh</Text>
+                <View style={[styles.inputRow, { backgroundColor: inputBg, borderColor: inputBorder }]}>
+                  <TextInput
+                    style={[styles.input, { color: textColor }]}
+                    value={noiSinh}
+                    onChangeText={setNoiSinh}
+                    placeholder="Tỉnh/Thành..."
+                    placeholderTextColor={C.textMuted || '#9cad9c'}
+                  />
+                </View>
+              </View>
+              <View style={[styles.fieldWrap, { flex: 1 }]}>
+                <Text style={[styles.fieldLabel, { color: labelColor }]}>Quê quán</Text>
+                <View style={[styles.inputRow, { backgroundColor: inputBg, borderColor: inputBorder }]}>
+                  <TextInput
+                    style={[styles.input, { color: textColor }]}
+                    value={queQuan}
+                    onChangeText={setQueQuan}
+                    placeholder="Quê quán..."
+                    placeholderTextColor={C.textMuted || '#9cad9c'}
+                  />
+                </View>
+              </View>
+            </View>
+
+            {/* Tỉnh thành, Quận huyện, Phường xã */}
+            <View style={styles.fieldWrap}>
+              <Text style={[styles.fieldLabel, { color: labelColor }]}>Tỉnh / Thành phố</Text>
+              <View style={[styles.inputRow, { backgroundColor: inputBg, borderColor: inputBorder }]}>
+                <TextInput
+                  style={[styles.input, { color: textColor }]}
+                  value={tinhThanh}
+                  onChangeText={setTinhThanh}
+                  placeholder="Tỉnh/Thành phố..."
+                  placeholderTextColor={C.textMuted || '#9cad9c'}
+                />
+              </View>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <View style={[styles.fieldWrap, { flex: 1 }]}>
+                <Text style={[styles.fieldLabel, { color: labelColor }]}>Quận / Huyện</Text>
+                <View style={[styles.inputRow, { backgroundColor: inputBg, borderColor: inputBorder }]}>
+                  <TextInput
+                    style={[styles.input, { color: textColor }]}
+                    value={quanHuyen}
+                    onChangeText={setQuanHuyen}
+                    placeholder="Quận/Huyện..."
+                    placeholderTextColor={C.textMuted || '#9cad9c'}
+                  />
+                </View>
+              </View>
+              <View style={[styles.fieldWrap, { flex: 1 }]}>
+                <Text style={[styles.fieldLabel, { color: labelColor }]}>Phường / Xã</Text>
+                <View style={[styles.inputRow, { backgroundColor: inputBg, borderColor: inputBorder }]}>
+                  <TextInput
+                    style={[styles.input, { color: textColor }]}
+                    value={phuongXa}
+                    onChangeText={setPhuongXa}
+                    placeholder="Phường/Xã..."
+                    placeholderTextColor={C.textMuted || '#9cad9c'}
+                  />
+                </View>
+              </View>
+            </View>
+
+            {/* Địa chỉ tạm trú */}
+            <View style={styles.fieldWrap}>
+              <Text style={[styles.fieldLabel, { color: labelColor }]}>Địa chỉ tạm trú</Text>
+              <View style={[styles.inputRow, { backgroundColor: inputBg, borderColor: inputBorder }]}>
+                <TextInput
+                  style={[styles.input, { color: textColor }]}
+                  value={diaChiTamTru}
+                  onChangeText={setDiaChiTamTru}
+                  placeholder="Số nhà, tên đường..."
+                  placeholderTextColor={C.textMuted || '#9cad9c'}
+                />
+              </View>
+            </View>
+
             {/* Buttons */}
             <View style={styles.btnRow}>
               <TouchableOpacity style={[styles.btnCancel, { borderColor: inputBorder }]} onPress={onClose}>
@@ -219,4 +379,12 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   btnSaveText: { fontSize: 15, fontWeight: '800', color: '#ffffff' },
+  genderBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

@@ -699,7 +699,14 @@ window.GymApp.pages['expired'] = {
             <div class="space-y-compact">
               <div>
                 <label class="block text-body-xs font-bold text-on-surface-variant mb-xs ml-0.5">Số tiền thực thu (VNĐ)</label>
+<<<<<<< HEAD
                 <input type="number" id="approve-price" value="${req.gia_thuc_te}" class="w-full bg-surface-container-lowest border border-outline-variant px-standard py-2 rounded-xl outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 text-body-sm font-black transition-all" />
+=======
+                <div class="relative">
+                  <input type="text" inputmode="numeric" id="approve-price" value="${new Intl.NumberFormat('vi-VN').format(req.gia_thuc_te || 0)}" class="w-full bg-surface-container-lowest border border-outline-variant pl-standard pr-12 py-2 rounded-xl outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 text-body-sm font-black transition-all" />
+                  <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-outline text-label-xs font-black opacity-50">VNĐ</span>
+                </div>
+>>>>>>> main
               </div>
               
               <div>

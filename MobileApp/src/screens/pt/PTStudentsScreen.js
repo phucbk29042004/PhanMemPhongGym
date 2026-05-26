@@ -11,6 +11,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../services/api';
 import { formatDate, unwrapData } from '../../utils/data';
 import ProfileAvatar from '../../components/ProfileAvatar';
+import { useTheme } from '../../context/ThemeContext';
 
 // ── Màu sắc ────────────────────────────────────────────────
 const G = {
@@ -30,6 +31,7 @@ const G = {
 };
 
 export default function PTStudentsScreen({ navigation }) {
+  const { colors, isDark } = useTheme();
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -81,80 +83,80 @@ export default function PTStudentsScreen({ navigation }) {
   }, [schedules]);
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={G.white} />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={isDark ? colors.background : G.white} />
 
       {/* ── Header ────────────────────────────── */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border, borderBottomWidth: 1 }]}>
         <View style={styles.headerLeft}>
-          <Text style={styles.headerTitle}>Học viên của tôi</Text>
-          <Text style={styles.headerSubtitle}>Bạn đang hướng dẫn {students.length} học viên</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Học viên của tôi</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>Bạn đang hướng dẫn {students.length} học viên</Text>
         </View>
         <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.actionBtn}>
-            <Search color={G.primary} size={20} />
+          <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.primaryLight }]}>
+            <Search color={colors.primary} size={20} />
           </TouchableOpacity>
         </View>
       </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[G.primary]} tintColor={G.primary} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
         contentContainerStyle={styles.scrollContent}
       >
         {loading ? (
           <View style={styles.center}>
-            <ActivityIndicator color={G.primary} size="large" />
+            <ActivityIndicator color={colors.primary} size="large" />
           </View>
         ) : students.length === 0 ? (
           <View style={styles.emptyBox}>
-            <Users color={G.gray300} size={64} strokeWidth={1} />
-            <Text style={styles.emptyTitle}>Chưa có học viên</Text>
-            <Text style={styles.emptyDesc}>Danh sách học viên sẽ tự động hiển thị khi có ca dạy được phân công.</Text>
+            <Users color={colors.textMuted} size={64} strokeWidth={1} />
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>Chưa có học viên</Text>
+            <Text style={[styles.emptyDesc, { color: colors.textMuted }]}>Danh sách học viên sẽ tự động hiển thị khi có ca dạy được phân công.</Text>
           </View>
         ) : (
           students.map((student) => (
             <TouchableOpacity
               key={student.id}
-              style={styles.card}
+              style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
               activeOpacity={0.7}
               onPress={() => {}} // Có thể mở chi tiết học viên sau này
             >
               <View style={styles.cardTop}>
                 <View style={styles.avatarBox}>
                   <ProfileAvatar uri={student.avatar} name={student.name} size={54} />
-                  <View style={styles.statusDot} />
+                  <View style={[styles.statusDot, { borderColor: colors.surface }]} />
                 </View>
                 <View style={styles.infoBox}>
-                  <Text style={styles.name}>{student.name || 'Hội viên'}</Text>
+                  <Text style={[styles.name, { color: colors.text }]}>{student.name || 'Hội viên'}</Text>
                   <View style={styles.idRow}>
-                    <User color={G.primary} size={11} strokeWidth={2.5} />
-                    <Text style={styles.idText}>Hội viên chính thức</Text>
+                    <User color={colors.primary} size={11} strokeWidth={2.5} />
+                    <Text style={[styles.idText, { color: colors.primary }]}>Hội viên chính thức</Text>
                   </View>
                 </View>
-                <ChevronRight color={G.gray300} size={18} strokeWidth={2} />
+                <ChevronRight color={colors.textMuted} size={18} strokeWidth={2} />
               </View>
 
-              <View style={styles.divider} />
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
               <View style={styles.statsRow}>
                 <View style={styles.statItem}>
-                  <TrendingUp color={G.primary} size={14} strokeWidth={2} />
-                  <Text style={styles.statVal}>{student.completed}/{student.total}</Text>
-                  <Text style={styles.statLabel}>Buổi dạy</Text>
+                  <TrendingUp color={colors.primary} size={14} strokeWidth={2} />
+                  <Text style={[styles.statVal, { color: colors.text }]}>{student.completed}/{student.total}</Text>
+                  <Text style={[styles.statLabel, { color: colors.textMuted }]}>Buổi dạy</Text>
                 </View>
-                <View style={styles.statDivider} />
+                <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
                 <View style={styles.statItem}>
-                  <CalendarCheck color={G.primary} size={14} strokeWidth={2} />
-                  <Text style={styles.statVal}>{student.remaining ?? '—'}</Text>
-                  <Text style={styles.statLabel}>Còn lại</Text>
+                  <CalendarCheck color={colors.primary} size={14} strokeWidth={2} />
+                  <Text style={[styles.statVal, { color: colors.text }]}>{student.remaining ?? '—'}</Text>
+                  <Text style={[styles.statLabel, { color: colors.textMuted }]}>Còn lại</Text>
                 </View>
-                <View style={styles.statDivider} />
+                <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
                 <View style={styles.statItem}>
-                  <Text style={[styles.statVal, { color: G.gray900 }]}>
+                  <Text style={[styles.statVal, { color: colors.text }]}>
                     {student.nextDate ? formatDate(student.nextDate) : '—'}
                   </Text>
-                  <Text style={styles.statLabel}>Tiếp theo</Text>
+                  <Text style={[styles.statLabel, { color: colors.textMuted }]}>Tiếp theo</Text>
                 </View>
               </View>
 

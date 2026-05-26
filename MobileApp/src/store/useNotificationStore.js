@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../services/api';
 
 export const useNotificationStore = create((set, get) => ({
@@ -15,12 +16,22 @@ export const useNotificationStore = create((set, get) => ({
       if (res.data?.success) {
         const notifs = res.data.data?.notifications || [];
         
+        // Load danh sách thông báo hệ thống đã bị ẩn từ AsyncStorage
+        const dismissedStr = await AsyncStorage.getItem('dismissed_notifications');
+        const dismissed = dismissedStr ? JSON.parse(dismissedStr) : [];
+
+        // Lọc bỏ những thông báo hệ thống đã bị ẩn
+        const activeNotifs = notifs.filter(n => {
+          if (n.is_custom) return true;
+          const key = `${n.tieu_de}_${n.ngay_tao}`;
+          return !dismissed.includes(key);
+        });
+
         // Chỉ badge số lượng cho các thông báo cá nhân chưa đọc (is_custom)
-        // Các thông báo hệ thống (system) vẫn hiện trong list nhưng không giữ badge tab
-        const unreadCustom = notifs.filter(n => n.is_custom && n.da_doc === 0).length;
+        const unreadCustom = activeNotifs.filter(n => n.is_custom && n.da_doc === 0).length;
 
         set({ 
-          notifications: notifs, 
+          notifications: activeNotifs, 
           unreadCount: unreadCustom,
           loading: false 
         });
@@ -44,14 +55,58 @@ export const useNotificationStore = create((set, get) => ({
     }
   },
   
+  deleteNotification: async (item) => {
+    try {
+      if (item.is_custom) {
+        // Xóa thông báo cá nhân ở server
+        await api.delete(`/members/me/notifications/${item.id}`);
+        set((state) => {
+          const filtered = state.notifications.filter(n => n.id !== item.id);
+          return {
+            notifications: filtered,
+            unreadCount: filtered.filter(n => n.is_custom && n.da_doc === 0).length
+          };
+        });
+      } else {
+        // Ẩn thông báo hệ thống tự động qua AsyncStorage
+        const key = `${item.tieu_de}_${item.ngay_tao}`;
+        const dismissedStr = await AsyncStorage.getItem('dismissed_notifications');
+        const dismissed = dismissedStr ? JSON.parse(dismissedStr) : [];
+        if (!dismissed.includes(key)) {
+          dismissed.push(key);
+          await AsyncStorage.setItem('dismissed_notifications', JSON.stringify(dismissed));
+        }
+        set((state) => ({
+          notifications: state.notifications.filter(n => `${n.tieu_de}_${n.ngay_tao}` !== key)
+        }));
+      }
+    } catch (e) {
+      console.error('[NotificationStore] deleteNotification error:', e?.message);
+      throw e;
+    }
+  },
+
   clearNotifications: async () => {
     try {
+      // 1. Xoá sạch thông báo cá nhân ở server
       await api.delete('/members/me/notifications');
-      // Sau khi xoá trên server, xoá sạch custom notifs ở local
-      set((state) => ({
-        notifications: state.notifications.filter(n => !n.is_custom),
+      
+      // 2. Ẩn toàn bộ thông báo hệ thống đang có
+      const currentSystemNotifs = get().notifications.filter(n => !n.is_custom);
+      const dismissedStr = await AsyncStorage.getItem('dismissed_notifications');
+      const dismissed = dismissedStr ? JSON.parse(dismissedStr) : [];
+      
+      currentSystemNotifs.forEach(n => {
+        const key = `${n.tieu_de}_${n.ngay_tao}`;
+        if (!dismissed.includes(key)) dismissed.push(key);
+      });
+      await AsyncStorage.setItem('dismissed_notifications', JSON.stringify(dismissed));
+
+      // 3. Xóa local state
+      set({
+        notifications: [],
         unreadCount: 0
-      }));
+      });
     } catch (e) {
       console.error('[NotificationStore] clearNotifications error:', e?.message);
       throw e;
