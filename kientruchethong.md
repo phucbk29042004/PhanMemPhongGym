@@ -1,6 +1,6 @@
 # 🏛️ Kiến Trúc Hệ Thống — Paradise GYM
 
-> Cập nhật lần cuối: 25/05/2026 — Tối ưu phân trang và scroll ngang Lịch tập PT, rút gọn bộ lọc và danh sách HLV.
+> Cập nhật lần cuối: 26/05/2026 — Khắc phục lỗi cú pháp biên dịch PTHomeScreen.js và đồng bộ tài liệu kiến trúc.
 
 ---
 
@@ -66,7 +66,7 @@ graph TD
 | `vai_tro` | Phân quyền hệ thống (JSON-based RBAC). |
 | `goi_tap` | Danh mục gói tập phòng gym. |
 | `dang_ky_goi_tap`| Lịch sử đăng ký và thanh toán của hội viên (Thêm cột payos_order_code, payos_status, chi_nhanh_mua ở Migration v11). |
-| `lich_tap` | Chi tiết các buổi tập của hội viên với PT. |
+| `lich_tap` | Chi tiết các buổi tập của hội viên với PT (Thêm cột pt_xac_nhan, hv_xac_nhan ở Migration v13). |
 | `doanh_thu` | Tổng hợp doanh thu tự động qua Triggers. |
 | `audit_log` | Nhật ký thay đổi dữ liệu nhạy cảm. |
 | `cau_hinh` | Cấu hình hệ thống (giờ cron, TTL QR, v.v.). |
@@ -99,7 +99,8 @@ graph TD
 
 ### Frontend (UI/UX)
 - [x] **Tích hợp đầy đủ tính năng Admin & Dark Mode trên MobileApp**: CRUD Hội viên, CRUD PT, CRUD Gói tập, Đăng ký dịch vụ, Phê duyệt yêu cầu gia hạn, xem chi tiết lịch sử tập luyện/check-in hội viên trên ứng dụng di động.
-- [x] Giao diện SPA Material 3 (Glassmorphism).
+- [x] **Màn hình Doanh thu Admin di động** (`AdminRevenueScreen.js`): Vẽ biểu đồ vùng SVG (Area Chart) theo các mốc Hôm nay/7 ngày/30 ngày.
+- [x] **Safe Area Headers trên các form Admin di động**: Tự động chèn padding top để tránh đè Status Bar.
 - [x] Sidebar đóng/mở mượt mà, hỗ trợ Tooltip.
 - [x] Dark/Light mode (Persistence).
 - [x] Form thêm mới hội viên (>25 trường dữ liệu).
@@ -126,6 +127,7 @@ graph TD
 - [x] **Check-in**: Log vào/ra, Thống kê mật độ phục vụ biểu đồ Dashboard.
 - [x] **QR Check-in Đa Nền Tảng (Hội viên & PT)**: Hội viên và PT lấy JWT token ngắn hạn (QR_JWT_SECRET, TTL 5 phút, tự động refresh). Lễ tân quét xác nhận: Hội viên ghi lượt vào tập luyện; PT tự động kiểm tra trạng thái gần nhất để đảo chiều vào/ra ca làm việc (bỏ qua kiểm tra gói tập). Tích hợp đồng bộ cả trên Web Portal và Mobile App. Buổi tập PT của hội viên có `da_checkin=1` sẽ được cron tự xác nhận lúc 22:00.
 - [x] **Cron Job** (`BE/src/jobs/cron-pt-confirm.js`): Tự động xác nhận buổi tập PT (`cho_tap` + `da_checkin=1`) vào cuối ngày, dùng `ghi_chu='auto_cron'` để phân biệt với lễ tân xác nhận thủ công.
+- [x] **Xác nhận kép buổi tập PT** (`pt_xac_nhan` & `hv_xac_nhan`): Chỉ cho phép hoàn thành buổi và trừ lượt khi cả hai bên xác nhận.
 - [x] **Hoàn tác buổi tập**: Admin/lễ tân có thể hoàn tác buổi do cron xác nhận (trong vòng 1 ngày) qua nút trên màn hình PT Training.
 - [x] **PT Schedule**: Đặt lịch tập, Kiểm tra trùng lịch của PT, Xác nhận/Hủy buổi.
 - [x] **Doanh thu**: Thống kê 30 ngày, Dashboard tổng quan (API JSON).
@@ -174,3 +176,9 @@ graph TD
 - **Frontend/Mobile**:
   - Cập nhật validation tại màn hình thêm hội viên (`member-add.js` trên Web) và đăng ký gói tập (`AdminRegisterPackageScreen.js` trên Mobile) để hiển thị thông báo lỗi và chặn lưu nếu số tiền không hợp lệ.
   - Tích hợp giao diện đổi gói tập trên Mobile: Hiển thị banner chi tiết gói tập đang hoạt động, cho phép chọn giữa "Đổi gói" và "Đăng ký song song", tự động hiển thị số tiền đóng thêm / hoàn trả động và gọi API `POST /api/members/:id/package/switch`.
+
+# Cập nhật kiến trúc 26/05/2026 — Xác nhận kép buổi tập PT, Doanh thu di động, Safe Area Forms
+- **Database & Nghiệp vụ (BE)**: Bổ sung Migration v13 thêm cột `pt_xac_nhan` và `hv_xac_nhan` vào bảng `lich_tap`. Cập nhật logic confirm và cron job để trừ số buổi còn lại của hội viên chỉ khi cả 2 bên đã xác nhận.
+- **Doanh thu Admin di động**: Thêm màn hình `AdminRevenueScreen.js` sử dụng `react-native-svg` để vẽ biểu đồ trực quan, tích hợp bộ lọc thời gian Hôm nay, 7 ngày, 30 ngày.
+- **Safe Area Header**: Tự động chèn `insets.top` vào padding-top của header 5 biểu mẫu của Admin.
+- **Sửa lỗi cú pháp PTHomeScreen.js**: Refactor tách logic phức tạp IIFE ra hàm helper `renderNextSchedule()`, chỉnh sửa ký tự & trong label, đơn giản hóa vòng lặp tia sáng.
