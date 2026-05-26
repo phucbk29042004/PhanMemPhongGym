@@ -296,14 +296,10 @@ export default function PTHomeScreen({ navigation }) {
             <View style={[styles.sectionIconBox, { backgroundColor: colors.primaryLight }]}>
               <CalendarCheck color={colors.primary} size={18} strokeWidth={2} />
             </View>
-<<<<<<< HEAD
-            <Text style={styles.sectionTitle}>Buổi tập tiếp theo</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Buổi tập tiếp theo</Text>
             <TouchableOpacity onPress={() => navigation.navigate('Lịch dạy')}>
               <Text style={styles.viewAllText}>Tất cả</Text>
             </TouchableOpacity>
-=======
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Buổi tập tiếp theo</Text>
->>>>>>> main
           </View>
 
           {renderNextSchedule()}
