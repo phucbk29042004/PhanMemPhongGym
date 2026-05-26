@@ -120,7 +120,9 @@ export const doiMatKhau = (req, res) => {
 export const getMe = (req, res) => {
   const account = db.prepare(`
     SELECT t.id, t.ten_dang_nhap, v.ma_vai_tro AS vai_tro, v.ten_hien_thi AS ten_vai_tro, v.quyen_json,
-           h.id AS ho_so_id, h.ho_ten, h.avatar_url, h.loai_ho_so, h.so_dien_thoai, h.email
+           h.id AS ho_so_id, h.ma_ho_so, h.ho_ten, h.avatar_url, h.loai_ho_so,
+           h.so_dien_thoai, h.email, h.gioi_tinh, h.ngay_sinh, h.cccd,
+           h.dia_chi_tam_tru, h.que_quan, h.noi_sinh, h.tinh_thanh, h.quan_huyen, h.phuong_xa
     FROM tai_khoan t
     JOIN vai_tro v ON v.id = t.vai_tro_id
     LEFT JOIN ho_so h ON h.tai_khoan_id = t.id AND h.is_deleted = 0
@@ -169,12 +171,15 @@ export const updateMe = (req, res) => {
       hoSo.id
     );
   } else {
-    // Nếu chưa có hồ sơ (ví dụ admin mặc định), tạo mới hồ sơ loại 'nhan_vien' hoặc 'admin'
-    // Để an toàn, chỉ tạo hồ sơ tối thiểu
+    // Nếu chưa có hồ sơ, tự sinh mã hồ sơ theo định dạng AD001, AD002...
+    const countRow = db.prepare(`SELECT COUNT(*) AS cnt FROM ho_so WHERE loai_ho_so IN ('nhan_vien', 'admin')`).get();
+    const nextNum = (countRow?.cnt || 0) + 1;
+    const maHoSo = `AD${String(nextNum).padStart(3, '0')}`;
     const result = db.prepare(`
-      INSERT INTO ho_so (loai_ho_so, ho_ten, so_dien_thoai, email, avatar_url, tai_khoan_id, gioi_tinh, ngay_sinh, cccd, dia_chi_tam_tru, que_quan, noi_sinh, tinh_thanh, quan_huyen, phuong_xa)
-      VALUES ('nhan_vien', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO ho_so (ma_ho_so, loai_ho_so, ho_ten, so_dien_thoai, email, avatar_url, tai_khoan_id, gioi_tinh, ngay_sinh, cccd, dia_chi_tam_tru, que_quan, noi_sinh, tinh_thanh, quan_huyen, phuong_xa)
+      VALUES (?, 'nhan_vien', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
+      maHoSo,
       ho_ten || 'Admin', so_dien_thoai || null, email || null, avatar_url || null, userId,
       gioi_tinh || null, ngay_sinh || null, cccd || null, dia_chi_tam_tru || null,
       que_quan || null, noi_sinh || null, tinh_thanh || null, quan_huyen || null, phuong_xa || null

@@ -7,12 +7,14 @@ import {
 import {
   Award, Calendar, CalendarCheck, CheckCircle2, ChevronRight,
   Clock, CreditCard, Dumbbell, Shield, Trash2, Edit3, User,
-  Users, Check, X, Phone, Mail, MapPin, Map, Building2, UserPlus
+  Users, Check, X, Phone, Mail, MapPin, Map, Building2, UserPlus, Bell
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import ProfileAvatar from '../../components/ProfileAvatar';
+import { useAuthStore } from '../../store/useAuthStore';
 
 function formatPrice(val) {
   if (val == null) return '0đ';
@@ -29,18 +31,22 @@ function formatDate(val) {
 export default function AdminMemberDetailScreen({ route, navigation }) {
   const { memberId } = route.params;
   const { colors, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
+  const { role } = useAuthStore();
   const [member, setMember] = useState(null);
   const [history, setHistory] = useState([]);
   const [checkins, setCheckins] = useState([]);
+  const [ptSchedules, setPtSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchDetail = useCallback(async () => {
     try {
-      const [detailRes, historyRes, checkinRes] = await Promise.all([
+      const [detailRes, historyRes, checkinRes, scheduleRes] = await Promise.all([
         api.get(`/members/${memberId}`),
         api.get(`/members/${memberId}/history`),
-        api.get(`/checkins?ho_so_id=${memberId}&date=all&limit=10`) // get recent check-ins
+        api.get(`/checkins?ho_so_id=${memberId}&date=all&limit=10`),
+        api.get(`/pt/schedules?hoi_vien_id=${memberId}`)
       ]);
 
       if (detailRes.data?.success) {
@@ -52,6 +58,9 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
       if (checkinRes.data?.success) {
         setCheckins(checkinRes.data.data || []);
       }
+      if (scheduleRes.data?.success) {
+        setPtSchedules(scheduleRes.data.data || []);
+      }
     } catch (err) {
       console.error('[AdminMemberDetail] fetch error:', err?.message);
       Alert.alert('Lỗi', 'Không thể lấy thông tin chi tiết hội viên.');
@@ -61,6 +70,28 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
     }
   }, [memberId]);
 
+  const handleCancelSchedule = (scheduleId) => {
+    Alert.prompt(
+      'Hủy lịch tập PT',
+      'Nhập lý do hủy lịch:',
+      async (reason) => {
+        if (!reason || !reason.trim()) {
+          Alert.alert('Lỗi', 'Vui lòng nhập lý do hủy lịch.');
+          return;
+        }
+        try {
+          const res = await api.put(`/pt/schedules/${scheduleId}/cancel`, { ly_do: reason.trim() });
+          if (res.data?.success) {
+            Alert.alert('Thành công', 'Đã hủy lịch tập.');
+            fetchDetail();
+          }
+        } catch (err) {
+          Alert.alert('Lỗi', err.response?.data?.message || err?.message || 'Không thể hủy lịch.');
+        }
+      }
+    );
+  };
+
   useFocusEffect(useCallback(() => {
     fetchDetail();
   }, [fetchDetail]));
@@ -68,6 +99,40 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
   const onRefresh = () => {
     setRefreshing(true);
     fetchDetail();
+  };
+
+  const handleNotifyRenew = async () => {
+    const trangThai = member?.trang_thai;
+    const isExpired = trangThai === 'het_han';
+    const title = isExpired
+      ? 'Gói tập của bạn đã hết hạn'
+      : 'Gói tập của bạn sắp hết hạn';
+    const body = isExpired
+      ? `Xin chào ${member.ho_ten}, gói tập Gym của bạn đã hết hạn. Hãy ghé thăm phòng tập để gia hạn ngay hôm nay!`
+      : `Xin chào ${member.ho_ten}, gói tập Gym của bạn sắp hết hạn. Hãy gia hạn để không bị gián đoạn lịch tập!`;
+
+    Alert.alert(
+      'Xác nhận gửi thông báo',
+      `Gửi thông báo nhắc gia hạn đến hội viên ${member.ho_ten}?`,
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Gửi ngay',
+          onPress: async () => {
+            try {
+              const res = await api.post(`/members/${memberId}/notify`, { title, body });
+              if (res.data?.success) {
+                Alert.alert('Thành công', 'Dã gửi thông báo gia hạn đến hội viên.');
+              } else {
+                Alert.alert('Lỗi', res.data?.message || 'Không thể gửi thông báo.');
+              }
+            } catch (err) {
+              Alert.alert('Lỗi', err?.response?.data?.message || 'Không thể gửi thông báo.');
+            }
+          }
+        }
+      ]
+    );
   };
 
   const handleDelete = () => {
@@ -136,7 +201,7 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
       <StatusBar barStyle={colors.statusBar} backgroundColor={colors.statusBarBg} />
       
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border, paddingTop: insets.top, height: 60 + insets.top }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
           <X color={colors.text} size={22} />
         </TouchableOpacity>
@@ -219,8 +284,20 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
               <Text style={[styles.emptyCardText, { color: colors.textMuted }]}>Chưa đăng ký gói Gym</Text>
             </View>
           )}
-          <TouchableOpacity 
-            style={[styles.actionBtn, { backgroundColor: colors.primaryLight, marginTop: activePkg ? 12 : 0 }]}
+
+          {/* Nút Yêu cầu gia hạn khi hết hạn / sắp hết hạn */}
+          {(member?.trang_thai === 'het_han' || member?.trang_thai === 'sap_het_han') && (
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: colors.warningLight, marginTop: 10, flexDirection: 'row', gap: 6 }]}
+              onPress={handleNotifyRenew}
+            >
+              <Bell color={colors.warning} size={14} />
+              <Text style={[styles.actionBtnText, { color: colors.warning }]}>Yêu cầu gia hạn</Text>
+            </TouchableOpacity>
+          )}
+
+          <TouchableOpacity
+            style={[styles.actionBtn, { backgroundColor: colors.primaryLight, marginTop: activePkg ? 10 : 0 }]}
             onPress={() => navigation.navigate('AdminRegisterPackage', { member, activePkg })}
           >
             <Text style={[styles.actionBtnText, { color: colors.primary }]}>
@@ -260,12 +337,91 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
           )}
           <TouchableOpacity 
             style={[styles.actionBtn, { backgroundColor: colors.primaryLight, marginTop: activePT ? 12 : 0 }]}
-            onPress={() => navigation.navigate('AdminRegisterPT', { member })}
+            onPress={() => navigation.navigate('AdminRegisterPT', { member, activePT })}
           >
             <Text style={[styles.actionBtnText, { color: colors.primary }]}>
-              Đăng ký gói tập với HLV (PT)
+              {activePT ? 'Gia hạn / Đổi gói PT' : 'Đăng ký gói tập với HLV (PT)'}
             </Text>
           </TouchableOpacity>
+          {activePT && (
+            <TouchableOpacity 
+              style={[styles.actionBtn, { backgroundColor: colors.primary, marginTop: 10 }]}
+              onPress={() => navigation.navigate('AdminRegisterPTSchedule', { member, activePT })}
+            >
+              <Text style={[styles.actionBtnText, { color: '#fff' }]}>
+                Đặt lịch tập PT mới
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Lịch tập PT gần đây */}
+        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Lịch tập PT gần đây</Text>
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, padding: 8 }]}>
+          {ptSchedules.length === 0 ? (
+            <View style={styles.emptySection}>
+              <Text style={[styles.emptyCardText, { color: colors.textMuted }]}>Chưa có lịch tập PT nào được xếp</Text>
+            </View>
+          ) : (
+            ptSchedules.map((item, idx) => {
+              const statusMap = {
+                cho_tap: 'Chờ tập',
+                da_tap: 'Đã hoàn thành',
+                da_huy: 'Đã hủy',
+              };
+              const label = statusMap[item.trang_thai] || item.trang_thai;
+              return (
+                <View 
+                  key={item.id} 
+                  style={[
+                    styles.historyRow, 
+                    { borderBottomColor: colors.borderLight }, 
+                    idx === ptSchedules.length - 1 && { borderBottomWidth: 0 }
+                  ]}
+                >
+                  <View style={styles.historyInfo}>
+                    <Text style={[styles.historyName, { color: colors.text }]}>
+                      HLV: {item.ten_pt} • {item.gio_bat_dau} - {item.gio_ket_thuc}
+                    </Text>
+                    <Text style={[styles.historyDates, { color: colors.textSecondary }]}>
+                      Ngày tập: {formatDate(item.ngay_tap)}
+                    </Text>
+                    {item.ghi_chu ? (
+                      <Text style={{ fontSize: 11, color: colors.textMuted, fontStyle: 'italic' }}>
+                        Ghi chú: {item.ghi_chu}
+                      </Text>
+                    ) : null}
+                    {item.ly_do_huy ? (
+                      <Text style={{ fontSize: 11, color: colors.danger, fontStyle: 'italic' }}>
+                        Lý do hủy: {item.ly_do_huy}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <View style={{ gap: 6, alignItems: 'flex-end' }}>
+                    <View style={[
+                      styles.historyBadge, 
+                      { backgroundColor: item.trang_thai === 'da_tap' ? colors.primaryLight : item.trang_thai === 'da_huy' ? colors.dangerLight : colors.warningLight }
+                    ]}>
+                      <Text style={[
+                        styles.historyBadgeText, 
+                        { color: item.trang_thai === 'da_tap' ? colors.primary : item.trang_thai === 'da_huy' ? colors.danger : colors.warning }
+                      ]}>
+                        {label}
+                      </Text>
+                    </View>
+                    {item.trang_thai === 'cho_tap' && (
+                      <TouchableOpacity 
+                        onPress={() => handleCancelSchedule(item.id)}
+                        style={{ padding: 4 }}
+                      >
+                        <Text style={{ fontSize: 11, color: colors.danger, fontWeight: '700' }}>Hủy lịch</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+              );
+            })
+          )}
         </View>
 
         {/* Lịch sử check-in */}
@@ -344,13 +500,15 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
         </View>
 
         {/* Delete button */}
-        <TouchableOpacity 
-          style={[styles.deleteBtn, { borderColor: colors.danger }]}
-          onPress={handleDelete}
-        >
-          <Trash2 color={colors.danger} size={16} />
-          <Text style={[styles.deleteBtnText, { color: colors.danger }]}>Xóa hội viên</Text>
-        </TouchableOpacity>
+        {role === 'admin' && (
+          <TouchableOpacity 
+            style={[styles.deleteBtn, { borderColor: colors.danger }]}
+            onPress={handleDelete}
+          >
+            <Trash2 color={colors.danger} size={16} />
+            <Text style={[styles.deleteBtnText, { color: colors.danger }]}>Xóa hội viên</Text>
+          </TouchableOpacity>
+        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>

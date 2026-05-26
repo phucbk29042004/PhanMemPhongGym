@@ -302,9 +302,11 @@ window.GymApp.pages['members-list'] = {
                 </button>
 
                 <!-- Xóa -->
+                ${window.GymApp.auth.user?.vai_tro === 'admin' ? `
                 <button class="member-delete-btn w-[30px] h-[30px] rounded-lg flex items-center justify-center transition-all bg-[#fff1f2] dark:bg-[#2e0b10] text-[#f43f5e] dark:text-[#f87171] hover:bg-[#f43f5e] dark:hover:bg-[#f87171] hover:text-white dark:hover:text-[#111318]" data-id="${m.id}" data-name="${m.ho_ten || ''}" title="Xóa">
                   <span class="material-symbols-outlined" style="font-size:15px;">delete</span>
                 </button>
+                ` : ''}
 
               </div>
             </td>
@@ -349,9 +351,11 @@ window.GymApp.pages['members-list'] = {
             <button class="member-edit-btn" data-id="${m.id}" title="Sửa" style="width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#eff6ff;color:#3b82f6;border:none;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='#3b82f6';this.style.color='#fff'" onmouseout="this.style.background='#eff6ff';this.style.color='#3b82f6'">
               <span class="material-symbols-outlined" style="font-size:15px;">edit</span>
             </button>
+            ${window.GymApp.auth.user?.vai_tro === 'admin' ? `
             <button class="member-delete-btn" data-id="${m.id}" data-name="${m.ho_ten || ''}" title="Xóa" style="width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#fff1f2;color:#f43f5e;border:none;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='#f43f5e';this.style.color='#fff'" onmouseout="this.style.background='#fff1f2';this.style.color='#f43f5e'">
               <span class="material-symbols-outlined" style="font-size:15px;">delete</span>
             </button>
+            ` : ''}
           </div>
         </div>
       `;
@@ -485,9 +489,11 @@ window.GymApp.pages['members-list'] = {
               <button class="member-action-btn w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-300 pt-edit-btn shadow-sm" data-id="${pt.id}" title="Chỉnh sửa">
                 <span class="material-symbols-outlined text-lg">edit</span>
               </button>
+              ${window.GymApp.auth.user?.vai_tro === 'admin' ? `
               <button class="member-delete-btn w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-300 pt-delete-btn shadow-sm" data-id="${pt.id}" data-name="${pt.ho_ten}" title="Xóa">
                 <span class="material-symbols-outlined text-lg">delete</span>
               </button>
+              ` : ''}
             </div>
           </div>
         </div>
@@ -1525,7 +1531,7 @@ window.GymApp.pages['members-list'] = {
         return `<div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;">
           ${btn('btn-edit-pkg', 'edit', 'Sửa', base)}
           ${btn('btn-switch-pkg', 'swap_horiz', 'Đổi gói', blue)}
-          ${btn('btn-cancel-pkg', 'cancel', 'Hủy gói', danger)}
+          ${window.GymApp.auth.user?.vai_tro === 'admin' ? btn('btn-cancel-pkg', 'cancel', 'Hủy gói', danger) : ''}
         </div>`;
       };
 
@@ -1690,9 +1696,15 @@ window.GymApp.pages['members-list'] = {
                    <button class="btn-switch-pt-reg px-standard py-compact rounded-lg font-bold text-body-sm text-blue hover:opacity-90 transition-all flex items-center gap-xs" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;cursor:pointer;" data-contract-id="${c.id}">
                      <span class="material-symbols-outlined text-sm">swap_horiz</span>Đổi gói PT
                    </button>
+<<<<<<< HEAD
                    <button class="btn-cancel-pt-contract px-standard py-compact rounded-lg font-bold text-body-sm text-white hover:opacity-90 transition-all flex items-center gap-xs" style="background:#ba1a1a;border:none;cursor:pointer;" data-contract-id="${c.id}" data-pt-name="${c.ten_pt || ''}" data-member-name="${m.ho_ten || ''}">
+=======
+                   ${window.GymApp.auth.user?.vai_tro === 'admin' ? `
+                   <button class="btn-cancel-pt-contract px-standard py-compact rounded-lg font-bold text-body-sm text-white hover:opacity-90 transition-all flex items-center gap-xs" style="background:#ba1a1a;border:none;cursor:pointer;" data-contract-id="${c.id}" data-pt-name="${c.ten_pt || ''}">
+>>>>>>> main
                      <span class="material-symbols-outlined text-sm">cancel</span>Hủy gói PT
                    </button>
+                   ` : ''}
                  </div>
               </div>`;
         }).join('');

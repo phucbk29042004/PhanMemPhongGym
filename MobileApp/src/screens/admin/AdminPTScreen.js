@@ -11,6 +11,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuthStore } from '../../store/useAuthStore';
 
 function formatDateTime(val) {
   if (!val) return '—';
@@ -53,7 +54,7 @@ function Avatar({ name, size = 44 }) {
 }
 
 // ── PT Card ───────────────────────────────────────────────
-function PTCard({ item, onPress, expanded, onEdit, onDelete, colors }) {
+function PTCard({ item, onPress, expanded, onEdit, onDelete, colors, isAdmin }) {
   return (
     <TouchableOpacity 
       style={[ptCard.wrap, { backgroundColor: colors.surface, borderColor: colors.border }]} 
@@ -106,14 +107,16 @@ function PTCard({ item, onPress, expanded, onEdit, onDelete, colors }) {
             <Edit2 color={colors.primary} size={12} strokeWidth={2.5} />
             <Text style={[ptCard.actionText, { color: colors.primary }]}>Sửa hồ sơ</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={[ptCard.actionBtn, { borderColor: colors.danger }]} 
-            onPress={() => onDelete(item)}
-            activeOpacity={0.7}
-          >
-            <Trash2 color={colors.danger} size={12} strokeWidth={2.5} />
-            <Text style={[ptCard.actionText, { color: colors.danger }]}>Xóa PT</Text>
-          </TouchableOpacity>
+          {isAdmin && (
+            <TouchableOpacity 
+              style={[ptCard.actionBtn, { borderColor: colors.danger }]} 
+              onPress={() => onDelete(item)}
+              activeOpacity={0.7}
+            >
+              <Trash2 color={colors.danger} size={12} strokeWidth={2.5} />
+              <Text style={[ptCard.actionText, { color: colors.danger }]}>Xóa PT</Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
     </TouchableOpacity>
@@ -149,6 +152,7 @@ const ptCard = StyleSheet.create({
 // ── Màn hình chính ────────────────────────────────────────
 export default function AdminPTScreen({ navigation, route }) {
   const { colors } = useTheme();
+  const { role } = useAuthStore();
   const [trainers, setTrainers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -344,6 +348,7 @@ export default function AdminPTScreen({ navigation, route }) {
                   onEdit={(pt) => navigation.navigate('AdminAddEditPT', { ptId: pt.id })}
                   onDelete={handleDeletePT}
                   colors={colors}
+                  isAdmin={role === 'admin'}
                 />
               )}
               contentContainerStyle={styles.listContent}

@@ -8,6 +8,17 @@ import { X, Save, Package, Award, Dumbbell } from 'lucide-react-native';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 
+function formatInputMoney(val) {
+  if (val == null || val === '') return '';
+  const clean = String(val).replace(/\D/g, '');
+  return clean.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+function parseInputMoney(val) {
+  if (!val) return 0;
+  return Number(String(val).replace(/\./g, '')) || 0;
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────
 function RequiredStar() {
   return <Text style={{ color: '#ba1a1a', fontWeight: '700' }}> *</Text>;
@@ -60,7 +71,7 @@ export default function AdminAddEditPackageScreen({ route, navigation }) {
               if (item) {
                 setPkgType('pt');
                 setTenGoi(item.ten_goi || '');
-                setGia(String(item.gia || 0));
+                setGia(formatInputMoney(String(item.gia || 0)));
                 setMoTa(item.mo_ta || '');
                 setPtType(item.loai_goi || 'theo_buoi');
                 setSoBuoi(String(item.so_buoi || 10));
@@ -74,7 +85,7 @@ export default function AdminAddEditPackageScreen({ route, navigation }) {
               const item = res.data.data;
               setPkgType('gym');
               setTenGoi(item.ten_goi || '');
-              setGia(String(item.gia || 0));
+              setGia(formatInputMoney(String(item.gia || 0)));
               setMoTa(item.mo_ta || '');
               setSoThang(String(item.so_thang || 1));
               setSoNgayThem(String(item.so_ngay_them || 0));
@@ -99,7 +110,7 @@ export default function AdminAddEditPackageScreen({ route, navigation }) {
       Alert.alert('Lỗi', 'Vui lòng nhập giá gói.');
       return;
     }
-    const giaVal = Number(gia);
+    const giaVal = parseInputMoney(gia);
     if (isNaN(giaVal) || giaVal <= 0) {
       Alert.alert('Lỗi', 'Giá gói tập phải là một số dương hợp lệ.');
       return;
@@ -242,7 +253,7 @@ export default function AdminAddEditPackageScreen({ route, navigation }) {
             <TextInput
               style={[styles.input, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
               value={gia}
-              onChangeText={setGia}
+              onChangeText={(val) => setGia(formatInputMoney(val))}
               keyboardType="numeric"
               placeholder="0"
               placeholderTextColor={colors.textMuted}

@@ -132,7 +132,9 @@ window.GymApp.pages['packages'] = {
                     <h3 class="font-bold text-on-surface text-body-sm truncate max-w-[70%]" title="${p.ten_goi}">${p.ten_goi}</h3>
                     <div class="flex items-center gap-0.5">
                       <button class="material-symbols-outlined text-outline hover:text-brand-primary text-base p-1 rounded-lg hover:bg-brand-primary/10 transition-colors btn-edit-pkg" data-id="${p.id}" data-type="${isGym ? 'gym' : 'pt'}" title="Chỉnh sửa">edit</button>
-                      <button class="material-symbols-outlined text-outline hover:text-error text-base p-1 rounded-lg hover:bg-error/10 transition-colors btn-del-pkg" data-id="${p.id}" data-type="${isGym ? 'gym' : 'pt'}" data-name="${p.ten_goi}" data-count="${p.so_nguoi_dang_ky || 0}" title="Xóa">delete</button>
+                      ${window.GymApp.auth.user?.vai_tro === 'admin' ? `
+                        <button class="material-symbols-outlined text-outline hover:text-error text-base p-1 rounded-lg hover:bg-error/10 transition-colors btn-del-pkg" data-id="${p.id}" data-type="${isGym ? 'gym' : 'pt'}" data-name="${p.ten_goi}" data-count="${p.so_nguoi_dang_ky || 0}" title="Xóa">delete</button>
+                      ` : ''}
                     </div>
                   </div>
 

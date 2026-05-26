@@ -4,13 +4,58 @@ import {
   StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { X, Award, CreditCard, Building2, Calendar, Dumbbell, User, Save } from 'lucide-react-native';
+import { X, Dumbbell, User, Save, AlertTriangle } from 'lucide-react-native';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 
 function formatPrice(val) {
   if (val == null) return '0đ';
   return Number(val).toLocaleString('vi-VN') + 'đ';
+}
+
+function formatDate(val) {
+  if (!val) return '—';
+  const d = new Date(val);
+  if (isNaN(d)) return val;
+  return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+/** Chuyển Date thành DD/MM/YYYY */
+function dateToDMY(d) {
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+}
+
+/** Parse DD/MM/YYYY thành Date */
+function parseDMY(str) {
+  if (!str) return null;
+  const parts = str.split('/');
+  if (parts.length !== 3) return null;
+  const [d, m, y] = parts.map(Number);
+  if (!d || !m || !y) return null;
+  const date = new Date(y, m - 1, d);
+  return isNaN(date) ? null : date;
+}
+
+function convertDMYToYMD(dmy) {
+  if (!dmy) return '';
+  const parts = dmy.split('/');
+  if (parts.length !== 3) return '';
+  const day = parts[0].trim();
+  const month = parts[1].trim();
+  const year = parts[2].trim();
+  if (day.length !== 2 || month.length !== 2 || year.length !== 4) return '';
+  return `${year}-${month}-${day}`;
+}
+
+function formatInputMoney(val) {
+  if (val == null || val === '') return '';
+  const clean = String(val).replace(/\D/g, '');
+  return clean.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+function parseInputMoney(val) {
+  if (!val) return 0;
+  return Number(String(val).replace(/\./g, '')) || 0;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -27,7 +72,7 @@ function FieldLabel({ label, required = false, colors }) {
 }
 
 export default function AdminRegisterPTScreen({ route, navigation }) {
-  const { member } = route.params;
+  const { member, activePT } = route.params || {};
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -39,13 +84,54 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
+  // Loại đăng ký khi có PT cũ:
+  //   'noi_tiep' = ngày bắt đầu = ngày kết thúc PT cũ + 1
+  //   'song_song' = chọn ngày tự do, hủy PT cũ trước
+  const [registrationType, setRegistrationType] = useState('noi_tiep');
+
   // Form inputs
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]); // YYYY-MM-DD
-  const [endDate, setEndDate] = useState(''); // YYYY-MM-DD
+  const todayDMY = dateToDMY(new Date());
+  const [startDate, setStartDate] = useState(todayDMY); // DD/MM/YYYY
+  const [endDate, setEndDate] = useState(''); // DD/MM/YYYY
   const [actualPrice, setActualPrice] = useState('');
   const [sessionCount, setSessionCount] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('tien_mat'); // 'tien_mat' | 'chuyen_khoan'
+  const [paymentMethod, setPaymentMethod] = useState('tien_mat');
   const [note, setNote] = useState('');
+
+  // Khi có activePT và loại nối tiếp, tự động set ngày bắt đầu = den_ngay + 1 ngày
+  useEffect(() => {
+    if (activePT && registrationType === 'noi_tiep' && activePT.den_ngay) {
+      const endOfCurrent = new Date(activePT.den_ngay);
+      endOfCurrent.setDate(endOfCurrent.getDate() + 1);
+      setStartDate(dateToDMY(endOfCurrent));
+    } else if (!activePT || registrationType === 'song_song') {
+      setStartDate(todayDMY);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [registrationType, activePT]);
+
+  // Tự động tính ngày kết thúc và số buổi dựa trên gói và ngày bắt đầu
+  useEffect(() => {
+    if (!selectedPkg) return;
+
+    const startParsed = parseDMY(startDate);
+    if (!startParsed) return;
+
+    const soThang = selectedPkg.so_thang || 0;
+    if (soThang > 0) {
+      // Gói theo tháng: tính ngày kết thúc
+      const end = new Date(startParsed);
+      end.setMonth(end.getMonth() + soThang);
+      setEndDate(dateToDMY(end));
+      // Số buổi = số ngày trong chu kỳ
+      const diffDays = Math.round((end - startParsed) / 86400000);
+      setSessionCount(String(diffDays));
+    } else {
+      // Gói theo buổi
+      setEndDate('');
+      setSessionCount(String(selectedPkg.so_buoi || ''));
+    }
+  }, [selectedPkg, startDate]);
 
   useEffect(() => {
     const loadInitData = async () => {
@@ -71,14 +157,8 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
 
   const handleSelectPackage = (pkg) => {
     setSelectedPkg(pkg);
-    setActualPrice(String(pkg.gia));
-    setSessionCount(String(pkg.so_buoi));
-    
-    // Automatically calculate den_ngay if applicable, e.g. packages usually last 1-3 months.
-    // Gym usually has so_thang, but let's let the admin set it or compute a default of +3 months
-    const start = new Date();
-    start.setMonth(start.getMonth() + 3);
-    setEndDate(start.toISOString().split('T')[0]);
+    setActualPrice(formatInputMoney(String(pkg.gia)));
+    // endDate và sessionCount sẽ tự tính qua useEffect
   };
 
   const handleRegister = async () => {
@@ -91,19 +171,24 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
       return;
     }
 
-    if (!startDate.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(startDate.trim())) {
-      Alert.alert('Lỗi', 'Ngày bắt đầu phải đúng định dạng YYYY-MM-DD.');
+    const ymdStart = convertDMYToYMD(startDate);
+    if (!ymdStart || !/^\d{4}-\d{2}-\d{2}$/.test(ymdStart)) {
+      Alert.alert('Lỗi', 'Ngày bắt đầu phải đúng định dạng DD/MM/YYYY (VD: 25/05/2026).');
       return;
     }
-    if (endDate.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(endDate.trim())) {
-      Alert.alert('Lỗi', 'Ngày kết thúc phải đúng định dạng YYYY-MM-DD.');
-      return;
+    let ymdEnd = null;
+    if (endDate.trim()) {
+      ymdEnd = convertDMYToYMD(endDate);
+      if (!ymdEnd || !/^\d{4}-\d{2}-\d{2}$/.test(ymdEnd)) {
+        Alert.alert('Lỗi', 'Ngày kết thúc phải đúng định dạng DD/MM/YYYY.');
+        return;
+      }
     }
 
-    const price = Number(actualPrice);
+    const price = parseInputMoney(actualPrice);
     const sessions = Number(sessionCount);
 
-    if (isNaN(price) || price < 0) {
+    if (price < 0) {
       Alert.alert('Lỗi', 'Giá thực tế không hợp lệ.');
       return;
     }
@@ -112,33 +197,56 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
       return;
     }
 
-    setSubmitting(true);
-    try {
-      const payload = {
-        hoi_vien_id: member.id,
-        pt_id: selectedTrainer.id,
-        goi_pt_id: selectedPkg.id,
-        so_buoi_dang_ky: sessions,
-        tu_ngay: startDate,
-        den_ngay: endDate || null,
-        gia_thuc_te: price,
-        phuong_thuc_tt: paymentMethod,
-        ghi_chu_tt: note || 'Đăng ký PT qua di động'
-      };
+    // Nếu chế độ song song: cảnh báo trước khi hủy PT cũ
+    const doRegister = async () => {
+      setSubmitting(true);
+      try {
+        // Nếu song song: hủy PT cũ trước
+        if (activePT && registrationType === 'song_song') {
+          await api.put(`/pt/registrations/${activePT.id}/cancel`, {
+            ly_do: 'Kích hoạt gói PT mới song song qua di động'
+          });
+        }
 
-      const res = await api.post('/pt/registrations', payload);
-      if (res.data?.success) {
-        Alert.alert('Thành công', `Đăng ký gói PT thành công với HLV ${selectedTrainer.ho_ten}!`, [
-          { text: 'OK', onPress: () => navigation.goBack() }
-        ]);
-      } else {
-        Alert.alert('Lỗi', res.data?.message || 'Đăng ký PT thất bại.');
+        const payload = {
+          hoi_vien_id: member.id,
+          pt_id: selectedTrainer.id,
+          goi_pt_id: selectedPkg.id,
+          so_buoi_dang_ky: sessions,
+          tu_ngay: ymdStart,
+          den_ngay: ymdEnd,
+          gia_thuc_te: price,
+          phuong_thuc_tt: paymentMethod,
+          ghi_chu_tt: note || 'Đăng ký PT qua di động'
+        };
+
+        const res = await api.post('/pt/registrations', payload);
+        if (res.data?.success) {
+          Alert.alert('Thành công', `Đăng ký gói PT thành công với HLV ${selectedTrainer.ho_ten}!`, [
+            { text: 'OK', onPress: () => navigation.goBack() }
+          ]);
+        } else {
+          Alert.alert('Lỗi', res.data?.message || 'Đăng ký PT thất bại.');
+        }
+      } catch (err) {
+        console.error('[RegisterPT] error:', err?.response?.data || err?.message);
+        Alert.alert('Lỗi', err?.response?.data?.message || 'Có lỗi xảy ra.');
+      } finally {
+        setSubmitting(false);
       }
-    } catch (err) {
-      console.error('[RegisterPT] error:', err?.response?.data || err?.message);
-      Alert.alert('Lỗi', err?.response?.data?.message || 'Có lỗi xảy ra.');
-    } finally {
-      setSubmitting(false);
+    };
+
+    if (activePT && registrationType === 'song_song') {
+      Alert.alert(
+        'Xác nhận kích hoạt song song',
+        `Gói PT hiện tại (${activePT.ten_goi_pt || 'PT'}) sẽ bị kết thúc sớm. Bạn có chắc chắn muốn kích hoạt gói mới?`,
+        [
+          { text: 'Hủy', style: 'cancel' },
+          { text: 'Xác nhận', onPress: doRegister }
+        ]
+      );
+    } else {
+      doRegister();
     }
   };
 
@@ -150,6 +258,8 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
     );
   }
 
+  const isRenew = !!activePT;
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={colors.statusBar} backgroundColor={colors.statusBarBg} />
@@ -159,7 +269,9 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
           <X color={colors.text} size={22} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Đăng ký gói PT</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>
+          {isRenew ? 'Gia hạn / Đổi gói PT' : 'Đăng ký gói PT'}
+        </Text>
         <TouchableOpacity onPress={handleRegister} disabled={submitting} style={styles.headerBtn}>
           {submitting ? <ActivityIndicator size="small" color={colors.primary} /> : <Save color={colors.primary} size={20} />}
         </TouchableOpacity>
@@ -169,8 +281,69 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
         {/* Hội viên */}
         <View style={[styles.memberInfo, { backgroundColor: colors.surfaceVariant }]}>
           <Text style={[styles.memberLabel, { color: colors.textSecondary }]}>Đăng ký cho hội viên:</Text>
-          <Text style={[styles.memberName, { color: colors.text }]}>{member.ho_ten} ({member.ma_ho_so})</Text>
+          <Text style={[styles.memberName, { color: colors.text }]}>{member?.ho_ten} ({member?.ma_ho_so})</Text>
         </View>
+
+        {/* Banner PT cũ đang hoạt động */}
+        {activePT && (
+          <View style={[styles.activePTBanner, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+              <Dumbbell color={colors.primary} size={18} />
+              <Text style={{ fontWeight: '700', fontSize: 13, color: colors.text }}>Hợp đồng PT đang hoạt động</Text>
+            </View>
+            <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 2 }}>
+              Gói: <Text style={{ fontWeight: '700', color: colors.text }}>{activePT.ten_goi_pt || 'Gói PT'}</Text>
+            </Text>
+            <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 2 }}>
+              HLV: <Text style={{ fontWeight: '700', color: colors.text }}>{activePT.ten_pt}</Text>
+            </Text>
+            <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 2 }}>
+              Thời hạn: {formatDate(activePT.tu_ngay)} - {formatDate(activePT.den_ngay)}
+            </Text>
+            <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 10 }}>
+              Số buổi còn lại: <Text style={{ fontWeight: '700', color: colors.text }}>{activePT.buoi_dang_ky - activePT.buoi_da_tap}</Text> buổi
+            </Text>
+
+            {/* Loại đăng ký */}
+            <View style={{ borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 8 }}>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textSecondary, marginBottom: 6 }}>Loại đăng ký:</Text>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TouchableOpacity
+                  style={[
+                    styles.typeBtn,
+                    { borderColor: registrationType === 'noi_tiep' ? colors.primary : colors.border },
+                    registrationType === 'noi_tiep' && { backgroundColor: colors.primaryLight }
+                  ]}
+                  onPress={() => setRegistrationType('noi_tiep')}
+                >
+                  <Text style={{ fontSize: 11, color: registrationType === 'noi_tiep' ? colors.primary : colors.textSecondary, fontWeight: registrationType === 'noi_tiep' ? '700' : '500' }}>
+                    Nối tiếp sau gói hiện tại
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.typeBtn,
+                    { borderColor: registrationType === 'song_song' ? colors.warning : colors.border },
+                    registrationType === 'song_song' && { backgroundColor: colors.warningLight }
+                  ]}
+                  onPress={() => setRegistrationType('song_song')}
+                >
+                  <Text style={{ fontSize: 11, color: registrationType === 'song_song' ? colors.warning : colors.textSecondary, fontWeight: registrationType === 'song_song' ? '700' : '500' }}>
+                    Kích hoạt song song
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              {registrationType === 'song_song' && (
+                <View style={[styles.warningBox, { backgroundColor: colors.warningLight, borderColor: colors.warning }]}>
+                  <AlertTriangle color={colors.warning} size={14} />
+                  <Text style={{ fontSize: 11, color: colors.warning, flex: 1 }}>
+                    Gói PT hiện tại sẽ bị kết thúc sớm khi xác nhận đăng ký mới.
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+        )}
 
         {/* Danh sách HLV (PT) */}
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Chọn Huấn Luyện Viên (PT)</Text>
@@ -201,6 +374,7 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
         <View style={styles.packageList}>
           {ptPackages.map((pkg) => {
             const active = selectedPkg?.id === pkg.id;
+            const hasMonths = (pkg.so_thang || 0) > 0;
             return (
               <TouchableOpacity
                 key={pkg.id}
@@ -215,7 +389,9 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.packageName, { color: colors.text }]}>{pkg.ten_goi}</Text>
                   <Text style={[styles.packageDetails, { color: colors.textSecondary }]}>
-                    Số buổi dạy: {pkg.so_buoi} buổi
+                    {hasMonths
+                      ? `Thời hạn: ${pkg.so_thang} tháng`
+                      : `Số buổi: ${pkg.so_buoi} buổi`}
                   </Text>
                 </View>
                 <Text style={[styles.packagePrice, { color: active ? colors.primary : colors.text, fontWeight: '800' }]}>
@@ -228,27 +404,33 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
 
         {selectedPkg && selectedTrainer && (
           <View style={[styles.formCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <FieldLabel label="Ngày bắt đầu (YYYY-MM-DD)" required colors={colors} />
+            <FieldLabel label="Ngày bắt đầu (DD/MM/YYYY)" required colors={colors} />
             <TextInput
               style={[styles.input, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
               value={startDate}
               onChangeText={setStartDate}
-              placeholder="VD: 2026-05-25"
+              placeholder="VD: 25/05/2026"
               placeholderTextColor={colors.textMuted}
             />
 
-            <FieldLabel label="Ngày kết thúc (YYYY-MM-DD)" colors={colors} />
+            <FieldLabel
+              label={`Ngày kết thúc (DD/MM/YYYY)${(selectedPkg.so_thang || 0) > 0 ? ' — Tự động tính' : ''}`}
+              colors={colors}
+            />
             <TextInput
               style={[styles.input, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
               value={endDate}
               onChangeText={setEndDate}
-              placeholder="VD: 2026-08-25"
+              placeholder="VD: 25/08/2026 (để trống nếu không giới hạn)"
               placeholderTextColor={colors.textMuted}
             />
 
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <View style={{ flex: 1 }}>
-                <FieldLabel label="Số buổi tập" required colors={colors} />
+                <FieldLabel
+                  label={`Số buổi tập${(selectedPkg.so_thang || 0) > 0 ? ' — Tự động tính' : ''}`}
+                  required colors={colors}
+                />
                 <TextInput
                   style={[styles.input, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
                   value={sessionCount}
@@ -263,7 +445,7 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
                 <TextInput
                   style={[styles.input, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
                   value={actualPrice}
-                  onChangeText={setActualPrice}
+                  onChangeText={(val) => setActualPrice(formatInputMoney(val))}
                   keyboardType="numeric"
                   placeholder="0"
                   placeholderTextColor={colors.textMuted}
@@ -317,7 +499,11 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
           {submitting ? (
             <ActivityIndicator color="#ffffff" size="small" />
           ) : (
-            <Text style={styles.submitBtnText}>Đăng ký Gói PT</Text>
+            <Text style={styles.submitBtnText}>
+              {isRenew
+                ? (registrationType === 'noi_tiep' ? 'Đăng ký Nối tiếp' : 'Kích hoạt Song song')
+                : 'Đăng ký Gói PT'}
+            </Text>
           )}
         </TouchableOpacity>
 
@@ -345,6 +531,31 @@ const styles = StyleSheet.create({
   memberInfo: { padding: 12, borderRadius: 12, marginBottom: 16 },
   memberLabel: { fontSize: 11 },
   memberName: { fontSize: 14, fontWeight: '700', marginTop: 2 },
+
+  activePTBanner: {
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  typeBtn: {
+    flex: 1,
+    height: 38,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  warningBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginTop: 8,
+  },
 
   sectionTitle: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, marginTop: 12, marginBottom: 8, paddingLeft: 4 },
   listContainer: { marginVertical: 6 },

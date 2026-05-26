@@ -905,10 +905,51 @@ export const checkPayosStatus = async (req, res) => {
       return success(res, { status: 'PAID' }, 'Thanh toán đã được ghi nhận trước đó.');
     }
 
-    // Gọi PayOS API kiểm tra trạng thái
-    const payosData = await getPaymentLinkInformation(orderCode);
+    const resume = req.query.resume === 'true';
+    let payosData;
+    let shouldRegenerate = false;
 
-    if (payosData.status === 'PAID') {
+    try {
+      // Gọi PayOS API kiểm tra trạng thái
+      payosData = await getPaymentLinkInformation(orderCode);
+      if (payosData.status === 'PENDING' && !payosData.checkoutUrl && !payosData.qrCode) {
+        shouldRegenerate = true;
+      }
+    } catch (payosErr) {
+      console.warn('[PayOS] Lỗi khi lấy thông tin link cũ:', payosErr.message);
+      shouldRegenerate = true;
+    }
+
+    if (shouldRegenerate && resume) {
+      // Tiến hành tạo mới link thanh toán PayOS
+      const newOrderCode = Math.floor(Date.now() / 1000) * 100 + Math.floor(Math.random() * 100);
+      try {
+        const returnUrl = `https://pay.waystation.vn/success?orderCode=${newOrderCode}`;
+        const cancelUrl = `https://pay.waystation.vn/cancel?orderCode=${newOrderCode}`;
+        const description = `Gia han ${request.ten_goi}`;
+        const paymentLink = await createPaymentLink(newOrderCode, request.gia_thuc_te, description, returnUrl, cancelUrl);
+
+        // Cập nhật order code mới vào DB
+        db.prepare(`
+          UPDATE dang_ky_goi_tap
+          SET payos_order_code = ?,
+              payos_status = 'PENDING'
+          WHERE id = ?
+        `).run(newOrderCode, request.id);
+
+        return success(res, {
+          status: 'PENDING',
+          orderCode: newOrderCode,
+          checkoutUrl: paymentLink.checkoutUrl,
+          qrCode: paymentLink.qrCode || paymentLink.qrCodeUrl
+        }, 'Đã tạo link thanh toán mới.');
+      } catch (createErr) {
+        console.error('[PayOS] Lỗi khi tạo link thanh toán mới:', createErr);
+        // Tiếp tục chạy để trả về PENDING lỗi nếu cần thiết
+      }
+    }
+
+    if (payosData && payosData.status === 'PAID') {
       const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
       // Kích hoạt ngay nếu tu_ngay <= hôm nay, ngược lại chuyển 'cho_kich_hoat' — cron job sẽ kích hoạt khi đến ngày
       const isActive = request.tu_ngay <= today;

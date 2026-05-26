@@ -10,6 +10,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuthStore } from '../../store/useAuthStore';
 
 function formatPrice(val) {
   if (val == null) return '—';
@@ -17,7 +18,7 @@ function formatPrice(val) {
 }
 
 // ── Package Card — Gym ────────────────────────────────────
-function GymPackageCard({ item, index, expanded, onPress, onEdit, onDelete, colors, isDark }) {
+function GymPackageCard({ item, index, expanded, onPress, onEdit, onDelete, colors, isDark, isAdmin }) {
   const palette = isDark ? [
     { bg: 'rgba(29, 147, 54, 0.15)', accent: colors.primary },
     { bg: 'rgba(21, 101, 192, 0.15)', accent: '#1565c0' },
@@ -76,14 +77,16 @@ function GymPackageCard({ item, index, expanded, onPress, onEdit, onDelete, colo
             <Edit2 color={colors.primary} size={12} strokeWidth={2.5} />
             <Text style={[gpCard.actionText, { color: colors.primary }]}>Chỉnh sửa</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={[gpCard.actionBtn, { borderColor: colors.danger }]} 
-            onPress={() => onDelete(item)}
-            activeOpacity={0.7}
-          >
-            <Trash2 color={colors.danger} size={12} strokeWidth={2.5} />
-            <Text style={[gpCard.actionText, { color: colors.danger }]}>Xóa gói</Text>
-          </TouchableOpacity>
+          {isAdmin && (
+            <TouchableOpacity 
+              style={[gpCard.actionBtn, { borderColor: colors.danger }]} 
+              onPress={() => onDelete(item)}
+              activeOpacity={0.7}
+            >
+              <Trash2 color={colors.danger} size={12} strokeWidth={2.5} />
+              <Text style={[gpCard.actionText, { color: colors.danger }]}>Xóa gói</Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
     </TouchableOpacity>
@@ -114,7 +117,7 @@ const gpCard = StyleSheet.create({
 });
 
 // ── Package Card — PT ─────────────────────────────────────
-function PTPackageCard({ item, index, expanded, onPress, onEdit, onDelete, colors, isDark }) {
+function PTPackageCard({ item, index, expanded, onPress, onEdit, onDelete, colors, isDark, isAdmin }) {
   const palette = isDark ? [
     { bg: 'rgba(29, 147, 54, 0.15)', accent: colors.primary },
     { bg: 'rgba(234, 88, 12, 0.15)', accent: '#ea580c' },
@@ -177,14 +180,16 @@ function PTPackageCard({ item, index, expanded, onPress, onEdit, onDelete, color
             <Edit2 color={colors.primary} size={12} strokeWidth={2.5} />
             <Text style={[ptPkgCard.actionText, { color: colors.primary }]}>Chỉnh sửa</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={[ptPkgCard.actionBtn, { borderColor: colors.danger }]} 
-            onPress={() => onDelete(item)}
-            activeOpacity={0.7}
-          >
-            <Trash2 color={colors.danger} size={12} strokeWidth={2.5} />
-            <Text style={[ptPkgCard.actionText, { color: colors.danger }]}>Xóa gói</Text>
-          </TouchableOpacity>
+          {isAdmin && (
+            <TouchableOpacity 
+              style={[ptPkgCard.actionBtn, { borderColor: colors.danger }]} 
+              onPress={() => onDelete(item)}
+              activeOpacity={0.7}
+            >
+              <Trash2 color={colors.danger} size={12} strokeWidth={2.5} />
+              <Text style={[ptPkgCard.actionText, { color: colors.danger }]}>Xóa gói</Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
     </TouchableOpacity>
@@ -217,6 +222,7 @@ const ptPkgCard = StyleSheet.create({
 // ── Màn hình chính ────────────────────────────────────────
 export default function AdminPackagesScreen({ navigation }) {
   const { colors, isDark } = useTheme();
+  const { role } = useAuthStore();
   const [gymPkgs, setGymPkgs] = useState([]);
   const [ptPkgs, setPtPkgs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -361,6 +367,7 @@ export default function AdminPackagesScreen({ navigation }) {
                   onDelete={(pkg) => handleDeletePackage(pkg, false)}
                   colors={colors}
                   isDark={isDark}
+                  isAdmin={role === 'admin'}
                 />
               ))
             )
@@ -382,6 +389,7 @@ export default function AdminPackagesScreen({ navigation }) {
                   onDelete={(pkg) => handleDeletePackage(pkg, true)}
                   colors={colors}
                   isDark={isDark}
+                  isAdmin={role === 'admin'}
                 />
               ))
             )

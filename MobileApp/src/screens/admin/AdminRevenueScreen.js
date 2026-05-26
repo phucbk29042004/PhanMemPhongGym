@@ -56,7 +56,7 @@ export default function AdminRevenueScreen({ navigation }) {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
 
-  const [filter, setFilter] = useState('7'); // 'today' | '7' | '30'
+  const [filter, setFilter] = useState('7'); // 'today' | 'yesterday' | '7' | '30'
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [data, setData] = useState(null);
@@ -67,6 +67,11 @@ export default function AdminRevenueScreen({ navigation }) {
         const res = await api.get('/revenue/today');
         if (res.data?.success) {
           setData({ type: 'today', ...res.data.data });
+        }
+      } else if (selectedFilter === 'yesterday') {
+        const res = await api.get('/revenue/yesterday');
+        if (res.data?.success) {
+          setData({ type: 'yesterday', ...res.data.data });
         }
       } else {
         const days = parseInt(selectedFilter);
@@ -104,14 +109,16 @@ export default function AdminRevenueScreen({ navigation }) {
     let subVal = '';
     let subLabel = '';
 
-    if (data.type === 'today') {
+    if (data.type === 'today' || data.type === 'yesterday') {
       total = data.tong_tien || 0;
       gymRev = data.tien_goi_tap || 0;
       ptRev = data.tien_goi_pt || 0;
       const diff = total - (data.hom_qua || 0);
       const isUp = diff >= 0;
       subVal = formatPrice(Math.abs(diff));
-      subLabel = isUp ? 'tăng so với hôm qua' : 'giảm so với hôm qua';
+      subLabel = data.type === 'today'
+        ? (isUp ? 'tăng so với hôm qua' : 'giảm so với hôm qua')
+        : (isUp ? 'tăng so với hôm kia' : 'giảm so với hôm kia');
     } else {
       total = data.summary?.tong_doanh_thu || 0;
       gymRev = data.summary?.tong_goi_tap || 0;
@@ -126,7 +133,7 @@ export default function AdminRevenueScreen({ navigation }) {
         <View style={[styles.statCard, { backgroundColor: colors.surface, width: '100%' }]}>
           <View style={styles.statHeader}>
             <Text style={[styles.statLabel, { color: colors.textMuted }]}>
-              {data.type === 'today' ? 'Doanh thu hôm nay' : `Doanh thu ${filter} ngày qua`}
+              {data.type === 'today' ? 'Doanh thu hôm nay' : data.type === 'yesterday' ? 'Doanh thu hôm qua' : `Doanh thu ${filter} ngày qua`}
             </Text>
             <View style={[styles.iconContainer, { backgroundColor: colors.primaryLight }]}>
               <DollarSign size={20} color={colors.primary} />
@@ -173,12 +180,12 @@ export default function AdminRevenueScreen({ navigation }) {
 
   // Draw line/area chart using react-native-svg
   const renderChart = () => {
-    if (!data || data.type === 'today' || !data.daily || data.daily.length < 2) {
+    if (!data || data.type === 'today' || data.type === 'yesterday' || !data.daily || data.daily.length < 2) {
       return null;
     }
 
     const chartHeight = 180;
-    const paddingLeft = 45;
+    const paddingLeft = 80;
     const paddingRight = 15;
     const paddingTop = 20;
     const paddingBottom = 30;
@@ -313,14 +320,16 @@ export default function AdminRevenueScreen({ navigation }) {
   const renderList = () => {
     if (!data) return null;
 
-    if (data.type === 'today') {
+    if (data.type === 'today' || data.type === 'yesterday') {
       const txs = data.giao_dich || [];
+      const title = data.type === 'today' ? 'Chi tiết giao dịch hôm nay' : 'Chi tiết giao dịch hôm qua';
+      const emptyMsg = data.type === 'today' ? 'Chưa có giao dịch nào hôm nay' : 'Chưa có giao dịch nào hôm qua';
       return (
         <View style={styles.listSection}>
-          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Chi tiết giao dịch hôm nay</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>{title}</Text>
           {txs.length === 0 ? (
             <View style={[styles.emptyCard, { backgroundColor: colors.surface }]}>
-              <Text style={{ color: colors.textMuted, fontSize: 13 }}>Chưa có giao dịch nào hôm nay</Text>
+              <Text style={{ color: colors.textMuted, fontSize: 13 }}>{emptyMsg}</Text>
             </View>
           ) : (
             <View style={[styles.listCard, { backgroundColor: colors.surface }]}>
@@ -437,6 +446,7 @@ export default function AdminRevenueScreen({ navigation }) {
       <View style={[styles.filterBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         {[
           { key: 'today', label: 'Hôm nay' },
+          { key: 'yesterday', label: 'Hôm qua' },
           { key: '7', label: '7 ngày' },
           { key: '30', label: '30 ngày' },
         ].map((item) => {

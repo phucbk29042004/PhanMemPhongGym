@@ -13,6 +13,35 @@ function formatPrice(val) {
   return Number(val).toLocaleString('vi-VN') + 'đ';
 }
 
+function convertDMYToYMD(dmy) {
+  if (!dmy) return '';
+  const parts = dmy.split('/');
+  if (parts.length !== 3) return '';
+  const day = parts[0].trim();
+  const month = parts[1].trim();
+  const year = parts[2].trim();
+  if (day.length !== 2 || month.length !== 2 || year.length !== 4) return '';
+  return `${year}-${month}-${day}`;
+}
+
+function formatInputMoney(val) {
+  if (val == null || val === '') return '';
+  const clean = String(val).replace(/\D/g, '');
+  return clean.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+function parseInputMoney(val) {
+  if (!val) return 0;
+  return Number(String(val).replace(/\./g, '')) || 0;
+}
+
+function formatDate(val) {
+  if (!val) return '—';
+  const d = new Date(val);
+  if (isNaN(d)) return val;
+  return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────
 function RequiredStar() {
   return <Text style={{ color: '#ba1a1a', fontWeight: '700' }}> *</Text>;
@@ -59,7 +88,10 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
   const [submitting, setSubmitting] = useState(false);
 
   // Form inputs
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]); // YYYY-MM-DD
+  const [startDate, setStartDate] = useState(() => {
+    const today = new Date();
+    return `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+  }); // DD/MM/YYYY
   const [actualPrice, setActualPrice] = useState('');
   const [paidAmount, setPaidAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('tien_mat'); // 'tien_mat' | 'chuyen_khoan'
@@ -68,7 +100,7 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
 
   // Switch package specific states
   const [isSwitch, setIsSwitch] = useState(!!activePkg);
-  const [refundAmount, setRefundAmount] = useState(activePkg ? String(oldPkgCredit) : '0');
+  const [refundAmount, setRefundAmount] = useState(activePkg ? formatInputMoney(String(oldPkgCredit)) : '0');
   const [switchReason, setSwitchReason] = useState('Đổi sang gói mới');
 
   const DEFAULT_BRANCHES = [
@@ -110,9 +142,9 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
 
   const handleSelectPackage = (pkg) => {
     setSelectedPkg(pkg);
-    setActualPrice(String(pkg.gia));
+    setActualPrice(formatInputMoney(String(pkg.gia)));
     if (!activePkg) {
-      setPaidAmount(String(pkg.gia));
+      setPaidAmount(formatInputMoney(String(pkg.gia)));
     }
   };
 
@@ -122,13 +154,14 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
       return;
     }
 
-    if (!startDate.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(startDate.trim())) {
-      Alert.alert('Lỗi', 'Ngày bắt đầu phải đúng định dạng YYYY-MM-DD.');
+    const ymdStart = convertDMYToYMD(startDate);
+    if (!ymdStart || !/^\d{4}-\d{2}-\d{2}$/.test(ymdStart)) {
+      Alert.alert('Lỗi', 'Ngày bắt đầu phải đúng định dạng DD/MM/YYYY (VD: 25/05/2026).');
       return;
     }
 
-    const price = Number(actualPrice);
-    if (isNaN(price) || price < 0) {
+    const price = parseInputMoney(actualPrice);
+    if (price < 0) {
       Alert.alert('Lỗi', 'Giá thực tế không hợp lệ.');
       return;
     }
@@ -136,7 +169,7 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
     setSubmitting(true);
     try {
       if (isSwitch) {
-        const refundVal = Number(refundAmount) || 0;
+        const refundVal = parseInputMoney(refundAmount) || 0;
         const maxRefund = activePkg ? (activePkg.gia_thuc_te || activePkg.gia || 0) : 0;
         if (refundVal > maxRefund) {
           Alert.alert('Lỗi', `Số tiền khấu trừ không được vượt quá giá trị gói cũ (${formatPrice(maxRefund)}).`);
@@ -147,7 +180,7 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
         const payload = {
           pkg_id_cu: activePkg.id,
           goi_tap_id_moi: selectedPkg.id,
-          tu_ngay: startDate,
+          tu_ngay: ymdStart,
           ly_do_huy: switchReason.trim() || 'Đổi sang gói mới',
           so_tien_hoan: refundVal,
           gia_thuc_te: price,
@@ -164,8 +197,8 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
           Alert.alert('Lỗi', res.data?.message || 'Đổi gói tập thất bại.');
         }
       } else {
-        const paid = Number(paidAmount);
-        if (isNaN(paid) || paid < 0) {
+        const paid = parseInputMoney(paidAmount);
+        if (paid < 0) {
           Alert.alert('Lỗi', 'Số tiền thu thực tế không hợp lệ.');
           setSubmitting(false);
           return;
@@ -178,7 +211,7 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
 
         const payload = {
           goi_tap_id: selectedPkg.id,
-          tu_ngay: startDate,
+          tu_ngay: ymdStart,
           gia_thuc_te: price,
           so_tien_da_thu: paid,
           phuong_thuc_tt: paymentMethod,
@@ -323,12 +356,12 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
 
         {selectedPkg && (
           <View style={[styles.formCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <FieldLabel label="Ngày bắt đầu (YYYY-MM-DD)" required colors={colors} />
+            <FieldLabel label="Ngày bắt đầu (DD/MM/YYYY)" required colors={colors} />
             <TextInput
               style={[styles.input, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
               value={startDate}
               onChangeText={setStartDate}
-              placeholder="VD: 2026-05-25"
+              placeholder="VD: 25/05/2026"
               placeholderTextColor={colors.textMuted}
             />
 
@@ -338,7 +371,7 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
                 <TextInput
                   style={[styles.input, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
                   value={actualPrice}
-                  onChangeText={setActualPrice}
+                  onChangeText={(val) => setActualPrice(formatInputMoney(val))}
                   keyboardType="numeric"
                   placeholder="0"
                   placeholderTextColor={colors.textMuted}
@@ -350,7 +383,7 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
                   <TextInput
                     style={[styles.input, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
                     value={refundAmount}
-                    onChangeText={setRefundAmount}
+                    onChangeText={(val) => setRefundAmount(formatInputMoney(val))}
                     keyboardType="numeric"
                     placeholder="0"
                     placeholderTextColor={colors.textMuted}
@@ -362,7 +395,7 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
                   <TextInput
                     style={[styles.input, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
                     value={paidAmount}
-                    onChangeText={setPaidAmount}
+                    onChangeText={(val) => setPaidAmount(formatInputMoney(val))}
                     keyboardType="numeric"
                     placeholder="0"
                     placeholderTextColor={colors.textMuted}
@@ -374,8 +407,8 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
             {isSwitch && (
               <View style={{ marginTop: 4 }}>
                 {(() => {
-                  const price = Number(actualPrice) || 0;
-                  const refund = Number(refundAmount) || 0;
+                  const price = parseInputMoney(actualPrice) || 0;
+                  const refund = parseInputMoney(refundAmount) || 0;
                   const diff = price - refund;
                   const isUpgrade = diff >= 0;
                   const label = isUpgrade ? 'Tiền đóng thêm (đ)' : 'Tiền hoàn trả khách (đ)';

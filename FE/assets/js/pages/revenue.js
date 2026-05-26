@@ -11,7 +11,8 @@ window.GymApp.pages['revenue'] = {
           <div class="flex flex-wrap items-center gap-standard">
             <span class="text-on-surface-variant font-bold text-body-sm">Khoảng thời gian:</span>
             <div class="flex gap-1.5 p-1 bg-surface-container-low/40 rounded-2xl border border-outline-variant/30">
-              <button class="rev-range-btn px-4 py-1.5 rounded-xl text-body-sm font-bold transition-all duration-300" data-days="1">Hôm nay</button>
+              <button class="rev-range-btn px-4 py-1.5 rounded-xl text-body-sm font-bold transition-all duration-300" data-days="today">Hôm nay</button>
+              <button class="rev-range-btn px-4 py-1.5 rounded-xl text-body-sm font-bold transition-all duration-300" data-days="yesterday">Hôm qua</button>
               <button class="rev-range-btn px-4 py-1.5 rounded-xl text-body-sm font-bold transition-all duration-300" data-days="7">7 ngày</button>
               <button class="rev-range-btn px-4 py-1.5 rounded-xl text-body-sm font-bold transition-all duration-300" data-days="30">30 ngày</button>
             </div>
@@ -67,7 +68,7 @@ window.GymApp.pages['revenue'] = {
             <div class="icon-bg icon-bg-green" style="width:32px;height:32px;border-radius:8px">
               <span class="material-symbols-outlined text-brand-primary text-base" style="font-variation-settings:'FILL' 1">receipt_long</span>
             </div>
-            <h3 class="font-bold text-on-surface text-body-lg">Giao dịch hôm nay</h3>
+            <h3 id="rev-table-title" class="font-bold text-on-surface text-body-lg">Giao dịch hôm nay</h3>
             <span id="rev-today-count" class="ml-auto bg-brand-primary text-white px-2.5 py-0.5 rounded-full text-body-sm font-bold">0</span>
           </div>
           <div id="rev-today-table" class="overflow-x-auto">
@@ -129,7 +130,7 @@ window.GymApp.pages['revenue'] = {
     return `<span class="text-red-500 font-bold text-body-sm flex items-center gap-0.5 ml-2"><span class="material-symbols-outlined text-[16px]" style="font-variation-settings:'FILL' 1">trending_down</span>${pct.toFixed(2)}%</span>`;
   },
 
-  _renderStats: function (summary, todayData, monthComparison) {
+  _renderStats: function (summary, dayData, monthComparison) {
     const grid = document.getElementById('rev-stats-grid');
     if (!grid) return;
 
@@ -138,12 +139,14 @@ window.GymApp.pages['revenue'] = {
     const currentTotal = monthSummary.current_total || 0;
 
     const totalTrendHtml = this._formatTrend(currentTotal, previousTotal);
-    const todayTrendHtml = this._formatTrend(todayData?.tong_tien || 0, todayData?.hom_qua || 0);
+    const dayTrendHtml = this._formatTrend(dayData?.tong_tien || 0, dayData?.hom_qua || 0);
+
+    const isYesterday = this._days === 'yesterday';
 
     const cards = [
       {
         label: 'Tổng doanh thu',
-        value: this._formatMoney(summary?.tong_doanh_thu),
+        value: this._formatMoney(isYesterday ? dayData?.tong_tien : summary?.tong_doanh_thu),
         icon: 'payments',
         iconBg: 'icon-bg-green',
         color: 'text-brand-primary',
@@ -151,17 +154,19 @@ window.GymApp.pages['revenue'] = {
         sub: `Tháng trước: ${this._formatMoney(previousTotal)}`,
       },
       {
-        label: 'Doanh thu hôm nay',
-        value: this._formatMoney(todayData?.tong_tien),
-        icon: 'today',
+        label: isYesterday ? 'Doanh thu hôm qua' : 'Doanh thu hôm nay',
+        value: this._formatMoney(dayData?.tong_tien),
+        icon: isYesterday ? 'history' : 'today',
         iconBg: 'icon-bg-green',
         color: 'text-brand-primary',
-        trendHtml: todayTrendHtml,
-        sub: `Hôm qua: ${this._formatMoney(todayData?.hom_qua)} • ${todayData?.tong_don || 0} đơn`,
+        trendHtml: dayTrendHtml,
+        sub: isYesterday 
+          ? `Hôm kia: ${this._formatMoney(dayData?.hom_qua)} • ${dayData?.tong_don || 0} đơn`
+          : `Hôm qua: ${this._formatMoney(dayData?.hom_qua)} • ${dayData?.tong_don || 0} đơn`,
       },
       {
         label: 'Gói tập',
-        value: this._formatMoney(summary?.tong_goi_tap),
+        value: this._formatMoney(isYesterday ? dayData?.tien_goi_tap : summary?.tong_goi_tap),
         icon: 'card_membership',
         iconBg: 'icon-bg-orange',
         color: 'text-[#e65100]',
@@ -170,7 +175,7 @@ window.GymApp.pages['revenue'] = {
       },
       {
         label: 'Gói PT',
-        value: this._formatMoney(summary?.tong_goi_pt),
+        value: this._formatMoney(isYesterday ? dayData?.tien_goi_pt : summary?.tong_goi_pt),
         icon: 'sports_gymnastics',
         iconBg: 'icon-bg-blue',
         color: 'text-secondary',
@@ -364,11 +369,18 @@ window.GymApp.pages['revenue'] = {
     const countEl = document.getElementById('rev-today-count');
     if (!tbody) return;
 
+    const isYesterday = this._days === 'yesterday';
+    const titleEl = document.getElementById('rev-table-title');
+    if (titleEl) {
+      titleEl.textContent = isYesterday ? 'Giao dịch hôm qua' : 'Giao dịch hôm nay';
+    }
+
     const list = Array.isArray(transactions) ? transactions : [];
     if (countEl) countEl.textContent = list.length;
 
     if (list.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" class="text-center py-margin text-on-surface-variant text-body-sm">Chưa có giao dịch hôm nay</td></tr>';
+      const msg = isYesterday ? 'Chưa có giao dịch nào hôm qua' : 'Chưa có giao dịch nào hôm nay';
+      tbody.innerHTML = `<tr><td colspan="5" class="text-center py-margin text-on-surface-variant text-body-sm">${msg}</td></tr>`;
       return;
     }
 
@@ -391,7 +403,7 @@ window.GymApp.pages['revenue'] = {
 
   _updateRangeButtons: function () {
     document.querySelectorAll('.rev-range-btn').forEach(btn => {
-      const active = parseInt(btn.dataset.days) === this._days;
+      const active = btn.dataset.days === String(this._days);
       btn.className = active
         ? 'rev-range-btn px-4 py-1.5 rounded-xl text-body-sm font-bold bg-brand-primary text-white shadow-sm transition-all duration-300 border border-brand-primary/20'
         : 'rev-range-btn px-4 py-1.5 rounded-xl text-body-sm font-bold text-on-surface-variant hover:text-brand-primary hover:bg-brand-primary/5 transition-all duration-300 border border-transparent';
@@ -400,18 +412,37 @@ window.GymApp.pages['revenue'] = {
 
   _fetchAndRender: async function () {
     try {
-      const [revRes, todayRes] = await Promise.all([
-        window.GymApp.api.get(`/revenue?days=${this._days}`),
-        window.GymApp.api.get('/revenue/today'),
-      ]);
+      let revData = {};
+      let dayData = {};
 
-      const revData = revRes?.data || {};
-      const todayData = todayRes?.data || {};
+      if (this._days === 'today') {
+        const [revRes, todayRes] = await Promise.all([
+          window.GymApp.api.get('/revenue?days=1'),
+          window.GymApp.api.get('/revenue/today'),
+        ]);
+        revData = revRes?.data || {};
+        dayData = todayRes?.data || {};
+      } else if (this._days === 'yesterday') {
+        const [revRes, yesterdayRes] = await Promise.all([
+          window.GymApp.api.get('/revenue?days=1'),
+          window.GymApp.api.get('/revenue/yesterday'),
+        ]);
+        revData = revRes?.data || {};
+        dayData = yesterdayRes?.data || {};
+      } else {
+        const daysInt = parseInt(this._days) || 30;
+        const [revRes, todayRes] = await Promise.all([
+          window.GymApp.api.get(`/revenue?days=${daysInt}`),
+          window.GymApp.api.get('/revenue/today'),
+        ]);
+        revData = revRes?.data || {};
+        dayData = todayRes?.data || {};
+      }
 
-      this._renderStats(revData.summary, todayData, revData.monthComparison);
+      this._renderStats(revData.summary, dayData, revData.monthComparison);
       this._renderChart(revData.daily, revData.monthComparison);
       this._renderPackageStats(revData.packageStats);
-      this._renderTodayTable(todayData.giao_dich);
+      this._renderTodayTable(dayData.giao_dich);
     } catch (err) {
       console.error('Revenue fetch error', err);
       window.GymApp.toast('Lỗi tải dữ liệu doanh thu!', 'error');
@@ -429,7 +460,8 @@ window.GymApp.pages['revenue'] = {
     // Chọn khoảng thời gian
     document.querySelectorAll('.rev-range-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
-        self._days = parseInt(btn.dataset.days);
+        const val = btn.dataset.days;
+        self._days = isNaN(val) ? val : parseInt(val);
         self._updateRangeButtons();
         await self._fetchAndRender();
       });
@@ -450,7 +482,8 @@ window.GymApp.pages['revenue'] = {
     // Nút xuất Excel
     document.getElementById('btn-export-revenue')?.addEventListener('click', async () => {
       window.GymApp.toast('Đang xuất báo cáo doanh thu...', 'info');
-      const ok = await window.GymApp.api.download(`/export/revenue?days=${self._days}`, `bao-cao-doanh-thu-${self._days}-ngay.csv`);
+      const daysParam = (self._days === 'today' || self._days === 'yesterday') ? 1 : self._days;
+      const ok = await window.GymApp.api.download(`/export/revenue?days=${daysParam}`, `bao-cao-doanh-thu-${self._days}-ngay.csv`);
       if (ok) window.GymApp.toast('Đã tải xuống file Excel doanh thu!', 'success');
     });
   },
