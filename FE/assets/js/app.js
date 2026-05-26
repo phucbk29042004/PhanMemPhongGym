@@ -337,7 +337,7 @@
           locale: window.GymApp.localeVi,
           dateFormat: 'dd/MM/yyyy',
           autoClose: true,
-          container: originalInput.parentElement,
+          container: document.body,
           position: 'bottom left',
           navTitles: {
             days: function (dp) {
