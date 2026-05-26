@@ -135,7 +135,11 @@ export const getMe = (req, res) => {
 
 // ── PUT /api/auth/me ──────────────────────────────────────
 export const updateMe = (req, res) => {
-  const { ho_ten, so_dien_thoai, email, avatar_url } = req.body;
+  const {
+    ho_ten, so_dien_thoai, email, avatar_url,
+    gioi_tinh, ngay_sinh, cccd, dia_chi_tam_tru,
+    que_quan, noi_sinh, tinh_thanh, quan_huyen, phuong_xa
+  } = req.body;
   const userId = req.user.id;
 
   // Tìm hồ sơ gắn với tài khoản này
@@ -147,16 +151,34 @@ export const updateMe = (req, res) => {
         ho_ten = COALESCE(?, ho_ten),
         so_dien_thoai = COALESCE(?, so_dien_thoai),
         email = COALESCE(?, email),
-        avatar_url = COALESCE(?, avatar_url)
+        avatar_url = COALESCE(?, avatar_url),
+        gioi_tinh = COALESCE(?, gioi_tinh),
+        ngay_sinh = COALESCE(?, ngay_sinh),
+        cccd = COALESCE(?, cccd),
+        dia_chi_tam_tru = COALESCE(?, dia_chi_tam_tru),
+        que_quan = COALESCE(?, que_quan),
+        noi_sinh = COALESCE(?, noi_sinh),
+        tinh_thanh = COALESCE(?, tinh_thanh),
+        quan_huyen = COALESCE(?, quan_huyen),
+        phuong_xa = COALESCE(?, phuong_xa)
       WHERE id = ?
-    `).run(ho_ten || null, so_dien_thoai || null, email || null, avatar_url || null, hoSo.id);
+    `).run(
+      ho_ten || null, so_dien_thoai || null, email || null, avatar_url || null,
+      gioi_tinh || null, ngay_sinh || null, cccd || null, dia_chi_tam_tru || null,
+      que_quan || null, noi_sinh || null, tinh_thanh || null, quan_huyen || null, phuong_xa || null,
+      hoSo.id
+    );
   } else {
     // Nếu chưa có hồ sơ (ví dụ admin mặc định), tạo mới hồ sơ loại 'nhan_vien' hoặc 'admin'
     // Để an toàn, chỉ tạo hồ sơ tối thiểu
     const result = db.prepare(`
-      INSERT INTO ho_so (loai_ho_so, ho_ten, so_dien_thoai, email, avatar_url, tai_khoan_id)
-      VALUES ('nhan_vien', ?, ?, ?, ?, ?)
-    `).run(ho_ten || 'Admin', so_dien_thoai || null, email || null, avatar_url || null, userId);
+      INSERT INTO ho_so (loai_ho_so, ho_ten, so_dien_thoai, email, avatar_url, tai_khoan_id, gioi_tinh, ngay_sinh, cccd, dia_chi_tam_tru, que_quan, noi_sinh, tinh_thanh, quan_huyen, phuong_xa)
+      VALUES ('nhan_vien', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      ho_ten || 'Admin', so_dien_thoai || null, email || null, avatar_url || null, userId,
+      gioi_tinh || null, ngay_sinh || null, cccd || null, dia_chi_tam_tru || null,
+      que_quan || null, noi_sinh || null, tinh_thanh || null, quan_huyen || null, phuong_xa || null
+    );
     hoSo = { id: result.lastInsertRowid };
   }
 

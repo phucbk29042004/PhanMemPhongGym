@@ -139,7 +139,7 @@ export default function OrderConfirmationScreen({ route, navigation }) {
               setPollingActive(false);
               setPayosModalVisible(false);
               Alert.alert('Thành công 🎉', 'Thanh toán chuyển khoản qua PayOS thành công! Gói tập của bạn đã được kích hoạt.', [
-                { text: 'Trở về trang chủ', onPress: () => navigation.navigate('Home') }
+                { text: 'Trở về trang chủ', onPress: () => navigation.popToTop() }
               ]);
             } else if (status === 'CANCELLED') {
               setPollingActive(false);
@@ -196,7 +196,7 @@ export default function OrderConfirmationScreen({ route, navigation }) {
         } else {
           // Luồng tiền mặt
           Alert.alert('Gửi yêu cầu thành công', 'Yêu cầu đăng ký gói đã được gửi. Vui lòng liên hệ quầy lễ tân để thanh toán tiền mặt.', [
-            { text: 'Đồng ý', onPress: () => navigation.navigate('Home') }
+            { text: 'Đồng ý', onPress: () => navigation.popToTop() }
           ]);
         }
       } else {

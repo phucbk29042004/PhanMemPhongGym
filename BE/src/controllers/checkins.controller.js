@@ -7,14 +7,19 @@ import { success, error } from '../utils/response.js';
 import { createNotification } from '../utils/notifications.js';
 
 // ── GET /api/checkins ─────────────────────────────────────
-// Lịch sử vào/ra (mặc định hôm nay)
+// Lịch sử vào/ra (mặc định hôm nay hoặc tất cả nếu date === 'all')
 export const getCheckins = (req, res) => {
   const { date, ho_so_id, loai, limit = 50 } = req.query;
   const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
-  const targetDate = date || today;
 
-  let where = `WHERE date(lv.thoi_diem) = ?`;
-  const params = [targetDate];
+  let where = `WHERE 1=1`;
+  const params = [];
+
+  if (date !== 'all') {
+    const targetDate = date || today;
+    where += ` AND date(lv.thoi_diem) = ?`;
+    params.push(targetDate);
+  }
 
   if (ho_so_id) { where += ` AND lv.ho_so_id = ?`; params.push(ho_so_id); }
   if (loai) { where += ` AND lv.loai = ?`; params.push(loai); }

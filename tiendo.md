@@ -7,12 +7,63 @@
 
 ---
 
-## 📌 Trạng Thế Hiện Tại
-**✅ Tối ưu Lịch tập PT & Bố cục Form gói tập Hội viên 3-3-3-1** — Phân trang 3 ngày/trang cho Lịch tập PT với thanh cuộn ngang (tối đa 4 card/ngày), rút gọn bộ lọc và danh sách PT. Tái cấu trúc Form đăng ký gói tập thành lưới 3-3-3-1 gọn gàng, giãn khoảng cách input và label để tăng tính thẩm mỹ.
+## 📌 Trạng Thái Hiện Tại
+**✅ Khắc phục lỗi cú pháp PTHomeScreen.js & Đồng bộ Nhật ký tiến độ** — Sửa lỗi biên dịch JSX cho PTHomeScreen.js giúp ứng dụng di động PT hoạt động bình thường, và cập nhật tài liệu dự án theo đúng quy tắc rule.md.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
+
+### 26/05/2026 11:55 — Khắc Phục Lỗi Cú Pháp JSX/TSX Cho PTHomeScreen.js
+- **Loại**: Sửa bug / Refactor code
+- **File/Thành phần liên quan**: `MobileApp/src/screens/pt/PTHomeScreen.js`
+- **Mô tả**: Sửa lỗi thiếu thẻ đóng `ScrollView`, khắc phục lỗi phân tích cú pháp (`unexpected token`, `identifier expected`) bằng cách tách các đoạn IIFE và biểu thức ternary lồng nhau phức tạp bên trong JSX ra hàm helper `renderNextSchedule()`, sửa đổi ký tự `&` trong label, và đơn giản hóa vòng lặp vẽ tia sáng của banner.
+- **Kết quả**: Thành công 100%. Ứng dụng di động PT đã biên dịch và hoạt động bình thường.
+
+### 26/05/2026 11:50 — Nâng Cấp Xác Nhận Kép Buổi Tập PT, Màn Hình Doanh Thu Admin và Đồng Bộ Dark Mode Toàn Diện
+- **Loại**: Thêm tính năng mới, Chỉnh sửa UI/UX, Sửa lỗi hệ thống, Bảo mật & Nghiệp vụ (Fullstack)
+- **File/Thành phần liên quan**:
+  - `BE/src/config/db.js` (Backend DB)
+  - `BE/src/controllers/pt-schedules.controller.js` (Backend API)
+  - `BE/src/jobs/cron-pt-confirm.js` (Backend Cron Job)
+  - `MobileApp/src/screens/shared/PTMeScreen.js` (Mobile Chat)
+  - `MobileApp/src/screens/member/MemberHomeScreen.js` (Mobile Member)
+  - `MobileApp/src/screens/member/MemberScheduleScreen.js` (Mobile Member)
+  - `MobileApp/src/screens/pt/PTHomeScreen.js` (Mobile PT)
+  - `MobileApp/src/screens/pt/PTScheduleScreen.js` (Mobile PT)
+  - `MobileApp/src/screens/pt/PTQRCodeScreen.js` (Mobile PT)
+  - `MobileApp/src/screens/pt/PTStudentsScreen.js` (Mobile PT)
+  - `MobileApp/src/navigation/AdminNavigator.js` (Mobile Admin Navigation)
+  - `MobileApp/src/screens/admin/AdminDashboardScreen.js` (Mobile Admin Dashboard)
+  - `MobileApp/src/screens/admin/AdminRevenueScreen.js` (Mobile Admin Revenue)
+  - `MobileApp/src/screens/admin/AdminProfileScreen.js` (Mobile Admin Profile)
+  - `MobileApp/src/screens/admin/AdminAddEditMemberScreen.js` (Mobile Admin Form)
+  - `MobileApp/src/screens/admin/AdminAddEditPTScreen.js` (Mobile Admin Form)
+  - `MobileApp/src/screens/admin/AdminAddEditPackageScreen.js` (Mobile Admin Form)
+  - `MobileApp/src/screens/admin/AdminRegisterPTScreen.js` (Mobile Admin Form)
+  - `MobileApp/src/screens/admin/AdminRegisterPackageScreen.js` (Mobile Admin Form)
+- **Mô tả**:
+  - **Cơ chế xác nhận kép buổi tập PT (Backend & Mobile)**:
+    - Thêm cột `pt_xac_nhan` và `hv_xac_nhan` vào bảng `lich_tap` (Migration v13).
+    - Cập nhật logic `confirmSchedule` trong Backend: buổi tập chỉ hoàn thành (chuyển sang `da_tap` và trừ số buổi còn lại của học viên) khi cả PT và Hội viên đều xác nhận.
+    - Cập nhật cron job `cron-pt-confirm.js` để tự động xác nhận cả 2 bên vào cuối ngày đối với các buổi đã check-in.
+    - Hiển thị nhãn trạng thái động trên app di động: *"Chờ bạn xác nhận"*, *"Chờ PT xác nhận"*, *"Chờ học viên xác nhận"* tương ứng với vai trò.
+  - **Giao diện & Tiện ích di động**:
+    - Cấu trúc lại bong bóng chat trong `PTMeScreen.js`: Tin nhắn hội viên căn lề Phải, PT căn lề Trái theo vai trò của người gửi tin nhắn.
+    - Redesign modal lịch tập trên màn hình chính Hội viên thành bottom sheet trượt chiếm **95%** chiều cao màn hình để tối ưu hóa không gian.
+    - Sửa lỗi vỡ giao diện/nền trắng khi ở Dark Mode trên các màn hình di động của PT (`PTHomeScreen.js`, `PTScheduleScreen.js`, v.v.).
+    - Tích hợp thêm Gym Info Card & Modal vào trang chủ PT để đồng bộ trải nghiệm với trang Hội viên.
+  - **Phân tích Doanh thu Admin di động (Mới)**:
+    - Đăng ký và hoàn thiện màn hình `AdminRevenueScreen.js` hỗ trợ các bộ lọc Hôm nay, 7 ngày, 30 ngày.
+    - Hiển thị các thẻ chỉ số KPI doanh thu, biểu đồ vùng động (Area Chart) vẽ bằng thẻ SVG nguyên bản (`react-native-svg`), danh sách giao dịch & phân tích chi tiết.
+    - Chuyển hướng nút "Doanh thu tháng" trên Admin Dashboard sang màn hình phân tích doanh thu mới.
+  - **Chỉnh sửa hồ sơ Admin di động**:
+    - Redesign `AdminProfileScreen.js` đồng bộ màu sắc hiện đại và tích hợp `EditProfileModal` cho phép Admin tự chỉnh sửa thông tin cá nhân và cập nhật avatar lên Cloudinary.
+  - **Sửa lỗi Status Bar đè lên nút tiêu đề trên Admin Forms**:
+    - Áp dụng Safe Area Insets (`paddingTop: insets.top` và chiều cao Header tự động thích ứng `60 + insets.top`) trên cả 5 màn hình biểu mẫu Admin.
+  - **Sửa lỗi cú pháp PTHomeScreen.js**:
+    - Khắc phục lỗi thiếu thẻ đóng `ScrollView` và lỗi phân tích cú pháp lồng nhau bằng cách tách IIFE và biểu thức ternary phức tạp thành hàm bổ trợ riêng biệt `renderNextSchedule()`, sửa đổi ký tự `&` trong label, và đơn giản hóa vòng lặp vẽ tia sáng.
+- **Kết quả**: Thành công 100%. Toàn bộ hệ thống hoạt động ổn định và đồng bộ nhất quán.
 
 ### 25/05/2026 — Phân Trang Lịch Tập PT (3 Ngày/Trang) & Redesign Form Gói Tập Hội Viên (Lưới 3-3-3-1)
 - **Loại**: Cải tiến giao diện UI/UX, Bố cục hiển thị

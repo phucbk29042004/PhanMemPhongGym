@@ -1950,6 +1950,9 @@ window.GymApp.pages['members-list'] = {
       from.setMonth(from.getMonth() + (pkg.so_thang || 0));
       from.setDate(from.getDate() + (pkg.so_ngay_them || 0));
       document.getElementById('pkg-to').value = from.toISOString().split('T')[0];
+      // Tự động đồng bộ ngày thanh toán = ngày đăng ký
+      const paymentDateEl = document.getElementById('pkg-payment-date');
+      if (paymentDateEl) paymentDateEl.value = this.value;
     });
     const fmtVND = n => n > 0 ? new Intl.NumberFormat('vi-VN').format(n) : '';
     const parseVND = s => parseInt((s || '').replace(/\./g, '').replace(/,/g, '')) || 0;
@@ -2959,7 +2962,7 @@ window.GymApp.pages['members-list'] = {
             <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Từ ngày ${REQ}</label><input id="ptswitch-from" type="date" value="${new Date().toISOString().split('T')[0]}" ${inputCls} /></div>
             <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Đến ngày</label><input id="ptswitch-to" type="date" ${inputCls} /></div>
             <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Hoàn tiền gói cũ (VNĐ)</label><input id="ptswitch-refund" type="text" inputmode="numeric" placeholder="Tự động tính hoặc nhập tay" ${inputCls} /></div>
-            <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Tiền đóng thêm (gợi ý)</label><input id="ptswitch-additional" type="text" readonly style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;background:#f0fdf4;color:#166534;font-weight:700;border:1px solid #bbf7d0;" /></div>
+            <div><label id="ptswitch-additional-label" class="block text-body-sm font-bold text-on-surface mb-xs">Tiền đóng thêm (gợi ý)</label><input id="ptswitch-additional" type="text" readonly style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;background:#f0fdf4;color:#166534;font-weight:700;border:1px solid #bbf7d0;" /></div>
             <div class="col-span-1 sm:col-span-2"><label class="block text-body-sm font-bold text-on-surface mb-xs">Ghi chú đổi gói</label><textarea id="ptswitch-note" rows="2" placeholder="Nhập lý do đổi gói..." class="bg-surface-container-lowest text-on-surface border border-outline-variant" style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;resize:vertical;font-family:inherit;">Đổi sang gói PT mới</textarea></div>
           </div>
         </div>
@@ -3060,9 +3063,22 @@ window.GymApp.pages['members-list'] = {
     const updateAdditionalHint = () => {
       const newPrice = _pVND(document.getElementById('ptswitch-price').value);
       const refund = _pVND(document.getElementById('ptswitch-refund').value);
-      const additional = Math.max(0, newPrice - refund);
+      const diff = newPrice - refund;
       const addEl = document.getElementById('ptswitch-additional');
-      if (addEl) addEl.value = newPrice > 0 ? _fVND(additional) + ' ₫' : '';
+      const labelEl = document.getElementById('ptswitch-additional-label');
+      if (!addEl) return;
+      if (newPrice <= 0) { addEl.value = ''; return; }
+      if (diff >= 0) {
+        // Khách phải đóng thêm
+        addEl.value = _fVND(diff) + ' ₫';
+        addEl.style.background = '#f0fdf4'; addEl.style.color = '#166534'; addEl.style.borderColor = '#bbf7d0';
+        if (labelEl) { labelEl.textContent = 'Tiền đóng thêm (gợi ý)'; labelEl.style.color = '#166534'; }
+      } else {
+        // Hoàn tiền cho khách
+        addEl.value = _fVND(Math.abs(diff)) + ' ₫';
+        addEl.style.background = '#fce4e4'; addEl.style.color = '#93000a'; addEl.style.borderColor = '#f5c2c7';
+        if (labelEl) { labelEl.textContent = 'Tiền hoàn trả khách (gợi ý)'; labelEl.style.color = '#93000a'; }
+      }
     };
 
     const ptswitchPriceEl = document.getElementById('ptswitch-price');
@@ -3101,6 +3117,8 @@ window.GymApp.pages['members-list'] = {
         document.getElementById('ptswitch-sessions').value = buoi || '';
         document.getElementById('ptswitch-to').value = '';
       }
+      // Cập nhật gợi ý tiền đóng thêm/hoàn trả sau khi chọn gói mới
+      updateAdditionalHint();
     };
 
     document.getElementById('ptswitch-goi').addEventListener('change', updatePtSwitchDuration);
@@ -3119,11 +3137,17 @@ window.GymApp.pages['members-list'] = {
       const note = document.getElementById('ptswitch-note').value.trim();
       if (!ptId || !goiId || price <= 0 || !from) { window.GymApp.toast('Vui lòng chọn gói mới, PT, giá và ngày bắt đầu (*)', 'error'); return; }
       try {
+        // Gắn gợi ý tiền đóng thêm/hoàn trả vào ghi chú để lưu vết
+        const refundLocal = _pVND(document.getElementById('ptswitch-refund')?.value);
+        const diffLocal = price - refundLocal;
+        const noteWithHint = diffLocal >= 0
+          ? `${note || 'Đổi gói PT'} | Đóng thêm: ${new Intl.NumberFormat('vi-VN').format(diffLocal)}₫`
+          : `${note || 'Đổi gói PT'} | Hoàn trả khách: ${new Intl.NumberFormat('vi-VN').format(Math.abs(diffLocal))}₫`;
         await window.GymApp.api.put(`/pt/registrations/${c.id}`, {
           pt_id: parseInt(ptId), goi_pt_id: parseInt(goiId),
           so_buoi_dang_ky: sessions ? parseInt(sessions) : undefined,
           tu_ngay: from, den_ngay: to || null, gia_thuc_te: price,
-          ghi_chu: note || null,
+          ghi_chu: noteWithHint,
         });
         window.GymApp.toast('Đổi gói PT thành công!', 'success');
         close();

@@ -3,6 +3,7 @@ import {
   ActivityIndicator, Alert, ScrollView,
   StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, Award, CreditCard, Building2, Calendar, Dumbbell, User, Save } from 'lucide-react-native';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
@@ -28,6 +29,7 @@ function FieldLabel({ label, required = false, colors }) {
 export default function AdminRegisterPTScreen({ route, navigation }) {
   const { member } = route.params;
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
 
   // States
   const [trainers, setTrainers] = useState([]);
@@ -153,7 +155,7 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
       <StatusBar barStyle={colors.statusBar} backgroundColor={colors.statusBarBg} />
       
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border, paddingTop: insets.top, height: 60 + insets.top }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
           <X color={colors.text} size={22} />
         </TouchableOpacity>

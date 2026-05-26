@@ -24,6 +24,8 @@ export const lightColors = {
   primaryMid: '#4db870',
   danger: '#dc2626',
   dangerLight: '#fef2f2',
+  warning: '#d97706',
+  warningLight: '#fffbeb',
   statusBar: 'dark-content',
   statusBarBg: '#ffffff',
 };
@@ -43,6 +45,8 @@ export const darkColors = {
   primaryMid: '#1D9336',
   danger: '#f87171',
   dangerLight: '#2d1515',
+  warning: '#fbbf24',
+  warningLight: '#2c1e10',
   statusBar: 'light-content',
   statusBarBg: '#1a2318',
 };

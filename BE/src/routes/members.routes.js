@@ -9,8 +9,8 @@ import {
   deleteMember, updateAvatar, getExpiringMembers,
   getExpiredMembers, getMemberHistory, registerPackage,
   getBirthday, getMyProfile, updateMyHealth, createAccount, checkDuplicate,
-  getMyNotifications, requestPackageRenewal, checkPayosStatus, getPackageRequests, approvePackageRequest,
-  notifyMember, markMyNotificationsRead, clearMyNotifications,
+  getMyNotifications, requestPackageRenewal, cancelPackageRequest, checkPayosStatus, getPackageRequests, approvePackageRequest,
+  notifyMember, markMyNotificationsRead, clearMyNotifications, deleteMyNotification,
   cancelPackage, editPackage, switchPackage,
   lookupMember, getMyPayments, requestPackagePause, getInvoice,
   sendBirthdayWish, sendBirthdayWishAll,
@@ -36,8 +36,10 @@ router.patch('/me/health', updateMyHealth);
 router.get('/me/notifications', getMyNotifications); // Thông báo realtime + inbox
 router.post('/me/notifications/read', markMyNotificationsRead); // Đánh dấu đã đọc
 router.delete('/me/notifications', clearMyNotifications); // Xoá sạch thông báo inbox
+router.delete('/me/notifications/:id', deleteMyNotification); // Xoá 1 thông báo inbox
 router.get('/me/payments',         getMyPayments);          // HV xem lịch sử thanh toán
 router.post('/me/package-request', requestPackageRenewal); // Yêu cầu gia hạn từ App
+router.post('/me/package-request/:id/cancel', cancelPackageRequest); // HV tự hủy yêu cầu gia hạn đang chờ
 router.get('/me/payos-status/:orderCode', checkPayosStatus); // Kiểm tra trạng thái thanh toán PayOS
 router.post('/me/package-pause-request', requestPackagePause); // HV yêu cầu tạm dừng gói
 router.put('/package-requests/:id/approve', requireRole('admin', 'le_tan'), approvePackageRequest); // Duyệt yêu cầu gia hạn

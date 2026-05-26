@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import {
   ArrowDownLeft, ArrowUpRight, CalendarClock,
-  Clock, FileText, Filter, ScanLine,
+  Clock, FileText, Filter, ScanLine, ArrowLeft
 } from 'lucide-react-native';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
@@ -123,7 +123,7 @@ const cardStyles = StyleSheet.create({
 });
 
 // ── Màn hình Vào/Ra ─────────────────────────────────────────
-export default function MemberCheckinsScreen() {
+export default function MemberCheckinsScreen({ navigation }) {
   const [checkins, setCheckins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -164,6 +164,9 @@ export default function MemberCheckinsScreen() {
       {/* ── Header ───────────────────────── */}
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <View style={styles.headerLeft}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginRight: 8, padding: 4 }}>
+            <ArrowLeft color={colors.text} size={22} />
+          </TouchableOpacity>
           <View style={[styles.headerIconBox, { backgroundColor: colors.primaryLight }]}>
             <CalendarClock color={colors.primary} size={18} strokeWidth={2} />
           </View>

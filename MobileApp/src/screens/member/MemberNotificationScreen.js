@@ -193,7 +193,7 @@ const pulseStyles = StyleSheet.create({
 });
 
 // ── Component: Card thông báo ──────────────────────────────
-function NotificationCard({ item }) {
+function NotificationCard({ item, onDelete }) {
   const { colors } = useTheme();
   const cfg = LEVEL_CONFIG[item.muc_do] || LEVEL_CONFIG.info;
   const { Icon } = cfg;
@@ -238,6 +238,15 @@ function NotificationCard({ item }) {
           </Text>
         )}
       </View>
+
+      {/* Nút xóa */}
+      <TouchableOpacity 
+        style={notifStyles.deleteBtn} 
+        onPress={() => onDelete?.(item)}
+        activeOpacity={0.7}
+      >
+        <Trash2 color={colors.isDark ? colors.textMuted : '#ef4444'} size={14} strokeWidth={2.5} />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -283,11 +292,18 @@ const notifStyles = StyleSheet.create({
   badgeText: { fontSize: 9, fontWeight: '800', color: '#fff', letterSpacing: 0.5 },
   body: { fontSize: 12, lineHeight: 18, opacity: 0.85 },
   timeText: { fontSize: 10, fontWeight: '600' },
+  deleteBtn: {
+    padding: 6,
+    alignSelf: 'flex-start',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 4,
+  },
 });
 
 // ── Màn hình chính ─────────────────────────────────────────
 export default function MemberNotificationScreen() {
-  const { notifications, loading, fetchNotifications, markAsRead, clearNotifications } = useNotificationStore();
+  const { notifications, loading, fetchNotifications, markAsRead, deleteNotification, clearNotifications } = useNotificationStore();
   const [refreshing, setRefreshing] = useState(false);
   const [checkedIn, setCheckedIn] = useState(false);
 
@@ -323,14 +339,14 @@ export default function MemberNotificationScreen() {
   const onRefresh = () => { setRefreshing(true); syncNotifications(); };
 
   const handleClearAll = () => {
-    if (notifications.filter(n => n.is_custom).length === 0) {
-      Alert.alert('Thông báo', 'Bạn không có thông báo cá nhân nào để xoá.');
+    if (notifications.length === 0) {
+      Alert.alert('Thông báo', 'Bạn không có thông báo nào để xoá.');
       return;
     }
 
     Alert.alert(
       'Xoá thông báo',
-      'Bạn có chắc chắn muốn xoá tất cả thông báo cá nhân? Hành động này không thể hoàn tác.',
+      'Bạn có chắc chắn muốn xoá/ẩn tất cả thông báo? Hành động này không thể hoàn tác.',
       [
         { text: 'Hủy', style: 'cancel' },
         { 
@@ -418,7 +434,19 @@ export default function MemberNotificationScreen() {
           </View>
         ) : (
           <View style={styles.listContainer}>
-            {notifications.map((n, i) => <NotificationCard key={i} item={n} />)}
+            {notifications.map((n, i) => (
+              <NotificationCard 
+                key={i} 
+                item={n} 
+                onDelete={async (item) => {
+                  try {
+                    await deleteNotification(item);
+                  } catch (e) {
+                    Alert.alert('Lỗi', 'Không thể xóa thông báo này.');
+                  }
+                }} 
+              />
+            ))}
           </View>
         )}
         <View style={{ height: 20 }} />
