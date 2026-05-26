@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import {
   ActivityIndicator, FlatList, RefreshControl,
   StatusBar, StyleSheet, Text, TextInput,
@@ -152,13 +152,21 @@ const FILTERS = [
   { key: 'no_pkg', label: 'Chưa có gói' },
 ];
 
-export default function AdminMembersScreen({ navigation }) {
+export default function AdminMembersScreen({ navigation, route }) {
   const { colors } = useTheme();
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
+
+  useEffect(() => {
+    if (route?.params?.filter) {
+      setFilter(route.params.filter);
+      // Clear route params so it doesn't get stuck on subsequent visits
+      navigation.setParams({ filter: undefined });
+    }
+  }, [route?.params?.filter]);
 
   const fetchMembers = useCallback(async () => {
     try {

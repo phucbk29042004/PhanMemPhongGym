@@ -379,7 +379,63 @@ window.GymApp.pages['pt-register'] = {
 
     const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
     const regDate = document.getElementById('reg-date');
-    if (regDate) regDate.value = today;
+    if (regDate) {
+      regDate.value = today;
+      regDate.min = today; // Không cho chọn ngày quá khứ
+    }
+
+    // ── Hàm khóa giờ/phút trong quá khứ khi chọn ngày hôm nay ──
+    const validateTimeOptions = () => {
+      const selectedDate = document.getElementById('reg-date')?.value;
+      const hourSel = document.getElementById('reg-start-hour');
+      const minSel = document.getElementById('reg-start-minute');
+      if (!hourSel || !minSel) return;
+
+      const now = new Date();
+      const nowH = now.getHours();
+      const nowM = now.getMinutes();
+      const isToday = selectedDate === today;
+
+      // Khóa / mở các option giờ
+      let firstValidHour = null;
+      Array.from(hourSel.options).forEach(opt => {
+        const h = parseInt(opt.value);
+        const isPast = isToday && h < nowH;
+        opt.disabled = isPast;
+        opt.style.color = isPast ? '#a3a3a3' : '';
+        if (!isPast && firstValidHour === null) firstValidHour = String(h).padStart(2, '0');
+      });
+
+      // Nếu giờ hiện tại đang chọn bị khóa → chuyển sang giờ hợp lệ đầu tiên
+      if (isToday && parseInt(hourSel.value) < nowH) {
+        hourSel.value = firstValidHour || String(nowH + 1).padStart(2, '0');
+      }
+
+      // Khóa / mở các option phút (chỉ khi chọn giờ hiện tại)
+      const selectedH = parseInt(hourSel.value);
+      Array.from(minSel.options).forEach(opt => {
+        const m = parseInt(opt.value);
+        const isPast = isToday && selectedH === nowH && m <= nowM;
+        opt.disabled = isPast;
+        opt.style.color = isPast ? '#a3a3a3' : '';
+      });
+      // Nếu phút đang chọn bị khóa → chuyển sang phút hợp lệ đầu tiên
+      if (isToday && selectedH === nowH && parseInt(minSel.value) <= nowM) {
+        const firstValidMin = Array.from(minSel.options).find(o => !o.disabled);
+        if (firstValidMin) minSel.value = firstValidMin.value;
+        else {
+          // Đã hết giờ hợp lệ trong ngày hôm nay → chuyển sang ngày mai
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          const tomorrowStr = tomorrow.toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
+          if (regDate) regDate.value = tomorrowStr;
+          Array.from(hourSel.options).forEach(o => { o.disabled = false; o.style.color = ''; });
+          Array.from(minSel.options).forEach(o => { o.disabled = false; o.style.color = ''; });
+          hourSel.value = '06'; minSel.value = '00';
+        }
+      }
+      updateStartTime();
+    };
 
     // Tự tính giờ kết thúc khi đổi giờ bắt đầu hoặc thời lượng
     const updateStartTime = () => {
@@ -391,12 +447,13 @@ window.GymApp.pages['pt-register'] = {
         self._calcEndTime();
       }
     };
-    document.getElementById('reg-start-hour')?.addEventListener('change', updateStartTime);
+    document.getElementById('reg-start-hour')?.addEventListener('change', () => { validateTimeOptions(); });
     document.getElementById('reg-start-minute')?.addEventListener('change', updateStartTime);
     document.getElementById('reg-duration')?.addEventListener('change', () => self._calcEndTime());
+    document.getElementById('reg-date')?.addEventListener('change', validateTimeOptions);
 
     // Khởi tạo giờ kết thúc mặc định lúc load trang
-    updateStartTime();
+    validateTimeOptions();
 
     // Search PT
     document.getElementById('search-pt')?.addEventListener('input', e => {
@@ -530,7 +587,7 @@ window.GymApp.pages['pt-register'] = {
             <div class="grid grid-cols-2 gap-standard">
               <div>
                 <label class="block text-[11px] font-bold text-on-surface-variant mb-1.5">Ngày tập</label>
-                <input id="edit-ngay" type="date" value="${ngay}" class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-xs font-semibold transition-all" />
+                <input id="edit-ngay" type="date" value="${ngay}" min="${new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0]}" class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-xs font-semibold transition-all" />
               </div>
               <div>
                 <label class="block text-[11px] font-bold text-on-surface-variant mb-1.5">Giờ bắt đầu</label>
@@ -576,9 +633,41 @@ window.GymApp.pages['pt-register'] = {
           const total = parseInt(h) * 60 + parseInt(m) + dur;
           document.getElementById('edit-end').value = `${String(Math.floor(total/60)%24).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`;
         };
-        document.getElementById('edit-start-hour')?.addEventListener('change', calcEditEnd);
+        // Khóa giờ/phút trong quá khứ cho modal sửa
+        const editToday = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
+        const validateEditTimeOptions = () => {
+          const selDate = document.getElementById('edit-ngay')?.value;
+          const hSel = document.getElementById('edit-start-hour');
+          const mSel = document.getElementById('edit-start-minute');
+          if (!hSel || !mSel) return;
+          const now = new Date();
+          const nowH = now.getHours(), nowM = now.getMinutes();
+          const isToday = selDate === editToday;
+          let firstValidH = null;
+          Array.from(hSel.options).forEach(o => {
+            const h = parseInt(o.value);
+            const past = isToday && h < nowH;
+            o.disabled = past; o.style.color = past ? '#a3a3a3' : '';
+            if (!past && firstValidH === null) firstValidH = String(h).padStart(2,'0');
+          });
+          if (isToday && parseInt(hSel.value) < nowH) hSel.value = firstValidH || String(nowH+1).padStart(2,'0');
+          const selH = parseInt(hSel.value);
+          Array.from(mSel.options).forEach(o => {
+            const m = parseInt(o.value);
+            const past = isToday && selH === nowH && m <= nowM;
+            o.disabled = past; o.style.color = past ? '#a3a3a3' : '';
+          });
+          if (isToday && selH === nowH && parseInt(mSel.value) <= nowM) {
+            const firstM = Array.from(mSel.options).find(o => !o.disabled);
+            if (firstM) mSel.value = firstM.value;
+          }
+          calcEditEnd();
+        };
+        document.getElementById('edit-ngay')?.addEventListener('change', validateEditTimeOptions);
+        document.getElementById('edit-start-hour')?.addEventListener('change', validateEditTimeOptions);
         document.getElementById('edit-start-minute')?.addEventListener('change', calcEditEnd);
         document.getElementById('edit-duration')?.addEventListener('change', calcEditEnd);
+        validateEditTimeOptions();
 
         document.getElementById('btn-edit-save')?.addEventListener('click', async () => {
           const newNgay = document.getElementById('edit-ngay')?.value;

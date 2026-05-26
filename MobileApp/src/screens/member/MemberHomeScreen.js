@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import {
-  ActivityIndicator, FlatList, RefreshControl, ScrollView,
+  ActivityIndicator, Alert, FlatList, RefreshControl, ScrollView,
   StatusBar, StyleSheet, Text, TouchableOpacity, View,
   Modal, TextInput, Platform, KeyboardAvoidingView,
 } from 'react-native';
@@ -371,9 +371,44 @@ export default function MemberHomeScreen({ navigation }) {
                 )}
 
                 {pendingPlan && (
-                  <View style={[styles.renewButton, { backgroundColor: colors.border, shadowOpacity: 0 }]}>
-                    <Clock color={colors.textMuted} size={16} strokeWidth={2.5} />
-                    <Text style={[styles.renewButtonText, { color: colors.textMuted }]}>Đang xử lý yêu cầu...</Text>
+                  <View style={styles.pendingRequestCard}>
+                    <View style={styles.pendingRequestHeader}>
+                      <Clock color={G.warning} size={15} strokeWidth={2} />
+                      <Text style={styles.pendingRequestTitle}>Yêu cầu đang chờ duyệt</Text>
+                    </View>
+                    <Text style={styles.pendingRequestPkg} numberOfLines={1}>{pendingPlan.ten_goi}</Text>
+                    <Text style={styles.pendingRequestInfo}>
+                      {formatDate(pendingPlan.tu_ngay)} – {formatDate(pendingPlan.den_ngay)}
+                      {pendingPlan.phuong_thuc_tt === 'chuyen_khoan' ? '  •  Chuyển khoản' : '  •  Tiền mặt'}
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.cancelRequestBtn}
+                      activeOpacity={0.8}
+                      onPress={() => {
+                        Alert.alert(
+                          'Hủy yêu cầu gia hạn',
+                          `Bạn muốn hủy yêu cầu gia hạn gói "${pendingPlan.ten_goi}" đang chờ duyệt?`,
+                          [
+                            { text: 'Không', style: 'cancel' },
+                            {
+                              text: 'Hủy yêu cầu', style: 'destructive',
+                              onPress: async () => {
+                                try {
+                                  await api.post(`/members/me/package-request/${pendingPlan.id}/cancel`);
+                                  Alert.alert('Thành công', 'Đã hủy yêu cầu gia hạn thành công.');
+                                  onRefresh();
+                                } catch (err) {
+                                  Alert.alert('Lỗi', err?.message || 'Không thể hủy yêu cầu lúc này.');
+                                }
+                              }
+                            }
+                          ]
+                        );
+                      }}
+                    >
+                      <XCircle color={G.white} size={15} strokeWidth={2.5} />
+                      <Text style={styles.cancelRequestBtnText}>Hủy yêu cầu gia hạn</Text>
+                    </TouchableOpacity>
                   </View>
                 )}
               </TouchableOpacity>
@@ -1088,6 +1123,52 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   renewButtonText: { color: G.white, fontWeight: '800', fontSize: 14 },
+
+  // Thẻ yêu cầu đang chờ duyệt — thay thế nút disabled bị đóng băng
+  pendingRequestCard: {
+    marginTop: 14,
+    borderRadius: 12,
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#fbbf24',
+    padding: 12,
+    gap: 6,
+  },
+  pendingRequestHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  pendingRequestTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#92400e',
+  },
+  pendingRequestPkg: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#1c1917',
+  },
+  pendingRequestInfo: {
+    fontSize: 11,
+    color: '#78716c',
+    fontWeight: '500',
+  },
+  cancelRequestBtn: {
+    marginTop: 8,
+    backgroundColor: '#dc2626',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 9,
+    borderRadius: 10,
+  },
+  cancelRequestBtnText: {
+    color: G.white,
+    fontWeight: '800',
+    fontSize: 13,
+  },
 
   modalOverlay: {
     flex: 1,

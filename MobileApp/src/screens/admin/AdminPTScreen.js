@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import {
   ActivityIndicator, Alert, FlatList, RefreshControl, ScrollView,
   StatusBar, StyleSheet, Text, TextInput,
@@ -147,7 +147,7 @@ const ptCard = StyleSheet.create({
 });
 
 // ── Màn hình chính ────────────────────────────────────────
-export default function AdminPTScreen({ navigation }) {
+export default function AdminPTScreen({ navigation, route }) {
   const { colors } = useTheme();
   const [trainers, setTrainers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -155,6 +155,14 @@ export default function AdminPTScreen({ navigation }) {
   const [search, setSearch] = useState('');
   const [expandedId, setExpandedId] = useState(null);
   const [tab, setTab] = useState('list'); // 'list' | 'schedule'
+
+  useEffect(() => {
+    if (route?.params?.tab) {
+      setTab(route.params.tab);
+      // Clear route params so it doesn't get stuck on subsequent visits
+      navigation.setParams({ tab: undefined });
+    }
+  }, [route?.params?.tab]);
   const [todaySchedules, setTodaySchedules] = useState([]);
   const [scheduleLoading, setScheduleLoading] = useState(false);
 
