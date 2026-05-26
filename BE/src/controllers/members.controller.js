@@ -583,6 +583,7 @@ export const getMyProfile = (req, res) => {
   if (hoSo.loai_ho_so === 'hoi_vien') {
     hoSo.goi_tap = db.prepare(`
       SELECT dk.id, dk.tu_ngay, dk.den_ngay, dk.gia_thuc_te, dk.so_tien_da_thu, dk.trang_thai,
+             dk.phuong_thuc_tt, dk.payos_status, dk.payos_order_code,
              gt.ten_goi, gt.so_thang
       FROM dang_ky_goi_tap dk
       JOIN goi_tap gt ON gt.id = dk.goi_tap_id
@@ -956,7 +957,7 @@ export const checkPayosStatus = async (req, res) => {
       return success(res, { status: 'CANCELLED' }, 'Giao dịch thanh toán đã bị hủy.');
     }
 
-    return success(res, { status: 'PENDING' }, 'Giao dịch đang chờ thanh toán.');
+    return success(res, { status: 'PENDING', checkoutUrl: payosData.checkoutUrl, qrCode: payosData.qrCode || payosData.qrCodeUrl }, 'Giao dịch đang chờ thanh toán.');
   } catch (err) {
     console.error('[BACKEND] Lỗi checkPayosStatus:', err);
     // Trả về PENDING nếu gặp lỗi tạm thời
@@ -1502,6 +1503,18 @@ export const clearMyNotifications = (req, res) => {
   db.prepare('DELETE FROM thong_bao_user WHERE ho_so_id = ?').run(hoSo.id);
   return success(res, null, 'Đã xoá sạch thông báo cá nhân.');
 };
+
+// ── DELETE /api/members/me/notifications/:id ──────────────────
+export const deleteMyNotification = (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+  const hoSo = db.prepare('SELECT id FROM ho_so WHERE tai_khoan_id = ?').get(userId);
+  if (!hoSo) return error(res, 'Không tìm thấy hồ sơ hội viên.', 404);
+
+  db.prepare('DELETE FROM thong_bao_user WHERE id = ? AND ho_so_id = ?').run(id, hoSo.id);
+  return success(res, null, 'Đã xoá thông báo cá nhân.');
+};
+
 
 // ── PATCH /api/members/:id/package/:pkgId/cancel ──────────────
 export const cancelPackage = (req, res) => {

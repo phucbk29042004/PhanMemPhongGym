@@ -31,6 +31,7 @@ function runConfirmJob() {
   const confirmOne = db.prepare(`
     UPDATE lich_tap
     SET trang_thai = 'da_tap', confirmed_by_id = NULL,
+        pt_xac_nhan = 1, hv_xac_nhan = 1,
         ghi_chu = 'auto_cron', ngay_xac_nhan = datetime('now','localtime')
     WHERE id = ?
   `);

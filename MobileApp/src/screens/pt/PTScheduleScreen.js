@@ -12,6 +12,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../services/api';
 import { formatDate, scheduleStatusLabel, unwrapData } from '../../utils/data';
 import ProfileAvatar from '../../components/ProfileAvatar';
+import { useTheme } from '../../context/ThemeContext';
 
 // ── Màu sắc ────────────────────────────────────────────────
 const G = {
@@ -35,6 +36,7 @@ const G = {
 const todayYMD = () => new Date().toISOString().slice(0, 10);
 
 export default function PTScheduleScreen() {
+  const { colors, isDark } = useTheme();
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -87,7 +89,7 @@ export default function PTScheduleScreen() {
   const confirmSchedule = (id) => {
     Alert.alert(
       'Xác nhận buổi tập',
-      'Xác nhận học viên đã hoàn thành buổi tập này? Hệ thống sẽ trừ 1 buổi trong gói tập của học viên.',
+      'Xác nhận học viên đã hoàn thành buổi tập này?',
       [
         { text: 'Hủy', style: 'cancel' },
         {
@@ -95,10 +97,18 @@ export default function PTScheduleScreen() {
           onPress: async () => {
             setActionLoadingId(id);
             try {
-              await api.put(`/pt/schedules/${id}/confirm`);
+              const res = await api.put(`/pt/schedules/${id}/confirm`);
+              if (res.data?.success) {
+                const { bothConfirmed } = res.data.data;
+                if (bothConfirmed) {
+                  Alert.alert('Thành công', 'Buổi tập đã được cả 2 bên xác nhận hoàn thành!');
+                } else {
+                  Alert.alert('Đã ghi nhận', 'Đã ghi nhận xác nhận của bạn. Buổi tập sẽ hoàn thành khi học viên xác nhận.');
+                }
+              }
               await fetchSchedules();
             } catch (err) {
-              Alert.alert('Lỗi', err.response?.data?.message || 'Không thể xác nhận buổi tập.');
+              Alert.alert('Lỗi', err.response?.data?.message || err?.message || 'Không thể xác nhận buổi tập.');
             } finally {
               setActionLoadingId(null);
             }
@@ -163,21 +173,21 @@ export default function PTScheduleScreen() {
   });
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={G.white} />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={isDark ? colors.background : G.white} />
       
       {/* ── Header ────────────────────────────── */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border, borderBottomWidth: 1 }]}>
         <View style={styles.headerLeft}>
-          <Text style={styles.headerTitle}>Lịch dạy cá nhân</Text>
-          <Text style={styles.headerSubtitle}>Quản lý các buổi tập 1 kèm 1</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Lịch dạy cá nhân</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>Quản lý các buổi tập 1 kèm 1</Text>
         </View>
         <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.iconBtn} onPress={() => setCreateModalVisible(true)} activeOpacity={0.8}>
-            <Plus color={G.primary} size={18} strokeWidth={2.5} />
+          <TouchableOpacity style={[styles.iconBtn, { backgroundColor: colors.primaryLight }]} onPress={() => setCreateModalVisible(true)} activeOpacity={0.8}>
+            <Plus color={colors.primary} size={18} strokeWidth={2.5} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.filterBtn}>
-            <Filter color={G.primary} size={20} strokeWidth={2} />
+          <TouchableOpacity style={[styles.filterBtn, { backgroundColor: colors.primaryLight }]}>
+            <Filter color={colors.primary} size={20} strokeWidth={2} />
           </TouchableOpacity>
         </View>
       </View>
@@ -201,46 +211,52 @@ export default function PTScheduleScreen() {
           sortedSchedules.map((item) => (
             <View key={item.id} style={[
               styles.card,
+              { backgroundColor: colors.surface, borderColor: colors.border },
               item.trang_thai === 'da_tap' && styles.cardCompleted,
               item.trang_thai === 'da_huy' && styles.cardCancelled,
             ]}>
               {/* Cột trái: Thời gian & Trạng thái */}
               <View style={[
                 styles.cardAccent,
-                { backgroundColor: item.trang_thai === 'da_tap' ? G.gray400 : item.trang_thai === 'da_huy' ? G.danger : G.primary }
+                { backgroundColor: item.trang_thai === 'da_tap' ? G.gray400 : item.trang_thai === 'da_huy' ? G.danger : colors.primary }
               ]} />
 
               <View style={styles.cardContent}>
                 <View style={styles.cardHeader}>
                   <View style={styles.timeBox}>
-                    <Clock color={G.gray500} size={14} strokeWidth={2} />
-                    <Text style={styles.timeText}>{item.gio_bat_dau} - {item.gio_ket_thuc}</Text>
+                    <Clock color={colors.textMuted} size={14} strokeWidth={2} />
+                    <Text style={[styles.timeText, { color: colors.textSecondary }]}>{item.gio_bat_dau} - {item.gio_ket_thuc}</Text>
                   </View>
                   <View style={[
                     styles.statusBadge,
-                    item.trang_thai === 'cho_tap' && styles.statusBadgePending,
+                    item.trang_thai === 'cho_tap' && (item.pt_xac_nhan === 1 || item.hv_xac_nhan === 1) ? { backgroundColor: colors.warningLight } : (item.trang_thai === 'cho_tap' ? styles.statusBadgePending : {}),
                     item.trang_thai === 'da_tap' && styles.statusBadgeDone,
                     item.trang_thai === 'da_huy' && styles.statusBadgeFail,
                   ]}>
                     <Text style={[
                       styles.statusText,
-                      item.trang_thai === 'cho_tap' && { color: G.warning },
+                      item.trang_thai === 'cho_tap' && (item.pt_xac_nhan === 1 || item.hv_xac_nhan === 1) ? { color: colors.warning } : (item.trang_thai === 'cho_tap' ? { color: G.warning } : {}),
                       item.trang_thai === 'da_tap' && { color: G.primary },
                       item.trang_thai === 'da_huy' && { color: G.danger },
-                    ]}>{scheduleStatusLabel(item.trang_thai)}</Text>
+                    ]}>
+                      {item.trang_thai === 'cho_tap' ? (
+                        item.pt_xac_nhan === 1 && item.hv_xac_nhan === 0 ? 'Chờ HV xác nhận' :
+                        item.hv_xac_nhan === 1 && item.pt_xac_nhan === 0 ? 'Chờ bạn xác nhận' : 'Chờ tập'
+                      ) : scheduleStatusLabel(item.trang_thai)}
+                    </Text>
                   </View>
                 </View>
 
-                <View style={styles.divider} />
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
                 <View style={styles.cardBody}>
                   <View style={styles.memberRow}>
                     <ProfileAvatar uri={item.avatar_hoi_vien} name={item.ten_hoi_vien} size={44} />
                     <View style={styles.memberText}>
-                      <Text style={styles.memberName}>{item.ten_hoi_vien || 'Học viên'}</Text>
+                      <Text style={[styles.memberName, { color: colors.text }]}>{item.ten_hoi_vien || 'Học viên'}</Text>
                       <View style={styles.metaRow}>
-                        <Dumbbell color={G.gray400} size={12} strokeWidth={2} />
-                        <Text style={styles.metaText}>
+                        <Dumbbell color={colors.textMuted} size={12} strokeWidth={2} />
+                        <Text style={[styles.metaText, { color: colors.textMuted }]}>
                           {item.loai_buoi === 'ca_nhan' ? 'Cá nhân' : 'Nhóm'} • Đã tập {item.so_buoi_da_tap ?? 0}/{item.so_buoi_dang_ky ?? '—'} • Còn {item.buoi_con_lai ?? '—'} buổi
                         </Text>
                       </View>
@@ -249,25 +265,25 @@ export default function PTScheduleScreen() {
 
                   <View style={styles.infoGrid}>
                     <View style={styles.infoItem}>
-                      <CalendarCheck color={G.gray400} size={14} strokeWidth={2} />
-                      <Text style={styles.infoVal}>{formatDate(item.ngay_tap)}</Text>
+                      <CalendarCheck color={colors.textMuted} size={14} strokeWidth={2} />
+                      <Text style={[styles.infoVal, { color: colors.textSecondary }]}>{formatDate(item.ngay_tap)}</Text>
                     </View>
                     <View style={styles.infoItem}>
-                      <MapPin color={G.gray400} size={14} strokeWidth={2} />
-                      <Text style={styles.infoVal} numberOfLines={1}>{item.chi_nhanh || 'Paradise GYM'}</Text>
+                      <MapPin color={colors.textMuted} size={14} strokeWidth={2} />
+                      <Text style={[styles.infoVal, { color: colors.textSecondary }]} numberOfLines={1}>{item.chi_nhanh || 'Paradise GYM'}</Text>
                     </View>
                   </View>
 
                   {item.ghi_chu ? (
-                    <View style={styles.noteBox}>
-                      <Info color={G.gray400} size={12} strokeWidth={2} />
-                      <Text style={styles.noteText}>{item.ghi_chu}</Text>
+                    <View style={[styles.noteBox, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
+                      <Info color={colors.textMuted} size={12} strokeWidth={2} />
+                      <Text style={[styles.noteText, { color: colors.textSecondary }]}>{item.ghi_chu}</Text>
                     </View>
                   ) : null}
 
                   {item.trang_thai === 'cho_tap' && (
                     <TouchableOpacity
-                      style={styles.noteActionBtn}
+                      style={[styles.noteActionBtn, { backgroundColor: colors.primaryLight, borderColor: colors.primary }]}
                       onPress={() => openNoteEditor(item)}
                       activeOpacity={0.8}
                     >
@@ -293,21 +309,28 @@ export default function PTScheduleScreen() {
                         </>
                       )}
                     </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.confirmBtn}
-                      onPress={() => confirmSchedule(item.id)}
-                      disabled={actionLoadingId === item.id}
-                      activeOpacity={0.8}
-                    >
-                      {actionLoadingId === item.id ? (
-                        <ActivityIndicator color={G.white} size="small" />
-                      ) : (
-                        <>
-                          <Zap color={G.white} size={16} strokeWidth={2.5} />
-                          <Text style={styles.confirmBtnText}>Hoàn thành</Text>
-                        </>
-                      )}
-                    </TouchableOpacity>
+                    {item.pt_xac_nhan === 0 ? (
+                      <TouchableOpacity
+                        style={styles.confirmBtn}
+                        onPress={() => confirmSchedule(item.id)}
+                        disabled={actionLoadingId === item.id}
+                        activeOpacity={0.8}
+                      >
+                        {actionLoadingId === item.id ? (
+                          <ActivityIndicator color={G.white} size="small" />
+                        ) : (
+                          <>
+                            <Zap color={G.white} size={16} strokeWidth={2.5} />
+                            <Text style={styles.confirmBtnText}>Hoàn thành</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    ) : (
+                      <View style={[styles.confirmBtn, { backgroundColor: colors.surfaceVariant, borderWidth: 1, borderColor: colors.border }]}>
+                        <Clock color={colors.textMuted} size={14} strokeWidth={2} />
+                        <Text style={[styles.confirmBtnText, { color: colors.textMuted, marginLeft: 4 }]}>Chờ học viên</Text>
+                      </View>
+                    )}
                   </View>
                 )}
               </View>
@@ -327,23 +350,24 @@ export default function PTScheduleScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalOverlay}
         >
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Ghi chú buổi tập</Text>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Ghi chú buổi tập</Text>
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
               value={noteText}
               onChangeText={setNoteText}
               placeholder="Nhập ghi chú buổi tập"
+              placeholderTextColor={colors.textMuted}
               multiline
               textAlignVertical="top"
             />
             <View style={styles.modalActions}>
               <TouchableOpacity
-                style={styles.modalBtnCancel}
+                style={[styles.modalBtnCancel, { backgroundColor: colors.surface, borderColor: colors.border }]}
                 onPress={() => setNoteModalVisible(false)}
                 activeOpacity={0.8}
               >
-                <Text style={styles.modalBtnCancelText}>Hủy</Text>
+                <Text style={[styles.modalBtnCancelText, { color: colors.textSecondary }]}>Hủy</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.modalBtnSave}
@@ -372,71 +396,76 @@ export default function PTScheduleScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalOverlay}
         >
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Thêm lịch tập</Text>
-            <Text style={styles.modalLabel}>Học viên</Text>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Thêm lịch tập</Text>
+            <Text style={[styles.modalLabel, { color: colors.textMuted }]}>Học viên</Text>
             <ScrollView style={styles.memberList} nestedScrollEnabled>
               {members.length === 0 ? (
-                <Text style={styles.memberEmpty}>Không có học viên đang đăng ký PT</Text>
+                <Text style={[styles.memberEmpty, { color: colors.textMuted }]}>Không có học viên đang đăng ký PT</Text>
               ) : members.map((member) => (
                 <TouchableOpacity
                   key={member.dang_ky_id}
                   style={[
                     styles.memberItem,
-                    selectedRegistration === member.dang_ky_id && styles.memberItemActive,
+                    { backgroundColor: colors.surfaceVariant, borderColor: colors.border },
+                    selectedRegistration === member.dang_ky_id && { borderColor: colors.primary, backgroundColor: colors.primaryLight },
                   ]}
                   onPress={() => setSelectedRegistration(member.dang_ky_id)}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.memberName}>{member.ho_ten}</Text>
-                  <Text style={styles.memberSub}>{member.ten_goi_pt || 'Gói PT'} • Còn {member.buoi_con_lai ?? '—'} buổi</Text>
+                  <Text style={[styles.memberName, { color: selectedRegistration === member.dang_ky_id ? colors.primary : colors.text }]}>{member.ho_ten}</Text>
+                  <Text style={[styles.memberSub, { color: selectedRegistration === member.dang_ky_id ? colors.primary : colors.textMuted }]}>{member.ten_goi_pt || 'Gói PT'} • Còn {member.buoi_con_lai ?? '—'} buổi</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
 
-            <Text style={styles.modalLabel}>Ngày</Text>
+            <Text style={[styles.modalLabel, { color: colors.textMuted }]}>Ngày</Text>
             <TextInput
-              style={styles.modalTextInput}
+              style={[styles.modalTextInput, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
               value={newDate}
               onChangeText={setNewDate}
               placeholder="YYYY-MM-DD"
+              placeholderTextColor={colors.textMuted}
             />
             <View style={styles.rowInputs}>
               <View style={styles.halfInput}>
-                <Text style={styles.modalLabel}>Giờ bắt đầu</Text>
+                <Text style={[styles.modalLabel, { color: colors.textMuted }]}>Giờ bắt đầu</Text>
                 <TextInput
-                  style={styles.modalTextInput}
+                  style={[styles.modalTextInput, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
                   value={newStart}
                   onChangeText={setNewStart}
                   placeholder="HH:MM"
+                  placeholderTextColor={colors.textMuted}
                 />
               </View>
               <View style={styles.halfInput}>
-                <Text style={styles.modalLabel}>Giờ kết thúc</Text>
+                <Text style={[styles.modalLabel, { color: colors.textMuted }]}>Giờ kết thúc</Text>
                 <TextInput
-                  style={styles.modalTextInput}
+                  style={[styles.modalTextInput, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
                   value={newEnd}
                   onChangeText={setNewEnd}
                   placeholder="HH:MM"
+                  placeholderTextColor={colors.textMuted}
                 />
               </View>
             </View>
-            <Text style={styles.modalLabel}>Ghi chú</Text>
+            <Text style={[styles.modalLabel, { color: colors.textMuted }]}>Ghi chú</Text>
             <TextInput
-              style={[styles.modalInput, { minHeight: 80 }]}
+              style={[styles.modalInput, { minHeight: 80, backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
               value={newNote}
               onChangeText={setNewNote}
               placeholder="Ghi chú tùy chọn"
+              placeholderTextColor={colors.textMuted}
               multiline
               textAlignVertical="top"
             />
             <View style={styles.modalActions}>
               <TouchableOpacity
-                style={styles.modalBtnCancel}
+                style={[styles.modalBtnCancel, { backgroundColor: colors.surface, borderColor: colors.border }]}
                 onPress={() => setCreateModalVisible(false)}
                 activeOpacity={0.8}
               >
-                <Text style={styles.modalBtnCancelText}>Hủy</Text>
+                <Text style={[styles.modalBtnCancelText, { color: colors.textSecondary }]}>Hủy</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalBtnSave, { opacity: creating || !selectedRegistration ? 0.7 : 1 }]}

@@ -1,13 +1,14 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import {
   ActivityIndicator, Alert, FlatList, RefreshControl, ScrollView,
   StatusBar, StyleSheet, Text, TouchableOpacity, View,
-  Modal, TextInput, Platform, KeyboardAvoidingView,
+  Modal, TextInput, Platform, KeyboardAvoidingView, Image,
 } from 'react-native';
 import {
   Award, CalendarCheck, ChevronRight, Clock,
   CreditCard, Dumbbell, QrCode, ShieldCheck,
   TrendingUp, Users, Zap, MessageSquare, CheckCircle2, XCircle, ChevronDown,
+  MapPin, Phone, Info, Star,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import ProfileAvatar from '../../components/ProfileAvatar';
@@ -53,28 +54,40 @@ function formatPrice(val) {
 }
 
 // ── Component: Card Gói Hội Viên ──────────────────────────
-function PackageCard({ item, index, colors, onPress }) {
-  const isPT = item.loai_goi === 'pt' || item.loai_goi === 'theo_buoi';
-  const isDark = colors?.isDark;
-  const cardBg = isDark ? colors.surfaceVariant : [G.primaryLight, '#e8f4fd', '#fef9e7', '#f3e8ff'][index % 4];
+function PackageCard({ item, index, colors: propColors, onPress }) {
+  const theme = useTheme();
+  const colors = propColors || theme.colors;
+  const isDark = theme.isDark;
+  const cardBg = isDark ? colors.surfaceVariant : [colors.primaryLight, '#e8f4fd', '#fef9e7', '#f3e8ff'][index % 4];
   const accentColor = isDark ? colors.primary : [G.primary, '#1565c0', '#b7791f', '#7c3aed'][index % 4];
 
   return (
     <TouchableOpacity
-      style={[styles.packageCard, { backgroundColor: cardBg }]}
+      style={[
+        styles.packageCard,
+        {
+          backgroundColor: cardBg,
+          borderWidth: isDark ? 1 : 0,
+          borderColor: isDark ? colors.border : 'transparent',
+        },
+      ]}
       onPress={onPress}
       activeOpacity={0.8}
     >
-      <View style={[styles.packageIconBox, { backgroundColor: accentColor + '22' }]}>
-        {isPT ? <Users color={accentColor} size={24} strokeWidth={2} /> : <Award color={accentColor} size={24} strokeWidth={2} />}
+      <View style={styles.pkgCardBrandRow}>
+        <Dumbbell color={accentColor} size={11} strokeWidth={2.5} />
+        <Text style={[styles.pkgCardBrandText, { color: accentColor }]}>PARADISE GYM</Text>
       </View>
-      <Text style={[styles.packageName, { color: accentColor }]} numberOfLines={2}>{item.ten_goi}</Text>
-      <Text style={[styles.packagePrice, { color: colors?.text || G.gray900 }]}>{formatPrice(item.gia)}</Text>
-      {item.so_thang ? (
-        <Text style={[styles.packageSub, { color: colors?.textMuted || G.gray500 }]}>{item.so_thang} tháng{item.so_ngay_them > 0 ? ` +${item.so_ngay_them} ngày` : ''}</Text>
-      ) : item.so_buoi ? (
-        <Text style={[styles.packageSub, { color: colors?.textMuted || G.gray500 }]}>{item.so_buoi} buổi</Text>
-      ) : null}
+      <Text style={[styles.packageNameText, { color: colors.text }]} numberOfLines={2}>
+        {item.ten_goi}
+      </Text>
+      <Text style={[styles.packagePriceText, { color: accentColor }]}> 
+        {formatPrice(item.gia)}
+      </Text>
+      <View style={[styles.pkgCardBadge, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}> 
+        <Text style={[styles.pkgCardBadgeText, { color: colors.textSecondary }]}> 
+        </Text>
+      </View>
     </TouchableOpacity>
   );
 }
@@ -103,13 +116,86 @@ export default function MemberHomeScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // ── State modal lịch PT ───────────────────────────────────
   const [ptScheduleVisible, setPtScheduleVisible] = useState(false);
   const [ptSchedules, setPtSchedules] = useState([]);
   const [ptScheduleLoading, setPtScheduleLoading] = useState(false);
   const [editingNote, setEditingNote] = useState(null); // { id, ghi_chu }
   const [noteText, setNoteText] = useState('');
   const [savingNote, setSavingNote] = useState(false);
+  const [remainingPtVisible, setRemainingPtVisible] = useState(false);
+
+  // States cho PayOS trên trang chủ
+  const [payosModalVisible, setPayosModalVisible] = useState(false);
+  const [paymentInfo, setPaymentInfo] = useState(null);
+  const [pollingActive, setPollingActive] = useState(false);
+  const [pollingErrorCount, setPollingErrorCount] = useState(0);
+
+  const handleResumePayment = async (plan) => {
+    setLoading(true);
+    try {
+      const res = await api.get(`/members/me/payos-status/${plan.payos_order_code}`);
+      if (res.data?.success) {
+        const { status, qrCode, checkoutUrl } = res.data.data;
+        if (status === 'PAID') {
+          Alert.alert('Thông báo', 'Giao dịch này đã được thanh toán thành công trước đó.');
+          fetchAll();
+        } else if (status === 'CANCELLED') {
+          Alert.alert('Thông báo', 'Giao dịch này đã bị hủy.');
+          fetchAll();
+        } else {
+          setPaymentInfo({
+            orderCode: plan.payos_order_code,
+            qrCodeUrl: qrCode || checkoutUrl,
+            amount: plan.gia_thuc_te,
+            checkoutUrl: checkoutUrl
+          });
+          setPayosModalVisible(true);
+          setPollingActive(true);
+          setPollingErrorCount(0);
+        }
+      }
+    } catch (err) {
+      Alert.alert('Lỗi', 'Không thể kết nối máy chủ để lấy mã QR thanh toán.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let intervalId = null;
+    if (pollingActive && paymentInfo?.orderCode) {
+      intervalId = setInterval(async () => {
+        try {
+          const res = await api.get(`/members/me/payos-status/${paymentInfo.orderCode}`);
+          if (res.data?.success) {
+            const status = res.data.data?.status;
+            if (status === 'PAID') {
+              setPollingActive(false);
+              setPayosModalVisible(false);
+              Alert.alert('Thành công 🎉', 'Thanh toán chuyển khoản qua PayOS thành công! Gói tập của bạn đã được kích hoạt.', [
+                { text: 'Đồng ý', onPress: () => { fetchAll(); } }
+              ]);
+            } else if (status === 'CANCELLED') {
+              setPollingActive(false);
+              setPayosModalVisible(false);
+              Alert.alert('Hủy thanh toán', 'Giao dịch thanh toán PayOS đã bị hủy.', [
+                { text: 'Đồng ý', onPress: () => { fetchAll(); } }
+              ]);
+            }
+          }
+        } catch (err) {
+          console.error('Lỗi checkPayosStatus polling:', err);
+          setPollingErrorCount(c => c + 1);
+          if (pollingErrorCount > 15) {
+            setPollingActive(false);
+          }
+        }
+      }, 3000);
+    }
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [pollingActive, paymentInfo, pollingErrorCount, fetchAll]);
 
   // ── Fetch dữ liệu thực tế từ API ─────────────────────────
   const fetchAll = useCallback(async () => {
@@ -203,15 +289,16 @@ export default function MemberHomeScreen({ navigation }) {
   // ── State chi tiết gói tập ───────────────────────────────
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedDetailPkg, setSelectedDetailPkg] = useState(null);
+  const [gymInfoVisible, setGymInfoVisible] = useState(false);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle={colors.statusBar} backgroundColor={colors.statusBarBg} />
+      <StatusBar barStyle="light-content" backgroundColor={G.primaryDark} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[G.primary]} tintColor={G.primary} />}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { backgroundColor: colors.background, flexGrow: 1 }]}
       >
         {/* ──────────────────────────────────────────────── */}
         {/* TOP BANNER — Paradise Gym với hiệu ứng tia nắng  */}
@@ -289,27 +376,31 @@ export default function MemberHomeScreen({ navigation }) {
                 {/* Trạng thái + tên gói */}
                 <View style={styles.contractTop}>
                   {activePlan ? (
-                    <View style={styles.contractBadge}>
+                    <View style={[styles.contractBadge, { backgroundColor: colors.primaryLight }]}>
                       <ShieldCheck color={colors.primary} size={12} strokeWidth={2.5} />
-                      <Text style={styles.contractBadgeText}>Đang hoạt động</Text>
+                      <Text style={[styles.contractBadgeText, { color: colors.primary }]}>Đang hoạt động</Text>
                     </View>
                   ) : null}
                   {pendingPlan ? (
-                    <View style={[styles.contractBadge, { backgroundColor: G.warningLight }]}>
-                      <Clock color={G.warning} size={12} strokeWidth={2.5} />
-                      <Text style={[styles.contractBadgeText, { color: G.warning }]}>Đang chờ duyệt</Text>
+                    <View style={[styles.contractBadge, { backgroundColor: colors.warningLight }]}>
+                      <Clock color={colors.warning} size={12} strokeWidth={2.5} />
+                      <Text style={[styles.contractBadgeText, { color: colors.warning }]}>
+                        {pendingPlan.phuong_thuc_tt === 'chuyen_khoan' && pendingPlan.payos_status === 'PENDING'
+                          ? 'Đang chờ thanh toán chuyển khoản'
+                          : 'Đang chờ duyệt'}
+                      </Text>
                     </View>
                   ) : null}
                   {!activePlan && !pendingPlan && expiredPlan ? (
-                    <View style={[styles.contractBadge, { backgroundColor: G.dangerLight }]}>
-                      <Clock color={G.danger} size={12} strokeWidth={2.5} />
-                      <Text style={[styles.contractBadgeText, { color: G.danger }]}>Đã hết hạn</Text>
+                    <View style={[styles.contractBadge, { backgroundColor: colors.dangerLight }]}>
+                      <Clock color={colors.danger} size={12} strokeWidth={2.5} />
+                      <Text style={[styles.contractBadgeText, { color: colors.danger }]}>Đã hết hạn</Text>
                     </View>
                   ) : null}
                   {remaining !== null && remaining <= 7 && activePlan && (
-                    <View style={[styles.contractBadge, { backgroundColor: G.dangerLight }]}>
-                      <Clock color={G.danger} size={12} strokeWidth={2.5} />
-                      <Text style={[styles.contractBadgeText, { color: G.danger }]}>Sắp hết hạn</Text>
+                    <View style={[styles.contractBadge, { backgroundColor: colors.dangerLight }]}>
+                      <Clock color={colors.danger} size={12} strokeWidth={2.5} />
+                      <Text style={[styles.contractBadgeText, { color: colors.danger }]}>Sắp hết hạn</Text>
                     </View>
                   )}
                 </View>
@@ -324,9 +415,9 @@ export default function MemberHomeScreen({ navigation }) {
                   </View>
                   <View style={[styles.contractDivider, { backgroundColor: colors.border }]} />
                   <View style={styles.contractGridItem}>
-                    <Clock color={remaining !== null && remaining <= 7 && activePlan ? G.danger : colors.textMuted} size={14} strokeWidth={2} />
+                    <Clock color={remaining !== null && remaining <= 7 && activePlan ? colors.danger : colors.textMuted} size={14} strokeWidth={2} />
                     <Text style={[styles.contractGridLabel, { color: colors.textMuted }]}>Hết hạn</Text>
-                    <Text style={[styles.contractGridValue, { color: colors.text }, remaining !== null && remaining <= 7 && activePlan && { color: G.danger }]}>
+                    <Text style={[styles.contractGridValue, { color: colors.text }, remaining !== null && remaining <= 7 && activePlan && { color: colors.danger }]}>
                       {formatDate(currentPlan.den_ngay)}
                     </Text>
                   </View>
@@ -334,7 +425,7 @@ export default function MemberHomeScreen({ navigation }) {
                   <View style={styles.contractGridItem}>
                     <TrendingUp color={colors.primary} size={14} strokeWidth={2} />
                     <Text style={[styles.contractGridLabel, { color: colors.textMuted }]}>Còn lại</Text>
-                    <Text style={[styles.contractGridValue, { color: remaining !== null && remaining <= 7 && activePlan ? G.danger : colors.primary }]}>
+                    <Text style={[styles.contractGridValue, { color: remaining !== null && remaining <= 7 && activePlan ? colors.danger : colors.primary }]}>
                       {remaining !== null && activePlan ? `${remaining} ngày` : '—'}
                     </Text>
                   </View>
@@ -342,7 +433,7 @@ export default function MemberHomeScreen({ navigation }) {
 
                 {/* HLV PT (nếu có) — bấm để xem lịch tập */}
                 {activePT ? (
-                  <TouchableOpacity style={styles.ptRow} onPress={openPtSchedule} activeOpacity={0.75}>
+                  <TouchableOpacity style={[styles.ptRow, { backgroundColor: colors.surface }]} onPress={openPtSchedule} activeOpacity={0.75}>
                     <Dumbbell color={colors.primary} size={15} strokeWidth={2} />
                     <Text style={[styles.ptRowText, { color: colors.text }]}>
                       {activePT.ten_goi_pt ? (
@@ -371,16 +462,32 @@ export default function MemberHomeScreen({ navigation }) {
                 )}
 
                 {pendingPlan && (
-                  <View style={styles.pendingRequestCard}>
+                  <View style={[styles.pendingRequestCard, { backgroundColor: colors.warningLight, borderColor: colors.warning }]}>
                     <View style={styles.pendingRequestHeader}>
-                      <Clock color={G.warning} size={15} strokeWidth={2} />
-                      <Text style={styles.pendingRequestTitle}>Yêu cầu đang chờ duyệt</Text>
+                      <Clock color={colors.warning} size={15} strokeWidth={2} />
+                      <Text style={[styles.pendingRequestTitle, { color: colors.warning }]}>
+                        {pendingPlan.phuong_thuc_tt === 'chuyen_khoan' && pendingPlan.payos_status === 'PENDING'
+                          ? 'Đang chờ thanh toán chuyển khoản'
+                          : 'Yêu cầu đang chờ duyệt'}
+                      </Text>
                     </View>
-                    <Text style={styles.pendingRequestPkg} numberOfLines={1}>{pendingPlan.ten_goi}</Text>
-                    <Text style={styles.pendingRequestInfo}>
+                    <Text style={[styles.pendingRequestPkg, { color: colors.text }]} numberOfLines={1}>{pendingPlan.ten_goi}</Text>
+                    <Text style={[styles.pendingRequestInfo, { color: colors.textSecondary }]}>
                       {formatDate(pendingPlan.tu_ngay)} – {formatDate(pendingPlan.den_ngay)}
                       {pendingPlan.phuong_thuc_tt === 'chuyen_khoan' ? '  •  Chuyển khoản' : '  •  Tiền mặt'}
                     </Text>
+
+                    {pendingPlan.phuong_thuc_tt === 'chuyen_khoan' && pendingPlan.payos_status === 'PENDING' && (
+                      <TouchableOpacity
+                        style={[styles.payNowBtn, { backgroundColor: colors.primary }]}
+                        activeOpacity={0.8}
+                        onPress={() => handleResumePayment(pendingPlan)}
+                      >
+                        <CreditCard color={G.white} size={15} strokeWidth={2.5} />
+                        <Text style={styles.payNowBtnText}>Thanh toán ngay</Text>
+                      </TouchableOpacity>
+                    )}
+
                     <TouchableOpacity
                       style={styles.cancelRequestBtn}
                       activeOpacity={0.8}
@@ -463,7 +570,7 @@ export default function MemberHomeScreen({ navigation }) {
               icon={Award}
               label={'Buổi PT\ncòn lại'}
               accent="#b7791f"
-              onPress={() => navigation?.navigate?.('Schedule')}
+              onPress={() => setRemainingPtVisible(true)}
               colors={colors}
             />
           </View>
@@ -505,34 +612,55 @@ export default function MemberHomeScreen({ navigation }) {
           </View>
         )}
 
-        {/* ──────────────────────────── */}
-        {/* PANEL PARADISE GYM          */}
-        {/* ──────────────────────────── */}
-        <View style={[styles.paradisePanel, { backgroundColor: colors.surfaceVariant }]}>
-          <View style={[styles.paradisePanelInner, { backgroundColor: colors.surface }]}>
-            <View style={styles.paradiseBadge}>
-              <ShieldCheck color={G.white} size={12} strokeWidth={2} />
-              <Text style={styles.paradiseBadgeText}>PREMIUM GYM</Text>
+        {/* ─────────────────────────────────────── */}
+        {/* CARD NỘI DUNG PHÒNG TẬP (bấm mở modal) */}
+        {/* ─────────────────────────────────────── */}
+        <TouchableOpacity
+          style={[styles.gymInfoCard, { backgroundColor: G.primaryDark }]}
+          onPress={() => setGymInfoVisible(true)}
+          activeOpacity={0.85}
+        >
+          {/* Sun rays */}
+          {Array.from({ length: 8 }).map((_, i) => (
+            <View
+              key={i}
+              style={[
+                styles.gymInfoRay,
+                { transform: [{ rotate: `${i * 45}deg` }] },
+              ]}
+            />
+          ))}
+          <View style={styles.gymInfoCardContent}>
+            <View style={styles.gymInfoCardLeft}>
+              <View style={styles.gymInfoBadge}>
+                <ShieldCheck color={G.white} size={11} strokeWidth={2} />
+                <Text style={styles.gymInfoBadgeText}>PREMIUM GYM</Text>
+              </View>
+              <Text style={styles.gymInfoCardTitle}>Paradise GYM</Text>
+              <Text style={styles.gymInfoCardDesc}>
+                Không gian hiện đại · HLV chuyên nghiệp
+              </Text>
+              <View style={styles.gymInfoStatsRow}>
+                {[
+                  { v: '100+', l: 'Hội viên' },
+                  { v: '15+', l: 'HLV' },
+                  { v: '3+', l: 'Năm' },
+                ].map(({ v, l }) => (
+                  <View key={l} style={styles.gymInfoStat}>
+                    <Text style={styles.gymInfoStatValue}>{v}</Text>
+                    <Text style={styles.gymInfoStatLabel}>{l}</Text>
+                  </View>
+                ))}
+              </View>
             </View>
-            <Text style={[styles.paradiseTitle, { color: colors.text }]}>Paradise GYM</Text>
-            <Text style={[styles.paradiseDesc, { color: colors.textMuted }]}>
-              Không gian hiện đại · Huấn luyện viên chuyên nghiệp · Thiết bị cao cấp
-            </Text>
-            <View style={styles.paradiseStats}>
-              {[
-                { icon: Users, label: 'Hội viên', value: '500+' },
-                { icon: Dumbbell, label: 'Huấn luyện viên', value: '20+' },
-                { icon: Award, label: 'Năm hoạt động', value: '5+' },
-              ].map(({ icon: Icon, label, value }) => (
-                <View key={label} style={styles.paradiseStat}>
-                  <Icon color={G.primaryMid} size={18} strokeWidth={2} />
-                  <Text style={[styles.paradiseStatValue, { color: colors.text }]}>{value}</Text>
-                  <Text style={[styles.paradiseStatLabel, { color: colors.textMuted }]}>{label}</Text>
-                </View>
-              ))}
+            <View style={styles.gymInfoCardRight}>
+              <View style={styles.gymInfoBtn}>
+                <Info color={G.white} size={16} strokeWidth={2} />
+                <Text style={styles.gymInfoBtnText}>Xem chi tiết</Text>
+              </View>
             </View>
           </View>
-        </View>
+        </TouchableOpacity>
 
         <View style={{ height: 16 }} />
       </ScrollView>
@@ -544,9 +672,9 @@ export default function MemberHomeScreen({ navigation }) {
         animationType="slide"
         onRequestClose={() => { setPtScheduleVisible(false); setEditingNote(null); }}
       >
-        <View style={styles.modalOverlay}>
+        <View style={styles.bottomSheetOverlay}>
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ width: '100%' }}>
-            <View style={[styles.modalContent, { backgroundColor: colors.surface, maxHeight: '88%' }]}>
+            <View style={[styles.modalContent, styles.bottomSheetContent, { backgroundColor: colors.surface, maxHeight: '95%' }]}>
               {/* Header */}
               <View style={[styles.modalHeader, { backgroundColor: G.primaryDark }]}>
                 <View style={{ flex: 1 }}>
@@ -611,9 +739,9 @@ export default function MemberHomeScreen({ navigation }) {
                 <ScrollView contentContainerStyle={{ padding: 16, gap: 10 }}>
                   {ptSchedules.map(s => {
                     const statusMap = {
-                      cho_tap:  { label: 'Chờ tập',      color: G.warning,  bg: G.warningLight },
-                      da_tap:   { label: 'Đã hoàn thành', color: colors.primary,  bg: colors.primaryLight },
-                      da_huy:   { label: 'Đã hủy',        color: G.danger,   bg: G.dangerLight },
+                      cho_tap: { label: 'Chờ tập', color: G.warning, bg: G.warningLight },
+                      da_tap: { label: 'Đã hoàn thành', color: colors.primary, bg: colors.primaryLight },
+                      da_huy: { label: 'Đã hủy', color: G.danger, bg: G.dangerLight },
                     };
                     const st = statusMap[s.trang_thai] || { label: s.trang_thai, color: colors.textMuted, bg: colors.surfaceVariant };
                     const isEditing = editingNote?.id === s.id;
@@ -767,6 +895,324 @@ export default function MemberHomeScreen({ navigation }) {
         </View>
       </Modal>
 
+      {/* ── Modal Số buổi PT còn lại ────────────────────── */}
+      <Modal
+        visible={remainingPtVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setRemainingPtVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <View style={[styles.modalHeader, { backgroundColor: '#b7791f' }]}>
+              <Text style={[styles.modalTitle, { color: G.white }]}>Số buổi PT còn lại</Text>
+              <TouchableOpacity onPress={() => setRemainingPtVisible(false)}>
+                <Text style={[styles.modalCloseX, { color: G.white }]}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              {activePT ? (
+                <View style={{ gap: 12 }}>
+                  {/* Trainer Avatar & Info */}
+                  <View style={{ alignItems: 'center', marginVertical: 10 }}>
+                    <View style={{ width: 64, height: 64, borderRadius: 32, overflow: 'hidden', borderWidth: 2, borderColor: '#b7791f', marginBottom: 8 }}>
+                      <ProfileAvatar
+                        uri={activePT.avatar_pt}
+                        name={activePT.ten_pt}
+                        size={64}
+                      />
+                    </View>
+                    <Text style={[styles.contractPackageName, { color: colors.text, fontSize: 18, fontWeight: '800' }]}>
+                      HLV: {activePT.ten_pt}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>
+                      {activePT.ten_goi_pt || 'Gói Huấn Luyện Viên Cá Nhân'}
+                    </Text>
+                  </View>
+
+                  {/* Remaining Progress Bar */}
+                  <View style={{ backgroundColor: colors.surfaceVariant, borderRadius: 14, padding: 16, gap: 12, borderWidth: 1, borderColor: colors.border }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: colors.text }}>Tiến độ gói tập</Text>
+                      <Text style={{ fontSize: 13, fontWeight: '800', color: '#b7791f' }}>
+                        Còn {ptRemaining} / {activePT.so_buoi_dang_ky || 0} buổi
+                      </Text>
+                    </View>
+
+                    {/* Progress Bar Container */}
+                    <View style={{ height: 10, backgroundColor: colors.border, borderRadius: 5, overflow: 'hidden' }}>
+                      <View
+                        style={{
+                          height: '100%',
+                          backgroundColor: '#b7791f',
+                          width: `${((activePT.so_buoi_da_tap || 0) / (activePT.so_buoi_dang_ky || 1)) * 100}%`
+                        }}
+                      />
+                    </View>
+
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                      <Text style={{ fontSize: 11, color: colors.textMuted }}>Đã tập: {activePT.so_buoi_da_tap || 0} buổi</Text>
+                      <Text style={{ fontSize: 11, color: colors.textMuted }}>Đăng ký: {activePT.so_buoi_dang_ky || 0} buổi</Text>
+                    </View>
+                  </View>
+
+                  {/* Dates */}
+                  {activePT.tu_ngay && (
+                    <View style={[styles.detailRow, { borderBottomColor: colors.border }]}>
+                      <Text style={[styles.detailLabel, { color: colors.textMuted }]}>Ngày bắt đầu:</Text>
+                      <Text style={[styles.detailValue, { color: colors.text }]}>{formatDate(activePT.tu_ngay)}</Text>
+                    </View>
+                  )}
+
+                  {activePT.den_ngay && (
+                    <View style={[styles.detailRow, { borderBottomColor: colors.border }]}>
+                      <Text style={[styles.detailLabel, { color: colors.textMuted }]}>Ngày hết hạn:</Text>
+                      <Text style={[styles.detailValue, { color: colors.text }]}>{formatDate(activePT.den_ngay)}</Text>
+                    </View>
+                  )}
+
+                  {activePT.gia_thuc_te != null && (
+                    <View style={[styles.detailRow, { borderBottomColor: colors.border }]}>
+                      <Text style={[styles.detailLabel, { color: colors.textMuted }]}>Chi phí gói:</Text>
+                      <Text style={[styles.detailValue, { color: colors.text, fontWeight: '700' }]}>
+                        {formatPrice(activePT.gia_thuc_te)}
+                      </Text>
+                    </View>
+                  )}
+
+                  <Text style={{ fontSize: 11, color: colors.textMuted, textAlign: 'center', marginTop: 10, lineHeight: 16 }}>
+                    {ptRemaining === 0
+                      ? 'Bạn đã hoàn thành toàn bộ số buổi của hợp đồng. Vui lòng liên hệ quầy lễ tân để gia hạn.'
+                      : 'Hãy tích cực tập luyện cùng PT để đạt mục tiêu sức khỏe của bạn!'}
+                  </Text>
+                </View>
+              ) : (
+                <View style={{ alignItems: 'center', paddingVertical: 20, gap: 10 }}>
+                  <Dumbbell color={colors.textMuted} size={48} strokeWidth={1.5} />
+                  <Text style={{ color: colors.text, fontWeight: '700', fontSize: 15, marginTop: 8 }}>Chưa có gói tập PT</Text>
+                  <Text style={{ color: colors.textMuted, fontSize: 12, textAlign: 'center', lineHeight: 18 }}>
+                    Bạn chưa đăng ký gói tập huấn luyện viên cá nhân (PT) nào đang hoạt động hoặc gói tập đã hoàn thành.
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={[styles.modalCancelBtn, { borderColor: colors.border, flex: 1 }]}
+                onPress={() => setRemainingPtVisible(false)}
+              >
+                <Text style={[styles.modalCancelText, { color: colors.textMuted, textAlign: 'center' }]}>Đóng</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Modal PayOS VietQR ─────────────────────────── */}
+      <Modal
+        visible={payosModalVisible}
+        animationType="fade"
+        transparent
+        onRequestClose={() => {
+          setPayosModalVisible(false);
+          setPollingActive(false);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.qrSheet, { backgroundColor: colors.surface }]}>
+            <View style={[styles.qrHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.qrTitle, { color: colors.text }]}>Thanh toán chuyển khoản</Text>
+              <TouchableOpacity onPress={() => {
+                setPayosModalVisible(false);
+                setPollingActive(false);
+                Alert.alert('Thanh toán chưa hoàn tất', 'Yêu cầu gia hạn của bạn vẫn đang ở trạng thái Chờ thanh toán. Bạn có thể thanh toán sau.');
+              }}>
+                <XCircle color={colors.textMuted} size={24} />
+              </TouchableOpacity>
+            </View>
+
+            {paymentInfo?.qrCodeUrl ? (
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.qrScroll}>
+                <Text style={[styles.qrHint, { color: colors.textMuted }]}>
+                  Sử dụng ứng dụng ngân hàng quét mã QR dưới đây để tự động điền số tiền và nội dung chuyển khoản.
+                </Text>
+
+                {/* QR Code Container */}
+                <View style={[styles.qrWrapper, { backgroundColor: '#ffffff' }]}>
+                  <Image
+                    source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(paymentInfo.qrCodeUrl)}` }}
+                    style={styles.qrImage}
+                    resizeMode="contain"
+                  />
+                  <View style={[styles.qrBadge, { backgroundColor: colors.primaryLight }]}>
+                    <CheckCircle2 color={colors.primary} size={14} />
+                    <Text style={[styles.qrBadgeText, { color: colors.primary }]}>PAYOS SECURE</Text>
+                  </View>
+                </View>
+
+                {/* Thông tin tài khoản */}
+                <View style={[styles.qrDetails, { backgroundColor: colors.surfaceVariant }]}>
+                  <View style={styles.qrDetailRow}>
+                    <Text style={[styles.qrDetailLabel, { color: colors.textMuted }]}>Số tiền thanh toán:</Text>
+                    <Text style={[styles.qrDetailValue, { color: colors.text }]}>{formatPrice(paymentInfo.amount)}</Text>
+                  </View>
+                  <View style={styles.qrDetailRow}>
+                    <Text style={[styles.qrDetailLabel, { color: colors.textMuted }]}>Mã đơn hàng:</Text>
+                    <Text style={[styles.qrDetailValue, { color: colors.text }]}>{paymentInfo.orderCode}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.pollingStatus}>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                  <Text style={[styles.pollingStatusText, { color: colors.textSecondary }]}>
+                    Đang chờ hệ thống kiểm tra giao dịch tự động...
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.qrCancelBtn, { borderColor: colors.border }]}
+                  onPress={() => {
+                    setPayosModalVisible(false);
+                    setPollingActive(false);
+                  }}
+                >
+                  <Text style={[styles.qrCancelBtnText, { color: colors.textSecondary }]}>Đóng</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            ) : (
+              <View style={styles.qrLoading}>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={{ marginTop: 12, color: colors.text }}>Đang tải mã QR PayOS...</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Modal Nội dung phòng tập ────────────────────── */}
+      <Modal
+        visible={gymInfoVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setGymInfoVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface, maxHeight: '92%' }]}>
+            {/* Header */}
+            <View style={[styles.modalHeader, { backgroundColor: G.primaryDark }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalTitle}>Paradise GYM</Text>
+                <Text style={{ color: 'rgba(255,255,255,0.72)', fontSize: 11, marginTop: 2 }}>
+                  Thông tin phòng tập
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setGymInfoVisible(false)}>
+                <Text style={styles.modalCloseX}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView contentContainerStyle={{ padding: 18, gap: 14 }} showsVerticalScrollIndicator={false}>
+              {/* Stats nổi bật */}
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                {[
+                  { icon: Users, label: 'Hội viên', value: '200+', color: '#0891b2' },
+                  { icon: Dumbbell, label: 'Huấn luyện viên', value: '15+', color: G.primary },
+                  { icon: Award, label: 'Năm hoạt động', value: '3+', color: '#b7791f' },
+                ].map(({ icon: Icon, label, value, color }) => (
+                  <View key={label} style={[styles.gymStatCard, { backgroundColor: colors.surfaceVariant, borderColor: colors.border, flex: 1 }]}>
+                    <Icon color={color} size={20} strokeWidth={2} />
+                    <Text style={[styles.gymStatValue, { color: colors.text }]}>{value}</Text>
+                    <Text style={[styles.gymStatLabel, { color: colors.textMuted }]}>{label}</Text>
+                  </View>
+                ))}
+              </View>
+
+              {/* Địa chỉ & Liên hệ */}
+              <View style={[styles.gymInfoSection, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
+                <Text style={[styles.gymInfoSectionTitle, { color: colors.text }]}>Địa chỉ & Liên hệ</Text>
+                <View style={styles.gymInfoRow}>
+                  <MapPin color={colors.primary} size={15} strokeWidth={2} />
+                  <Text style={[styles.gymInfoRowText, { color: colors.text }]}>123 Đường ABC, Phường XYZ, Quận 1, TP.HCM</Text>
+                </View>
+                <View style={styles.gymInfoRow}>
+                  <Phone color={colors.primary} size={15} strokeWidth={2} />
+                  <Text style={[styles.gymInfoRowText, { color: colors.text }]}>028 1234 5678  •  0901 234 567</Text>
+                </View>
+                <View style={styles.gymInfoRow}>
+                  <Clock color={colors.primary} size={15} strokeWidth={2} />
+                  <Text style={[styles.gymInfoRowText, { color: colors.text }]}>Giờ mở cửa: 5:00 – 22:00 (Thứ 2 – CN)</Text>
+                </View>
+              </View>
+
+              {/* Tiện ích phòng tập */}
+              <View style={[styles.gymInfoSection, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
+                <Text style={[styles.gymInfoSectionTitle, { color: colors.text }]}>Tiện ích & Thiết bị</Text>
+                {[
+                  'Hơn 100 máy tập thể hình cao cấp nhập khẩu',
+                  'Khu cardio hiện đại: xe đạp, máy chạy bộ, elliptical',
+                  'Phòng tập nhóm: Yoga, Zumba, Boxing, Aerobics',
+                  'Phòng tắm, tủ đồ cá nhân miễn phí',
+                  'Bãi giữ xe rộng rãi, miễn phí',
+                  'WiFi miễn phí toàn khu vực',
+                  'Hệ thống âm thanh, ánh sáng chuyên nghiệp',
+                  'Camera an ninh 24/7',
+                ].map((item, i) => (
+                  <View key={i} style={styles.gymBulletRow}>
+                    <View style={[styles.gymBulletDot, { backgroundColor: colors.primary }]} />
+                    <Text style={[styles.gymBulletText, { color: colors.text }]}>{item}</Text>
+                  </View>
+                ))}
+              </View>
+
+              {/* Dịch vụ */}
+              <View style={[styles.gymInfoSection, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
+                <Text style={[styles.gymInfoSectionTitle, { color: colors.text }]}>Dịch vụ nổi bật</Text>
+                {[
+                  'Huấn luyện viên cá nhân (PT) chuyên nghiệp',
+                  'Tư vấn dinh dưỡng & kế hoạch tập luyện',
+                  'Đo chỉ số cơ thể (BMI, BF%) miễn phí',
+                  'Theo dõi tiến độ tập luyện qua app',
+                  'Lớp tập nhóm đa dạng không phụ phí',
+                  'Chương trình khuyến mãi thành viên thân thiết',
+                ].map((item, i) => (
+                  <View key={i} style={styles.gymBulletRow}>
+                    <Star color={G.primaryMid} size={12} strokeWidth={2.5} fill={G.primaryMid} />
+                    <Text style={[styles.gymBulletText, { color: colors.text }]}>{item}</Text>
+                  </View>
+                ))}
+              </View>
+
+              {/* Nội quy */}
+              <View style={[styles.gymInfoSection, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
+                <Text style={[styles.gymInfoSectionTitle, { color: colors.text }]}>Nội quy phòng tập</Text>
+                {[
+                  'Mang theo thẻ hội viên khi vào tập',
+                  'Mặc trang phục thể thao phù hợp',
+                  'Hoàn trả dụng cụ sau khi dùng xong',
+                  'Giữ vệ sinh chung, không hút thuốc',
+                  'Không mang thức ăn vào khu vực tập',
+                  'Tôn trọng giờ nghỉ của hội viên khác',
+                ].map((item, i) => (
+                  <View key={i} style={styles.gymBulletRow}>
+                    <CheckCircle2 color={G.primary} size={13} strokeWidth={2.5} />
+                    <Text style={[styles.gymBulletText, { color: colors.text }]}>{item}</Text>
+                  </View>
+                ))}
+              </View>
+
+              <TouchableOpacity
+                style={[styles.gymInfoCloseBtn, { backgroundColor: G.primaryDark }]}
+                onPress={() => setGymInfoVisible(false)}
+              >
+                <Text style={{ color: G.white, fontWeight: '800', fontSize: 15 }}>Đóng</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }
@@ -780,10 +1226,12 @@ const styles = StyleSheet.create({
   banner: {
     backgroundColor: G.primaryDark,
     paddingTop: 52,
-    paddingBottom: 24,
+    paddingBottom: 28,
     paddingHorizontal: 20,
     overflow: 'hidden',
     position: 'relative',
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
   },
   sunRay: {
     position: 'absolute',
@@ -1250,4 +1698,273 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
   },
   modalSubmitText: { color: G.white, fontWeight: '800', fontSize: 15 },
+
+  // Nút Thanh toán ngay PayOS
+  payNowBtn: {
+    marginTop: 8,
+    backgroundColor: G.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 9,
+    borderRadius: 10,
+  },
+  payNowBtnText: {
+    color: G.white,
+    fontWeight: '800',
+    fontSize: 13,
+  },
+
+  // Premium Package Card Styles
+  pkgCardBrandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 2,
+  },
+  pkgCardBrandText: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+  },
+  packageNameText: {
+    fontSize: 14,
+    fontWeight: '800',
+    lineHeight: 18,
+    marginVertical: 2,
+  },
+  packagePriceText: {
+    fontSize: 16,
+    fontWeight: '900',
+    marginTop: 'auto',
+  },
+  pkgCardBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    marginTop: 4,
+  },
+  pkgCardBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+
+  // PayOS QR Modal Styles
+  qrSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    maxHeight: '90%',
+  },
+  qrHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+  },
+  qrTitle: {
+    fontSize: 16,
+    fontWeight: '850',
+  },
+  qrScroll: {
+    alignItems: 'center',
+    paddingBottom: 24,
+  },
+  qrHint: {
+    fontSize: 12,
+    lineHeight: 16,
+    textAlign: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 12,
+  },
+  qrWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 24,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
+    marginBottom: 16,
+    position: 'relative',
+  },
+  qrImage: {
+    width: 240,
+    height: 240,
+  },
+  qrBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  qrBadgeText: {
+    fontSize: 10,
+    fontWeight: '850',
+    letterSpacing: 0.5,
+  },
+  qrDetails: {
+    width: '100%',
+    borderRadius: 16,
+    padding: 16,
+    gap: 10,
+    marginBottom: 20,
+  },
+  qrDetailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  qrDetailLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  qrDetailValue: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  pollingStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 20,
+    paddingHorizontal: 20,
+  },
+  pollingStatusText: {
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+    flex: 1,
+  },
+  qrCancelBtn: {
+    width: '100%',
+    height: 48,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qrCancelBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  qrLoading: {
+    paddingVertical: 80,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Gym Info Card (tappable banner)
+  gymInfoCard: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 20,
+    paddingVertical: 22,
+    paddingHorizontal: 20,
+    overflow: 'hidden',
+    position: 'relative',
+    shadowColor: G.primaryDark,
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  gymInfoRay: {
+    position: 'absolute',
+    width: 2,
+    height: 300,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    top: -80,
+    left: '50%',
+    transformOrigin: 'bottom center',
+  },
+  gymInfoCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  gymInfoCardLeft: { flex: 1 },
+  gymInfoBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  gymInfoBadgeText: { color: G.white, fontSize: 9, fontWeight: '800', letterSpacing: 0.8 },
+  gymInfoCardTitle: { fontSize: 22, fontWeight: '900', color: G.white, letterSpacing: 0.3 },
+  gymInfoCardDesc: { fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 2, fontWeight: '500' },
+  gymInfoStatsRow: { flexDirection: 'row', gap: 16, marginTop: 12 },
+  gymInfoStat: { alignItems: 'center' },
+  gymInfoStatValue: { fontSize: 15, fontWeight: '900', color: G.white },
+  gymInfoStatLabel: { fontSize: 9, color: 'rgba(255,255,255,0.65)', fontWeight: '600' },
+  gymInfoCardRight: { marginLeft: 12 },
+  gymInfoBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+  },
+  gymInfoBtnText: { color: G.white, fontSize: 12, fontWeight: '800' },
+
+  // Gym Info Modal content styles
+  gymStatCard: {
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 12,
+    alignItems: 'center',
+    gap: 4,
+  },
+  gymStatValue: { fontSize: 18, fontWeight: '900' },
+  gymStatLabel: { fontSize: 10, fontWeight: '600', textAlign: 'center' },
+  gymInfoSection: {
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 14,
+    gap: 8,
+  },
+  gymInfoSectionTitle: { fontSize: 14, fontWeight: '800', marginBottom: 4 },
+  gymInfoRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  gymInfoRowText: { flex: 1, fontSize: 13, lineHeight: 19, fontWeight: '500' },
+  gymBulletRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  gymBulletDot: { width: 6, height: 6, borderRadius: 3 },
+  gymBulletText: { flex: 1, fontSize: 13, lineHeight: 19 },
+  gymInfoCloseBtn: {
+    height: 50,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  bottomSheetOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  bottomSheetContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    overflow: 'hidden',
+  },
 });

@@ -76,8 +76,7 @@ const av = StyleSheet.create({
 
 // ── Member Card ───────────────────────────────────────────
 function MemberCard({ item, colors, onPress }) {
-  const activePkg = Array.isArray(item.goi_tap_hien_tai) && item.goi_tap_hien_tai.length > 0 && item.goi_tap_hien_tai[0].trang_thai !== 'het_han' && item.goi_tap_hien_tai[0].trang_thai !== 'huy' ? item.goi_tap_hien_tai[0] : null;
-  const days = activePkg ? daysLeft(activePkg.den_ngay) : null;
+  const days = daysLeft(item.ngay_het_han);
 
   return (
     <TouchableOpacity
@@ -94,9 +93,9 @@ function MemberCard({ item, colors, onPress }) {
         <Text style={[card.sub, { color: colors.textSecondary }]} numberOfLines={1}>
           {item.ma_ho_so} • {item.so_dien_thoai || '—'}
         </Text>
-        {activePkg ? (
+        {item.ten_goi_tap ? (
           <Text style={[card.pkg, { color: colors.primary }]} numberOfLines={1}>
-            {activePkg.ten_goi} · HH {formatDate(activePkg.den_ngay)}
+            {item.ten_goi_tap} · HH {formatDate(item.ngay_het_han)}
           </Text>
         ) : (
           <Text style={[card.pkg, { color: colors.textMuted }]}>Chưa đăng ký gói tập</Text>
@@ -190,14 +189,11 @@ export default function AdminMembersScreen({ navigation, route }) {
     const q = search.toLowerCase().trim();
     if (q && !m.ho_ten?.toLowerCase().includes(q) && !m.so_dien_thoai?.includes(q) && !m.ma_ho_so?.toLowerCase().includes(q)) return false;
 
-    const activePkg = Array.isArray(m.goi_tap_hien_tai) && m.goi_tap_hien_tai.length > 0 && m.goi_tap_hien_tai[0].trang_thai !== 'het_han' && m.goi_tap_hien_tai[0].trang_thai !== 'huy' ? m.goi_tap_hien_tai[0] : null;
-
-    if (filter === 'no_pkg') return !activePkg;
-    if (!activePkg) return filter === 'all';
-    const days = daysLeft(activePkg?.den_ngay);
-    if (filter === 'active') return days !== null && days > 7;
-    if (filter === 'expiring') return days !== null && days >= 0 && days <= 7;
-    if (filter === 'expired') return days !== null && days < 0;
+    if (filter === 'all') return true;
+    if (filter === 'active') return m.trang_thai === 'con_han';
+    if (filter === 'expiring') return m.trang_thai === 'sap_het_han';
+    if (filter === 'expired') return m.trang_thai === 'het_han';
+    if (filter === 'no_pkg') return m.trang_thai === 'chua_dang_ky';
     return true;
   });
 

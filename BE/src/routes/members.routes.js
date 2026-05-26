@@ -10,7 +10,7 @@ import {
   getExpiredMembers, getMemberHistory, registerPackage,
   getBirthday, getMyProfile, updateMyHealth, createAccount, checkDuplicate,
   getMyNotifications, requestPackageRenewal, cancelPackageRequest, checkPayosStatus, getPackageRequests, approvePackageRequest,
-  notifyMember, markMyNotificationsRead, clearMyNotifications,
+  notifyMember, markMyNotificationsRead, clearMyNotifications, deleteMyNotification,
   cancelPackage, editPackage, switchPackage,
   lookupMember, getMyPayments, requestPackagePause, getInvoice,
   sendBirthdayWish, sendBirthdayWishAll,
@@ -36,6 +36,7 @@ router.patch('/me/health', updateMyHealth);
 router.get('/me/notifications', getMyNotifications); // Thông báo realtime + inbox
 router.post('/me/notifications/read', markMyNotificationsRead); // Đánh dấu đã đọc
 router.delete('/me/notifications', clearMyNotifications); // Xoá sạch thông báo inbox
+router.delete('/me/notifications/:id', deleteMyNotification); // Xoá 1 thông báo inbox
 router.get('/me/payments',         getMyPayments);          // HV xem lịch sử thanh toán
 router.post('/me/package-request', requestPackageRenewal); // Yêu cầu gia hạn từ App
 router.post('/me/package-request/:id/cancel', cancelPackageRequest); // HV tự hủy yêu cầu gia hạn đang chờ

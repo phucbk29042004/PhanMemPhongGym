@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect, useMemo } from 'react';
 import {
   ActivityIndicator, Alert, FlatList, RefreshControl, ScrollView,
   StatusBar, StyleSheet, Text, TextInput,
@@ -82,7 +82,7 @@ function PTCard({ item, onPress, expanded, onEdit, onDelete, colors }) {
             <View key={idx} style={[ptCard.scheduleRow, { borderBottomColor: colors.border }]}>
               <View style={ptCard.scheduleLeft}>
                 <Text style={[ptCard.scheduleMember, { color: colors.text }]} numberOfLines={1}>{s.ten_hoi_vien || '—'}</Text>
-                <Text style={[ptCard.scheduleTime, { color: colors.textSecondary }]}>{formatDateTime(s.thoi_gian_bat_dau)}</Text>
+                <Text style={[ptCard.scheduleTime, { color: colors.textSecondary }]}>🕒 {s.gio_bat_dau || '—'} – {s.gio_ket_thuc || '—'}</Text>
               </View>
               <ScheduleBadge status={s.trang_thai} colors={colors} />
             </View>
@@ -177,7 +177,7 @@ export default function AdminPTScreen({ navigation, route }) {
         const withSchedules = await Promise.all(
           list.map(async (pt) => {
             try {
-              const s = await api.get(`/trainers/${pt.id}/schedules?ngay=${today}`);
+              const s = await api.get(`/trainers/${pt.id}/schedules?date=${today}`);
               return { ...pt, lich_hom_nay: s.data?.data || [] };
             } catch {
               return { ...pt, lich_hom_nay: [] };
@@ -197,14 +197,28 @@ export default function AdminPTScreen({ navigation, route }) {
   const fetchTodaySchedules = useCallback(async () => {
     setScheduleLoading(true);
     try {
-      const res = await api.get(`/pt/schedules?ngay=${today}`);
+      const res = await api.get('/pt/schedules');
       setTodaySchedules(res.data?.data || []);
     } catch (err) {
       console.error('[AdminPT] schedules error:', err?.message);
     } finally {
       setScheduleLoading(false);
     }
-  }, [today]);
+  }, []);
+
+  const groupedSchedules = useMemo(() => {
+    const groups = {};
+    todaySchedules.forEach(s => {
+      const date = s.ngay_tap || 'Chưa rõ';
+      if (!groups[date]) groups[date] = [];
+      groups[date].push(s);
+    });
+    const sortedDates = Object.keys(groups).sort((a, b) => b.localeCompare(a)); // Mới nhất lên trước
+    return sortedDates.map(date => {
+      const list = groups[date].sort((a, b) => (a.gio_bat_dau || '').localeCompare(b.gio_bat_dau || ''));
+      return { date, list };
+    });
+  }, [todaySchedules]);
 
   useFocusEffect(useCallback(() => {
     fetchTrainers();
@@ -290,7 +304,7 @@ export default function AdminPTScreen({ navigation, route }) {
           onPress={() => setTab('schedule')}
         >
           <Text style={[styles.tabText, { color: tab === 'schedule' ? colors.primary : colors.textSecondary, fontWeight: tab === 'schedule' ? '700' : '600' }]}>
-            Lịch hôm nay {totalToday > 0 ? `(${totalToday})` : ''}
+            Lịch tập PT {todaySchedules.length > 0 ? `(${todaySchedules.length})` : ''}
           </Text>
         </TouchableOpacity>
       </View>
@@ -352,21 +366,32 @@ export default function AdminPTScreen({ navigation, route }) {
         >
           {scheduleLoading ? (
             <View style={styles.loadingBox}><ActivityIndicator size="large" color={colors.primary} /></View>
-          ) : todaySchedules.length === 0 ? (
+          ) : groupedSchedules.length === 0 ? (
             <View style={styles.emptyBox}>
               <CalendarCheck color={colors.textMuted} size={48} strokeWidth={1} />
-              <Text style={[styles.emptyText, { color: colors.textMuted }]}>Chưa có lịch tập hôm nay</Text>
+              <Text style={[styles.emptyText, { color: colors.textMuted }]}>Chưa có lịch tập nào</Text>
             </View>
           ) : (
-            todaySchedules.map((s, idx) => (
-              <View key={idx} style={[scheduleCard.wrap, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <View style={scheduleCard.left}>
-                  <Text style={[scheduleCard.time, { color: colors.textSecondary }]}>{formatDateTime(s.thoi_gian_bat_dau)}</Text>
-                  <Text style={[scheduleCard.member, { color: colors.text }]} numberOfLines={1}>HV: {s.ten_hoi_vien || '—'}</Text>
-                  <Text style={[scheduleCard.pt, { color: colors.primary }]} numberOfLines={1}>PT: {s.ten_pt || '—'}</Text>
-                  {s.ghi_chu ? <Text style={[scheduleCard.note, { color: colors.textSecondary }]} numberOfLines={1}>📝 {s.ghi_chu}</Text> : null}
+            groupedSchedules.map((group, groupIdx) => (
+              <View key={groupIdx} style={{ marginBottom: 16 }}>
+                <View style={[styles.dateGroupHeader, { borderBottomColor: colors.border }]}>
+                  <CalendarCheck color={colors.primary} size={15} strokeWidth={2.5} />
+                  <Text style={[styles.dateGroupText, { color: colors.text }]}>
+                    {group.date === 'Chưa rõ' ? 'Chưa rõ ngày' : new Date(group.date + 'T00:00:00').toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })}
+                  </Text>
+                  <Text style={[styles.dateGroupCount, { color: colors.textSecondary }]}>({group.list.length} buổi)</Text>
                 </View>
-                <ScheduleBadge status={s.trang_thai} colors={colors} />
+                {group.list.map((s, idx) => (
+                  <View key={s.id || idx} style={[scheduleCard.wrap, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                    <View style={scheduleCard.left}>
+                      <Text style={[scheduleCard.time, { color: colors.primary }]}>🕒 {s.gio_bat_dau || '—'} – {s.gio_ket_thuc || '—'}</Text>
+                      <Text style={[scheduleCard.member, { color: colors.text }]} numberOfLines={1}>HV: {s.ten_hoi_vien || '—'}</Text>
+                      <Text style={[scheduleCard.pt, { color: colors.textSecondary }]} numberOfLines={1}>PT: {s.ten_pt || '—'}</Text>
+                      {s.ghi_chu ? <Text style={[scheduleCard.note, { color: colors.textSecondary }]} numberOfLines={2}>📝 {s.ghi_chu}</Text> : null}
+                    </View>
+                    <ScheduleBadge status={s.trang_thai} colors={colors} />
+                  </View>
+                ))}
               </View>
             ))
           )}
@@ -422,4 +447,21 @@ const styles = StyleSheet.create({
   loadingBox: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 40 },
   emptyBox: { paddingVertical: 60, alignItems: 'center', gap: 12 },
   emptyText: { fontSize: 14, fontWeight: '600' },
+  dateGroupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    marginTop: 10,
+    marginBottom: 8,
+    borderBottomWidth: 1,
+  },
+  dateGroupText: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  dateGroupCount: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
 });

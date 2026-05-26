@@ -645,4 +645,13 @@ if (!migratedV12) {
   console.log('[DB] ✅ Migration v12 (revenue triggers) hoàn thành.');
 }
 
+// ── Migration v13: Thêm cột xác nhận kép (PT + HV) vào bảng lich_tap ─────────
+try { db.exec(`ALTER TABLE lich_tap ADD COLUMN pt_xac_nhan INTEGER NOT NULL DEFAULT 0;`); } catch (_) {}
+try { db.exec(`ALTER TABLE lich_tap ADD COLUMN hv_xac_nhan INTEGER NOT NULL DEFAULT 0;`); } catch (_) {}
+// Backfill: buổi đã hoàn thành trước khi migration được coi là cả 2 đã xác nhận
+try {
+  db.exec(`UPDATE lich_tap SET pt_xac_nhan = 1, hv_xac_nhan = 1 WHERE trang_thai = 'da_tap' AND pt_xac_nhan = 0;`);
+} catch (_) {}
+console.log('[DB] ✅ Migration v13: cột pt_xac_nhan và hv_xac_nhan sẵn sàng.');
+
 export default db;

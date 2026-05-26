@@ -14,6 +14,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useAuthStore } from '../../store/useAuthStore';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function formatPrice(val) {
   if (val == null || val === 0) return '0đ';
@@ -120,6 +121,7 @@ const revRow = StyleSheet.create({
 export default function AdminDashboardScreen({ navigation }) {
   const { user } = useAuthStore();
   const { colors, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const [dash, setDash] = useState(null);
   const [todayRevenue, setTodayRevenue] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -281,7 +283,7 @@ export default function AdminDashboardScreen({ navigation }) {
       <StatusBar barStyle={colors.statusBar} backgroundColor={colors.statusBarBg} />
 
       {/* ── Header ── */}
-      <View style={[styles.header, { backgroundColor: colors.primaryDark }]}>
+      <View style={[styles.header, { backgroundColor: colors.primaryDark, paddingTop: Math.max(insets.top, 16) + 8 }]}>
         <View>
           <Text style={styles.headerSub}>{greeting}, Admin</Text>
           <Text style={styles.headerTitle}>Paradise GYM</Text>
@@ -380,7 +382,7 @@ export default function AdminDashboardScreen({ navigation }) {
                 sub={`${dash?.so_goi_ban_thang ?? 0} gói bán`}
                 colors={colors}
                 subColor="#fbbf24"
-                onPress={() => navigation.navigate('AdminPackages')}
+                onPress={() => navigation.navigate('AdminRevenue')}
               />
             </View>
 
@@ -800,7 +802,6 @@ const pagination = StyleSheet.create({
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: {
-    paddingTop: 52,
     paddingBottom: 20,
     paddingHorizontal: 20,
     flexDirection: 'row',
