@@ -2631,7 +2631,6 @@ window.GymApp.pages['members-list'] = {
         const to = new Date(fromVal);
         to.setMonth(to.getMonth() + soThang);
         document.getElementById('ptreg-to').value = to.toISOString().split('T')[0];
-<<<<<<< HEAD
         
         if (!e || e.target.id !== 'ptreg-sessions') {
           const diffDays = Math.ceil((to - from) / (1000 * 60 * 60 * 24));
@@ -2642,12 +2641,10 @@ window.GymApp.pages['members-list'] = {
         const to = new Date(fromVal);
         to.setDate(to.getDate() + numSessions);
         document.getElementById('ptreg-to').value = to.toISOString().split('T')[0];
-=======
 
         // Tự động tính số buổi mặc định theo số ngày trong tháng/chu kỳ
         const diffDays = Math.ceil((to - from) / (1000 * 60 * 60 * 24));
         document.getElementById('ptreg-sessions').value = diffDays;
->>>>>>> main
       } else {
         document.getElementById('ptreg-to').value = '';
       }
@@ -2869,7 +2866,6 @@ window.GymApp.pages['members-list'] = {
         const to = new Date(fromVal);
         to.setMonth(to.getMonth() + soThang);
         document.getElementById('ptedit-to').value = to.toISOString().split('T')[0];
-<<<<<<< HEAD
         
         if (!e || e.target.id !== 'ptedit-sessions') {
           const diffDays = Math.ceil((to - from) / (1000 * 60 * 60 * 24));
@@ -2880,11 +2876,9 @@ window.GymApp.pages['members-list'] = {
         const to = new Date(fromVal);
         to.setDate(to.getDate() + numSessions);
         document.getElementById('ptedit-to').value = to.toISOString().split('T')[0];
-=======
 
         const diffDays = Math.ceil((to - from) / (1000 * 60 * 60 * 24));
         document.getElementById('ptedit-sessions').value = diffDays;
->>>>>>> main
       } else {
         document.getElementById('ptedit-to').value = '';
       }
@@ -3126,7 +3120,6 @@ window.GymApp.pages['members-list'] = {
         const to = new Date(fromVal);
         to.setMonth(to.getMonth() + soThang);
         document.getElementById('ptswitch-to').value = to.toISOString().split('T')[0];
-<<<<<<< HEAD
         
         if (!e || e.target.id !== 'ptswitch-sessions') {
           const diffDays = Math.ceil((to - from) / (1000 * 60 * 60 * 24));
@@ -3137,11 +3130,9 @@ window.GymApp.pages['members-list'] = {
         const to = new Date(fromVal);
         to.setDate(to.getDate() + numSessions);
         document.getElementById('ptswitch-to').value = to.toISOString().split('T')[0];
-=======
 
         const diffDays = Math.ceil((to - from) / (1000 * 60 * 60 * 24));
         document.getElementById('ptswitch-sessions').value = diffDays;
->>>>>>> main
       } else {
         document.getElementById('ptswitch-to').value = '';
       }

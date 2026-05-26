@@ -29,18 +29,12 @@
 
   function getActivePackage() {
     const packages = window.GymApp.data.myPackages || [];
-<<<<<<< HEAD
     const today = todayKey();
     const active = packages.find(p => p.trang_thai === 'dang_hoat_dong' && p.den_ngay >= today);
     if (active) return active;
-    return packages[0] || null;
-=======
     // Ưu tiên gói đang hoạt động, KHÔNG dùng gói cho_duyet làm fallback
-    const active = packages.find(p => p.trang_thai === 'dang_hoat_dong');
-    if (active) return active;
     // Fallback: gói hết hạn gần nhất (không dùng cho_duyet)
     return packages.find(p => p.trang_thai === 'het_han') || null;
->>>>>>> main
   }
 
   function getPendingPackage() {
