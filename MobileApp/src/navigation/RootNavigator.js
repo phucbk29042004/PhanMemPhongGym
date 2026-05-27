@@ -7,6 +7,7 @@ import LoginScreen from '../screens/auth/LoginScreen';
 import MemberNavigator from './MemberNavigator';
 import PTNavigator from './PTNavigator';
 import AdminNavigator from './AdminNavigator';
+import AIAssistantBubble from '../components/AIAssistantBubble';
 
 const Stack = createNativeStackNavigator();
 
@@ -26,16 +27,19 @@ export default function RootNavigator() {
   }
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {token == null ? (
-        <Stack.Screen name="Login" component={LoginScreen} />
-      ) : (role === 'admin' || role === 'le_tan') ? (
-        <Stack.Screen name="AdminApp" component={AdminNavigator} />
-      ) : role === 'pt' ? (
-        <Stack.Screen name="PTApp" component={PTNavigator} />
-      ) : (
-        <Stack.Screen name="MemberApp" component={MemberNavigator} />
-      )}
-    </Stack.Navigator>
+    <View style={{ flex: 1 }}>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {token == null ? (
+          <Stack.Screen name="Login" component={LoginScreen} />
+        ) : (role === 'admin' || role === 'le_tan') ? (
+          <Stack.Screen name="AdminApp" component={AdminNavigator} />
+        ) : role === 'pt' ? (
+          <Stack.Screen name="PTApp" component={PTNavigator} />
+        ) : (
+          <Stack.Screen name="MemberApp" component={MemberNavigator} />
+        )}
+      </Stack.Navigator>
+      {token != null && <AIAssistantBubble />}
+    </View>
   );
 }

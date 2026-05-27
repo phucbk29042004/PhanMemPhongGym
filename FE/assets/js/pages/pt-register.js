@@ -739,4 +739,29 @@ window.GymApp.pages['pt-register'] = {
       });
     });
   },
+
+  guideHtml: `
+    <div class="space-y-4 text-xs">
+      <div class="flex items-start gap-2 bg-brand-primary/5 p-3 rounded-xl border border-brand-primary/10">
+        <span class="material-symbols-outlined text-brand-primary text-base flex-shrink-0 mt-0.5">info</span>
+        <p class="text-on-surface-variant leading-relaxed">Trang <strong>Đặt lịch PT</strong> quản lý việc đăng ký hợp đồng đào tạo cá nhân giữa Hội viên và Huấn luyện viên (PT).</p>
+      </div>
+
+      <div>
+        <h4 class="font-bold text-on-surface mb-1">📋 Các bước đăng ký:</h4>
+        <ul class="list-decimal pl-5 space-y-1 text-on-surface-variant">
+          <li><strong>Bước 1: Chọn Huấn luyện viên (PT):</strong> Click chọn PT mong muốn trong danh sách bên trái.</li>
+          <li><strong>Bước 2: Chọn Hội viên:</strong> Danh sách hội viên bên phải sẽ tự động hiển thị, click chọn hội viên muốn đăng ký tập với PT đã chọn.</li>
+          <li><strong>Bước 3: Chọn Gói tập PT:</strong> Lựa chọn gói dịch vụ PT (số buổi, thời hạn, đơn giá).</li>
+          <li><strong>Bước 4: Nhập chi tiết hợp đồng:</strong> Cấu hình ngày bắt đầu hợp đồng, số tiền thực tế khách thanh toán (VNĐ), và chọn phương thức thanh toán.</li>
+          <li><strong>Bước 5: Hoàn tất:</strong> Bấm <strong>Lưu đăng ký</strong> để kích hoạt hợp đồng PT và sinh lịch tập trống cho hội viên.</li>
+        </ul>
+      </div>
+
+      <div class="bg-[#e65100]/5 border border-[#e65100]/20 rounded-xl p-3 flex gap-2">
+        <span class="material-symbols-outlined text-[#e65100] text-base flex-shrink-0 mt-0.5">warning</span>
+        <p class="text-on-surface-variant leading-relaxed"><strong>Chú ý:</strong> Một hội viên có thể đăng ký nhiều PT cùng một lúc, tuy nhiên thời gian diễn ra các buổi tập của từng PT cần tránh bị trùng lịch.</p>
+      </div>
+    </div>
+  `
 };

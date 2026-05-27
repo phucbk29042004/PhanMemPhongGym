@@ -791,4 +791,28 @@ window.GymApp.pages['member-add'] = {
       }
     });
   },
+
+  guideHtml: `
+    <div class="space-y-4 text-xs">
+      <div class="flex items-start gap-2 bg-brand-primary/5 p-3 rounded-xl border border-brand-primary/10">
+        <span class="material-symbols-outlined text-brand-primary text-base flex-shrink-0 mt-0.5">info</span>
+        <p class="text-on-surface-variant leading-relaxed">Trang <strong>Thêm hội viên mới</strong> cho phép nhập hồ sơ thông tin và tiến hành đăng ký gói tập ban đầu cho khách hàng.</p>
+      </div>
+
+      <div>
+        <h4 class="font-bold text-on-surface mb-1">📋 Các bước thực hiện:</h4>
+        <ul class="list-decimal pl-5 space-y-1 text-on-surface-variant">
+          <li><strong>Bước 1: Điền thông tin cá nhân:</strong> Nhập họ tên, số điện thoại, giới tính, ngày sinh. Tải ảnh đại diện (avatar) của hội viên để nhận diện khi check-in.</li>
+          <li><strong>Bước 2: Chọn gói tập ban đầu:</strong> Lựa chọn gói tập phù hợp trong danh sách, hệ thống sẽ tự động tính ngày bắt đầu và kết thúc.</li>
+          <li><strong>Bước 3: Xác nhận thanh toán:</strong> Chọn phương thức thanh toán (tiền mặt/chuyển khoản), điền số tiền thực tế khách trả (nếu nợ cần chú ý).</li>
+          <li><strong>Bước 4: Hoàn tất:</strong> Bấm <strong>Lưu hồ sơ</strong> để tạo tài khoản hội viên và kích hoạt gói tập.</li>
+        </ul>
+      </div>
+
+      <div class="bg-error/5 border border-error/20 rounded-xl p-3 flex gap-2">
+        <span class="material-symbols-outlined text-error text-base flex-shrink-0 mt-0.5">warning</span>
+        <p class="text-on-surface-variant leading-relaxed"><strong>Chú ý:</strong> Số điện thoại của hội viên là bắt buộc và phải là duy nhất (không được trùng lặp trong hệ thống).</p>
+      </div>
+    </div>
+  `
 };

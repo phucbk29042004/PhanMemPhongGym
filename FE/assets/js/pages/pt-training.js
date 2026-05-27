@@ -774,5 +774,31 @@ window.GymApp.pages['pt-training'] = {
         btn.innerHTML = '<span class="material-symbols-outlined text-sm">undo</span>Hoàn tác';
       }
     });
-  }
+  },
+
+  guideHtml: `
+    <div class="space-y-4 text-xs">
+      <div class="flex items-start gap-2 bg-brand-primary/5 p-3 rounded-xl border border-brand-primary/10">
+        <span class="material-symbols-outlined text-brand-primary text-base flex-shrink-0 mt-0.5">info</span>
+        <p class="text-on-surface-variant leading-relaxed">Trang <strong>Lịch đào tạo PT</strong> hiển thị danh sách các buổi tập luyện cá nhân của hội viên cùng Huấn luyện viên (PT) và quản lý trạng thái buổi học.</p>
+      </div>
+
+      <div>
+        <h4 class="font-bold text-on-surface mb-1">🔍 Tìm kiếm & Bộ lọc:</h4>
+        <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
+          <li><strong>Tìm nhanh:</strong> Gõ tên PT hoặc hội viên vào ô tìm kiếm để lọc nhanh danh sách lịch tập.</li>
+          <li><strong>Bộ lọc nâng cao:</strong> Bấm <strong>Bộ lọc</strong> để mở rộng tuỳ chọn lọc theo Huấn luyện viên cụ thể, Trạng thái buổi học, hoặc Khoảng ngày diễn ra buổi tập.</li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="font-bold text-on-surface mb-1">⚙️ Cập nhật trạng thái buổi tập:</h4>
+        <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
+          <li><strong>Điểm danh dạy (Duyệt dạy):</strong> Khi buổi tập diễn ra, bấm **Điểm danh** để đổi trạng thái sang <strong>Đã tập</strong> (ghi nhận buổi dạy cho PT).</li>
+          <li><strong>Hủy buổi:</strong> Bấm **Hủy buổi** (nhập lý do) nếu hội viên bận đột xuất hoặc có việc riêng không thể tập.</li>
+          <li><strong>Hoàn tác:</strong> Cho phép khôi phục trạng thái buổi học về <strong>Chờ tập</strong> nếu có sai sót trong quá trình điểm danh trước đó.</li>
+        </ul>
+      </div>
+    </div>
+  `
 };

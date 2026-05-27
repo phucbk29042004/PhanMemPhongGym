@@ -4229,5 +4229,32 @@ window.GymApp.pages['members-list'] = {
 
     self._updatePtSortUI();
     self._updateMemberSortUI();
-  }
+  },
+
+  guideHtml: `
+    <div class="space-y-4 text-xs">
+      <div class="flex items-start gap-2 bg-brand-primary/5 p-3 rounded-xl border border-brand-primary/10">
+        <span class="material-symbols-outlined text-brand-primary text-base flex-shrink-0 mt-0.5">info</span>
+        <p class="text-on-surface-variant leading-relaxed">Trang <strong>Danh sách hội viên</strong> quản lý thông tin tài khoản, hồ sơ hội viên và huấn luyện viên (HLV/PT) của phòng tập.</p>
+      </div>
+
+      <div>
+        <h4 class="font-bold text-on-surface mb-1">👥 Quản lý Hội viên:</h4>
+        <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
+          <li><strong>Tìm kiếm & Lọc:</strong> Tìm hội viên theo tên, SĐT hoặc mã số. Lọc theo trạng thái gói (Còn hạn, Hết hạn...), giới tính, hoặc xem ai đã check-in hôm nay.</li>
+          <li><strong>Xem chi tiết:</strong> Click vào nút Xem (mắt xanh) để xem thông tin cá nhân, lịch sử tập luyện, các gói tập đã mua và lịch đăng ký PT của hội viên.</li>
+          <li><strong>Thao tác nhanh:</strong> Lập phiếu gia hạn gói, đổi gói, hủy gói tập hoặc gán PT trực tiếp trong màn hình chi tiết hội viên.</li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="font-bold text-on-surface mb-1">🏋️ Quản lý Huấn luyện viên (PT):</h4>
+        <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
+          <li>Chuyển sang tab <strong>Huấn luyện viên</strong> để quản lý danh sách PT.</li>
+          <li>Xem thông tin chuyên môn, số lượng hội viên đang phụ trách và tổng số buổi dạy thực tế của từng PT.</li>
+          <li>Thêm mới HLV bằng nút <strong>Thêm HLV</strong> ở góc trên bên phải khi đang chọn tab HLV.</li>
+        </ul>
+      </div>
+    </div>
+  `
 };

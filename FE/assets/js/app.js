@@ -49,11 +49,26 @@
     // Update breadcrumb
     const breadcrumbCurrent = document.getElementById('breadcrumb-current-page');
     if (breadcrumbCurrent) {
+      let pageTitleHtml = '';
       if (SUB_PAGES.includes(pageName)) {
-        breadcrumbCurrent.innerHTML = `<span class="text-on-surface-variant font-medium">Quản lý</span> <span class="material-symbols-outlined text-[16px] text-outline-variant align-middle mx-0.5">chevron_right</span> <span class="text-on-surface font-bold">${PAGE_TITLES[pageName] || 'Trang'}</span>`;
+        pageTitleHtml = `<span class="text-on-surface-variant font-medium">Quản lý</span> <span class="material-symbols-outlined text-[16px] text-outline-variant align-middle mx-0.5">chevron_right</span> <span class="text-on-surface font-bold">${PAGE_TITLES[pageName] || 'Trang'}</span>`;
       } else {
-        breadcrumbCurrent.textContent = PAGE_TITLES[pageName] || 'Trang';
+        pageTitleHtml = PAGE_TITLES[pageName] || 'Trang';
       }
+      
+      // Nếu trang đó có hướng dẫn, ta chèn thêm nút dấu hỏi
+      if (page.guideHtml) {
+        pageTitleHtml += `<button id="btn-page-help" class="material-symbols-outlined text-on-surface-variant hover:text-brand-primary text-[18px] align-middle ml-1.5 cursor-pointer transition-all hover:scale-110 active:scale-95" title="Hướng dẫn sử dụng trang này">help_outline</button>`;
+      }
+      
+      breadcrumbCurrent.innerHTML = pageTitleHtml;
+      
+      // Gắn sự kiện click
+      document.getElementById('btn-page-help')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        window.GymApp.showHelpModal(pageName);
+      });
     }
 
     window.GymApp.currentPage = pageName;
@@ -233,6 +248,42 @@
     overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
     const escHandler = e => { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', escHandler); } };
     document.addEventListener('keydown', escHandler);
+  };
+
+  // ===== HELP MODAL =====
+  window.GymApp.showHelpModal = function (pageName) {
+    const page = window.GymApp.pages[pageName];
+    if (!page || !page.guideHtml) return;
+
+    const pageTitle = PAGE_TITLES[pageName] || 'Trang';
+    const modalHtml = `
+      <div class="px-6 py-4 bg-brand-primary text-white flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center shadow-inner">
+          <span class="material-symbols-outlined text-xl">help_outline</span>
+        </div>
+        <div>
+          <h3 class="text-sm font-bold tracking-tight">Hướng dẫn sử dụng</h3>
+          <p class="text-[11px] opacity-90 font-medium">Trang: ${pageTitle}</p>
+        </div>
+      </div>
+      
+      <div class="p-6 max-h-[50vh] overflow-y-auto" style="scrollbar-width: thin; scrollbar-color: var(--outline-variant) transparent;">
+        <div class="text-on-surface">
+          ${page.guideHtml}
+        </div>
+      </div>
+      
+      <div class="px-6 py-4 bg-surface-container-low flex gap-2 border-t border-outline-variant/30 justify-end">
+        <button id="btn-close-help" class="px-5 py-2 rounded-xl font-bold bg-brand-primary text-white hover:bg-[#157a2a] transition-all text-xs shadow-md active:scale-95">Đã hiểu</button>
+      </div>
+    `;
+
+    window.GymApp.showModal(modalHtml);
+
+    // Bind close event
+    document.getElementById('btn-close-help').onclick = () => {
+      document.getElementById('gym-modal')?.remove();
+    };
   };
 
   // ===== CONFIRM MODAL =====

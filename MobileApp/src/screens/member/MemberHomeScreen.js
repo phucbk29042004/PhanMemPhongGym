@@ -8,7 +8,7 @@ import {
   Award, CalendarCheck, ChevronRight, Clock,
   CreditCard, Dumbbell, QrCode, ShieldCheck,
   TrendingUp, Users, Zap, MessageSquare, CheckCircle2, XCircle, ChevronDown,
-  MapPin, Phone, Info, Star,
+  MapPin, Phone, Info, Star
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import ProfileAvatar from '../../components/ProfileAvatar';
@@ -545,6 +545,7 @@ export default function MemberHomeScreen({ navigation }) {
               onPress={() => navigation?.navigate?.('QRCode')}
               colors={colors}
             />
+
             <UtilityChip
               icon={CalendarCheck}
               label={'Lịch tập\ntiếp theo'}
@@ -1389,12 +1390,12 @@ const styles = StyleSheet.create({
   emptyContractSub: { fontSize: 12, color: G.gray400 },
 
   // Utility chips
-  utilGrid: { flexDirection: 'row', justifyContent: 'space-between', gap: 4 },
+  utilGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'flex-start' },
   utilChip: {
-    flex: 1,
+    width: '30%',
     alignItems: 'center',
     gap: 6,
-    minWidth: 55,
+    marginBottom: 12,
   },
   utilIcon: {
     width: 48,

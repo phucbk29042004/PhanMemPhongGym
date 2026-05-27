@@ -816,5 +816,32 @@ window.GymApp.pages['expired'] = {
     } else {
       window.GymApp.toast('Module gia hạn chưa sẵn sàng!', 'warning');
     }
-  }
+  },
+
+  guideHtml: `
+    <div class="space-y-4 text-xs">
+      <div class="flex items-start gap-2 bg-brand-primary/5 p-3 rounded-xl border border-brand-primary/10">
+        <span class="material-symbols-outlined text-brand-primary text-base flex-shrink-0 mt-0.5">info</span>
+        <p class="text-on-surface-variant leading-relaxed">Trang <strong>Hết hạn / Sắp hết hạn</strong> giúp quản lý danh sách các khách hàng đã kết thúc gói tập hoặc sắp đến ngày hết hạn để nhân viên kịp thời chăm sóc và gia hạn.</p>
+      </div>
+
+      <div>
+        <h4 class="font-bold text-on-surface mb-1">📁 Các tab chức năng:</h4>
+        <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
+          <li><strong>Hết hạn:</strong> Danh sách hội viên đã quá ngày kết thúc gói tập (hiện tại không thể quét mã vào tập).</li>
+          <li><strong>Sắp hết:</strong> Danh sách hội viên có gói tập sẽ hết hạn trong vòng 7 ngày tới.</li>
+          <li><strong>Yêu cầu:</strong> Danh sách yêu cầu gia hạn gói tập do hội viên gửi trực tiếp từ ứng dụng điện thoại (App).</li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="font-bold text-on-surface mb-1">⚡ Thao tác xử lý:</h4>
+        <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
+          <li><strong>Gửi nhắc nhở:</strong> Bấm biểu tượng Chuông báo để gửi thông báo đẩy (push notification) nhắc nhở hội viên gia hạn qua App.</li>
+          <li><strong>Lập phiếu gia hạn:</strong> Bấm biểu tượng Tờ giấy để mở nhanh hộp thoại đăng ký gói tập mới cho hội viên.</li>
+          <li><strong>Duyệt yêu cầu:</strong> Tại tab Yêu cầu, bấm <strong>Duyệt</strong> để xác nhận thu tiền và kích hoạt gói mới cho hội viên, hoặc bấm <strong>Từ chối</strong> nếu có sai sót.</li>
+        </ul>
+      </div>
+    </div>
+  `
 };

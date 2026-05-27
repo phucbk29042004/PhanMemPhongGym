@@ -691,4 +691,35 @@ window.GymApp.pages['revenue'] = {
       this._chart = null;
     }
   },
+
+  guideHtml: `
+    <div class="space-y-4 text-xs">
+      <div class="flex items-start gap-2 bg-brand-primary/5 p-3 rounded-xl border border-brand-primary/10">
+        <span class="material-symbols-outlined text-brand-primary text-base flex-shrink-0 mt-0.5">info</span>
+        <p class="text-on-surface-variant leading-relaxed">Trang <strong>Quản lý Doanh thu</strong> giúp theo dõi doanh thu thực tế, lịch sử giao dịch và phân tích cơ cấu doanh thu theo gói tập của phòng gym.</p>
+      </div>
+      
+      <div>
+        <h4 class="font-bold text-on-surface mb-1">📌 Các chỉ số tài chính:</h4>
+        <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
+          <li><strong>Doanh thu:</strong> Tổng số tiền thu được từ việc đăng ký gói hội viên và gói PT trong khoảng thời gian đã chọn.</li>
+          <li><strong>Số giao dịch:</strong> Tổng số hóa đơn/lịch sử đăng ký được ghi nhận thành công.</li>
+          <li><strong>Trung bình/GD:</strong> Giá trị trung bình trên mỗi giao dịch được thực hiện.</li>
+          <li><strong>So với tháng trước:</strong> Tỷ lệ tăng trưởng doanh thu so với cùng kỳ tháng trước.</li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="font-bold text-on-surface mb-1">⚙️ Hướng dẫn thao tác:</h4>
+        <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
+          <li><strong>Bộ lọc thời gian:</strong> Lựa chọn xem dữ liệu theo Hôm nay, Hôm qua, 7 ngày qua hoặc 30 ngày qua bằng các nút ở góc trên bên phải.</li>
+          <li><strong>Biểu đồ doanh thu:</strong> Thể hiện xu hướng biến động doanh thu theo từng ngày để có kế hoạch kinh doanh phù hợp.</li>
+          <li><strong>Doanh thu theo gói:</strong> Bảng thống kê chi tiết số tiền đóng góp từ từng gói tập hội viên/gói PT riêng biệt, có hỗ trợ phân trang khi danh sách gói dài.</li>
+          <li><strong>Danh sách giao dịch:</strong> Hiển thị danh sách hóa đơn chi tiết trong ngày hoặc khoảng thời gian lọc (bao gồm Tên hội viên, Gói tập, Giá tiền, Ngày thanh toán và Người duyệt).</li>
+          <li><strong>Tải lại dữ liệu:</strong> Cập nhật dữ liệu tài chính mới nhất từ hệ thống bằng nút xoay tải lại.</li>
+          <li><strong>Xuất Excel:</strong> Tải báo cáo doanh thu dưới dạng file CSV theo bộ lọc thời gian hiện tại để lưu trữ hoặc đối soát.</li>
+        </ul>
+      </div>
+    </div>
+  `
 };

@@ -603,5 +603,36 @@ window.GymApp.pages['dashboard'] = {
         }
       });
     }
-  }
+  },
+
+  guideHtml: `
+    <div class="space-y-4 text-xs">
+      <div class="flex items-start gap-2 bg-brand-primary/5 p-3 rounded-xl border border-brand-primary/10">
+        <span class="material-symbols-outlined text-brand-primary text-base flex-shrink-0 mt-0.5">info</span>
+        <p class="text-on-surface-variant leading-relaxed">Trang <strong>Tổng quan (Dashboard)</strong> cung cấp cái nhìn tổng thể về tình hình kinh doanh, số lượng hội viên và hoạt động vào-ra trong ngày của phòng tập.</p>
+      </div>
+      
+      <div>
+        <h4 class="font-bold text-on-surface mb-1">📌 4 Chỉ số KPI hàng đầu:</h4>
+        <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
+          <li><strong>Tổng hội viên:</strong> Toàn bộ số lượng hội viên đã đăng ký trong cơ sở dữ liệu.</li>
+          <li><strong>Check-in hôm nay:</strong> Lượt quét mã QR/nhập thẻ vào tập thực tế ghi nhận trong ngày.</li>
+          <li><strong>Doanh thu hôm nay:</strong> Doanh thu thực tế (đã thu tiền) phát sinh trong hôm nay.</li>
+          <li><strong>Sắp hết hạn:</strong> Số lượng gói tập sẽ hết hạn trong vòng 7 ngày tới (cần chú ý gia hạn).</li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="font-bold text-on-surface mb-1">📊 Phân tích biểu đồ & Tiện ích:</h4>
+        <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
+          <li><strong>Doanh thu 12 tháng:</strong> Biểu đồ so sánh trực quan doanh thu tháng này so với tháng trước để theo dõi tốc độ tăng trưởng.</li>
+          <li><strong>Hội viên chăm chỉ:</strong> Liệt kê danh sách top 5 hội viên có số buổi quét mã check-in đi tập nhiều nhất trong tháng hiện tại.</li>
+          <li><strong>Doanh thu theo gói tập:</strong> Xếp hạng 5 gói tập đem lại doanh thu cao nhất cho phòng tập kèm biểu đồ tương ứng.</li>
+          <li><strong>Tình trạng hội viên:</strong> Biểu đồ tròn thể hiện tỷ lệ hội viên còn hạn, sắp hết hạn, hết hạn và chưa mua gói.</li>
+          <li><strong>Check-in gần nhất:</strong> Danh sách cập nhật thời gian thực các hội viên vừa vào tập.</li>
+          <li><strong>Hoạt động gần đây:</strong> Nhật ký hoạt động của các nhân viên/admin hệ thống (tạo, sửa, xóa, đăng nhập).</li>
+        </ul>
+      </div>
+    </div>
+  `
 };
