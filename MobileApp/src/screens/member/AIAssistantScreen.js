@@ -20,6 +20,55 @@ const G = {
   gray900: '#141c14',
 };
 
+const renderFormattedText = (text, isUser, colors, isDark) => {
+  if (isUser) {
+    return (
+      <Text style={[styles.messageText, { color: G.white }]}>
+        {text}
+      </Text>
+    );
+  }
+
+  const lines = text.split('\n');
+  return lines.map((line, lineIdx) => {
+    let content = line;
+    let isBullet = false;
+
+    if (content.trim().startsWith('- ')) {
+      isBullet = true;
+      content = content.replace(/^\s*-\s+/, '');
+    } else if (content.trim().startsWith('* ')) {
+      isBullet = true;
+      content = content.replace(/^\s*\*\s+/, '');
+    } else if (content.trim().startsWith('• ')) {
+      isBullet = true;
+      content = content.replace(/^\s*•\s+/, '');
+    }
+
+    // Tách phần in đậm **bold**
+    const parts = content.split(/(\*\*.*?\*\*)/g);
+    const elements = parts.map((part, partIdx) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return (
+          <Text key={partIdx} style={{ fontWeight: 'bold' }}>
+            {part.slice(2, -2)}
+          </Text>
+        );
+      }
+      return <Text key={partIdx}>{part}</Text>;
+    });
+
+    return (
+      <View key={lineIdx} style={[styles.textLineContainer, isBullet && styles.bulletContainer]}>
+        {isBullet && <Text style={[styles.bulletDot, { color: colors.text }]}>• </Text>}
+        <Text style={[styles.messageText, { color: colors.text, flex: 1 }]}>
+          {elements}
+        </Text>
+      </View>
+    );
+  });
+};
+
 export default function AIAssistantScreen({ navigation }) {
   const { colors, isDark } = useTheme();
   const [messages, setMessages] = useState([
@@ -136,14 +185,7 @@ export default function AIAssistantScreen({ navigation }) {
                         ],
                   ]}
                 >
-                  <Text
-                    style={[
-                      styles.messageText,
-                      { color: isUser ? G.white : colors.text },
-                    ]}
-                  >
-                    {item.text}
-                  </Text>
+                  {renderFormattedText(item.text, isUser, colors, isDark)}
                 </View>
                 {isUser && (
                   <View style={[styles.userAvatar, { backgroundColor: G.primary }]}>
@@ -302,6 +344,20 @@ const styles = StyleSheet.create({
   messageText: {
     fontSize: 13,
     lineHeight: 18,
+  },
+  textLineContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginVertical: 1,
+  },
+  bulletContainer: {
+    paddingLeft: 6,
+  },
+  bulletDot: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: 'bold',
+    marginRight: 4,
   },
   inputArea: {
     flexDirection: 'row',

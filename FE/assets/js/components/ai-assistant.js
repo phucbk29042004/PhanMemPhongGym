@@ -228,13 +228,43 @@
       scrollToBottom();
     };
 
-    // Simple formatting for bold, bullet points, line breaks
+    // Simple formatting for bold, bullet points, line breaks, and paragraphs
     const formatText = (text) => {
-      return text
+      const lines = text.split('\n');
+      let html = '';
+      let inList = false;
+
+      lines.forEach((line) => {
+        const trimmed = line.trim();
+        // Kiểm tra xem dòng có phải là một gạch đầu dòng danh sách không
+        if (trimmed.startsWith('- ') || trimmed.startsWith('* ') || trimmed.startsWith('• ')) {
+          if (!inList) {
+            html += '<ul class="list-disc pl-5 my-1.5 space-y-1">';
+            inList = true;
+          }
+          const content = trimmed.replace(/^[-*•]\s+/, '');
+          html += `<li>${content}</li>`;
+        } else {
+          if (inList) {
+            html += '</ul>';
+            inList = false;
+          }
+          if (trimmed === '') {
+            html += '<div class="h-2"></div>'; // Dòng trống tạo khoảng giãn cách nhỏ
+          } else {
+            html += `<p class="mb-1.5 last:mb-0">${line}</p>`;
+          }
+        }
+      });
+
+      if (inList) {
+        html += '</ul>';
+      }
+
+      // Apply formatting for bold and italic
+      return html
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        .replace(/\n/g, '<br>')
-        .replace(/- (.*?)(<br>|$)/g, '• $1$2');
+        .replace(/\*(.*?)\*/g, '<em>$1</em>');
     };
 
     const scrollToBottom = () => {
