@@ -75,8 +75,8 @@ window.GymApp.pages['pt-training'] = {
               Bộ lọc
             </button>
 
-            <!-- Button Tải Lại (reload icon, blue background) -->
-            <button id="pt-reload" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl bg-[#1a73e8] text-white hover:opacity-90 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer whitespace-nowrap">
+            <!-- Button Tải Lại (reload icon, outlined style) -->
+            <button id="pt-reload" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border border-outline-variant bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer whitespace-nowrap">
               <span class="material-symbols-outlined text-base">refresh</span>
               Tải lại
             </button>

@@ -120,6 +120,11 @@ window.GymApp.pages['members-list'] = {
                   <span id="member-sort-badge" style="display:none;position:absolute;top:-8px;right:-8px;width:22px;height:22px;background:#1D9336;color:#fff;border-radius:50%;font-size:11px;align-items:center;justify-content:center;font-weight:800;box-shadow:0 2px 8px rgba(29,147,54,0.4);border:2px solid #fff;">1</span>
                 </button>
                 
+                <button id="btn-members-reload" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border border-outline-variant bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer whitespace-nowrap">
+                  <span class="material-symbols-outlined text-base">refresh</span>
+                  <span>Tải lại</span>
+                </button>
+
                 <button id="btn-export-members" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border-2 border-outline-variant/50 bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer group">
                   <span class="material-symbols-outlined text-base text-[#1D9336]">download</span>
                   <span>Xuất Excel</span>
@@ -163,6 +168,11 @@ window.GymApp.pages['members-list'] = {
                   <span id="pt-sort-badge" style="display:none;position:absolute;top:-8px;right:-8px;width:22px;height:22px;background:#1D9336;color:#fff;border-radius:50%;font-size:11px;align-items:center;justify-content:center;font-weight:800;box-shadow:0 2px 8px rgba(29,147,54,0.4);border:2px solid #fff;">1</span>
                 </button>
  
+                <button id="btn-pts-reload" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border border-outline-variant bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer whitespace-nowrap">
+                  <span class="material-symbols-outlined text-base">refresh</span>
+                  <span>Tải lại</span>
+                </button>
+
                 <button id="btn-export-pts" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border-2 border-outline-variant/50 bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer group">
                   <span class="material-symbols-outlined text-base text-[#1D9336]">download</span>
                   <span>Xuất Excel</span>
@@ -191,6 +201,13 @@ window.GymApp.pages['members-list'] = {
     window.GymApp.data.members = this._normalizeListResponse(membersRes);
     this._memberFiltered = [...window.GymApp.data.members];
     this._refreshMemberTable();
+  },
+
+  _refreshPtsFromApi: async function () {
+    const ptsRes = await window.GymApp.api.get('/trainers');
+    window.GymApp.data.pts = this._normalizeListResponse(ptsRes);
+    this._ptFiltered = [...window.GymApp.data.pts];
+    this._refreshPtCards();
   },
 
   _renderMemberTable: function () {
@@ -526,6 +543,14 @@ window.GymApp.pages['members-list'] = {
         : Array.isArray(membersRes?.data?.data) ? membersRes.data.data : [];
       ptSchedules = Array.isArray(schedulesRes?.data) ? schedulesRes.data
         : Array.isArray(schedulesRes?.data?.data) ? schedulesRes.data.data : [];
+      
+      // Cập nhật cache PT với dữ liệu mới từ API để thống kê luôn chính xác
+      if (pt && ptRes?.data) {
+        const ptIndex = (window.GymApp.data.pts || []).findIndex(x => x.id == id);
+        if (ptIndex !== -1) {
+          window.GymApp.data.pts[ptIndex] = { ...window.GymApp.data.pts[ptIndex], ...pt };
+        }
+      }
     } catch (err) {
       console.error('Failed to fetch PT details:', err);
       pt = (window.GymApp.data.pts || []).find(x => x.id == id);
@@ -4141,6 +4166,50 @@ window.GymApp.pages['members-list'] = {
 
     document.getElementById('btn-filter-pt')?.addEventListener('click', () => self._showPtFilterModal());
     document.getElementById('btn-sort-pt')?.addEventListener('click', () => self._showPtSortModal());
+
+    document.getElementById('btn-members-reload')?.addEventListener('click', async () => {
+      const btn = document.getElementById('btn-members-reload');
+      const icon = btn?.querySelector('.material-symbols-outlined');
+      if (icon) icon.classList.add('animate-spin');
+      if (btn) {
+        btn.disabled = true;
+        btn.classList.add('pointer-events-none', 'opacity-50');
+      }
+      try {
+        await self._refreshMembersFromApi();
+        window.GymApp.toast('Đã cập nhật danh sách hội viên!', 'success');
+      } catch (e) {
+        window.GymApp.toast('Không thể tải lại danh sách hội viên!', 'error');
+      } finally {
+        if (icon) icon.classList.remove('animate-spin');
+        if (btn) {
+          btn.disabled = false;
+          btn.classList.remove('pointer-events-none', 'opacity-50');
+        }
+      }
+    });
+
+    document.getElementById('btn-pts-reload')?.addEventListener('click', async () => {
+      const btn = document.getElementById('btn-pts-reload');
+      const icon = btn?.querySelector('.material-symbols-outlined');
+      if (icon) icon.classList.add('animate-spin');
+      if (btn) {
+        btn.disabled = true;
+        btn.classList.add('pointer-events-none', 'opacity-50');
+      }
+      try {
+        await self._refreshPtsFromApi();
+        window.GymApp.toast('Đã cập nhật danh sách huấn luyện viên!', 'success');
+      } catch (e) {
+        window.GymApp.toast('Không thể tải lại danh sách huấn luyện viên!', 'error');
+      } finally {
+        if (icon) icon.classList.remove('animate-spin');
+        if (btn) {
+          btn.disabled = false;
+          btn.classList.remove('pointer-events-none', 'opacity-50');
+        }
+      }
+    });
 
     document.getElementById('btn-export-members')?.addEventListener('click', async () => {
       window.GymApp.toast('Đang xuất danh sách hội viên...', 'info');

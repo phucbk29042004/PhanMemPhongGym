@@ -8,11 +8,46 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
-**✅ Khắc phục lỗi cú pháp PTHomeScreen.js & Đồng bộ Nhật ký tiến độ** — Sửa lỗi biên dịch JSX cho PTHomeScreen.js giúp ứng dụng di động PT hoạt động bình thường, và cập nhật tài liệu dự án theo đúng quy tắc rule.md.
+**✅ Cải tổ Triggers doanh thu, Rebuild dữ liệu Doanh thu & Đồng bộ bộ lọc 7/30 ngày** — Khắc phục triệt để sai lệch doanh thu lịch sử bằng cách rebuild bảng doanh thu, thống nhất ngày ghi nhận trigger, và hoàn thiện bộ lọc doanh thu 7/30 ngày đồng bộ Web và Mobile.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
+
+### 27/05/2026 09:45 — Cải tổ Triggers doanh thu, Rebuild dữ liệu Doanh thu & Đồng bộ bộ lọc 7/30 ngày
+- **Loại**: Thêm tính năng mới, Sửa bug, Nghiệp vụ, Database Trigger (Fullstack)
+- **File/Thành phần liên quan**:
+  - [db.js](file:///d:/UI%20GYM/BE/src/config/db.js) (Backend DB)
+  - [revenue.controller.js](file:///d:/UI%20GYM/BE/src/controllers/revenue.controller.js) (Backend API)
+  - [revenue.js](file:///d:/UI%20GYM/FE/assets/js/pages/revenue.js) (Web Frontend JS)
+- **Mô tả**:
+  - **Cải tổ Triggers doanh thu (Database)**: Tạo Migration v15 trong `db.js` để drop 6 trigger doanh thu cũ và định nghĩa lại với ngày ghi nhận thống nhất `COALESCE(date(ngay_thanh_toan), date(ngay_tao))`, loại bỏ hoàn toàn việc lệch doanh thu do sự bất nhất giữa ngày duyệt (ngày hôm nay) và ngày tạo (ngày hôm trước).
+  - **Rebuild Doanh thu**: Chạy SQL tổng hợp lại bảng `doanh_thu` từ hai bảng giao dịch gốc `dang_ky_goi_tap` và `dang_ky_pt` khi khởi động backend, giúp khôi phục dữ liệu doanh thu quá khứ chính xác 100%.
+  - **API Giao dịch kỳ lọc**: Bổ sung trả về danh sách giao dịch chi tiết `transactions` trong khoảng thời gian lọc trong hàm `getRevenue`.
+  - **Đồng bộ bộ lọc 7/30 ngày (Frontend Web & Mobile)**:
+    - Sửa đổi `revenue.js` để khi người dùng chọn "7 ngày" hoặc "30 ngày", các card thống kê Doanh thu, Gói Gym, Gói PT sẽ lấy số liệu của cả kỳ lọc (từ đối tượng `summary` thay vì lấy ngày hôm nay).
+    - Cập nhật bảng giao dịch hiển thị đúng các giao dịch của cả kỳ lọc, đồng bộ cách hiển thị doanh thu kỳ lọc chuyên nghiệp với Mobile App.
+- **Kết quả**: Thành công 100%.
+
+### 27/05/2026 09:30 — Fix Lỗi Thống Kê PT & Doanh Thu Hôm Nay Không Cập Nhật
+- **Loại**: Sửa bug, Frontend Data Cache
+- **File/Thành phần liên quan**:
+  - [FE/assets/js/pages/members-list.js](FE/assets/js/pages/members-list.js#L511-L537) (Tab PT Detail Modal)
+  - [FE/assets/js/pages/revenue.js](FE/assets/js/pages/revenue.js#L163-L180) (Card Doanh Thu)
+- **Mô tả**:
+  - **Vấn đề 1 — Thống kê PT không chính xác**: Khi xem chi tiết PT, dữ liệu `tong_buoi_da_day`, `so_hoc_vien`, `danh_gia` không được cập nhật từ API vào cache. Fix: Thêm logic cập nhật `window.GymApp.data.pts` sau khi fetch dữ liệu PT từ API `/trainers/{id}`, đảm bảo cache luôn được đồng bộ.
+  - **Vấn đề 2 — Doanh thu gói PT/tập hôm nay sai**: Card "Gói tập" & "Gói PT" lấy dữ liệu từ `summary?.tong_goi_tap` (doanh thu tháng) thay vì `dayData?.tien_goi_tap` (doanh thu hôm nay). Fix: Thay đổi logic `_renderStats()` để 2 card này luôn dùng `dayData` (doanh thu hôm nay), bất kể khoảng thời gian nào được chọn. Chỉ card "Tổng doanh thu" mới dùng `summary`.
+- **Kết quả**: Thành công 100%. Giờ đây khi đổi gói PT/tập, các thống kê và doanh thu đều cập nhật chính xác.
+
+### 27/05/2026 08:45 — Bổ sung Thống kê PT & Trigger đồng bộ Doanh thu đổi gói PT
+- **Loại**: Sửa bug, Nghiệp vụ, Database Trigger (Fullstack)
+- **File/Thành phần liên quan**:
+  - [trainers.controller.js](file:///d:/UI%20GYM/BE/src/controllers/trainers.controller.js) (Backend API)
+  - [db.js](file:///d:/UI%20GYM/BE/src/config/db.js) (Backend DB)
+- **Mô tả**:
+  - **Sửa lỗi hiển thị chi tiết PT**: Cập nhật hàm `getTrainerById` trong `trainers.controller.js` để tính toán realtime và trả về đầy đủ các trường `so_hoc_vien`, `tong_buoi_da_day` và `so_goi_dang_day` qua câu truy vấn con, giúp frontend hiển thị chính xác bảng thống kê chi tiết HLV.
+  - **Sửa lỗi đồng bộ doanh thu đổi gói PT**: Tạo Migration v14 trong `db.js` để thêm 2 trigger SQLite `trg_doanh_thu_goi_pt_price_update` (`AFTER UPDATE OF gia_thuc_te ON dang_ky_pt`) và `trg_doanh_thu_goi_tap_price_update` (`AFTER UPDATE OF gia_thuc_te ON dang_ky_goi_tap`). Nhờ vậy, khi thay đổi trực tiếp giá thực tế của gói (để đổi gói mà không tạo bản ghi mới), doanh thu hôm nay vẫn được tính toán cộng/trừ chênh lệch một cách chính xác dựa trên ngày tạo ban đầu.
+- **Kết quả**: Thành công 100%.
 
 ### 26/05/2026 11:55 — Khắc Phục Lỗi Cú Pháp JSX/TSX Cho PTHomeScreen.js
 - **Loại**: Sửa bug / Refactor code

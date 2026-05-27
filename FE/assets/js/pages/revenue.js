@@ -16,7 +16,7 @@ window.GymApp.pages['revenue'] = {
               <button class="rev-range-btn px-4 py-1.5 rounded-xl text-body-sm font-bold transition-all duration-300" data-days="7">7 ngày</button>
               <button class="rev-range-btn px-4 py-1.5 rounded-xl text-body-sm font-bold transition-all duration-300" data-days="30">30 ngày</button>
             </div>
-            <button id="rev-reload" class="ml-auto flex items-center justify-center gap-xs px-4 py-2 rounded-xl border-2 border-outline-variant/50 bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer whitespace-nowrap">
+            <button id="rev-reload" class="ml-auto flex items-center justify-center gap-xs px-4 py-2 rounded-xl border border-outline-variant bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer whitespace-nowrap">
               <span class="material-symbols-outlined text-base">refresh</span>
               Tải lại
             </button>
@@ -62,7 +62,7 @@ window.GymApp.pages['revenue'] = {
           </div>
         </div>
 
-        <!-- Bảng giao dịch hôm nay -->
+        <!-- Bảng giao dịch -->
         <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 shadow-sm overflow-hidden">
           <div class="section-header px-standard py-compact border-b border-outline-variant/50 flex items-center gap-compact bg-surface-container-low/20">
             <div class="icon-bg icon-bg-green" style="width:32px;height:32px;border-radius:8px">
@@ -112,7 +112,7 @@ window.GymApp.pages['revenue'] = {
     const prevVal = parseFloat(previous);
     const currVal = parseFloat(current);
     if (isNaN(prevVal) || isNaN(currVal)) return '';
-    
+
     let pct = 0;
     if (prevVal === 0) {
       if (currVal > 0) pct = 100;
@@ -141,48 +141,96 @@ window.GymApp.pages['revenue'] = {
     const totalTrendHtml = this._formatTrend(currentTotal, previousTotal);
     const dayTrendHtml = this._formatTrend(dayData?.tong_tien || 0, dayData?.hom_qua || 0);
 
+    const isToday = this._days === 'today';
     const isYesterday = this._days === 'yesterday';
+    const isSingleDay = isToday || isYesterday;
 
-    const cards = [
-      {
-        label: 'Tổng doanh thu',
-        value: this._formatMoney(isYesterday ? dayData?.tong_tien : summary?.tong_doanh_thu),
-        icon: 'payments',
-        iconBg: 'icon-bg-green',
-        color: 'text-brand-primary',
-        trendHtml: totalTrendHtml,
-        sub: `Tháng trước: ${this._formatMoney(previousTotal)}`,
-      },
-      {
-        label: isYesterday ? 'Doanh thu hôm qua' : 'Doanh thu hôm nay',
-        value: this._formatMoney(dayData?.tong_tien),
-        icon: isYesterday ? 'history' : 'today',
-        iconBg: 'icon-bg-green',
-        color: 'text-brand-primary',
-        trendHtml: dayTrendHtml,
-        sub: isYesterday 
-          ? `Hôm kia: ${this._formatMoney(dayData?.hom_qua)} • ${dayData?.tong_don || 0} đơn`
-          : `Hôm qua: ${this._formatMoney(dayData?.hom_qua)} • ${dayData?.tong_don || 0} đơn`,
-      },
-      {
-        label: 'Gói tập',
-        value: this._formatMoney(isYesterday ? dayData?.tien_goi_tap : summary?.tong_goi_tap),
-        icon: 'card_membership',
-        iconBg: 'icon-bg-orange',
-        color: 'text-[#e65100]',
-        trendHtml: '',
-        sub: 'Doanh thu từ đăng ký gói tập',
-      },
-      {
-        label: 'Gói PT',
-        value: this._formatMoney(isYesterday ? dayData?.tien_goi_pt : summary?.tong_goi_pt),
-        icon: 'sports_gymnastics',
-        iconBg: 'icon-bg-blue',
-        color: 'text-secondary',
-        trendHtml: '',
-        sub: 'Doanh thu từ đăng ký huấn luyện viên',
-      },
-    ];
+    let cards = [];
+    if (isSingleDay) {
+      cards = [
+        {
+          label: 'Tổng doanh thu',
+          // FIX: dùng dayData.tong_tien (từ bảng doanh_thu qua API today/yesterday)
+          // thay vì summary.tong_doanh_thu (API /revenue?days=1 tính lại từ giao dịch)
+          value: this._formatMoney(dayData?.tong_tien),
+          icon: 'payments',
+          iconBg: 'icon-bg-green',
+          color: 'text-brand-primary',
+          trendHtml: totalTrendHtml,
+          sub: `Tháng trước: ${this._formatMoney(previousTotal)}`,
+        },
+        {
+          label: isYesterday ? 'Doanh thu hôm qua' : 'Doanh thu hôm nay',
+          value: this._formatMoney(dayData?.tong_tien),
+          icon: isYesterday ? 'history' : 'today',
+          iconBg: 'icon-bg-green',
+          color: 'text-brand-primary',
+          trendHtml: dayTrendHtml,
+          sub: isYesterday
+            ? `Hôm kia: ${this._formatMoney(dayData?.hom_qua)} • ${dayData?.tong_don || 0} đơn`
+            : `Hôm qua: ${this._formatMoney(dayData?.hom_qua)} • ${dayData?.tong_don || 0} đơn`,
+        },
+        {
+          label: 'Gói tập',
+          // FIX: đọc tien_goi_tap từ dayData (bảng doanh_thu) thay vì summary
+          value: this._formatMoney(dayData?.tien_goi_tap),
+          icon: 'card_membership',
+          iconBg: 'icon-bg-orange',
+          color: 'text-[#e65100]',
+          trendHtml: '',
+          sub: isYesterday ? 'Doanh thu gói tập hôm qua' : 'Doanh thu gói tập hôm nay',
+        },
+        {
+          label: 'Gói PT',
+          // FIX: đọc tien_goi_pt từ dayData (bảng doanh_thu) thay vì summary
+          value: this._formatMoney(dayData?.tien_goi_pt),
+          icon: 'sports_gymnastics',
+          iconBg: 'icon-bg-blue',
+          color: 'text-secondary',
+          trendHtml: '',
+          sub: isYesterday ? 'Doanh thu gói PT hôm qua' : 'Doanh thu gói PT hôm nay',
+        },
+      ];
+    } else {
+      cards = [
+        {
+          label: `Doanh thu ${this._days} ngày`,
+          value: this._formatMoney(summary?.tong_doanh_thu),
+          icon: 'payments',
+          iconBg: 'icon-bg-green',
+          color: 'text-brand-primary',
+          trendHtml: totalTrendHtml,
+          sub: `Tháng trước: ${this._formatMoney(previousTotal)}`,
+        },
+        {
+          label: 'Trung bình ngày',
+          value: this._formatMoney(summary?.trung_binh_ngay),
+          icon: 'analytics',
+          iconBg: 'icon-bg-green',
+          color: 'text-brand-primary',
+          trendHtml: '',
+          sub: `Tổng số đơn: ${summary?.tong_don || 0} đơn`,
+        },
+        {
+          label: 'Gói tập',
+          value: this._formatMoney(summary?.tong_goi_tap),
+          icon: 'card_membership',
+          iconBg: 'icon-bg-orange',
+          color: 'text-[#e65100]',
+          trendHtml: '',
+          sub: `Tổng doanh thu gói tập trong ${this._days} ngày`,
+        },
+        {
+          label: 'Gói PT',
+          value: this._formatMoney(summary?.tong_goi_pt),
+          icon: 'sports_gymnastics',
+          iconBg: 'icon-bg-blue',
+          color: 'text-secondary',
+          trendHtml: '',
+          sub: `Tổng doanh thu gói PT trong ${this._days} ngày`,
+        },
+      ];
+    }
 
     grid.innerHTML = cards.map(c => `
       <div class="bg-brand-primary/5 dark:bg-brand-primary/10 rounded-2xl p-4 hover:-translate-y-1 hover:shadow-md hover:bg-brand-primary/10 transition-all duration-300 border border-brand-primary/20 flex flex-col justify-between" style="min-height: 104px;">
@@ -193,11 +241,12 @@ window.GymApp.pages['revenue'] = {
             ${c.trendHtml || ''}
           </div>
         </div>
-        ${c.sub ? `<span class="text-on-surface-variant text-body-sm font-medium mt-1 truncate" title="${c.sub}">${c.sub}</span>` : ''}
+        ${c.sub ? `<span class="text-on-surface-variant text-body-sm font-medium mt-1 line-clamp-2" title="${c.sub}">${c.sub}</span>` : ''}
       </div>
     `).join('');
   },
 
+  // FIX: tách _renderChart thành 2 mode: month-comparison (today/yesterday) và daily-range (7/30 ngày)
   _renderChart: function (daily, monthComparison) {
     const canvas = document.getElementById('rev-chart');
     if (!canvas) return;
@@ -207,80 +256,167 @@ window.GymApp.pages['revenue'] = {
       this._chart = null;
     }
 
-    const monthData = monthComparison || {};
-    const labels = (monthData.labels || []).map(day => `${day}`);
-    const currentMonthLabel = monthData.current_month ? `Tháng ${parseInt(monthData.current_month.slice(5, 7), 10)}` : 'Tháng này';
-    const previousMonthLabel = monthData.previous_month ? `Tháng ${parseInt(monthData.previous_month.slice(5, 7), 10)}` : 'Tháng trước';
-    const currentData = (monthData.current || []).map(d => d.tong_tien);
-    const previousData = (monthData.previous || []).map(d => d.tong_tien || 0);
-
-    const title = document.getElementById('rev-chart-title');
-    if (title) title.textContent = `So sánh doanh thu ${currentMonthLabel} / ${previousMonthLabel}`;
-
     const isDark = document.documentElement.classList.contains('dark');
     const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
     const labelColor = isDark ? '#9aa0ab' : '#6e7a6b';
 
-    this._chart = new Chart(canvas, {
-      type: 'bar',
-      data: {
-        labels,
-        datasets: [
-          {
-            label: 'Gói tập',
-            type: 'bar',
-            label: currentMonthLabel,
-            data: currentData,
-            borderColor: '#1D9336',
-            backgroundColor: '#1D9336cc',
-            borderRadius: 4,
-            borderSkipped: false,
+    const isToday = this._days === 'today';
+    const isYesterday = this._days === 'yesterday';
+    const isSingleDay = isToday || isYesterday;
+
+    if (isSingleDay) {
+      // Mode: so sánh tháng này vs tháng trước (giữ nguyên logic cũ)
+      const monthData = monthComparison || {};
+      const labels = (monthData.labels || []).map(day => `${day}`);
+      const currentMonthLabel = monthData.current_month ? `Tháng ${parseInt(monthData.current_month.slice(5, 7), 10)}` : 'Tháng này';
+      const previousMonthLabel = monthData.previous_month ? `Tháng ${parseInt(monthData.previous_month.slice(5, 7), 10)}` : 'Tháng trước';
+      const currentData = (monthData.current || []).map(d => d.tong_tien);
+      const previousData = (monthData.previous || []).map(d => d.tong_tien || 0);
+
+      const title = document.getElementById('rev-chart-title');
+      if (title) title.textContent = `So sánh doanh thu ${currentMonthLabel} / ${previousMonthLabel}`;
+
+      this._chart = new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: currentMonthLabel,
+              type: 'bar',
+              data: currentData,
+              borderColor: '#1D9336',
+              backgroundColor: '#1D9336cc',
+              borderRadius: 4,
+              borderSkipped: false,
+            },
+            {
+              label: previousMonthLabel,
+              type: 'line',
+              data: previousData,
+              borderColor: '#575f67',
+              backgroundColor: '#575f6722',
+              borderWidth: 2,
+              pointRadius: 2,
+              pointHoverRadius: 4,
+              tension: 0.35,
+              fill: false,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: labelColor, font: { size: 11 } } },
+            tooltip: {
+              callbacks: {
+                label: ctx => ` ${new Intl.NumberFormat('vi-VN').format(ctx.raw ?? 0)} đ`,
+              },
+            },
           },
-          {
-            label: 'Gói PT',
-            type: 'line',
-            label: previousMonthLabel,
-            data: previousData,
-            borderColor: '#575f67',
-            backgroundColor: '#575f6722',
-            borderWidth: 2,
-            pointRadius: 2,
-            pointHoverRadius: 4,
-            tension: 0.35,
-            fill: false,
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { labels: { color: labelColor, font: { size: 11 } } },
-          tooltip: {
-            callbacks: {
-              label: ctx => ` ${new Intl.NumberFormat('vi-VN').format(ctx.raw)} đ`,
+          scales: {
+            x: {
+              ticks: { color: labelColor, font: { size: 10 } },
+              grid: { color: gridColor },
+              title: { display: true, text: 'Ngày trong tháng', color: labelColor, font: { size: 10 } },
+            },
+            y: {
+              ticks: {
+                color: labelColor,
+                font: { size: 10 },
+                callback: v => new Intl.NumberFormat('vi-VN', { notation: 'compact' }).format(v),
+              },
+              grid: { color: gridColor },
             },
           },
         },
-        scales: {
-          x: {
-            stacked: false,
-            ticks: { color: labelColor, font: { size: 10 } },
-            grid: { color: gridColor },
-            title: { display: true, text: 'Ngày trong tháng', color: labelColor, font: { size: 10 } },
-          },
-          y: {
-            stacked: false,
-            ticks: {
-              color: labelColor,
-              font: { size: 10 },
-              callback: v => new Intl.NumberFormat('vi-VN', { notation: 'compact' }).format(v),
+      });
+    } else {
+      // FIX: Mode 7/30 ngày — hiển thị biểu đồ theo ngày thực tế từ `daily`
+      const daysInt = parseInt(this._days) || 30;
+      const title = document.getElementById('rev-chart-title');
+      if (title) title.textContent = `Doanh thu ${daysInt} ngày qua (theo ngày)`;
+
+      const dailyList = Array.isArray(daily) ? daily : [];
+
+      // Format nhãn ngày: "27/5", "26/5" ...
+      const labels = dailyList.map(d => {
+        const parts = d.ngay.split('-');
+        return `${parseInt(parts[2])}/${parseInt(parts[1])}`;
+      });
+      const goiTapData = dailyList.map(d => d.tien_goi_tap || 0);
+      const goiPTData = dailyList.map(d => d.tien_goi_pt || 0);
+      const tongData = dailyList.map(d => d.tong_tien || 0);
+
+      this._chart = new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Gói tập',
+              data: goiTapData,
+              backgroundColor: '#1D9336cc',
+              borderColor: '#1D9336',
+              borderRadius: 4,
+              borderSkipped: false,
+              stack: 'revenue',
             },
-            grid: { color: gridColor },
+            {
+              label: 'Gói PT',
+              data: goiPTData,
+              backgroundColor: '#6750a4cc',
+              borderColor: '#6750a4',
+              borderRadius: 4,
+              borderSkipped: false,
+              stack: 'revenue',
+            },
+            {
+              label: 'Tổng',
+              type: 'line',
+              data: tongData,
+              borderColor: '#e65100',
+              backgroundColor: 'transparent',
+              borderWidth: 2,
+              pointRadius: 2,
+              pointHoverRadius: 4,
+              tension: 0.35,
+              fill: false,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: labelColor, font: { size: 11 } } },
+            tooltip: {
+              callbacks: {
+                label: ctx => ` ${new Intl.NumberFormat('vi-VN').format(ctx.raw ?? 0)} đ`,
+              },
+            },
+          },
+          scales: {
+            x: {
+              stacked: true,
+              ticks: { color: labelColor, font: { size: 10 }, maxRotation: 45 },
+              grid: { color: gridColor },
+              title: { display: true, text: 'Ngày', color: labelColor, font: { size: 10 } },
+            },
+            y: {
+              stacked: true,
+              ticks: {
+                color: labelColor,
+                font: { size: 10 },
+                callback: v => new Intl.NumberFormat('vi-VN', { notation: 'compact' }).format(v),
+              },
+              grid: { color: gridColor },
+            },
           },
         },
-      },
-    });
+      });
+    }
   },
 
   _renderPackageStats: function (packageStats) {
@@ -369,25 +505,40 @@ window.GymApp.pages['revenue'] = {
     const countEl = document.getElementById('rev-today-count');
     if (!tbody) return;
 
+    const isToday = this._days === 'today';
     const isYesterday = this._days === 'yesterday';
     const titleEl = document.getElementById('rev-table-title');
     if (titleEl) {
-      titleEl.textContent = isYesterday ? 'Giao dịch hôm qua' : 'Giao dịch hôm nay';
+      if (isToday) titleEl.textContent = 'Giao dịch hôm nay';
+      else if (isYesterday) titleEl.textContent = 'Giao dịch hôm qua';
+      else titleEl.textContent = `Giao dịch ${this._days} ngày qua`;
     }
 
     const list = Array.isArray(transactions) ? transactions : [];
     if (countEl) countEl.textContent = list.length;
 
     if (list.length === 0) {
-      const msg = isYesterday ? 'Chưa có giao dịch nào hôm qua' : 'Chưa có giao dịch nào hôm nay';
+      const msg = isYesterday ? 'Chưa có giao dịch nào hôm qua' : isToday ? 'Chưa có giao dịch nào hôm nay' : `Chưa có giao dịch nào trong ${this._days} ngày qua`;
       tbody.innerHTML = `<tr><td colspan="5" class="text-center py-margin text-on-surface-variant text-body-sm">${msg}</td></tr>`;
       return;
     }
 
-    tbody.innerHTML = list.map(t => {
+    // FIX: Thêm pagination khi > 10 records
+    const perPage = 10;
+    const totalPages = Math.ceil(list.length / perPage);
+    this._transactionPage = this._transactionPage || 1;
+    this._transactionPage = Math.max(1, Math.min(this._transactionPage, totalPages));
+    const start = (this._transactionPage - 1) * perPage;
+    const paginated = list.slice(start, start + perPage);
+
+    const rowsHtml = paginated.map(t => {
       const time = t.thoi_gian ? new Date(t.thoi_gian).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '—';
-      const loaiLabel = t.loai === 'goi_tap' 
-        ? `<span class="bg-[#e7f5e9] dark:bg-[#0b2010] text-[#1D9336] dark:text-[#4cce5f] px-2 py-0.5 rounded-full text-label-xs font-bold border border-[#1D9336]/20 dark:border-[#4cce5f]/20">Gói tập</span>` 
+      const timeDisplay = (isToday || isYesterday)
+        ? time
+        : (t.thoi_gian ? new Date(t.thoi_gian).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }) + ' ' + time : '—');
+
+      const loaiLabel = t.loai === 'goi_tap'
+        ? `<span class="bg-[#e7f5e9] dark:bg-[#0b2010] text-[#1D9336] dark:text-[#4cce5f] px-2 py-0.5 rounded-full text-label-xs font-bold border border-[#1D9336]/20 dark:border-[#4cce5f]/20">Gói tập</span>`
         : `<span class="bg-[#e8def8] dark:bg-[#201035] text-[#6750a4] dark:text-[#b89eff] px-2 py-0.5 rounded-full text-label-xs font-bold border border-[#6750a4]/20 dark:border-[#b89eff]/20">Gói PT</span>`;
       return `
         <tr class="border-b border-outline-variant/30 hover:bg-brand-primary/5 transition-colors">
@@ -395,10 +546,54 @@ window.GymApp.pages['revenue'] = {
           <td class="px-standard py-3 text-on-surface-variant font-medium text-body-sm">${t.san_pham || '—'}</td>
           <td class="px-standard py-3">${loaiLabel}</td>
           <td class="px-standard py-3 text-right font-bold text-brand-primary text-body-md">${this._formatMoney(t.gia_thuc_te)}</td>
-          <td class="px-standard py-3 text-on-surface-variant font-medium text-body-sm">${time}</td>
+          <td class="px-standard py-3 text-on-surface-variant font-medium text-body-sm">${timeDisplay}</td>
         </tr>
       `;
     }).join('');
+
+    // Thêm pagination controls nếu > 10 records
+    let paginationHtml = '';
+    if (totalPages > 1) {
+      paginationHtml = `
+        <tr class="bg-surface-container-low/20">
+          <td colspan="5" class="px-standard py-3">
+            <div class="flex items-center justify-between">
+              <span class="text-on-surface-variant text-body-sm font-bold">Trang ${this._transactionPage}/${totalPages} • ${list.length} giao dịch</span>
+              <div class="flex gap-1">
+                <button class="rev-table-prev w-7 h-7 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-brand-primary/5 hover:text-brand-primary transition-all active:scale-95" ${this._transactionPage === 1 ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : 'style="cursor:pointer;"'}>
+                  <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+                </button>
+                <button class="rev-table-next w-7 h-7 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-brand-primary/5 hover:text-brand-primary transition-all active:scale-95" ${this._transactionPage === totalPages ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : 'style="cursor:pointer;"'}>
+                  <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+                </button>
+              </div>
+            </div>
+          </td>
+        </tr>
+      `;
+    }
+
+    tbody.innerHTML = rowsHtml + paginationHtml;
+
+    // Gắn event listeners cho nút pagination
+    const prevBtn = tbody.querySelector('.rev-table-prev');
+    const nextBtn = tbody.querySelector('.rev-table-next');
+    if (prevBtn) {
+      prevBtn.addEventListener('click', () => {
+        if (this._transactionPage > 1) {
+          this._transactionPage--;
+          this._renderTodayTable(transactions);
+        }
+      });
+    }
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => {
+        if (this._transactionPage < totalPages) {
+          this._transactionPage++;
+          this._renderTodayTable(transactions);
+        }
+      });
+    }
   },
 
   _updateRangeButtons: function () {
@@ -430,16 +625,18 @@ window.GymApp.pages['revenue'] = {
         revData = revRes?.data || {};
         dayData = yesterdayRes?.data || {};
       } else {
+        // FIX: 7/30 ngày — gọi đúng days param, dùng transactions từ revData cho bảng giao dịch
         const daysInt = parseInt(this._days) || 30;
-        const [revRes, todayRes] = await Promise.all([
-          window.GymApp.api.get(`/revenue?days=${daysInt}`),
-          window.GymApp.api.get('/revenue/today'),
-        ]);
+        const revRes = await window.GymApp.api.get(`/revenue?days=${daysInt}`);
         revData = revRes?.data || {};
-        dayData = todayRes?.data || {};
+        // dayData chỉ dùng cho bảng giao dịch — lấy transactions từ revData
+        dayData = {
+          giao_dich: revData.transactions || [],
+        };
       }
 
       this._renderStats(revData.summary, dayData, revData.monthComparison);
+      // FIX: truyền daily vào _renderChart để mode 7/30 ngày vẽ đúng
       this._renderChart(revData.daily, revData.monthComparison);
       this._renderPackageStats(revData.packageStats);
       this._renderTodayTable(dayData.giao_dich);

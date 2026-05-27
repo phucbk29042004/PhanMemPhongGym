@@ -49,9 +49,9 @@ window.GymApp.pages['dashboard'] = {
              <span class="material-symbols-outlined text-[18px]">calendar_today</span>
              ${new Date().toLocaleDateString('vi-VN', { year:'numeric', month:'long', day:'numeric' })}
           </div>
-          <button id="btn-dashboard-refresh" class="flex items-center gap-2 bg-brand-primary/10 text-brand-primary px-4 py-2 rounded-full font-bold text-sm hover:bg-brand-primary/20 transition-all">
-             <span id="dashboard-refresh-icon" class="material-symbols-outlined text-[18px]" style="transition:transform 0.6s ease">refresh</span>
-             <span id="dashboard-refresh-text">Làm mới dữ liệu</span>
+          <button id="btn-dashboard-refresh" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border border-outline-variant bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer whitespace-nowrap">
+             <span id="dashboard-refresh-icon" class="material-symbols-outlined text-base" style="transition:transform 0.6s ease">refresh</span>
+             <span id="dashboard-refresh-text">Tải lại dữ liệu</span>
           </button>
         </div>
 
@@ -105,10 +105,35 @@ window.GymApp.pages['dashboard'] = {
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
               
               <!-- Bar Chart: Revenue by Package -->
-              <div class="${cardClass} p-4">
+              <div class="${cardClass} p-4 flex flex-col">
                 <h3 class="text-sm font-bold text-on-surface mb-4">Doanh thu theo gói tập</h3>
-                <div style="height: 220px; width: 100%;">
-                  <canvas id="chart-packages-bar"></canvas>
+                <div class="flex-1 flex items-center">
+                  <div style="height: 180px; width: 50%;">
+                    <canvas id="chart-packages-bar"></canvas>
+                  </div>
+                  <div class="flex-1 flex flex-col justify-center gap-2 pl-4 text-xs">
+                    ${(function() {
+                      const packageStats = d.packageStats || [];
+                      const topPkgs = packageStats.slice(0, 5);
+                      return topPkgs.map((p, idx) => {
+                        const totalMoney = window.GymApp.formatCurrency(p.tong_tien);
+                        const colors = ['bg-[#1D9336]', 'bg-[#34d399]', 'bg-[#60a5fa]', 'bg-[#f59e0b]', 'bg-[#ec4899]'];
+                        const color = colors[idx] || 'bg-outline';
+                        return `
+                        <div class="flex flex-col gap-0.5">
+                          <div class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full ${color} flex-shrink-0"></span>
+                            <span class="text-on-surface font-bold truncate w-24 sm:w-28 md:w-32 lg:w-36" title="${p.ten_goi}">${p.ten_goi}</span>
+                          </div>
+                          <div class="flex justify-between items-center pl-3.5 text-on-surface-variant font-medium">
+                            <span>${p.so_dang_ky} lượt</span>
+                            <span class="font-bold text-brand-primary">${totalMoney}</span>
+                          </div>
+                        </div>
+                        `;
+                      }).join('') || '<p class="text-center text-on-surface-variant w-full">Chưa có dữ liệu</p>';
+                    })()}
+                  </div>
                 </div>
               </div>
 
@@ -263,7 +288,7 @@ window.GymApp.pages['dashboard'] = {
     }));
 
     if (checkins.length === 0) {
-      el.innerHTML = '<p class="text-body-sm text-on-surface-variant ml-2 mt-10">Chưa có lượt vào</p>';
+      el.innerHTML = '<p class="text-body-sm text-on-surface-variant text-center mt-10">Chưa có lượt vào</p>';
       return;
     }
 
@@ -275,14 +300,11 @@ window.GymApp.pages['dashboard'] = {
     const paginated = checkins.slice(start, start + perPage);
 
     const itemsHtml = paginated.map(c => `
-      <div class="relative py-1">
-        <div class="absolute -left-[17px] top-2.5 w-2.5 h-2.5 rounded-full bg-brand-primary ring-4 ring-surface"></div>
-        <div class="flex flex-col ml-3 text-left">
-          <span class="text-body-md font-semibold text-on-surface">
-            <a href="javascript:void(0)" onclick="window.GymApp.navigate('checkin')" class="hover:text-brand-primary transition-colors">${c.name}</a> đã vào tập.
-          </span>
-          <span class="text-label-xs text-on-surface-variant mt-0.5">${c.time} hôm nay</span>
-        </div>
+      <div class="py-2 border-b border-outline-variant/10 last:border-b-0 flex flex-col items-center justify-center text-center">
+        <span class="text-body-md font-bold text-on-surface">
+          <a href="javascript:void(0)" onclick="window.GymApp.navigate('checkin')" class="hover:text-brand-primary transition-colors">${c.name}</a> đã vào tập
+        </span>
+        <span class="text-label-xs text-on-surface-variant mt-1">${c.time} hôm nay</span>
       </div>
     `).join('');
 
@@ -302,7 +324,7 @@ window.GymApp.pages['dashboard'] = {
 
     el.innerHTML = `
       <div class="flex flex-col justify-between flex-grow">
-        <div class="relative pl-3 border-l border-outline-variant/50 flex flex-col gap-3 flex-grow my-1">
+        <div class="flex flex-col gap-2 flex-grow my-1">
           ${itemsHtml}
         </div>
         ${paginationHtml}
@@ -534,7 +556,7 @@ window.GymApp.pages['dashboard'] = {
     if (ctxPkgBar) {
       // Get top 5 packages
       const topPkgs = pkgStats.slice(0, 5);
-      const labels = topPkgs.map(p => p.ten_goi.substring(0, 10));
+      const labels = topPkgs.map((p, idx) => 'Gói ' + (idx + 1));
       const data = topPkgs.map(p => p.tong_tien / 1_000_000);
 
       window.GymApp._activeChart2 = new Chart(ctxPkgBar, {
@@ -543,10 +565,10 @@ window.GymApp.pages['dashboard'] = {
           labels: labels,
           datasets: [{
             data: data,
-            backgroundColor: colorBarBase,
-            hoverBackgroundColor: colorBarHover,
+            backgroundColor: ['#1D9336', '#34d399', '#60a5fa', '#f59e0b', '#ec4899'],
+            hoverBackgroundColor: ['#146a27', '#059669', '#2563eb', '#d97706', '#db2777'],
             borderRadius: 6,
-            barThickness: 24
+            barThickness: 16
           }]
         },
         options: {

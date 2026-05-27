@@ -170,7 +170,7 @@ window.GymApp.pages['checkin'] = {
               </div>
               <div class="flex items-center gap-standard">
                 <span class="text-on-surface-variant text-body-sm">${new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'numeric' })}</span>
-                <button id="btn-checkin-reload" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border-2 border-outline-variant/50 bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer">
+                <button id="btn-checkin-reload" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border border-outline-variant bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer">
                   <span class="material-symbols-outlined text-base">refresh</span>Tải lại
                 </button>
               </div>

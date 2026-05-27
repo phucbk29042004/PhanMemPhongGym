@@ -1,6 +1,6 @@
 # 🏛️ Kiến Trúc Hệ Thống — Paradise GYM
 
-> Cập nhật lần cuối: 26/05/2026 — Khắc phục lỗi cú pháp biên dịch PTHomeScreen.js và đồng bộ tài liệu kiến trúc.
+> Cập nhật lần cuối: 27/05/2026 — Cải tổ Triggers doanh thu, Rebuild dữ liệu Doanh thu & Đồng bộ bộ lọc 7/30 ngày.
 
 ---
 
@@ -182,3 +182,17 @@ graph TD
 - **Doanh thu Admin di động**: Thêm màn hình `AdminRevenueScreen.js` sử dụng `react-native-svg` để vẽ biểu đồ trực quan, tích hợp bộ lọc thời gian Hôm nay, 7 ngày, 30 ngày.
 - **Safe Area Header**: Tự động chèn `insets.top` vào padding-top của header 5 biểu mẫu của Admin.
 - **Sửa lỗi cú pháp PTHomeScreen.js**: Refactor tách logic phức tạp IIFE ra hàm helper `renderNextSchedule()`, chỉnh sửa ký tự & trong label, đơn giản hóa vòng lặp tia sáng.
+
+# Cập nhật kiến trúc 27/05/2026 — Bổ sung Thống kê PT & Trigger đồng bộ Doanh thu đổi gói PT
+- **Thống kê PT (Backend API)**: Bổ sung các câu truy vấn con tính toán các trường `so_hoc_vien`, `tong_buoi_da_day` và `so_goi_dang_day` vào hàm `getTrainerById` trong `trainers.controller.js` giúp đồng bộ dữ liệu thống kê khi bấm vào xem chi tiết PT trên frontend.
+- **Database & Trigger (BE)**: Bổ sung Migration v14 vào `db.js` định nghĩa trigger `trg_doanh_thu_goi_pt_price_update` (`AFTER UPDATE OF gia_thuc_te ON dang_ky_pt`) và `trg_doanh_thu_goi_tap_price_update` (`AFTER UPDATE OF gia_thuc_te ON dang_ky_goi_tap`). Điều này giúp đồng bộ chênh lệch doanh thu tăng/giảm tự động dựa trên ngày giao dịch gốc khi quản trị viên thay đổi trực tiếp giá thực tế của gói tập hoặc gói PT (phục vụ luồng đổi gói cập nhật trực tiếp hiện tại).
+
+# Cập nhật kiến trúc 27/05/2026 (Lần 2) — Cải tổ Triggers doanh thu, Rebuild dữ liệu Doanh thu & Đồng bộ bộ lọc 7/30 ngày
+- **Database & Triggers (BE)**:
+  - Bổ sung Migration v15 vào `db.js`: Khởi tạo lại toàn bộ 6 database triggers doanh thu sử dụng chung ngày ghi nhận thống nhất `COALESCE(date(ngay_thanh_toan), date(ngay_tao))`. Việc này loại bỏ hoàn toàn lỗi lệch doanh thu do sự bất nhất giữa ngày duyệt (ngày hôm nay) và ngày tạo (ngày hôm trước).
+  - Tự động chạy lệnh SQL rebuild (tổng hợp lại) bảng `doanh_thu` từ dữ liệu giao dịch gốc trong `dang_ky_goi_tap` và `dang_ky_pt` ngay khi server khởi động.
+- **Backend API (`revenue.controller.js`)**:
+  - Cập nhật hàm `getRevenue` để lấy thêm danh sách giao dịch chi tiết (`transactions`) trong khoảng thời gian lọc và trả về cho client.
+- **Web Frontend (`revenue.js`)**:
+  - Đồng bộ hóa bộ lọc doanh thu 7 ngày và 30 ngày: Khi chọn bộ lọc này, các card thống kê Doanh thu, Gym, PT sẽ lấy dữ liệu tổng hợp của cả kỳ lọc từ đối tượng `summary` thay vì lấy dữ liệu ngày hôm nay.
+  - Bảng giao dịch bên dưới và tiêu đề cũng tự động hiển thị các giao dịch chi tiết của cả kỳ lọc 7 ngày / 30 ngày thay vì cố định hôm nay.

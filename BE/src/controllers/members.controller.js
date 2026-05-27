@@ -1045,6 +1045,12 @@ export const approvePackageRequest = (req, res) => {
     WHERE dk.id = ?
   `).get(id);
   if (!request) return error(res, 'Không tìm thấy yêu cầu.', 404);
+
+  // Nếu đã được kích hoạt tự động qua PayOS → trả success thay vì lỗi
+  if (request.payos_status === 'PAID') {
+    return success(res, { auto_activated: true }, 'Gói tập đã được xử lý tự động sau khi hội viên thanh toán thành công qua PayOS. Không cần duyệt thêm.');
+  }
+
   if (!['cho_duyet', 'cho_kich_hoat'].includes(request.trang_thai)) return error(res, 'Yêu cầu này đã được xử lý.', 400);
 
   const member = db.prepare('SELECT ho_ten FROM ho_so WHERE id = ?').get(request.ho_so_id);

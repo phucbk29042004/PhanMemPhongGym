@@ -50,6 +50,12 @@ export const getTrainerById = (req, res) => {
            ROUND((SELECT AVG(so_sao) FROM danh_gia_pt dg WHERE dg.pt_id = h.id), 1) AS rating,
            ROUND((SELECT AVG(so_sao) FROM danh_gia_pt dg WHERE dg.pt_id = h.id), 1) AS danh_gia,
            (SELECT COUNT(*) FROM danh_gia_pt dg WHERE dg.pt_id = h.id) AS so_luot_danh_gia,
+           -- Số học viên đang tập
+           (SELECT COUNT(DISTINCT dp.hoi_vien_id) FROM dang_ky_pt dp WHERE dp.pt_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS so_hoc_vien,
+           -- Tổng buổi đã dạy
+           (SELECT COUNT(*) FROM lich_tap lt WHERE lt.pt_id = h.id AND lt.trang_thai = 'da_tap') AS tong_buoi_da_day,
+           -- Gói PT đang nhận
+           (SELECT COUNT(*) FROM dang_ky_pt dp WHERE dp.pt_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS so_goi_dang_day,
            (SELECT json_group_array(json_object(
              'hoi_vien_id', dp.hoi_vien_id, 'ten_hoi_vien', hv.ho_ten,
              'avatar_hoi_vien', hv.avatar_url, 'buoi_con_lai', dp.so_buoi_dang_ky - dp.so_buoi_da_tap,
