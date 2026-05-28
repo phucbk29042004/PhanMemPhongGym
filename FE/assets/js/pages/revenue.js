@@ -107,8 +107,7 @@ window.GymApp.pages['revenue'] = {
 
   _formatMoney: function (amount) {
     if (amount == null || amount === '') return '0 đ';
-    const cleaned = String(amount).replace(/[^\d-]/g, '');
-    const numeric = Number(cleaned);
+    const numeric = Math.round(Number(amount));
     if (Number.isNaN(numeric)) return '0 đ';
     return new Intl.NumberFormat('vi-VN').format(numeric) + ' đ';
   },
