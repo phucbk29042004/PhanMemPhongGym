@@ -4441,10 +4441,6 @@ window.GymApp.pages['members-list'] = {
 
     self._updatePtSortUI();
     self._updateMemberSortUI();
-<<<<<<< HEAD
-  }
-};
-=======
   },
 
   guideHtml: `
@@ -4474,4 +4470,3 @@ window.GymApp.pages['members-list'] = {
     </div>
   `
 };
->>>>>>> main
