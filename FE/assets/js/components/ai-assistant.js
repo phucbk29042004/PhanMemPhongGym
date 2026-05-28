@@ -74,7 +74,7 @@
       <!-- Đặt bottom sát góc bottom-0 để thay thế vị trí nút toggle khi ẩn -->
       <div id="ai-chat-window" class="hidden w-[360px] h-[520px] max-h-[85vh] bg-surface-container-lowest border border-outline-variant/60 rounded-3xl shadow-2xl overflow-hidden flex flex-col transition-all duration-300">
         <!-- Header -->
-        <div class="px-5 py-4 bg-brand-primary text-white flex items-center justify-between shadow-md">
+        <div class="px-5 py-4 bg-brand-primary text-white flex items-center justify-between shadow-md cursor-grab active:cursor-grabbing">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center shadow-inner">
               <span class="material-symbols-outlined text-white text-xl">forum</span>
@@ -87,22 +87,19 @@
               </div>
             </div>
           </div>
-          <button id="btn-ai-chat-close" class="text-white hover:bg-white/10 transition-colors p-1.5 rounded-xl flex items-center justify-center" title="Thu nhỏ">
-            <span class="material-symbols-outlined text-lg">expand_more</span>
-          </button>
+          <div class="flex items-center gap-1">
+            <button id="btn-ai-chat-clear" class="text-white hover:bg-white/10 transition-colors p-1.5 rounded-xl flex items-center justify-center" title="Xóa lịch sử">
+              <span class="material-symbols-outlined text-lg">delete</span>
+            </button>
+            <button id="btn-ai-chat-close" class="text-white hover:bg-white/10 transition-colors p-1.5 rounded-xl flex items-center justify-center" title="Thu nhỏ">
+              <span class="material-symbols-outlined text-lg">expand_more</span>
+            </button>
+          </div>
         </div>
 
         <!-- Chat Messages -->
         <div id="ai-chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3 bg-[#f8faf9] dark:bg-[#121212] flex flex-col" style="scrollbar-width: thin; scrollbar-color: var(--outline-variant) transparent;">
-          <!-- Welcome Message -->
-          <div class="flex gap-2 max-w-[85%] self-start">
-            <div class="w-7 h-7 rounded-full bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center flex-shrink-0">
-              <span class="material-symbols-outlined text-brand-primary text-xs">forum</span>
-            </div>
-            <div class="bg-white dark:bg-[#1e1e1e] border border-outline-variant/30 text-on-surface text-xs rounded-2xl px-3.5 py-2 shadow-sm leading-relaxed">
-              Xin chào! Mình là <strong>Trợ lý ảo Paradise AI</strong>. Mình hỗ trợ tư vấn cá nhân hóa về gym, lịch tập và dinh dưỡng. Hôm nay bạn cần hỗ trợ gì?
-            </div>
-          </div>
+          <!-- Messages will be loaded dynamically -->
         </div>
 
         <!-- Typing Indicator -->
@@ -125,7 +122,7 @@
       </div>
 
       <!-- Floating Bubble Button (Sử dụng icon chat bubble thay thế hình robot) -->
-      <button id="btn-ai-chat-toggle" class="w-14 h-14 rounded-full bg-brand-primary hover:bg-[#157a2a] text-white flex items-center justify-center shadow-xl hover:scale-105 active:scale-95 transition-all cursor-pointer relative" title="Trợ lý ảo AI">
+      <button id="btn-ai-chat-toggle" class="w-14 h-14 rounded-full bg-brand-primary hover:bg-[#157a2a] text-white flex items-center justify-center shadow-xl hover:scale-105 active:scale-95 transition-all cursor-grab active:cursor-grabbing relative" title="Trợ lý ảo AI">
         <span class="material-symbols-outlined text-2xl">chat</span>
         <span class="absolute top-0 right-0 w-3 h-3 bg-red-500 border-2 border-white rounded-full"></span>
       </button>
@@ -137,10 +134,38 @@
     const chatWindow = document.getElementById('ai-chat-window');
     const chatToggle = document.getElementById('btn-ai-chat-toggle');
     const chatClose = document.getElementById('btn-ai-chat-close');
+    const chatClear = document.getElementById('btn-ai-chat-clear');
     const chatInput = document.getElementById('ai-chat-input');
     const chatSend = document.getElementById('btn-ai-chat-send');
     const chatMessages = document.getElementById('ai-chat-messages');
     const typingIndicator = document.getElementById('ai-typing-indicator');
+
+    // Chat History Management
+    let chatHistory = [];
+
+    const loadHistory = () => {
+      const stored = localStorage.getItem('gym-chat-history');
+      if (stored) {
+        try {
+          chatHistory = JSON.parse(stored);
+        } catch (e) {
+          chatHistory = [];
+        }
+      }
+      
+      if (!chatHistory || chatHistory.length === 0) {
+        chatHistory = [{
+          text: "Xin chào! Mình là **Trợ lý ảo Paradise AI**. Mình hỗ trợ tư vấn cá nhân hóa về gym, lịch tập và dinh dưỡng. Hôm nay bạn cần hỗ trợ gì?",
+          sender: "ai"
+        }];
+        localStorage.setItem('gym-chat-history', JSON.stringify(chatHistory));
+      }
+
+      chatMessages.innerHTML = '';
+      chatHistory.forEach(msg => {
+        appendMessage(msg.text, msg.sender, false);
+      });
+    };
 
     // Toggle Chat Window & Hide/Show Toggle Button
     const openChat = () => {
@@ -170,7 +195,13 @@
       }, 250);
     };
 
-    chatToggle.addEventListener('click', openChat);
+    chatToggle.addEventListener('click', (e) => {
+      if (hasMoved) {
+        hasMoved = false; // reset
+        return;
+      }
+      openChat();
+    });
     chatClose.addEventListener('click', closeChat);
 
     // Send Message
@@ -205,7 +236,7 @@
     };
 
     // Append Message helper
-    const appendMessage = (text, sender) => {
+    const appendMessage = (text, sender, save = true) => {
       const msgWrap = document.createElement('div');
       msgWrap.className = sender === 'user' ? 'flex gap-2 max-w-[85%] self-end flex-row-reverse' : 'flex gap-2 max-w-[85%] self-start';
 
@@ -226,6 +257,11 @@
 
       chatMessages.appendChild(msgWrap);
       scrollToBottom();
+
+      if (save) {
+        chatHistory.push({ text, sender });
+        localStorage.setItem('gym-chat-history', JSON.stringify(chatHistory));
+      }
     };
 
     // Simple formatting for bold, bullet points, line breaks, and paragraphs
@@ -278,5 +314,155 @@
         sendMessage();
       }
     });
+
+    chatClear.addEventListener('click', () => {
+      const confirmClear = confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch sử trò chuyện không?');
+      if (confirmClear) {
+        localStorage.removeItem('gym-chat-history');
+        loadHistory();
+        if (window.GymApp && typeof window.GymApp.toast === 'function') {
+          window.GymApp.toast('Đã xóa lịch sử trò chuyện.', 'info');
+        }
+      }
+    });
+
+    // Drag and drop implementation
+    let isMouseDown = false;
+    let dragThreshold = 5; // pixels
+    let hasMoved = false;
+    let startX, startY;
+    let initialLeft, initialTop;
+
+    const onMouseDown = (e) => {
+      // Don't drag if clicking buttons, inputs, etc.
+      if (
+        e.target.closest('#btn-ai-chat-close') || 
+        e.target.closest('#btn-ai-chat-clear') || 
+        e.target.closest('input') || 
+        e.target.closest('#btn-ai-chat-send') || 
+        e.target.closest('a')
+      ) {
+        return;
+      }
+
+      const isHeader = e.target.closest('#ai-chat-window > div:first-child');
+      const isToggleBtn = e.target.closest('#btn-ai-chat-toggle');
+      
+      if (!isHeader && !isToggleBtn) return;
+
+      isMouseDown = true;
+      hasMoved = false;
+      
+      const clientX = e.type.startsWith('touch') ? e.touches[0].clientX : e.clientX;
+      const clientY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
+      
+      startX = clientX;
+      startY = clientY;
+      
+      const rect = container.getBoundingClientRect();
+      initialLeft = rect.left;
+      initialTop = rect.top;
+      
+      if (e.type === 'touchstart') {
+        document.addEventListener('touchmove', onTouchMove, { passive: false });
+        document.addEventListener('touchend', onTouchEnd);
+      } else {
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      }
+    };
+
+    const onMouseMove = (e) => {
+      if (!isMouseDown) return;
+      
+      const clientX = e.clientX;
+      const clientY = e.clientY;
+      
+      const dx = clientX - startX;
+      const dy = clientY - startY;
+      
+      if (!hasMoved && Math.sqrt(dx*dx + dy*dy) > dragThreshold) {
+        hasMoved = true;
+        const rect = container.getBoundingClientRect();
+        container.style.bottom = 'auto';
+        container.style.right = 'auto';
+        container.style.left = rect.left + 'px';
+        container.style.top = rect.top + 'px';
+        container.classList.add('cursor-grabbing');
+      }
+      
+      if (hasMoved) {
+        let newLeft = initialLeft + dx;
+        let newTop = initialTop + dy;
+        
+        // Restrict within viewport
+        const rect = container.getBoundingClientRect();
+        const maxX = window.innerWidth - rect.width;
+        const maxY = window.innerHeight - rect.height;
+        
+        newLeft = Math.max(0, Math.min(newLeft, maxX));
+        newTop = Math.max(0, Math.min(newTop, maxY));
+        
+        container.style.left = newLeft + 'px';
+        container.style.top = newTop + 'px';
+        
+        e.preventDefault();
+      }
+    };
+
+    const onMouseUp = (e) => {
+      isMouseDown = false;
+      container.classList.remove('cursor-grabbing');
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    const onTouchMove = (e) => {
+      if (!isMouseDown) return;
+      
+      const clientX = e.touches[0].clientX;
+      const clientY = e.touches[0].clientY;
+      
+      const dx = clientX - startX;
+      const dy = clientY - startY;
+      
+      if (!hasMoved && Math.sqrt(dx*dx + dy*dy) > dragThreshold) {
+        hasMoved = true;
+        const rect = container.getBoundingClientRect();
+        container.style.bottom = 'auto';
+        container.style.right = 'auto';
+        container.style.left = rect.left + 'px';
+        container.style.top = rect.top + 'px';
+      }
+      
+      if (hasMoved) {
+        let newLeft = initialLeft + dx;
+        let newTop = initialTop + dy;
+        
+        const rect = container.getBoundingClientRect();
+        const maxX = window.innerWidth - rect.width;
+        const maxY = window.innerHeight - rect.height;
+        
+        newLeft = Math.max(0, Math.min(newLeft, maxX));
+        newTop = Math.max(0, Math.min(newTop, maxY));
+        
+        container.style.left = newLeft + 'px';
+        container.style.top = newTop + 'px';
+        
+        if (e.cancelable) e.preventDefault();
+      }
+    };
+
+    const onTouchEnd = (e) => {
+      isMouseDown = false;
+      document.removeEventListener('touchmove', onTouchMove);
+      document.removeEventListener('touchend', onTouchEnd);
+    };
+
+    container.addEventListener('mousedown', onMouseDown);
+    container.addEventListener('touchstart', onMouseDown, { passive: true });
+
+    // Load Chat History on startup
+    loadHistory();
   });
 })();

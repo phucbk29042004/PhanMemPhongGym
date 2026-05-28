@@ -32,19 +32,19 @@ window.GymApp.pages['dashboard'] = {
     };
 
     const stats = [
-      { label: 'Tổng hội viên', value: dbData.hoi_vien?.tong || 0, percent: formatPercent(dbData.percent_changes.hoi_vien) },
-      { label: 'Check-in hôm nay', value: dbData.luot_vao_ra_hom_nay?.luot_vao || 0, percent: formatPercent(dbData.percent_changes.luot_vao) },
-      { label: 'Doanh thu hôm nay', value: window.GymApp.formatCurrency(dbData.doanh_thu_hom_nay?.tong_tien || 0), percent: formatPercent(dbData.percent_changes.doanh_thu) },
-      { label: 'Sắp hết hạn', value: dbData.hoi_vien?.sap_het_han || 0, percent: formatPercent(dbData.percent_changes.sap_het_han) },
+      { label: 'Tổng hội viên', value: dbData.hoi_vien?.tong || 0, percent: formatPercent(dbData.percent_changes.hoi_vien), page: 'members-list' },
+      { label: 'Check-in hôm nay', value: dbData.luot_vao_ra_hom_nay?.luot_vao || 0, percent: formatPercent(dbData.percent_changes.luot_vao), page: 'checkin' },
+      { label: 'Doanh thu hôm nay', value: window.GymApp.formatCurrency(dbData.doanh_thu_hom_nay?.tong_tien || 0), percent: formatPercent(dbData.percent_changes.doanh_thu), page: 'revenue' },
+      { label: 'Sắp hết hạn', value: dbData.hoi_vien?.sap_het_han || 0, percent: formatPercent(dbData.percent_changes.sap_het_han), page: 'expired' },
     ];
 
     const cardClass = "bg-white dark:bg-[#1e1e1e] rounded-2xl shadow-sm border-2 border-outline-variant/50 hover:-translate-y-1 hover:shadow-md transition-all duration-300";
 
     return `
-      <div class="flex flex-col gap-4 animate-in fade-in duration-500 pb-6">
+      <div class="flex flex-col gap-3 animate-in fade-in duration-500 pb-6">
 
         <!-- Header -->
-        <div class="flex items-center justify-between gap-3 px-1 mb-2">
+        <div class="flex items-center justify-between gap-3 px-1">
           <div class="flex items-center gap-2 text-sm text-on-surface-variant font-medium">
              <span class="material-symbols-outlined text-[18px]">calendar_today</span>
              ${new Date().toLocaleDateString('vi-VN', { year:'numeric', month:'long', day:'numeric' })}
@@ -56,15 +56,15 @@ window.GymApp.pages['dashboard'] = {
         </div>
 
         <!-- Layout Grid -->
-        <div class="grid grid-cols-1 xl:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 xl:grid-cols-4 gap-3">
           
           <!-- LEFT / MAIN CONTENT (Spans 3 cols) -->
-          <div class="xl:col-span-3 flex flex-col gap-4">
+          <div class="xl:col-span-3 flex flex-col gap-3">
             
             <!-- 4 Stat Cards -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               ${stats.map(c => `
-                <div class="bg-brand-primary/5 dark:bg-brand-primary/10 rounded-2xl p-4 hover:-translate-y-1 hover:shadow-md hover:bg-brand-primary/10 transition-all duration-300 border border-brand-primary/20">
+                <div data-page="${c.page}" class="bg-brand-primary/5 dark:bg-brand-primary/10 rounded-2xl p-4 hover:scale-[1.02] active:scale-98 hover:shadow-md hover:bg-brand-primary/10 transition-all duration-300 border border-brand-primary/20 cursor-pointer">
                   <p class="text-on-surface-variant text-body-sm font-bold uppercase tracking-wider mb-2">${c.label}</p>
                   <div class="flex items-baseline flex-wrap gap-x-2 gap-y-1">
                     <h3 class="text-xl font-bold text-on-surface truncate max-w-full" title="${c.value}">${c.value}</h3>
@@ -75,7 +75,7 @@ window.GymApp.pages['dashboard'] = {
             </div>
 
             <!-- Middle Row (Revenue Chart + Top Members) -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
               
               <!-- Revenue Chart -->
               <div class="lg:col-span-2 ${cardClass} p-4">
@@ -102,7 +102,7 @@ window.GymApp.pages['dashboard'] = {
             </div>
 
             <!-- Bottom Row (Bar Chart + Doughnut) -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
               
               <!-- Bar Chart: Revenue by Package -->
               <div class="${cardClass} p-4 flex flex-col">
@@ -170,10 +170,10 @@ window.GymApp.pages['dashboard'] = {
           </div>
 
           <!-- RIGHT SIDEBAR (Spans 1 col) -->
-          <div class="xl:col-span-1 flex flex-col gap-4">
+          <div class="xl:col-span-1 flex flex-col gap-3">
             
             <!-- Check-in gần nhất (Activities) -->
-            <div class="${cardClass} p-4 flex flex-col justify-between" style="min-height: 320px;">
+            <div class="${cardClass} p-4 flex flex-col flex-1" style="min-height: 280px;">
               <h3 class="text-sm font-bold text-on-surface mb-4">Check-in gần nhất</h3>
               <div id="dash-recent-checkins-container" class="flex-grow flex flex-col justify-between">
                 <p class="text-center text-on-surface-variant text-body-sm mt-10">Đang tải...</p>
@@ -183,7 +183,7 @@ window.GymApp.pages['dashboard'] = {
 
 
             <!-- Hoạt động gần đây -->
-            <div class="${cardClass} p-4 flex flex-col flex-1" style="min-height: 320px;">
+            <div class="${cardClass} p-4 flex flex-col flex-1" style="min-height: 280px;">
               <h3 class="text-sm font-bold text-on-surface mb-4">Hoạt động gần đây</h3>
               <div id="dash-audit-logs-container" class="flex-1 overflow-y-auto pr-1 flex flex-col gap-3" style="scrollbar-width: thin; scrollbar-color: var(--outline-variant) transparent;">
                 <p class="text-center text-on-surface-variant text-body-sm mt-10">Đang tải...</p>

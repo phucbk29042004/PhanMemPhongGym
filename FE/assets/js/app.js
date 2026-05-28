@@ -5,7 +5,7 @@
     'expired': 'Danh sách hết hạn', 'pt-training': 'Lịch đào tạo PT',
     'pt-register': 'Đăng ký lịch tập PT', 'packages': 'Danh sách gói tập',
     'birthday': 'Sinh nhật hội viên', 'gym-rules': 'Nội quy phòng tập',
-    'revenue': 'Doanh thu',
+    'revenue': 'Doanh thu', 'audit-logs': 'Nhật ký kiểm tra',
   };
   const SUB_PAGES = ['members-list', 'member-add', 'checkin', 'expired', 'pt-training', 'pt-register', 'packages', 'birthday', 'revenue'];
 
@@ -607,7 +607,7 @@
   // Phân trang helper
   window.GymApp.renderPagination = function (page, total, perPage, onPageChange) {
     const totalPages = Math.ceil(total / perPage);
-    if (totalPages <= 1) return '';
+    if (totalPages <= 1 && total < 10) return '';
     const start = (page - 1) * perPage + 1;
     const end = Math.min(page * perPage, total);
     const pages = [];

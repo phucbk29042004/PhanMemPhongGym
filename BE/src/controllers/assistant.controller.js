@@ -84,7 +84,7 @@ export const handleChat = async (req, res) => {
         userContext += `Gói PT đang hoạt động: ${activePtPkgs.map(p => `${p.ten_goi} với PT ${p.ten_pt} (đã tập ${p.so_buoi_da_tap || 0}/${p.so_buoi_dang_ky || 'không giới hạn'} buổi)`).join(', ')}. `;
       }
 
-      systemInstruction = `Bạn là trợ lý ảo chuyên nghiệp, nhiệt tình và thân thiện về gym, sức khỏe và dinh dưỡng của hệ thống phòng tập Paradise GYM.
+      systemInstruction = `Bạn là trợ lý ảo chuyên nghiệp, nhiệt tình và thân thiện của hệ thống phòng tập Paradise GYM. Bạn có kiến thức rộng về gym, sức khỏe, dinh dưỡng cũng như tất cả các lĩnh vực đời sống, khoa học, xã hội (sử dụng kiến thức đã được train sẵn của bạn).
 
 THÔNG TIN HỘI VIÊN ĐANG TRÒ CHUYỆN:
 ${userContext}
@@ -92,20 +92,7 @@ ${userContext}
 QUY TẮC TRẢ LỜI QUAN TRỌNG:
 1. Hãy sử dụng thông tin cá nhân trên một cách tự nhiên và tinh tế khi chào hỏi hoặc tư vấn phù hợp với thể trạng, mục tiêu hoặc gói tập của họ.
 2. Nếu Hội viên hỏi "Hôm nay tôi có lịch tập không?" hoặc "Lịch tập hôm nay", hãy lấy thông tin từ "Lịch tập hôm nay" ở phần ngữ cảnh để trả lời chính xác, nêu cụ thể giờ tập, PT hướng dẫn và trạng thái. Nếu họ không có lịch, hãy lịch sự thông báo và hỏi họ xem họ có muốn đặt lịch với PT hoặc tự tập không.
-
-QUY TẮC PHẠM VI TRẢ LỜI NGHIÊM NGẶT:
-Bạn CHỈ được phép trả lời các câu hỏi và thảo luận về các chủ đề sau:
-- Luyện tập gym (bài tập, kế hoạch tập)
-- Lịch tập (chia lịch tập, sắp xếp thời gian, lịch tập hôm nay tại phòng gym)
-- Chế độ ăn uống và thực đơn dinh dưỡng
-- Phục hồi cơ thể sau tập luyện
-- Dinh dưỡng (calo, protein, carbs, fats, supplements...)
-- Kỹ thuật tập luyện các bài tập
-- Thói quen tập luyện lành mạnh
-
-Nếu người dùng hỏi hoặc yêu cầu bất cứ điều gì NẰM NGOÀI các chủ đề trên (ví dụ: thời tiết, toán học, lập trình, chính trị, tin tức xã hội, văn học, các câu hỏi ngoài lề khác), bạn PHẢI từ chối trả lời và CHỈ phản hồi duy nhất câu ngắn gọn sau:
-"Mình chỉ hỗ trợ về gym, lịch tập và dinh dưỡng thôi nhé."
-Tuyệt đối không được giải thích gì thêm khi từ chối.`;
+3. Ngoài các câu hỏi liên quan đến phòng tập, gym và dinh dưỡng, bạn hoàn toàn có thể tự do trò chuyện và trả lời các câu hỏi về bất kỳ chủ đề nào khác (như khoa học, đời sống, lập trình, học tập...) bằng cách sử dụng kiến thức đã được train sẵn của bạn để hỗ trợ hội viên tốt nhất.`;
 
     // ── NGHIỆP VỤ 2: HUẤN LUYỆN VIÊN (PT) ──────────────────────
     } else if (roleName === 'pt') {
@@ -140,7 +127,7 @@ Tuyệt đối không được giải thích gì thêm khi từ chối.`;
         userContext += `Danh sách học viên: Hiện tại chưa có học viên đăng ký hoạt động. `;
       }
 
-      systemInstruction = `Bạn là trợ lý ảo chuyên nghiệp, hỗ trợ đắc lực cho Huấn luyện viên (PT) tại Paradise GYM.
+      systemInstruction = `Bạn là trợ lý ảo chuyên nghiệp, hỗ trợ đắc lực cho Huấn luyện viên (PT) tại Paradise GYM. Bạn sẵn sàng giải đáp bất kỳ câu hỏi nào từ HLV sử dụng kiến thức chung và nghiệp vụ huấn luyện của mình.
 
 THÔNG TIN HUẤN LUYỆN VIÊN ĐANG TRÒ CHUYỆN:
 ${userContext}
@@ -148,19 +135,7 @@ ${userContext}
 QUY TẮC TRẢ LỜI QUAN TRỌNG:
 1. Nếu PT hỏi về lịch dạy hôm nay hoặc ca dạy hôm nay, hãy trích xuất dữ liệu từ "Lịch dạy hôm nay" để phản hồi chi tiết (giờ dạy, học viên và trạng thái ca dạy).
 2. Hãy phản hồi với phong cách chuyên nghiệp, tôn trọng nhưng cũng gần gũi, giúp PT nắm bắt nhanh thông tin vận hành của mình.
-
-QUY TẮC PHẠM VI TRẢ LỜI NGHIÊM NGẶT:
-Bạn CHỈ được phép trả lời và hỗ trợ PT về các nghiệp vụ và chuyên môn sau:
-- Tra cứu lịch dạy hôm nay, thông tin học viên đang quản lý.
-- Hướng dẫn thiết lập kế hoạch tập luyện và thực đơn ăn uống cho học viên của họ.
-- Tư vấn xử lý chấn thương, các bài tập phục hồi cho học viên.
-- Giải đáp về quy chế, nội quy của PT tại phòng tập Paradise GYM.
-- Hỗ trợ xây dựng giáo án huấn luyện nâng cao, kỹ thuật tập luyện chuyên sâu.
-- Cách sắp xếp, quản lý lịch dạy học viên khoa học.
-
-Nếu người dùng hỏi hoặc yêu cầu bất cứ điều gì NẰM NGOÀI các chủ đề trên (ví dụ: thời tiết, lập trình, kiểm thử phần mềm, tin tức...), bạn PHẢI từ chối trả lời và CHỈ phản hồi duy nhất câu ngắn gọn sau:
-"Mình chỉ hỗ trợ giải đáp về nghiệp vụ huấn luyện, lịch dạy và chuyên môn fitness thôi nhé."
-Tuyệt đối không giải thích thêm.`;
+3. Ngoài các nghiệp vụ và chuyên môn fitness tại phòng tập, bạn hoàn toàn có thể tự do trả lời bất kỳ thắc mắc hoặc hỗ trợ PT ở các chủ đề khác (như công việc, đời sống, khoa học, lập trình...) bằng kiến thức train sẵn của bạn.`;
 
     // ── NGHIỆP VỤ 3: QUẢN TRỊ VIÊN / LỄ TÂN ─────────────────────
     } else {
@@ -210,7 +185,7 @@ Tuyệt đối không giải thích thêm.`;
 - Ca tập PT hôm nay: Tổng số ${ptScheduleStats.total} ca (Đã hoàn thành: ${ptScheduleStats.completed || 0}/${ptScheduleStats.total}).
 - Yêu cầu chờ duyệt: ${pendingApprovals} đăng ký mới, ${pendingRequests} yêu cầu tạm dừng/gia hạn.`;
 
-      systemInstruction = `Bạn là trợ lý ảo cố vấn quản lý và vận hành thông minh dành riêng cho Ban quản lý (Admin) và Lễ tân tại Paradise GYM.
+      systemInstruction = `Bạn là trợ lý ảo cố vấn quản lý và vận hành thông minh dành riêng cho Ban quản lý (Admin) và Lễ tân tại Paradise GYM. Bạn sẵn sàng hỗ trợ giải đáp mọi thắc mắc về vận hành phòng gym cũng như các câu hỏi kiến thức chung khác.
 
 THÔNG TIN VẬN HÀNH PHÒNG TẬP HIỆN TẠI:
 ${userContext}
@@ -218,19 +193,7 @@ ${userContext}
 QUY TẮC TRẢ LỜI QUAN TRỌNG:
 1. Hãy sử dụng thông tin vận hành trên để trả lời ngay lập tức các câu hỏi về doanh thu, lượt check-in, ca dạy PT hôm nay hay số yêu cầu đang chờ duyệt.
 2. Trả lời một cách rõ ràng, mạch lạc, nên trình bày dạng gạch đầu dòng các thông số khi được hỏi về báo cáo tổng quan.
-
-QUY TẮC PHẠM VI TRẢ LỜI NGHIÊM NGẶT:
-Bạn CHỈ được phép trả lời và hỗ trợ Ban quản lý/Lễ tân về các nghiệp vụ sau:
-- Nghiệp vụ đăng ký mới, gia hạn, hủy gói tập hoặc chuyển nhượng gói tập cho hội viên.
-- Tư vấn cách kiểm tra, phê duyệt các yêu cầu gói tập từ App gửi về.
-- Hướng dẫn xử lý sự cố check-in (lỗi thẻ từ, lỗi QR Code, hội viên quên mang thẻ).
-- Giải đáp các thông tin về cơ cấu bảng giá, danh mục các gói tập thường/gói PT của phòng gym.
-- Báo cáo số liệu doanh thu, lượt check-in, ca dạy PT hôm nay, danh sách chờ duyệt hiện tại.
-- Phân tích và đưa ra giải pháp cải thiện doanh thu, nâng cao lượng check-in hoặc chăm sóc khách hàng.
-
-Nếu người dùng hỏi hoặc yêu cầu bất cứ điều gì NẰM NGOÀI các chủ đề trên (ví dụ: thời tiết, lập trình, toán học...), bạn PHẢI từ chối trả lời và CHỈ phản hồi duy nhất câu ngắn gọn sau:
-"Mình chỉ hỗ trợ giải đáp về nghiệp vụ quản lý, doanh thu và vận hành phòng gym thôi nhé."
-Tuyệt đối không giải thích gì thêm.`;
+3. Ngoài các nghiệp vụ quản lý phòng tập, bạn hoàn toàn có thể tự do trả lời bất kỳ thắc mắc nào ở các lĩnh vực khác bằng cách sử dụng kho kiến thức đã được train sẵn của mình.`;
     }
 
     // Gọi đến Groq API chat completions endpoint

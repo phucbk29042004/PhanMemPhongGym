@@ -234,8 +234,8 @@ window.GymApp.pages['members-list'] = {
           <tr class="member-row transition-colors hover:bg-brand-primary/5 dark:hover:bg-brand-primary/10 border-b border-outline-variant/30 cursor-pointer bg-white dark:bg-[#1e1e1e] odd:bg-[#fafafa] odd:dark:bg-[#15171e]" data-id="${m.id}">
             
             <!-- Cell 1: Avatar + Tên -->
-            <td style="padding:8px 14px; white-space:nowrap;">
-              <div style="display:flex; align-items:center; gap:12px;">
+            <td class="border-r border-outline-variant/30" style="padding:8px 14px; white-space:nowrap; text-align:left;">
+              <div style="display:flex; align-items:center; justify-content:left; gap:12px; margin:0 auto; max-width:240px;">
                 
                 <!-- Avatar bigger -->
                 <div style="width:38px;height:38px;border-radius:50%;overflow:hidden;flex-shrink:0;
@@ -243,7 +243,7 @@ window.GymApp.pages['members-list'] = {
                   ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'sm', 'width:100%;height:100%;')}
                 </div>
 
-                <div style="min-width:0;">
+                <div style="min-width:0; text-align:left;">
                   
                   <!-- Tên: bigger font -->
                   <div style="font-size:15px;font-weight:700;color:var(--text-on-surface);
@@ -265,19 +265,19 @@ window.GymApp.pages['members-list'] = {
             </td>
 
             <!-- Cell 2: Mã HV -->
-            <td class="member-table-col-mahv" style="padding:8px 14px; font-size:14px; font-weight:700; color:var(--text-on-surface-variant); white-space:nowrap;">
+            <td class="member-table-col-mahv border-r border-outline-variant/30" style="padding:8px 14px; font-size:14px; font-weight:700; color:var(--text-on-surface-variant); white-space:nowrap; text-align:center;">
               ${m.ma_ho_so || '—'}
             </td>
 
             <!-- Cell 3: SĐT -->
-            <td class="member-table-col-sdt" style="padding:8px 14px; font-size:14px; font-weight:500; color:var(--text-on-surface-variant); white-space:nowrap;">
+            <td class="member-table-col-sdt border-r border-outline-variant/30" style="padding:8px 14px; font-size:14px; font-weight:500; color:var(--text-on-surface-variant); white-space:nowrap; text-align:center;">
               ${m.so_dien_thoai || '—'}
             </td>
 
             <!-- Cell 4: Gói tập -->
-            <td class="member-table-col-goi" style="padding:8px 14px;">
+            <td class="member-table-col-goi border-r border-outline-variant/30" style="padding:8px 14px; text-align:center;">
               <span style="font-size:13px;font-weight:600;color:var(--text-on-surface-variant);
-                white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:140px;"
+                white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:140px; margin:0 auto;"
                 title="${m.ten_goi_tap || 'Chưa đăng ký'}">
                 ${m.ten_goi_tap ||
           '<span class="text-outline-variant font-medium italic">Chưa đăng ký</span>'}
@@ -285,19 +285,19 @@ window.GymApp.pages['members-list'] = {
             </td>
 
             <!-- Cell 5: PT -->
-            <td class="member-table-col-pt" style="padding:8px 14px; text-align:center;">
+            <td class="member-table-col-pt border-r border-outline-variant/30" style="padding:8px 14px; text-align:center;">
               ${m.co_pt > 0
             ? '<span class="inline-flex items-center gap-1 px-2 py-1 bg-[#f0fdf4] dark:bg-[#0b2010] text-[#16a34a] dark:text-[#4cce5f] rounded-full text-xs font-bold"><span class="material-symbols-outlined" style="font-size:14px;">sports_gymnastics</span>Có PT</span>'
             : '<span class="text-outline-variant font-medium">—</span>'}
             </td>
 
             <!-- Cell 6: Trạng thái -->
-            <td style="padding:8px 14px; white-space:nowrap;">
+            <td class="border-r border-outline-variant/30" style="padding:8px 14px; white-space:nowrap; text-align:center;">
               ${window.GymApp.statusBadge(m.trang_thai)}
             </td>
 
             <!-- Cell 7: Hết hạn -->
-            <td class="member-table-col-han" style="padding:8px 14px; white-space:nowrap;">
+            <td class="member-table-col-han border-r border-outline-variant/30" style="padding:8px 14px; white-space:nowrap; text-align:center;">
               <span style="font-size:13px;font-weight:600;
                 color:${isExpiringSoon ? '#d97706' : 'var(--text-on-surface-variant)'};">
                 ${m.ngay_het_han ? window.GymApp.formatDate(m.ngay_het_han) : '—'}
@@ -408,13 +408,13 @@ window.GymApp.pages['members-list'] = {
           <table style="width:100%;border-collapse:collapse;min-width:480px;">
             <thead>
               <tr style="position:sticky;top:0;z-index:10;background:linear-gradient(135deg,#6dac7b 0%,#1D9336 100%);">
-                <th style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:left;white-space:nowrap;border:none;">Họ và tên</th>
-                <th class="member-table-col-mahv" style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:left;white-space:nowrap;border:none;">Mã HV</th>
-                <th class="member-table-col-sdt" style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:left;white-space:nowrap;border:none;">Số ĐT</th>
-                <th class="member-table-col-goi" style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:left;white-space:nowrap;border:none;">Gói tập</th>
-                <th class="member-table-col-pt" style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Có PT</th>
-                <th style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:left;white-space:nowrap;border:none;">Trạng thái</th>
-                <th class="member-table-col-han" style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:left;white-space:nowrap;border:none;">Hết hạn</th>
+                <th style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Họ và tên</th>
+                <th class="member-table-col-mahv" style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Mã HV</th>
+                <th class="member-table-col-sdt" style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Số ĐT</th>
+                <th class="member-table-col-goi" style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Gói tập</th>
+                <th class="member-table-col-pt" style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">PT</th>
+                <th style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Trạng thái</th>
+                <th class="member-table-col-han" style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Hết hạn</th>
                 <th style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Thao tác</th>
               </tr>
             </thead>
@@ -543,7 +543,7 @@ window.GymApp.pages['members-list'] = {
         : Array.isArray(membersRes?.data?.data) ? membersRes.data.data : [];
       ptSchedules = Array.isArray(schedulesRes?.data) ? schedulesRes.data
         : Array.isArray(schedulesRes?.data?.data) ? schedulesRes.data.data : [];
-      
+
       // Cập nhật cache PT với dữ liệu mới từ API để thống kê luôn chính xác
       if (pt && ptRes?.data) {
         const ptIndex = (window.GymApp.data.pts || []).findIndex(x => x.id == id);

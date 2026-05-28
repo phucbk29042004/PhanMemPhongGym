@@ -105,19 +105,19 @@ export const updateTrainer = (req, res) => {
   const old = db.prepare(`SELECT * FROM ho_so WHERE id = ? AND loai_ho_so = 'pt' AND is_deleted = 0`).get(id);
   if (!old) return error(res, 'Không tìm thấy PT.', 404);
 
-  const { ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email, chuyen_mon, kinh_nghiem, ghi_chu } = req.body;
+  const { ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email, chuyen_mon, kinh_nghiem, trang_thai, ghi_chu } = req.body;
   db.prepare(`
     UPDATE ho_so SET
       ho_ten = COALESCE(?, ho_ten), gioi_tinh = COALESCE(?, gioi_tinh),
       ngay_sinh = COALESCE(?, ngay_sinh), so_dien_thoai = COALESCE(?, so_dien_thoai),
       email = COALESCE(?, email), chuyen_mon = COALESCE(?, chuyen_mon),
-      kinh_nghiem = COALESCE(?, kinh_nghiem),
+      kinh_nghiem = COALESCE(?, kinh_nghiem), trang_thai = COALESCE(?, trang_thai),
       ghi_chu = COALESCE(?, ghi_chu), nguoi_cap_nhat_id = ?
     WHERE id = ?
   `).run(
     ho_ten || null, gioi_tinh || null, ngay_sinh || null, so_dien_thoai || null, email || null,
     chuyen_mon || null, kinh_nghiem !== undefined ? parseInt(kinh_nghiem) || 0 : undefined,
-    ghi_chu || null, req.user.id, id
+    trang_thai || null, ghi_chu || null, req.user.id, id
   );
 
   const updated = db.prepare('SELECT * FROM ho_so WHERE id = ?').get(id);

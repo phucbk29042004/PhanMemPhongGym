@@ -8,11 +8,37 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
-**✅ Cải tổ Triggers doanh thu, Rebuild dữ liệu Doanh thu & Đồng bộ bộ lọc 7/30 ngày** — Khắc phục triệt để sai lệch doanh thu lịch sử bằng cách rebuild bảng doanh thu, thống nhất ngày ghi nhận trigger, và hoàn thiện bộ lọc doanh thu 7/30 ngày đồng bộ Web và Mobile.
+**✅ Redesign toàn diện Member Portal & PT Portal theo quy chuẩn Supabaze** — Tối ưu hóa phông chữ Inter, bảng màu nhấn Emerald (#3ecf8e) & Ink (#171717), cấu trúc bo góc 6px/12px, tinh gọn sidebar nav active, và tối giản hóa SVG logos cho 2 cổng.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
+
+### 28/05/2026 09:00 — Redesign toàn diện Member Portal & PT Portal theo quy chuẩn Supabaze
+- **Loại**: Redesign giao diện, Cải tiến UI/UX (Frontend)
+- **File/Thành phần liên quan**:
+  - `FE/member-portal.html`
+  - `FE/pt-portal.html`
+- **Mô tả**:
+  - **Bảng màu & Nền**: Thay đổi màu chủ đạo cũ thành màu xanh ngọc lục bảo Emerald `#3ecf8e` và màu nhấn deep `#24b47e`. Đặt chữ mặc định sang màu Ink `#171717`.
+  - **Nút bấm & Inputs**: Cập nhật bo góc nút bấm về 6px (`rounded.sm`), thay đổi màu chữ nút bấm primary green thành màu Ink `#171717` đúng tinh thần thiết kế Supabaze.
+  - **Cards & Bảng**: Cấu trúc bo góc card tăng lên 12px (`rounded.lg`), bóng đổ Level 1 mặc định và nâng lên Level 2 khi hover.
+  - **Sidebar Active Nav**: Đổi dạng pill-shape bo tròn cũ thành dạng thiết kế phẳng tối giản, có đường gạch trái màu xanh ngọc và nền nhẹ `#fafafa`.
+  - **SVG Logos**: Tinh giản màu sắc logo chỉ giữ màu tối `#171717` và chấm chữ i, tạ tập là điểm nhấn xanh ngọc lục bảo `#3ecf8e`.
+  - **Helpers JS**: Đồng bộ màu Toast và các Status badge theo hệ màu thiết kế mới.
+- **Kết quả**: Thành công 100%.
+
+### 28/05/2026 08:42 — Tối ưu trải nghiệm Login di động, kẻ dọc bảng hội viên & đồng bộ card Dashboard
+- **Loại**: Cải tiến giao diện UI/UX, Sửa lỗi hiệu năng di động (Fullstack)
+- **File/Thành phần liên quan**:
+  - `MobileApp/src/screens/auth/LoginScreen.js`
+  - `FE/assets/js/pages/members-list.js`
+  - `FE/assets/js/pages/dashboard.js`
+- **Mô tả**:
+  - **Tối ưu đăng nhập di động**: Loại bỏ state `focusedInput` và style `inputRowFocused` nhằm tắt bỏ viền xanh khi nhấp vào input. Việc này cũng ngăn chặn việc re-render liên tục gây giật khựng (lag) khi di chuyển con trỏ giữa Tên đăng nhập và Mật khẩu.
+  - **Kẻ dọc bảng hội viên**: Thêm đường kẻ dọc mờ tinh tế phân chia giữa các cột của bảng hội viên bằng class `border-r border-outline-variant/30` cho các ô `<td>` và `border-right: 1px solid rgba(255,255,255,0.15)` cho các ô `<th>` (ngoại trừ cột thao tác cuối).
+  - **Đồng bộ card Dashboard**: Đặt thuộc tính `flex-1` và `min-height: 280px` cho cả hai card "Check-in gần nhất" và "Hoạt động gần đây" giúp chúng chia đều chiều cao của thanh bên, tạo sự cân xứng tuyệt đối trên giao diện tổng quan.
+- **Kết quả**: Thành công 100%.
 
 ### 27/05/2026 09:45 — Cải tổ Triggers doanh thu, Rebuild dữ liệu Doanh thu & Đồng bộ bộ lọc 7/30 ngày
 - **Loại**: Thêm tính năng mới, Sửa bug, Nghiệp vụ, Database Trigger (Fullstack)
@@ -937,3 +963,14 @@
 - **Loại**: Tính năng mới & đồng bộ Web/Mobile/Backend
 - **Phạm vi**: `danh_gia_pt`, `pt_toi_nhat_ky`, BMI hồ sơ, rating PT, Web Member/PT Portal và Mobile App.
 - **Kết quả**: Hội viên có thể đánh giá/sửa đánh giá PT sau buổi đã hoàn thành; điểm sao PT đồng bộ lên danh sách chọn PT; hồ sơ lưu chiều cao/cân nặng hiện tại để tính BMI; hai bên có luồng trao đổi chung `PT & Tôi` kèm thông báo khi tạo/chỉnh sửa.
+
+### 28/05/2026 09:15 — Thêm mục Nhật ký kiểm tra (Audit Logs) và bộ lọc vai trò
+- **Loại**: Tính năng mới & Đồng bộ giao diện (Frontend)
+- **File/Thành phần liên quan**: `FE/index.html`, `FE/assets/js/app.js`, `FE/assets/js/pages/audit-logs.js`
+- **Mô tả**:
+    - Thêm mục "Nhật ký kiểm tra" vào sidebar trong `FE/index.html` và nạp script.
+    - Cấu hình route và title trong `FE/assets/js/app.js`.
+    - Tạo trang `FE/assets/js/pages/audit-logs.js` hiển thị lịch sử thao tác từ bảng `audit_log`, hỗ trợ lọc nhanh theo 4 vai trò (Quản trị viên, Lễ tân, Huấn luyện viên, Hội viên) và xem tất cả.
+    - Hỗ trợ các bộ lọc nâng cao gồm tìm kiếm theo từ khóa tài khoản/họ tên/ghi chú, loại hành động, khoảng thời gian (sử dụng AirDatepicker) và phân trang.
+- **Kết quả**: ✅ Hoàn thành tích hợp tính năng nhật ký kiểm tra đồng bộ với backend và style thiết kế hệ thống.
+
