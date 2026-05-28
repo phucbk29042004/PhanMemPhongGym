@@ -123,7 +123,8 @@ export const getRevenue = (req, res) => {
   // Lấy các giao dịch chi tiết trong khoảng thời gian lọc
   const goiTapTransactions = db.prepare(`
     SELECT dk.id, dk.ngay_tao AS thoi_gian, 'goi_tap' AS loai,
-           gt.ten_goi AS san_pham, h.ho_ten AS khach_hang, dk.gia_thuc_te, dk.phuong_thuc_tt
+           gt.ten_goi AS san_pham, h.ho_ten AS khach_hang, dk.gia_thuc_te, dk.phuong_thuc_tt, dk.trang_thai,
+           dk.ly_do_huy, dk.so_tien_hoan, dk.ghi_chu_tt
     FROM dang_ky_goi_tap dk
     JOIN goi_tap gt ON gt.id = dk.goi_tap_id
     JOIN ho_so h ON h.id = dk.ho_so_id
@@ -134,7 +135,8 @@ export const getRevenue = (req, res) => {
 
   const goiPTTransactions = db.prepare(`
     SELECT dp.id, dp.ngay_tao AS thoi_gian, 'goi_pt' AS loai,
-           gp.ten_goi AS san_pham, h.ho_ten AS khach_hang, dp.gia_thuc_te, dp.phuong_thuc_tt
+           gp.ten_goi AS san_pham, h.ho_ten AS khach_hang, dp.gia_thuc_te, dp.phuong_thuc_tt, dp.trang_thai,
+           NULL AS ly_do_huy, 0 AS so_tien_hoan, dp.ghi_chu_tt
     FROM dang_ky_pt dp
     JOIN goi_pt gp ON gp.id = dp.goi_pt_id
     JOIN ho_so h ON h.id = dp.hoi_vien_id
@@ -162,19 +164,21 @@ export const getRevenueToday = (req, res) => {
   // FIX: lọc giao dịch theo COALESCE(ngay_thanh_toan, ngay_tao) để khớp trigger
   const goiTapToday = db.prepare(`
     SELECT dk.id, dk.ngay_tao AS thoi_gian, 'goi_tap' AS loai,
-           gt.ten_goi AS san_pham, h.ho_ten AS khach_hang, dk.gia_thuc_te, dk.phuong_thuc_tt
+           gt.ten_goi AS san_pham, h.ho_ten AS khach_hang, dk.gia_thuc_te, dk.phuong_thuc_tt, dk.trang_thai,
+           dk.ly_do_huy, dk.so_tien_hoan, dk.ghi_chu_tt
     FROM dang_ky_goi_tap dk
     JOIN goi_tap gt ON gt.id = dk.goi_tap_id
     JOIN ho_so h ON h.id = dk.ho_so_id
     WHERE COALESCE(date(dk.ngay_thanh_toan), date(dk.ngay_tao)) = ?
-      AND dk.trang_thai IN ('dang_hoat_dong', 'het_han', 'tam_dung')
+      AND dk.trang_thai IN ('dang_hoat_dong', 'het_han', 'huy', 'tam_dung')
     ORDER BY dk.ngay_tao DESC
   `).all(today);
 
   // FIX: lọc giao dịch theo COALESCE(ngay_thanh_toan, ngay_tao)
   const goiPTToday = db.prepare(`
     SELECT dp.id, dp.ngay_tao AS thoi_gian, 'goi_pt' AS loai,
-           gp.ten_goi AS san_pham, h.ho_ten AS khach_hang, dp.gia_thuc_te, dp.phuong_thuc_tt
+           gp.ten_goi AS san_pham, h.ho_ten AS khach_hang, dp.gia_thuc_te, dp.phuong_thuc_tt, dp.trang_thai,
+           NULL AS ly_do_huy, 0 AS so_tien_hoan, dp.ghi_chu_tt
     FROM dang_ky_pt dp
     JOIN goi_pt gp ON gp.id = dp.goi_pt_id
     JOIN ho_so h ON h.id = dp.hoi_vien_id
@@ -220,19 +224,21 @@ export const getRevenueYesterday = (req, res) => {
   // FIX: lọc theo COALESCE(ngay_thanh_toan, ngay_tao)
   const goiTapYesterday = db.prepare(`
     SELECT dk.id, dk.ngay_tao AS thoi_gian, 'goi_tap' AS loai,
-           gt.ten_goi AS san_pham, h.ho_ten AS khach_hang, dk.gia_thuc_te, dk.phuong_thuc_tt
+           gt.ten_goi AS san_pham, h.ho_ten AS khach_hang, dk.gia_thuc_te, dk.phuong_thuc_tt, dk.trang_thai,
+           dk.ly_do_huy, dk.so_tien_hoan, dk.ghi_chu_tt
     FROM dang_ky_goi_tap dk
     JOIN goi_tap gt ON gt.id = dk.goi_tap_id
     JOIN ho_so h ON h.id = dk.ho_so_id
     WHERE COALESCE(date(dk.ngay_thanh_toan), date(dk.ngay_tao)) = ?
-      AND dk.trang_thai IN ('dang_hoat_dong', 'het_han', 'tam_dung')
+      AND dk.trang_thai IN ('dang_hoat_dong', 'het_han', 'huy', 'tam_dung')
     ORDER BY dk.ngay_tao DESC
   `).all(yesterday);
 
   // FIX: lọc theo COALESCE(ngay_thanh_toan, ngay_tao)
   const goiPTYesterday = db.prepare(`
     SELECT dp.id, dp.ngay_tao AS thoi_gian, 'goi_pt' AS loai,
-           gp.ten_goi AS san_pham, h.ho_ten AS khach_hang, dp.gia_thuc_te, dp.phuong_thuc_tt
+           gp.ten_goi AS san_pham, h.ho_ten AS khach_hang, dp.gia_thuc_te, dp.phuong_thuc_tt, dp.trang_thai,
+           NULL AS ly_do_huy, 0 AS so_tien_hoan, dp.ghi_chu_tt
     FROM dang_ky_pt dp
     JOIN goi_pt gp ON gp.id = dp.goi_pt_id
     JOIN ho_so h ON h.id = dp.hoi_vien_id

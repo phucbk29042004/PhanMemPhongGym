@@ -394,7 +394,7 @@ export default function AdminDashboardScreen({ navigation }) {
                       icon={Clock} iconBg={isDark ? '#3d250c' : '#fffbeb'} iconColor="#fbbf24"
                       label="Hội viên sắp hết hạn (7 ngày)" count={dash.hoi_vien.sap_het_han} color="#fbbf24"
                       colors={colors}
-                      onPress={() => navigation.navigate('AdminMembers', { filter: 'expiring' })}
+                      onPress={() => navigation.navigate('AdminExpiredMembers', { filter: 'expiring' })}
                     />
                   )}
                   {(dash?.hoi_vien?.het_han ?? 0) > 0 && (
@@ -402,7 +402,7 @@ export default function AdminDashboardScreen({ navigation }) {
                       icon={AlertTriangle} iconBg={colors.dangerLight} iconColor={colors.danger}
                       label="Hội viên đã hết hạn" count={dash.hoi_vien.het_han} color={colors.danger}
                       colors={colors}
-                      onPress={() => navigation.navigate('AdminMembers', { filter: 'expired' })}
+                      onPress={() => navigation.navigate('AdminExpiredMembers', { filter: 'expired' })}
                     />
                   )}
                   {(dash?.yeu_cau_cho_duyet ?? 0) > 0 && (

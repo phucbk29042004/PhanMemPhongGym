@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator, Alert, RefreshControl, ScrollView,
   StatusBar, StyleSheet, Text, TouchableOpacity, View,
-  FlatList
+  FlatList, Modal, TextInput
 } from 'react-native';
 import {
   Award, Calendar, CalendarCheck, CheckCircle2, ChevronRight,
@@ -39,6 +39,90 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
   const [ptSchedules, setPtSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [cancelingPackage, setCancelingPackage] = useState(false);
+  const [cancelingPT, setCancelingPT] = useState(false);
+
+  // States for inline editing
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editType, setEditType] = useState('gym'); // 'gym' | 'pt'
+  const [editTuNgay, setEditTuNgay] = useState('');
+  const [editDenNgay, setEditDenNgay] = useState('');
+  const [editGiaThucTe, setEditGiaThucTe] = useState('');
+  const [editSoBuoi, setEditSoBuoi] = useState(''); // PT only
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  const handleEditPackageClick = () => {
+    if (!activePkg) return;
+    setEditType('gym');
+    setEditTuNgay(activePkg.tu_ngay ? activePkg.tu_ngay.split('T')[0] : '');
+    setEditDenNgay(activePkg.den_ngay ? activePkg.den_ngay.split('T')[0] : '');
+    setEditGiaThucTe(String(activePkg.gia_thuc_te || 0));
+    setEditModalVisible(true);
+  };
+
+  const handleEditPTClick = () => {
+    if (!activePT) return;
+    setEditType('pt');
+    setEditTuNgay(activePT.tu_ngay ? activePT.tu_ngay.split('T')[0] : '');
+    setEditDenNgay(activePT.den_ngay ? activePT.den_ngay.split('T')[0] : '');
+    setEditGiaThucTe(String(activePT.gia_thuc_te || 0));
+    setEditSoBuoi(String(activePT.buoi_dang_ky || 0));
+    setEditModalVisible(true);
+  };
+
+  const handleSaveEdit = async () => {
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(editTuNgay) || (editDenNgay && !dateRegex.test(editDenNgay))) {
+      Alert.alert('Lỗi', 'Ngày phải có định dạng YYYY-MM-DD (VD: 2026-05-28).');
+      return;
+    }
+    const priceVal = Number(editGiaThucTe);
+    if (isNaN(priceVal) || priceVal < 0) {
+      Alert.alert('Lỗi', 'Giá thực tế không hợp lệ.');
+      return;
+    }
+
+    setSavingEdit(true);
+    try {
+      if (editType === 'gym') {
+        const activePackage = member?.goi_tap_hien_tai[0];
+        const res = await api.patch(`/members/${memberId}/package/${activePackage.id}`, {
+          tu_ngay: editTuNgay,
+          den_ngay: editDenNgay,
+          gia_thuc_te: priceVal
+        });
+        if (res.data?.success) {
+          Alert.alert('Thành công', 'Đã cập nhật thông tin gói Gym.');
+          setEditModalVisible(false);
+          fetchDetail();
+        } else {
+          Alert.alert('Lỗi', res.data?.message || 'Không thể cập nhật gói Gym.');
+        }
+      } else {
+        const activePT = member?.pt_hien_tai[0];
+        const res = await api.put(`/pt/registrations/${activePT.id}`, {
+          pt_id: activePT.pt_id,
+          goi_pt_id: activePT.goi_pt_id,
+          tu_ngay: editTuNgay,
+          den_ngay: editDenNgay,
+          gia_thuc_te: priceVal,
+          so_buoi_dang_ky: Number(editSoBuoi)
+        });
+        if (res.data?.success) {
+          Alert.alert('Thành công', 'Đã cập nhật thông tin gói PT.');
+          setEditModalVisible(false);
+          fetchDetail();
+        } else {
+          Alert.alert('Lỗi', res.data?.message || 'Không thể cập nhật gói PT.');
+        }
+      }
+    } catch (err) {
+      console.error('[AdminMemberDetail] edit error:', err?.message);
+      Alert.alert('Lỗi', err.response?.data?.message || err?.message || 'Không thể cập nhật.');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
 
   const fetchDetail = useCallback(async () => {
     try {
@@ -122,12 +206,81 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
             try {
               const res = await api.post(`/members/${memberId}/notify`, { title, body });
               if (res.data?.success) {
-                Alert.alert('Thành công', 'Dã gửi thông báo gia hạn đến hội viên.');
+                Alert.alert('Thành công', 'Đã gửi thông báo gia hạn đến hội viên.');
               } else {
                 Alert.alert('Lỗi', res.data?.message || 'Không thể gửi thông báo.');
               }
             } catch (err) {
               Alert.alert('Lỗi', err?.response?.data?.message || 'Không thể gửi thông báo.');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const handleCancelPackage = () => {
+    if (!member?.goi_tap_hien_tai?.length) return;
+    const activePackage = member.goi_tap_hien_tai[0];
+    Alert.alert(
+      'Xác nhận hủy gói',
+      `Bạn có chắc chắn muốn hủy gói "${activePackage.ten_goi}" của ${member.ho_ten}?`,
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Hủy gói',
+          style: 'destructive',
+          onPress: async () => {
+            setCancelingPackage(true);
+            try {
+              const res = await api.patch(`/members/${memberId}/package/${activePackage.id}/cancel`, {
+                ly_do_huy: 'Hủy gói bởi Admin qua ứng dụng di động',
+                so_tien_hoan: 0
+              });
+              if (res.data?.success) {
+                Alert.alert('Thành công', 'Đã hủy gói tập của hội viên.');
+                fetchDetail();
+              } else {
+                Alert.alert('Lỗi', res.data?.message || 'Không thể hủy gói này.');
+              }
+            } catch (err) {
+              Alert.alert('Lỗi', err?.response?.data?.message || err?.message || 'Có lỗi khi hủy gói.');
+            } finally {
+              setCancelingPackage(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const handleCancelPT = () => {
+    if (!member?.pt_hien_tai?.length) return;
+    const activePT = member.pt_hien_tai[0];
+    Alert.alert(
+      'Xác nhận hủy PT',
+      `Bạn có chắc chắn muốn hủy gói PT "${activePT.ten_goi_pt}" của ${member.ho_ten}?`,
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Hủy PT',
+          style: 'destructive',
+          onPress: async () => {
+            setCancelingPT(true);
+            try {
+              const res = await api.put(`/pt/registrations/${activePT.id}/cancel`, {
+                ly_do: 'Hủy PT bởi Admin qua ứng dụng di động'
+              });
+              if (res.data?.success) {
+                Alert.alert('Thành công', 'Đã hủy gói PT của hội viên.');
+                fetchDetail();
+              } else {
+                Alert.alert('Lỗi', res.data?.message || 'Không thể hủy gói PT.');
+              }
+            } catch (err) {
+              Alert.alert('Lỗi', err?.response?.data?.message || err?.message || 'Có lỗi khi hủy gói PT.');
+            } finally {
+              setCancelingPT(false);
             }
           }
         }
@@ -304,6 +457,23 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
               {activePkg ? 'Gia hạn / Đổi gói Gym' : 'Đăng ký gói Gym mới'}
             </Text>
           </TouchableOpacity>
+          {activePkg && (
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: colors.surfaceVariant, marginTop: 10 }]}
+              onPress={handleEditPackageClick}
+            >
+              <Text style={[styles.actionBtnText, { color: colors.text }]}>Chỉnh sửa thông tin gói Gym hiện tại</Text>
+            </TouchableOpacity>
+          )}
+          {activePkg && role === 'admin' && (
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: colors.dangerLight, marginTop: 10 }]}
+              onPress={handleCancelPackage}
+              disabled={cancelingPackage}
+            >
+              <Text style={[styles.actionBtnText, { color: colors.danger }]}>Hủy gói hiện tại</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Hợp đồng PT hiện tại */}
@@ -344,6 +514,14 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
             </Text>
           </TouchableOpacity>
           {activePT && (
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: colors.surfaceVariant, marginTop: 10 }]}
+              onPress={handleEditPTClick}
+            >
+              <Text style={[styles.actionBtnText, { color: colors.text }]}>Chỉnh sửa thông tin gói PT</Text>
+            </TouchableOpacity>
+          )}
+          {activePT && (
             <TouchableOpacity 
               style={[styles.actionBtn, { backgroundColor: colors.primary, marginTop: 10 }]}
               onPress={() => navigation.navigate('AdminRegisterPTSchedule', { member, activePT })}
@@ -353,11 +531,15 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
               </Text>
             </TouchableOpacity>
           )}
-        </View>
-
-        {/* Lịch tập PT gần đây */}
-        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Lịch tập PT gần đây</Text>
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, padding: 8 }]}>
+          {activePT && role === 'admin' && (
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: colors.dangerLight, marginTop: 10 }]}
+              onPress={handleCancelPT}
+              disabled={cancelingPT}
+            >
+              <Text style={[styles.actionBtnText, { color: colors.danger }]}>Hủy gói PT</Text>
+            </TouchableOpacity>
+          )}
           {ptSchedules.length === 0 ? (
             <View style={styles.emptySection}>
               <Text style={[styles.emptyCardText, { color: colors.textMuted }]}>Chưa có lịch tập PT nào được xếp</Text>
@@ -512,6 +694,91 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* Edit Registration Modal */}
+      <Modal
+        visible={editModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEditModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                {editType === 'gym' ? 'Sửa Gói Gym Hiện Tại' : 'Sửa Gói PT Hiện Tại'}
+              </Text>
+              <TouchableOpacity onPress={() => setEditModalVisible(false)}>
+                <X color={colors.text} size={20} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ gap: 8 }}>
+              <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Ngày bắt đầu (YYYY-MM-DD)</Text>
+              <TextInput
+                style={[styles.modalInput, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
+                value={editTuNgay}
+                onChangeText={setEditTuNgay}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={colors.textMuted}
+              />
+
+              <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Ngày kết thúc (YYYY-MM-DD)</Text>
+              <TextInput
+                style={[styles.modalInput, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
+                value={editDenNgay}
+                onChangeText={setEditDenNgay}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={colors.textMuted}
+              />
+
+              <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Giá thực tế (đ)</Text>
+              <TextInput
+                style={[styles.modalInput, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
+                value={editGiaThucTe}
+                onChangeText={setEditGiaThucTe}
+                keyboardType="numeric"
+                placeholder="0"
+                placeholderTextColor={colors.textMuted}
+              />
+
+              {editType === 'pt' && (
+                <>
+                  <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Số buổi đăng ký</Text>
+                  <TextInput
+                    style={[styles.modalInput, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
+                    value={editSoBuoi}
+                    onChangeText={setEditSoBuoi}
+                    keyboardType="numeric"
+                    placeholder="0"
+                    placeholderTextColor={colors.textMuted}
+                  />
+                </>
+              )}
+            </View>
+
+            <View style={styles.modalBtnRow}>
+              <TouchableOpacity
+                style={[styles.modalBtn, { backgroundColor: colors.surfaceVariant }]}
+                onPress={() => setEditModalVisible(false)}
+              >
+                <Text style={[styles.modalBtnText, { color: colors.text }]}>Hủy</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalBtn, { backgroundColor: colors.primary }]}
+                onPress={handleSaveEdit}
+                disabled={savingEdit}
+              >
+                {savingEdit ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={[styles.modalBtnText, { color: '#fff' }]}>Lưu lại</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -618,5 +885,56 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginTop: 20
   },
-  deleteBtnText: { fontSize: 14, fontWeight: '800' }
+  deleteBtnText: { fontSize: 14, fontWeight: '800' },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    padding: 20
+  },
+  modalContent: {
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 20,
+    gap: 12
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '800'
+  },
+  modalLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 4
+  },
+  modalInput: {
+    height: 44,
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    fontSize: 14
+  },
+  modalBtnRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 14
+  },
+  modalBtn: {
+    flex: 1,
+    height: 44,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  modalBtnText: {
+    fontSize: 14,
+    fontWeight: '700'
+  }
 });

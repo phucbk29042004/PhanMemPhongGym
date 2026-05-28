@@ -21,6 +21,8 @@ import AdminAddEditPTScreen from '../screens/admin/AdminAddEditPTScreen';
 import AdminAddEditPackageScreen from '../screens/admin/AdminAddEditPackageScreen';
 import AdminRevenueScreen from '../screens/admin/AdminRevenueScreen';
 import AdminRegisterPTScheduleScreen from '../screens/admin/AdminRegisterPTScheduleScreen';
+import AdminExpiredMembersScreen from '../screens/admin/AdminExpiredMembersScreen';
+import GymRulesScreen from '../screens/shared/GymRulesScreen';
 
 import { useTheme } from '../context/ThemeContext';
 
@@ -119,6 +121,8 @@ export default function AdminNavigator() {
       <Stack.Screen name="AdminAddEditPackage" component={AdminAddEditPackageScreen} />
       <Stack.Screen name="AdminRevenue" component={AdminRevenueScreen} />
       <Stack.Screen name="AdminRegisterPTSchedule" component={AdminRegisterPTScheduleScreen} />
+      <Stack.Screen name="AdminExpiredMembers" component={AdminExpiredMembersScreen} />
+      <Stack.Screen name="GymRules" component={GymRulesScreen} />
     </Stack.Navigator>
   );
 }

@@ -14,6 +14,15 @@ window.GymApp.pages['audit-logs'] = {
   actions: [],
   pagination: null,
 
+  // Thống kê nhanh
+  stats: {
+    total: 0,
+    admin: 0,
+    le_tan: 0,
+    pt: 0,
+    hoi_vien: 0
+  },
+
   // Bản đồ dịch đối tượng dữ liệu sang Tiếng Việt
   objectTranslations: {
     'ho_so': 'Hồ sơ',

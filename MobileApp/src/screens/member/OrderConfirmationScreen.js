@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View,
   SafeAreaView, Modal, ActivityIndicator, Image, Alert
@@ -52,7 +52,22 @@ export default function OrderConfirmationScreen({ route, navigation }) {
   const [payosModalVisible, setPayosModalVisible] = useState(false);
   const [paymentInfo, setPaymentInfo] = useState(null); // { orderCode, payosUrl, qrCodeUrl, amount }
   const [pollingActive, setPollingActive] = useState(false);
-  const [pollingErrorCount, setPollingErrorCount] = useState(0);
+  const pollingErrorCountRef = useRef(0);
+  const pollingActiveRef = useRef(false);
+
+  // Keep ref in sync
+  useEffect(() => {
+    pollingActiveRef.current = pollingActive;
+  }, [pollingActive]);
+
+  // Turn off polling when screen is blurred/navigated away
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('blur', () => {
+      setPollingActive(false);
+      setPayosModalVisible(false);
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   // Lấy ngày bắt đầu tự động tính toán từ backend nối tiếp
   const [startDate, setStartDate] = useState('');
@@ -131,8 +146,10 @@ export default function OrderConfirmationScreen({ route, navigation }) {
     
     if (pollingActive && paymentInfo?.orderCode) {
       intervalId = setInterval(async () => {
+        if (!pollingActiveRef.current) return;
         try {
           const res = await api.get(`/members/me/payos-status/${paymentInfo.orderCode}`);
+          if (!pollingActiveRef.current) return;
           if (res.data?.success) {
             const status = res.data.data?.status;
             if (status === 'PAID') {
@@ -149,8 +166,8 @@ export default function OrderConfirmationScreen({ route, navigation }) {
           }
         } catch (err) {
           console.error('Lỗi checkPayosStatus polling:', err);
-          setPollingErrorCount(c => c + 1);
-          if (pollingErrorCount > 15) {
+          pollingErrorCountRef.current += 1;
+          if (pollingErrorCountRef.current > 15) {
             // Tự động dừng polling nếu gặp lỗi liên tiếp quá nhiều
             setPollingActive(false);
           }
@@ -161,7 +178,7 @@ export default function OrderConfirmationScreen({ route, navigation }) {
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
-  }, [pollingActive, paymentInfo, pollingErrorCount]);
+  }, [pollingActive, paymentInfo]);
 
   // 3. Xử lý mua gói tập
   const handleConfirmPurchase = async () => {
@@ -192,7 +209,7 @@ export default function OrderConfirmationScreen({ route, navigation }) {
           setPaymentInfo(res.data.data);
           setPayosModalVisible(true);
           setPollingActive(true);
-          setPollingErrorCount(0);
+          pollingErrorCountRef.current = 0;
         } else {
           // Luồng tiền mặt
           Alert.alert('Gửi yêu cầu thành công', 'Yêu cầu đăng ký gói đã được gửi. Vui lòng liên hệ quầy lễ tân để thanh toán tiền mặt.', [

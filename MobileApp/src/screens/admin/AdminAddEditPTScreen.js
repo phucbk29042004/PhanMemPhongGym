@@ -41,7 +41,8 @@ export default function AdminAddEditPTScreen({ route, navigation }) {
   const [kinhNghiem, setKinhNghiem] = useState('1');
   const [ghiChu, setGhiChu] = useState('');
 
-  // Account creation states (only when adding new)
+  // Account creation states (only when adding new or no account exists yet)
+  const [taiKhoanId, setTaiKhoanId] = useState(null);
   const [createAcc, setCreateAcc] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('123456');
@@ -62,6 +63,7 @@ export default function AdminAddEditPTScreen({ route, navigation }) {
             setChuyenMon(data.chuyen_mon || 'Fitness');
             setKinhNghiem(String(data.kinh_nghiem || 0));
             setGhiChu(data.ghi_chu || '');
+            setTaiKhoanId(data.tai_khoan_id || null);
           }
         } catch (err) {
           console.error('[AddEditPT] fetch error:', err?.message);
@@ -122,6 +124,18 @@ export default function AdminAddEditPTScreen({ route, navigation }) {
         // Edit Trainer API
         const res = await api.put(`/trainers/${ptId}`, payload);
         if (!res.data?.success) throw new Error(res.data?.message || 'Không thể cập nhật.');
+
+        // Account creation for edit mode (if PT doesn't have an account and createAcc is checked)
+        if (!taiKhoanId && createAcc && username.trim() && ptId) {
+          try {
+            await api.post(`/members/${ptId}/create-account`, {
+              ten_dang_nhap: username.trim(),
+              mat_khau: password
+            });
+          } catch (accErr) {
+            Alert.alert('Cảnh báo', `Cập nhật PT thành công nhưng không thể cấp tài khoản: ${accErr?.response?.data?.message || accErr.message}`);
+          }
+        }
       } else {
         // Add Trainer API
         const res = await api.post('/trainers', payload);
@@ -285,8 +299,8 @@ export default function AdminAddEditPTScreen({ route, navigation }) {
             />
           </View>
 
-          {/* Section 3: Cấp tài khoản (chỉ khi thêm mới) */}
-          {!isEdit && (
+          {/* Section 3: Cấp tài khoản (khi thêm mới hoặc chưa có tài khoản) */}
+          {(!isEdit || !taiKhoanId) && (
             <>
               <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Tài khoản đăng nhập</Text>
               <View style={[styles.formCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>

@@ -24,6 +24,17 @@ function formatDate(val) {
   return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
+function formatInputMoney(val) {
+  if (val == null || val === '') return '';
+  const clean = String(val).replace(/\D/g, '');
+  return clean.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+function parseInputMoney(val) {
+  if (!val) return 0;
+  return Number(String(val).replace(/\./g, '')) || 0;
+}
+
 export default function AdminPackageRequestsScreen({ navigation }) {
   const { colors, isDark } = useTheme();
   const [requests, setRequests] = useState([]);
@@ -64,7 +75,7 @@ export default function AdminPackageRequestsScreen({ navigation }) {
 
   const openApproveModal = (req) => {
     setSelectedReq(req);
-    setPaidAmount(String(req.gia_thuc_te));
+    setPaidAmount(formatInputMoney(String(req.gia_thuc_te)));
     setPaymentMethod(req.phuong_thuc_tt || 'tien_mat');
     setNote(req.ghi_chu_gia || 'Duyệt thủ công qua di động');
     setModalVisible(true);
@@ -73,9 +84,10 @@ export default function AdminPackageRequestsScreen({ navigation }) {
   const handleAction = async (actionType) => {
     if (!selectedReq) return;
 
+    let amount = 0;
     if (actionType === 'approve') {
-      const amount = Number(paidAmount);
-      if (isNaN(amount) || amount < 0) {
+      amount = parseInputMoney(paidAmount);
+      if (amount < 0) {
         Alert.alert('Lỗi', 'Vui lòng nhập số tiền hợp lệ.');
         return;
       }
@@ -86,7 +98,7 @@ export default function AdminPackageRequestsScreen({ navigation }) {
       const payload = actionType === 'approve' 
         ? {
             action: 'approve',
-            gia_thuc_te: Number(paidAmount),
+            gia_thuc_te: amount,
             phuong_thuc_tt: paymentMethod,
             ghi_chu_tt: note
           }
@@ -269,7 +281,7 @@ export default function AdminPackageRequestsScreen({ navigation }) {
               <TextInput
                 style={[styles.input, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
                 value={paidAmount}
-                onChangeText={setPaidAmount}
+                onChangeText={(val) => setPaidAmount(formatInputMoney(val))}
                 keyboardType="numeric"
                 placeholder="Nhập số tiền thực tế..."
                 placeholderTextColor={colors.textMuted}

@@ -2168,7 +2168,14 @@ window.GymApp.pages['members-list'] = {
     cancelRefundEl?.addEventListener('blur', function () { this.value = _cFmtVND(_cParseVND(this.value)); });
     overlay.querySelector('#cancel-pkg-confirm').addEventListener('click', async () => {
       const ly_do_huy = overlay.querySelector('#cancel-pkg-reason').value.trim();
-      const so_tien_hoan = _cParseVND(overlay.querySelector('#cancel-pkg-refund').value);
+      const refundInputVal = overlay.querySelector('#cancel-pkg-refund').value.trim();
+      if (!refundInputVal) {
+        return window.GymApp.toast('Vui lòng nhập số tiền hoàn (không được để trống)', 'error');
+      }
+      const so_tien_hoan = _cParseVND(refundInputVal);
+      if (so_tien_hoan <= 0) {
+        return window.GymApp.toast('Số tiền hoàn phải lớn hơn 0', 'error');
+      }
       const maxHoan = pkg.gia_thuc_te || pkg.gia || 0;
       if (so_tien_hoan > maxHoan) {
         return window.GymApp.toast(`Số tiền hoàn không được vượt quá ${window.GymApp.formatCurrency(maxHoan)}`, 'error');
