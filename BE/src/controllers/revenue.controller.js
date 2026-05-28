@@ -1,5 +1,9 @@
 /**
  * Revenue Controller — Thống kê doanh thu & tổng quan Dashboard
+ * FIX:
+ *   1. getRevenueToday / getRevenueYesterday: lọc theo COALESCE(ngay_thanh_toan, ngay_tao)
+ *      thay vì chỉ date(ngay_tao) để khớp đúng với bảng doanh_thu
+ *   2. getDashboard: không thay đổi
  */
 
 import db from '../config/db.js';
@@ -116,37 +120,66 @@ export const getRevenue = (req, res) => {
     previous_orders: previousMonthRows.reduce((sum, row) => sum + (row.tong_don || 0), 0),
   };
 
-  return success(res, { daily, summary, packageStats, monthComparison });
+  // Lấy các giao dịch chi tiết trong khoảng thời gian lọc
+  const goiTapTransactions = db.prepare(`
+    SELECT dk.id, dk.ngay_tao AS thoi_gian, 'goi_tap' AS loai,
+           gt.ten_goi AS san_pham, h.ho_ten AS khach_hang, dk.gia_thuc_te, dk.phuong_thuc_tt
+    FROM dang_ky_goi_tap dk
+    JOIN goi_tap gt ON gt.id = dk.goi_tap_id
+    JOIN ho_so h ON h.id = dk.ho_so_id
+    WHERE COALESCE(date(dk.ngay_thanh_toan), date(dk.ngay_tao)) >= date('now','localtime','-' || ? || ' days')
+      AND dk.trang_thai IN ('dang_hoat_dong', 'het_han', 'huy', 'tam_dung')
+    ORDER BY dk.ngay_tao DESC
+  `).all(daysInt);
+
+  const goiPTTransactions = db.prepare(`
+    SELECT dp.id, dp.ngay_tao AS thoi_gian, 'goi_pt' AS loai,
+           gp.ten_goi AS san_pham, h.ho_ten AS khach_hang, dp.gia_thuc_te, dp.phuong_thuc_tt
+    FROM dang_ky_pt dp
+    JOIN goi_pt gp ON gp.id = dp.goi_pt_id
+    JOIN ho_so h ON h.id = dp.hoi_vien_id
+    WHERE COALESCE(date(dp.ngay_thanh_toan), date(dp.ngay_tao)) >= date('now','localtime','-' || ? || ' days')
+      AND dp.trang_thai IN ('dang_hoat_dong', 'hoan_thanh')
+    ORDER BY dp.ngay_tao DESC
+  `).all(daysInt);
+
+  const transactions = [...goiTapTransactions, ...goiPTTransactions].sort((a, b) => b.thoi_gian.localeCompare(a.thoi_gian));
+
+  return success(res, { daily, summary, packageStats, monthComparison, transactions });
 };
 
 // ── GET /api/revenue/today ────────────────────────────────
 // Doanh thu hôm nay chi tiết
+// FIX: lấy giao dịch theo COALESCE(ngay_thanh_toan, ngay_tao) để khớp với bảng doanh_thu
 export const getRevenueToday = (req, res) => {
   const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
 
+  // Lấy số liệu tổng hợp từ bảng doanh_thu (nguồn chân lý, được trigger cập nhật)
   const todayRevenue = db.prepare('SELECT * FROM doanh_thu WHERE ngay = ?').get(today);
   const yesterdayRevenue = db.prepare(`SELECT tong_tien FROM doanh_thu WHERE ngay = date('now','localtime','-1 days')`).get();
   const lastMonthSameDay = db.prepare(`SELECT tong_tien FROM doanh_thu WHERE ngay = date('now','localtime','-1 month')`).get();
 
-  // Giao dịch hôm nay — gói tập
+  // FIX: lọc giao dịch theo COALESCE(ngay_thanh_toan, ngay_tao) để khớp trigger
   const goiTapToday = db.prepare(`
     SELECT dk.id, dk.ngay_tao AS thoi_gian, 'goi_tap' AS loai,
            gt.ten_goi AS san_pham, h.ho_ten AS khach_hang, dk.gia_thuc_te, dk.phuong_thuc_tt
     FROM dang_ky_goi_tap dk
     JOIN goi_tap gt ON gt.id = dk.goi_tap_id
     JOIN ho_so h ON h.id = dk.ho_so_id
-    WHERE date(dk.ngay_tao) = ? AND dk.trang_thai IN ('dang_hoat_dong', 'het_han')
+    WHERE COALESCE(date(dk.ngay_thanh_toan), date(dk.ngay_tao)) = ?
+      AND dk.trang_thai IN ('dang_hoat_dong', 'het_han', 'tam_dung')
     ORDER BY dk.ngay_tao DESC
   `).all(today);
 
-  // Giao dịch hôm nay — gói PT
+  // FIX: lọc giao dịch theo COALESCE(ngay_thanh_toan, ngay_tao)
   const goiPTToday = db.prepare(`
     SELECT dp.id, dp.ngay_tao AS thoi_gian, 'goi_pt' AS loai,
            gp.ten_goi AS san_pham, h.ho_ten AS khach_hang, dp.gia_thuc_te, dp.phuong_thuc_tt
     FROM dang_ky_pt dp
     JOIN goi_pt gp ON gp.id = dp.goi_pt_id
     JOIN ho_so h ON h.id = dp.hoi_vien_id
-    WHERE date(dp.ngay_tao) = ? AND dp.trang_thai IN ('dang_hoat_dong', 'hoan_thanh')
+    WHERE COALESCE(date(dp.ngay_thanh_toan), date(dp.ngay_tao)) = ?
+      AND dp.trang_thai IN ('dang_hoat_dong', 'hoan_thanh')
     ORDER BY dp.ngay_tao DESC
   `).all(today);
 
@@ -160,19 +193,21 @@ export const getRevenueToday = (req, res) => {
 
   return success(res, {
     ngay: today,
-    tong_tien:       todayRevenue?.tong_tien || 0,
-    tong_don:        todayRevenue?.tong_don || 0,
-    tien_goi_tap:    todayRevenue?.tien_goi_tap || 0,
-    tien_goi_pt:     todayRevenue?.tien_goi_pt || 0,
-    hom_qua:         yesterdayRevenue?.tong_tien || 0,
+    // Lấy từ bảng doanh_thu (nguồn chân lý) thay vì tính lại từ giao dịch
+    tong_tien: todayRevenue?.tong_tien || 0,
+    tong_don: todayRevenue?.tong_don || 0,
+    tien_goi_tap: todayRevenue?.tien_goi_tap || 0,
+    tien_goi_pt: todayRevenue?.tien_goi_pt || 0,
+    hom_qua: yesterdayRevenue?.tong_tien || 0,
     thang_truoc_cung_ngay: lastMonthSameDay?.tong_tien || 0,
-    so_hv_moi:       soHvMoiHomNay,
-    giao_dich:       giaoDichHomNay,
+    so_hv_moi: soHvMoiHomNay,
+    giao_dich: giaoDichHomNay,
   });
 };
 
 // ── GET /api/revenue/yesterday ────────────────────────────
 // Doanh thu hôm qua chi tiết
+// FIX: lọc giao dịch theo COALESCE(ngay_thanh_toan, ngay_tao)
 export const getRevenueYesterday = (req, res) => {
   const yesterday = db.prepare(`SELECT date('now','localtime','-1 days') as d`).get().d;
   const twoDaysAgo = db.prepare(`SELECT date('now','localtime','-2 days') as d`).get().d;
@@ -182,25 +217,27 @@ export const getRevenueYesterday = (req, res) => {
   const twoDaysAgoRevenue = db.prepare('SELECT tong_tien FROM doanh_thu WHERE ngay = ?').get(twoDaysAgo);
   const lastMonthSameDayRevenue = db.prepare('SELECT tong_tien FROM doanh_thu WHERE ngay = ?').get(lastMonthSameDay);
 
-  // Giao dịch hôm qua — gói tập
+  // FIX: lọc theo COALESCE(ngay_thanh_toan, ngay_tao)
   const goiTapYesterday = db.prepare(`
     SELECT dk.id, dk.ngay_tao AS thoi_gian, 'goi_tap' AS loai,
            gt.ten_goi AS san_pham, h.ho_ten AS khach_hang, dk.gia_thuc_te, dk.phuong_thuc_tt
     FROM dang_ky_goi_tap dk
     JOIN goi_tap gt ON gt.id = dk.goi_tap_id
     JOIN ho_so h ON h.id = dk.ho_so_id
-    WHERE date(dk.ngay_tao) = ? AND dk.trang_thai IN ('dang_hoat_dong', 'het_han')
+    WHERE COALESCE(date(dk.ngay_thanh_toan), date(dk.ngay_tao)) = ?
+      AND dk.trang_thai IN ('dang_hoat_dong', 'het_han', 'tam_dung')
     ORDER BY dk.ngay_tao DESC
   `).all(yesterday);
 
-  // Giao dịch hôm qua — gói PT
+  // FIX: lọc theo COALESCE(ngay_thanh_toan, ngay_tao)
   const goiPTYesterday = db.prepare(`
     SELECT dp.id, dp.ngay_tao AS thoi_gian, 'goi_pt' AS loai,
            gp.ten_goi AS san_pham, h.ho_ten AS khach_hang, dp.gia_thuc_te, dp.phuong_thuc_tt
     FROM dang_ky_pt dp
     JOIN goi_pt gp ON gp.id = dp.goi_pt_id
     JOIN ho_so h ON h.id = dp.hoi_vien_id
-    WHERE date(dp.ngay_tao) = ? AND dp.trang_thai IN ('dang_hoat_dong', 'hoan_thanh')
+    WHERE COALESCE(date(dp.ngay_thanh_toan), date(dp.ngay_tao)) = ?
+      AND dp.trang_thai IN ('dang_hoat_dong', 'hoan_thanh')
     ORDER BY dp.ngay_tao DESC
   `).all(yesterday);
 
@@ -214,14 +251,14 @@ export const getRevenueYesterday = (req, res) => {
 
   return success(res, {
     ngay: yesterday,
-    tong_tien:       yesterdayRevenue?.tong_tien || 0,
-    tong_don:        yesterdayRevenue?.tong_don || 0,
-    tien_goi_tap:    yesterdayRevenue?.tien_goi_tap || 0,
-    tien_goi_pt:     yesterdayRevenue?.tien_goi_pt || 0,
-    hom_qua:         twoDaysAgoRevenue?.tong_tien || 0,
+    tong_tien: yesterdayRevenue?.tong_tien || 0,
+    tong_don: yesterdayRevenue?.tong_don || 0,
+    tien_goi_tap: yesterdayRevenue?.tien_goi_tap || 0,
+    tien_goi_pt: yesterdayRevenue?.tien_goi_pt || 0,
+    hom_qua: twoDaysAgoRevenue?.tong_tien || 0,
     thang_truoc_cung_ngay: lastMonthSameDayRevenue?.tong_tien || 0,
-    so_hv_moi:       soHvMoiHomQua,
-    giao_dich:       giaoDichHomQua,
+    so_hv_moi: soHvMoiHomQua,
+    giao_dich: giaoDichHomQua,
   });
 };
 
@@ -270,19 +307,17 @@ export const getDashboard = (req, res) => {
 
   const yesterdayLuotVao = db.prepare(`SELECT COUNT(*) as c FROM luot_vao_ra WHERE date(thoi_diem) = ? AND loai = 'vao'`).get(yesterday).c;
   const yesterdayDoanhThu = db.prepare(`SELECT tong_tien FROM doanh_thu WHERE ngay = ?`).get(yesterday)?.tong_tien || 0;
-  // Sửa lỗi 'hv' thành 'hoi_vien' để đếm đúng số hội viên mới trong tháng
   const newMembersThisMonth = db.prepare(`SELECT COUNT(*) as c FROM ho_so WHERE date(ngay_tao) >= ? AND loai_ho_so = 'hoi_vien' AND is_deleted = 0`).get(startOfMonth).c;
 
   const calcPercent = (curr, prev) => prev === 0 ? (curr > 0 ? 100 : 0) : ((curr - prev) / prev * 100);
 
   stats.percent_changes = {
-    hoi_vien: ((newMembersThisMonth / (stats.hoi_vien.tong || 1)) * 100).toFixed(2), // % tăng trưởng trong tháng
+    hoi_vien: ((newMembersThisMonth / (stats.hoi_vien.tong || 1)) * 100).toFixed(2),
     luot_vao: calcPercent(stats.luot_vao_ra_hom_nay.luot_vao, yesterdayLuotVao).toFixed(2),
     doanh_thu: calcPercent(stats.doanh_thu_hom_nay.tong_tien, yesterdayDoanhThu).toFixed(2),
     sap_het_han: ((stats.hoi_vien.sap_het_han / (stats.hoi_vien.tong || 1)) * 100).toFixed(2)
   };
 
-  // Tính các trường doanh thu và số lượng phục vụ mobile dashboard
   stats.doanh_thu_thang = db.prepare(`
     SELECT SUM(tong_tien) AS sum FROM doanh_thu 
     WHERE ngay >= ? AND ngay <= ?
@@ -315,7 +350,6 @@ export const getDashboard = (req, res) => {
     WHERE trang_thai = 'dang_hoat_dong'
   `).get().c;
 
-  // Check-in gần nhất hôm nay (tối đa 8 lượt)
   stats.recent_checkins = db.prepare(`
     SELECT lv.id, lv.thoi_diem, lv.loai,
            h.ma_ho_so, h.ho_ten, h.avatar_url,
@@ -327,8 +361,7 @@ export const getDashboard = (req, res) => {
     LIMIT 8
   `).all(today);
 
-  // Top hội viên chăm chỉ (theo tháng hiện tại)
-  const currentMonthStart = today.substring(0, 8) + '01'; // 'YYYY-MM-01'
+  const currentMonthStart = today.substring(0, 8) + '01';
   stats.top_hoi_vien = db.prepare(`
     SELECT h.id, h.ma_ho_so, h.ho_ten, h.avatar_url, COUNT(lv.id) as so_buoi_tap
     FROM luot_vao_ra lv

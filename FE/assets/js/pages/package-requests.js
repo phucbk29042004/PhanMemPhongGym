@@ -15,8 +15,8 @@
               <p class="text-on-surface-variant font-body-sm text-body-sm mt-xs">Hội viên gửi yêu cầu từ ứng dụng — duyệt để kích hoạt gói mới</p>
             </div>
             <button id="btn-refresh-pkg-req"
-              class="flex items-center gap-xs px-compact py-compact rounded-xl border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary transition-all text-body-sm font-bold">
-              <span class="material-symbols-outlined text-sm">refresh</span> Làm mới
+              class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border border-outline-variant bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer whitespace-nowrap">
+              <span class="material-symbols-outlined text-base">refresh</span> Tải lại
             </button>
           </div>
 
@@ -59,6 +59,9 @@
           btn.classList.remove('pointer-events-none', 'opacity-50');
         }
       });
+
+      // Auto-refresh mỗi 30 giây để cập nhật danh sách nếu có yêu cầu được xử lý tự động
+      setInterval(() => this._load(), 30000);
     },
 
     async _load() {
@@ -80,7 +83,7 @@
       if (!el) return;
       el.innerHTML = [
         { label: 'Chờ duyệt', value: total, icon: 'pending_actions', bg: '#fff3e0', color: '#e65100' },
-        { label: 'Hôm nay', value: this._data.filter(r => r.ngay_tao?.startsWith(new Date().toISOString().slice(0,10))).length, icon: 'today', bg: '#e3f2fd', color: '#1565c0' },
+        { label: 'Hôm nay', value: this._data.filter(r => r.ngay_tao?.startsWith(new Date().toISOString().slice(0, 10))).length, icon: 'today', bg: '#e3f2fd', color: '#1565c0' },
         { label: 'Tuần này', value: (() => { const w = new Date(); w.setDate(w.getDate() - 7); return this._data.filter(r => new Date(r.ngay_tao) >= w).length; })(), icon: 'date_range', bg: '#e7f5e9', color: '#1D9336' },
       ].map(s => `
         <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-standard shadow-sm flex items-center gap-compact">
@@ -132,7 +135,7 @@
                   <td class="py-compact px-standard">
                     <div class="flex items-center gap-compact">
                       <div class="w-8 h-8 rounded-full bg-brand-primary/10 flex items-center justify-center flex-shrink-0">
-                        <span class="font-bold text-brand-primary text-body-sm">${(r.ho_ten||'?')[0].toUpperCase()}</span>
+                        <span class="font-bold text-brand-primary text-body-sm">${(r.ho_ten || '?')[0].toUpperCase()}</span>
                       </div>
                       <div>
                         <p class="font-bold text-on-surface">${r.ho_ten || '—'}</p>
@@ -150,12 +153,12 @@
                     ${r.gia_thuc_te ? Number(r.gia_thuc_te).toLocaleString('vi-VN') + 'đ' : '—'}
                   </td>
                   <td class="py-compact px-standard text-on-surface-variant" style="font-size:11px">
-                    ${r.ngay_tao ? new Date(r.ngay_tao).toLocaleString('vi-VN', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—'}
+                    ${r.ngay_tao ? new Date(r.ngay_tao).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'}
                   </td>
                   <td class="py-compact px-standard text-center">
                     <div class="flex items-center justify-center gap-xs">
                       <button class="btn-approve-req px-compact py-xs rounded-lg font-bold text-white transition-all hover:opacity-90 active:scale-95 text-body-sm"
-                        style="background:#1D9336" data-id="${r.id}" data-name="${r.ho_ten}" data-goi="${r.ten_goi_tap}" data-gia="${r.gia_thuc_te||0}">
+                        style="background:#1D9336" data-id="${r.id}" data-name="${r.ho_ten}" data-goi="${r.ten_goi_tap}" data-gia="${r.gia_thuc_te || 0}">
                         <span class="material-symbols-outlined text-sm align-middle">check</span> Duyệt
                       </button>
                       <button class="btn-reject-req px-compact py-xs rounded-lg font-bold border border-outline-variant text-on-surface-variant hover:text-error hover:border-error transition-all text-body-sm"
@@ -176,7 +179,7 @@
             <div class="rounded-xl border border-outline-variant overflow-hidden" data-req-id="${r.id}">
               <div class="section-header px-compact py-compact flex items-center gap-compact border-b border-outline-variant">
                 <div class="w-8 h-8 rounded-full bg-brand-primary/10 flex items-center justify-center flex-shrink-0">
-                  <span class="font-bold text-brand-primary text-body-sm">${(r.ho_ten||'?')[0].toUpperCase()}</span>
+                  <span class="font-bold text-brand-primary text-body-sm">${(r.ho_ten || '?')[0].toUpperCase()}</span>
                 </div>
                 <div class="flex-1 min-w-0">
                   <p class="font-bold text-on-surface text-body-sm truncate">${r.ho_ten || '—'}</p>
@@ -188,11 +191,11 @@
                 <div><p class="text-on-surface-variant">Gói tập</p><p class="font-bold text-on-surface">${r.ten_goi_tap || '—'}</p></div>
                 <div><p class="text-on-surface-variant">Từ ngày</p><p class="font-bold text-on-surface">${r.tu_ngay ? window.GymApp.formatDate(r.tu_ngay) : '—'}</p></div>
                 <div><p class="text-on-surface-variant">Giá dự kiến</p><p class="font-bold text-brand-primary">${r.gia_thuc_te ? Number(r.gia_thuc_te).toLocaleString('vi-VN') + 'đ' : '—'}</p></div>
-                <div><p class="text-on-surface-variant">Gửi lúc</p><p class="font-bold text-on-surface">${r.ngay_tao ? new Date(r.ngay_tao).toLocaleString('vi-VN',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—'}</p></div>
+                <div><p class="text-on-surface-variant">Gửi lúc</p><p class="font-bold text-on-surface">${r.ngay_tao ? new Date(r.ngay_tao).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'}</p></div>
               </div>
               <div class="px-compact pb-compact flex gap-xs">
                 <button class="btn-approve-req flex-1 py-xs rounded-lg font-bold text-white text-body-sm" style="background:#1D9336"
-                  data-id="${r.id}" data-name="${r.ho_ten}" data-goi="${r.ten_goi_tap}" data-gia="${r.gia_thuc_te||0}">
+                  data-id="${r.id}" data-name="${r.ho_ten}" data-goi="${r.ten_goi_tap}" data-gia="${r.gia_thuc_te || 0}">
                   ✓ Duyệt
                 </button>
                 <button class="btn-reject-req flex-1 py-xs rounded-lg font-bold border border-outline-variant text-on-surface-variant text-body-sm"
@@ -316,18 +319,25 @@
             action: 'approve', gia_thuc_te: Number(gia_thuc_te), phuong_thuc_tt, ghi_chu_tt
           });
           if (res?.success) {
-            window.GymApp.toast('Đã duyệt yêu cầu gia hạn thành công!', 'success');
+            const msg = res?.data?.auto_activated
+              ? 'Gói đã được kích hoạt tự động qua PayOS. Không cần duyệt thêm!'
+              : 'Đã duyệt yêu cầu gia hạn thành công!';
+            window.GymApp.toast(msg, 'success');
             closeModal();
             await this._load();
           } else {
             window.GymApp.toast(res?.message || 'Có lỗi xảy ra', 'error');
             confirmBtn.disabled = false;
             confirmBtn.textContent = 'Xác nhận duyệt';
+            // Refresh danh sách để cập nhật trạng thái
+            await this._load();
           }
         } catch (e) {
-          window.GymApp.toast('Lỗi kết nối server', 'error');
+          window.GymApp.toast(e.message || 'Lỗi kết nối server', 'error');
           confirmBtn.disabled = false;
           confirmBtn.textContent = 'Xác nhận duyệt';
+          // Refresh danh sách để cập nhật trạng thái
+          await this._load();
         }
       };
     },

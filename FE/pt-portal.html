@@ -15,22 +15,37 @@
       theme: {
         extend: {
           colors: {
-            "on-surface": "var(--text-on-surface)", "on-surface-variant": "var(--text-on-surface-variant)",
-            "surface-container-lowest": "var(--bg-surface-lowest)", "surface-container-low": "var(--bg-surface-low)",
-            "surface-container": "var(--bg-surface-container)", "surface-container-high": "var(--bg-surface-high)",
-            "outline-variant": "var(--outline-variant)", "background": "var(--bg-background)",
-            "brand-primary": "#1D9336", "primary-container": "#03872c", "error": "#ba1a1a",
-            "error-container": "#ffdad6", "secondary": "#575f67"
+            "on-surface": "#171717",
+            "on-surface-variant": "#707070",
+            "surface-container-lowest": "#ffffff",
+            "surface-container-low": "#fafafa",
+            "surface-container": "#ededed",
+            "surface-container-high": "#dfdfdf",
+            "outline-variant": "#dfdfdf",
+            "background": "#ffffff",
+            "brand-primary": "#3ecf8e",
+            "primary-container": "#24b47e",
+            "on-brand-primary": "#171717",
+            "error": "#ba1a1a",
+            "error-container": "#ffdad6",
+            "secondary": "#707070"
           },
           spacing: {
             "xs": "4px", "sm": "8px", "compact": "8px", "standard": "10px", "loose": "20px",
             "margin": "32px", "atom": "5px"
           },
           fontSize: {
-            "body-sm": ["12px", { lineHeight: "16px" }], "body-md": ["14px", { lineHeight: "20px" }],
-            "display-lg": ["32px", { lineHeight: "40px", fontWeight: "700" }],
-            "display-2xl": ["20px", { lineHeight: "28px", fontWeight: "600" }],
-            "display-xl": ["16px", { lineHeight: "24px", fontWeight: "600" }],
+            "body-sm": ["12px", { lineHeight: "16px" }],
+            "body-md": ["14px", { lineHeight: "20px" }],
+            "display-lg": ["32px", { lineHeight: "40px", fontWeight: "500", letterSpacing: "-0.72px" }],
+            "display-2xl": ["20px", { lineHeight: "28px", fontWeight: "500", letterSpacing: "-0.42px" }],
+            "display-xl": ["16px", { lineHeight: "24px", fontWeight: "500" }],
+          },
+          borderRadius: {
+            "xl": "12px",
+            "sm": "6px",
+            "md": "8px",
+            "full": "999px"
           }
         }
       }
@@ -40,13 +55,24 @@
   <script src="https://cdn.jsdelivr.net/npm/air-datepicker@3/air-datepicker.min.js"></script>
   <link rel="stylesheet" href="assets/css/main.css" />
   <style>
+    body {
+      font-family: "Inter", sans-serif;
+      background: #ffffff;
+      color: #171717;
+      letter-spacing: -0.01em;
+    }
+
     .gym-card {
+      background: #ffffff;
+      border: 1px solid #dfdfdf;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
       transition: all 0.2s ease-in-out;
     }
 
     .gym-card:hover {
-      border-color: var(--brand-primary);
-      box-shadow: 0 4px 12px rgba(29, 147, 54, 0.15);
+      border-color: #3ecf8e;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
       transform: translateY(-2px);
     }
 
@@ -55,8 +81,21 @@
     }
     
     [data-page]:not(.nav-active):hover {
-      box-shadow: inset 0 0 0 1px var(--brand-primary);
-      color: var(--brand-primary);
+      background: #fafafa;
+      color: #171717;
+    }
+
+    .nav-active {
+      background: #ffffff;
+      color: #171717 !important;
+      font-weight: 500;
+      border-left: 3px solid #3ecf8e;
+      border-radius: 6px;
+    }
+
+    .focus-ring:focus {
+      outline: none;
+      box-shadow: rgba(62, 207, 142, 0.18) 0 0 0 3px;
     }
   </style>
 </head>
@@ -83,29 +122,29 @@
         <div class="sidebar-label flex items-center gap-compact overflow-hidden flex-1">
           <!-- White Hexagon Logo -->
           <svg viewBox="0 0 45 45" width="32" height="32" class="flex-shrink-0">
-             <polygon points="22.5,2 42,13 42,35 22.5,46 3,35 3,13" fill="#ffffff" stroke="#166534" stroke-width="1.5"/>
-             <path d="M19,37 C19,31 18,24 20,15" fill="none" stroke="#14532d" stroke-width="3" stroke-linecap="round"/>
-             <path d="M20,15 C23,11 31,11 34,15 C36,18 35,24 29,26 C24,27 20,26.5 20,26.5" fill="none" stroke="#14532d" stroke-width="2.5" stroke-linecap="round"/>
-             <path d="M20.5,19 C24,18 28.5,18.5 30,21" fill="none" stroke="#14532d" stroke-width="1.2" stroke-linecap="round"/>
-             <path d="M20,23.5 C23.5,23 27,24 28.5,22.5" fill="none" stroke="#14532d" stroke-width="1" stroke-linecap="round"/>
+             <polygon points="22.5,2 42,13 42,35 22.5,46 3,35 3,13" fill="#ffffff" stroke="#3ecf8e" stroke-width="1.5"/>
+             <path d="M19,37 C19,31 18,24 20,15" fill="none" stroke="#171717" stroke-width="3" stroke-linecap="round"/>
+             <path d="M20,15 C23,11 31,11 34,15 C36,18 35,24 29,26 C24,27 20,26.5 20,26.5" fill="none" stroke="#171717" stroke-width="2.5" stroke-linecap="round"/>
+             <path d="M20.5,19 C24,18 28.5,18.5 30,21" fill="none" stroke="#171717" stroke-width="1.2" stroke-linecap="round"/>
+             <path d="M20,23.5 C23.5,23 27,24 28.5,22.5" fill="none" stroke="#171717" stroke-width="1" stroke-linecap="round"/>
           </svg>
           <div class="min-w-0">
             <svg viewBox="0 0 190 40" width="140" height="30" style="display:block;">
               <g font-family="'Outfit', 'Inter', 'Roboto', sans-serif" font-weight="800" font-size="22">
-                <text x="5" y="27" fill="#1D9336" letter-spacing="-0.5">arad</text>
-                <text x="53" y="27" fill="#1D9336" letter-spacing="-0.5">ı</text>
-                <path d="M54.5,10 C56.5,8 59,8 59.5,10 C59.5,12.5 57,14 55.5,14 C54.5,14 53.5,12.5 54.5,10 Z" fill="#16a34a"/>
-                <text x="64" y="27" fill="#14532d" letter-spacing="-0.5">seGy</text>
-                <text x="112" y="27" fill="#14532d" letter-spacing="-0.5">m</text>
+                <text x="5" y="27" fill="#171717" letter-spacing="-0.5">arad</text>
+                <text x="53" y="27" fill="#171717" letter-spacing="-0.5">ı</text>
+                <path d="M54.5,10 C56.5,8 59,8 59.5,10 C59.5,12.5 57,14 55.5,14 C54.5,14 53.5,12.5 54.5,10 Z" fill="#3ecf8e"/>
+                <text x="64" y="27" fill="#171717" letter-spacing="-0.5">seGy</text>
+                <text x="112" y="27" fill="#171717" letter-spacing="-0.5">m</text>
                 <g transform="translate(116, 9) rotate(15)">
-                  <line x1="1" y1="8" x2="13" y2="2" stroke="#1D9336" stroke-width="1.5" stroke-linecap="round"/>
-                  <rect x="0" y="5" width="2.5" height="5" rx="0.8" fill="#14532d"/>
-                  <rect x="-2" y="4" width="2" height="7" rx="0.8" fill="#1D9336"/>
-                  <rect x="11.5" y="0" width="2.5" height="5" rx="0.8" fill="#14532d"/>
-                  <rect x="14" y="-1" width="2" height="7" rx="0.8" fill="#1D9336"/>
+                  <line x1="1" y1="8" x2="13" y2="2" stroke="#3ecf8e" stroke-width="1.5" stroke-linecap="round"/>
+                  <rect x="0" y="5" width="2.5" height="5" rx="0.8" fill="#171717"/>
+                  <rect x="-2" y="4" width="2" height="7" rx="0.8" fill="#3ecf8e"/>
+                  <rect x="11.5" y="0" width="2.5" height="5" rx="0.8" fill="#171717"/>
+                  <rect x="14" y="-1" width="2" height="7" rx="0.8" fill="#3ecf8e"/>
                 </g>
               </g>
-              <text x="5" y="38" font-family="'Inter', sans-serif" font-weight="500" font-size="9" fill="#16a34a">HUẤN LUYỆN VIÊN (PT)</text>
+              <text x="5" y="38" font-family="'Inter', sans-serif" font-weight="500" font-size="9" fill="#707070">HUẤN LUYỆN VIÊN (PT)</text>
             </svg>
           </div>
         </div>
@@ -277,11 +316,16 @@
   <!-- Scripts -->
   <script>
     window.GymApp.toast = function (message, type = 'success') {
-      const colors = { success: 'background:#1D9336', error: 'background:#ba1a1a', info: 'background:#575f67', warning: 'background:#e65100' };
+      const colors = { 
+        success: 'background:#3ecf8e;color:#171717;border:1px solid #24b47e;', 
+        error: 'background:#ba1a1a;color:#ffffff;', 
+        info: 'background:#fafafa;color:#171717;border:1px solid #dfdfdf;', 
+        warning: 'background:#ffdb13;color:#171717;border:1px solid #c7c7c7;' 
+      };
       const icons = { success: 'check_circle', error: 'error', info: 'info', warning: 'warning' };
       const el = document.createElement('div');
-      el.style.cssText = `position:fixed;bottom:20px;right:20px;z-index:9997;${colors[type] || colors.info};color:#fff;padding:10px 20px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.2);font-size:14px;display:flex;align-items:center;gap:8px;font-weight:500;`;
-      el.innerHTML = `<span class="material-symbols-outlined" style="font-size:18px">${icons[type]}</span>${message}`;
+      el.style.cssText = `position:fixed;bottom:20px;right:20px;z-index:9997;${colors[type] || colors.info};padding:10px 16px;border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,0.08);font-size:13px;display:flex;align-items:center;gap:8px;font-weight:500;font-family:Inter,sans-serif;`;
+      el.innerHTML = `<span class="material-symbols-outlined" style="font-size:16px">${icons[type]}</span>${message}`;
       document.body.appendChild(el);
       setTimeout(() => el.remove(), 3000);
     };
@@ -290,14 +334,17 @@
     window.GymApp.avatarInitials = function (name, size = 'md') {
       const parts = (name || '').trim().split(' ');
       const initials = parts.length >= 2 ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase() : (name || '??').slice(0, 2).toUpperCase();
-      const bg = ['#006b20', '#a52d59', '#575f67', '#03872c', '#005317', '#1D9336'][((name || '').charCodeAt(0) || 0) % 6];
+      const bg = ['#3ecf8e', '#24b47e', '#171717', '#644fc1', '#6b01c2', '#fafafa'][((name || '').charCodeAt(0) || 0) % 6];
+      const isWhiteBg = bg === '#fafafa';
+      const color = isWhiteBg ? '#171717' : (bg === '#3ecf8e' ? '#171717' : '#ffffff');
+      const border = isWhiteBg ? 'border:1px solid #dfdfdf;' : '';
       const dim = size === 'sm' ? 32 : size === 'lg' ? 48 : 36;
       const fs = size === 'sm' ? 12 : size === 'lg' ? 16 : 14;
-      return `<div style="width:${dim}px;height:${dim}px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:${fs}px;flex-shrink:0;">${initials}</div>`;
+      return `<div style="width:${dim}px;height:${dim}px;border-radius:50%;background:${bg};color:${color};${border}display:flex;align-items:center;justify-content:center;font-weight:700;font-size:${fs}px;flex-shrink:0;">${initials}</div>`;
     };
     window.GymApp.avatarImg = function (url, name, size = 'md') {
       const dim = size === 'sm' ? 32 : size === 'lg' ? 48 : 36;
-      if (url) return `<img src="${url}" alt="${name}" width="${dim}" height="${dim}" style="width:${dim}px;height:${dim}px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid #becab9;" loading="lazy">`;
+      if (url) return `<img src="${url}" alt="${name}" width="${dim}" height="${dim}" style="width:${dim}px;height:${dim}px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid #dfdfdf;" loading="lazy">`;
       return window.GymApp.avatarInitials(name, size);
     };
     window.GymApp.formatEnumLabel = function (value) {
@@ -321,18 +368,18 @@
     };
     window.GymApp.statusBadge = function (status) {
       const map = {
-        cho_tap: { bg: '#fff3e0', color: '#e65100', label: 'Chờ tập' },
-        da_tap: { bg: '#e7f5e9', color: '#1D9336', label: 'Đã tập' },
-        da_xac_nhan: { bg: '#e7f5e9', color: '#1D9336', label: 'Đã xác nhận' },
-        da_huy: { bg: '#ffdad6', color: '#93000a', label: 'Đã hủy' },
-        hoan_tac: { bg: '#fff8e1', color: '#f57f17', label: 'Hoàn tác' },
-        vang: { bg: '#f3e5f5', color: '#6a1b9a', label: 'Vắng' },
-        dang_hoat_dong: { bg: '#e7f5e9', color: '#1D9336', label: 'Đang hoạt động' },
-        cho_duyet: { bg: '#fff3e0', color: '#e65100', label: 'Chờ duyệt' },
-        huy: { bg: '#ffdad6', color: '#93000a', label: 'Bị từ chối' },
+        cho_tap: { bg: '#fffbeb', color: '#d97706', label: 'Chờ tập' },
+        da_tap: { bg: '#e8fdf4', color: '#24b47e', label: 'Đã tập' },
+        da_xac_nhan: { bg: '#e8fdf4', color: '#24b47e', label: 'Đã xác nhận' },
+        da_huy: { bg: '#fdf2f2', color: '#ba1a1a', label: 'Đã hủy' },
+        hoan_tac: { bg: '#fffbeb', color: '#d97706', label: 'Hoàn tác' },
+        vang: { bg: '#fafafa', color: '#707070', label: 'Vắng' },
+        dang_hoat_dong: { bg: '#e8fdf4', color: '#24b47e', label: 'Đang hoạt động' },
+        cho_duyet: { bg: '#fffbeb', color: '#d97706', label: 'Chờ duyệt' },
+        huy: { bg: '#fdf2f2', color: '#ba1a1a', label: 'Bị từ chối' },
       };
-      const s = map[status] || { bg: '#ebeef3', color: '#181c20', label: window.GymApp.formatEnumLabel(status) };
-      return `<span style="padding:2px 8px;border-radius:999px;font-size:9.6px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;background:${s.bg};color:${s.color}">${s.label}</span>`;
+      const s = map[status] || { bg: '#fafafa', color: '#171717', label: window.GymApp.formatEnumLabel(status) };
+      return `<span style="padding:2px 8px;border-radius:4px;font-size:10px;font-weight:500;letter-spacing:0.02em;text-transform:uppercase;background:${s.bg};color:${s.color};border:1px solid rgba(0,0,0,0.02);white-space:nowrap">${s.label}</span>`;
     };
 
     window.GymApp.localeVi = {
@@ -497,6 +544,7 @@
   <script src="assets/js/api.js"></script>
   <script src="assets/js/auth.js"></script>
   <script src="assets/js/pt-portal.js"></script>
+  <script src="assets/js/components/ai-assistant.js"></script>
 </body>
 
 </html>

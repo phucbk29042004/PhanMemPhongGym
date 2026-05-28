@@ -50,6 +50,12 @@ export const getTrainerById = (req, res) => {
            ROUND((SELECT AVG(so_sao) FROM danh_gia_pt dg WHERE dg.pt_id = h.id), 1) AS rating,
            ROUND((SELECT AVG(so_sao) FROM danh_gia_pt dg WHERE dg.pt_id = h.id), 1) AS danh_gia,
            (SELECT COUNT(*) FROM danh_gia_pt dg WHERE dg.pt_id = h.id) AS so_luot_danh_gia,
+           -- Số học viên đang tập
+           (SELECT COUNT(DISTINCT dp.hoi_vien_id) FROM dang_ky_pt dp WHERE dp.pt_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS so_hoc_vien,
+           -- Tổng buổi đã dạy
+           (SELECT COUNT(*) FROM lich_tap lt WHERE lt.pt_id = h.id AND lt.trang_thai = 'da_tap') AS tong_buoi_da_day,
+           -- Gói PT đang nhận
+           (SELECT COUNT(*) FROM dang_ky_pt dp WHERE dp.pt_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS so_goi_dang_day,
            (SELECT json_group_array(json_object(
              'hoi_vien_id', dp.hoi_vien_id, 'ten_hoi_vien', hv.ho_ten,
              'avatar_hoi_vien', hv.avatar_url, 'buoi_con_lai', dp.so_buoi_dang_ky - dp.so_buoi_da_tap,
@@ -104,19 +110,19 @@ export const updateTrainer = (req, res) => {
   const old = db.prepare(`SELECT * FROM ho_so WHERE id = ? AND loai_ho_so = 'pt' AND is_deleted = 0`).get(id);
   if (!old) return error(res, 'Không tìm thấy PT.', 404);
 
-  const { ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email, chuyen_mon, kinh_nghiem, ghi_chu } = req.body;
+  const { ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email, chuyen_mon, kinh_nghiem, trang_thai, ghi_chu } = req.body;
   db.prepare(`
     UPDATE ho_so SET
       ho_ten = COALESCE(?, ho_ten), gioi_tinh = COALESCE(?, gioi_tinh),
       ngay_sinh = COALESCE(?, ngay_sinh), so_dien_thoai = COALESCE(?, so_dien_thoai),
       email = COALESCE(?, email), chuyen_mon = COALESCE(?, chuyen_mon),
-      kinh_nghiem = COALESCE(?, kinh_nghiem),
+      kinh_nghiem = COALESCE(?, kinh_nghiem), trang_thai = COALESCE(?, trang_thai),
       ghi_chu = COALESCE(?, ghi_chu), nguoi_cap_nhat_id = ?
     WHERE id = ?
   `).run(
     ho_ten || null, gioi_tinh || null, ngay_sinh || null, so_dien_thoai || null, email || null,
     chuyen_mon || null, kinh_nghiem !== undefined ? parseInt(kinh_nghiem) || 0 : undefined,
-    ghi_chu || null, req.user.id, id
+    trang_thai || null, ghi_chu || null, req.user.id, id
   );
 
   const updated = db.prepare('SELECT * FROM ho_so WHERE id = ?').get(id);

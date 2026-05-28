@@ -171,7 +171,7 @@
             onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
             data-accordion="hoi-vien" title="Quản lý hội viên">
             <span class="material-symbols-outlined text-xl flex-shrink-0">manage_accounts</span>
-            <span class="sidebar-label font-body-md text-body-md font-medium flex-1 text-left">Quản lý</span>
+            <span class="sidebar-label font-body-md text-body-md font-medium flex-1 text-left">Báo cáo</span>
             <span
               class="material-symbols-outlined text-sm arrow-icon transition-transform duration-200 sidebar-label flex-shrink-0">chevron_right</span>
           </button>
@@ -286,6 +286,17 @@
           data-page="gym-rules" title="Nội quy phòng tập">
           <span class="material-symbols-outlined text-xl flex-shrink-0">gavel</span>
           <span class="sidebar-label font-body-md text-body-md font-medium">Nội quy phòng tập</span>
+        </button>
+
+        <!-- Nhật ký kiểm tra -->
+        <button
+          class="nav-item flex items-center gap-standard w-full px-standard py-compact rounded-xl transition-all duration-150"
+          style="color:#166534"
+          onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}"
+          onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
+          data-page="audit-logs" title="Nhật ký kiểm tra">
+          <span class="material-symbols-outlined text-xl flex-shrink-0">history</span>
+          <span class="sidebar-label font-body-md text-body-md font-medium">Nhật ký kiểm tra</span>
         </button>
       </nav>
 
@@ -454,8 +465,14 @@
   <script src="assets/js/pages/birthday.js"></script>
   <script src="assets/js/pages/broadcast.js"></script>
   <script src="assets/js/pages/revenue.js"></script>
+  <script src="assets/js/pages/audit-logs.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<<<<<<< HEAD
   <script src="assets/js/app.js?v=3.0"></script>
+=======
+  <script src="assets/js/app.js"></script>
+  <script src="assets/js/components/ai-assistant.js"></script>
+>>>>>>> main
 
   <!-- Modal Quét QR Check-in -->
   <div id="modal-qr-scan" class="hidden fixed inset-0 z-[9100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
@@ -636,7 +653,7 @@
         <!-- Footer Actions -->
         <div class="flex gap-3 mt-2">
           <button id="btn-close-broadcast-2" class="flex-1 py-2.5 rounded-xl bg-surface-container-low text-on-surface-variant font-bold text-xs hover:bg-surface-container transition-all active:scale-95">Hủy</button>
-          <button id="btn-save-broadcast" class="flex-2 py-2.5 rounded-xl bg-brand-primary text-white font-bold text-xs hover:shadow-lg hover:shadow-brand-primary/20 transition-all active:scale-95 flex items-center justify-center gap-xs">
+          <button id="btn-save-broadcast" class="flex-1 py-2.5 rounded-xl bg-brand-primary text-white font-bold text-xs hover:shadow-lg hover:shadow-brand-primary/20 transition-all active:scale-95 flex items-center justify-center gap-xs">
             <span class="material-symbols-outlined text-[16px]">send</span> Gửi ngay
           </button>
         </div>

@@ -16,7 +16,6 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [focusedInput, setFocusedInput] = useState(null);
   const login = useAuthStore((state) => state.login);
 
   const logoScale = useRef(new Animated.Value(1)).current;
@@ -123,10 +122,7 @@ export default function LoginScreen() {
             {/* Username */}
             <View style={styles.fieldGroup}>
               <Text style={styles.fieldLabel}>TÊN ĐĂNG NHẬP</Text>
-              <View style={[
-                styles.inputRow,
-                focusedInput === 'username' && styles.inputRowFocused
-              ]}>
+              <View style={styles.inputRow}>
                 <TextInput
                   style={styles.input}
                   placeholder="Nhập tài khoản của bạn"
@@ -135,8 +131,6 @@ export default function LoginScreen() {
                   onChangeText={setUsername}
                   autoCapitalize="none"
                   autoCorrect={false}
-                  onFocus={() => setFocusedInput('username')}
-                  onBlur={() => setFocusedInput(null)}
                 />
               </View>
             </View>
@@ -144,10 +138,7 @@ export default function LoginScreen() {
             {/* Password */}
             <View style={styles.fieldGroup}>
               <Text style={styles.fieldLabel}>MẬT KHẨU</Text>
-              <View style={[
-                styles.inputRow,
-                focusedInput === 'password' && styles.inputRowFocused
-              ]}>
+              <View style={styles.inputRow}>
                 <TextInput
                   style={[styles.input, { flex: 1 }]}
                   placeholder="Nhập mật khẩu"
@@ -155,8 +146,6 @@ export default function LoginScreen() {
                   secureTextEntry={!showPassword}
                   value={password}
                   onChangeText={setPassword}
-                  onFocus={() => setFocusedInput('password')}
-                  onBlur={() => setFocusedInput(null)}
                   onSubmitEditing={handleLogin}
                   returnKeyType="done"
                 />
@@ -338,15 +327,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     height: 54,
     gap: 10,
-  },
-  inputRowFocused: {
-    borderColor: '#16a34a',
-    backgroundColor: '#f0fdf4',
-    shadowColor: '#22c55e',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.20,
-    shadowRadius: 8,
-    elevation: 4,
   },
   input: {
     flex: 1,

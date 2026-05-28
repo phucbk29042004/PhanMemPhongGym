@@ -120,6 +120,11 @@ window.GymApp.pages['members-list'] = {
                   <span id="member-sort-badge" style="display:none;position:absolute;top:-8px;right:-8px;width:22px;height:22px;background:#1D9336;color:#fff;border-radius:50%;font-size:11px;align-items:center;justify-content:center;font-weight:800;box-shadow:0 2px 8px rgba(29,147,54,0.4);border:2px solid #fff;">1</span>
                 </button>
                 
+                <button id="btn-members-reload" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border border-outline-variant bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer whitespace-nowrap">
+                  <span class="material-symbols-outlined text-base">refresh</span>
+                  <span>Tải lại</span>
+                </button>
+
                 <button id="btn-export-members" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border-2 border-outline-variant/50 bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer group">
                   <span class="material-symbols-outlined text-base text-[#1D9336]">download</span>
                   <span>Xuất Excel</span>
@@ -163,6 +168,11 @@ window.GymApp.pages['members-list'] = {
                   <span id="pt-sort-badge" style="display:none;position:absolute;top:-8px;right:-8px;width:22px;height:22px;background:#1D9336;color:#fff;border-radius:50%;font-size:11px;align-items:center;justify-content:center;font-weight:800;box-shadow:0 2px 8px rgba(29,147,54,0.4);border:2px solid #fff;">1</span>
                 </button>
  
+                <button id="btn-pts-reload" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border border-outline-variant bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer whitespace-nowrap">
+                  <span class="material-symbols-outlined text-base">refresh</span>
+                  <span>Tải lại</span>
+                </button>
+
                 <button id="btn-export-pts" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border-2 border-outline-variant/50 bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer group">
                   <span class="material-symbols-outlined text-base text-[#1D9336]">download</span>
                   <span>Xuất Excel</span>
@@ -193,6 +203,13 @@ window.GymApp.pages['members-list'] = {
     this._refreshMemberTable();
   },
 
+  _refreshPtsFromApi: async function () {
+    const ptsRes = await window.GymApp.api.get('/trainers');
+    window.GymApp.data.pts = this._normalizeListResponse(ptsRes);
+    this._ptFiltered = [...window.GymApp.data.pts];
+    this._refreshPtCards();
+  },
+
   _renderMemberTable: function () {
     const self = this;
     const start = (self._memberPage - 1) * self._perPage;
@@ -217,8 +234,8 @@ window.GymApp.pages['members-list'] = {
           <tr class="member-row transition-colors hover:bg-brand-primary/5 dark:hover:bg-brand-primary/10 border-b border-outline-variant/30 cursor-pointer bg-white dark:bg-[#1e1e1e] odd:bg-[#fafafa] odd:dark:bg-[#15171e]" data-id="${m.id}">
             
             <!-- Cell 1: Avatar + Tên -->
-            <td style="padding:8px 14px; white-space:nowrap;">
-              <div style="display:flex; align-items:center; gap:12px;">
+            <td class="border-r border-outline-variant/30" style="padding:8px 14px; white-space:nowrap; text-align:left;">
+              <div style="display:flex; align-items:center; justify-content:left; gap:12px; margin:0 auto; max-width:240px;">
                 
                 <!-- Avatar bigger -->
                 <div style="width:38px;height:38px;border-radius:50%;overflow:hidden;flex-shrink:0;
@@ -226,7 +243,7 @@ window.GymApp.pages['members-list'] = {
                   ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'sm', 'width:100%;height:100%;')}
                 </div>
 
-                <div style="min-width:0;">
+                <div style="min-width:0; text-align:left;">
                   
                   <!-- Tên: bigger font -->
                   <div style="font-size:15px;font-weight:700;color:var(--text-on-surface);
@@ -248,19 +265,19 @@ window.GymApp.pages['members-list'] = {
             </td>
 
             <!-- Cell 2: Mã HV -->
-            <td class="member-table-col-mahv" style="padding:8px 14px; font-size:14px; font-weight:700; color:var(--text-on-surface-variant); white-space:nowrap;">
+            <td class="member-table-col-mahv border-r border-outline-variant/30" style="padding:8px 14px; font-size:14px; font-weight:700; color:var(--text-on-surface-variant); white-space:nowrap; text-align:center;">
               ${m.ma_ho_so || '—'}
             </td>
 
             <!-- Cell 3: SĐT -->
-            <td class="member-table-col-sdt" style="padding:8px 14px; font-size:14px; font-weight:500; color:var(--text-on-surface-variant); white-space:nowrap;">
+            <td class="member-table-col-sdt border-r border-outline-variant/30" style="padding:8px 14px; font-size:14px; font-weight:500; color:var(--text-on-surface-variant); white-space:nowrap; text-align:center;">
               ${m.so_dien_thoai || '—'}
             </td>
 
             <!-- Cell 4: Gói tập -->
-            <td class="member-table-col-goi" style="padding:8px 14px;">
+            <td class="member-table-col-goi border-r border-outline-variant/30" style="padding:8px 14px; text-align:center;">
               <span style="font-size:13px;font-weight:600;color:var(--text-on-surface-variant);
-                white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:140px;"
+                white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:140px; margin:0 auto;"
                 title="${m.ten_goi_tap || 'Chưa đăng ký'}">
                 ${m.ten_goi_tap ||
           '<span class="text-outline-variant font-medium italic">Chưa đăng ký</span>'}
@@ -268,19 +285,19 @@ window.GymApp.pages['members-list'] = {
             </td>
 
             <!-- Cell 5: PT -->
-            <td class="member-table-col-pt" style="padding:8px 14px; text-align:center;">
+            <td class="member-table-col-pt border-r border-outline-variant/30" style="padding:8px 14px; text-align:center;">
               ${m.co_pt > 0
             ? '<span class="inline-flex items-center gap-1 px-2 py-1 bg-[#f0fdf4] dark:bg-[#0b2010] text-[#16a34a] dark:text-[#4cce5f] rounded-full text-xs font-bold"><span class="material-symbols-outlined" style="font-size:14px;">sports_gymnastics</span>Có PT</span>'
             : '<span class="text-outline-variant font-medium">—</span>'}
             </td>
 
             <!-- Cell 6: Trạng thái -->
-            <td style="padding:8px 14px; white-space:nowrap;">
+            <td class="border-r border-outline-variant/30" style="padding:8px 14px; white-space:nowrap; text-align:center;">
               ${window.GymApp.statusBadge(m.trang_thai)}
             </td>
 
             <!-- Cell 7: Hết hạn -->
-            <td class="member-table-col-han" style="padding:8px 14px; white-space:nowrap;">
+            <td class="member-table-col-han border-r border-outline-variant/30" style="padding:8px 14px; white-space:nowrap; text-align:center;">
               <span style="font-size:13px;font-weight:600;
                 color:${isExpiringSoon ? '#d97706' : 'var(--text-on-surface-variant)'};">
                 ${m.ngay_het_han ? window.GymApp.formatDate(m.ngay_het_han) : '—'}
@@ -391,13 +408,13 @@ window.GymApp.pages['members-list'] = {
           <table style="width:100%;border-collapse:collapse;min-width:480px;">
             <thead>
               <tr style="position:sticky;top:0;z-index:10;background:linear-gradient(135deg,#6dac7b 0%,#1D9336 100%);">
-                <th style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:left;white-space:nowrap;border:none;">Họ và tên</th>
-                <th class="member-table-col-mahv" style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:left;white-space:nowrap;border:none;">Mã HV</th>
-                <th class="member-table-col-sdt" style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:left;white-space:nowrap;border:none;">Số ĐT</th>
-                <th class="member-table-col-goi" style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:left;white-space:nowrap;border:none;">Gói tập</th>
-                <th class="member-table-col-pt" style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Có PT</th>
-                <th style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:left;white-space:nowrap;border:none;">Trạng thái</th>
-                <th class="member-table-col-han" style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:left;white-space:nowrap;border:none;">Hết hạn</th>
+                <th style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Họ và tên</th>
+                <th class="member-table-col-mahv" style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Mã HV</th>
+                <th class="member-table-col-sdt" style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Số ĐT</th>
+                <th class="member-table-col-goi" style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Gói tập</th>
+                <th class="member-table-col-pt" style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">PT</th>
+                <th style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Trạng thái</th>
+                <th class="member-table-col-han" style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Hết hạn</th>
                 <th style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Thao tác</th>
               </tr>
             </thead>
@@ -526,6 +543,14 @@ window.GymApp.pages['members-list'] = {
         : Array.isArray(membersRes?.data?.data) ? membersRes.data.data : [];
       ptSchedules = Array.isArray(schedulesRes?.data) ? schedulesRes.data
         : Array.isArray(schedulesRes?.data?.data) ? schedulesRes.data.data : [];
+
+      // Cập nhật cache PT với dữ liệu mới từ API để thống kê luôn chính xác
+      if (pt && ptRes?.data) {
+        const ptIndex = (window.GymApp.data.pts || []).findIndex(x => x.id == id);
+        if (ptIndex !== -1) {
+          window.GymApp.data.pts[ptIndex] = { ...window.GymApp.data.pts[ptIndex], ...pt };
+        }
+      }
     } catch (err) {
       console.error('Failed to fetch PT details:', err);
       pt = (window.GymApp.data.pts || []).find(x => x.id == id);
@@ -4354,6 +4379,50 @@ window.GymApp.pages['members-list'] = {
     document.getElementById('btn-filter-pt')?.addEventListener('click', () => self._showPtFilterModal());
     document.getElementById('btn-sort-pt')?.addEventListener('click', () => self._showPtSortModal());
 
+    document.getElementById('btn-members-reload')?.addEventListener('click', async () => {
+      const btn = document.getElementById('btn-members-reload');
+      const icon = btn?.querySelector('.material-symbols-outlined');
+      if (icon) icon.classList.add('animate-spin');
+      if (btn) {
+        btn.disabled = true;
+        btn.classList.add('pointer-events-none', 'opacity-50');
+      }
+      try {
+        await self._refreshMembersFromApi();
+        window.GymApp.toast('Đã cập nhật danh sách hội viên!', 'success');
+      } catch (e) {
+        window.GymApp.toast('Không thể tải lại danh sách hội viên!', 'error');
+      } finally {
+        if (icon) icon.classList.remove('animate-spin');
+        if (btn) {
+          btn.disabled = false;
+          btn.classList.remove('pointer-events-none', 'opacity-50');
+        }
+      }
+    });
+
+    document.getElementById('btn-pts-reload')?.addEventListener('click', async () => {
+      const btn = document.getElementById('btn-pts-reload');
+      const icon = btn?.querySelector('.material-symbols-outlined');
+      if (icon) icon.classList.add('animate-spin');
+      if (btn) {
+        btn.disabled = true;
+        btn.classList.add('pointer-events-none', 'opacity-50');
+      }
+      try {
+        await self._refreshPtsFromApi();
+        window.GymApp.toast('Đã cập nhật danh sách huấn luyện viên!', 'success');
+      } catch (e) {
+        window.GymApp.toast('Không thể tải lại danh sách huấn luyện viên!', 'error');
+      } finally {
+        if (icon) icon.classList.remove('animate-spin');
+        if (btn) {
+          btn.disabled = false;
+          btn.classList.remove('pointer-events-none', 'opacity-50');
+        }
+      }
+    });
+
     document.getElementById('btn-export-members')?.addEventListener('click', async () => {
       window.GymApp.toast('Đang xuất danh sách hội viên...', 'info');
       const q = document.getElementById('member-search')?.value || '';
@@ -4372,5 +4441,37 @@ window.GymApp.pages['members-list'] = {
 
     self._updatePtSortUI();
     self._updateMemberSortUI();
+<<<<<<< HEAD
   }
 };
+=======
+  },
+
+  guideHtml: `
+    <div class="space-y-4 text-xs">
+      <div class="flex items-start gap-2 bg-brand-primary/5 p-3 rounded-xl border border-brand-primary/10">
+        <span class="material-symbols-outlined text-brand-primary text-base flex-shrink-0 mt-0.5">info</span>
+        <p class="text-on-surface-variant leading-relaxed">Trang <strong>Danh sách hội viên</strong> quản lý thông tin tài khoản, hồ sơ hội viên và huấn luyện viên (HLV/PT) của phòng tập.</p>
+      </div>
+
+      <div>
+        <h4 class="font-bold text-on-surface mb-1">👥 Quản lý Hội viên:</h4>
+        <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
+          <li><strong>Tìm kiếm & Lọc:</strong> Tìm hội viên theo tên, SĐT hoặc mã số. Lọc theo trạng thái gói (Còn hạn, Hết hạn...), giới tính, hoặc xem ai đã check-in hôm nay.</li>
+          <li><strong>Xem chi tiết:</strong> Click vào nút Xem (mắt xanh) để xem thông tin cá nhân, lịch sử tập luyện, các gói tập đã mua và lịch đăng ký PT của hội viên.</li>
+          <li><strong>Thao tác nhanh:</strong> Lập phiếu gia hạn gói, đổi gói, hủy gói tập hoặc gán PT trực tiếp trong màn hình chi tiết hội viên.</li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="font-bold text-on-surface mb-1">🏋️ Quản lý Huấn luyện viên (PT):</h4>
+        <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
+          <li>Chuyển sang tab <strong>Huấn luyện viên</strong> để quản lý danh sách PT.</li>
+          <li>Xem thông tin chuyên môn, số lượng hội viên đang phụ trách và tổng số buổi dạy thực tế của từng PT.</li>
+          <li>Thêm mới HLV bằng nút <strong>Thêm HLV</strong> ở góc trên bên phải khi đang chọn tab HLV.</li>
+        </ul>
+      </div>
+    </div>
+  `
+};
+>>>>>>> main

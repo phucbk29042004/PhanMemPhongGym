@@ -170,7 +170,7 @@ window.GymApp.pages['checkin'] = {
               </div>
               <div class="flex items-center gap-standard">
                 <span class="text-on-surface-variant text-body-sm">${new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'numeric' })}</span>
-                <button id="btn-checkin-reload" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border-2 border-outline-variant/50 bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer">
+                <button id="btn-checkin-reload" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border border-outline-variant bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer">
                   <span class="material-symbols-outlined text-base">refresh</span>Tải lại
                 </button>
               </div>
@@ -472,5 +472,37 @@ window.GymApp.pages['checkin'] = {
   destroy: function () {
     clearInterval(this._autoRefreshTimer);
     this._autoRefreshTimer = null;
-  }
+  },
+
+  guideHtml: `
+    <div class="space-y-4 text-xs">
+      <div class="flex items-start gap-2 bg-brand-primary/5 p-3 rounded-xl border border-brand-primary/10">
+        <span class="material-symbols-outlined text-brand-primary text-base flex-shrink-0 mt-0.5">info</span>
+        <p class="text-on-surface-variant leading-relaxed">Trang <strong>Vào - Ra (Check-in)</strong> quản lý lượt ra vào phòng tập và theo dõi mật độ tập luyện của hội viên theo thời gian thực.</p>
+      </div>
+
+      <div>
+        <h4 class="font-bold text-on-surface mb-1">📲 Cách Check-in (Vào tập):</h4>
+        <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
+          <li><strong>Cách 1: Quét mã QR:</strong> Lễ tân bấm nút <strong>Quét QR</strong> trên thanh Header → hướng camera vào mã QR hiển thị trên App Hội viên.</li>
+          <li><strong>Cách 2: Nhập mã thủ công:</strong> Nếu camera lỗi, trong Modal Quét QR có phần nhập token thủ công để kích hoạt vào phòng.</li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="font-bold text-on-surface mb-1">🚪 Cách Check-out (Ra về):</h4>
+        <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
+          <li>Tại danh sách **Lượt check-in hôm nay** ở phần dưới, tìm tên hội viên ra về.</li>
+          <li>Bấm nút **Ra về** (màu đỏ) ở cột thao tác để ghi nhận thời điểm kết thúc tập luyện.</li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="font-bold text-on-surface mb-1">📈 Biểu đồ & Thống kê:</h4>
+        <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
+          <li><strong>Lượt check-in theo giờ:</strong> Biểu đồ cột ngang thống kê khung giờ đông khách nhất trong ngày, giúp sắp xếp nhân sự/PT phù hợp.</li>
+        </ul>
+      </div>
+    </div>
+  `
 };

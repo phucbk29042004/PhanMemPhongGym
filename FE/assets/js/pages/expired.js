@@ -36,7 +36,7 @@ window.GymApp.pages['expired'] = {
               <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors text-[18px]">search</span>
               <input id="expired-search" type="text" placeholder="Tìm tên, SĐT..." class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface pl-10 pr-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none placeholder-outline-variant/60 font-body-md text-body-md transition-all shadow-sm focus:shadow-none" value="${this._searchQuery}">
             </div>
-            <button id="btn-refresh-expired" class="w-10 h-10 flex items-center justify-center rounded-xl border-2 border-outline-variant/50 bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all shadow-sm active:scale-95 duration-200 cursor-pointer">
+            <button id="btn-refresh-expired" class="w-10 h-10 flex items-center justify-center rounded-xl border border-outline-variant bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all shadow-sm active:scale-95 duration-200 cursor-pointer">
               <span class="material-symbols-outlined text-base">refresh</span>
             </button>
           </div>
@@ -759,7 +759,11 @@ window.GymApp.pages['expired'] = {
       try {
         const res = await window.GymApp.api.put(`/members/package-requests/${id}/approve`, data);
         if (res?.success) {
-          window.GymApp.toast('Kích hoạt gói thành công!', 'success');
+          // Nếu gói đã được kích hoạt tự động qua PayOS, hiển thị thông báo phù hợp
+          const msg = res?.data?.auto_activated
+            ? 'Gói tập đã được kích hoạt tự động sau khi hội viên thanh toán PayOS. Không cần duyệt thêm!'
+            : 'Kích hoạt gói tập thành công!';
+          window.GymApp.toast(msg, 'success');
           document.getElementById('modal-approve-renewal').remove();
           self._loadData();
           if (window.GymApp.fetchInitialData) await window.GymApp.fetchInitialData();
@@ -813,5 +817,32 @@ window.GymApp.pages['expired'] = {
     } else {
       window.GymApp.toast('Module gia hạn chưa sẵn sàng!', 'warning');
     }
-  }
+  },
+
+  guideHtml: `
+    <div class="space-y-4 text-xs">
+      <div class="flex items-start gap-2 bg-brand-primary/5 p-3 rounded-xl border border-brand-primary/10">
+        <span class="material-symbols-outlined text-brand-primary text-base flex-shrink-0 mt-0.5">info</span>
+        <p class="text-on-surface-variant leading-relaxed">Trang <strong>Hết hạn / Sắp hết hạn</strong> giúp quản lý danh sách các khách hàng đã kết thúc gói tập hoặc sắp đến ngày hết hạn để nhân viên kịp thời chăm sóc và gia hạn.</p>
+      </div>
+
+      <div>
+        <h4 class="font-bold text-on-surface mb-1">📁 Các tab chức năng:</h4>
+        <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
+          <li><strong>Hết hạn:</strong> Danh sách hội viên đã quá ngày kết thúc gói tập (hiện tại không thể quét mã vào tập).</li>
+          <li><strong>Sắp hết:</strong> Danh sách hội viên có gói tập sẽ hết hạn trong vòng 7 ngày tới.</li>
+          <li><strong>Yêu cầu:</strong> Danh sách yêu cầu gia hạn gói tập do hội viên gửi trực tiếp từ ứng dụng điện thoại (App).</li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="font-bold text-on-surface mb-1">⚡ Thao tác xử lý:</h4>
+        <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
+          <li><strong>Gửi nhắc nhở:</strong> Bấm biểu tượng Chuông báo để gửi thông báo đẩy (push notification) nhắc nhở hội viên gia hạn qua App.</li>
+          <li><strong>Lập phiếu gia hạn:</strong> Bấm biểu tượng Tờ giấy để mở nhanh hộp thoại đăng ký gói tập mới cho hội viên.</li>
+          <li><strong>Duyệt yêu cầu:</strong> Tại tab Yêu cầu, bấm <strong>Duyệt</strong> để xác nhận thu tiền và kích hoạt gói mới cho hội viên, hoặc bấm <strong>Từ chối</strong> nếu có sai sót.</li>
+        </ul>
+      </div>
+    </div>
+  `
 };

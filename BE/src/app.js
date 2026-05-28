@@ -24,6 +24,7 @@ import configRoutes            from './routes/config.routes.js';
 import auditRoutes             from './routes/audit.routes.js';
 import exportRoutes            from './routes/export.routes.js';
 import branchesRoutes          from './routes/branches.routes.js';
+import assistantRoutes         from './routes/assistant.routes.js';
 
 // Import error handlers
 import { notFound, globalError } from './middlewares/error-handler.js';
@@ -58,6 +59,7 @@ app.use('/api/config',           configRoutes);
 app.use('/api/audit',            auditRoutes);
 app.use('/api/export',           exportRoutes);
 app.use('/api/branches',         branchesRoutes);
+app.use('/api/assistant',        assistantRoutes);
 
 // ── Health check ───────────────────────────────────────────
 app.get('/api/health', (req, res) => {
