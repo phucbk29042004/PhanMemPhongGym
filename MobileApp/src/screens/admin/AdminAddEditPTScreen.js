@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronDown, Shield, X, Save, User, Phone, Mail, Award, Dumbbell } from 'lucide-react-native';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import DatePickerField from '../../components/DatePickerField';
 
 // ── Helpers ──────────────────────────────────────────────────────────
 function RequiredStar() {
@@ -177,7 +178,7 @@ export default function AdminAddEditPTScreen({ route, navigation }) {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={colors.statusBar} backgroundColor={colors.statusBarBg} />
-      
+
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border, paddingTop: insets.top, height: 60 + insets.top }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
@@ -194,11 +195,11 @@ export default function AdminAddEditPTScreen({ route, navigation }) {
         style={{ flex: 1 }}
       >
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          
+
           {/* Section 1: Thông tin cơ bản */}
           <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Thông tin cá nhân</Text>
           <View style={[styles.formCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            
+
             <FieldLabel label="Họ và tên" required colors={colors} />
             <TextInput
               style={[styles.input, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
@@ -254,20 +255,20 @@ export default function AdminAddEditPTScreen({ route, navigation }) {
               })}
             </View>
 
-            <FieldLabel label="Ngày sinh (YYYY-MM-DD)" colors={colors} />
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
+            <DatePickerField
+              label="Ngày sinh"
               value={ngaySinh}
               onChangeText={setNgaySinh}
-              placeholder="VD: 1995-10-12"
-              placeholderTextColor={colors.textMuted}
+              placeholder="Chọn ngày sinh"
+              colors={colors}
+              returnFormat="dd/mm/yyyy"
             />
           </View>
 
           {/* Section 2: Chuyên môn */}
           <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Chuyên môn & Kinh nghiệm</Text>
           <View style={[styles.formCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            
+
             <FieldLabel label="Chuyên môn" colors={colors} />
             <TextInput
               style={[styles.input, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
@@ -304,9 +305,9 @@ export default function AdminAddEditPTScreen({ route, navigation }) {
             <>
               <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Tài khoản đăng nhập</Text>
               <View style={[styles.formCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                
-                <TouchableOpacity 
-                  style={styles.toggleRow} 
+
+                <TouchableOpacity
+                  style={styles.toggleRow}
                   onPress={() => setCreateAcc(!createAcc)}
                   activeOpacity={0.8}
                 >

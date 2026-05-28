@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, Award, CreditCard, Building2, Calendar, Save } from 'lucide-react-native';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import DatePickerField from '../../components/DatePickerField';
 
 function formatPrice(val) {
   if (val == null) return '0đ';
@@ -356,13 +357,14 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
 
         {selectedPkg && (
           <View style={[styles.formCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <FieldLabel label="Ngày bắt đầu (DD/MM/YYYY)" required colors={colors} />
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
+            <DatePickerField
+              label="Ngày bắt đầu"
+              required
               value={startDate}
               onChangeText={setStartDate}
-              placeholder="VD: 25/05/2026"
-              placeholderTextColor={colors.textMuted}
+              placeholder="Chọn ngày bắt đầu"
+              colors={colors}
+              returnFormat="DD/MM/YYYY"
             />
 
             <View style={{ flexDirection: 'row', gap: 10 }}>

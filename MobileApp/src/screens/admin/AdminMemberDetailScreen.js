@@ -15,6 +15,7 @@ import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import ProfileAvatar from '../../components/ProfileAvatar';
 import { useAuthStore } from '../../store/useAuthStore';
+import DatePickerField from '../../components/DatePickerField';
 
 function formatPrice(val) {
   if (val == null) return '0đ';
@@ -74,6 +75,22 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(editTuNgay) || (editDenNgay && !dateRegex.test(editDenNgay))) {
       Alert.alert('Lỗi', 'Ngày phải có định dạng YYYY-MM-DD (VD: 2026-05-28).');
+      return;
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const startD = new Date(editTuNgay);
+    const endD = editDenNgay ? new Date(editDenNgay) : null;
+    if (startD < today) {
+      Alert.alert('Lỗi', 'Ngày bắt đầu không được ở quá khứ.');
+      return;
+    }
+    if (endD && endD < today) {
+      Alert.alert('Lỗi', 'Ngày kết thúc không được ở quá khứ.');
+      return;
+    }
+    if (endD && endD <= startD) {
+      Alert.alert('Lỗi', 'Ngày kết thúc phải sau ngày bắt đầu.');
       return;
     }
     const priceVal = Number(editGiaThucTe);
@@ -714,32 +731,35 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
             </View>
 
             <View style={{ gap: 8 }}>
-              <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Ngày bắt đầu (YYYY-MM-DD)</Text>
-              <TextInput
-                style={[styles.modalInput, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
+              <DatePickerField
+                label="Ngày bắt đầu"
                 value={editTuNgay}
                 onChangeText={setEditTuNgay}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={colors.textMuted}
+                placeholder="Chọn ngày bắt đầu"
+                colors={colors}
+                returnFormat="YYYY-MM-DD"
+                minDate={new Date()}
               />
 
-              <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Ngày kết thúc (YYYY-MM-DD)</Text>
-              <TextInput
-                style={[styles.modalInput, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
+              <DatePickerField
+                label="Ngày kết thúc"
                 value={editDenNgay}
                 onChangeText={setEditDenNgay}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={colors.textMuted}
+                placeholder="Chọn ngày kết thúc"
+                colors={colors}
+                returnFormat="YYYY-MM-DD"
+                minDate={new Date()}
               />
 
               <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Giá thực tế (đ)</Text>
               <TextInput
-                style={[styles.modalInput, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
+                style={[styles.modalInput, { backgroundColor: colors.surfaceVariant, color: colors.textMuted, borderColor: colors.border, opacity: 0.6 }]}
                 value={editGiaThucTe}
                 onChangeText={setEditGiaThucTe}
                 keyboardType="numeric"
                 placeholder="0"
                 placeholderTextColor={colors.textMuted}
+                editable={false}
               />
 
               {editType === 'pt' && (

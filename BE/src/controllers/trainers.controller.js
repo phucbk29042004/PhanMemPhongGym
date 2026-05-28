@@ -106,19 +106,29 @@ export const updateTrainer = (req, res) => {
   if (!old) return error(res, 'Không tìm thấy PT.', 404);
 
   const { ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email, chuyen_mon, kinh_nghiem, trang_thai, ghi_chu } = req.body;
-  db.prepare(`
-    UPDATE ho_so SET
-      ho_ten = COALESCE(?, ho_ten), gioi_tinh = COALESCE(?, gioi_tinh),
-      ngay_sinh = COALESCE(?, ngay_sinh), so_dien_thoai = COALESCE(?, so_dien_thoai),
-      email = COALESCE(?, email), chuyen_mon = COALESCE(?, chuyen_mon),
-      kinh_nghiem = COALESCE(?, kinh_nghiem), trang_thai = COALESCE(?, trang_thai),
-      ghi_chu = COALESCE(?, ghi_chu), nguoi_cap_nhat_id = ?
-    WHERE id = ?
-  `).run(
-    ho_ten || null, gioi_tinh || null, ngay_sinh || null, so_dien_thoai || null, email || null,
-    chuyen_mon || null, kinh_nghiem !== undefined ? parseInt(kinh_nghiem) || 0 : undefined,
-    trang_thai || null, ghi_chu || null, req.user.id, id
-  );
+  
+  const tx = db.transaction(() => {
+    db.prepare(`
+      UPDATE ho_so SET
+        ho_ten = COALESCE(?, ho_ten), gioi_tinh = COALESCE(?, gioi_tinh),
+        ngay_sinh = COALESCE(?, ngay_sinh), so_dien_thoai = COALESCE(?, so_dien_thoai),
+        email = COALESCE(?, email), chuyen_mon = COALESCE(?, chuyen_mon),
+        kinh_nghiem = COALESCE(?, kinh_nghiem),
+        ghi_chu = COALESCE(?, ghi_chu), nguoi_cap_nhat_id = ?
+      WHERE id = ?
+    `).run(
+      ho_ten || null, gioi_tinh || null, ngay_sinh || null, so_dien_thoai || null, email || null,
+      chuyen_mon || null, kinh_nghiem !== undefined ? parseInt(kinh_nghiem) || 0 : undefined,
+      ghi_chu || null, req.user.id, id
+    );
+
+    if (trang_thai && old.tai_khoan_id) {
+      const tk_status = (trang_thai === 'hoat_dong' || trang_thai === 'active' || trang_thai === 'kich_hoat') ? 'kich_hoat' : 'khoa';
+      db.prepare(`UPDATE tai_khoan SET trang_thai = ? WHERE id = ?`).run(tk_status, old.tai_khoan_id);
+    }
+  });
+
+  tx();
 
   const updated = db.prepare('SELECT * FROM ho_so WHERE id = ?').get(id);
   ghi_audit_log(req, 'UPDATE', 'ho_so', parseInt(id), old, updated, 'Cập nhật thông tin PT');

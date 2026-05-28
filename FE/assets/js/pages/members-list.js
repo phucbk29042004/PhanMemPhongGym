@@ -2206,6 +2206,7 @@ window.GymApp.pages['members-list'] = {
 
   // ===== MODAL CHỈNH SỬA GÓI TẬP =====
   _showEditPackageModal: function (m, pkg, onSaved) {
+    const todayStr = new Date().toLocaleDateString('sv-SE');
     document.getElementById('gym-sub-modal')?.remove();
     const d0 = s => s ? s.substring(0, 10) : '';
     const iCls = `class="w-full bg-surface-container/30 border border-outline-variant text-on-surface rounded-xl focus:border-brand-primary focus:bg-surface-container-lowest outline-none transition-all placeholder-outline-variant/60 font-body-md text-body-md shadow-inner focus:shadow-none"`;
@@ -2233,14 +2234,14 @@ window.GymApp.pages['members-list'] = {
               <label class="block text-body-sm font-bold text-on-surface-variant mb-xs">Từ ngày</label>
               <div class="relative w-full">
                 <span class="material-symbols-outlined absolute left-standard top-1/2 -translate-y-1/2 text-outline text-sm">calendar_month</span>
-                <input id="edit-pkg-from" type="date" value="${d0(pkg.tu_ngay)}" ${iCls} style="padding:10px 12px 10px 36px; box-sizing:border-box; width:100%;" />
+                <input id="edit-pkg-from" type="date" min="${todayStr}" value="${d0(pkg.tu_ngay)}" ${iCls} style="padding:10px 12px 10px 36px; box-sizing:border-box; width:100%;" />
               </div>
             </div>
             <div>
               <label class="block text-body-sm font-bold text-on-surface-variant mb-xs">Đến ngày</label>
               <div class="relative w-full">
                 <span class="material-symbols-outlined absolute left-standard top-1/2 -translate-y-1/2 text-outline text-sm">calendar_month</span>
-                <input id="edit-pkg-to" type="date" value="${d0(pkg.den_ngay)}" ${iCls} style="padding:10px 12px 10px 36px; box-sizing:border-box; width:100%;" />
+                <input id="edit-pkg-to" type="date" min="${todayStr}" value="${d0(pkg.den_ngay)}" ${iCls} style="padding:10px 12px 10px 36px; box-sizing:border-box; width:100%;" />
               </div>
             </div>
           </div>
@@ -2249,7 +2250,7 @@ window.GymApp.pages['members-list'] = {
               <label class="block text-body-sm font-bold text-on-surface-variant mb-xs">Giá thực tế (VNĐ)</label>
               <div class="relative w-full">
                 <span class="material-symbols-outlined absolute left-standard top-1/2 -translate-y-1/2 text-outline text-sm">payments</span>
-                <input id="edit-pkg-price" type="text" inputmode="numeric" value="${pkg.gia_thuc_te > 0 ? new Intl.NumberFormat('vi-VN').format(pkg.gia_thuc_te) : ''}" placeholder="Không đổi" ${iCls} style="padding:10px 12px 10px 36px; box-sizing:border-box; width:100%;" />
+                <input id="edit-pkg-price" type="text" value="${pkg.gia_thuc_te > 0 ? new Intl.NumberFormat('vi-VN').format(pkg.gia_thuc_te) : ''}" readonly class="w-full bg-surface-container/30 border border-outline-variant text-on-surface rounded-xl outline-none font-body-md text-body-md shadow-inner cursor-not-allowed opacity-70" style="padding:10px 12px 10px 36px; box-sizing:border-box; width:100%;" />
               </div>
             </div>
             <div>
@@ -2289,6 +2290,10 @@ window.GymApp.pages['members-list'] = {
     overlay.querySelector('#edit-pkg-save').addEventListener('click', async () => {
       const tu_ngay = overlay.querySelector('#edit-pkg-from').value;
       const den_ngay = overlay.querySelector('#edit-pkg-to').value;
+      if (tu_ngay && tu_ngay < todayStr)
+        return window.GymApp.toast('Ngày bắt đầu chỉ được chọn từ hôm nay trở đi', 'error');
+      if (den_ngay && den_ngay < todayStr)
+        return window.GymApp.toast('Ngày kết thúc chỉ được chọn từ hôm nay trở đi', 'error');
       if (tu_ngay && den_ngay && den_ngay <= tu_ngay)
         return window.GymApp.toast('Ngày kết thúc phải sau ngày bắt đầu', 'error');
       try {
@@ -2744,6 +2749,7 @@ window.GymApp.pages['members-list'] = {
   },
 
   _showEditPtRegistrationModal: async function (m, c, onSaved) {
+    const todayStr = new Date().toLocaleDateString('sv-SE');
     const self = this;
     document.getElementById('gym-sub-modal')?.remove();
     const REQ = `<span style="color:#ba1a1a;margin-left:2px;font-weight:700;">*</span>`;
@@ -2790,9 +2796,9 @@ window.GymApp.pages['members-list'] = {
             </div>
             <div class="col-span-1 sm:col-span-2"><label class="block text-body-sm font-bold text-on-surface mb-xs">Gói PT ${REQ}</label><select id="ptedit-goi" ${inputCls}><option value="">— Chọn gói PT —</option>${goiPtList.map(g => `<option value="${g.id}" ${String(g.id) === String(c.goi_pt_id) ? 'selected' : ''} data-price="${g.gia || 0}" data-buoi="${g.so_buoi || ''}" data-thang="${g.so_thang || 0}">${g.ten_goi} — ${window.GymApp.formatCurrency(g.gia || 0)}${g.so_buoi ? ' / ' + g.so_buoi + ' buổi' : ''}</option>`).join('')}</select></div>
             <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Số buổi</label><input id="ptedit-sessions" type="number" min="1" value="${c.so_buoi_dang_ky || c.buoi_dang_ky || ''}" ${inputCls} /></div>
-            <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Giá thực tế (VNĐ) ${REQ}</label><input id="ptedit-price" type="text" inputmode="numeric" value="${new Intl.NumberFormat('vi-VN').format(c.gia_thuc_te || 0)}" ${inputCls} /></div>
-            <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Từ ngày ${REQ}</label><input id="ptedit-from" type="date" value="${formatInputDate(c.tu_ngay)}" ${inputCls} /></div>
-            <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Đến ngày</label><input id="ptedit-to" type="date" value="${formatInputDate(c.den_ngay)}" ${inputCls} /></div>
+            <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Giá thực tế (VNĐ) ${REQ}</label><input id="ptedit-price" type="text" value="${new Intl.NumberFormat('vi-VN').format(c.gia_thuc_te || 0)}" readonly class="bg-surface-container/30 text-on-surface border border-outline-variant cursor-not-allowed opacity-70" style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;" /></div>
+            <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Từ ngày ${REQ}</label><input id="ptedit-from" type="date" min="${todayStr}" value="${formatInputDate(c.tu_ngay)}" ${inputCls} /></div>
+            <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Đến ngày</label><input id="ptedit-to" type="date" min="${todayStr}" value="${formatInputDate(c.den_ngay)}" ${inputCls} /></div>
             <div class="col-span-1 sm:col-span-2"><label class="block text-body-sm font-bold text-on-surface mb-xs">Ghi chú</label><textarea id="ptedit-note" rows="2" placeholder="Ghi chú thêm..." class="bg-surface-container-lowest text-on-surface border border-outline-variant" style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;resize:vertical;font-family:inherit;">${c.ghi_chu_tt || c.ghi_chu || ''}</textarea></div>
           </div>
         </div>
@@ -2927,6 +2933,10 @@ window.GymApp.pages['members-list'] = {
       const sessions = document.getElementById('ptedit-sessions').value;
       const note = document.getElementById('ptedit-note').value.trim();
       if (!ptId || !goiId || price <= 0 || !from) { window.GymApp.toast('Vui lòng điền đầy đủ: PT, gói PT, giá và từ ngày (*)', 'error'); return; }
+      if (from && from < todayStr)
+        return window.GymApp.toast('Ngày bắt đầu chỉ được chọn từ hôm nay trở đi', 'error');
+      if (to && to < todayStr)
+        return window.GymApp.toast('Ngày kết thúc chỉ được chọn từ hôm nay trở đi', 'error');
       try {
         await window.GymApp.api.put(`/pt/registrations/${c.id}`, {
           pt_id: parseInt(ptId), goi_pt_id: parseInt(goiId),

@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, Dumbbell, User, Save, AlertTriangle } from 'lucide-react-native';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import DatePickerField from '../../components/DatePickerField';
 
 function formatPrice(val) {
   if (val == null) return '0đ';
@@ -413,25 +414,24 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
 
         {selectedPkg && selectedTrainer && (
           <View style={[styles.formCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <FieldLabel label="Ngày bắt đầu (DD/MM/YYYY)" required colors={colors} />
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
+            <DatePickerField
+              label="Ngày bắt đầu"
+              required
               value={startDate}
               onChangeText={setStartDate}
-              placeholder="VD: 25/05/2026"
-              placeholderTextColor={colors.textMuted}
+              placeholder="Chọn ngày bắt đầu"
+              colors={colors}
+              returnFormat="DD/MM/YYYY"
             />
 
-            <FieldLabel
-              label={`Ngày kết thúc (DD/MM/YYYY)${(selectedPkg.so_thang || 0) > 0 ? ' — Tự động tính' : ''}`}
-              colors={colors}
-            />
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
+            <DatePickerField
+              label={`Ngày kết thúc${(selectedPkg.so_thang || 0) > 0 ? ' (Tự động tính)' : ''}`}
               value={endDate}
               onChangeText={setEndDate}
-              placeholder="VD: 25/08/2026 (để trống nếu không giới hạn)"
-              placeholderTextColor={colors.textMuted}
+              placeholder="Chọn ngày kết thúc"
+              colors={colors}
+              returnFormat="DD/MM/YYYY"
+              disabled={(selectedPkg.so_thang || 0) > 0}
             />
 
             <View style={{ flexDirection: 'row', gap: 10 }}>
