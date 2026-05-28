@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
 import {
   ActivityIndicator, Alert, FlatList, RefreshControl, ScrollView,
   StatusBar, StyleSheet, Text, TouchableOpacity, View,
@@ -128,7 +128,22 @@ export default function MemberHomeScreen({ navigation }) {
   const [payosModalVisible, setPayosModalVisible] = useState(false);
   const [paymentInfo, setPaymentInfo] = useState(null);
   const [pollingActive, setPollingActive] = useState(false);
-  const [pollingErrorCount, setPollingErrorCount] = useState(0);
+  const pollingErrorCountRef = useRef(0);
+  const pollingActiveRef = useRef(false);
+
+  // Keep ref in sync
+  useEffect(() => {
+    pollingActiveRef.current = pollingActive;
+  }, [pollingActive]);
+
+  // Turn off polling when screen is blurred/navigated away
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('blur', () => {
+      setPollingActive(false);
+      setPayosModalVisible(false);
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   const handleResumePayment = async (plan) => {
     setLoading(true);
@@ -151,7 +166,7 @@ export default function MemberHomeScreen({ navigation }) {
           });
           setPayosModalVisible(true);
           setPollingActive(true);
-          setPollingErrorCount(0);
+          pollingErrorCountRef.current = 0;
         }
       }
     } catch (err) {
@@ -165,8 +180,10 @@ export default function MemberHomeScreen({ navigation }) {
     let intervalId = null;
     if (pollingActive && paymentInfo?.orderCode) {
       intervalId = setInterval(async () => {
+        if (!pollingActiveRef.current) return;
         try {
           const res = await api.get(`/members/me/payos-status/${paymentInfo.orderCode}`);
+          if (!pollingActiveRef.current) return;
           if (res.data?.success) {
             const status = res.data.data?.status;
             if (status === 'PAID') {
@@ -185,8 +202,8 @@ export default function MemberHomeScreen({ navigation }) {
           }
         } catch (err) {
           console.error('Lỗi checkPayosStatus polling:', err);
-          setPollingErrorCount(c => c + 1);
-          if (pollingErrorCount > 15) {
+          pollingErrorCountRef.current += 1;
+          if (pollingErrorCountRef.current > 15) {
             setPollingActive(false);
           }
         }
@@ -195,7 +212,7 @@ export default function MemberHomeScreen({ navigation }) {
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
-  }, [pollingActive, paymentInfo, pollingErrorCount, fetchAll]);
+  }, [pollingActive, paymentInfo, fetchAll]);
 
   // ── Fetch dữ liệu thực tế từ API ─────────────────────────
   const fetchAll = useCallback(async () => {
@@ -273,9 +290,10 @@ export default function MemberHomeScreen({ navigation }) {
 
   // ── Dữ liệu đã xử lý ─────────────────────────────────────
   const activePlan = profile?.goi_tap?.find(p => p.trang_thai === 'dang_hoat_dong') || null;
+  const choKichHoatPlan = profile?.goi_tap?.find(p => p.trang_thai === 'cho_kich_hoat') || null;
   const pendingPlan = profile?.goi_tap?.find(p => p.trang_thai === 'cho_duyet') || null;
   const expiredPlan = profile?.goi_tap?.find(p => p.trang_thai === 'het_han') || null;
-  const currentPlan = activePlan || pendingPlan || expiredPlan;
+  const currentPlan = activePlan || choKichHoatPlan || pendingPlan || expiredPlan;
   const hasAnyPackage = profile?.goi_tap && profile.goi_tap.length > 0;
   const activePT = profile?.dang_ky_pt?.[0] || null;
   const remaining = daysLeft(currentPlan?.den_ngay);
@@ -381,7 +399,13 @@ export default function MemberHomeScreen({ navigation }) {
                       <Text style={[styles.contractBadgeText, { color: colors.primary }]}>Đang hoạt động</Text>
                     </View>
                   ) : null}
-                  {pendingPlan ? (
+                  {choKichHoatPlan && !activePlan ? (
+                    <View style={[styles.contractBadge, { backgroundColor: colors.primaryLight }]}>
+                      <ShieldCheck color={colors.primary} size={12} strokeWidth={2.5} />
+                      <Text style={[styles.contractBadgeText, { color: colors.primary }]}>Chờ kích hoạt nối tiếp</Text>
+                    </View>
+                  ) : null}
+                  {pendingPlan && !activePlan && !choKichHoatPlan ? (
                     <View style={[styles.contractBadge, { backgroundColor: colors.warningLight }]}>
                       <Clock color={colors.warning} size={12} strokeWidth={2.5} />
                       <Text style={[styles.contractBadgeText, { color: colors.warning }]}>
@@ -391,7 +415,7 @@ export default function MemberHomeScreen({ navigation }) {
                       </Text>
                     </View>
                   ) : null}
-                  {!activePlan && !pendingPlan && expiredPlan ? (
+                  {!activePlan && !choKichHoatPlan && !pendingPlan && expiredPlan ? (
                     <View style={[styles.contractBadge, { backgroundColor: colors.dangerLight }]}>
                       <Clock color={colors.danger} size={12} strokeWidth={2.5} />
                       <Text style={[styles.contractBadgeText, { color: colors.danger }]}>Đã hết hạn</Text>
@@ -516,6 +540,21 @@ export default function MemberHomeScreen({ navigation }) {
                       <XCircle color={G.white} size={15} strokeWidth={2.5} />
                       <Text style={styles.cancelRequestBtnText}>Hủy yêu cầu gia hạn</Text>
                     </TouchableOpacity>
+                  </View>
+                )}
+
+                {choKichHoatPlan && (
+                  <View style={[styles.pendingRequestCard, { backgroundColor: colors.primaryLight, borderColor: colors.primary, marginTop: 12 }]}>
+                    <View style={styles.pendingRequestHeader}>
+                      <CheckCircle2 color={colors.primary} size={15} strokeWidth={2} />
+                      <Text style={[styles.pendingRequestTitle, { color: colors.primary }]}>
+                        Gói gia hạn đã được phê duyệt
+                      </Text>
+                    </View>
+                    <Text style={[styles.pendingRequestPkg, { color: colors.text }]} numberOfLines={1}>{choKichHoatPlan.ten_goi}</Text>
+                    <Text style={[styles.pendingRequestInfo, { color: colors.textSecondary }]}>
+                      Hiệu lực nối tiếp: {formatDate(choKichHoatPlan.tu_ngay)} – {formatDate(choKichHoatPlan.den_ngay)}
+                    </Text>
                   </View>
                 )}
               </TouchableOpacity>

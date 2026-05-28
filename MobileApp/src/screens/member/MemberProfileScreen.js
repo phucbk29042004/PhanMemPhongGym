@@ -296,6 +296,7 @@ export default function MemberProfileScreen() {
   const onRefresh = () => { setRefreshing(true); fetchProfile(); };
 
   const activePlan = profile?.goi_tap?.find(p => p.trang_thai === 'dang_hoat_dong') || null;
+  const choKichHoatPlan = profile?.goi_tap?.find(p => p.trang_thai === 'cho_kich_hoat') || null;
   const activePT = profile?.dang_ky_pt?.[0] || null;
   const ptRemaining = activePT ? Math.max(0, (activePT.so_buoi_dang_ky || 0) - (activePT.so_buoi_da_tap || 0)) : null;
   const diaChiParts = [profile?.dia_chi_tam_tru, profile?.phuong_xa, profile?.quan_huyen, profile?.tinh_thanh].filter(Boolean);
@@ -372,7 +373,7 @@ export default function MemberProfileScreen() {
                 <View style={styles.quickStat}>
                   <CreditCard color={colors.primary} size={16} strokeWidth={2} />
                   <Text style={[styles.quickStatVal, { color: colors.text }]}>
-                    {activePlan ? activePlan.ten_goi : 'Chưa có'}
+                    {activePlan ? activePlan.ten_goi : (choKichHoatPlan ? choKichHoatPlan.ten_goi : 'Chưa có')}
                   </Text>
                   <Text style={[styles.quickStatLabel, { color: colors.textMuted }]}>Gói tập</Text>
                 </View>
@@ -380,7 +381,7 @@ export default function MemberProfileScreen() {
                 <View style={styles.quickStat}>
                   <Calendar color={colors.primary} size={16} strokeWidth={2} />
                   <Text style={[styles.quickStatVal, { color: colors.text }]}>
-                    {activePlan ? formatDate(activePlan.den_ngay) : '—'}
+                    {activePlan ? formatDate(activePlan.den_ngay) : (choKichHoatPlan ? formatDate(choKichHoatPlan.den_ngay) : '—')}
                   </Text>
                   <Text style={[styles.quickStatLabel, { color: colors.textMuted }]}>Hết hạn</Text>
                 </View>
@@ -397,7 +398,6 @@ export default function MemberProfileScreen() {
           )}
         </View>
 
-        {/* ── THÔNG TIN CÁ NHÂN ─────────────────── */}
         <Section 
           title="Thông tin định danh" 
           colors={colors}
@@ -414,8 +414,6 @@ export default function MemberProfileScreen() {
           <MenuRow icon={Building2} label="Địa chỉ" sublabel={diaChi} onPress={() => {}} rightEl={null} colors={colors} />
           <MenuRow icon={Building2} label="Chi nhánh" sublabel={profile?.chi_nhanh || '—'} onPress={() => {}} rightEl={<View />} colors={colors} />
         </Section>
-
-
 
         {/* ── CÀI ĐẶT ──────────────────────────── */}
         <Section title="Chỉ số BMI" colors={colors}>

@@ -121,17 +121,20 @@ export const scanQr = (req, res) => {
       return error(res, `Gói dịch vụ của ${hoSo.ho_ten} đã hết hạn (${hoSo.ngay_ket_thuc}).`, 403);
     }
 
-    // Kiểm tra hôm nay đã check-in chưa (tránh quét 2 lần)
-    const daCheckin = db.prepare(`
-      SELECT id FROM luot_vao_ra
-      WHERE ho_so_id = ? AND DATE(thoi_diem) = ? AND loai = 'vao' AND phuong_thuc = 'qr_code'
+    // Kiểm tra trạng thái vào/ra gần nhất hôm nay (hỗ trợ ra vào nhiều lần)
+    const lastRecord = db.prepare(`
+      SELECT loai FROM luot_vao_ra
+      WHERE ho_so_id = ? AND DATE(thoi_diem) = ?
+      ORDER BY thoi_diem DESC LIMIT 1
     `).get(ho_so_id, today);
 
-    if (daCheckin) {
-      return error(res, `${hoSo.ho_ten} đã check-in hôm nay rồi.`, 409);
+    if (lastRecord && lastRecord.loai === 'vao') {
+      loaiCheckin = 'ra';
+      labelAction = 'Check-out ra về';
+    } else {
+      loaiCheckin = 'vao';
+      labelAction = 'Check-in tập luyện';
     }
-
-    labelAction = 'Check-in tập luyện';
   }
 
   // Ghi nhận check-in / check-out

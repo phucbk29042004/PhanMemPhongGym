@@ -288,7 +288,7 @@ const pwStyles = StyleSheet.create({
 });
 
 // ── Màn hình chính ────────────────────────────────────────
-export default function AdminProfileScreen() {
+export default function AdminProfileScreen({ navigation }) {
   const { user, logout } = useAuthStore();
   const { isDark, toggleTheme, colors } = useTheme();
   const [profile, setProfile] = useState(null);
@@ -436,6 +436,15 @@ export default function AdminProfileScreen() {
             label="Chỉnh sửa thông tin"
             sublabel="Họ tên, SĐT, Email, Giới tính..."
             onPress={() => setShowEditProfile(true)}
+            colors={colors}
+          />
+          <MenuRow
+            icon={Building2}
+            iconBg={colors.primaryLight}
+            iconColor={colors.primary}
+            label="Nội quy phòng tập"
+            sublabel="Xem quy định & nội quy phòng tập"
+            onPress={() => navigation.navigate('GymRules')}
             colors={colors}
           />
           <MenuRow

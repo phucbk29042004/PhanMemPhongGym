@@ -1,6 +1,6 @@
 window.GymApp.pages['revenue'] = {
   _chart: null,
-  _days: 30,
+  _days: 'today',
 
   render: function () {
     return `
@@ -78,12 +78,15 @@ window.GymApp.pages['revenue'] = {
                   <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60">Khách hàng</th>
                   <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60">Sản phẩm</th>
                   <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60">Loại</th>
+                  <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60">Trạng thái</th>
+                  <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60">Phương thức</th>
                   <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60 text-right">Số tiền</th>
+                  <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60 text-right">Chênh lệch</th>
                   <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60">Thời gian</th>
                 </tr>
               </thead>
               <tbody id="rev-today-tbody">
-                <tr><td colspan="5" class="text-center py-margin text-on-surface-variant text-body-sm">Đang tải...</td></tr>
+                <tr><td colspan="8" class="text-center py-margin text-on-surface-variant text-body-sm">Đang tải...</td></tr>
               </tbody>
             </table>
           </div>
@@ -103,8 +106,11 @@ window.GymApp.pages['revenue'] = {
   },
 
   _formatMoney: function (amount) {
-    if (!amount || isNaN(amount)) return '0 đ';
-    return new Intl.NumberFormat('vi-VN').format(amount) + ' đ';
+    if (amount == null || amount === '') return '0 đ';
+    const cleaned = String(amount).replace(/[^\d-]/g, '');
+    const numeric = Number(cleaned);
+    if (Number.isNaN(numeric)) return '0 đ';
+    return new Intl.NumberFormat('vi-VN').format(numeric) + ' đ';
   },
 
   _formatTrend: function (current, previous) {
@@ -519,7 +525,7 @@ window.GymApp.pages['revenue'] = {
 
     if (list.length === 0) {
       const msg = isYesterday ? 'Chưa có giao dịch nào hôm qua' : isToday ? 'Chưa có giao dịch nào hôm nay' : `Chưa có giao dịch nào trong ${this._days} ngày qua`;
-      tbody.innerHTML = `<tr><td colspan="5" class="text-center py-margin text-on-surface-variant text-body-sm">${msg}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="8" class="text-center py-margin text-on-surface-variant text-body-sm">${msg}</td></tr>`;
       return;
     }
 
@@ -540,12 +546,75 @@ window.GymApp.pages['revenue'] = {
       const loaiLabel = t.loai === 'goi_tap'
         ? `<span class="bg-[#e7f5e9] dark:bg-[#0b2010] text-[#1D9336] dark:text-[#4cce5f] px-2 py-0.5 rounded-full text-label-xs font-bold border border-[#1D9336]/20 dark:border-[#4cce5f]/20">Gói tập</span>`
         : `<span class="bg-[#e8def8] dark:bg-[#201035] text-[#6750a4] dark:text-[#b89eff] px-2 py-0.5 rounded-full text-label-xs font-bold border border-[#6750a4]/20 dark:border-[#b89eff]/20">Gói PT</span>`;
+
+      // Xác định trạng thái nghiệp vụ & chênh lệch giá
+      let statusText = 'Đăng ký mới';
+      let statusClass = 'bg-[#eef2ff] text-[#1e40af] border border-[#bfdbfe]'; // Blue badge for new
+      let chenhLechHtml = '';
+
+      if (t.trang_thai === 'huy') {
+        const isSwitch = (t.ly_do_huy || '').includes('Đổi sang');
+        if (isSwitch) {
+          statusText = 'Đổi gói';
+          statusClass = 'bg-[#fef3c7] text-[#d97706] border border-[#fde68a]'; // Yellow badge
+          const refundAmount = t.so_tien_hoan || 0;
+          chenhLechHtml = `<span class="text-red-500 font-bold">-${this._formatMoney(refundAmount)}</span>`;
+        } else {
+          statusText = 'Hủy gói';
+          statusClass = 'bg-[#fee2e2] text-[#b91c1c] border border-[#fecaca]'; // Red badge
+          const refundAmount = t.so_tien_hoan || t.gia_thuc_te || 0;
+          chenhLechHtml = `<span class="text-red-500 font-bold">-${this._formatMoney(refundAmount)}</span>`;
+        }
+      } else {
+        // Gói hoạt động / tạm dừng / hết hạn
+        const isSwitch = (t.ghi_chu_tt || '').includes('Đổi từ');
+        if (isSwitch) {
+          statusText = 'Đổi gói';
+          statusClass = 'bg-[#fef3c7] text-[#d97706] border border-[#fde68a]';
+          // Parse hoàn tiền
+          const matchHoanTien = (t.ghi_chu_tt || '').match(/Hoàn tiền:\s*([0-9.]+)/);
+          const hoanTien = matchHoanTien ? parseFloat(matchHoanTien[1]) : 0;
+          const diff = t.gia_thuc_te - hoanTien;
+          if (diff >= 0) {
+            chenhLechHtml = `<span class="text-brand-primary font-bold">+${this._formatMoney(diff)}</span>`;
+          } else {
+            chenhLechHtml = `<span class="text-red-500 font-bold">-${this._formatMoney(Math.abs(diff))}</span>`;
+          }
+        } else if (t.trang_thai === 'tam_dung') {
+          statusText = 'Tạm dừng';
+          statusClass = 'bg-surface-container text-on-surface-variant border border-outline-variant';
+          chenhLechHtml = `<span class="text-on-surface-variant">—</span>`;
+        } else if (t.trang_thai === 'het_han') {
+          statusText = 'Hết hạn';
+          statusClass = 'bg-surface-container text-on-surface-variant border border-outline-variant';
+          chenhLechHtml = `<span class="text-on-surface-variant">—</span>`;
+        } else {
+          statusText = 'Đăng ký mới';
+          statusClass = 'bg-[#e7f5e9] text-[#1D9336] border border-[#c2e7c9]'; // Green badge
+          chenhLechHtml = `<span class="text-brand-primary font-bold">+${this._formatMoney(t.gia_thuc_te)}</span>`;
+        }
+      }
+
+      const statusLabel = `<span class="px-2 py-0.5 rounded-full text-label-xs font-bold ${statusClass}">${statusText}</span>`;
+
+      const paymentLabel = t.phuong_thuc_tt
+        ? t.phuong_thuc_tt === 'tien_mat' ? 'Tiền mặt'
+          : t.phuong_thuc_tt === 'chuyen_khoan' ? 'Chuyển khoản'
+          : t.phuong_thuc_tt === 'the' ? 'Thẻ'
+          : t.phuong_thuc_tt === 'momo' ? 'MoMo'
+          : t.phuong_thuc_tt === 'zalopay' ? 'ZaloPay'
+          : 'Khác'
+        : '—';
+
       return `
         <tr class="border-b border-outline-variant/30 hover:bg-brand-primary/5 transition-colors">
           <td class="px-standard py-3 font-bold text-on-surface text-body-md">${t.khach_hang || '—'}</td>
           <td class="px-standard py-3 text-on-surface-variant font-medium text-body-sm">${t.san_pham || '—'}</td>
           <td class="px-standard py-3">${loaiLabel}</td>
+          <td class="px-standard py-3">${statusLabel}</td>
+          <td class="px-standard py-3">${paymentLabel}</td>
           <td class="px-standard py-3 text-right font-bold text-brand-primary text-body-md">${this._formatMoney(t.gia_thuc_te)}</td>
+          <td class="px-standard py-3 text-right font-bold">${chenhLechHtml}</td>
           <td class="px-standard py-3 text-on-surface-variant font-medium text-body-sm">${timeDisplay}</td>
         </tr>
       `;
@@ -556,7 +625,7 @@ window.GymApp.pages['revenue'] = {
     if (totalPages > 1) {
       paginationHtml = `
         <tr class="bg-surface-container-low/20">
-          <td colspan="5" class="px-standard py-3">
+          <td colspan="8" class="px-standard py-3">
             <div class="flex items-center justify-between">
               <span class="text-on-surface-variant text-body-sm font-bold">Trang ${this._transactionPage}/${totalPages} • ${list.length} giao dịch</span>
               <div class="flex gap-1">
@@ -616,20 +685,18 @@ window.GymApp.pages['revenue'] = {
           window.GymApp.api.get('/revenue/today'),
         ]);
         revData = revRes?.data || {};
-        dayData = todayRes?.data || {};
+        dayData = todayRes?.data || { giao_dich: [] };
       } else if (this._days === 'yesterday') {
         const [revRes, yesterdayRes] = await Promise.all([
           window.GymApp.api.get('/revenue?days=1'),
           window.GymApp.api.get('/revenue/yesterday'),
         ]);
         revData = revRes?.data || {};
-        dayData = yesterdayRes?.data || {};
+        dayData = yesterdayRes?.data || { giao_dich: [] };
       } else {
-        // FIX: 7/30 ngày — gọi đúng days param, dùng transactions từ revData cho bảng giao dịch
         const daysInt = parseInt(this._days) || 30;
         const revRes = await window.GymApp.api.get(`/revenue?days=${daysInt}`);
         revData = revRes?.data || {};
-        // dayData chỉ dùng cho bảng giao dịch — lấy transactions từ revData
         dayData = {
           giao_dich: revData.transactions || [],
         };
@@ -639,7 +706,7 @@ window.GymApp.pages['revenue'] = {
       // FIX: truyền daily vào _renderChart để mode 7/30 ngày vẽ đúng
       this._renderChart(revData.daily, revData.monthComparison);
       this._renderPackageStats(revData.packageStats);
-      this._renderTodayTable(dayData.giao_dich);
+      this._renderTodayTable(dayData.giao_dich || []);
     } catch (err) {
       console.error('Revenue fetch error', err);
       window.GymApp.toast('Lỗi tải dữ liệu doanh thu!', 'error');
@@ -650,7 +717,7 @@ window.GymApp.pages['revenue'] = {
     const self = this;
     this._packagePage = 1;
     this._packageStats = [];
-    this._days = 30;
+    this._days = 'today';
     this._updateRangeButtons();
     await this._fetchAndRender();
 

@@ -134,7 +134,7 @@ export const getMemberById = (req, res) => {
         'id', dk.id, 'ten_goi', gt.ten_goi, 'tu_ngay', dk.tu_ngay,
         'den_ngay', dk.den_ngay, 'gia_thuc_te', dk.gia_thuc_te, 'trang_thai', dk.trang_thai
       )) FROM dang_ky_goi_tap dk JOIN goi_tap gt ON gt.id = dk.goi_tap_id
-       WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong'
+       WHERE dk.ho_so_id = h.id AND dk.trang_thai IN ('dang_hoat_dong', 'cho_kich_hoat', 'cho_duyet')
        ORDER BY dk.den_ngay DESC, dk.id DESC) AS goi_tap_hien_tai,
       -- PT đang đăng ký
       (SELECT json_group_array(json_object(
@@ -728,19 +728,21 @@ export const requestPackageRenewal = async (req, res) => {
 
     const today = new Date().toISOString().split('T')[0];
 
-    // 1. Kiểm tra xem đã có yêu cầu gia hạn nào đang chờ duyệt hoặc đã duyệt chờ kích hoạt hay chưa
-    const pendingRequest = db.prepare(`
-      SELECT id, trang_thai FROM dang_ky_goi_tap
-      WHERE ho_so_id = ?
-        AND trang_thai IN ('cho_duyet', 'cho_kich_hoat')
-        AND (payos_status IS NULL OR payos_status IN ('PENDING', 'PAID'))
+    // 1. Tự động hủy các yêu cầu cũ ở trạng thái 'cho_duyet' (chờ duyệt/chờ thanh toán chưa hoàn thành)
+    db.prepare(`
+      UPDATE dang_ky_goi_tap
+      SET trang_thai = 'huy', ly_do_huy = 'Hủy tự động bởi hệ thống do hội viên gửi yêu cầu mới'
+      WHERE ho_so_id = ? AND trang_thai = 'cho_duyet'
+    `).run(hoSo.id);
+
+    // Vẫn chặn nếu đã có gói được duyệt chờ kích hoạt ('cho_kich_hoat')
+    const pendingActive = db.prepare(`
+      SELECT id FROM dang_ky_goi_tap
+      WHERE ho_so_id = ? AND trang_thai = 'cho_kich_hoat'
     `).get(hoSo.id);
 
-    if (pendingRequest) {
-      const msg = pendingRequest.trang_thai === 'cho_kich_hoat'
-        ? 'Bạn đã có một gói tập đã được duyệt và đang chờ kích hoạt. Không thể đăng ký thêm.'
-        : 'Bạn đã có một yêu cầu gia hạn đang chờ duyệt. Vui lòng đợi lễ tân phê duyệt hoặc hoàn thành thanh toán.';
-      return error(res, msg, 400);
+    if (pendingActive) {
+      return error(res, 'Bạn đã có một gói tập đã được duyệt và đang chờ kích hoạt. Không thể đăng ký thêm.', 400);
     }
 
     // 2. Lấy gói tập đang hoạt động có ngày hết hạn xa nhất để thực hiện nối tiếp nếu có
@@ -1566,7 +1568,12 @@ export const deleteMyNotification = (req, res) => {
 // ── PATCH /api/members/:id/package/:pkgId/cancel ──────────────
 export const cancelPackage = (req, res) => {
   const { id, pkgId } = req.params;
-  const { ly_do_huy, so_tien_hoan = 0 } = req.body;
+  const { ly_do_huy, so_tien_hoan } = req.body;
+  const refundAmount = Number(so_tien_hoan);
+
+  if (so_tien_hoan === undefined || so_tien_hoan === null || isNaN(refundAmount) || refundAmount <= 0) {
+    return error(res, 'Số tiền hoàn là bắt buộc và phải lớn hơn 0.', 400);
+  }
 
   const hoSo = db.prepare('SELECT id, ho_ten FROM ho_so WHERE id = ? AND is_deleted = 0').get(id);
   if (!hoSo) return error(res, 'Không tìm thấy hồ sơ hội viên.', 404);
@@ -1578,6 +1585,7 @@ export const cancelPackage = (req, res) => {
     WHERE dk.id = ? AND dk.ho_so_id = ?
   `).get(pkgId, id);
   if (!pkg) return error(res, 'Không tìm thấy đăng ký gói tập.', 404);
+  if (refundAmount > pkg.gia_thuc_te) return error(res, `Số tiền hoàn không được vượt quá ${pkg.gia_thuc_te.toLocaleString('vi-VN')}đ.`, 400);
   if (pkg.trang_thai === 'huy') return error(res, 'Gói tập này đã bị hủy trước đó.', 400);
   if (pkg.trang_thai === 'het_han') return error(res, 'Không thể hủy gói tập đã hết hạn.', 400);
 
@@ -1587,7 +1595,7 @@ export const cancelPackage = (req, res) => {
     SET trang_thai = 'huy', ly_do_huy = ?, so_tien_hoan = ?, ngay_huy = datetime('now','localtime'),
         nguoi_cap_nhat_id = ?, ngay_cap_nhat = datetime('now','localtime')
     WHERE id = ?
-  `).run(ly_do_huy || null, so_tien_hoan, req.user.id, pkgId);
+  `).run(ly_do_huy || null, refundAmount, req.user.id, pkgId);
 
   ghi_audit_log(req, 'UPDATE', 'dang_ky_goi_tap', pkgId, oldData,
     { trang_thai: 'huy', ly_do_huy, so_tien_hoan },
@@ -1597,7 +1605,7 @@ export const cancelPackage = (req, res) => {
   createNotification(
     'huy_buoi_tap',
     'Gói tập bị hủy',
-    `${req.user.ten_dang_nhap || 'Nhân viên'} đã hủy gói "${pkg.ten_goi}" của ${hoSo.ho_ten}${so_tien_hoan > 0 ? `, hoàn tiền ${so_tien_hoan.toLocaleString('vi-VN')}đ` : ''}.`,
+    `${req.user.ten_dang_nhap || 'Nhân viên'} đã hủy gói "${pkg.ten_goi}" của ${hoSo.ho_ten}${refundAmount > 0 ? `, hoàn tiền ${refundAmount.toLocaleString('vi-VN')}đ` : ''}.`,
     pkgId,
     'dang_ky_goi_tap',
     'admin'
@@ -1607,7 +1615,7 @@ export const cancelPackage = (req, res) => {
   createUserNotification(
     hoSo.id,
     'Gói tập đã bị hủy',
-    `Gói tập "${pkg.ten_goi}" của bạn đã được hủy${ly_do_huy ? ` (${ly_do_huy})` : ''}. ${so_tien_hoan > 0 ? `Hoàn tiền: ${Number(so_tien_hoan).toLocaleString('vi-VN')}đ.` : ''} Liên hệ lễ tân để biết thêm chi tiết.`,
+    `Gói tập "${pkg.ten_goi}" của bạn đã được hủy${ly_do_huy ? ` (${ly_do_huy})` : ''}. ${refundAmount > 0 ? `Hoàn tiền: ${Number(refundAmount).toLocaleString('vi-VN')}đ.` : ''} Liên hệ lễ tân để biết thêm chi tiết.`,
     'thong_bao_chung'
   );
 
@@ -1719,22 +1727,24 @@ export const switchPackage = (req, res) => {
   if (!denNgay) return error(res, 'Không tính được ngày kết thúc cho gói mới.', 400);
 
   const switchTx = db.transaction(() => {
-    // Hủy gói cũ
+    // Hủy gói cũ với lý do có cấu trúc
+    const structuredLyDoHuy = `Đổi sang gói: ${goiMoi.ten_goi} (ID: ${goi_tap_id_moi}, Giá cũ: ${pkgCu.gia_thuc_te})`;
     db.prepare(`
       UPDATE dang_ky_goi_tap
       SET trang_thai = 'huy', ly_do_huy = ?, so_tien_hoan = ?, ngay_huy = datetime('now','localtime'),
           nguoi_cap_nhat_id = ?, ngay_cap_nhat = datetime('now','localtime')
       WHERE id = ?
-    `).run(ly_do_huy, so_tien_hoan, req.user.id, pkg_id_cu);
+    `).run(structuredLyDoHuy, so_tien_hoan, req.user.id, pkg_id_cu);
 
-    // Đăng ký gói mới
+    // Đăng ký gói mới với ghi chú có cấu trúc
+    const structuredGhiChuTT = `Đổi từ gói: ${pkgCu.ten_goi} (ID: ${pkgCu.id}, Giá cũ: ${pkgCu.gia_thuc_te}, Hoàn tiền: ${so_tien_hoan})`;
     const ins = db.prepare(`
       INSERT INTO dang_ky_goi_tap
         (ho_so_id, goi_tap_id, tu_ngay, den_ngay, gia_thuc_te, so_tien_da_thu, phuong_thuc_tt, ghi_chu_tt,
          trang_thai, nguoi_tao_id, nguoi_cap_nhat_id, ngay_thanh_toan)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'dang_hoat_dong', ?, ?, ?)
     `).run(hoSo.id, goi_tap_id_moi, tu_ngay, denNgay,
-      gia_thuc_te ?? goiMoi.gia, gia_thuc_te ?? goiMoi.gia, phuong_thuc_tt || null, ghi_chu_tt || null,
+      gia_thuc_te ?? goiMoi.gia, gia_thuc_te ?? goiMoi.gia, phuong_thuc_tt || null, structuredGhiChuTT,
       req.user.id, req.user.id, tu_ngay);
 
     return ins.lastInsertRowid;

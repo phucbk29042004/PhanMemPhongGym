@@ -5,6 +5,7 @@
 import db from '../config/db.js';
 import { success, error } from '../utils/response.js';
 import { createNotification } from '../utils/notifications.js';
+import { ghi_audit_log } from '../utils/audit.js';
 
 // ── GET /api/checkins ─────────────────────────────────────
 // Lịch sử vào/ra (mặc định hôm nay hoặc tất cả nếu date === 'all')
@@ -84,6 +85,11 @@ export const createCheckin = (req, res) => {
       'ca_hai'
     );
   }
+
+  const labelAction = loai === 'vao' ? 'Check-in tập luyện' : 'Check-out ra về';
+  const targetMemberName = newRow?.ho_ten || 'Hội viên';
+  ghi_audit_log(req, 'CREATE', 'luot_vao_ra', result.lastInsertRowid, null,
+    { ho_so_id, loai, phuong_thuc }, `Thủ công: ${labelAction} cho ${targetMemberName}${ghi_chu ? ` (${ghi_chu})` : ''}`);
 
   return success(res, newRow, `Check-${loai} thành công`, 201);
 };
