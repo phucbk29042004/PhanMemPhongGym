@@ -448,6 +448,47 @@ if (checkView && checkView.sql.includes('dang_ky_goi_tap_old')) {
   console.log('[DB] ✅ Tái tạo View v_trang_thai_hoi_vien thành công.');
 }
 
+// ── Sửa lỗi table yeu_cau_goi_tap bị hỏng sau khi migrate (SQLite tự động đổi tên ref sang _old_v17) ──
+try {
+  const checkYeuCau = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='yeu_cau_goi_tap'").get();
+  if (checkYeuCau && checkYeuCau.sql && checkYeuCau.sql.includes('dang_ky_goi_tap_old_v17')) {
+    console.log('[DB] 🛠️ Phát hiện table yeu_cau_goi_tap bị lỗi tham chiếu khóa ngoại, đang tái tạo...');
+    db.transaction(() => {
+      db.exec(`ALTER TABLE yeu_cau_goi_tap RENAME TO yeu_cau_goi_tap_old;`);
+      db.exec(`
+        CREATE TABLE yeu_cau_goi_tap (
+          id           INTEGER PRIMARY KEY AUTOINCREMENT,
+          ho_so_id     INTEGER NOT NULL REFERENCES ho_so(id),
+          dang_ky_id   INTEGER REFERENCES dang_ky_goi_tap(id),
+          loai_yeu_cau TEXT NOT NULL DEFAULT 'gia_han'
+                       CHECK (loai_yeu_cau IN ('gia_han','tam_dung','huy')),
+          ly_do        TEXT,
+          trang_thai   TEXT NOT NULL DEFAULT 'cho_duyet'
+                       CHECK (trang_thai IN ('cho_duyet','da_duyet','tu_choi')),
+          nguoi_duyet_id INTEGER REFERENCES tai_khoan(id),
+          ghi_chu_duyet  TEXT,
+          ngay_tao     DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
+          ngay_duyet   DATETIME
+        );
+      `);
+      db.exec(`
+        INSERT INTO yeu_cau_goi_tap (
+          id, ho_so_id, dang_ky_id, loai_yeu_cau, ly_do, trang_thai,
+          nguoi_duyet_id, ghi_chu_duyet, ngay_tao, ngay_duyet
+        )
+        SELECT 
+          id, ho_so_id, dang_ky_id, loai_yeu_cau, ly_do, trang_thai,
+          nguoi_duyet_id, ghi_chu_duyet, ngay_tao, ngay_duyet
+        FROM yeu_cau_goi_tap_old;
+      `);
+      db.exec(`DROP TABLE yeu_cau_goi_tap_old;`);
+    })();
+    console.log('[DB] ✅ Tái tạo table yeu_cau_goi_tap thành công.');
+  }
+} catch (e) {
+  console.error('[DB] Lỗi khi sửa table yeu_cau_goi_tap:', e.message);
+}
+
 // ── Migration v8: Tạo bảng noi_quy (nội quy phòng tập) ───────────────────────
 db.exec(`
   CREATE TABLE IF NOT EXISTS noi_quy (
