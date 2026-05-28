@@ -201,11 +201,20 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
     const doRegister = async () => {
       setSubmitting(true);
       try {
+        let structuredGhiChu = note || 'Đăng ký PT qua di động';
+
         // Nếu song song: hủy PT cũ trước
         if (activePT && registrationType === 'song_song') {
           await api.put(`/pt/registrations/${activePT.id}/cancel`, {
             ly_do: 'Kích hoạt gói PT mới song song qua di động'
           });
+
+          const buoiCon = (activePT.buoi_dang_ky || 0) - (activePT.buoi_da_tap || 0);
+          const tongBuoi = activePT.buoi_dang_ky || 0;
+          const giaThucTeCu = activePT.gia_thuc_te || 0;
+          const creditGoiCu = tongBuoi > 0 ? Math.round(giaThucTeCu * buoiCon / tongBuoi) : 0;
+
+          structuredGhiChu = `Đổi từ gói: ${activePT.ten_goi_pt || 'Gói PT'} (ID: ${activePT.id}, Giá cũ: ${giaThucTeCu}, Hoàn tiền: ${creditGoiCu})${note ? ' | ' + note : ''}`;
         }
 
         const payload = {
@@ -217,7 +226,7 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
           den_ngay: ymdEnd,
           gia_thuc_te: price,
           phuong_thuc_tt: paymentMethod,
-          ghi_chu_tt: note || 'Đăng ký PT qua di động'
+          ghi_chu_tt: structuredGhiChu
         };
 
         const res = await api.post('/pt/registrations', payload);

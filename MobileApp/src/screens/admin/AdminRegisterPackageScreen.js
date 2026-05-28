@@ -409,10 +409,11 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
                 {(() => {
                   const price = parseInputMoney(actualPrice) || 0;
                   const refund = parseInputMoney(refundAmount) || 0;
-                  const diff = price - refund;
-                  const isUpgrade = diff >= 0;
+                  const oldPrice = activePkg ? (activePkg.gia_thuc_te || activePkg.gia || 0) : 0;
+                  const isUpgrade = price >= oldPrice;
                   const label = isUpgrade ? 'Tiền đóng thêm (đ)' : 'Tiền hoàn trả khách (đ)';
-                  const displayValue = formatPrice(Math.abs(diff));
+                  const diff = isUpgrade ? Math.max(0, price - refund) : Math.max(0, refund - price);
+                  const displayValue = formatPrice(diff);
                   const bgStyle = isUpgrade ? { backgroundColor: '#e6f4ea', borderColor: '#34a853' } : { backgroundColor: '#fce8e6', borderColor: '#ea4335' };
                   const textStyle = isUpgrade ? { color: '#137333' } : { color: '#c5221f' };
 
