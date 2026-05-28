@@ -2408,7 +2408,8 @@ window.GymApp.pages['members-list'] = {
     const _updateExtraHint = () => {
       const newGia = _pVND(swPriceEl?.value);
       const hoan = _pVND(swRefundEl?.value);
-      const diff = newGia - hoan;
+      const oldGia = pkg.gia_thuc_te || pkg.gia || 0;
+      const isUpgrade = newGia >= oldGia;
 
       const diffLabelEl = overlay.querySelector('#switch-diff-label');
       const diffInputEl = overlay.querySelector('#switch-pkg-diff');
@@ -2423,7 +2424,8 @@ window.GymApp.pages['members-list'] = {
           diffInputEl.value = '—';
           return;
         }
-        if (diff >= 0) {
+        if (isUpgrade) {
+          const diff = Math.max(0, newGia - hoan);
           diffLabelEl.textContent = 'Tiền thanh toán thêm (VNĐ)';
           diffLabelEl.style.color = '#166534';
           diffInputEl.style.background = '#dcfce7';
@@ -2431,12 +2433,13 @@ window.GymApp.pages['members-list'] = {
           diffInputEl.style.color = '#166534';
           diffInputEl.value = _fVND(diff) || '0';
         } else {
+          const diff = Math.max(0, hoan - newGia);
           diffLabelEl.textContent = 'Tiền hoàn trả khách (VNĐ)';
           diffLabelEl.style.color = '#ba1a1a';
           diffInputEl.style.background = '#ffdad6';
           diffInputEl.style.borderColor = '#fecaca';
           diffInputEl.style.color = '#ba1a1a';
-          diffInputEl.value = _fVND(Math.abs(diff)) || '0';
+          diffInputEl.value = _fVND(diff) || '0';
         }
       }
     };
@@ -3122,19 +3125,22 @@ window.GymApp.pages['members-list'] = {
     const updateAdditionalHint = () => {
       const newPrice = _pVND(document.getElementById('ptswitch-price').value);
       const refund = _pVND(document.getElementById('ptswitch-refund').value);
-      const diff = newPrice - refund;
+      const oldPrice = c.gia_thuc_te || 0;
+      const isUpgrade = newPrice >= oldPrice;
       const addEl = document.getElementById('ptswitch-additional');
       const labelEl = document.getElementById('ptswitch-additional-label');
       if (!addEl) return;
       if (newPrice <= 0) { addEl.value = ''; return; }
-      if (diff >= 0) {
+      if (isUpgrade) {
         // Khách phải đóng thêm
+        const diff = Math.max(0, newPrice - refund);
         addEl.value = _fVND(diff) + ' ₫';
         addEl.style.background = '#f0fdf4'; addEl.style.color = '#166534'; addEl.style.borderColor = '#bbf7d0';
         if (labelEl) { labelEl.textContent = 'Tiền đóng thêm (gợi ý)'; labelEl.style.color = '#166534'; }
       } else {
         // Hoàn tiền cho khách
-        addEl.value = _fVND(Math.abs(diff)) + ' ₫';
+        const diff = Math.max(0, refund - newPrice);
+        addEl.value = _fVND(diff) + ' ₫';
         addEl.style.background = '#fce4e4'; addEl.style.color = '#93000a'; addEl.style.borderColor = '#f5c2c7';
         if (labelEl) { labelEl.textContent = 'Tiền hoàn trả khách (gợi ý)'; labelEl.style.color = '#93000a'; }
       }
@@ -3216,9 +3222,7 @@ window.GymApp.pages['members-list'] = {
         // Gắn gợi ý tiền đóng thêm/hoàn trả vào ghi chú để lưu vết
         const refundLocal = _pVND(document.getElementById('ptswitch-refund')?.value);
         const diffLocal = price - refundLocal;
-        const noteWithHint = diffLocal >= 0
-          ? `${note || 'Đổi gói PT'} | Đóng thêm: ${new Intl.NumberFormat('vi-VN').format(diffLocal)}₫`
-          : `${note || 'Đổi gói PT'} | Hoàn trả khách: ${new Intl.NumberFormat('vi-VN').format(Math.abs(diffLocal))}₫`;
+        const noteWithHint = `Đổi từ gói: ${c.ten_goi_pt || 'Gói PT'} (ID: ${c.id}, Giá cũ: ${c.gia_thuc_te}, Hoàn tiền: ${refundLocal})${note ? ' | ' + note : ''}`;
         await window.GymApp.api.put(`/pt/registrations/${c.id}`, {
           pt_id: parseInt(ptId), goi_pt_id: parseInt(goiId),
           so_buoi_dang_ky: sessions ? parseInt(sessions) : undefined,

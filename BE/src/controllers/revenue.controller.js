@@ -57,7 +57,7 @@ export const getRevenue = (req, res) => {
       SUM(tong_don)     AS tong_don,
       SUM(tien_goi_tap) AS tong_goi_tap,
       SUM(tien_goi_pt)  AS tong_goi_pt,
-      AVG(tong_tien)    AS trung_binh_ngay
+      ROUND(AVG(tong_tien)) AS trung_binh_ngay
     FROM doanh_thu
     WHERE ngay >= date('now','localtime','-' || ? || ' days')
   `).get(daysInt);
