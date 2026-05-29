@@ -716,36 +716,44 @@ const styles = StyleSheet.create({
   txCard: {
     paddingVertical: 14,
     borderBottomWidth: 1,
+    width: '100%',
   },
   txRowLine: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    width: '100%',
   },
-  txTitle: { fontSize: 14, fontWeight: '700' },
-  txSubtitle: { fontSize: 12, marginTop: 2 },
-  txAmount: { fontSize: 14, fontWeight: '800' },
-  txTime: { fontSize: 11, marginTop: 2 },
-  txDiff: { fontSize: 11, fontWeight: '700', marginTop: 2 },
+  txTitle: { fontSize: 14, fontWeight: '700', textAlign: 'left' },
+  txSubtitle: { fontSize: 12, marginTop: 2, textAlign: 'left' },
+  txAmount: { fontSize: 14, fontWeight: '800', textAlign: 'right' },
+  txTime: { fontSize: 11, marginTop: 2, textAlign: 'right' },
+  txDiff: { fontSize: 11, fontWeight: '700', marginTop: 2, textAlign: 'right' },
 
   typeBadge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   typeBadgeText: {
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.5,
+    textAlign: 'center',
   },
   statusBadge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   statusBadgeText: {
     fontSize: 10,
     fontWeight: '700',
+    textAlign: 'center',
   },
 
   /* Package stats row (period view) */

@@ -569,7 +569,7 @@ export default function AdminDashboardScreen({ navigation }) {
                     return (
                       <View style={[modalStyles.txCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
                         {/* Row 1: Tên KH + Loại */}
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, width: '100%' }}>
                           <Text style={[modalStyles.rowTitle, { color: colors.text, flex: 1, marginRight: 8 }]} numberOfLines={1}>
                             {item.khach_hang}
                           </Text>
@@ -580,7 +580,7 @@ export default function AdminDashboardScreen({ navigation }) {
                           </View>
                         </View>
                         {/* Row 2: Sản phẩm + Giờ */}
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, width: '100%' }}>
                           <Text style={[modalStyles.rowText, { color: colors.textSecondary, flex: 1 }]} numberOfLines={1}>
                             {item.san_pham}
                           </Text>
@@ -589,7 +589,7 @@ export default function AdminDashboardScreen({ navigation }) {
                           </Text>
                         </View>
                         {/* Row 3: Trạng thái + Tiền + Chênh lệch */}
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                           <View style={[modalStyles.badge, { backgroundColor: txInfo.statusBg }]}>
                             <Text style={[modalStyles.badgeText, { color: txInfo.statusColor }]}>
                               {txInfo.statusText}
@@ -599,7 +599,7 @@ export default function AdminDashboardScreen({ navigation }) {
                             <Text style={[modalStyles.rowTitle, { color: colors.primary, fontSize: 13 }]}>
                               {formatPrice(item.gia_thuc_te)}
                             </Text>
-                            <Text style={[{ fontSize: 11, fontWeight: '700', color: txInfo.diffColor }]}>
+                            <Text style={[{ fontSize: 11, fontWeight: '700', color: txInfo.diffColor, textAlign: 'right' }]}>
                               {txInfo.diffText}
                             </Text>
                           </View>
@@ -814,16 +814,20 @@ const modalStyles = StyleSheet.create({
     shadowOpacity: 0.02,
     shadowRadius: 4,
     elevation: 1,
+    width: '100%',
   },
   typeBadge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   typeBadgeText: {
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.5,
+    textAlign: 'center',
   },
   row: {
     paddingVertical: 12,
@@ -839,18 +843,23 @@ const modalStyles = StyleSheet.create({
   rowTitle: {
     fontSize: 14,
     fontWeight: '700',
+    textAlign: 'left',
   },
   rowText: {
     fontSize: 12,
+    textAlign: 'left',
   },
   badge: {
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   badgeText: {
     fontSize: 9,
     fontWeight: '800',
+    textAlign: 'center',
   },
   notifItem: {
     padding: 12,

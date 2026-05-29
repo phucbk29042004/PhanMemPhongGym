@@ -229,7 +229,7 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
           text: 'Gửi ngay',
           onPress: async () => {
             try {
-              const res = await api.post(`/members/${memberId}/notify`, { title, body });
+              const res = await api.post(`/members/${memberId}/notify`, { tieu_de: title, noi_dung: body });
               if (res.data?.success) {
                 Alert.alert('Thành công', 'Đã gửi thông báo gia hạn đến hội viên.');
               } else {
