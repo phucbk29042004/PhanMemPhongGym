@@ -96,9 +96,9 @@ function getTransactionStatusAndDiff(item) {
 function KpiCard({ icon: Icon, iconBg, iconColor, label, value, sub, subColor, colors, onPress }) {
   const Container = onPress ? TouchableOpacity : View;
   return (
-    <Container 
-      style={[kpi.card, { backgroundColor: colors.surface }]} 
-      onPress={onPress} 
+    <Container
+      style={[kpi.card, { backgroundColor: colors.surface }]}
+      onPress={onPress}
       activeOpacity={onPress ? 0.7 : 1}
     >
       <View style={[kpi.iconBox, { backgroundColor: iconBg }]}>
@@ -132,9 +132,9 @@ const kpi = StyleSheet.create({
 function AlertRow({ icon: Icon, iconColor, iconBg, label, count, color, onPress, colors }) {
   const Container = onPress ? TouchableOpacity : View;
   return (
-    <Container 
-      style={[alertRow.row, { borderBottomColor: colors.borderLight }]} 
-      onPress={onPress} 
+    <Container
+      style={[alertRow.row, { borderBottomColor: colors.borderLight }]}
+      onPress={onPress}
       activeOpacity={0.7}
     >
       <View style={[alertRow.iconBox, { backgroundColor: iconBg }]}>
@@ -351,8 +351,8 @@ export default function AdminDashboardScreen({ navigation }) {
           <Text style={styles.headerTitle}>Paradise GYM</Text>
         </View>
         <View style={styles.headerActions}>
-          <TouchableOpacity 
-            style={styles.bellBtn} 
+          <TouchableOpacity
+            style={styles.bellBtn}
             onPress={() => { setShowNotifModal(true); setNotifPage(1); }}
             activeOpacity={0.7}
           >
@@ -384,7 +384,7 @@ export default function AdminDashboardScreen({ navigation }) {
         ) : (
           <>
             {/* ── Doanh thu hôm nay ── */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.revenueBanner, { backgroundColor: colors.primary }]}
               onPress={() => { setShowTransactionsModal(true); setTxPage(1); }}
               activeOpacity={0.9}
@@ -550,7 +550,7 @@ export default function AdminDashboardScreen({ navigation }) {
                 <X color={colors.text} size={20} />
               </TouchableOpacity>
             </View>
-            
+
             {!(todayRevenue?.giao_dich) || todayRevenue.giao_dich.length === 0 ? (
               <View style={{ paddingVertical: 40, alignItems: 'center' }}>
                 <Text style={{ color: colors.textMuted, fontSize: 13 }}>Chưa có giao dịch nào hôm nay</Text>
@@ -608,10 +608,10 @@ export default function AdminDashboardScreen({ navigation }) {
                     );
                   }}
                 />
-                <Pagination 
-                  currentPage={txPage} 
-                  totalItems={todayRevenue.giao_dich.length} 
-                  onPageChange={setTxPage} 
+                <Pagination
+                  currentPage={txPage}
+                  totalItems={todayRevenue.giao_dich.length}
+                  onPageChange={setTxPage}
                 />
               </>
             )}
@@ -629,7 +629,7 @@ export default function AdminDashboardScreen({ navigation }) {
                 <X color={colors.text} size={20} />
               </TouchableOpacity>
             </View>
-            
+
             {checkinsLoading ? (
               <View style={{ paddingVertical: 40, alignItems: 'center' }}>
                 <ActivityIndicator size="small" color={colors.primary} />
@@ -649,11 +649,11 @@ export default function AdminDashboardScreen({ navigation }) {
                       <View style={modalStyles.rowHeader}>
                         <Text style={[modalStyles.rowTitle, { color: colors.text }]}>{item.ho_ten}</Text>
                         <View style={[
-                          modalStyles.badge, 
+                          modalStyles.badge,
                           { backgroundColor: item.loai === 'vao' ? colors.primaryLight : colors.dangerLight }
                         ]}>
                           <Text style={[
-                            modalStyles.badgeText, 
+                            modalStyles.badgeText,
                             { color: item.loai === 'vao' ? colors.primary : colors.danger }
                           ]}>
                             {item.loai === 'vao' ? 'VÀO' : 'RA'}
@@ -669,10 +669,10 @@ export default function AdminDashboardScreen({ navigation }) {
                     </View>
                   )}
                 />
-                <Pagination 
-                  currentPage={checkinPage} 
-                  totalItems={todayCheckins.length} 
-                  onPageChange={setCheckinPage} 
+                <Pagination
+                  currentPage={checkinPage}
+                  totalItems={todayCheckins.length}
+                  onPageChange={setCheckinPage}
                 />
               </>
             )}
@@ -724,16 +724,16 @@ export default function AdminDashboardScreen({ navigation }) {
                         <Text style={[modalStyles.notifContent, { color: s.text }]}>{item.noi_dung}</Text>
                         <View style={modalStyles.notifFooter}>
                           {!item.da_doc && (
-                            <TouchableOpacity 
-                              style={[modalStyles.notifBtn, { backgroundColor: colors.primary + '22' }]} 
+                            <TouchableOpacity
+                              style={[modalStyles.notifBtn, { backgroundColor: colors.primary + '22' }]}
                               onPress={() => handleMarkAsRead(item.id)}
                             >
                               <Check color={colors.primary} size={12} strokeWidth={2.5} />
                               <Text style={[modalStyles.notifBtnText, { color: colors.primary }]}>Đã đọc</Text>
                             </TouchableOpacity>
                           )}
-                          <TouchableOpacity 
-                            style={[modalStyles.notifBtn, { backgroundColor: colors.danger + '22' }]} 
+                          <TouchableOpacity
+                            style={[modalStyles.notifBtn, { backgroundColor: colors.danger + '22' }]}
                             onPress={() => handleDeleteNotif(item.id)}
                           >
                             <Trash2 color={colors.danger} size={12} strokeWidth={2.5} />
@@ -744,10 +744,10 @@ export default function AdminDashboardScreen({ navigation }) {
                     );
                   }}
                 />
-                <Pagination 
-                  currentPage={notifPage} 
-                  totalItems={notifications.length} 
-                  onPageChange={setNotifPage} 
+                <Pagination
+                  currentPage={notifPage}
+                  totalItems={notifications.length}
+                  onPageChange={setNotifPage}
                 />
               </>
             )}

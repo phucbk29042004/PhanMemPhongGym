@@ -4360,17 +4360,7 @@ window.GymApp.pages['members-list'] = {
   },
 
   _setupGlobalClickHandlers: function () {
-    const self = this;
-    document.addEventListener('click', async (e) => {
-      const cancelBtn = e.target.closest('.btn-cancel-pt-contract');
-      if (!cancelBtn) return;
-      e.preventDefault();
-      const contractId = cancelBtn.dataset.contractId;
-      const ptName = cancelBtn.dataset.ptName || cancelBtn.getAttribute('data-pt-name') || '';
-      const memberName = cancelBtn.dataset.memberName || cancelBtn.getAttribute('data-member-name') || '';
-      
-      self._showCancelPtRegistrationModal(contractId, ptName, memberName);
-    });
+    // Đã loại bỏ để tránh chồng chéo với modal hủy ở tab-specific events
   },
 
   _showLoadingOverlay: function (msg = 'Đang xử lý...') {

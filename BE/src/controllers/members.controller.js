@@ -394,6 +394,7 @@ export const checkDuplicate = (req, res) => {
 // 🔧 ĐÃ SỬA: dùng query trực tiếp thay vì view để hỗ trợ days động
 // và trả về đủ fields mà FE cần (ten_goi_tap, ngay_het_han, so_dien_thoai)
 export const getExpiringMembers = (req, res) => {
+  autoUpdateExpiredStatuses();
   const days = parseInt(req.query.days) || 30; // ← mặc định 30 ngày cho trang danh sách
 
   const rows = db.prepare(`
@@ -402,14 +403,14 @@ export const getExpiringMembers = (req, res) => {
       'sap_het_han' AS trang_thai,
       (SELECT MAX(d_ngay) FROM (
          SELECT den_ngay as d_ngay FROM dang_ky_goi_tap
-         WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+         WHERE ho_so_id = h.id AND trang_thai IN ('dang_hoat_dong', 'het_han')
          UNION ALL
          SELECT den_ngay as d_ngay FROM dang_ky_pt
-         WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+         WHERE hoi_vien_id = h.id AND trang_thai IN ('dang_hoat_dong', 'het_han', 'hoan_thanh')
       )) AS ngay_het_han,
       (SELECT gt.ten_goi FROM dang_ky_goi_tap dk
        JOIN goi_tap gt ON gt.id = dk.goi_tap_id
-       WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong'
+       WHERE dk.ho_so_id = h.id AND dk.trang_thai IN ('dang_hoat_dong', 'het_han')
        ORDER BY dk.den_ngay DESC LIMIT 1) AS ten_goi_tap,
       EXISTS (SELECT 1 FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai IN ('cho_duyet', 'cho_kich_hoat')) AS co_yeu_cau_gia_han
     FROM ho_so h
@@ -433,20 +434,21 @@ export const getExpiringMembers = (req, res) => {
 // ── GET /api/members/expired ──────────────────────────────
 // 🔧 ĐÃ SỬA: query trực tiếp để trả về đủ fields FE cần
 export const getExpiredMembers = (req, res) => {
+  autoUpdateExpiredStatuses();
   const rows = db.prepare(`
     SELECT
       h.id, h.ma_ho_so, h.ho_ten, h.so_dien_thoai, h.email, h.avatar_url,
       'het_han' AS trang_thai,
       (SELECT MAX(d_ngay) FROM (
          SELECT den_ngay as d_ngay FROM dang_ky_goi_tap
-         WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+         WHERE ho_so_id = h.id AND trang_thai IN ('dang_hoat_dong', 'het_han')
          UNION ALL
          SELECT den_ngay as d_ngay FROM dang_ky_pt
-         WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+         WHERE hoi_vien_id = h.id AND trang_thai IN ('dang_hoat_dong', 'het_han', 'hoan_thanh')
       )) AS ngay_het_han,
       (SELECT gt.ten_goi FROM dang_ky_goi_tap dk
        JOIN goi_tap gt ON gt.id = dk.goi_tap_id
-       WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong'
+       WHERE dk.ho_so_id = h.id AND dk.trang_thai IN ('dang_hoat_dong', 'het_han')
        ORDER BY dk.den_ngay DESC LIMIT 1) AS ten_goi_tap,
       EXISTS (SELECT 1 FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai IN ('cho_duyet', 'cho_kich_hoat')) AS co_yeu_cau_gia_han
     FROM ho_so h

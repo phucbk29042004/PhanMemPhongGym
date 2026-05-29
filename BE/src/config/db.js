@@ -1498,9 +1498,58 @@ WHEN (SELECT MAX(d_ngay) FROM (
       `);
     })();
     console.log('[DB] ✅ Đã sửa xong các tham chiếu bị hỏng tới dang_ky_pt_old_v18.');
-  }
-} catch (err) {
-  console.error('[DB] ❌ Lỗi khi sửa tham chiếu v20:', err.message);
+// ── Cưỡng bức tạo lại View v_trang_thai_hoi_vien chính xác ──
+try {
+  db.exec(`DROP VIEW IF EXISTS v_trang_thai_hoi_vien;`);
+  db.exec(`
+    CREATE VIEW v_trang_thai_hoi_vien AS
+    SELECT
+        h.id,
+        h.ma_ho_so,
+        h.ho_ten,
+        h.so_dien_thoai,
+        h.email,
+        h.avatar_url,
+        h.is_deleted,
+        (SELECT MAX(d_ngay) FROM (
+           SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai IN ('dang_hoat_dong', 'het_han')
+           UNION ALL
+           SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai IN ('dang_hoat_dong', 'het_han', 'hoan_thanh')
+        )) AS den_ngay_xa_nhat,
+        CASE
+            WHEN EXISTS (SELECT 1 FROM dang_ky_goi_tap dk WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong')
+                 OR EXISTS (SELECT 1 FROM dang_ky_pt dp WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong')
+              THEN CASE
+                  WHEN (SELECT MAX(d_ngay) FROM (
+                          SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+                          UNION ALL
+                          SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+                       )) < date('now','localtime')
+                      THEN 'het_han'
+                  WHEN (SELECT MAX(d_ngay) FROM (
+                          SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+                          UNION ALL
+                          SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+                       )) <= date('now','localtime','+7 days')
+                      THEN 'sap_het_han'
+                  ELSE 'con_han'
+              END
+            WHEN EXISTS (SELECT 1 FROM dang_ky_goi_tap dk WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'het_han')
+                 OR EXISTS (SELECT 1 FROM dang_ky_pt dp WHERE dp.hoi_vien_id = h.id AND dp.trang_thai IN ('het_han', 'hoan_thanh'))
+              THEN 'het_han'
+            ELSE 'chua_dang_ky'
+        END AS trang_thai_mau,
+        (SELECT COUNT(*) FROM dang_ky_pt dp
+         WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS so_goi_pt_dang_tap,
+        (SELECT COUNT(*) FROM dang_ky_goi_tap dk
+         WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong') AS so_goi_tap_hien_tai
+    FROM ho_so h
+    WHERE h.loai_ho_so = 'hoi_vien'
+      AND h.is_deleted = 0;
+  `);
+  console.log('[DB] ✅ Khởi tạo/Cập nhật View v_trang_thai_hoi_vien thành công.');
+} catch (e) {
+  console.error('[DB] Lỗi khi tạo View v_trang_thai_hoi_vien:', e.message);
 }
 
 export default db;
