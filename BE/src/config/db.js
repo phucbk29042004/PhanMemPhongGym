@@ -397,53 +397,58 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_pttoi_pt ON pt_toi_nhat_ky(pt_id, ngay_tao);
 `);
 
+// Hàm helper tái tạo View v_trang_thai_hoi_vien để tránh code lặp lại và dễ sửa lỗi sau khi migrate
+function recreateMemberStatusView() {
+  db.exec(`DROP VIEW IF EXISTS v_trang_thai_hoi_vien;`);
+  db.exec(`
+    CREATE VIEW v_trang_thai_hoi_vien AS
+    SELECT
+        h.id,
+        h.ma_ho_so,
+        h.ho_ten,
+        h.so_dien_thoai,
+        h.email,
+        h.avatar_url,
+        h.is_deleted,
+        (SELECT MAX(d_ngay) FROM (
+           SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+           UNION ALL
+           SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+        )) AS den_ngay_xa_nhat,
+        CASE
+            WHEN NOT EXISTS (SELECT 1 FROM dang_ky_goi_tap dk WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong')
+                 AND NOT EXISTS (SELECT 1 FROM dang_ky_pt dp WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong')
+                THEN 'chua_dang_ky'
+            WHEN (SELECT MAX(d_ngay) FROM (
+                    SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+                    UNION ALL
+                    SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+                 )) < date('now','localtime')
+                THEN 'het_han'
+            WHEN (SELECT MAX(d_ngay) FROM (
+                    SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+                    UNION ALL
+                    SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+                 )) <= date('now','localtime','+7 days')
+                THEN 'sap_het_han'
+            ELSE 'con_han'
+        END AS trang_thai_mau,
+        (SELECT COUNT(*) FROM dang_ky_pt dp
+         WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS so_goi_pt_dang_tap,
+        (SELECT COUNT(*) FROM dang_ky_goi_tap dk
+         WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong') AS so_goi_tap_hien_tai
+    FROM ho_so h
+    WHERE h.loai_ho_so = 'hoi_vien'
+      AND h.is_deleted = 0;
+  `);
+}
+
 // ── Sửa lỗi View bị hỏng sau khi migrate (SQLite tự động đổi tên ref sang _old) ──
 const checkView = db.prepare("SELECT sql FROM sqlite_master WHERE type='view' AND name='v_trang_thai_hoi_vien'").get();
-if (checkView && checkView.sql.includes('dang_ky_goi_tap_old')) {
+if (checkView && checkView.sql.toLowerCase().includes('old')) {
   console.log('[DB] 🛠️ Phát hiện View v_trang_thai_hoi_vien bị hỏng (ref sang _old), đang tái tạo...');
   db.transaction(() => {
-    db.exec(`DROP VIEW IF EXISTS v_trang_thai_hoi_vien;`);
-    db.exec(`
-      CREATE VIEW v_trang_thai_hoi_vien AS
-      SELECT
-          h.id,
-          h.ma_ho_so,
-          h.ho_ten,
-          h.so_dien_thoai,
-          h.email,
-          h.avatar_url,
-          h.is_deleted,
-          (SELECT MAX(d_ngay) FROM (
-             SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
-             UNION ALL
-             SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
-          )) AS den_ngay_xa_nhat,
-          CASE
-              WHEN NOT EXISTS (SELECT 1 FROM dang_ky_goi_tap dk WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong')
-                   AND NOT EXISTS (SELECT 1 FROM dang_ky_pt dp WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong')
-                  THEN 'chua_dang_ky'
-              WHEN (SELECT MAX(d_ngay) FROM (
-                      SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
-                      UNION ALL
-                      SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
-                   )) < date('now','localtime')
-                  THEN 'het_han'
-              WHEN (SELECT MAX(d_ngay) FROM (
-                      SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
-                      UNION ALL
-                      SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
-                   )) <= date('now','localtime','+7 days')
-                  THEN 'sap_het_han'
-              ELSE 'con_han'
-          END AS trang_thai_mau,
-          (SELECT COUNT(*) FROM dang_ky_pt dp
-           WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS so_goi_pt_dang_tap,
-          (SELECT COUNT(*) FROM dang_ky_goi_tap dk
-           WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong') AS so_goi_tap_hien_tai
-      FROM ho_so h
-      WHERE h.loai_ho_so = 'hoi_vien'
-        AND h.is_deleted = 0;
-    `);
+    recreateMemberStatusView();
   })();
   console.log('[DB] ✅ Tái tạo View v_trang_thai_hoi_vien thành công.');
 }
@@ -973,6 +978,9 @@ if (schemaGoiTap && schemaGoiTap.sql && !schemaGoiTap.sql.includes('cho_kich_hoa
     // 4. Xóa bảng backup
     db.exec(`DROP TABLE dang_ky_goi_tap_old_v17;`);
 
+    // Tái tạo view trạng thái hội viên ngay lập tức để tránh tham chiếu bảng cũ bị drop
+    recreateMemberStatusView();
+
     // 5. Tái tạo các Triggers cho dang_ky_goi_tap
     db.exec(`DROP TRIGGER IF EXISTS trg_doanh_thu_goi_tap;`);
     db.exec(`
@@ -1065,6 +1073,11 @@ try {
   if (schemaPt && schemaPt.sql && !schemaPt.sql.includes('cho_kich_hoat')) {
     console.log('[DB] Bảng dang_ky_pt thiếu trạng thái cho_kich_hoat, tiến hành tái cấu trúc...');
     
+    // Lấy danh sách cột thực tế của bảng dang_ky_pt hiện tại
+    const existingCols = db.prepare(`PRAGMA table_info(dang_ky_pt)`).all().map(c => c.name);
+    const hasSoTienHoan = existingCols.includes('so_tien_hoan');
+    const hasLyDoHuy = existingCols.includes('ly_do_huy');
+    
     // Tạm thời drop các trigger liên quan để tránh báo lỗi phụ thuộc khi rename bảng
     try { db.exec(`DROP TRIGGER IF EXISTS trg_doanh_thu_goi_pt;`); } catch (_) {}
     try { db.exec(`DROP TRIGGER IF EXISTS trg_doanh_thu_goi_pt_update;`); } catch (_) {}
@@ -1098,29 +1111,43 @@ try {
           nguoi_tao_id    INTEGER REFERENCES tai_khoan(id),
           nguoi_cap_nhat_id INTEGER REFERENCES tai_khoan(id),
           ngay_tao        DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
-          ngay_cap_nhat   DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
+          ngay_cap_nhat   DATETIME NOT NULL DEFAULT (datetime('now','localtime'))
+          ${hasSoTienHoan ? ', so_tien_hoan REAL DEFAULT 0' : ''}
+          ${hasLyDoHuy ? ', ly_do_huy TEXT' : ''},
           CHECK (hoi_vien_id != pt_id)
         );
       `);
 
+      // Xây dựng danh sách cột để INSERT và SELECT động dựa trên các cột đã có của dang_ky_pt_old_v18
+      const insertFields = [
+        'id', 'hoi_vien_id', 'pt_id', 'goi_pt_id', 'so_buoi_dang_ky', 'so_buoi_da_tap',
+        'tu_ngay', 'den_ngay', 'gia_thuc_te', 'ghi_chu_gia', 'trang_thai', 'phuong_thuc_tt',
+        'nguoi_thu_id', 'ma_giao_dich', 'ghi_chu_tt', 'ngay_thanh_toan', 'nguoi_tao_id',
+        'nguoi_cap_nhat_id', 'ngay_tao', 'ngay_cap_nhat'
+      ];
+      if (hasSoTienHoan) insertFields.push('so_tien_hoan');
+      if (hasLyDoHuy) insertFields.push('ly_do_huy');
+
+      const selectFields = insertFields.map(field => {
+        if (existingCols.includes(field)) {
+          return field;
+        } else {
+          return `NULL AS ${field}`;
+        }
+      });
+
       // 3. Copy dữ liệu từ bảng cũ sang bảng mới
       db.exec(`
-        INSERT INTO dang_ky_pt (
-          id, hoi_vien_id, pt_id, goi_pt_id, so_buoi_dang_ky, so_buoi_da_tap,
-          tu_ngay, den_ngay, gia_thuc_te, ghi_chu_gia, trang_thai, phuong_thuc_tt,
-          nguoi_thu_id, ma_giao_dich, ghi_chu_tt, ngay_thanh_toan, nguoi_tao_id,
-          nguoi_cap_nhat_id, ngay_tao, ngay_cap_nhat
-        )
-        SELECT 
-          id, hoi_vien_id, pt_id, goi_pt_id, so_buoi_dang_ky, so_buoi_da_tap,
-          tu_ngay, den_ngay, gia_thuc_te, ghi_chu_gia, trang_thai, phuong_thuc_tt,
-          nguoi_thu_id, ma_giao_dich, ghi_chu_tt, ngay_thanh_toan, nguoi_tao_id,
-          nguoi_cap_nhat_id, ngay_tao, ngay_cap_nhat
+        INSERT INTO dang_ky_pt (${insertFields.join(', ')})
+        SELECT ${selectFields.join(', ')}
         FROM dang_ky_pt_old_v18;
       `);
 
       // 4. Xóa bảng backup
       db.exec(`DROP TABLE dang_ky_pt_old_v18;`);
+
+      // Tái tạo view trạng thái hội viên ngay lập tức để tránh tham chiếu bảng cũ bị drop
+      recreateMemberStatusView();
     })();
     console.log('[DB] ✅ Tái cấu trúc bảng dang_ky_pt thành công.');
   }
