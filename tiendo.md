@@ -8,11 +8,27 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
-**✅ Redesign toàn diện Member Portal & PT Portal theo quy chuẩn Supabaze** — Tối ưu hóa phông chữ Inter, bảng màu nhấn Emerald (#3ecf8e) & Ink (#171717), cấu trúc bo góc 6px/12px, tinh gọn sidebar nav active, và tối giản hóa SVG logos cho 2 cổng.
+**✅ Sửa lỗi ReferenceError, Khóa tiền hoàn hủy gói & Đồng bộ Trạng thái giao dịch di động** — Thực hiện Migration v19 bổ sung cột `so_tien_hoan`/`ly_do_huy` cho `dang_ky_pt`, nâng cấp logic hủy gói Gym/PT tại backend để khóa tiền hoàn khớp với giá thực tế của gói tập, đồng bộ hiển thị Badge trạng thái và chênh lệch dòng tiền (+/-) trong doanh thu di động giống như bản Web.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
+
+### 29/05/2026 10:15 — Sửa lỗi ReferenceError, Khóa tiền hoàn hủy gói & Đồng bộ Trạng thái giao dịch di động
+- **Loại**: Sửa bug, Thêm tính năng mới, Nghiệp vụ, Database Migration (Fullstack)
+- **File/Thành phần liên quan**:
+  - `BE/src/config/db.js` (Migration v19 & Trigger update)
+  - `BE/src/controllers/revenue.controller.js` (Query giao dịch PT)
+  - `BE/src/controllers/pt-registrations.controller.js` (API hủy PT)
+  - `BE/src/controllers/members.controller.js` (API hủy Gym)
+  - `MobileApp/src/screens/admin/AdminMemberDetailScreen.js` (Giao diện hủy gói)
+  - `MobileApp/src/screens/admin/AdminDashboardScreen.js` (Badge trạng thái & dòng tiền)
+  - `MobileApp/src/screens/admin/AdminRevenueScreen.js` (Badge trạng thái & dòng tiền)
+- **Mô tả**:
+  - **ReferenceError**: Đã sửa triệt để lỗi thiếu import bằng cách đảm bảo import React và hook useEffect đồng bộ ở các trang.
+  - **Ràng buộc tiền hoàn**: Thực hiện Migration v19 bổ sung cột `so_tien_hoan` và `ly_do_huy` vào bảng `dang_ky_pt`. Cập nhật trigger doanh thu PT để trừ tiền đúng theo số tiền hoàn thực tế. Cập nhật backend API hủy gói Gym và gói PT để bắt buộc tiền hoàn khớp 100% với giá thực tế của gói tập đang hoạt động. Cập nhật giao diện di động khóa trường nhập tiền hoàn trả (editable={false}) và tự động điền giá trị gói khi hủy.
+  - **Trạng thái giao dịch di động**: Đồng bộ logic phân loại giao dịch (Đăng ký mới, Đổi gói, Hủy gói, Tạm dừng, Hết hạn) kèm chênh lệch dòng tiền (+/-) và hiển thị Badge màu tương ứng lên cả modal Dashboard và trang Doanh thu hôm nay/hôm qua di động giống hệt bản Web.
+- **Kết quả**: Thành công 100%.
 
 ### 28/05/2026 09:00 — Redesign toàn diện Member Portal & PT Portal theo quy chuẩn Supabaze
 - **Loại**: Redesign giao diện, Cải tiến UI/UX (Frontend)
@@ -1000,4 +1016,16 @@
     - **Icon PT & Phân trang**: Thay đổi icon tab PT thành biểu tượng quả tạ `Dumbbell` thay vì biểu đồ cột. Tích hợp phân trang client-side 10 dòng/trang cho 5 màn hình danh sách Admin di động.
   - **Giao diện Web**: Hiển thị các gói gia hạn mới (`cho_kich_hoat`) trong danh sách giao dịch hôm nay của trang quản lý doanh thu.
 - **Kết quả**: ✅ Hoàn thành 100% yêu cầu nghiệp vụ và tối ưu hóa trải nghiệm người dùng.
+
+### 29/05/2026 09:40 — Sửa lỗi CHECK constraint đăng ký PT và điều chỉnh thứ tự/hiển thị tin nhắn PT & Tôi
+- **Loại**: Cải tiến giao diện di động, Sửa bug hệ thống (Fullstack)
+- **File/Thành phần liên quan**:
+  - [db.js](file:///d:/UI%20GYM/BE/src/config/db.js) (Database Migration & Constraints)
+  - [PTMeScreen.js](file:///d:/UI%20GYM/MobileApp/src/screens/shared/PTMeScreen.js) (Giao diện di động PT & Tôi)
+- **Mô tả**:
+  - **Sửa lỗi CHECK constraint**: Cập nhật lại khối Migration v18 trong `db.js` để cưỡng bức tái cấu trúc bảng `dang_ky_pt` khi boot up (bỏ qua điều kiện sql.includes vì có thể schema trong sqlite_master chưa được đồng bộ từ nodemon), đảm bảo trạng thái `cho_kich_hoat` được SQLite chấp nhận hợp lệ khi đăng ký nối tiếp gói PT.
+  - **Sắp xếp & Hiển thị tin nhắn**:
+    - Sắp xếp các tin nhắn của mục "PT & Tôi" theo thứ tự tin nhắn mới nhất hiển thị lên đầu (sắp xếp giảm dần theo thời gian tạo).
+    - Hiển thị ngày đầy đủ và giờ cho mỗi tin nhắn (ví dụ: `08:30 29/05/2026`) thay vì chỉ hiển thị giờ như trước đây.
+- **Kết quả**: ✅ Khắc phục hoàn toàn lỗi crash khi đăng ký nối tiếp PT và cải thiện trải nghiệm chat.
 

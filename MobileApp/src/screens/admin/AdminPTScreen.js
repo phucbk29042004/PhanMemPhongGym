@@ -12,6 +12,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function formatDateTime(val) {
   if (!val) return '—';
@@ -153,6 +154,7 @@ const ptCard = StyleSheet.create({
 export default function AdminPTScreen({ navigation, route }) {
   const { colors } = useTheme();
   const { role } = useAuthStore();
+  const insets = useSafeAreaInsets();
   const [trainers, setTrainers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -288,7 +290,7 @@ export default function AdminPTScreen({ navigation, route }) {
       <StatusBar barStyle={colors.statusBar} backgroundColor={colors.statusBarBg} />
 
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.primaryDark }]}>
+      <View style={[styles.header, { backgroundColor: colors.primaryDark, paddingTop: insets.top + 16 }]}>
         <View>
           <Text style={styles.headerTitle}>Huấn luyện viên</Text>
           <Text style={styles.headerSub}>{trainers.length} PT · {totalToday} lịch hôm nay · {doneToday} đã tập</Text>

@@ -90,7 +90,7 @@ export default function AdminExpiredMembersScreen({ navigation, route }) {
       : `Xin chào ${item.ho_ten}, gói tập Gym của bạn sắp hết hạn. Hãy gia hạn để không bị gián đoạn lịch tập!`;
 
     try {
-      const res = await api.post(`/members/${item.id}/notify`, { title, body });
+      const res = await api.post(`/members/${item.id}/notify`, { tieu_de: title, noi_dung: body });
       if (res.data?.success) {
         Alert.alert('Thành công', `Đã gửi thông báo nhắc gia hạn đến hội viên ${item.ho_ten}.`);
       } else {

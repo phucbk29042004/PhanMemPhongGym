@@ -18,6 +18,7 @@ import {
   Calendar,
   DollarSign,
   TrendingUp,
+  TrendingDown,
   Package,
   Activity,
   Award,
@@ -41,6 +42,70 @@ const { width: screenWidth } = Dimensions.get('window');
 function formatPrice(val) {
   if (val == null) return '0đ';
   return Number(val).toLocaleString('vi-VN') + 'đ';
+}
+
+function getTransactionStatusAndDiff(item) {
+  let statusText = 'Đăng ký mới';
+  let statusColor = '#10b981'; // Green
+  let statusBg = 'rgba(16, 185, 129, 0.1)';
+  let diffText = `+${formatPrice(item.gia_thuc_te)}`;
+  let diffColor = '#10b981';
+
+  if (item.trang_thai === 'huy') {
+    const isSwitch = (item.ly_do_huy || '').includes('Đổi sang');
+    if (isSwitch) {
+      statusText = 'Đổi gói';
+      statusColor = '#d97706'; // Orange
+      statusBg = 'rgba(217, 119, 6, 0.1)';
+      const refundAmount = item.so_tien_hoan || 0;
+      diffText = `-${formatPrice(refundAmount)}`;
+      diffColor = '#ef4444';
+    } else {
+      statusText = 'Hủy gói';
+      statusColor = '#ef4444'; // Red
+      statusBg = 'rgba(239, 68, 68, 0.1)';
+      const refundAmount = item.so_tien_hoan || item.gia_thuc_te || 0;
+      diffText = `-${formatPrice(refundAmount)}`;
+      diffColor = '#ef4444';
+    }
+  } else {
+    const isSwitch = (item.ghi_chu_tt || '').includes('Đổi từ');
+    if (isSwitch) {
+      statusText = 'Đổi gói';
+      statusColor = '#d97706'; // Orange
+      statusBg = 'rgba(217, 119, 6, 0.1)';
+      const matchHoanTien = (item.ghi_chu_tt || '').match(/Hoàn tiền:\s*([0-9.]+)/);
+      const hoanTien = matchHoanTien ? parseFloat(matchHoanTien[1]) : 0;
+      const diff = item.gia_thuc_te - hoanTien;
+      if (diff >= 0) {
+        diffText = `+${formatPrice(diff)}`;
+        diffColor = '#10b981';
+      } else {
+        diffText = `-${formatPrice(Math.abs(diff))}`;
+        diffColor = '#ef4444';
+      }
+    } else if (item.trang_thai === 'tam_dung') {
+      statusText = 'Tạm dừng';
+      statusColor = '#6b7280'; // Gray
+      statusBg = 'rgba(107, 114, 128, 0.1)';
+      diffText = '—';
+      diffColor = '#6b7280';
+    } else if (item.trang_thai === 'het_han') {
+      statusText = 'Hết hạn';
+      statusColor = '#6b7280'; // Gray
+      statusBg = 'rgba(107, 114, 128, 0.1)';
+      diffText = '—';
+      diffColor = '#6b7280';
+    } else {
+      statusText = 'Đăng ký mới';
+      statusColor = '#10b981'; // Green
+      statusBg = 'rgba(16, 185, 129, 0.1)';
+      diffText = `+${formatPrice(item.gia_thuc_te)}`;
+      diffColor = '#10b981';
+    }
+  }
+
+  return { statusText, statusColor, statusBg, diffText, diffColor };
 }
 
 function formatDate(dateStr) {
@@ -108,13 +173,16 @@ export default function AdminRevenueScreen({ navigation }) {
     let ptRev = 0;
     let subVal = '';
     let subLabel = '';
+    let isUp = true;
+    let hasTrend = false;
 
     if (data.type === 'today' || data.type === 'yesterday') {
       total = data.tong_tien || 0;
       gymRev = data.tien_goi_tap || 0;
       ptRev = data.tien_goi_pt || 0;
       const diff = total - (data.hom_qua || 0);
-      const isUp = diff >= 0;
+      isUp = diff >= 0;
+      hasTrend = true;
       subVal = formatPrice(Math.abs(diff));
       subLabel = data.type === 'today'
         ? (isUp ? 'tăng so với hôm qua' : 'giảm so với hôm qua')
@@ -126,6 +194,9 @@ export default function AdminRevenueScreen({ navigation }) {
       subVal = formatPrice(data.summary?.trung_binh_ngay || 0);
       subLabel = 'trung bình mỗi ngày';
     }
+
+    const TrendIcon = hasTrend ? (isUp ? TrendingUp : TrendingDown) : TrendingUp;
+    const trendColor = hasTrend ? (isUp ? '#10b981' : '#ef4444') : colors.primary;
 
     return (
       <View style={styles.statsGrid}>
@@ -141,8 +212,8 @@ export default function AdminRevenueScreen({ navigation }) {
           </View>
           <Text style={[styles.statValue, { color: colors.text }]}>{formatPrice(total)}</Text>
           <View style={styles.statFooter}>
-            <TrendingUp size={12} color={colors.primary} style={{ marginRight: 4 }} />
-            <Text style={[styles.statSubText, { color: colors.primary }]}>{subVal} </Text>
+            <TrendIcon size={12} color={trendColor} style={{ marginRight: 4 }} />
+            <Text style={[styles.statSubText, { color: trendColor }]}>{subVal} </Text>
             <Text style={[styles.statSubLabel, { color: colors.textMuted }]}>{subLabel}</Text>
           </View>
         </View>
@@ -333,44 +404,67 @@ export default function AdminRevenueScreen({ navigation }) {
             </View>
           ) : (
             <View style={[styles.listCard, { backgroundColor: colors.surface }]}>
-              {txs.map((item, idx) => (
-                <View
-                  key={idx}
-                  style={[
-                    styles.txRow,
-                    { borderBottomColor: idx < txs.length - 1 ? colors.border : 'transparent' },
-                  ]}
-                >
-                  <View style={styles.txLeft}>
-                    <Text style={[styles.txTitle, { color: colors.text }]} numberOfLines={1}>
-                      {item.khach_hang}
-                    </Text>
-                    <Text style={[styles.txSubtitle, { color: colors.textSecondary }]}>
-                      {item.san_pham} •{' '}
-                      <Text
-                        style={{
-                          fontWeight: '700',
-                          color: item.loai === 'goi_tap' ? colors.primary : '#8b5cf6',
-                        }}
-                      >
-                        {item.loai === 'goi_tap' ? 'Gym' : 'PT'}
+              {txs.map((item, idx) => {
+                const txInfo = getTransactionStatusAndDiff(item);
+                const isGym = item.loai === 'goi_tap';
+                const typeColor = isGym ? colors.primary : '#8b5cf6';
+                const typeBg   = isGym ? colors.primaryLight : 'rgba(139,92,246,0.12)';
+                return (
+                  <View
+                    key={idx}
+                    style={[
+                      styles.txCard,
+                      {
+                        borderBottomColor: idx < txs.length - 1 ? colors.border : 'transparent',
+                      },
+                    ]}
+                  >
+                    {/* Hàng 1: Tên khách hàng + Badge loại */}
+                    <View style={styles.txRowLine}>
+                      <Text style={[styles.txTitle, { color: colors.text, flex: 1, marginRight: 8 }]} numberOfLines={1}>
+                        {item.khach_hang}
                       </Text>
-                    </Text>
+                      <View style={[styles.typeBadge, { backgroundColor: typeBg }]}>
+                        <Text style={[styles.typeBadgeText, { color: typeColor }]}>
+                          {isGym ? 'GYM' : 'PT'}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Hàng 2: Tên sản phẩm + Giờ giao dịch */}
+                    <View style={[styles.txRowLine, { marginTop: 4 }]}>
+                      <Text style={[styles.txSubtitle, { color: colors.textSecondary, flex: 1 }]} numberOfLines={1}>
+                        {item.san_pham}
+                      </Text>
+                      <Text style={[styles.txTime, { color: colors.textMuted }]}>
+                        {new Date(item.thoi_gian).toLocaleTimeString('vi-VN', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </Text>
+                    </View>
+
+                    {/* Hàng 3: Trạng thái + Số tiền + Chênh lệch */}
+                    <View style={[styles.txRowLine, { marginTop: 8 }]}>
+                      <View style={[styles.statusBadge, { backgroundColor: txInfo.statusBg }]}>
+                        <Text style={[styles.statusBadgeText, { color: txInfo.statusColor }]}>
+                          {txInfo.statusText}
+                        </Text>
+                      </View>
+                      <View style={{ alignItems: 'flex-end' }}>
+                        <Text style={[styles.txAmount, { color: colors.primary }]}>
+                          {formatPrice(item.gia_thuc_te)}
+                        </Text>
+                        <Text style={[styles.txDiff, { color: txInfo.diffColor }]}>
+                          {txInfo.diffText}
+                        </Text>
+                      </View>
+                    </View>
                   </View>
-                  <View style={styles.txRight}>
-                    <Text style={[styles.txAmount, { color: colors.primary }]}>
-                      {formatPrice(item.gia_thuc_te)}
-                    </Text>
-                    <Text style={[styles.txTime, { color: colors.textMuted }]}>
-                      {new Date(item.thoi_gian).toLocaleTimeString('vi-VN', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </Text>
-                  </View>
-                </View>
-              ))}
+                );
+              })}
             </View>
+
           )}
         </View>
       );
@@ -624,6 +718,52 @@ const styles = StyleSheet.create({
     elevation: 2,
     marginBottom: 16,
   },
+
+  /* Transaction card (replaces txRow) */
+  txCard: {
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    width: '100%',
+  },
+  txRowLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  txTitle: { fontSize: 14, fontWeight: '700', textAlign: 'left' },
+  txSubtitle: { fontSize: 12, marginTop: 2, textAlign: 'left' },
+  txAmount: { fontSize: 14, fontWeight: '800', textAlign: 'right' },
+  txTime: { fontSize: 11, marginTop: 2, textAlign: 'right' },
+  txDiff: { fontSize: 11, fontWeight: '700', marginTop: 2, textAlign: 'right' },
+
+  typeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  typeBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    textAlign: 'center',
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+
+  /* Package stats row (period view) */
   txRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -632,9 +772,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   txLeft: { flex: 1, marginRight: 16 },
-  txTitle: { fontSize: 14, fontWeight: '700' },
-  txSubtitle: { fontSize: 12, marginTop: 2 },
   txRight: { alignItems: 'flex-end' },
-  txAmount: { fontSize: 14, fontWeight: '800' },
-  txTime: { fontSize: 11, marginTop: 2 },
 });
+

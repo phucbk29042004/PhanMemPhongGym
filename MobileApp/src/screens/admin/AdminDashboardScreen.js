@@ -28,6 +28,70 @@ function formatDate(val) {
   return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
 }
 
+function getTransactionStatusAndDiff(item) {
+  let statusText = 'Đăng ký mới';
+  let statusColor = '#10b981'; // Green
+  let statusBg = 'rgba(16, 185, 129, 0.1)';
+  let diffText = `+${formatPrice(item.gia_thuc_te)}`;
+  let diffColor = '#10b981';
+
+  if (item.trang_thai === 'huy') {
+    const isSwitch = (item.ly_do_huy || '').includes('Đổi sang');
+    if (isSwitch) {
+      statusText = 'Đổi gói';
+      statusColor = '#d97706'; // Orange
+      statusBg = 'rgba(217, 119, 6, 0.1)';
+      const refundAmount = item.so_tien_hoan || 0;
+      diffText = `-${formatPrice(refundAmount)}`;
+      diffColor = '#ef4444';
+    } else {
+      statusText = 'Hủy gói';
+      statusColor = '#ef4444'; // Red
+      statusBg = 'rgba(239, 68, 68, 0.1)';
+      const refundAmount = item.so_tien_hoan || item.gia_thuc_te || 0;
+      diffText = `-${formatPrice(refundAmount)}`;
+      diffColor = '#ef4444';
+    }
+  } else {
+    const isSwitch = (item.ghi_chu_tt || '').includes('Đổi từ');
+    if (isSwitch) {
+      statusText = 'Đổi gói';
+      statusColor = '#d97706'; // Orange
+      statusBg = 'rgba(217, 119, 6, 0.1)';
+      const matchHoanTien = (item.ghi_chu_tt || '').match(/Hoàn tiền:\s*([0-9.]+)/);
+      const hoanTien = matchHoanTien ? parseFloat(matchHoanTien[1]) : 0;
+      const diff = item.gia_thuc_te - hoanTien;
+      if (diff >= 0) {
+        diffText = `+${formatPrice(diff)}`;
+        diffColor = '#10b981';
+      } else {
+        diffText = `-${formatPrice(Math.abs(diff))}`;
+        diffColor = '#ef4444';
+      }
+    } else if (item.trang_thai === 'tam_dung') {
+      statusText = 'Tạm dừng';
+      statusColor = '#6b7280'; // Gray
+      statusBg = 'rgba(107, 114, 128, 0.1)';
+      diffText = '—';
+      diffColor = '#6b7280';
+    } else if (item.trang_thai === 'het_han') {
+      statusText = 'Hết hạn';
+      statusColor = '#6b7280'; // Gray
+      statusBg = 'rgba(107, 114, 128, 0.1)';
+      diffText = '—';
+      diffColor = '#6b7280';
+    } else {
+      statusText = 'Đăng ký mới';
+      statusColor = '#10b981'; // Green
+      statusBg = 'rgba(16, 185, 129, 0.1)';
+      diffText = `+${formatPrice(item.gia_thuc_te)}`;
+      diffColor = '#10b981';
+    }
+  }
+
+  return { statusText, statusColor, statusBg, diffText, diffColor };
+}
+
 // ── KPI Card ──────────────────────────────────────────────
 function KpiCard({ icon: Icon, iconBg, iconColor, label, value, sub, subColor, colors, onPress }) {
   const Container = onPress ? TouchableOpacity : View;
@@ -497,22 +561,52 @@ export default function AdminDashboardScreen({ navigation }) {
                   data={todayRevenue.giao_dich.slice((txPage - 1) * PAGE_SIZE, txPage * PAGE_SIZE)}
                   keyExtractor={(item, idx) => String(idx)}
                   contentContainerStyle={modalStyles.list}
-                  renderItem={({ item }) => (
-                    <View style={modalStyles.row}>
-                      <View style={modalStyles.rowHeader}>
-                        <Text style={[modalStyles.rowTitle, { color: colors.text }]}>{item.khach_hang}</Text>
-                        <Text style={[modalStyles.rowTitle, { color: colors.primary }]}>{formatPrice(item.gia_thuc_te)}</Text>
+                  renderItem={({ item }) => {
+                    const txInfo = getTransactionStatusAndDiff(item);
+                    const isGym = item.loai === 'goi_tap';
+                    const typeColor = isGym ? colors.primary : '#8b5cf6';
+                    const typeBg = isGym ? colors.primaryLight : 'rgba(139,92,246,0.12)';
+                    return (
+                      <View style={[modalStyles.txCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                        {/* Row 1: Tên KH + Loại */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, width: '100%' }}>
+                          <Text style={[modalStyles.rowTitle, { color: colors.text, flex: 1, marginRight: 8 }]} numberOfLines={1}>
+                            {item.khach_hang}
+                          </Text>
+                          <View style={[modalStyles.typeBadge, { backgroundColor: typeBg }]}>
+                            <Text style={[modalStyles.typeBadgeText, { color: typeColor }]}>
+                              {isGym ? 'GYM' : 'PT'}
+                            </Text>
+                          </View>
+                        </View>
+                        {/* Row 2: Sản phẩm + Giờ */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, width: '100%' }}>
+                          <Text style={[modalStyles.rowText, { color: colors.textSecondary, flex: 1 }]} numberOfLines={1}>
+                            {item.san_pham}
+                          </Text>
+                          <Text style={[modalStyles.rowText, { color: colors.textMuted }]}>
+                            {new Date(item.thoi_gian).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                          </Text>
+                        </View>
+                        {/* Row 3: Trạng thái + Tiền + Chênh lệch */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                          <View style={[modalStyles.badge, { backgroundColor: txInfo.statusBg }]}>
+                            <Text style={[modalStyles.badgeText, { color: txInfo.statusColor }]}>
+                              {txInfo.statusText}
+                            </Text>
+                          </View>
+                          <View style={{ alignItems: 'flex-end' }}>
+                            <Text style={[modalStyles.rowTitle, { color: colors.primary, fontSize: 13 }]}>
+                              {formatPrice(item.gia_thuc_te)}
+                            </Text>
+                            <Text style={[{ fontSize: 11, fontWeight: '700', color: txInfo.diffColor, textAlign: 'right' }]}>
+                              {txInfo.diffText}
+                            </Text>
+                          </View>
+                        </View>
                       </View>
-                      <View style={modalStyles.rowHeader}>
-                        <Text style={[modalStyles.rowText, { color: colors.textSecondary }]}>
-                          {item.san_pham} • <Text style={{ fontWeight: '700', color: item.loai === 'goi_tap' ? colors.primary : '#8b5cf6' }}>{item.loai === 'goi_tap' ? 'Gym' : 'PT'}</Text>
-                        </Text>
-                        <Text style={[modalStyles.rowText, { color: colors.textMuted }]}>
-                          {new Date(item.thoi_gian).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                        </Text>
-                      </View>
-                    </View>
-                  )}
+                    );
+                  }}
                 />
                 <Pagination 
                   currentPage={txPage} 
@@ -710,6 +804,30 @@ const modalStyles = StyleSheet.create({
   },
   list: {
     paddingBottom: 20,
+    gap: 10,
+  },
+  txCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.02,
+    shadowRadius: 4,
+    elevation: 1,
+    width: '100%',
+  },
+  typeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  typeBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    textAlign: 'center',
   },
   row: {
     paddingVertical: 12,
@@ -725,18 +843,23 @@ const modalStyles = StyleSheet.create({
   rowTitle: {
     fontSize: 14,
     fontWeight: '700',
+    textAlign: 'left',
   },
   rowText: {
     fontSize: 12,
+    textAlign: 'left',
   },
   badge: {
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   badgeText: {
     fontSize: 9,
     fontWeight: '800',
+    textAlign: 'center',
   },
   notifItem: {
     padding: 12,

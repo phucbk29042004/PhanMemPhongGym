@@ -233,7 +233,7 @@ export const updateRegistration = (req, res) => {
 // Hủy đăng ký PT
 export const cancelRegistration = (req, res) => {
   const { id } = req.params;
-  const { ly_do } = req.body;
+  const { ly_do, ly_do_huy, so_tien_hoan } = req.body;
 
   const reg = db.prepare(`
     SELECT dp.*, hv.ho_ten AS ten_hv, pt.ho_ten AS ten_pt
@@ -246,9 +246,24 @@ export const cancelRegistration = (req, res) => {
   if (!reg) return error(res, 'Không tìm thấy đăng ký PT.', 404);
   if (reg.trang_thai === 'huy') return error(res, 'Đăng ký đã bị hủy rồi.', 400);
 
+  const lyDoText = ly_do_huy || ly_do || 'Hủy gói PT bởi Admin';
+  const refundAmount = Number(so_tien_hoan);
+
+  if (so_tien_hoan === undefined || so_tien_hoan === null || isNaN(refundAmount) || refundAmount !== reg.gia_thuc_te) {
+    return error(res, `Số tiền hoàn trả phải bằng đúng giá thực tế của gói PT (${reg.gia_thuc_te.toLocaleString('vi-VN')}đ).`, 400);
+  }
+
+  const oldData = { ...reg };
+
   db.prepare(`
-    UPDATE dang_ky_pt SET trang_thai = 'huy', ghi_chu_tt = COALESCE(?, ghi_chu_tt) WHERE id = ?
-  `).run(ly_do ? `[HỦY] ${ly_do}` : null, id);
+    UPDATE dang_ky_pt 
+    SET trang_thai = 'huy', 
+        ly_do_huy = ?, 
+        so_tien_hoan = ?, 
+        ngay_cap_nhat = datetime('now','localtime'),
+        nguoi_cap_nhat_id = ? 
+    WHERE id = ?
+  `).run(lyDoText, refundAmount, req.user?.id || null, id);
 
   // Hủy luôn tất cả buổi tập chưa tập
   db.prepare(`
@@ -260,7 +275,7 @@ export const cancelRegistration = (req, res) => {
   createUserNotification(
     reg.hoi_vien_id,
     'Hợp đồng PT bị hủy ❌',
-    `Hợp đồng tập luyện với PT ${reg.ten_pt} đã bị hủy. Lý do: ${ly_do || 'Không có lý do cụ thể'}.`,
+    `Hợp đồng tập luyện với PT ${reg.ten_pt} đã bị hủy. Lý do: ${lyDoText}. Hoàn trả: ${refundAmount.toLocaleString('vi-VN')}đ.`,
     'huy_goi_pt'
   );
 
@@ -268,11 +283,12 @@ export const cancelRegistration = (req, res) => {
   createUserNotification(
     reg.pt_id,
     'Học viên hủy hợp đồng ❌',
-    `Học viên ${reg.ten_hv} đã hủy hợp đồng tập luyện với bạn. Lý do: ${ly_do || 'Không có lý do cụ thể'}.`,
+    `Học viên ${reg.ten_hv} đã hủy hợp đồng tập luyện với bạn. Lý do: ${lyDoText}.`,
     'huy_goi_pt'
   );
 
-  ghi_audit_log(req, 'UPDATE', 'dang_ky_pt', parseInt(id), { trang_thai: reg.trang_thai },
-    { trang_thai: 'huy', ly_do }, 'Hủy đăng ký PT');
+  ghi_audit_log(req, 'UPDATE', 'dang_ky_pt', parseInt(id), oldData,
+    { trang_thai: 'huy', ly_do_huy: lyDoText, so_tien_hoan: refundAmount }, 'Hủy đăng ký PT');
   return success(res, null, 'Đã hủy đăng ký PT');
 };
+

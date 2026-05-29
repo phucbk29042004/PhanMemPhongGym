@@ -136,12 +136,12 @@ export const getRevenue = (req, res) => {
   const goiPTTransactions = db.prepare(`
     SELECT dp.id, dp.ngay_tao AS thoi_gian, 'goi_pt' AS loai,
            gp.ten_goi AS san_pham, h.ho_ten AS khach_hang, dp.gia_thuc_te, dp.phuong_thuc_tt, dp.trang_thai,
-           NULL AS ly_do_huy, 0 AS so_tien_hoan, dp.ghi_chu_tt
+           dp.ly_do_huy, dp.so_tien_hoan, dp.ghi_chu_tt
     FROM dang_ky_pt dp
     JOIN goi_pt gp ON gp.id = dp.goi_pt_id
     JOIN ho_so h ON h.id = dp.hoi_vien_id
     WHERE COALESCE(date(dp.ngay_thanh_toan), date(dp.ngay_tao)) >= date('now','localtime','-' || ? || ' days')
-      AND dp.trang_thai IN ('dang_hoat_dong', 'hoan_thanh', 'cho_kich_hoat')
+      AND dp.trang_thai IN ('dang_hoat_dong', 'hoan_thanh', 'cho_kich_hoat', 'huy')
     ORDER BY dp.ngay_tao DESC
   `).all(daysInt);
 
@@ -178,12 +178,12 @@ export const getRevenueToday = (req, res) => {
   const goiPTToday = db.prepare(`
     SELECT dp.id, dp.ngay_tao AS thoi_gian, 'goi_pt' AS loai,
            gp.ten_goi AS san_pham, h.ho_ten AS khach_hang, dp.gia_thuc_te, dp.phuong_thuc_tt, dp.trang_thai,
-           NULL AS ly_do_huy, 0 AS so_tien_hoan, dp.ghi_chu_tt
+           dp.ly_do_huy, dp.so_tien_hoan, dp.ghi_chu_tt
     FROM dang_ky_pt dp
     JOIN goi_pt gp ON gp.id = dp.goi_pt_id
     JOIN ho_so h ON h.id = dp.hoi_vien_id
     WHERE COALESCE(date(dp.ngay_thanh_toan), date(dp.ngay_tao)) = ?
-      AND dp.trang_thai IN ('dang_hoat_dong', 'hoan_thanh', 'cho_kich_hoat')
+      AND dp.trang_thai IN ('dang_hoat_dong', 'hoan_thanh', 'cho_kich_hoat', 'huy')
     ORDER BY dp.ngay_tao DESC
   `).all(today);
 
@@ -238,12 +238,12 @@ export const getRevenueYesterday = (req, res) => {
   const goiPTYesterday = db.prepare(`
     SELECT dp.id, dp.ngay_tao AS thoi_gian, 'goi_pt' AS loai,
            gp.ten_goi AS san_pham, h.ho_ten AS khach_hang, dp.gia_thuc_te, dp.phuong_thuc_tt, dp.trang_thai,
-           NULL AS ly_do_huy, 0 AS so_tien_hoan, dp.ghi_chu_tt
+           dp.ly_do_huy, dp.so_tien_hoan, dp.ghi_chu_tt
     FROM dang_ky_pt dp
     JOIN goi_pt gp ON gp.id = dp.goi_pt_id
     JOIN ho_so h ON h.id = dp.hoi_vien_id
     WHERE COALESCE(date(dp.ngay_thanh_toan), date(dp.ngay_tao)) = ?
-      AND dp.trang_thai IN ('dang_hoat_dong', 'hoan_thanh', 'cho_kich_hoat')
+      AND dp.trang_thai IN ('dang_hoat_dong', 'hoan_thanh', 'cho_kich_hoat', 'huy')
     ORDER BY dp.ngay_tao DESC
   `).all(yesterday);
 

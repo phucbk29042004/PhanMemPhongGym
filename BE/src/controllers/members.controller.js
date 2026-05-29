@@ -1579,10 +1579,6 @@ export const cancelPackage = (req, res) => {
   const { ly_do_huy, so_tien_hoan } = req.body;
   const refundAmount = Number(so_tien_hoan);
 
-  if (so_tien_hoan === undefined || so_tien_hoan === null || isNaN(refundAmount) || refundAmount <= 0) {
-    return error(res, 'Số tiền hoàn là bắt buộc và phải lớn hơn 0.', 400);
-  }
-
   const hoSo = db.prepare('SELECT id, ho_ten FROM ho_so WHERE id = ? AND is_deleted = 0').get(id);
   if (!hoSo) return error(res, 'Không tìm thấy hồ sơ hội viên.', 404);
 
@@ -1593,7 +1589,10 @@ export const cancelPackage = (req, res) => {
     WHERE dk.id = ? AND dk.ho_so_id = ?
   `).get(pkgId, id);
   if (!pkg) return error(res, 'Không tìm thấy đăng ký gói tập.', 404);
-  if (refundAmount > pkg.gia_thuc_te) return error(res, `Số tiền hoàn không được vượt quá ${pkg.gia_thuc_te.toLocaleString('vi-VN')}đ.`, 400);
+
+  if (so_tien_hoan === undefined || so_tien_hoan === null || isNaN(refundAmount) || refundAmount !== pkg.gia_thuc_te) {
+    return error(res, `Số tiền hoàn trả phải bằng đúng giá thực tế của gói tập (${pkg.gia_thuc_te.toLocaleString('vi-VN')}đ).`, 400);
+  }
   if (pkg.trang_thai === 'huy') return error(res, 'Gói tập này đã bị hủy trước đó.', 400);
   if (pkg.trang_thai === 'het_han') return error(res, 'Không thể hủy gói tập đã hết hạn.', 400);
 

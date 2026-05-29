@@ -1,12 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
-  ActivityIndicator, Alert, ScrollView,
+  ActivityIndicator, Alert, FlatList, Modal, ScrollView,
   StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { X, Calendar, Clock, Dumbbell, Save } from 'lucide-react-native';
+import { X, Calendar, Clock, Dumbbell, Save, ChevronDown } from 'lucide-react-native';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+
+// ── Tạo danh sách giờ từ 06:00 đến 21:00 mỗi 30 phút ──────────
+function buildTimeOptions(fromHour = 6, toHour = 21) {
+  const times = [];
+  for (let h = fromHour; h <= toHour; h++) {
+    times.push(`${String(h).padStart(2, '0')}:00`);
+    if (h < toHour) times.push(`${String(h).padStart(2, '0')}:30`);
+  }
+  return times;
+}
+
+const START_TIMES = buildTimeOptions(6, 21);
+const END_TIMES   = buildTimeOptions(6, 22);
 
 function convertDMYToYMD(dmy) {
   if (!dmy) return '';
@@ -31,44 +44,122 @@ function FieldLabel({ label, required = false, colors }) {
   );
 }
 
+// ── Custom Time Picker ──────────────────────────────────────────
+function TimePickerModal({ visible, times, selected, onSelect, onClose, title, colors }) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <TouchableOpacity style={tp.overlay} activeOpacity={1} onPress={onClose}>
+        <View style={[tp.sheet, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={tp.header}>
+            <Text style={[tp.title, { color: colors.text }]}>{title}</Text>
+            <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <X color={colors.textSecondary} size={20} />
+            </TouchableOpacity>
+          </View>
+          <FlatList
+            data={times}
+            keyExtractor={(t) => t}
+            showsVerticalScrollIndicator={false}
+            style={{ maxHeight: 320 }}
+            renderItem={({ item }) => {
+              const isSelected = item === selected;
+              return (
+                <TouchableOpacity
+                  style={[tp.item, isSelected && { backgroundColor: colors.primaryLight }]}
+                  onPress={() => { onSelect(item); onClose(); }}
+                  activeOpacity={0.7}
+                >
+                  <Clock color={isSelected ? colors.primary : colors.textMuted} size={14} />
+                  <Text style={[tp.itemText, { color: isSelected ? colors.primary : colors.text }]}>
+                    {item}
+                  </Text>
+                  {isSelected && (
+                    <View style={[tp.check, { backgroundColor: colors.primary }]}>
+                      <Text style={{ color: '#fff', fontSize: 9, fontWeight: '800' }}>✓</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            }}
+          />
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
+}
+
+const tp = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 24 },
+  sheet: { borderRadius: 20, borderWidth: 1, overflow: 'hidden' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.06)' },
+  title: { fontSize: 15, fontWeight: '800' },
+  item: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 16 },
+  itemText: { fontSize: 15, fontWeight: '600', flex: 1 },
+  check: { width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+});
+
+// ── TimeSelector Button ─────────────────────────────────────────
+function TimeSelector({ label, value, onPress, colors, required }) {
+  return (
+    <View style={{ flex: 1 }}>
+      <FieldLabel label={label} required={required} colors={colors} />
+      <TouchableOpacity
+        style={[styles.timeSelectorBtn, { borderColor: colors.border, backgroundColor: colors.surfaceVariant }]}
+        onPress={onPress}
+        activeOpacity={0.7}
+      >
+        <Clock color={colors.textMuted} size={16} />
+        <Text style={[styles.timeSelectorText, { color: colors.text }]}>{value}</Text>
+        <ChevronDown color={colors.textMuted} size={16} />
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+// ── Main Screen ─────────────────────────────────────────────────
 export default function AdminRegisterPTScheduleScreen({ route, navigation }) {
   const { member, activePT } = route.params || {};
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
 
-  // Find all active contracts
   const contracts = member?.pt_hien_tai || (activePT ? [activePT] : []);
   const [selectedContract, setSelectedContract] = useState(activePT || contracts[0] || null);
-
   const [submitting, setSubmitting] = useState(false);
 
-  // Form inputs
   const [startDate, setStartDate] = useState(() => {
     const today = new Date();
     return `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
-  }); // DD/MM/YYYY
-  const [startTime, setStartTime] = useState('08:00'); // HH:MM
-  const [endTime, setEndTime] = useState('09:30'); // HH:MM
-  const [note, setNote] = useState('');
+  });
+  const [startTime, setStartTime] = useState('08:00');
+  const [endTime, setEndTime]     = useState('09:30');
+  const [note, setNote]           = useState('');
+
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker]     = useState(false);
+
+  const handleSelectStart = (t) => {
+    setStartTime(t);
+    // Tự động tính giờ kết thúc = +1.5h
+    const [h, m] = t.split(':').map(Number);
+    let nh = h + 1, nm = m + 30;
+    if (nm >= 60) { nh += 1; nm -= 60; }
+    const auto = `${String(nh).padStart(2, '0')}:${String(nm).padStart(2, '0')}`;
+    // Chỉ set nếu auto còn trong danh sách
+    if (END_TIMES.includes(auto)) setEndTime(auto);
+  };
 
   const handleRegister = async () => {
     if (!selectedContract) {
       Alert.alert('Lỗi', 'Hội viên này chưa có hợp đồng PT đang hoạt động.');
       return;
     }
-
     const ymdDate = convertDMYToYMD(startDate);
     if (!ymdDate || !/^\d{4}-\d{2}-\d{2}$/.test(ymdDate)) {
       Alert.alert('Lỗi', 'Ngày tập phải đúng định dạng DD/MM/YYYY (VD: 25/05/2026).');
       return;
     }
-
-    if (!startTime.trim() || !/^\d{2}:\d{2}$/.test(startTime.trim())) {
-      Alert.alert('Lỗi', 'Giờ bắt đầu phải đúng định dạng HH:MM (VD: 08:00).');
-      return;
-    }
-    if (!endTime.trim() || !/^\d{2}:\d{2}$/.test(endTime.trim())) {
-      Alert.alert('Lỗi', 'Giờ kết thúc phải đúng định dạng HH:MM (VD: 09:30).');
+    if (endTime <= startTime) {
+      Alert.alert('Lỗi', 'Giờ kết thúc phải sau giờ bắt đầu.');
       return;
     }
 
@@ -76,13 +167,12 @@ export default function AdminRegisterPTScheduleScreen({ route, navigation }) {
     try {
       const payload = {
         dang_ky_pt_id: selectedContract.id,
-        ngay_tap: ymdDate,
-        gio_bat_dau: startTime.trim(),
-        gio_ket_thuc: endTime.trim(),
-        loai_buoi: 'ca_nhan',
-        ghi_chu: note.trim() || 'Đặt lịch qua di động'
+        ngay_tap:     ymdDate,
+        gio_bat_dau:  startTime,
+        gio_ket_thuc: endTime,
+        loai_buoi:    'ca_nhan',
+        ghi_chu:      note.trim() || 'Đặt lịch qua di động'
       };
-
       const res = await api.post('/pt/schedules', payload);
       if (res.data?.success) {
         Alert.alert('Thành công', 'Đặt lịch tập PT thành công!', [
@@ -99,10 +189,13 @@ export default function AdminRegisterPTScheduleScreen({ route, navigation }) {
     }
   };
 
+  // Lọc giờ kết thúc để chỉ lấy những giờ > startTime
+  const validEndTimes = END_TIMES.filter(t => t > startTime);
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={colors.statusBar} backgroundColor={colors.statusBarBg} />
-      
+
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border, paddingTop: insets.top, height: 60 + insets.top }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
@@ -121,7 +214,7 @@ export default function AdminRegisterPTScheduleScreen({ route, navigation }) {
           <Text style={[styles.memberName, { color: colors.text }]}>{member?.ho_ten} ({member?.ma_ho_so})</Text>
         </View>
 
-        {/* Hợp đồng PT list */}
+        {/* Chọn hợp đồng PT */}
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Chọn Hợp đồng PT</Text>
         <View style={styles.contractList}>
           {contracts.map((item) => {
@@ -151,6 +244,7 @@ export default function AdminRegisterPTScheduleScreen({ route, navigation }) {
 
         {selectedContract && (
           <View style={[styles.formCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            {/* Ngày tập */}
             <FieldLabel label="Ngày tập (DD/MM/YYYY)" required colors={colors} />
             <View style={[styles.inputRow, { borderColor: colors.border, backgroundColor: colors.surfaceVariant }]}>
               <Calendar color={colors.textMuted} size={18} style={{ marginRight: 10 }} />
@@ -160,87 +254,29 @@ export default function AdminRegisterPTScheduleScreen({ route, navigation }) {
                 onChangeText={setStartDate}
                 placeholder="VD: 25/05/2026"
                 placeholderTextColor={colors.textMuted}
+                keyboardType="numeric"
               />
             </View>
 
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <View style={{ flex: 1 }}>
-                <FieldLabel label="Giờ bắt đầu" required colors={colors} />
-                <View style={[styles.pickerWrap, { borderColor: colors.border, backgroundColor: colors.surfaceVariant }]}>
-                  <Clock color={colors.textMuted} size={18} style={{ marginRight: 8 }} />
-                  <select
-                    style={{
-                      flex: 1,
-                      height: '100%',
-                      backgroundColor: 'transparent',
-                      color: colors.text,
-                      borderWidth: 0,
-                      fontSize: 14,
-                      outline: 'none',
-                      fontFamily: 'system-ui'
-                    }}
-                    value={startTime}
-                    onChange={(e) => {
-                      const selected = e.target.value;
-                      setStartTime(selected);
-                      // Tự động set giờ kết thúc bằng giờ bắt đầu + 1.5 tiếng
-                      const [h, m] = selected.split(':').map(Number);
-                      let newH = h + 1;
-                      let newM = m + 30;
-                      if (newM >= 60) {
-                        newH += 1;
-                        newM -= 60;
-                      }
-                      const endStr = `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
-                      setEndTime(endStr);
-                    }}
-                  >
-                    {Array.from({ length: 31 }, (_, i) => {
-                      const hour = Math.floor(6 + i / 2);
-                      const min = (i % 2) * 30;
-                      const timeStr = `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
-                      return (
-                        <option key={timeStr} value={timeStr}>
-                          {timeStr}
-                        </option>
-                      );
-                    })}
-                  </select>
-                </View>
-              </View>
-              <View style={{ flex: 1 }}>
-                <FieldLabel label="Giờ kết thúc" required colors={colors} />
-                <View style={[styles.pickerWrap, { borderColor: colors.border, backgroundColor: colors.surfaceVariant }]}>
-                  <Clock color={colors.textMuted} size={18} style={{ marginRight: 8 }} />
-                  <select
-                    style={{
-                      flex: 1,
-                      height: '100%',
-                      backgroundColor: 'transparent',
-                      color: colors.text,
-                      borderWidth: 0,
-                      fontSize: 14,
-                      outline: 'none',
-                      fontFamily: 'system-ui'
-                    }}
-                    value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                  >
-                    {Array.from({ length: 31 }, (_, i) => {
-                      const hour = Math.floor(7 + i / 2);
-                      const min = (i % 2) * 30;
-                      const timeStr = `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
-                      return (
-                        <option key={timeStr} value={timeStr} disabled={timeStr <= startTime}>
-                          {timeStr}
-                        </option>
-                      );
-                    })}
-                  </select>
-                </View>
-              </View>
+            {/* Giờ bắt đầu / kết thúc */}
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
+              <TimeSelector
+                label="Giờ bắt đầu"
+                value={startTime}
+                onPress={() => setShowStartPicker(true)}
+                colors={colors}
+                required
+              />
+              <TimeSelector
+                label="Giờ kết thúc"
+                value={endTime}
+                onPress={() => setShowEndPicker(true)}
+                colors={colors}
+                required
+              />
             </View>
 
+            {/* Ghi chú */}
             <FieldLabel label="Ghi chú buổi tập" colors={colors} />
             <TextInput
               style={[styles.input, styles.textArea, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
@@ -253,7 +289,6 @@ export default function AdminRegisterPTScheduleScreen({ route, navigation }) {
             />
           </View>
         )}
-
 
         <TouchableOpacity
           style={[styles.submitBtn, { backgroundColor: colors.primary, opacity: selectedContract ? 1 : 0.6 }]}
@@ -269,6 +304,26 @@ export default function AdminRegisterPTScheduleScreen({ route, navigation }) {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* Pickers */}
+      <TimePickerModal
+        visible={showStartPicker}
+        times={START_TIMES}
+        selected={startTime}
+        onSelect={handleSelectStart}
+        onClose={() => setShowStartPicker(false)}
+        title="Chọn giờ bắt đầu"
+        colors={colors}
+      />
+      <TimePickerModal
+        visible={showEndPicker}
+        times={validEndTimes}
+        selected={endTime}
+        onSelect={setEndTime}
+        onClose={() => setShowEndPicker(false)}
+        title="Chọn giờ kết thúc"
+        colors={colors}
+      />
     </View>
   );
 }
@@ -330,19 +385,25 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 14,
   },
-  pickerWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 48,
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-  },
   inputField: {
     flex: 1,
     height: '100%',
     fontSize: 14,
     padding: 0
+  },
+  timeSelectorBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    gap: 8,
+  },
+  timeSelectorText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
   },
   textArea: {
     height: 80,
@@ -358,4 +419,3 @@ const styles = StyleSheet.create({
   },
   submitBtnText: { color: '#ffffff', fontSize: 15, fontWeight: '800' }
 });
-

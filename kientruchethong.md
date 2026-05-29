@@ -1,6 +1,6 @@
 # 🏛️ Kiến Trúc Hệ Thống — Paradise GYM
 
-> Cập nhật lần cuối: 27/05/2026 — Cải tổ Triggers doanh thu, Rebuild dữ liệu Doanh thu & Đồng bộ bộ lọc 7/30 ngày.
+> Cập nhật lần cuối: 29/05/2026 — Sửa lỗi ReferenceError, Khóa tiền hoàn hủy gói & Đồng bộ Trạng thái giao dịch di động.
 
 ---
 
@@ -210,4 +210,13 @@ graph TD
   - **Đặt lịch PT**: Đổi 2 trường nhập giờ sang dạng chọn Dropdown từ 06:00 đến 21:00, tự động tính giờ kết thúc bằng giờ bắt đầu cộng thêm 1.5 tiếng.
   - **Phân trang di động**: Bổ sung phân trang client-side 10 dòng/trang cho 5 màn hình danh sách Admin di động.
   - **Icon**: Thay đổi icon tab PT sang biểu tượng quả tạ `Dumbbell`.
+- **Cập nhật Lần 2 (29/05/2026)**:
+  - Cập nhật cưỡng bức kiểm tra và tự động cập nhật schema bảng `dang_ky_pt` trong `db.js` để bảo đảm chấp nhận giá trị `'cho_kich_hoat'` mà không phụ thuộc vào bộ nhớ đệm cache schema SQLite.
+  - Cập nhật logic sắp xếp tin nhắn trên di động ở `PTMeScreen.js` để đẩy tin nhắn mới lên đầu (sử dụng sort theo `ngay_tao` giảm dần) và hiển thị chi tiết thời gian gồm cả `Giờ Phút Ngày/Tháng/Năm`.
+- **Cập nhật Lần 3 (29/05/2026)**:
+  - **Database & Trigger (BE)**: Bổ sung Migration v19 vào `db.js` tự động thêm cột `so_tien_hoan` và `ly_do_huy` vào bảng `dang_ky_pt` và cập nhật trigger doanh thu PT `trg_doanh_thu_goi_pt_update` để hỗ trợ trừ đúng theo số tiền hoàn trả thực tế khi hủy gói PT.
+  - **Backend API**: Nâng cấp API hủy gói Gym và PT để kiểm duyệt và bắt buộc số tiền hoàn trả phải khớp chính xác 100% với giá thực tế ban đầu của gói tập, ngăn chặn sai lệch dòng tiền.
+  - **Giao diện di động**: Khóa trường nhập tiền hoàn trả (read-only) và tự động điền sẵn giá trị gói đang hủy. Đồng bộ Badge hiển thị Trạng thái nghiệp vụ (Đăng ký mới, Đổi gói, Hủy gói, Tạm dừng, Hết hạn) kèm chênh lệch dòng tiền (+/-) lên modal chi tiết giao dịch hôm nay trên Dashboard và trang Doanh thu di động.
+
+
 

@@ -176,58 +176,70 @@ export default function PTMeScreen({ navigation }) {
 
         {loading ? <ActivityIndicator color={colors.primary} /> : entries.length === 0 ? (
           <Text style={[styles.empty, { color: colors.textMuted }]}>Chưa có trao đổi nào.</Text>
-        ) : entries.map(item => {
-          // Tin nhắn của Hội viên → bên PHẢI, tin nhắn của PT → bên TRÁI
-          // (bất kể ai đang đăng nhập)
-          const isMemberMsg = item.vai_tro_gui !== 'pt';
-          const isMe = item.nguoi_gui_id === user?.id; // để hiện nút Sửa đúng người
-          return (
-            <View
-              key={item.id}
-              style={[
-                styles.entry,
-                isMemberMsg ? styles.entryMe : styles.entryOther,
-                {
-                  backgroundColor: isMemberMsg ? (colors.isDark ? colors.primary : '#e6f4ea') : colors.surface,
-                  borderColor: isMemberMsg ? colors.primary : colors.border
-                }
-              ]}
-            >
-              <View style={styles.entryHead}>
-                <UserRound color={isMemberMsg ? (colors.isDark ? '#fff' : colors.primary) : colors.primary} size={14} />
-                <Text style={[styles.entryTitle, { color: isMemberMsg ? (colors.isDark ? '#fff' : colors.primary) : colors.text }]}>
-                  {item.vai_tro_gui === 'pt' ? 'PT dặn dò' : (isPT ? item.ten_hoi_vien || 'Hội viên' : 'Bạn cập nhật')}
+        ) : [...entries]
+          .sort((a, b) => new Date(b.ngay_tao || b.ngay_cap_nhat).getTime() - new Date(a.ngay_tao || a.ngay_cap_nhat).getTime())
+          .map(item => {
+            // Tin nhắn của Hội viên → bên PHẢI, tin nhắn của PT → bên TRÁI
+            // (bất kể ai đang đăng nhập)
+            const isMemberMsg = item.vai_tro_gui !== 'pt';
+            const isMe = item.nguoi_gui_id === user?.id; // để hiện nút Sửa đúng người
+            
+            // Format ngày giờ hiển thị
+            let dateStr = '';
+            if (item.ngay_tao) {
+              const dt = new Date(item.ngay_tao);
+              const time = dt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+              const date = dt.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+              dateStr = `${time} ${date}`;
+            }
+
+            return (
+              <View
+                key={item.id}
+                style={[
+                  styles.entry,
+                  isMemberMsg ? styles.entryMe : styles.entryOther,
+                  {
+                    backgroundColor: isMemberMsg ? (colors.isDark ? colors.primary : '#e6f4ea') : colors.surface,
+                    borderColor: isMemberMsg ? colors.primary : colors.border
+                  }
+                ]}
+              >
+                <View style={styles.entryHead}>
+                  <UserRound color={isMemberMsg ? (colors.isDark ? '#fff' : colors.primary) : colors.primary} size={14} />
+                  <Text style={[styles.entryTitle, { color: isMemberMsg ? (colors.isDark ? '#fff' : colors.primary) : colors.text }]}>
+                    {item.vai_tro_gui === 'pt' ? 'PT dặn dò' : (isPT ? item.ten_hoi_vien || 'Hội viên' : 'Bạn cập nhật')}
+                  </Text>
+                  {isMe ? (
+                    <TouchableOpacity style={styles.editBtn} onPress={() => startEdit(item)}>
+                      <Text style={[styles.editText, { color: colors.isDark ? '#fff' : colors.primary }]}>Sửa</Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+
+                {item.vai_tro_gui === 'pt' ? (
+                  <>
+                    {item.noi_dung_tap ? <Text style={[styles.bubbleField, { color: isMemberMsg ? (colors.isDark ? '#fff' : '#141c14') : colors.text }]}><Text style={styles.boldLabel}>Nội dung tập: </Text>{item.noi_dung_tap}</Text> : null}
+                    {item.khau_phan_an ? <Text style={[styles.bubbleField, { color: isMemberMsg ? (colors.isDark ? '#fff' : '#141c14') : colors.text }]}><Text style={styles.boldLabel}>Dinh dưỡng: </Text>{item.khau_phan_an}</Text> : null}
+                    {item.so_phut_tap ? <Text style={[styles.bubbleField, { color: isMemberMsg ? (colors.isDark ? '#fff' : '#141c14') : colors.text }]}><Text style={styles.boldLabel}>Thời gian: </Text>{item.so_phut_tap} phút</Text> : null}
+                    {item.loi_dan ? <Text style={[styles.bubbleField, { color: isMemberMsg ? (colors.isDark ? '#fff' : '#141c14') : colors.text }]}><Text style={styles.boldLabel}>Lời dặn: </Text>{item.loi_dan}</Text> : null}
+                  </>
+                ) : (
+                  <>
+                    {item.cam_nhan_tap ? <Text style={[styles.bubbleField, { color: isMemberMsg ? (colors.isDark ? '#fff' : '#141c14') : colors.text }]}><Text style={styles.boldLabel}>Cảm nhận: </Text>{item.cam_nhan_tap}</Text> : null}
+                    {item.khau_phan_an ? <Text style={[styles.bubbleField, { color: isMemberMsg ? (colors.isDark ? '#fff' : '#141c14') : colors.text }]}><Text style={styles.boldLabel}>Khẩu phần ăn: </Text>{item.khau_phan_an}</Text> : null}
+                    {item.so_phut_tap ? <Text style={[styles.bubbleField, { color: isMemberMsg ? (colors.isDark ? '#fff' : '#141c14') : colors.text }]}><Text style={styles.boldLabel}>Thời gian tập: </Text>{item.so_phut_tap} phút</Text> : null}
+                  </>
+                )}
+                {item.ghi_chu ? <Text style={[styles.bubbleField, { color: isMemberMsg ? (colors.isDark ? '#fff' : '#141c14') : colors.text }]}><Text style={styles.boldLabel}>Ghi chú: </Text>{item.ghi_chu}</Text> : null}
+
+                <Text style={[styles.bubbleTime, { color: isMemberMsg ? (colors.isDark ? 'rgba(255,255,255,0.7)' : 'rgba(20,28,20,0.6)') : colors.textMuted }]}>
+                  {dateStr}
+                  {item.da_chinh_sua ? ' • Đã sửa' : ''}
                 </Text>
-                {isMe ? (
-                  <TouchableOpacity style={styles.editBtn} onPress={() => startEdit(item)}>
-                    <Text style={[styles.editText, { color: colors.isDark ? '#fff' : colors.primary }]}>Sửa</Text>
-                  </TouchableOpacity>
-                ) : null}
               </View>
-
-              {item.vai_tro_gui === 'pt' ? (
-                <>
-                  {item.noi_dung_tap ? <Text style={[styles.bubbleField, { color: isMemberMsg ? (colors.isDark ? '#fff' : '#141c14') : colors.text }]}><Text style={styles.boldLabel}>Nội dung tập: </Text>{item.noi_dung_tap}</Text> : null}
-                  {item.khau_phan_an ? <Text style={[styles.bubbleField, { color: isMemberMsg ? (colors.isDark ? '#fff' : '#141c14') : colors.text }]}><Text style={styles.boldLabel}>Dinh dưỡng: </Text>{item.khau_phan_an}</Text> : null}
-                  {item.so_phut_tap ? <Text style={[styles.bubbleField, { color: isMemberMsg ? (colors.isDark ? '#fff' : '#141c14') : colors.text }]}><Text style={styles.boldLabel}>Thời gian: </Text>{item.so_phut_tap} phút</Text> : null}
-                  {item.loi_dan ? <Text style={[styles.bubbleField, { color: isMemberMsg ? (colors.isDark ? '#fff' : '#141c14') : colors.text }]}><Text style={styles.boldLabel}>Lời dặn: </Text>{item.loi_dan}</Text> : null}
-                </>
-              ) : (
-                <>
-                  {item.cam_nhan_tap ? <Text style={[styles.bubbleField, { color: isMemberMsg ? (colors.isDark ? '#fff' : '#141c14') : colors.text }]}><Text style={styles.boldLabel}>Cảm nhận: </Text>{item.cam_nhan_tap}</Text> : null}
-                  {item.khau_phan_an ? <Text style={[styles.bubbleField, { color: isMemberMsg ? (colors.isDark ? '#fff' : '#141c14') : colors.text }]}><Text style={styles.boldLabel}>Khẩu phần ăn: </Text>{item.khau_phan_an}</Text> : null}
-                  {item.so_phut_tap ? <Text style={[styles.bubbleField, { color: isMemberMsg ? (colors.isDark ? '#fff' : '#141c14') : colors.text }]}><Text style={styles.boldLabel}>Thời gian tập: </Text>{item.so_phut_tap} phút</Text> : null}
-                </>
-              )}
-              {item.ghi_chu ? <Text style={[styles.bubbleField, { color: isMemberMsg ? (colors.isDark ? '#fff' : '#141c14') : colors.text }]}><Text style={styles.boldLabel}>Ghi chú: </Text>{item.ghi_chu}</Text> : null}
-
-              <Text style={[styles.bubbleTime, { color: isMemberMsg ? (colors.isDark ? 'rgba(255,255,255,0.7)' : 'rgba(20,28,20,0.6)') : colors.textMuted }]}>
-                {item.ngay_tao ? new Date(item.ngay_tao).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'}) : ''}
-                {item.da_chinh_sua ? ' • Đã sửa' : ''}
-              </Text>
-            </View>
-          );
-        })}
+            );
+          })}
       </ScrollView>
     </View>
   );
