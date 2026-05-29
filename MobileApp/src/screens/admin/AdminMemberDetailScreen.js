@@ -511,8 +511,10 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
               <View style={styles.cardHeader}>
                 <Dumbbell color={colors.primary} size={20} />
                 <Text style={[styles.cardTitle, { color: colors.text }]}>{activePT.ten_goi_pt || 'Đăng ký PT'}</Text>
-                <View style={[styles.badge, { backgroundColor: colors.primaryLight }]}>
-                  <Text style={[styles.badgeText, { color: colors.primary }]}>Đang hoạt động</Text>
+                <View style={[styles.badge, { backgroundColor: activePT.trang_thai === 'cho_kich_hoat' ? (colors.warningLight || '#fef3c7') : colors.primaryLight }]}>
+                  <Text style={[styles.badgeText, { color: activePT.trang_thai === 'cho_kich_hoat' ? (colors.warning || '#d97706') : colors.primary }]}>
+                    {activePT.trang_thai === 'cho_kich_hoat' ? 'Chờ kích hoạt' : 'Đang hoạt động'}
+                  </Text>
                 </View>
               </View>
               <View style={styles.cardInfo}>

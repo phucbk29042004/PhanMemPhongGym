@@ -144,7 +144,7 @@ export const getMemberById = (req, res) => {
         'tu_ngay', dp.tu_ngay, 'den_ngay', dp.den_ngay,
         'trang_thai', dp.trang_thai, 'gia_thuc_te', dp.gia_thuc_te, 'ghi_chu_tt', dp.ghi_chu_tt
       )) FROM dang_ky_pt dp JOIN ho_so pt ON pt.id = dp.pt_id
-       WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS pt_hien_tai,
+       WHERE dp.hoi_vien_id = h.id AND dp.trang_thai IN ('dang_hoat_dong', 'cho_kich_hoat')) AS pt_hien_tai,
       ((SELECT loai FROM luot_vao_ra WHERE ho_so_id = h.id AND date(thoi_diem) = date('now','localtime') ORDER BY id DESC LIMIT 1) = 'vao') AS da_check_in_hom_nay
     FROM ho_so h
     LEFT JOIN tai_khoan tk ON tk.id = h.tai_khoan_id

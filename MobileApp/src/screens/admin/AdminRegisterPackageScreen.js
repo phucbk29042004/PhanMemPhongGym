@@ -36,6 +36,22 @@ function parseInputMoney(val) {
   return Number(String(val).replace(/\./g, '')) || 0;
 }
 
+/** Chuyển Date thành DD/MM/YYYY */
+function dateToDMY(d) {
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+}
+
+/** Parse DD/MM/YYYY thành Date */
+function parseDMY(str) {
+  if (!str) return null;
+  const parts = str.split('/');
+  if (parts.length !== 3) return null;
+  const [d, m, y] = parts.map(Number);
+  if (!d || !m || !y) return null;
+  const date = new Date(y, m - 1, d);
+  return isNaN(date) ? null : date;
+}
+
 function formatDate(val) {
   if (!val) return '—';
   const d = new Date(val);
@@ -103,6 +119,7 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
     return `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
   }); // DD/MM/YYYY
 
+  const [endDate, setEndDate] = useState(''); // DD/MM/YYYY
   const [actualPrice, setActualPrice] = useState('');
   const [paidAmount, setPaidAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('tien_mat'); // 'tien_mat' | 'chuyen_khoan'
@@ -150,6 +167,26 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
     };
     loadInitData();
   }, [activePkg]);
+
+  // Tự động tính ngày kết thúc dựa trên gói và ngày bắt đầu
+  useEffect(() => {
+    if (!selectedPkg) return;
+
+    const startParsed = parseDMY(startDate);
+    if (!startParsed) return;
+
+    const soThang = selectedPkg.so_thang || 0;
+    const soNgayThem = selectedPkg.so_ngay_them || 0;
+    
+    if (soThang > 0 || soNgayThem > 0) {
+      const end = new Date(startParsed);
+      end.setMonth(end.getMonth() + soThang);
+      end.setDate(end.getDate() + soNgayThem);
+      setEndDate(dateToDMY(end));
+    } else {
+      setEndDate('');
+    }
+  }, [selectedPkg, startDate]);
 
   const handleSelectPackage = (pkg) => {
     setSelectedPkg(pkg);
@@ -383,6 +420,16 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
                 * Ngày bắt đầu được đặt tự động nối tiếp sau ngày hết hạn của gói hiện tại ({formatDate(activePkg.den_ngay)})
               </Text>
             )}
+
+            <DatePickerField
+              label={`Ngày kết thúc${(selectedPkg.so_thang || 0) > 0 || (selectedPkg.so_ngay_them || 0) > 0 ? ' (Tự động tính)' : ''}`}
+              value={endDate}
+              onChangeText={setEndDate}
+              placeholder="Chọn ngày kết thúc"
+              colors={colors}
+              returnFormat="DD/MM/YYYY"
+              disabled={(selectedPkg.so_thang || 0) > 0 || (selectedPkg.so_ngay_them || 0) > 0}
+            />
 
 
             <View style={{ flexDirection: 'row', gap: 10 }}>

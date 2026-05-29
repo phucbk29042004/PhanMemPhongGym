@@ -1848,6 +1848,16 @@ window.GymApp.pages['members-list'] = {
           if (contract) self._showSwitchPtRegistrationModal(m, contract, refreshTab);
         });
       });
+<<<<<<< HEAD
+=======
+      document.querySelectorAll('.btn-cancel-pt-contract').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const contractId = btn.dataset.contractId;
+          const contract = ptContracts.find(c => String(c.id) === String(contractId));
+          if (contract) self._showCancelPtContractModal(m, contract, refreshTab);
+        });
+      });
+>>>>>>> main
     }
   },
 
@@ -2186,6 +2196,68 @@ window.GymApp.pages['members-list'] = {
         close();
         if (typeof onSaved === 'function') onSaved();
       } catch (err) { window.GymApp.toast(err.message || 'Lỗi khi hủy gói tập', 'error'); }
+    });
+  },
+
+  _showCancelPtContractModal: function (m, contract, onSaved) {
+    document.getElementById('gym-sub-modal')?.remove();
+    const iCls = `class="bg-surface-container-lowest text-on-surface border border-outline-variant" style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;"`;
+    const overlay = document.createElement('div');
+    overlay.id = 'gym-sub-modal';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);backdrop-filter:blur(6px);padding:16px;';
+    overlay.innerHTML = `
+      <div class="modal-card bg-surface-container-lowest" style="border-radius:18px;width:100%;max-width:400px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.2);overflow:hidden;">
+        <div style="background:linear-gradient(135deg,#b91c1c,#dc2626);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <h3 style="font-size:15px;font-weight:800;color:#fff;margin:0 0 2px;">Hủy gói PT</h3>
+            <p style="font-size:11px;color:rgba(255,255,255,0.75);margin:0;">PT: <strong style="color:#fecaca;">${contract.ten_pt || 'huấn luyện viên'}</strong></p>
+          </div>
+          <button id="cancel-pt-close" style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.25);cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.18)'"><span class="material-symbols-outlined" style="color:#fff;font-size:16px;">close</span></button>
+        </div>
+        <div class="p-loose" style="display:flex;flex-direction:column;gap:14px;">
+          <div class="grid gap-standard">
+            <div>
+              <label class="block text-body-sm font-bold text-on-surface mb-xs">Lý do hủy</label>
+              <input id="cancel-pt-reason" type="text" placeholder="VD: Hội viên yêu cầu hủy..." ${iCls} />
+            </div>
+            <div>
+              <label class="block text-body-sm font-bold text-on-surface mb-xs">Hoàn tiền (VNĐ)</label>
+              <input id="cancel-pt-refund" type="text" readonly value="${new Intl.NumberFormat('vi-VN').format(contract.gia_thuc_te || 0)}" ${iCls} style="background:var(--bg-surface-container);cursor:not-allowed;" />
+              <p style="font-size:11px;color:var(--text-on-surface-variant);margin-top:4px;">Lưu ý: Backend yêu cầu hoàn đúng số tiền thực tế đã đóng (${new Intl.NumberFormat('vi-VN').format(contract.gia_thuc_te || 0)}đ).</p>
+            </div>
+            <div class="rounded-xl border" style="padding:10px 12px;background:#fef2f2;border-color:#fecaca;">
+              <p class="text-body-sm" style="color:#b91c1c;margin:0;">Sau khi hủy, hội viên nhận thông báo trên app. Thao tác không thể hoàn tác.</p>
+            </div>
+          </div>
+          <div class="flex gap-standard">
+            <button id="cancel-pt-close2" class="flex-1 py-compact rounded-xl border border-outline-variant text-on-surface-variant font-bold hover:bg-surface-container transition-colors text-body-md">Đóng</button>
+            <button id="cancel-pt-confirm" class="flex-1 py-compact rounded-xl font-bold text-white text-body-md transition-all hover:opacity-90" style="background:#dc2626;border:none;cursor:pointer;">Xác nhận hủy</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    overlay.querySelector('#cancel-pt-close').addEventListener('click', close);
+    overlay.querySelector('#cancel-pt-close2').addEventListener('click', close);
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+    overlay.querySelector('#cancel-pt-confirm').addEventListener('click', async () => {
+      const ly_do_huy = overlay.querySelector('#cancel-pt-reason').value.trim();
+      if (!ly_do_huy) {
+        return window.GymApp.toast('Vui lòng nhập lý do hủy!', 'error');
+      }
+      try {
+        const res = await window.GymApp.api.put(`/pt/registrations/${contract.id}/cancel`, {
+          ly_do_huy,
+          so_tien_hoan: contract.gia_thuc_te || 0
+        });
+        if (res?.success) {
+          window.GymApp.toast('Đã hủy hợp đồng PT thành công!', 'success');
+          close();
+          if (typeof onSaved === 'function') onSaved();
+        } else {
+          window.GymApp.toast(res?.message || 'Hủy hợp đồng thất bại!', 'error');
+        }
+      } catch (err) { window.GymApp.toast(err.message || 'Lỗi khi hủy hợp đồng PT', 'error'); }
     });
   },
 
