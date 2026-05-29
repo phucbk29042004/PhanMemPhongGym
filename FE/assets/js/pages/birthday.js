@@ -290,6 +290,11 @@ window.GymApp.pages['birthday'] = {
           display: flex;
           align-items: center;
           gap: 12px;
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .bd-stat-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 8px 16px rgba(0,0,0,0.06);
         }
         .dark .bd-stat-card { background: #1e2220; border-color: #2e3530; }
 

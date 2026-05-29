@@ -97,10 +97,10 @@ window.GymApp.pages['audit-logs'] = {
     return `
       <div class="flex flex-col gap-standard animate-fadeIn">
         
-        <!-- Header Actions (Chỉ có nút tải dữ liệu) -->
+        <!-- Header Actions -->
         <div class="flex justify-end items-center mb-0.5">
           <button id="btn-refresh-audit" class="btn-primary text-white px-3.5 py-1.5 rounded-xl font-bold flex items-center gap-1.5 shadow-md hover:shadow-lg transition-all active:scale-95 text-body-md">
-            <span class="material-symbols-outlined text-[16px] animate-hover-spin">refresh</span>
+            <span class="material-symbols-outlined text-[16px]">refresh</span>
             Tải lại dữ liệu
           </button>
         </div>
@@ -165,37 +165,16 @@ window.GymApp.pages['audit-logs'] = {
           </div>
         </div>
 
-        <!-- Logs Table -->
-        <div class="bg-white dark:bg-[#1e1e1e] rounded-xl border border-outline-variant/40 shadow-sm overflow-hidden flex flex-col">
-          <div class="overflow-x-auto" style="scrollbar-width: thin; scrollbar-color: var(--outline-variant) transparent;">
-            <table class="w-full text-left border-collapse table-auto">
-              <thead>
-                <tr class="h-10 border-b border-outline-variant/40 bg-surface-container-low/10">
-                  <th class="px-4 font-bold text-on-surface-variant uppercase tracking-wider text-xs whitespace-nowrap">Thời điểm</th>
-                  <th class="px-4 font-bold text-on-surface-variant uppercase tracking-wider text-xs whitespace-nowrap">Tài khoản thực hiện</th>
-                  <th class="px-4 font-bold text-on-surface-variant uppercase tracking-wider text-xs whitespace-nowrap">Vai trò</th>
-                  <th class="px-4 font-bold text-on-surface-variant uppercase tracking-wider text-xs whitespace-nowrap">Hành động</th>
-                  <th class="px-4 font-bold text-on-surface-variant uppercase tracking-wider text-xs whitespace-nowrap">Đối tượng tác động</th>
-                  <th class="px-4 font-bold text-on-surface-variant uppercase tracking-wider text-xs">Ghi chú chi tiết</th>
-                </tr>
-              </thead>
-              <tbody id="audit-table-tbody" class="divide-y divide-outline-variant/30">
-                <!-- Body được render qua hàm _renderTableRows() -->
-              </tbody>
-            </table>
-          </div>
-          
-          <!-- Pagination -->
-          <div id="audit-pagination-container">
-            <!-- Phân trang render qua _renderPagination() -->
-          </div>
+        <!-- Logs Content (Desktop table + Mobile cards) -->
+        <div id="audit-logs-content" class="bg-white dark:bg-[#1e1e1e] rounded-xl border border-outline-variant/40 shadow-sm overflow-hidden flex flex-col p-standard">
+          <!-- Body được render qua hàm _renderLogsList() -->
         </div>
 
       </div>
     `;
   },
 
-  _renderTableRows: function () {
+  _renderLogsList: function () {
     const self = this;
 
     // Lọc danh sách theo từ khóa tìm kiếm (local filter)
@@ -225,18 +204,15 @@ window.GymApp.pages['audit-logs'] = {
 
     if (displayLogs.length === 0) {
       return `
-        <tr>
-          <td colspan="6" class="text-center py-16 text-on-surface-variant text-body-md" style="font-size: 14px;">
-            <div style="display:flex;flex-direction:column;align-items:center;opacity:0.4;">
-              <span class="material-symbols-outlined text-[36px] text-outline mb-2">history</span>
-              <p style="font-weight:600;margin:0;">Không tìm thấy lịch sử hoạt động phù hợp.</p>
-            </div>
-          </td>
-        </tr>
+        <div class="text-center py-16 text-on-surface-variant flex flex-col items-center justify-center opacity-40">
+          <span class="material-symbols-outlined text-[48px] text-outline mb-2">history</span>
+          <p style="font-weight:600;margin:0;">Không tìm thấy lịch sử hoạt động phù hợp.</p>
+        </div>
       `;
     }
 
-    return displayLogs.map(log => {
+    // 1. Desktop table
+    const tableRowsHtml = displayLogs.map(log => {
       let tenDangNhap = log.ten_dang_nhap || 'system';
       let vaiTro = log.vai_tro || 'system';
       let hoTen = log.ho_ten || '';
@@ -283,6 +259,90 @@ window.GymApp.pages['audit-logs'] = {
         </tr>
       `;
     }).join('');
+
+    const desktopHtml = `
+      <div class="hidden md:block overflow-x-auto" style="scrollbar-width: thin; scrollbar-color: var(--outline-variant) transparent;">
+        <table class="w-full text-left border-collapse table-auto">
+          <thead>
+            <tr class="h-10 border-b border-outline-variant/40 bg-surface-container-low/10">
+              <th class="px-4 font-bold text-on-surface-variant uppercase tracking-wider text-xs whitespace-nowrap">Thời điểm</th>
+              <th class="px-4 font-bold text-on-surface-variant uppercase tracking-wider text-xs whitespace-nowrap">Tài khoản thực hiện</th>
+              <th class="px-4 font-bold text-on-surface-variant uppercase tracking-wider text-xs whitespace-nowrap">Vai trò</th>
+              <th class="px-4 font-bold text-on-surface-variant uppercase tracking-wider text-xs whitespace-nowrap">Hành động</th>
+              <th class="px-4 font-bold text-on-surface-variant uppercase tracking-wider text-xs whitespace-nowrap">Đối tượng</th>
+              <th class="px-4 font-bold text-on-surface-variant uppercase tracking-wider text-xs">Ghi chú</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-outline-variant/30">
+            ${tableRowsHtml}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    // 2. Mobile cards
+    const mobileCardsHtml = displayLogs.map(log => {
+      let tenDangNhap = log.ten_dang_nhap || 'system';
+      let vaiTro = log.vai_tro || 'system';
+      let hoTen = log.ho_ten || '';
+
+      if (tenDangNhap === 'system') {
+        tenDangNhap = 'admin';
+        vaiTro = 'admin';
+        hoTen = 'Quản trị viên';
+      }
+
+      const roleStyle = self.roleLabels[vaiTro] || { label: vaiTro, class: 'bg-surface-container text-on-surface-variant' };
+      const formattedTime = log.thoi_diem ? new Date(log.thoi_diem).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : '—';
+      const actorName = hoTen || tenDangNhap;
+
+      return `
+        <div class="rounded-xl border border-outline-variant/50 p-compact flex flex-col gap-2 bg-white dark:bg-[#1e1e1e] shadow-sm text-left">
+          <div class="flex items-center justify-between border-b border-outline-variant/20 pb-1.5">
+            <span class="text-xs text-on-surface-variant font-bold">${formattedTime}</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${roleStyle.class}">
+              ${roleStyle.label}
+            </span>
+          </div>
+          <div class="grid grid-cols-2 gap-xs text-body-sm">
+            <div>
+              <p class="text-on-surface-variant text-[11px] font-bold uppercase tracking-wider">Người thực hiện</p>
+              <p class="font-bold text-on-surface" style="font-size: 13px;">${actorName} <span class="font-normal text-xs text-on-surface-variant">(@${tenDangNhap})</span></p>
+            </div>
+            <div>
+              <p class="text-on-surface-variant text-[11px] font-bold uppercase tracking-wider">Hành động</p>
+              <p class="mt-0.5">${self.getActionBadge(log.hanh_dong)}</p>
+            </div>
+            <div class="col-span-2">
+              <p class="text-on-surface-variant text-[11px] font-bold uppercase tracking-wider">Đối tượng tác động</p>
+              <p class="font-bold text-on-surface">
+                ${self.translateObject(log.doi_tuong)}
+                ${log.doi_tuong_id ? `<span class="text-brand-primary text-xs font-black"> #ID:${log.doi_tuong_id}</span>` : ''}
+              </p>
+            </div>
+            <div class="col-span-2 border-t border-outline-variant/10 pt-1.5">
+              <p class="text-on-surface-variant text-[11px] font-bold uppercase tracking-wider mb-0.5">Ghi chú chi tiết</p>
+              <p class="text-on-surface-variant/90 leading-relaxed font-medium">${log.ghi_chu || '—'}</p>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    const mobileHtml = `
+      <div class="md:hidden flex flex-col gap-compact">
+        ${mobileCardsHtml}
+      </div>
+    `;
+
+    // Pagination container static wrapper at bottom
+    const paginationHtml = `
+      <div id="audit-pagination-container">
+        <!-- Phân trang sẽ render qua _renderPaginationOnly() -->
+      </div>
+    `;
+
+    return desktopHtml + mobileHtml + paginationHtml;
   },
 
   _renderPaginationOnly: function () {
@@ -313,9 +373,9 @@ window.GymApp.pages['audit-logs'] = {
       return;
     }
 
-    // Render hàng loạt hàng dữ liệu vào body
-    const tbody = document.getElementById('audit-table-tbody');
-    if (tbody) tbody.innerHTML = self._renderTableRows();
+    // Render danh sách logs (cả Desktop table và Mobile cards)
+    const contentContainer = document.getElementById('audit-logs-content');
+    if (contentContainer) contentContainer.innerHTML = self._renderLogsList();
     self._renderPaginationOnly();
 
     // 1. Tự động tìm kiếm tức thì khi gõ từ khóa
@@ -323,7 +383,8 @@ window.GymApp.pages['audit-logs'] = {
     if (searchInput) {
       searchInput.addEventListener('input', (e) => {
         self.searchKeyword = e.target.value.trim();
-        if (tbody) tbody.innerHTML = self._renderTableRows();
+        if (contentContainer) contentContainer.innerHTML = self._renderLogsList();
+        self._renderPaginationOnly();
       });
     }
 
@@ -361,9 +422,24 @@ window.GymApp.pages['audit-logs'] = {
     if (fromDateInput) fromDateInput.addEventListener('change', handleDateChange);
     if (toDateInput) toDateInput.addEventListener('change', handleDateChange);
 
-    // 5. Gắn sự kiện nút Refresh
-    document.getElementById('btn-refresh-audit')?.addEventListener('click', () => {
-      self._loadData({ keepDOM: true });
+    // 5. Gắn sự kiện nút Refresh với xoay icon & toast
+    document.getElementById('btn-refresh-audit')?.addEventListener('click', async () => {
+      const btn = document.getElementById('btn-refresh-audit');
+      const icon = btn?.querySelector('.material-symbols-outlined');
+      if (icon) icon.classList.add('animate-spin');
+      if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.7';
+      }
+      
+      await self._loadData({ keepDOM: true });
+      
+      if (icon) icon.classList.remove('animate-spin');
+      if (btn) {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+      }
+      window.GymApp.toast('Đã cập nhật dữ liệu nhật ký!', 'success');
     });
 
     // 6. Sự kiện nút Đặt lại bộ lọc
@@ -387,17 +463,15 @@ window.GymApp.pages['audit-logs'] = {
   // ===== PRIVATE HELPERS =====
   _loadData: async function (options = {}) {
     const self = this;
-    const tbody = document.getElementById('audit-table-tbody');
+    const contentContainer = document.getElementById('audit-logs-content');
 
     // Hiển thị trạng thái loading spinner nếu không giữ DOM
-    if (!options.keepDOM && tbody) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="6" class="text-center py-16">
-            <span class="material-symbols-outlined animate-spin text-brand-primary text-3xl mb-compact">autorenew</span>
-            <p class="text-on-surface-variant text-body-sm mt-1">Đang tải nhật ký hệ thống...</p>
-          </td>
-        </tr>
+    if (!options.keepDOM && contentContainer) {
+      contentContainer.innerHTML = `
+        <div class="text-center py-16">
+          <span class="material-symbols-outlined animate-spin text-brand-primary text-3xl mb-compact">autorenew</span>
+          <p class="text-on-surface-variant text-body-sm mt-1">Đang tải nhật ký hệ thống...</p>
+        </div>
       `;
     }
 
@@ -430,7 +504,7 @@ window.GymApp.pages['audit-logs'] = {
       window.GymApp.toast('Lỗi kết nối máy chủ!', 'error');
     } finally {
       if (options.keepDOM) {
-        if (tbody) tbody.innerHTML = self._renderTableRows();
+        if (contentContainer) contentContainer.innerHTML = self._renderLogsList();
         self._renderPaginationOnly();
       } else {
         self._refreshView();
