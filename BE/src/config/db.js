@@ -1498,6 +1498,11 @@ WHEN (SELECT MAX(d_ngay) FROM (
       `);
     })();
     console.log('[DB] ✅ Đã sửa xong các tham chiếu bị hỏng tới dang_ky_pt_old_v18.');
+  }
+} catch (err) {
+  console.error('[DB] ❌ Lỗi khi sửa tham chiếu v20:', err.message);
+}
+
 // ── Cưỡng bức tạo lại View v_trang_thai_hoi_vien chính xác ──
 try {
   db.exec(`DROP VIEW IF EXISTS v_trang_thai_hoi_vien;`);
