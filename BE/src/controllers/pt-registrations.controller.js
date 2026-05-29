@@ -249,8 +249,8 @@ export const cancelRegistration = (req, res) => {
   const lyDoText = ly_do_huy || ly_do || 'Hủy gói PT bởi Admin';
   const refundAmount = Number(so_tien_hoan);
 
-  if (so_tien_hoan === undefined || so_tien_hoan === null || isNaN(refundAmount) || refundAmount !== reg.gia_thuc_te) {
-    return error(res, `Số tiền hoàn trả phải bằng đúng giá thực tế của gói PT (${reg.gia_thuc_te.toLocaleString('vi-VN')}đ).`, 400);
+  if (so_tien_hoan === undefined || so_tien_hoan === null || isNaN(refundAmount) || refundAmount < 0 || refundAmount > reg.gia_thuc_te) {
+    return error(res, `Số tiền hoàn trả phải từ 0đ đến tối đa giá thực tế của gói PT (${reg.gia_thuc_te.toLocaleString('vi-VN')}đ).`, 400);
   }
 
   const oldData = { ...reg };

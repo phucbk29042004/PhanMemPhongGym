@@ -265,14 +265,18 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
   const submitCancel = async () => {
     const cleanRefund = String(cancelRefund).replace(/\./g, '').replace(/,/g, '');
     const refundVal = Number(cleanRefund);
-    if (isNaN(refundVal) || refundVal <= 0) {
-      Alert.alert('Lỗi', 'Số tiền hoàn trả bắt buộc nhập và phải lớn hơn 0đ.');
+    if (isNaN(refundVal) || refundVal < 0) {
+      Alert.alert('Lỗi', 'Số tiền hoàn trả bắt buộc nhập và phải từ 0đ trở lên.');
       return;
     }
 
     if (cancelType === 'gym') {
       const activePackage = member?.goi_tap_hien_tai[0];
       if (!activePackage) return;
+      if (refundVal > (activePackage.gia_thuc_te || 0)) {
+        Alert.alert('Lỗi', `Số tiền hoàn trả không được vượt quá giá thực tế của gói tập (${formatPrice(activePackage.gia_thuc_te)}).`);
+        return;
+      }
       setCancelingPackage(true);
       try {
         const res = await api.patch(`/members/${memberId}/package/${activePackage.id}/cancel`, {
@@ -294,6 +298,10 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
     } else {
       const activePT = member?.pt_hien_tai[0];
       if (!activePT) return;
+      if (refundVal > (activePT.gia_thuc_te || 0)) {
+        Alert.alert('Lỗi', `Số tiền hoàn trả không được vượt quá giá thực tế của gói PT (${formatPrice(activePT.gia_thuc_te)}).`);
+        return;
+      }
       setCancelingPT(true);
       try {
         const res = await api.put(`/pt/registrations/${activePT.id}/cancel`, {
@@ -831,12 +839,13 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
             </View>
 
             <View style={{ gap: 8, marginTop: 10 }}>
-              <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Số tiền hoàn trả (đ) - Cố định theo giá gói *</Text>
+              <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Số tiền hoàn trả (đ) *</Text>
               <TextInput
-                style={[styles.modalInput, { backgroundColor: colors.surfaceVariant, color: colors.textMuted, borderColor: colors.border, opacity: 0.8 }]}
+                style={[styles.modalInput, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
                 value={cancelRefund}
-                editable={false}
+                onChangeText={(val) => setCancelRefund(formatInputMoney(val))}
                 keyboardType="numeric"
+                placeholder="VD: 500.000"
                 placeholderTextColor={colors.textMuted}
               />
 
