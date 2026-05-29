@@ -633,7 +633,7 @@ window.GymApp.pages['packages'] = {
       </div>
 
       <div>
-        <h4 class="font-bold text-on-surface mb-1">📦 Quản lý Gói tập (Gym Packages):</h4>
+        <h4 class="font-bold text-on-surface mb-1">Quản lý Gói tập (Gym Packages):</h4>
         <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
           <li>Hiển thị ở cột bên trái. Click <strong>Thêm gói tập</strong> để tạo gói tập mới.</li>
           <li>Cấu hình: Tên gói, Đơn giá (VNĐ), Hạn dùng (số tháng hoặc số ngày).</li>
@@ -641,7 +641,7 @@ window.GymApp.pages['packages'] = {
       </div>
 
       <div>
-        <h4 class="font-bold text-on-surface mb-1">🏋️ Quản lý Gói PT (Trainer Packages):</h4>
+        <h4 class="font-bold text-on-surface mb-1">Quản lý Gói PT (Trainer Packages):</h4>
         <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
           <li>Hiển thị ở cột bên phải. Click <strong>Thêm gói PT</strong> để tạo gói dịch vụ kèm HLV cá nhân mới.</li>
           <li>Cấu hình: Tên gói PT, Tổng số buổi tập (buổi học), Đơn giá, Hạn dùng tối đa (ngày).</li>
@@ -649,7 +649,7 @@ window.GymApp.pages['packages'] = {
       </div>
 
       <div>
-        <h4 class="font-bold text-on-surface mb-1">⚡ Thao tác chỉnh sửa & xóa:</h4>
+        <h4 class="font-bold text-on-surface mb-1">Thao tác chỉnh sửa & xóa:</h4>
         <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
           <li><strong>Sửa gói:</strong> Bấm biểu tượng bút chì để điều chỉnh giá bán hoặc thông tin gói.</li>
           <li><strong>Xóa gói:</strong> Bấm biểu tượng thùng rác màu đỏ để xóa gói. Hệ thống chỉ cho phép xóa nếu gói tập đó hiện tại chưa có hội viên nào đang đăng ký sử dụng thực tế.</li>

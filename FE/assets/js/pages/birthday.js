@@ -628,7 +628,7 @@ window.GymApp.pages['birthday'] = {
       </div>
 
       <div>
-        <h4 class="font-bold text-on-surface mb-1">🎂 Sinh nhật hôm nay:</h4>
+        <h4 class="font-bold text-on-surface mb-1">Sinh nhật hôm nay:</h4>
         <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
           <li>Hiển thị nổi bật ở khung phía trên kèm ảnh đại diện của hội viên.</li>
           <li><strong>Gửi lời chúc:</strong> Bấm nút **Gửi tất cả** để gửi thông điệp chúc mừng sinh nhật qua thông báo App tới toàn bộ hội viên có sinh nhật hôm nay, hoặc gửi riêng từng người bằng nút **Gửi chúc mừng** bên dưới avatar.</li>
@@ -636,7 +636,7 @@ window.GymApp.pages['birthday'] = {
       </div>
 
       <div>
-        <h4 class="font-bold text-on-surface mb-1">📅 Lịch sinh nhật 12 tháng:</h4>
+        <h4 class="font-bold text-on-surface mb-1">Lịch sinh nhật 12 tháng:</h4>
         <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
           <li>Phân chia hội viên theo từng tháng sinh.</li>
           <li>Tháng hiện tại sẽ được đánh dấu nhãn **Tháng này**.</li>

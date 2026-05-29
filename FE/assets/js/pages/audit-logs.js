@@ -555,7 +555,7 @@ window.GymApp.pages['audit-logs'] = {
       </div>
 
       <div>
-        <h4 class="font-bold text-on-surface mb-1">🔍 Phân luồng vai trò (Tabs):</h4>
+        <h4 class="font-bold text-on-surface mb-1">Phân luồng vai trò (Tabs):</h4>
         <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
           <li><strong>Xem tất cả:</strong> Lọc hiển thị toàn bộ lịch sử không phân biệt vai trò.</li>
           <li><strong>Các tab vai trò cụ thể:</strong> Click vào các tab như **Quản trị viên**, **Lễ tân**, **Huấn luyện viên**, **Hội viên** để chỉ xem các hoạt động được thực hiện bởi người dùng có vai trò đó.</li>
@@ -563,7 +563,7 @@ window.GymApp.pages['audit-logs'] = {
       </div>
 
       <div>
-        <h4 class="font-bold text-on-surface mb-1">⚙️ Bộ lọc nâng cao:</h4>
+        <h4 class="font-bold text-on-surface mb-1">Bộ lọc nâng cao:</h4>
         <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
           <li><strong>Từ khóa tìm kiếm:</strong> Nhập tài khoản, họ tên hoặc nội dung ghi chú để tìm nhanh log cụ thể.</li>
           <li><strong>Loại hành động:</strong> Lọc theo các loại thao tác như LOGIN, CREATE_MEMBER, CHECKIN...</li>

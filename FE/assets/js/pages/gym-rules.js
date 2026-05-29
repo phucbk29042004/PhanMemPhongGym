@@ -421,7 +421,7 @@ window.GymApp.pages['gym-rules'] = {
       </div>
 
       <div>
-        <h4 class="font-bold text-on-surface mb-1">📝 Soạn thảo quy tắc:</h4>
+        <h4 class="font-bold text-on-surface mb-1">Soạn thảo quy tắc:</h4>
         <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
           <li>Bấm nút **Thêm nội quy** để mở Form tạo quy tắc mới.</li>
           <li>Cấu hình: Tiêu đề quy tắc, Đối tượng áp dụng (Hội viên, PT, Nhân viên hoặc Quy định chung), Thứ tự hiển thị (số nhỏ hiển thị trước), và Nội dung chi tiết quy tắc.</li>
@@ -429,7 +429,7 @@ window.GymApp.pages['gym-rules'] = {
       </div>
 
       <div>
-        <h4 class="font-bold text-on-surface mb-1">⚙️ Bật/Tắt & Quản lý:</h4>
+        <h4 class="font-bold text-on-surface mb-1">Bật/Tắt & Quản lý:</h4>
         <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
           <li><strong>Bật/Tắt hiển thị:</strong> Sử dụng công tắc gạt (switch) ở mỗi quy tắc để bật/tắt hiển thị quy tắc đó trên App di động của hội viên ngay lập tức.</li>
           <li><strong>Sửa/Xóa:</strong> Click vào biểu tượng tương ứng trên từng thẻ nội quy để thay đổi nội dung hoặc xóa vĩnh viễn quy tắc đó.</li>

@@ -826,7 +826,7 @@ window.GymApp.pages['expired'] = {
       </div>
 
       <div>
-        <h4 class="font-bold text-on-surface mb-1">📁 Các tab chức năng:</h4>
+        <h4 class="font-bold text-on-surface mb-1">Các tab chức năng:</h4>
         <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
           <li><strong>Hết hạn:</strong> Danh sách hội viên đã quá ngày kết thúc gói tập (hiện tại không thể quét mã vào tập).</li>
           <li><strong>Sắp hết:</strong> Danh sách hội viên có gói tập sẽ hết hạn trong vòng 7 ngày tới.</li>
@@ -835,7 +835,7 @@ window.GymApp.pages['expired'] = {
       </div>
 
       <div>
-        <h4 class="font-bold text-on-surface mb-1">⚡ Thao tác xử lý:</h4>
+        <h4 class="font-bold text-on-surface mb-1">Thao tác xử lý:</h4>
         <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
           <li><strong>Gửi nhắc nhở:</strong> Bấm biểu tượng Chuông báo để gửi thông báo đẩy (push notification) nhắc nhở hội viên gia hạn qua App.</li>
           <li><strong>Lập phiếu gia hạn:</strong> Bấm biểu tượng Tờ giấy để mở nhanh hộp thoại đăng ký gói tập mới cho hội viên.</li>

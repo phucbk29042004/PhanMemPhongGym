@@ -37,11 +37,19 @@ window.GymApp.pages['revenue'] = {
 
           <!-- Biểu đồ cột doanh thu theo ngày/tháng -->
           <div class="lg:col-span-2 bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 shadow-sm overflow-hidden">
-            <div class="section-header px-standard py-compact border-b border-outline-variant/50 flex items-center gap-compact bg-surface-container-low/20">
-              <div class="icon-bg icon-bg-green" style="width:32px;height:32px;border-radius:8px">
-                <span class="material-symbols-outlined text-brand-primary text-base" style="font-variation-settings:'FILL' 1">bar_chart</span>
+            <div class="section-header px-standard py-compact border-b border-outline-variant/50 flex items-center justify-between bg-surface-container-low/20">
+              <div class="flex items-center gap-compact">
+                <div class="icon-bg icon-bg-green" style="width:32px;height:32px;border-radius:8px">
+                  <span class="material-symbols-outlined text-brand-primary text-base" style="font-variation-settings:'FILL' 1">bar_chart</span>
+                </div>
+                <h3 id="rev-chart-title" class="font-bold text-on-surface text-body-lg">So sánh doanh thu tháng này / tháng trước</h3>
               </div>
-              <h3 id="rev-chart-title" class="font-bold text-on-surface text-body-lg">So sánh doanh thu tháng này / tháng trước</h3>
+              <select id="rev-chart-type" class="bg-surface-container-low text-on-surface border border-outline-variant text-body-sm font-bold rounded-lg px-2 py-1 outline-none cursor-pointer">
+                <option value="default">Mặc định</option>
+                <option value="hourly">Doanh thu theo giờ</option>
+                <option value="weekday">Doanh thu theo thứ</option>
+                <option value="payment_method">Phương thức thanh toán</option>
+              </select>
             </div>
             <div class="p-standard" style="height:280px">
               <canvas id="rev-chart"></canvas>
@@ -269,51 +277,155 @@ window.GymApp.pages['revenue'] = {
     const isYesterday = this._days === 'yesterday';
     const isSingleDay = isToday || isYesterday;
 
-    if (isSingleDay) {
-      // Mode: so sánh tháng này vs tháng trước (giữ nguyên logic cũ)
-      const monthData = monthComparison || {};
-      const labels = (monthData.labels || []).map(day => `${day}`);
-      const currentMonthLabel = monthData.current_month ? `Tháng ${parseInt(monthData.current_month.slice(5, 7), 10)}` : 'Tháng này';
-      const previousMonthLabel = monthData.previous_month ? `Tháng ${parseInt(monthData.previous_month.slice(5, 7), 10)}` : 'Tháng trước';
-      const currentData = (monthData.current || []).map(d => d.tong_tien);
-      const previousData = (monthData.previous || []).map(d => d.tong_tien || 0);
+    // Sync select dropdown value
+    const selectEl = document.getElementById('rev-chart-type');
+    if (selectEl) {
+      selectEl.value = this._chartType || 'default';
+    }
 
+    if (this._chartType === 'hourly') {
       const title = document.getElementById('rev-chart-title');
-      if (title) title.textContent = `So sánh doanh thu ${currentMonthLabel} / ${previousMonthLabel}`;
+      if (title) title.textContent = `Doanh thu theo giờ (Phát sinh trong kì)`;
+
+      const hourlyData = Array(24).fill(0);
+      const transactions = this._transactionsData || [];
+
+      transactions.forEach(t => {
+        let netCash = 0;
+        if (t.trang_thai === 'huy') {
+          const isSwitch = (t.ly_do_huy || '').includes('Đổi sang');
+          const refund = t.so_tien_hoan || (isSwitch ? 0 : t.gia_thuc_te) || 0;
+          netCash = -refund;
+        } else {
+          const isSwitch = (t.ghi_chu_tt || '').includes('Đổi từ');
+          if (isSwitch) {
+            const matchHoanTien = (t.ghi_chu_tt || '').match(/Hoàn tiền:\s*([0-9.]+)/);
+            const hoanTien = matchHoanTien ? parseFloat(matchHoanTien[1]) : 0;
+            netCash = t.gia_thuc_te - hoanTien;
+          } else if (t.trang_thai === 'tam_dung' || t.trang_thai === 'het_han') {
+            netCash = 0;
+          } else {
+            netCash = t.gia_thuc_te;
+          }
+        }
+
+        if (t.thoi_gian) {
+          const hourPart = t.thoi_gian.substring(11, 13);
+          const hour = parseInt(hourPart, 10);
+          if (!isNaN(hour) && hour >= 0 && hour < 24) {
+            hourlyData[hour] += netCash;
+          }
+        }
+      });
+
+      const labels = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}h`);
 
       this._chart = new Chart(canvas, {
         type: 'bar',
         data: {
           labels,
-          datasets: [
-            {
-              label: currentMonthLabel,
-              type: 'bar',
-              data: currentData,
-              borderColor: '#1D9336',
-              backgroundColor: '#1D9336cc',
-              borderRadius: 4,
-              borderSkipped: false,
-            },
-            {
-              label: previousMonthLabel,
-              type: 'line',
-              data: previousData,
-              borderColor: '#575f67',
-              backgroundColor: '#575f6722',
-              borderWidth: 2,
-              pointRadius: 2,
-              pointHoverRadius: 4,
-              tension: 0.35,
-              fill: false,
-            },
-          ],
+          datasets: [{
+            label: 'Doanh thu',
+            data: hourlyData,
+            backgroundColor: '#1D9336cc',
+            borderColor: '#1D9336',
+            borderRadius: 4,
+            borderWidth: 1
+          }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { labels: { color: labelColor, font: { size: 11 } } },
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => ` ${new Intl.NumberFormat('vi-VN').format(ctx.raw ?? 0)} đ`,
+              },
+            },
+          },
+          scales: {
+            x: {
+              ticks: { color: labelColor, font: { size: 9 } },
+              grid: { color: gridColor },
+              title: { display: true, text: 'Khung giờ', color: labelColor, font: { size: 10 } }
+            },
+            y: {
+              ticks: {
+                color: labelColor,
+                font: { size: 9 },
+                callback: v => new Intl.NumberFormat('vi-VN', { notation: 'compact' }).format(v),
+              },
+              grid: { color: gridColor }
+            }
+          }
+        }
+      });
+    } else if (this._chartType === 'weekday') {
+      const title = document.getElementById('rev-chart-title');
+      if (title) title.textContent = `Doanh thu theo thứ trong tuần`;
+
+      const weekdayData = Array(7).fill(0);
+      const transactions = this._transactionsData || [];
+
+      transactions.forEach(t => {
+        let netCash = 0;
+        if (t.trang_thai === 'huy') {
+          const isSwitch = (t.ly_do_huy || '').includes('Đổi sang');
+          const refund = t.so_tien_hoan || (isSwitch ? 0 : t.gia_thuc_te) || 0;
+          netCash = -refund;
+        } else {
+          const isSwitch = (t.ghi_chu_tt || '').includes('Đổi từ');
+          if (isSwitch) {
+            const matchHoanTien = (t.ghi_chu_tt || '').match(/Hoàn tiền:\s*([0-9.]+)/);
+            const hoanTien = matchHoanTien ? parseFloat(matchHoanTien[1]) : 0;
+            netCash = t.gia_thuc_te - hoanTien;
+          } else if (t.trang_thai === 'tam_dung' || t.trang_thai === 'het_han') {
+            netCash = 0;
+          } else {
+            netCash = t.gia_thuc_te;
+          }
+        }
+
+        if (t.thoi_gian) {
+          const datePart = t.thoi_gian.substring(0, 10);
+          const d = new Date(datePart);
+          if (!isNaN(d)) {
+            const dayIndex = d.getDay();
+            weekdayData[dayIndex] += netCash;
+          }
+        }
+      });
+
+      const labels = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
+      const orderedData = [
+        weekdayData[1],
+        weekdayData[2],
+        weekdayData[3],
+        weekdayData[4],
+        weekdayData[5],
+        weekdayData[6],
+        weekdayData[0]
+      ];
+
+      this._chart = new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Doanh thu',
+            data: orderedData,
+            backgroundColor: '#6750a4cc',
+            borderColor: '#6750a4',
+            borderRadius: 4,
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
             tooltip: {
               callbacks: {
                 label: ctx => ` ${new Intl.NumberFormat('vi-VN').format(ctx.raw ?? 0)} đ`,
@@ -323,79 +435,74 @@ window.GymApp.pages['revenue'] = {
           scales: {
             x: {
               ticks: { color: labelColor, font: { size: 10 } },
-              grid: { color: gridColor },
-              title: { display: true, text: 'Ngày trong tháng', color: labelColor, font: { size: 10 } },
+              grid: { color: gridColor }
             },
             y: {
               ticks: {
                 color: labelColor,
-                font: { size: 10 },
+                font: { size: 9 },
                 callback: v => new Intl.NumberFormat('vi-VN', { notation: 'compact' }).format(v),
               },
-              grid: { color: gridColor },
-            },
-          },
-        },
+              grid: { color: gridColor }
+            }
+          }
+        }
       });
-    } else {
-      // FIX: Mode 7/30 ngày — hiển thị biểu đồ theo ngày thực tế từ `daily`
-      const daysInt = parseInt(this._days) || 30;
+    } else if (this._chartType === 'payment_method') {
       const title = document.getElementById('rev-chart-title');
-      if (title) title.textContent = `Doanh thu ${daysInt} ngày qua (theo ngày)`;
+      if (title) title.textContent = `Doanh thu theo phương thức thanh toán`;
 
-      const dailyList = Array.isArray(daily) ? daily : [];
+      let cashTotal = 0;
+      let bankTotal = 0;
+      const transactions = this._transactionsData || [];
 
-      // Format nhãn ngày: "27/5", "26/5" ...
-      const labels = dailyList.map(d => {
-        const parts = d.ngay.split('-');
-        return `${parseInt(parts[2])}/${parseInt(parts[1])}`;
+      transactions.forEach(t => {
+        let netCash = 0;
+        if (t.trang_thai === 'huy') {
+          const isSwitch = (t.ly_do_huy || '').includes('Đổi sang');
+          const refund = t.so_tien_hoan || (isSwitch ? 0 : t.gia_thuc_te) || 0;
+          netCash = -refund;
+        } else {
+          const isSwitch = (t.ghi_chu_tt || '').includes('Đổi từ');
+          if (isSwitch) {
+            const matchHoanTien = (t.ghi_chu_tt || '').match(/Hoàn tiền:\s*([0-9.]+)/);
+            const hoanTien = matchHoanTien ? parseFloat(matchHoanTien[1]) : 0;
+            netCash = t.gia_thuc_te - hoanTien;
+          } else if (t.trang_thai === 'tam_dung' || t.trang_thai === 'het_han') {
+            netCash = 0;
+          } else {
+            netCash = t.gia_thuc_te;
+          }
+        }
+
+        if (t.phuong_thuc_tt === 'tien_mat') {
+          cashTotal += netCash;
+        } else if (t.phuong_thuc_tt === 'chuyen_khoan') {
+          bankTotal += netCash;
+        }
       });
-      const goiTapData = dailyList.map(d => d.tien_goi_tap || 0);
-      const goiPTData = dailyList.map(d => d.tien_goi_pt || 0);
-      const tongData = dailyList.map(d => d.tong_tien || 0);
+
+      const labels = ['Tiền mặt', 'Chuyển khoản'];
+      const data = [cashTotal, bankTotal];
 
       this._chart = new Chart(canvas, {
         type: 'bar',
         data: {
           labels,
-          datasets: [
-            {
-              label: 'Gói tập',
-              data: goiTapData,
-              backgroundColor: '#1D9336cc',
-              borderColor: '#1D9336',
-              borderRadius: 4,
-              borderSkipped: false,
-              stack: 'revenue',
-            },
-            {
-              label: 'Gói PT',
-              data: goiPTData,
-              backgroundColor: '#6750a4cc',
-              borderColor: '#6750a4',
-              borderRadius: 4,
-              borderSkipped: false,
-              stack: 'revenue',
-            },
-            {
-              label: 'Tổng',
-              type: 'line',
-              data: tongData,
-              borderColor: '#e65100',
-              backgroundColor: 'transparent',
-              borderWidth: 2,
-              pointRadius: 2,
-              pointHoverRadius: 4,
-              tension: 0.35,
-              fill: false,
-            },
-          ],
+          datasets: [{
+            data,
+            backgroundColor: ['#e65100cc', '#1D9336cc'],
+            borderColor: ['#e65100', '#1D9336'],
+            borderRadius: 6,
+            borderWidth: 1,
+            barThickness: 60
+          }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { labels: { color: labelColor, font: { size: 11 } } },
+            legend: { display: false },
             tooltip: {
               callbacks: {
                 label: ctx => ` ${new Intl.NumberFormat('vi-VN').format(ctx.raw ?? 0)} đ`,
@@ -404,23 +511,174 @@ window.GymApp.pages['revenue'] = {
           },
           scales: {
             x: {
-              stacked: true,
-              ticks: { color: labelColor, font: { size: 10 }, maxRotation: 45 },
-              grid: { color: gridColor },
-              title: { display: true, text: 'Ngày', color: labelColor, font: { size: 10 } },
+              ticks: { color: labelColor, font: { size: 11, weight: 'bold' } },
+              grid: { display: false }
             },
             y: {
-              stacked: true,
               ticks: {
                 color: labelColor,
-                font: { size: 10 },
+                font: { size: 9 },
                 callback: v => new Intl.NumberFormat('vi-VN', { notation: 'compact' }).format(v),
               },
-              grid: { color: gridColor },
+              grid: { color: gridColor }
+            }
+          }
+        }
+      });
+    } else {
+      if (isSingleDay) {
+        // Mode: so sánh tháng này vs tháng trước (giữ nguyên logic cũ)
+        const monthData = monthComparison || {};
+        const labels = (monthData.labels || []).map(day => `${day}`);
+        const currentMonthLabel = monthData.current_month ? `Tháng ${parseInt(monthData.current_month.slice(5, 7), 10)}` : 'Tháng này';
+        const previousMonthLabel = monthData.previous_month ? `Tháng ${parseInt(monthData.previous_month.slice(5, 7), 10)}` : 'Tháng trước';
+        const currentData = (monthData.current || []).map(d => d.tong_tien);
+        const previousData = (monthData.previous || []).map(d => d.tong_tien || 0);
+
+        const title = document.getElementById('rev-chart-title');
+        if (title) title.textContent = `So sánh doanh thu ${currentMonthLabel} / ${previousMonthLabel}`;
+
+        this._chart = new Chart(canvas, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [
+              {
+                label: currentMonthLabel,
+                type: 'bar',
+                data: currentData,
+                borderColor: '#1D9336',
+                backgroundColor: '#1D9336cc',
+                borderRadius: 4,
+                borderSkipped: false,
+              },
+              {
+                label: previousMonthLabel,
+                type: 'line',
+                data: previousData,
+                borderColor: '#575f67',
+                backgroundColor: '#575f6722',
+                borderWidth: 2,
+                pointRadius: 2,
+                pointHoverRadius: 4,
+                tension: 0.35,
+                fill: false,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { labels: { color: labelColor, font: { size: 11 } } },
+              tooltip: {
+                callbacks: {
+                  label: ctx => ` ${new Intl.NumberFormat('vi-VN').format(ctx.raw ?? 0)} đ`,
+                },
+              },
+            },
+            scales: {
+              x: {
+                ticks: { color: labelColor, font: { size: 10 } },
+                grid: { color: gridColor },
+                title: { display: true, text: 'Ngày trong tháng', color: labelColor, font: { size: 10 } },
+              },
+              y: {
+                ticks: {
+                  color: labelColor,
+                  font: { size: 10 },
+                  callback: v => new Intl.NumberFormat('vi-VN', { notation: 'compact' }).format(v),
+                },
+                grid: { color: gridColor },
+              },
             },
           },
-        },
-      });
+        });
+      } else {
+        // FIX: Mode 7/30 ngày — hiển thị biểu đồ theo ngày thực tế từ `daily`
+        const daysInt = parseInt(this._days) || 30;
+        const title = document.getElementById('rev-chart-title');
+        if (title) title.textContent = `Doanh thu ${daysInt} ngày qua (theo ngày)`;
+
+        const dailyList = Array.isArray(daily) ? daily : [];
+
+        // Format nhãn ngày: "27/5", "26/5" ...
+        const labels = dailyList.map(d => {
+          const parts = d.ngay.split('-');
+          return `${parseInt(parts[2])}/${parseInt(parts[1])}`;
+        });
+        const goiTapData = dailyList.map(d => d.tien_goi_tap || 0);
+        const goiPTData = dailyList.map(d => d.tien_goi_pt || 0);
+        const tongData = dailyList.map(d => d.tong_tien || 0);
+
+        this._chart = new Chart(canvas, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [
+              {
+                label: 'Gói tập',
+                data: goiTapData,
+                backgroundColor: '#1D9336cc',
+                borderColor: '#1D9336',
+                borderRadius: 4,
+                borderSkipped: false,
+                stack: 'revenue',
+              },
+              {
+                label: 'Gói PT',
+                data: goiPTData,
+                backgroundColor: '#6750a4cc',
+                borderColor: '#6750a4',
+                borderRadius: 4,
+                borderSkipped: false,
+                stack: 'revenue',
+              },
+              {
+                label: 'Tổng',
+                type: 'line',
+                data: tongData,
+                borderColor: '#e65100',
+                backgroundColor: 'transparent',
+                borderWidth: 2,
+                pointRadius: 2,
+                pointHoverRadius: 4,
+                tension: 0.35,
+                fill: false,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { labels: { color: labelColor, font: { size: 11 } } },
+              tooltip: {
+                callbacks: {
+                  label: ctx => ` ${new Intl.NumberFormat('vi-VN').format(ctx.raw ?? 0)} đ`,
+                },
+              },
+            },
+            scales: {
+              x: {
+                stacked: true,
+                ticks: { color: labelColor, font: { size: 10 }, maxRotation: 45 },
+                grid: { color: gridColor },
+                title: { display: true, text: 'Ngày', color: labelColor, font: { size: 10 } },
+              },
+              y: {
+                stacked: true,
+                ticks: {
+                  color: labelColor,
+                  font: { size: 10 },
+                  callback: v => new Intl.NumberFormat('vi-VN', { notation: 'compact' }).format(v),
+                },
+                grid: { color: gridColor },
+              },
+            },
+          },
+        });
+      }
     }
   },
 
@@ -478,7 +736,7 @@ window.GymApp.pages['revenue'] = {
 
     el.innerHTML = `
       <div class="flex flex-col gap-standard flex-1 justify-between">
-        <div class="flex flex-col gap-standard">
+        <div class="flex flex-col gap-standard" style="min-height:230px;">
           ${itemsHtml}
         </div>
         ${paginationHtml}
@@ -599,10 +857,10 @@ window.GymApp.pages['revenue'] = {
       const paymentLabel = t.phuong_thuc_tt
         ? t.phuong_thuc_tt === 'tien_mat' ? 'Tiền mặt'
           : t.phuong_thuc_tt === 'chuyen_khoan' ? 'Chuyển khoản'
-          : t.phuong_thuc_tt === 'the' ? 'Thẻ'
-          : t.phuong_thuc_tt === 'momo' ? 'MoMo'
-          : t.phuong_thuc_tt === 'zalopay' ? 'ZaloPay'
-          : 'Khác'
+            : t.phuong_thuc_tt === 'the' ? 'Thẻ'
+              : t.phuong_thuc_tt === 'momo' ? 'MoMo'
+                : t.phuong_thuc_tt === 'zalopay' ? 'ZaloPay'
+                  : 'Khác'
         : '—';
 
       return `
@@ -701,9 +959,13 @@ window.GymApp.pages['revenue'] = {
         };
       }
 
+      this._dailyData = revData.daily || [];
+      this._monthComparisonData = revData.monthComparison || {};
+      this._transactionsData = dayData.giao_dich || [];
+
       this._renderStats(revData.summary, dayData, revData.monthComparison);
       // FIX: truyền daily vào _renderChart để mode 7/30 ngày vẽ đúng
-      this._renderChart(revData.daily, revData.monthComparison);
+      this._renderChart(this._dailyData, this._monthComparisonData);
       this._renderPackageStats(revData.packageStats);
       this._renderTodayTable(dayData.giao_dich || []);
     } catch (err) {
@@ -717,8 +979,15 @@ window.GymApp.pages['revenue'] = {
     this._packagePage = 1;
     this._packageStats = [];
     this._days = 'today';
+    this._chartType = 'default';
     this._updateRangeButtons();
     await this._fetchAndRender();
+
+    // Lắng nghe đổi loại biểu đồ
+    document.getElementById('rev-chart-type')?.addEventListener('change', function () {
+      self._chartType = this.value;
+      self._renderChart(self._dailyData, self._monthComparisonData);
+    });
 
     // Chọn khoảng thời gian
     document.querySelectorAll('.rev-range-btn').forEach(btn => {
@@ -766,7 +1035,7 @@ window.GymApp.pages['revenue'] = {
       </div>
       
       <div>
-        <h4 class="font-bold text-on-surface mb-1">📌 Các chỉ số tài chính:</h4>
+        <h4 class="font-bold text-on-surface mb-1">Các chỉ số tài chính:</h4>
         <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
           <li><strong>Doanh thu:</strong> Tổng số tiền thu được từ việc đăng ký gói hội viên và gói PT trong khoảng thời gian đã chọn.</li>
           <li><strong>Số giao dịch:</strong> Tổng số hóa đơn/lịch sử đăng ký được ghi nhận thành công.</li>
@@ -776,7 +1045,7 @@ window.GymApp.pages['revenue'] = {
       </div>
 
       <div>
-        <h4 class="font-bold text-on-surface mb-1">⚙️ Hướng dẫn thao tác:</h4>
+        <h4 class="font-bold text-on-surface mb-1">Hướng dẫn thao tác:</h4>
         <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
           <li><strong>Bộ lọc thời gian:</strong> Lựa chọn xem dữ liệu theo Hôm nay, Hôm qua, 7 ngày qua hoặc 30 ngày qua bằng các nút ở góc trên bên phải.</li>
           <li><strong>Biểu đồ doanh thu:</strong> Thể hiện xu hướng biến động doanh thu theo từng ngày để có kế hoạch kinh doanh phù hợp.</li>

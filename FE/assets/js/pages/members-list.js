@@ -3049,9 +3049,9 @@ window.GymApp.pages['members-list'] = {
         const giaBuoi = tongBuoi > 0 ? Math.round(giaThucTe / tongBuoi) : 0;
         const fmt = n => new Intl.NumberFormat('vi-VN').format(n);
         return `<div style="margin-top:8px;padding-top:8px;border-top:1px solid #bfdbfe;display:flex;flex-wrap:wrap;gap:8px;">
-                <span style="font-size:11px;color:#1e4ed8;">💰 Giá gói cũ: <b>${fmt(giaThucTe)} ₫</b></span>
-                <span style="font-size:11px;color:#1e4ed8;">📅 Giá/buổi: <b>${fmt(giaBuoi)} ₫</b></span>
-                <span style="font-size:11px;color:#166534;background:#dcfce7;padding:1px 6px;border-radius:4px;">💵 Tiền hoàn gợi ý: <b>${fmt(credit)} ₫</b></span>
+                <span style="font-size:11px;color:#1e4ed8;">Giá gói cũ: <b>${fmt(giaThucTe)} ₫</b></span>
+                <span style="font-size:11px;color:#1e4ed8;">Giá/buổi: <b>${fmt(giaBuoi)} ₫</b></span>
+                <span style="font-size:11px;color:#166534;background:#dcfce7;padding:1px 6px;border-radius:4px;">Tiền hoàn gợi ý: <b>${fmt(credit)} ₫</b></span>
               </div>`;
       })()}
           </div>
@@ -4324,7 +4324,7 @@ window.GymApp.pages['members-list'] = {
       </div>
 
       <div>
-        <h4 class="font-bold text-on-surface mb-1">👥 Quản lý Hội viên:</h4>
+        <h4 class="font-bold text-on-surface mb-1">Quản lý Hội viên:</h4>
         <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
           <li><strong>Tìm kiếm & Lọc:</strong> Tìm hội viên theo tên, SĐT hoặc mã số. Lọc theo trạng thái gói (Còn hạn, Hết hạn...), giới tính, hoặc xem ai đã check-in hôm nay.</li>
           <li><strong>Xem chi tiết:</strong> Click vào nút Xem (mắt xanh) để xem thông tin cá nhân, lịch sử tập luyện, các gói tập đã mua và lịch đăng ký PT của hội viên.</li>
@@ -4333,7 +4333,7 @@ window.GymApp.pages['members-list'] = {
       </div>
 
       <div>
-        <h4 class="font-bold text-on-surface mb-1">🏋️ Quản lý Huấn luyện viên (PT):</h4>
+        <h4 class="font-bold text-on-surface mb-1">Quản lý Huấn luyện viên (PT):</h4>
         <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
           <li>Chuyển sang tab <strong>Huấn luyện viên</strong> để quản lý danh sách PT.</li>
           <li>Xem thông tin chuyên môn, số lượng hội viên đang phụ trách và tổng số buổi dạy thực tế của từng PT.</li>
