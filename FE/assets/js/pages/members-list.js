@@ -2211,8 +2211,7 @@ window.GymApp.pages['members-list'] = {
             </div>
             <div>
               <label class="block text-body-sm font-bold text-on-surface mb-xs">Hoàn tiền (VNĐ)</label>
-              <input id="cancel-pt-refund" type="text" readonly value="${new Intl.NumberFormat('vi-VN').format(contract.gia_thuc_te || 0)}" ${iCls} style="background:var(--bg-surface-container);cursor:not-allowed;" />
-              <p style="font-size:11px;color:var(--text-on-surface-variant);margin-top:4px;">Lưu ý: Backend yêu cầu hoàn đúng số tiền thực tế đã đóng (${new Intl.NumberFormat('vi-VN').format(contract.gia_thuc_te || 0)}đ).</p>
+              <input id="cancel-pt-refund" type="text" inputmode="numeric" placeholder="VD: 500.000" value="${new Intl.NumberFormat('vi-VN').format(contract.gia_thuc_te || 0)}" ${iCls} />
             </div>
             <div class="rounded-xl border" style="padding:10px 12px;background:#fef2f2;border-color:#fecaca;">
               <p class="text-body-sm" style="color:#b91c1c;margin:0;">Sau khi hủy, hội viên nhận thông báo trên app. Thao tác không thể hoàn tác.</p>
@@ -2229,15 +2228,34 @@ window.GymApp.pages['members-list'] = {
     overlay.querySelector('#cancel-pt-close').addEventListener('click', close);
     overlay.querySelector('#cancel-pt-close2').addEventListener('click', close);
     overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+    const _cParseVND = s => parseInt((s || '').replace(/\./g, '').replace(/,/g, '')) || 0;
+    const _cFmtVND = n => n > 0 ? new Intl.NumberFormat('vi-VN').format(n) : '';
+    const cancelRefundEl = overlay.querySelector('#cancel-pt-refund');
+    cancelRefundEl?.addEventListener('focus', function () { const v = _cParseVND(this.value); this.value = v > 0 ? String(v) : ''; });
+    cancelRefundEl?.addEventListener('blur', function () { this.value = _cFmtVND(_cParseVND(this.value)); });
+
     overlay.querySelector('#cancel-pt-confirm').addEventListener('click', async () => {
       const ly_do_huy = overlay.querySelector('#cancel-pt-reason').value.trim();
+      const refundInputVal = overlay.querySelector('#cancel-pt-refund').value.trim();
       if (!ly_do_huy) {
         return window.GymApp.toast('Vui lòng nhập lý do hủy!', 'error');
+      }
+      if (!refundInputVal) {
+        return window.GymApp.toast('Vui lòng nhập số tiền hoàn (không được để trống)', 'error');
+      }
+      const so_tien_hoan = _cParseVND(refundInputVal);
+      if (so_tien_hoan < 0) {
+        return window.GymApp.toast('Số tiền hoàn phải lớn hơn hoặc bằng 0', 'error');
+      }
+      const maxHoan = contract.gia_thuc_te || 0;
+      if (so_tien_hoan > maxHoan) {
+        return window.GymApp.toast(`Số tiền hoàn không được vượt quá ${window.GymApp.formatCurrency(maxHoan)}`, 'error');
       }
       try {
         const res = await window.GymApp.api.put(`/pt/registrations/${contract.id}/cancel`, {
           ly_do_huy,
-          so_tien_hoan: contract.gia_thuc_te || 0
+          so_tien_hoan
         });
         if (res?.success) {
           window.GymApp.toast('Đã hủy hợp đồng PT thành công!', 'success');

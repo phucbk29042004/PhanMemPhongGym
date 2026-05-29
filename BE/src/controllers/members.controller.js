@@ -1586,8 +1586,8 @@ export const cancelPackage = (req, res) => {
   `).get(pkgId, id);
   if (!pkg) return error(res, 'Không tìm thấy đăng ký gói tập.', 404);
 
-  if (so_tien_hoan === undefined || so_tien_hoan === null || isNaN(refundAmount) || refundAmount !== pkg.gia_thuc_te) {
-    return error(res, `Số tiền hoàn trả phải bằng đúng giá thực tế của gói tập (${pkg.gia_thuc_te.toLocaleString('vi-VN')}đ).`, 400);
+  if (so_tien_hoan === undefined || so_tien_hoan === null || isNaN(refundAmount) || refundAmount < 0 || refundAmount > pkg.gia_thuc_te) {
+    return error(res, `Số tiền hoàn trả phải từ 0đ đến tối đa giá thực tế của gói tập (${pkg.gia_thuc_te.toLocaleString('vi-VN')}đ).`, 400);
   }
   if (pkg.trang_thai === 'huy') return error(res, 'Gói tập này đã bị hủy trước đó.', 400);
   if (pkg.trang_thai === 'het_han') return error(res, 'Không thể hủy gói tập đã hết hạn.', 400);
