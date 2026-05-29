@@ -18,6 +18,7 @@ import {
   Calendar,
   DollarSign,
   TrendingUp,
+  TrendingDown,
   Package,
   Activity,
   Award,
@@ -172,13 +173,16 @@ export default function AdminRevenueScreen({ navigation }) {
     let ptRev = 0;
     let subVal = '';
     let subLabel = '';
+    let isUp = true;
+    let hasTrend = false;
 
     if (data.type === 'today' || data.type === 'yesterday') {
       total = data.tong_tien || 0;
       gymRev = data.tien_goi_tap || 0;
       ptRev = data.tien_goi_pt || 0;
       const diff = total - (data.hom_qua || 0);
-      const isUp = diff >= 0;
+      isUp = diff >= 0;
+      hasTrend = true;
       subVal = formatPrice(Math.abs(diff));
       subLabel = data.type === 'today'
         ? (isUp ? 'tăng so với hôm qua' : 'giảm so với hôm qua')
@@ -190,6 +194,9 @@ export default function AdminRevenueScreen({ navigation }) {
       subVal = formatPrice(data.summary?.trung_binh_ngay || 0);
       subLabel = 'trung bình mỗi ngày';
     }
+
+    const TrendIcon = hasTrend ? (isUp ? TrendingUp : TrendingDown) : TrendingUp;
+    const trendColor = hasTrend ? (isUp ? '#10b981' : '#ef4444') : colors.primary;
 
     return (
       <View style={styles.statsGrid}>
@@ -205,8 +212,8 @@ export default function AdminRevenueScreen({ navigation }) {
           </View>
           <Text style={[styles.statValue, { color: colors.text }]}>{formatPrice(total)}</Text>
           <View style={styles.statFooter}>
-            <TrendingUp size={12} color={colors.primary} style={{ marginRight: 4 }} />
-            <Text style={[styles.statSubText, { color: colors.primary }]}>{subVal} </Text>
+            <TrendIcon size={12} color={trendColor} style={{ marginRight: 4 }} />
+            <Text style={[styles.statSubText, { color: trendColor }]}>{subVal} </Text>
             <Text style={[styles.statSubLabel, { color: colors.textMuted }]}>{subLabel}</Text>
           </View>
         </View>
