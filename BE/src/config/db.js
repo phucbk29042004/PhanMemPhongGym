@@ -73,7 +73,7 @@ if (!migrated) {
       CREATE TABLE thong_bao (
         id            INTEGER PRIMARY KEY AUTOINCREMENT,
         loai          TEXT NOT NULL CHECK (loai IN (
-                          'sap_het_han_goi_tap', 'het_han_goi_tap',
+'sap_het_han_goi_tap', 'het_han_goi_tap',
                           'check_in', 'chua_check_in_truoc_buoi_pt',
                           'cron_tu_xac_nhan', 'sap_het_buoi_pt',
                           'ho_so_moi', 'gia_han_goi_tap',
@@ -137,7 +137,7 @@ if (!migratedV3) {
              SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
           )) AS den_ngay_xa_nhat,
           CASE
-              WHEN NOT EXISTS (SELECT 1 FROM dang_ky_goi_tap dk WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong')
+WHEN NOT EXISTS (SELECT 1 FROM dang_ky_goi_tap dk WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong')
                    AND NOT EXISTS (SELECT 1 FROM dang_ky_pt dp WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong')
                   THEN 'chua_dang_ky'
               WHEN (SELECT MAX(d_ngay) FROM (
@@ -187,7 +187,7 @@ if (!migratedV4) {
                           'dang_ky_goi_pt_moi', 'huy_buoi_tap',
                           'hoan_tac_buoi_tap', 'tai_khoan_bi_khoa',
                           'tai_khoan_moi', 'tom_tat_buoi_sang',
-                          'het_han_goi_pt_thang', 'cap_nhat_buoi_tap'
+'het_han_goi_pt_thang', 'cap_nhat_buoi_tap'
                       )),
         tieu_de       TEXT NOT NULL,
         noi_dung      TEXT NOT NULL,
@@ -356,7 +356,7 @@ try {
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS danh_gia_pt (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+id              INTEGER PRIMARY KEY AUTOINCREMENT,
     lich_tap_id     INTEGER NOT NULL REFERENCES lich_tap(id) ON DELETE CASCADE,
     pt_id           INTEGER NOT NULL REFERENCES ho_so(id),
     hoi_vien_id     INTEGER NOT NULL REFERENCES ho_so(id),
@@ -418,7 +418,7 @@ function recreateMemberStatusView() {
         CASE
             WHEN NOT EXISTS (SELECT 1 FROM dang_ky_goi_tap dk WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong')
                  AND NOT EXISTS (SELECT 1 FROM dang_ky_pt dp WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong')
-                THEN 'chua_dang_ky'
+THEN 'chua_dang_ky'
             WHEN (SELECT MAX(d_ngay) FROM (
                     SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
                     UNION ALL
@@ -451,6 +451,47 @@ if (checkView && checkView.sql.toLowerCase().includes('old')) {
     recreateMemberStatusView();
   })();
   console.log('[DB] ✅ Tái tạo View v_trang_thai_hoi_vien thành công.');
+}
+
+// ── Sửa lỗi table yeu_cau_goi_tap bị hỏng sau khi migrate (SQLite tự động đổi tên ref sang _old_v17) ──
+try {
+  const checkYeuCau = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='yeu_cau_goi_tap'").get();
+  if (checkYeuCau && checkYeuCau.sql && checkYeuCau.sql.includes('dang_ky_goi_tap_old_v17')) {
+    console.log('[DB] 🛠️ Phát hiện table yeu_cau_goi_tap bị lỗi tham chiếu khóa ngoại, đang tái tạo...');
+    db.transaction(() => {
+      db.exec(`ALTER TABLE yeu_cau_goi_tap RENAME TO yeu_cau_goi_tap_old;`);
+      db.exec(`
+        CREATE TABLE yeu_cau_goi_tap (
+          id           INTEGER PRIMARY KEY AUTOINCREMENT,
+          ho_so_id     INTEGER NOT NULL REFERENCES ho_so(id),
+          dang_ky_id   INTEGER REFERENCES dang_ky_goi_tap(id),
+          loai_yeu_cau TEXT NOT NULL DEFAULT 'gia_han'
+                       CHECK (loai_yeu_cau IN ('gia_han','tam_dung','huy')),
+          ly_do        TEXT,
+          trang_thai   TEXT NOT NULL DEFAULT 'cho_duyet'
+                       CHECK (trang_thai IN ('cho_duyet','da_duyet','tu_choi')),
+          nguoi_duyet_id INTEGER REFERENCES tai_khoan(id),
+ghi_chu_duyet  TEXT,
+          ngay_tao     DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
+          ngay_duyet   DATETIME
+        );
+      `);
+      db.exec(`
+        INSERT INTO yeu_cau_goi_tap (
+          id, ho_so_id, dang_ky_id, loai_yeu_cau, ly_do, trang_thai,
+          nguoi_duyet_id, ghi_chu_duyet, ngay_tao, ngay_duyet
+        )
+        SELECT 
+          id, ho_so_id, dang_ky_id, loai_yeu_cau, ly_do, trang_thai,
+          nguoi_duyet_id, ghi_chu_duyet, ngay_tao, ngay_duyet
+        FROM yeu_cau_goi_tap_old;
+      `);
+      db.exec(`DROP TABLE yeu_cau_goi_tap_old;`);
+    })();
+    console.log('[DB] ✅ Tái tạo table yeu_cau_goi_tap thành công.');
+  }
+} catch (e) {
+  console.error('[DB] Lỗi khi sửa table yeu_cau_goi_tap:', e.message);
 }
 
 // ── Migration v8: Tạo bảng noi_quy (nội quy phòng tập) ───────────────────────
@@ -545,7 +586,7 @@ if (!migratedV10) {
     CREATE TRIGGER trg_doanh_thu_goi_tap_update
     AFTER UPDATE OF trang_thai ON dang_ky_goi_tap
     BEGIN
-      INSERT INTO doanh_thu (ngay, tong_tien, tong_don, tien_goi_tap, tien_goi_pt)
+INSERT INTO doanh_thu (ngay, tong_tien, tong_don, tien_goi_tap, tien_goi_pt)
       SELECT date('now','localtime'), NEW.gia_thuc_te, 1, NEW.gia_thuc_te, 0
       WHERE NEW.trang_thai IN ('dang_hoat_dong', 'het_han')
         AND OLD.trang_thai NOT IN ('dang_hoat_dong', 'het_han')
@@ -722,7 +763,6 @@ if (!migratedV14) {
 //           ngay_cap_nhat = datetime('now','localtime');
 //       END;
 //     `);
-
 //     db.exec(`
 //       CREATE TRIGGER trg_doanh_thu_goi_pt
 //       AFTER INSERT ON dang_ky_pt
@@ -904,7 +944,6 @@ if (!migratedV16) {
       WHERE ngay = COALESCE(date(OLD.ngay_thanh_toan), date(OLD.ngay_tao));
     END;
   `);
-
   db.prepare(`INSERT OR IGNORE INTO cau_hinh (khoa, gia_tri, mo_ta) VALUES ('db_migration_triggers_revenue_v16', '1', 'Sửa trigger price_update: thêm INSERT OR IGNORE để đảm bảo row doanh_thu tồn tại trước khi UPDATE')`).run();
   console.log('[DB] ✅ Migration v16 (sửa trigger price_update) hoàn thành.');
 }
@@ -913,7 +952,7 @@ if (!migratedV16) {
 const schemaGoiTap = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='dang_ky_goi_tap'").get();
 if (schemaGoiTap && schemaGoiTap.sql && !schemaGoiTap.sql.includes('cho_kich_hoat')) {
   console.log('[DB] 🛠️ Phát hiện bảng dang_ky_goi_tap thiếu trạng thái cho_kich_hoat, đang nâng cấp...');
-  
+
   // Xóa trigger cũ tham chiếu sai (dang_ky_goi_tap_old) gây crash khi ALTER TABLE
   try {
     db.exec(`DROP TRIGGER IF EXISTS trg_chong_xoa_goi_tap;`);
@@ -963,7 +1002,7 @@ if (schemaGoiTap && schemaGoiTap.sql && !schemaGoiTap.sql.includes('cho_kich_hoa
         id, ho_so_id, goi_tap_id, tu_ngay, den_ngay, gia_thuc_te, ghi_chu_gia,
         trang_thai, phuong_thuc_tt, nguoi_thu_id, ma_giao_dich, ghi_chu_tt,
         ngay_thanh_toan, so_tien_da_thu, nguoi_tao_id, nguoi_cap_nhat_id,
-        ngay_tao, ngay_cap_nhat, ly_do_huy, so_tien_hoan, ngay_huy,
+ngay_tao, ngay_cap_nhat, ly_do_huy, so_tien_hoan, ngay_huy,
         payos_order_code, payos_status, chi_nhanh_mua
       )
       SELECT 
@@ -1029,7 +1068,7 @@ if (schemaGoiTap && schemaGoiTap.sql && !schemaGoiTap.sql.includes('cho_kich_hoa
       CREATE TRIGGER trg_doanh_thu_goi_tap_price_update
       AFTER UPDATE ON dang_ky_goi_tap
       WHEN OLD.trang_thai IN ('dang_hoat_dong', 'het_han')
-        AND NEW.trang_thai IN ('dang_hoat_dong', 'het_han')
+AND NEW.trang_thai IN ('dang_hoat_dong', 'het_han')
         AND OLD.gia_thuc_te != NEW.gia_thuc_te
       BEGIN
         INSERT OR IGNORE INTO doanh_thu (ngay, tong_tien, tong_don, tien_goi_tap, tien_goi_pt)
@@ -1061,7 +1100,7 @@ if (schemaGoiTap && schemaGoiTap.sql && !schemaGoiTap.sql.includes('cho_kich_hoa
 // ── Migration v18: Nâng cấp CHECK constraint cho dang_ky_pt để nhận 'cho_kich_hoat' & cập nhật các Triggers doanh thu ──
 try {
   console.log('[DB] 🛠️ Đang cưỡng bức kiểm tra nâng cấp bảng dang_ky_pt (thêm trạng thái cho_kich_hoat)...');
-  
+
   // Kiểm tra xem bảng backup dang_ky_pt_old_v18 có đang tồn tại do lỗi dở dang hay không
   const checkOldTable = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='dang_ky_pt_old_v18'").get();
   if (checkOldTable) {
@@ -1072,16 +1111,16 @@ try {
   const schemaPt = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='dang_ky_pt'").get();
   if (schemaPt && schemaPt.sql && !schemaPt.sql.includes('cho_kich_hoat')) {
     console.log('[DB] Bảng dang_ky_pt thiếu trạng thái cho_kich_hoat, tiến hành tái cấu trúc...');
-    
+
     // Lấy danh sách cột thực tế của bảng dang_ky_pt hiện tại
     const existingCols = db.prepare(`PRAGMA table_info(dang_ky_pt)`).all().map(c => c.name);
     const hasSoTienHoan = existingCols.includes('so_tien_hoan');
     const hasLyDoHuy = existingCols.includes('ly_do_huy');
-    
+
     // Tạm thời drop các trigger liên quan để tránh báo lỗi phụ thuộc khi rename bảng
-    try { db.exec(`DROP TRIGGER IF EXISTS trg_doanh_thu_goi_pt;`); } catch (_) {}
-    try { db.exec(`DROP TRIGGER IF EXISTS trg_doanh_thu_goi_pt_update;`); } catch (_) {}
-    try { db.exec(`DROP TRIGGER IF EXISTS trg_doanh_thu_goi_pt_price_update;`); } catch (_) {}
+    try { db.exec(`DROP TRIGGER IF EXISTS trg_doanh_thu_goi_pt;`); } catch (_) { }
+    try { db.exec(`DROP TRIGGER IF EXISTS trg_doanh_thu_goi_pt_update;`); } catch (_) { }
+    try { db.exec(`DROP TRIGGER IF EXISTS trg_doanh_thu_goi_pt_price_update;`); } catch (_) { }
 
     db.transaction(() => {
       // 1. Đổi tên bảng cũ sang backup
@@ -1138,8 +1177,22 @@ try {
 
       // 3. Copy dữ liệu từ bảng cũ sang bảng mới
       db.exec(`
+<<<<<<< HEAD
+        INSERT INTO dang_ky_pt (
+          id, hoi_vien_id, pt_id, goi_pt_id, so_buoi_dang_ky, so_buoi_da_tap,
+          tu_ngay, den_ngay, gia_thuc_te, ghi_chu_gia, trang_thai, phuong_thuc_tt,
+          nguoi_thu_id, ma_giao_dich, ghi_chu_tt, ngay_thanh_toan, nguoi_tao_id,
+          nguoi_cap_nhat_id, ngay_tao, ngay_cap_nhat
+        )
+        SELECT 
+          id, hoi_vien_id, pt_id, goi_pt_id, so_buoi_dang_ky, so_buoi_da_tap,
+          tu_ngay, den_ngay, gia_thuc_te, ghi_chu_gia, trang_thai, phuong_thuc_tt,
+nguoi_thu_id, ma_giao_dich, ghi_chu_tt, ngay_thanh_toan, nguoi_tao_id,
+          nguoi_tao_id, ngay_tao, ngay_cap_nhat
+=======
         INSERT INTO dang_ky_pt (${insertFields.join(', ')})
         SELECT ${selectFields.join(', ')}
+>>>>>>> main
         FROM dang_ky_pt_old_v18;
       `);
 
@@ -1201,7 +1254,7 @@ try {
   db.exec(`
     CREATE TRIGGER trg_doanh_thu_goi_pt_price_update
     AFTER UPDATE ON dang_ky_pt
-    WHEN OLD.trang_thai IN ('dang_hoat_dong', 'hoan_thanh', 'cho_kich_hoat')
+WHEN OLD.trang_thai IN ('dang_hoat_dong', 'hoan_thanh', 'cho_kich_hoat')
       AND NEW.trang_thai IN ('dang_hoat_dong', 'hoan_thanh', 'cho_kich_hoat')
       AND OLD.gia_thuc_te != NEW.gia_thuc_te
     BEGIN
@@ -1319,9 +1372,149 @@ db.exec(`
       tong_tien    = MAX(0, tong_tien - OLD.gia_thuc_te + NEW.gia_thuc_te),
       tien_goi_tap = MAX(0, tien_goi_tap - OLD.gia_thuc_te + NEW.gia_thuc_te),
       ngay_cap_nhat = datetime('now','localtime')
-    WHERE ngay = COALESCE(date(OLD.ngay_thanh_toan), date(OLD.ngay_tao));
+WHERE ngay = COALESCE(date(OLD.ngay_thanh_toan), date(OLD.ngay_tao));
   END;
 `);
 
-export default db;
+// ── Migration v20: Sửa các lỗi tham chiếu (dangling references) sau khi rename dang_ky_pt ──
+try {
+  const checkLichTap = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='lich_tap'").get();
+  if (checkLichTap && checkLichTap.sql.includes('dang_ky_pt_old_v18')) {
+    console.log('[DB] 🛠️ Phát hiện bảng lich_tap và các view/trigger liên quan bị hỏng tham chiếu, đang sửa chữa...');
+    db.transaction(() => {
+      // DROP broken views and triggers FIRST to prevent SQLite compilation errors
+      db.exec(`DROP VIEW IF EXISTS v_lich_tap_hom_nay;`);
+      db.exec(`DROP TRIGGER IF EXISTS trg_xac_nhan_buoi_tap;`);
+      db.exec(`DROP TRIGGER IF EXISTS trg_chong_xoa_goi_pt;`);
+      db.exec(`DROP VIEW IF EXISTS v_trang_thai_hoi_vien;`);
 
+      // 1. Sửa bảng lich_tap
+      db.exec(`ALTER TABLE lich_tap RENAME TO lich_tap_old_broken;`);
+      db.exec(`
+        CREATE TABLE lich_tap (
+          id              INTEGER PRIMARY KEY AUTOINCREMENT,
+          dang_ky_pt_id   INTEGER NOT NULL REFERENCES dang_ky_pt(id) ON DELETE CASCADE,
+          pt_id           INTEGER NOT NULL REFERENCES ho_so(id),
+          hoi_vien_id     INTEGER NOT NULL REFERENCES ho_so(id),
+          ngay_tap        DATE    NOT NULL,
+          gio_bat_dau     TIME    NOT NULL,
+          gio_ket_thuc    TIME    NOT NULL,
+          loai_buoi       TEXT    NOT NULL DEFAULT 'ca_nhan'
+                                  CHECK (loai_buoi IN ('ca_nhan','nhom')),
+          trang_thai      TEXT    NOT NULL DEFAULT 'cho_tap'
+                                  CHECK (trang_thai IN ('cho_tap','da_tap','da_huy','vang')),
+          confirmed_by_id INTEGER REFERENCES tai_khoan(id),
+          ngay_xac_nhan   DATETIME,
+          ly_do_huy       TEXT,
+          nguoi_huy_id    INTEGER REFERENCES tai_khoan(id),
+          ngay_huy        DATETIME,
+          ghi_chu         TEXT,
+          nguoi_tao_id    INTEGER REFERENCES tai_khoan(id),
+          ngay_tao        DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
+          ngay_cap_nhat   DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
+          da_checkin      INTEGER NOT NULL DEFAULT 0 CHECK (da_checkin IN (0,1)),
+          pt_xac_nhan     INTEGER NOT NULL DEFAULT 0,
+          hv_xac_nhan     INTEGER NOT NULL DEFAULT 0,
+          CHECK (gio_ket_thuc > gio_bat_dau),
+          CHECK (pt_id != hoi_vien_id)
+        );
+      `);
+      db.exec(`INSERT INTO lich_tap SELECT * FROM lich_tap_old_broken;`);
+      db.exec(`DROP TABLE lich_tap_old_broken;`);
+
+      // 2. Sửa view v_lich_tap_hom_nay
+      db.exec(`DROP VIEW IF EXISTS v_lich_tap_hom_nay;`);
+      db.exec(`
+        CREATE VIEW v_lich_tap_hom_nay AS
+        SELECT
+            lt.id, lt.ngay_tap, lt.gio_bat_dau, lt.gio_ket_thuc, lt.loai_buoi, lt.trang_thai, lt.ghi_chu,
+hv.id AS hoi_vien_id, hv.ho_ten AS ten_hoi_vien, hv.avatar_url AS avatar_hoi_vien,
+            pt.id AS pt_id, pt.ho_ten AS ten_pt, pt.avatar_url AS avatar_pt,
+            (dk.so_buoi_dang_ky - dk.so_buoi_da_tap) AS buoi_con_lai
+        FROM lich_tap lt
+        JOIN ho_so hv ON hv.id = lt.hoi_vien_id
+        JOIN ho_so pt ON pt.id = lt.pt_id
+        JOIN dang_ky_pt dk ON dk.id = lt.dang_ky_pt_id
+        WHERE lt.ngay_tap = date('now','localtime')
+        ORDER BY lt.gio_bat_dau;
+      `);
+
+      // 3. Sửa trigger trg_xac_nhan_buoi_tap
+      db.exec(`DROP TRIGGER IF EXISTS trg_xac_nhan_buoi_tap;`);
+      db.exec(`
+        CREATE TRIGGER trg_xac_nhan_buoi_tap
+            AFTER UPDATE OF trang_thai ON lich_tap
+            WHEN NEW.trang_thai = 'da_tap' AND OLD.trang_thai != 'da_tap' BEGIN
+            UPDATE dang_ky_pt
+            SET so_buoi_da_tap = so_buoi_da_tap + 1
+            WHERE id = NEW.dang_ky_pt_id;
+
+            UPDATE lich_tap
+            SET ngay_xac_nhan = datetime('now','localtime')
+            WHERE id = NEW.id;
+        END;
+      `);
+
+      // 4. Sửa trigger trg_chong_xoa_goi_pt
+      db.exec(`DROP TRIGGER IF EXISTS trg_chong_xoa_goi_pt;`);
+      db.exec(`
+        CREATE TRIGGER trg_chong_xoa_goi_pt
+            BEFORE DELETE ON goi_pt BEGIN
+            SELECT CASE
+                WHEN EXISTS (SELECT 1 FROM dang_ky_pt WHERE goi_pt_id = OLD.id)
+                THEN RAISE(ABORT, 'KHÔNG THỂ XÓA: Gói PT đã có người đăng ký. Hãy dùng Soft Delete (is_deleted=1).')
+            END;
+        END;
+      `);
+
+      // 5. Sửa v_trang_thai_hoi_vien
+      db.exec(`DROP VIEW IF EXISTS v_trang_thai_hoi_vien;`);
+      db.exec(`
+        CREATE VIEW v_trang_thai_hoi_vien AS
+        SELECT
+            h.id,
+            h.ma_ho_so,
+            h.ho_ten,
+            h.so_dien_thoai,
+            h.email,
+            h.avatar_url,
+            h.is_deleted,
+            (SELECT MAX(d_ngay) FROM (
+               SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+               UNION ALL
+               SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+            )) AS den_ngay_xa_nhat,
+            CASE
+                WHEN NOT EXISTS (SELECT 1 FROM dang_ky_goi_tap dk WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong')
+                     AND NOT EXISTS (SELECT 1 FROM dang_ky_pt dp WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong')
+                    THEN 'chua_dang_ky'
+                WHEN (SELECT MAX(d_ngay) FROM (
+                        SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+                        UNION ALL
+                        SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+                     )) < date('now','localtime')
+                    THEN 'het_han'
+WHEN (SELECT MAX(d_ngay) FROM (
+                        SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+                        UNION ALL
+                        SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+                     )) <= date('now','localtime','+7 days')
+                    THEN 'sap_het_han'
+                ELSE 'con_han'
+            END AS trang_thai_mau,
+            (SELECT COUNT(*) FROM dang_ky_pt dp
+             WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS so_goi_pt_dang_tap,
+            (SELECT COUNT(*) FROM dang_ky_goi_tap dk
+             WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong') AS so_goi_tap_hien_tai
+        FROM ho_so h
+        WHERE h.loai_ho_so = 'hoi_vien'
+          AND h.is_deleted = 0
+      `);
+    })();
+    console.log('[DB] ✅ Đã sửa xong các tham chiếu bị hỏng tới dang_ky_pt_old_v18.');
+  }
+} catch (err) {
+  console.error('[DB] ❌ Lỗi khi sửa tham chiếu v20:', err.message);
+}
+
+export default db;

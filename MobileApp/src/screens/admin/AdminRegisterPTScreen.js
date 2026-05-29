@@ -207,7 +207,8 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
         // Nếu song song: hủy PT cũ trước
         if (activePT && registrationType === 'song_song') {
           await api.put(`/pt/registrations/${activePT.id}/cancel`, {
-            ly_do: 'Kích hoạt gói PT mới song song qua di động'
+            ly_do_huy: 'Kích hoạt gói PT mới song song qua di động',
+            so_tien_hoan: activePT.gia_thuc_te
           });
 
           const buoiCon = (activePT.buoi_dang_ky || 0) - (activePT.buoi_da_tap || 0);
