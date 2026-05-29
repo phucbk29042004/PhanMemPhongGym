@@ -1050,4 +1050,192 @@ if (schemaGoiTap && schemaGoiTap.sql && !schemaGoiTap.sql.includes('cho_kich_hoa
   console.log('[DB] ✅ Migration v17 (thêm cho_kich_hoat vào CHECK constraint dang_ky_goi_tap) hoàn thành.');
 }
 
+// ── Migration v18: Nâng cấp CHECK constraint cho dang_ky_pt để nhận 'cho_kich_hoat' & cập nhật các Triggers doanh thu ──
+const schemaPt = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='dang_ky_pt'").get();
+if (schemaPt && schemaPt.sql && !schemaPt.sql.includes('cho_kich_hoat')) {
+  console.log('[DB] 🛠️ Phát hiện bảng dang_ky_pt thiếu trạng thái cho_kich_hoat, đang nâng cấp...');
+  db.transaction(() => {
+    // 1. Đổi tên bảng cũ sang backup
+    db.exec(`ALTER TABLE dang_ky_pt RENAME TO dang_ky_pt_old_v18;`);
+
+    // 2. Tạo bảng mới với CHECK constraint đầy đủ trạng thái bao gồm 'cho_kich_hoat'
+    db.exec(`
+      CREATE TABLE dang_ky_pt (
+        id              INTEGER PRIMARY KEY AUTOINCREMENT,
+        hoi_vien_id     INTEGER NOT NULL REFERENCES ho_so(id),
+        pt_id           INTEGER NOT NULL REFERENCES ho_so(id),
+        goi_pt_id       INTEGER NOT NULL REFERENCES goi_pt(id),
+        so_buoi_dang_ky INTEGER,
+        so_buoi_da_tap  INTEGER NOT NULL DEFAULT 0,
+        tu_ngay         DATE    NOT NULL,
+        den_ngay        DATE,
+        gia_thuc_te     REAL    NOT NULL CHECK (gia_thuc_te >= 0),
+        ghi_chu_gia     TEXT,
+        trang_thai      TEXT    NOT NULL DEFAULT 'dang_hoat_dong'
+                                CHECK (trang_thai IN ('cho_duyet','cho_kich_hoat','dang_hoat_dong','hoan_thanh','huy','tam_dung')),
+        phuong_thuc_tt  TEXT    NOT NULL
+                                CHECK (phuong_thuc_tt IN ('tien_mat','chuyen_khoan','the','momo','zalopay','khac')),
+        nguoi_thu_id    INTEGER REFERENCES ho_so(id),
+        ma_giao_dich    TEXT,
+        ghi_chu_tt      TEXT,
+        ngay_thanh_toan DATETIME,
+        nguoi_tao_id    INTEGER REFERENCES tai_khoan(id),
+        nguoi_cap_nhat_id INTEGER REFERENCES tai_khoan(id),
+        ngay_tao        DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
+        ngay_cap_nhat   DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
+        CHECK (hoi_vien_id != pt_id)
+      );
+    `);
+
+    // 3. Copy dữ liệu từ bảng cũ sang bảng mới
+    db.exec(`
+      INSERT INTO dang_ky_pt (
+        id, hoi_vien_id, pt_id, goi_pt_id, so_buoi_dang_ky, so_buoi_da_tap,
+        tu_ngay, den_ngay, gia_thuc_te, ghi_chu_gia, trang_thai, phuong_thuc_tt,
+        nguoi_thu_id, ma_giao_dich, ghi_chu_tt, ngay_thanh_toan, nguoi_tao_id,
+        nguoi_cap_nhat_id, ngay_tao, ngay_cap_nhat
+      )
+      SELECT 
+        id, hoi_vien_id, pt_id, goi_pt_id, so_buoi_dang_ky, so_buoi_da_tap,
+        tu_ngay, den_ngay, gia_thuc_te, ghi_chu_gia, trang_thai, phuong_thuc_tt,
+        nguoi_thu_id, ma_giao_dich, ghi_chu_tt, ngay_thanh_toan, nguoi_tao_id,
+        nguoi_cap_nhat_id, ngay_tao, ngay_cap_nhat
+      FROM dang_ky_pt_old_v18;
+    `);
+
+    // 4. Xóa bảng backup
+    db.exec(`DROP TABLE dang_ky_pt_old_v18;`);
+
+    // 5. Tái tạo các Triggers cho dang_ky_pt và nâng cấp triggers doanh thu
+    // Các trigger INSERT: cộng doanh thu khi kích hoạt hoạt động HOẶC chờ kích hoạt (vì tiền đã thu)
+    db.exec(`DROP TRIGGER IF EXISTS trg_doanh_thu_goi_pt;`);
+    db.exec(`
+      CREATE TRIGGER trg_doanh_thu_goi_pt
+      AFTER INSERT ON dang_ky_pt
+      WHEN NEW.trang_thai IN ('dang_hoat_dong', 'hoan_thanh', 'cho_kich_hoat')
+      BEGIN
+        INSERT INTO doanh_thu (ngay, tong_tien, tong_don, tien_goi_tap, tien_goi_pt)
+        VALUES (COALESCE(date(NEW.ngay_thanh_toan), date(NEW.ngay_tao)), NEW.gia_thuc_te, 1, 0, NEW.gia_thuc_te)
+        ON CONFLICT(ngay) DO UPDATE SET
+          tong_tien   = tong_tien + NEW.gia_thuc_te,
+          tong_don    = tong_don + 1,
+          tien_goi_pt = tien_goi_pt + NEW.gia_thuc_te,
+          ngay_cap_nhat = datetime('now','localtime');
+      END;
+    `);
+
+    // Update triggers cho dang_ky_pt
+    db.exec(`DROP TRIGGER IF EXISTS trg_doanh_thu_goi_pt_update;`);
+    db.exec(`
+      CREATE TRIGGER trg_doanh_thu_goi_pt_update
+      AFTER UPDATE OF trang_thai ON dang_ky_pt
+      BEGIN
+        -- Khi trạng thái đổi từ Chưa thu tiền/Chưa duyệt sang Có doanh thu
+        INSERT INTO doanh_thu (ngay, tong_tien, tong_don, tien_goi_tap, tien_goi_pt)
+        SELECT COALESCE(date(NEW.ngay_thanh_toan), date(NEW.ngay_tao)), NEW.gia_thuc_te, 1, 0, NEW.gia_thuc_te
+        WHERE NEW.trang_thai IN ('dang_hoat_dong', 'hoan_thanh', 'cho_kich_hoat')
+          AND OLD.trang_thai NOT IN ('dang_hoat_dong', 'hoan_thanh', 'cho_kich_hoat')
+        ON CONFLICT(ngay) DO UPDATE SET
+          tong_tien   = tong_tien + NEW.gia_thuc_te,
+          tong_don    = tong_don + 1,
+          tien_goi_pt = tien_goi_pt + NEW.gia_thuc_te,
+          ngay_cap_nhat = datetime('now','localtime');
+
+        -- Khi trạng thái đổi từ Có doanh thu sang các trạng thái bị hủy/không doanh thu
+        UPDATE doanh_thu SET
+          tong_tien   = MAX(0, tong_tien - OLD.gia_thuc_te),
+          tong_don    = MAX(0, tong_don - 1),
+          tien_goi_pt = MAX(0, tien_goi_pt - OLD.gia_thuc_te),
+          ngay_cap_nhat = datetime('now','localtime')
+        WHERE ngay = COALESCE(date(OLD.ngay_thanh_toan), date(OLD.ngay_tao))
+          AND OLD.trang_thai IN ('dang_hoat_dong', 'hoan_thanh', 'cho_kich_hoat')
+          AND NEW.trang_thai NOT IN ('dang_hoat_dong', 'hoan_thanh', 'cho_kich_hoat');
+      END;
+    `);
+
+    db.exec(`DROP TRIGGER IF EXISTS trg_doanh_thu_goi_pt_price_update;`);
+    db.exec(`
+      CREATE TRIGGER trg_doanh_thu_goi_pt_price_update
+      AFTER UPDATE ON dang_ky_pt
+      WHEN OLD.trang_thai IN ('dang_hoat_dong', 'hoan_thanh', 'cho_kich_hoat')
+        AND NEW.trang_thai IN ('dang_hoat_dong', 'hoan_thanh', 'cho_kich_hoat')
+        AND OLD.gia_thuc_te != NEW.gia_thuc_te
+      BEGIN
+        INSERT OR IGNORE INTO doanh_thu (ngay, tong_tien, tong_don, tien_goi_tap, tien_goi_pt)
+        VALUES (COALESCE(date(OLD.ngay_thanh_toan), date(OLD.ngay_tao)), 0, 0, 0, 0);
+
+        UPDATE doanh_thu SET
+          tong_tien   = MAX(0, tong_tien - OLD.gia_thuc_te + NEW.gia_thuc_te),
+          tien_goi_pt = MAX(0, tien_goi_pt - OLD.gia_thuc_te + NEW.gia_thuc_te),
+          ngay_cap_nhat = datetime('now','localtime')
+        WHERE ngay = COALESCE(date(OLD.ngay_thanh_toan), date(OLD.ngay_tao));
+      END;
+    `);
+  });
+  console.log('[DB] ✅ Migration v18 (thêm cho_kich_hoat vào CHECK constraint dang_ky_pt & triggers doanh thu PT) hoàn thành.');
+}
+
+// Cập nhật triggers cho dang_ky_goi_tap để nhận 'cho_kich_hoat' là có doanh thu ngay
+db.exec(`DROP TRIGGER IF EXISTS trg_doanh_thu_goi_tap;`);
+db.exec(`
+  CREATE TRIGGER trg_doanh_thu_goi_tap
+  AFTER INSERT ON dang_ky_goi_tap
+  WHEN NEW.trang_thai IN ('dang_hoat_dong', 'het_han', 'cho_kich_hoat')
+  BEGIN
+    INSERT INTO doanh_thu (ngay, tong_tien, tong_don, tien_goi_tap, tien_goi_pt)
+    VALUES (COALESCE(date(NEW.ngay_thanh_toan), date(NEW.ngay_tao)), NEW.gia_thuc_te, 1, NEW.gia_thuc_te, 0)
+    ON CONFLICT(ngay) DO UPDATE SET
+      tong_tien    = tong_tien + NEW.gia_thuc_te,
+      tong_don     = tong_don + 1,
+      tien_goi_tap = tien_goi_tap + NEW.gia_thuc_te,
+      ngay_cap_nhat = datetime('now','localtime');
+  END;
+`);
+
+db.exec(`DROP TRIGGER IF EXISTS trg_doanh_thu_goi_tap_update;`);
+db.exec(`
+  CREATE TRIGGER trg_doanh_thu_goi_tap_update
+  AFTER UPDATE OF trang_thai ON dang_ky_goi_tap
+  BEGIN
+    INSERT INTO doanh_thu (ngay, tong_tien, tong_don, tien_goi_tap, tien_goi_pt)
+    SELECT COALESCE(date(NEW.ngay_thanh_toan), date(NEW.ngay_tao)), NEW.gia_thuc_te, 1, NEW.gia_thuc_te, 0
+    WHERE NEW.trang_thai IN ('dang_hoat_dong', 'het_han', 'cho_kich_hoat')
+      AND OLD.trang_thai NOT IN ('dang_hoat_dong', 'het_han', 'cho_kich_hoat')
+    ON CONFLICT(ngay) DO UPDATE SET
+      tong_tien    = tong_tien + NEW.gia_thuc_te,
+      tong_don     = tong_don + 1,
+      tien_goi_tap = tien_goi_tap + NEW.gia_thuc_te,
+      ngay_cap_nhat = datetime('now','localtime');
+
+    UPDATE doanh_thu SET
+      tong_tien    = MAX(0, tong_tien - COALESCE(NEW.so_tien_hoan, OLD.gia_thuc_te)),
+      tong_don     = MAX(0, tong_don - 1),
+      tien_goi_tap = MAX(0, tien_goi_tap - COALESCE(NEW.so_tien_hoan, OLD.gia_thuc_te)),
+      ngay_cap_nhat = datetime('now','localtime')
+    WHERE ngay = COALESCE(date(OLD.ngay_thanh_toan), date(OLD.ngay_tao))
+      AND OLD.trang_thai IN ('dang_hoat_dong', 'het_han', 'cho_kich_hoat')
+      AND NEW.trang_thai NOT IN ('dang_hoat_dong', 'het_han', 'cho_kich_hoat');
+  END;
+`);
+
+db.exec(`DROP TRIGGER IF EXISTS trg_doanh_thu_goi_tap_price_update;`);
+db.exec(`
+  CREATE TRIGGER trg_doanh_thu_goi_tap_price_update
+  AFTER UPDATE ON dang_ky_goi_tap
+  WHEN OLD.trang_thai IN ('dang_hoat_dong', 'het_han', 'cho_kich_hoat')
+    AND NEW.trang_thai IN ('dang_hoat_dong', 'het_han', 'cho_kich_hoat')
+    AND OLD.gia_thuc_te != NEW.gia_thuc_te
+  BEGIN
+    INSERT OR IGNORE INTO doanh_thu (ngay, tong_tien, tong_don, tien_goi_tap, tien_goi_pt)
+    VALUES (COALESCE(date(OLD.ngay_thanh_toan), date(OLD.ngay_tao)), 0, 0, 0, 0);
+
+    UPDATE doanh_thu SET
+      tong_tien    = MAX(0, tong_tien - OLD.gia_thuc_te + NEW.gia_thuc_te),
+      tien_goi_tap = MAX(0, tien_goi_tap - OLD.gia_thuc_te + NEW.gia_thuc_te),
+      ngay_cap_nhat = datetime('now','localtime')
+    WHERE ngay = COALESCE(date(OLD.ngay_thanh_toan), date(OLD.ngay_tao));
+  END;
+`);
+
 export default db;
+

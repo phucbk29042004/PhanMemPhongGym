@@ -194,6 +194,16 @@ export default function AdminPackageRequestsScreen({ navigation }) {
     );
   };
 
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    setPage(1);
+  }, [requests.length]);
+
+  const totalPages = Math.ceil(requests.length / itemsPerPage) || 1;
+  const paginatedRequests = requests.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={colors.statusBar} backgroundColor={colors.statusBarBg} />
@@ -213,30 +223,55 @@ export default function AdminPackageRequestsScreen({ navigation }) {
           <Text style={[styles.loadingText, { color: colors.textMuted }]}>Đang tải danh sách yêu cầu…</Text>
         </View>
       ) : (
-        <FlatList
-          data={requests}
-          keyExtractor={(item) => String(item.id)}
-          renderItem={renderRequestItem}
-          contentContainerStyle={styles.listContent}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={[colors.primary]}
-              tintColor={colors.primary}
-            />
-          }
-          ListEmptyComponent={
-            <View style={styles.emptyBox}>
-              <Clock color={colors.textMuted} size={48} strokeWidth={1.5} />
-              <Text style={[styles.emptyText, { color: colors.textMuted }]}>
-                Không có yêu cầu gia hạn nào chờ duyệt
+        <View style={{ flex: 1 }}>
+          <FlatList
+            data={paginatedRequests}
+            keyExtractor={(item) => String(item.id)}
+            renderItem={renderRequestItem}
+            contentContainerStyle={styles.listContent}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={[colors.primary]}
+                tintColor={colors.primary}
+              />
+            }
+            ListEmptyComponent={
+              <View style={styles.emptyBox}>
+                <Clock color={colors.textMuted} size={48} strokeWidth={1.5} />
+                <Text style={[styles.emptyText, { color: colors.textMuted }]}>
+                  Không có yêu cầu gia hạn nào chờ duyệt
+                </Text>
+              </View>
+            }
+            showsVerticalScrollIndicator={false}
+          />
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface }}>
+              <TouchableOpacity
+                disabled={page === 1}
+                onPress={() => setPage(p => Math.max(1, p - 1))}
+                style={{ paddingHorizontal: 16, paddingVertical: 8, opacity: page === 1 ? 0.4 : 1 }}
+              >
+                <Text style={{ color: colors.primary, fontWeight: '700' }}>Trước</Text>
+              </TouchableOpacity>
+              <Text style={{ color: colors.text, marginHorizontal: 16, fontWeight: '600' }}>
+                Trang {page} / {totalPages}
               </Text>
+              <TouchableOpacity
+                disabled={page === totalPages}
+                onPress={() => setPage(p => Math.min(totalPages, p + 1))}
+                style={{ paddingHorizontal: 16, paddingVertical: 8, opacity: page === totalPages ? 0.4 : 1 }}
+              >
+                <Text style={{ color: colors.primary, fontWeight: '700' }}>Sau</Text>
+              </TouchableOpacity>
             </View>
-          }
-          showsVerticalScrollIndicator={false}
-        />
+          )}
+        </View>
       )}
+
 
       {/* Modal Xử lý Yêu cầu (Bottom Sheet Style) */}
       <Modal

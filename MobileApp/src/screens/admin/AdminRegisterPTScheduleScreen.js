@@ -165,29 +165,78 @@ export default function AdminRegisterPTScheduleScreen({ route, navigation }) {
 
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <View style={{ flex: 1 }}>
-                <FieldLabel label="Giờ bắt đầu (HH:MM)" required colors={colors} />
-                <View style={[styles.inputRow, { borderColor: colors.border, backgroundColor: colors.surfaceVariant }]}>
-                  <Clock color={colors.textMuted} size={18} style={{ marginRight: 10 }} />
-                  <TextInput
-                    style={[styles.inputField, { color: colors.text }]}
+                <FieldLabel label="Giờ bắt đầu" required colors={colors} />
+                <View style={[styles.pickerWrap, { borderColor: colors.border, backgroundColor: colors.surfaceVariant }]}>
+                  <Clock color={colors.textMuted} size={18} style={{ marginRight: 8 }} />
+                  <select
+                    style={{
+                      flex: 1,
+                      height: '100%',
+                      backgroundColor: 'transparent',
+                      color: colors.text,
+                      borderWidth: 0,
+                      fontSize: 14,
+                      outline: 'none',
+                      fontFamily: 'system-ui'
+                    }}
                     value={startTime}
-                    onChangeText={setStartTime}
-                    placeholder="08:00"
-                    placeholderTextColor={colors.textMuted}
-                  />
+                    onChange={(e) => {
+                      const selected = e.target.value;
+                      setStartTime(selected);
+                      // Tự động set giờ kết thúc bằng giờ bắt đầu + 1.5 tiếng
+                      const [h, m] = selected.split(':').map(Number);
+                      let newH = h + 1;
+                      let newM = m + 30;
+                      if (newM >= 60) {
+                        newH += 1;
+                        newM -= 60;
+                      }
+                      const endStr = `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
+                      setEndTime(endStr);
+                    }}
+                  >
+                    {Array.from({ length: 31 }, (_, i) => {
+                      const hour = Math.floor(6 + i / 2);
+                      const min = (i % 2) * 30;
+                      const timeStr = `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+                      return (
+                        <option key={timeStr} value={timeStr}>
+                          {timeStr}
+                        </option>
+                      );
+                    })}
+                  </select>
                 </View>
               </View>
               <View style={{ flex: 1 }}>
-                <FieldLabel label="Giờ kết thúc (HH:MM)" required colors={colors} />
-                <View style={[styles.inputRow, { borderColor: colors.border, backgroundColor: colors.surfaceVariant }]}>
-                  <Clock color={colors.textMuted} size={18} style={{ marginRight: 10 }} />
-                  <TextInput
-                    style={[styles.inputField, { color: colors.text }]}
+                <FieldLabel label="Giờ kết thúc" required colors={colors} />
+                <View style={[styles.pickerWrap, { borderColor: colors.border, backgroundColor: colors.surfaceVariant }]}>
+                  <Clock color={colors.textMuted} size={18} style={{ marginRight: 8 }} />
+                  <select
+                    style={{
+                      flex: 1,
+                      height: '100%',
+                      backgroundColor: 'transparent',
+                      color: colors.text,
+                      borderWidth: 0,
+                      fontSize: 14,
+                      outline: 'none',
+                      fontFamily: 'system-ui'
+                    }}
                     value={endTime}
-                    onChangeText={setEndTime}
-                    placeholder="09:30"
-                    placeholderTextColor={colors.textMuted}
-                  />
+                    onChange={(e) => setEndTime(e.target.value)}
+                  >
+                    {Array.from({ length: 31 }, (_, i) => {
+                      const hour = Math.floor(7 + i / 2);
+                      const min = (i % 2) * 30;
+                      const timeStr = `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+                      return (
+                        <option key={timeStr} value={timeStr} disabled={timeStr <= startTime}>
+                          {timeStr}
+                        </option>
+                      );
+                    })}
+                  </select>
                 </View>
               </View>
             </View>
@@ -204,6 +253,7 @@ export default function AdminRegisterPTScheduleScreen({ route, navigation }) {
             />
           </View>
         )}
+
 
         <TouchableOpacity
           style={[styles.submitBtn, { backgroundColor: colors.primary, opacity: selectedContract ? 1 : 0.6 }]}
@@ -280,6 +330,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 14,
   },
+  pickerWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+  },
   inputField: {
     flex: 1,
     height: '100%',
@@ -300,3 +358,4 @@ const styles = StyleSheet.create({
   },
   submitBtnText: { color: '#ffffff', fontSize: 15, fontWeight: '800' }
 });
+

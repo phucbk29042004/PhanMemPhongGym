@@ -196,3 +196,18 @@ graph TD
 - **Web Frontend (`revenue.js`)**:
   - Đồng bộ hóa bộ lọc doanh thu 7 ngày và 30 ngày: Khi chọn bộ lọc này, các card thống kê Doanh thu, Gym, PT sẽ lấy dữ liệu tổng hợp của cả kỳ lọc từ đối tượng `summary` thay vì lấy dữ liệu ngày hôm nay.
   - Bảng giao dịch bên dưới và tiêu đề cũng tự động hiển thị các giao dịch chi tiết của cả kỳ lọc 7 ngày / 30 ngày thay vì cố định hôm nay.
+
+# Cập nhật kiến trúc 29/05/2026 — Sửa đổi logic gia hạn gói tập/PT, cập nhật giao diện Admin di động và tích hợp thống kê doanh thu
+- **Database & Nghiệp vụ (BE)**:
+  - Bổ sung Migration v18 vào `db.js` cập nhật ràng buộc kiểm tra trạng thái bảng `dang_ky_pt` cho phép trạng thái `cho_kich_hoat`.
+  - Cấu hình lại triggers doanh thu để ghi nhận doanh thu cho các gói có trạng thái `cho_kich_hoat` ngay tại ngày thanh toán/ngày tạo.
+  - Tự động chuyển các gói đăng ký mới sang trạng thái `cho_kich_hoat` nếu ngày bắt đầu (`tu_ngay`) lớn hơn ngày hiện tại.
+  - Bổ sung Cron Job quét hàng ngày lúc 08:00 để tự động kích hoạt gói `cho_kich_hoat` sang `dang_hoat_dong` khi đến ngày bắt đầu.
+- **Backend API (`revenue.controller.js`) & Web Frontend (`revenue.js`)**:
+  - Tích hợp trạng thái `cho_kich_hoat` vào danh sách giao dịch doanh thu hiển thị trên Web.
+- **Giao diện di động (Mobile App)**:
+  - **Đăng ký gói & PT**: Khóa trường nhập ngày bắt đầu, hiển thị ngày bắt đầu tự động nối tiếp (`den_ngay` của gói cũ + 1 ngày) để ngăn chặn đăng ký song song.
+  - **Đặt lịch PT**: Đổi 2 trường nhập giờ sang dạng chọn Dropdown từ 06:00 đến 21:00, tự động tính giờ kết thúc bằng giờ bắt đầu cộng thêm 1.5 tiếng.
+  - **Phân trang di động**: Bổ sung phân trang client-side 10 dòng/trang cho 5 màn hình danh sách Admin di động.
+  - **Icon**: Thay đổi icon tab PT sang biểu tượng quả tạ `Dumbbell`.
+

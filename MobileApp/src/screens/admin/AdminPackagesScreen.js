@@ -284,6 +284,16 @@ export default function AdminPackagesScreen({ navigation }) {
   const gymBg = isDark ? 'rgba(29, 147, 54, 0.15)' : colors.primaryLight;
   const ptBg = isDark ? 'rgba(21, 101, 192, 0.15)' : '#e3f2fd';
 
+  const [gymPage, setGymPage] = useState(1);
+  const [ptPage, setPtPage] = useState(1);
+  const itemsPerPage = 10;
+
+  const totalGymPages = Math.ceil(gymPkgs.length / itemsPerPage) || 1;
+  const totalPtPages = Math.ceil(ptPkgs.length / itemsPerPage) || 1;
+
+  const paginatedGymPkgs = gymPkgs.slice((gymPage - 1) * itemsPerPage, gymPage * itemsPerPage);
+  const paginatedPtPkgs = ptPkgs.slice((ptPage - 1) * itemsPerPage, ptPage * itemsPerPage);
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={colors.statusBar} backgroundColor={colors.statusBarBg} />
@@ -344,62 +354,110 @@ export default function AdminPackagesScreen({ navigation }) {
       {loading ? (
         <View style={styles.loadingBox}><ActivityIndicator size="large" color={colors.primary} /></View>
       ) : (
-        <ScrollView
-          contentContainerStyle={styles.listContent}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
-          showsVerticalScrollIndicator={false}
-        >
-          {tab === 'gym' ? (
-            gymPkgs.length === 0 ? (
-              <View style={styles.emptyBox}>
-                <Package color={colors.textMuted} size={48} strokeWidth={1} />
-                <Text style={[styles.emptyText, { color: colors.textMuted }]}>Chưa có gói gym nào</Text>
-              </View>
+        <View style={{ flex: 1 }}>
+          <ScrollView
+            contentContainerStyle={styles.listContent}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
+            showsVerticalScrollIndicator={false}
+          >
+            {tab === 'gym' ? (
+              gymPkgs.length === 0 ? (
+                <View style={styles.emptyBox}>
+                  <Package color={colors.textMuted} size={48} strokeWidth={1} />
+                  <Text style={[styles.emptyText, { color: colors.textMuted }]}>Chưa có gói gym nào</Text>
+                </View>
+              ) : (
+                paginatedGymPkgs.map((item, idx) => (
+                  <GymPackageCard 
+                    key={item.id} 
+                    item={item} 
+                    index={(gymPage - 1) * itemsPerPage + idx} 
+                    expanded={expandedId === item.id}
+                    onPress={() => setExpandedId(expandedId === item.id ? null : item.id)}
+                    onEdit={(pkg) => navigation.navigate('AdminAddEditPackage', { isPtPackage: false, packageId: pkg.id })}
+                    onDelete={(pkg) => handleDeletePackage(pkg, false)}
+                    colors={colors}
+                    isDark={isDark}
+                    isAdmin={role === 'admin'}
+                  />
+                ))
+              )
             ) : (
-              gymPkgs.map((item, idx) => (
-                <GymPackageCard 
-                  key={item.id} 
-                  item={item} 
-                  index={idx} 
-                  expanded={expandedId === item.id}
-                  onPress={() => setExpandedId(expandedId === item.id ? null : item.id)}
-                  onEdit={(pkg) => navigation.navigate('AdminAddEditPackage', { isPtPackage: false, packageId: pkg.id })}
-                  onDelete={(pkg) => handleDeletePackage(pkg, false)}
-                  colors={colors}
-                  isDark={isDark}
-                  isAdmin={role === 'admin'}
-                />
-              ))
-            )
-          ) : (
-            ptPkgs.length === 0 ? (
-              <View style={styles.emptyBox}>
-                <Dumbbell color={colors.textMuted} size={48} strokeWidth={1} />
-                <Text style={[styles.emptyText, { color: colors.textMuted }]}>Chưa có gói PT nào</Text>
-              </View>
-            ) : (
-              ptPkgs.map((item, idx) => (
-                <PTPackageCard 
-                  key={item.id} 
-                  item={item} 
-                  index={idx} 
-                  expanded={expandedId === item.id}
-                  onPress={() => setExpandedId(expandedId === item.id ? null : item.id)}
-                  onEdit={(pkg) => navigation.navigate('AdminAddEditPackage', { isPtPackage: true, packageId: pkg.id })}
-                  onDelete={(pkg) => handleDeletePackage(pkg, true)}
-                  colors={colors}
-                  isDark={isDark}
-                  isAdmin={role === 'admin'}
-                />
-              ))
-            )
+              ptPkgs.length === 0 ? (
+                <View style={styles.emptyBox}>
+                  <Dumbbell color={colors.textMuted} size={48} strokeWidth={1} />
+                  <Text style={[styles.emptyText, { color: colors.textMuted }]}>Chưa có gói PT nào</Text>
+                </View>
+              ) : (
+                paginatedPtPkgs.map((item, idx) => (
+                  <PTPackageCard 
+                    key={item.id} 
+                    item={item} 
+                    index={(ptPage - 1) * itemsPerPage + idx} 
+                    expanded={expandedId === item.id}
+                    onPress={() => setExpandedId(expandedId === item.id ? null : item.id)}
+                    onEdit={(pkg) => navigation.navigate('AdminAddEditPackage', { isPtPackage: true, packageId: pkg.id })}
+                    onDelete={(pkg) => handleDeletePackage(pkg, true)}
+                    colors={colors}
+                    isDark={isDark}
+                    isAdmin={role === 'admin'}
+                  />
+                ))
+              )
+            )}
+            <View style={{ height: 24 }} />
+          </ScrollView>
+
+          {/* Pagination Controls */}
+          {tab === 'gym' && totalGymPages > 1 && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface }}>
+              <TouchableOpacity
+                disabled={gymPage === 1}
+                onPress={() => setGymPage(p => Math.max(1, p - 1))}
+                style={{ paddingHorizontal: 16, paddingVertical: 8, opacity: gymPage === 1 ? 0.4 : 1 }}
+              >
+                <Text style={{ color: colors.primary, fontWeight: '700' }}>Trước</Text>
+              </TouchableOpacity>
+              <Text style={{ color: colors.text, marginHorizontal: 16, fontWeight: '600' }}>
+                Trang {gymPage} / {totalGymPages}
+              </Text>
+              <TouchableOpacity
+                disabled={gymPage === totalGymPages}
+                onPress={() => setGymPage(p => Math.min(totalGymPages, p + 1))}
+                style={{ paddingHorizontal: 16, paddingVertical: 8, opacity: gymPage === totalGymPages ? 0.4 : 1 }}
+              >
+                <Text style={{ color: colors.primary, fontWeight: '700' }}>Sau</Text>
+              </TouchableOpacity>
+            </View>
           )}
-          <View style={{ height: 24 }} />
-        </ScrollView>
+
+          {tab === 'pt' && totalPtPages > 1 && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface }}>
+              <TouchableOpacity
+                disabled={ptPage === 1}
+                onPress={() => setPtPage(p => Math.max(1, p - 1))}
+                style={{ paddingHorizontal: 16, paddingVertical: 8, opacity: ptPage === 1 ? 0.4 : 1 }}
+              >
+                <Text style={{ color: colors.primary, fontWeight: '700' }}>Trước</Text>
+              </TouchableOpacity>
+              <Text style={{ color: colors.text, marginHorizontal: 16, fontWeight: '600' }}>
+                Trang {ptPage} / {totalPtPages}
+              </Text>
+              <TouchableOpacity
+                disabled={ptPage === totalPtPages}
+                onPress={() => setPtPage(p => Math.min(totalPtPages, p + 1))}
+                style={{ paddingHorizontal: 16, paddingVertical: 8, opacity: ptPage === totalPtPages ? 0.4 : 1 }}
+              >
+                <Text style={{ color: colors.primary, fontWeight: '700' }}>Sau</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
       )}
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: { flex: 1 },

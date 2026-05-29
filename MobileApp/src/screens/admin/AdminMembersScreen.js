@@ -187,6 +187,13 @@ export default function AdminMembersScreen({ navigation, route }) {
   useFocusEffect(useCallback(() => { fetchMembers(); }, [fetchMembers]));
   const onRefresh = () => { setRefreshing(true); fetchMembers(); };
 
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, filter]);
+
   const filtered = members.filter(m => {
     const q = search.toLowerCase().trim();
     if (q && !m.ho_ten?.toLowerCase().includes(q) && !m.so_dien_thoai?.includes(q) && !m.ma_ho_so?.toLowerCase().includes(q)) return false;
@@ -198,6 +205,9 @@ export default function AdminMembersScreen({ navigation, route }) {
     if (filter === 'no_pkg') return m.trang_thai === 'chua_dang_ky';
     return true;
   });
+
+  const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
+  const paginatedData = filtered.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -257,30 +267,55 @@ export default function AdminMembersScreen({ navigation, route }) {
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
-        <FlatList
-          data={filtered}
-          keyExtractor={item => String(item.id)}
-          renderItem={({ item }) => (
-            <MemberCard 
-              item={item} 
-              colors={colors}
-              onPress={() => navigation.navigate('AdminMemberDetail', { memberId: item.id })}
-            />
-          )}
-          contentContainerStyle={styles.listContent}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
-          ListEmptyComponent={
-            <View style={styles.emptyBox}>
-              <User color={colors.textMuted} size={48} strokeWidth={1} />
-              <Text style={[styles.emptyText, { color: colors.textMuted }]}>Không tìm thấy hội viên</Text>
+        <View style={{ flex: 1 }}>
+          <FlatList
+            data={paginatedData}
+            keyExtractor={item => String(item.id)}
+            renderItem={({ item }) => (
+              <MemberCard 
+                item={item} 
+                colors={colors}
+                onPress={() => navigation.navigate('AdminMemberDetail', { memberId: item.id })}
+              />
+            )}
+            contentContainerStyle={styles.listContent}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
+            ListEmptyComponent={
+              <View style={styles.emptyBox}>
+                <User color={colors.textMuted} size={48} strokeWidth={1} />
+                <Text style={[styles.emptyText, { color: colors.textMuted }]}>Không tìm thấy hội viên</Text>
+              </View>
+            }
+            showsVerticalScrollIndicator={false}
+          />
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface }}>
+              <TouchableOpacity
+                disabled={page === 1}
+                onPress={() => setPage(p => Math.max(1, p - 1))}
+                style={{ paddingHorizontal: 16, paddingVertical: 8, opacity: page === 1 ? 0.4 : 1 }}
+              >
+                <Text style={{ color: colors.primary, fontWeight: '700' }}>Trước</Text>
+              </TouchableOpacity>
+              <Text style={{ color: colors.text, marginHorizontal: 16, fontWeight: '600' }}>
+                Trang {page} / {totalPages}
+              </Text>
+              <TouchableOpacity
+                disabled={page === totalPages}
+                onPress={() => setPage(p => Math.min(totalPages, p + 1))}
+                style={{ paddingHorizontal: 16, paddingVertical: 8, opacity: page === totalPages ? 0.4 : 1 }}
+              >
+                <Text style={{ color: colors.primary, fontWeight: '700' }}>Sau</Text>
+              </TouchableOpacity>
             </View>
-          }
-          showsVerticalScrollIndicator={false}
-        />
+          )}
+        </View>
       )}
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: { flex: 1 },

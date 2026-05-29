@@ -269,10 +269,21 @@ export default function AdminPTScreen({ navigation, route }) {
     return pt.ho_ten?.toLowerCase().includes(q) || pt.chuyen_mon?.toLowerCase().includes(q) || pt.ma_ho_so?.toLowerCase().includes(q);
   });
 
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
+
+  const totalPages = Math.ceil(filteredTrainers.length / itemsPerPage) || 1;
+  const paginatedPT = filteredTrainers.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+
   const totalToday = trainers.reduce((sum, pt) => sum + (pt.lich_hom_nay?.length || 0), 0);
   const doneToday = trainers.reduce((sum, pt) => sum + (pt.lich_hom_nay?.filter(s => s.trang_thai === 'da_tap').length || 0), 0);
 
   return (
+
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={colors.statusBar} backgroundColor={colors.statusBarBg} />
 
@@ -337,33 +348,58 @@ export default function AdminPTScreen({ navigation, route }) {
           {loading ? (
             <View style={styles.loadingBox}><ActivityIndicator size="large" color={colors.primary} /></View>
           ) : (
-            <FlatList
-              data={filteredTrainers}
-              keyExtractor={item => String(item.id)}
-              renderItem={({ item }) => (
-                <PTCard
-                  item={item}
-                  expanded={expandedId === item.id}
-                  onPress={() => setExpandedId(expandedId === item.id ? null : item.id)}
-                  onEdit={(pt) => navigation.navigate('AdminAddEditPT', { ptId: pt.id })}
-                  onDelete={handleDeletePT}
-                  colors={colors}
-                  isAdmin={role === 'admin'}
-                />
-              )}
-              contentContainerStyle={styles.listContent}
-              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
-              ListEmptyComponent={
-                <View style={styles.emptyBox}>
-                  <Dumbbell color={colors.textMuted} size={48} strokeWidth={1} />
-                  <Text style={[styles.emptyText, { color: colors.textMuted }]}>Không tìm thấy PT</Text>
+            <View style={{ flex: 1 }}>
+              <FlatList
+                data={paginatedPT}
+                keyExtractor={item => String(item.id)}
+                renderItem={({ item }) => (
+                  <PTCard
+                    item={item}
+                    expanded={expandedId === item.id}
+                    onPress={() => setExpandedId(expandedId === item.id ? null : item.id)}
+                    onEdit={(pt) => navigation.navigate('AdminAddEditPT', { ptId: pt.id })}
+                    onDelete={handleDeletePT}
+                    colors={colors}
+                    isAdmin={role === 'admin'}
+                  />
+                )}
+                contentContainerStyle={styles.listContent}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
+                ListEmptyComponent={
+                  <View style={styles.emptyBox}>
+                    <Dumbbell color={colors.textMuted} size={48} strokeWidth={1} />
+                    <Text style={[styles.emptyText, { color: colors.textMuted }]}>Không tìm thấy PT</Text>
+                  </View>
+                }
+                showsVerticalScrollIndicator={false}
+              />
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface }}>
+                  <TouchableOpacity
+                    disabled={page === 1}
+                    onPress={() => setPage(p => Math.max(1, p - 1))}
+                    style={{ paddingHorizontal: 16, paddingVertical: 8, opacity: page === 1 ? 0.4 : 1 }}
+                  >
+                    <Text style={{ color: colors.primary, fontWeight: '700' }}>Trước</Text>
+                  </TouchableOpacity>
+                  <Text style={{ color: colors.text, marginHorizontal: 16, fontWeight: '600' }}>
+                    Trang {page} / {totalPages}
+                  </Text>
+                  <TouchableOpacity
+                    disabled={page === totalPages}
+                    onPress={() => setPage(p => Math.min(totalPages, p + 1))}
+                    style={{ paddingHorizontal: 16, paddingVertical: 8, opacity: page === totalPages ? 0.4 : 1 }}
+                  >
+                    <Text style={{ color: colors.primary, fontWeight: '700' }}>Sau</Text>
+                  </TouchableOpacity>
                 </View>
-              }
-              showsVerticalScrollIndicator={false}
-            />
+              )}
+            </View>
           )}
         </>
       ) : (
+
         <ScrollView
           contentContainerStyle={styles.listContent}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}

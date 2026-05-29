@@ -687,13 +687,17 @@ export const registerPackage = (req, res) => {
     SELECT date(?, '+' || ? || ' months', '+' || ? || ' days') AS den_ngay
   `).get(tu_ngay, goiTap.so_thang, goiTap.so_ngay_them).den_ngay;
 
+  const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
+  const finalStatus = tu_ngay > todayStr ? 'cho_kich_hoat' : 'dang_hoat_dong';
+
   const result = db.prepare(`
     INSERT INTO dang_ky_goi_tap
       (ho_so_id, goi_tap_id, tu_ngay, den_ngay, gia_thuc_te, ghi_chu_gia, phuong_thuc_tt, nguoi_thu_id, ma_giao_dich, ghi_chu_tt, ngay_thanh_toan, so_tien_da_thu, nguoi_tao_id, nguoi_cap_nhat_id, trang_thai)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'dang_hoat_dong')
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(id, goi_tap_id, tu_ngay, denNgay, gia_thuc_te, ghi_chu_gia || null,
     phuong_thuc_tt, req.user.id, ma_giao_dich || null, ghi_chu_tt || null, ngay_thanh_toan || null,
-    paidAmount, req.user.id, req.user.id);
+    paidAmount, req.user.id, req.user.id, finalStatus);
+
 
   ghi_audit_log(req, 'CREATE', 'dang_ky_goi_tap', result.lastInsertRowid, null,
     { ho_so_id: id, goi_tap_id, gia: gia_thuc_te }, 'Đăng ký gói tập cho hội viên');
