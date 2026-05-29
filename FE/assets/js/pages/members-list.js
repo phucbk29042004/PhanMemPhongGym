@@ -1848,8 +1848,6 @@ window.GymApp.pages['members-list'] = {
           if (contract) self._showSwitchPtRegistrationModal(m, contract, refreshTab);
         });
       });
-<<<<<<< HEAD
-=======
       document.querySelectorAll('.btn-cancel-pt-contract').forEach(btn => {
         btn.addEventListener('click', () => {
           const contractId = btn.dataset.contractId;
@@ -1857,7 +1855,6 @@ window.GymApp.pages['members-list'] = {
           if (contract) self._showCancelPtContractModal(m, contract, refreshTab);
         });
       });
->>>>>>> main
     }
   },
 
