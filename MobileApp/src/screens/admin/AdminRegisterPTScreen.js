@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, Dumbbell, User, Save, AlertTriangle } from 'lucide-react-native';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import DatePickerField from '../../components/DatePickerField';
 
 function formatPrice(val) {
   if (val == null) return '0đ';
@@ -313,46 +314,21 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
               Số buổi còn lại: <Text style={{ fontWeight: '700', color: colors.text }}>{activePT.buoi_dang_ky - activePT.buoi_da_tap}</Text> buổi
             </Text>
 
-            {/* Loại đăng ký */}
+            {/* Loại đăng ký (Bắt buộc nối tiếp để không bị song song) */}
             <View style={{ borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 8 }}>
               <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textSecondary, marginBottom: 6 }}>Loại đăng ký:</Text>
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                <TouchableOpacity
-                  style={[
-                    styles.typeBtn,
-                    { borderColor: registrationType === 'noi_tiep' ? colors.primary : colors.border },
-                    registrationType === 'noi_tiep' && { backgroundColor: colors.primaryLight }
-                  ]}
-                  onPress={() => setRegistrationType('noi_tiep')}
-                >
-                  <Text style={{ fontSize: 11, color: registrationType === 'noi_tiep' ? colors.primary : colors.textSecondary, fontWeight: registrationType === 'noi_tiep' ? '700' : '500' }}>
-                    Nối tiếp sau gói hiện tại
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.typeBtn,
-                    { borderColor: registrationType === 'song_song' ? colors.warning : colors.border },
-                    registrationType === 'song_song' && { backgroundColor: colors.warningLight }
-                  ]}
-                  onPress={() => setRegistrationType('song_song')}
-                >
-                  <Text style={{ fontSize: 11, color: registrationType === 'song_song' ? colors.warning : colors.textSecondary, fontWeight: registrationType === 'song_song' ? '700' : '500' }}>
-                    Kích hoạt song song
-                  </Text>
-                </TouchableOpacity>
+              <View style={[styles.typeBtn, { borderColor: colors.primary, backgroundColor: colors.primaryLight, alignSelf: 'flex-start' }]}>
+                <Text style={{ fontSize: 11, color: colors.primary, fontWeight: '700' }}>
+                  Nối tiếp sau gói hiện tại
+                </Text>
               </View>
-              {registrationType === 'song_song' && (
-                <View style={[styles.warningBox, { backgroundColor: colors.warningLight, borderColor: colors.warning }]}>
-                  <AlertTriangle color={colors.warning} size={14} />
-                  <Text style={{ fontSize: 11, color: colors.warning, flex: 1 }}>
-                    Gói PT hiện tại sẽ bị kết thúc sớm khi xác nhận đăng ký mới.
-                  </Text>
-                </View>
-              )}
+              <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 6 }}>
+                * Gói PT mới sẽ bắt đầu sau khi gói cũ hết hạn để tránh bị lỗi trùng lặp logic lịch tập.
+              </Text>
             </View>
           </View>
         )}
+
 
         {/* Danh sách HLV (PT) */}
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Chọn Huấn Luyện Viên (PT)</Text>
@@ -413,25 +389,32 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
 
         {selectedPkg && selectedTrainer && (
           <View style={[styles.formCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <FieldLabel label="Ngày bắt đầu (DD/MM/YYYY)" required colors={colors} />
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
+            <DatePickerField
+              label={activePT ? "Ngày bắt đầu (Tự động nối tiếp gói cũ)" : "Ngày bắt đầu"}
+              required
               value={startDate}
               onChangeText={setStartDate}
-              placeholder="VD: 25/05/2026"
-              placeholderTextColor={colors.textMuted}
+              placeholder="Chọn ngày bắt đầu"
+              colors={colors}
+              returnFormat="DD/MM/YYYY"
+              disabled={!!activePT}
             />
 
-            <FieldLabel
-              label={`Ngày kết thúc (DD/MM/YYYY)${(selectedPkg.so_thang || 0) > 0 ? ' — Tự động tính' : ''}`}
-              colors={colors}
-            />
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
+            {activePT && (
+              <Text style={{ fontSize: 11, color: colors.primary, fontWeight: '600', marginTop: -4, marginBottom: 4 }}>
+                * Ngày bắt đầu được đặt tự động nối tiếp sau ngày kết thúc của hợp đồng PT hiện tại ({formatDate(activePT.den_ngay)})
+              </Text>
+            )}
+
+
+            <DatePickerField
+              label={`Ngày kết thúc${(selectedPkg.so_thang || 0) > 0 ? ' (Tự động tính)' : ''}`}
               value={endDate}
               onChangeText={setEndDate}
-              placeholder="VD: 25/08/2026 (để trống nếu không giới hạn)"
-              placeholderTextColor={colors.textMuted}
+              placeholder="Chọn ngày kết thúc"
+              colors={colors}
+              returnFormat="DD/MM/YYYY"
+              disabled={(selectedPkg.so_thang || 0) > 0}
             />
 
             <View style={{ flexDirection: 'row', gap: 10 }}>

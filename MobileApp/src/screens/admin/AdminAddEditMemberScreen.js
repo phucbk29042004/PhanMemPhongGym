@@ -11,6 +11,7 @@ import {
 } from 'lucide-react-native';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import DatePickerField from '../../components/DatePickerField';
 
 // ── Helpers ──────────────────────────────────────────────────────────
 function RequiredStar() {
@@ -362,7 +363,14 @@ export default function AdminAddEditMemberScreen({ route, navigation }) {
                 />
               </View>
               <View style={{ flex: 1, marginLeft: 10 }}>
-                <InputField label="Ngày sinh (YYYY-MM-DD)" value={ngaySinh} onChangeText={setNgaySinh} placeholder="VD: 1998-05-20" colors={colors} />
+                <DatePickerField
+                  label="Ngày sinh"
+                  value={ngaySinh}
+                  onChangeText={setNgaySinh}
+                  placeholder="Chọn ngày sinh"
+                  colors={colors}
+                  returnFormat="YYYY-MM-DD"
+                />
               </View>
             </View>
 

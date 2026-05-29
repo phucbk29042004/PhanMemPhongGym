@@ -974,3 +974,30 @@
     - Hỗ trợ các bộ lọc nâng cao gồm tìm kiếm theo từ khóa tài khoản/họ tên/ghi chú, loại hành động, khoảng thời gian (sử dụng AirDatepicker) và phân trang.
 - **Kết quả**: ✅ Hoàn thành tích hợp tính năng nhật ký kiểm tra đồng bộ với backend và style thiết kế hệ thống.
 
+### 29/05/2026 08:30 — Sửa đổi logic gia hạn gói tập/PT, cập nhật giao diện Admin di động và tích hợp thống kê doanh thu
+- **Loại**: Cải tiến nghiệp vụ, Nâng cấp UI/UX, Sửa lỗi hệ thống (Fullstack)
+- **File/Thành phần liên quan**:
+  - `BE/src/config/db.js` (Migration v18 & Triggers doanh thu)
+  - `BE/src/controllers/members.controller.js` (Đăng ký gói Gym)
+  - `BE/src/controllers/pt-registrations.controller.js` (Đăng ký gói PT)
+  - `BE/src/jobs/cron-daily.js` (Cron Job tự động kích hoạt gói)
+  - `BE/src/controllers/revenue.controller.js` (API Doanh thu)
+  - `FE/assets/js/pages/revenue.js` (Web Doanh thu)
+  - `MobileApp/src/screens/admin/AdminRegisterPackageScreen.js` (Mobile Đăng ký gói Gym)
+  - `MobileApp/src/screens/admin/AdminRegisterPTScreen.js` (Mobile Đăng ký gói PT)
+  - `MobileApp/src/screens/admin/AdminRegisterPTScheduleScreen.js` (Mobile Đặt lịch PT)
+  - `MobileApp/src/navigation/AdminNavigator.js` (Mobile Admin Navigation)
+  - Màn hình danh sách Admin di động: `AdminMembersScreen.js`, `AdminPTScreen.js`, `AdminPackagesScreen.js`, `AdminExpiredMembersScreen.js`, `AdminPackageRequestsScreen.js`
+- **Mô tả**:
+  - **Logic Nghiệp vụ Gia hạn (Backend & DB)**: 
+    - Áp dụng Migration v18 bổ sung constraint trạng thái `cho_kich_hoat` và nâng cấp các triggers doanh thu để ghi nhận doanh thu của các gói "chờ kích hoạt" ngay tại ngày thanh toán/ngày tạo.
+    - Cập nhật backend đăng ký gói tập Gym và PT tự động chuyển trạng thái thành `cho_kich_hoat` nếu ngày bắt đầu lớn hơn ngày hiện tại.
+    - Bổ sung Cron Job quét lúc 08:00 hàng ngày để tự động kích hoạt gói `cho_kich_hoat` sang `dang_hoat_dong` khi đến ngày bắt đầu.
+    - API Doanh thu hỗ trợ thống kê thêm các gói ở trạng thái `cho_kich_hoat`.
+  - **Giao diện di động (Mobile App)**:
+    - **Đăng ký gói & PT**: Tự động tính ngày bắt đầu nối tiếp liền kề sau ngày kết thúc của gói cũ và khóa trường ngày bắt đầu để ngăn đăng ký song song sai logic.
+    - **Đặt lịch PT**: Chuyển đổi ô nhập giờ bắt đầu/kết thúc viết tay thành dạng dropdown danh sách giờ từ 06:00 đến 21:00 và tự động tính giờ kết thúc bằng giờ bắt đầu cộng 1.5 tiếng.
+    - **Icon PT & Phân trang**: Thay đổi icon tab PT thành biểu tượng quả tạ `Dumbbell` thay vì biểu đồ cột. Tích hợp phân trang client-side 10 dòng/trang cho 5 màn hình danh sách Admin di động.
+  - **Giao diện Web**: Hiển thị các gói gia hạn mới (`cho_kich_hoat`) trong danh sách giao dịch hôm nay của trang quản lý doanh thu.
+- **Kết quả**: ✅ Hoàn thành 100% yêu cầu nghiệp vụ và tối ưu hóa trải nghiệm người dùng.
+

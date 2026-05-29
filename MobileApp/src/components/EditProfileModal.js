@@ -16,6 +16,7 @@ import {
 import { X, Camera } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { api } from '../services/api';
+import DatePickerField from './DatePickerField';
 
 const BRAND = {
   primary: '#1D9336',
@@ -206,19 +207,14 @@ export default function EditProfileModal({ visible, onClose, profile, onSaved, c
               </View>
             </View>
 
-            {/* Ngày sinh */}
-            <View style={styles.fieldWrap}>
-              <Text style={[styles.fieldLabel, { color: labelColor }]}>Ngày sinh (YYYY-MM-DD)</Text>
-              <View style={[styles.inputRow, { backgroundColor: inputBg, borderColor: inputBorder }]}>
-                <TextInput
-                  style={[styles.input, { color: textColor }]}
-                  value={ngaySinh}
-                  onChangeText={setNgaySinh}
-                  placeholder="Ví dụ: 1995-08-25"
-                  placeholderTextColor={C.textMuted || '#9cad9c'}
-                />
-              </View>
-            </View>
+            <DatePickerField
+              label="Ngày sinh"
+              value={ngaySinh}
+              onChangeText={setNgaySinh}
+              placeholder="Chọn ngày sinh"
+              colors={C}
+              returnFormat="YYYY-MM-DD"
+            />
 
             {/* Số CCCD/CMND */}
             <View style={styles.fieldWrap}>

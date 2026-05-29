@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, Award, CreditCard, Building2, Calendar, Save } from 'lucide-react-native';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import DatePickerField from '../../components/DatePickerField';
 
 function formatPrice(val) {
   if (val == null) return '0đ';
@@ -64,6 +65,7 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
   let oldPkgRemainingDays = 0;
   let oldPkgTotalDays = 30;
   let oldPkgCredit = 0;
+  let hasActiveOldPkg = false;
 
   if (activePkg) {
     const today = new Date(); today.setHours(0,0,0,0);
@@ -72,6 +74,9 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
     if (denNgayVal) {
       denNgayVal.setHours(0,0,0,0);
       oldPkgRemainingDays = Math.max(0, Math.round((denNgayVal - today) / 86400000));
+      if (oldPkgRemainingDays > 0) {
+        hasActiveOldPkg = true;
+      }
       if (tuNgayVal) {
         tuNgayVal.setHours(0,0,0,0);
         oldPkgTotalDays = Math.max(1, Math.round((denNgayVal - tuNgayVal) / 86400000));
@@ -89,9 +94,15 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
 
   // Form inputs
   const [startDate, setStartDate] = useState(() => {
+    if (activePkg && oldPkgRemainingDays > 0 && activePkg.den_ngay) {
+      const nextDay = new Date(activePkg.den_ngay);
+      nextDay.setDate(nextDay.getDate() + 1);
+      return `${String(nextDay.getDate()).padStart(2, '0')}/${String(nextDay.getMonth() + 1).padStart(2, '0')}/${nextDay.getFullYear()}`;
+    }
     const today = new Date();
     return `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
   }); // DD/MM/YYYY
+
   const [actualPrice, setActualPrice] = useState('');
   const [paidAmount, setPaidAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('tien_mat'); // 'tien_mat' | 'chuyen_khoan'
@@ -356,14 +367,23 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
 
         {selectedPkg && (
           <View style={[styles.formCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <FieldLabel label="Ngày bắt đầu (DD/MM/YYYY)" required colors={colors} />
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
+            <DatePickerField
+              label={activePkg && !isSwitch && oldPkgRemainingDays > 0 ? "Ngày bắt đầu (Tự động nối tiếp gói cũ)" : "Ngày bắt đầu"}
+              required
               value={startDate}
               onChangeText={setStartDate}
-              placeholder="VD: 25/05/2026"
-              placeholderTextColor={colors.textMuted}
+              placeholder="Chọn ngày bắt đầu"
+              colors={colors}
+              returnFormat="DD/MM/YYYY"
+              disabled={activePkg && !isSwitch && oldPkgRemainingDays > 0}
             />
+
+            {activePkg && !isSwitch && oldPkgRemainingDays > 0 && (
+              <Text style={{ fontSize: 11, color: colors.primary, fontWeight: '600', marginTop: -4, marginBottom: 4 }}>
+                * Ngày bắt đầu được đặt tự động nối tiếp sau ngày hết hạn của gói hiện tại ({formatDate(activePkg.den_ngay)})
+              </Text>
+            )}
+
 
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <View style={{ flex: 1 }}>

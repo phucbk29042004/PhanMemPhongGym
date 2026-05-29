@@ -13,6 +13,7 @@ import { api } from '../../services/api';
 import { formatDate, scheduleStatusLabel, unwrapData } from '../../utils/data';
 import ProfileAvatar from '../../components/ProfileAvatar';
 import { useTheme } from '../../context/ThemeContext';
+import DatePickerField from '../../components/DatePickerField';
 
 // ── Màu sắc ────────────────────────────────────────────────
 const G = {
@@ -422,13 +423,13 @@ export default function PTScheduleScreen() {
               ))}
             </ScrollView>
 
-            <Text style={[styles.modalLabel, { color: colors.textMuted }]}>Ngày</Text>
-            <TextInput
-              style={[styles.modalTextInput, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
+            <DatePickerField
+              label="Ngày"
               value={newDate}
               onChangeText={setNewDate}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor={colors.textMuted}
+              placeholder="Chọn ngày tập"
+              colors={colors}
+              returnFormat="YYYY-MM-DD"
             />
             <View style={styles.rowInputs}>
               <View style={styles.halfInput}>

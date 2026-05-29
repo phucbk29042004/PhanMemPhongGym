@@ -55,7 +55,48 @@ function runDailyJob() {
     console.log(`[CRON-DAILY] Tự động kích hoạt ${newlyActivated.length} gói tập đến hạn.`);
   }
 
+  // 0a2. Tự động kích hoạt các gói PT ở trạng thái 'cho_kich_hoat' khi đến ngày bắt đầu (tu_ngay)
+  const newlyActivatedPT = db.prepare(`
+    SELECT dp.id, dp.hoi_vien_id, gp.ten_goi, h.ho_ten
+    FROM dang_ky_pt dp
+    JOIN ho_so h ON h.id = dp.hoi_vien_id
+    LEFT JOIN goi_pt gp ON gp.id = dp.goi_pt_id
+    WHERE dp.trang_thai = 'cho_kich_hoat'
+      AND dp.tu_ngay <= date('now','localtime')
+  `).all();
+
+  for (const row of newlyActivatedPT) {
+    db.prepare(`
+      UPDATE dang_ky_pt
+      SET trang_thai = 'dang_hoat_dong'
+      WHERE id = ?
+    `).run(row.id);
+
+    // Thông báo cho user
+    createUserNotification(
+      row.hoi_vien_id,
+      'Gói PT được kích hoạt 🎉',
+      `Hợp đồng tập luyện gói "${row.ten_goi || 'PT'}" của bạn đã bắt đầu có hiệu lực từ hôm nay. Chúc bạn tập luyện hiệu quả!`,
+      'thong_bao_chung'
+    );
+
+    // Thông báo cho hệ thống admin
+    createNotification(
+      'dang_ky_goi_pt_moi',
+      'Gói PT tự động kích hoạt',
+      `Gói PT ${row.ten_goi || 'PT'} của hội viên ${row.ho_ten} đã tự động kích hoạt hôm nay.`,
+      row.id,
+      'dang_ky_pt',
+      'admin'
+    );
+  }
+
+  if (newlyActivatedPT.length > 0) {
+    console.log(`[CRON-DAILY] Tự động kích hoạt ${newlyActivatedPT.length} gói PT đến hạn.`);
+  }
+
   // 0b. Tự động cập nhật trạng thái gói tập đã hết hạn sang 'het_han' và gói PT sang 'hoan_thanh'
+
   const updatedGoiTap = db.prepare(`
     UPDATE dang_ky_goi_tap
     SET trang_thai = 'het_han'

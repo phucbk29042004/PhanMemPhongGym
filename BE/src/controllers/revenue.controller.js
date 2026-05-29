@@ -129,7 +129,7 @@ export const getRevenue = (req, res) => {
     JOIN goi_tap gt ON gt.id = dk.goi_tap_id
     JOIN ho_so h ON h.id = dk.ho_so_id
     WHERE COALESCE(date(dk.ngay_thanh_toan), date(dk.ngay_tao)) >= date('now','localtime','-' || ? || ' days')
-      AND dk.trang_thai IN ('dang_hoat_dong', 'het_han', 'huy', 'tam_dung')
+      AND dk.trang_thai IN ('dang_hoat_dong', 'het_han', 'huy', 'tam_dung', 'cho_kich_hoat')
     ORDER BY dk.ngay_tao DESC
   `).all(daysInt);
 
@@ -141,7 +141,7 @@ export const getRevenue = (req, res) => {
     JOIN goi_pt gp ON gp.id = dp.goi_pt_id
     JOIN ho_so h ON h.id = dp.hoi_vien_id
     WHERE COALESCE(date(dp.ngay_thanh_toan), date(dp.ngay_tao)) >= date('now','localtime','-' || ? || ' days')
-      AND dp.trang_thai IN ('dang_hoat_dong', 'hoan_thanh')
+      AND dp.trang_thai IN ('dang_hoat_dong', 'hoan_thanh', 'cho_kich_hoat')
     ORDER BY dp.ngay_tao DESC
   `).all(daysInt);
 
@@ -170,7 +170,7 @@ export const getRevenueToday = (req, res) => {
     JOIN goi_tap gt ON gt.id = dk.goi_tap_id
     JOIN ho_so h ON h.id = dk.ho_so_id
     WHERE COALESCE(date(dk.ngay_thanh_toan), date(dk.ngay_tao)) = ?
-      AND dk.trang_thai IN ('dang_hoat_dong', 'het_han', 'huy', 'tam_dung')
+      AND dk.trang_thai IN ('dang_hoat_dong', 'het_han', 'huy', 'tam_dung', 'cho_kich_hoat')
     ORDER BY dk.ngay_tao DESC
   `).all(today);
 
@@ -183,7 +183,7 @@ export const getRevenueToday = (req, res) => {
     JOIN goi_pt gp ON gp.id = dp.goi_pt_id
     JOIN ho_so h ON h.id = dp.hoi_vien_id
     WHERE COALESCE(date(dp.ngay_thanh_toan), date(dp.ngay_tao)) = ?
-      AND dp.trang_thai IN ('dang_hoat_dong', 'hoan_thanh')
+      AND dp.trang_thai IN ('dang_hoat_dong', 'hoan_thanh', 'cho_kich_hoat')
     ORDER BY dp.ngay_tao DESC
   `).all(today);
 
@@ -230,7 +230,7 @@ export const getRevenueYesterday = (req, res) => {
     JOIN goi_tap gt ON gt.id = dk.goi_tap_id
     JOIN ho_so h ON h.id = dk.ho_so_id
     WHERE COALESCE(date(dk.ngay_thanh_toan), date(dk.ngay_tao)) = ?
-      AND dk.trang_thai IN ('dang_hoat_dong', 'het_han', 'huy', 'tam_dung')
+      AND dk.trang_thai IN ('dang_hoat_dong', 'het_han', 'huy', 'tam_dung', 'cho_kich_hoat')
     ORDER BY dk.ngay_tao DESC
   `).all(yesterday);
 
@@ -243,7 +243,7 @@ export const getRevenueYesterday = (req, res) => {
     JOIN goi_pt gp ON gp.id = dp.goi_pt_id
     JOIN ho_so h ON h.id = dp.hoi_vien_id
     WHERE COALESCE(date(dp.ngay_thanh_toan), date(dp.ngay_tao)) = ?
-      AND dp.trang_thai IN ('dang_hoat_dong', 'hoan_thanh')
+      AND dp.trang_thai IN ('dang_hoat_dong', 'hoan_thanh', 'cho_kich_hoat')
     ORDER BY dp.ngay_tao DESC
   `).all(yesterday);
 

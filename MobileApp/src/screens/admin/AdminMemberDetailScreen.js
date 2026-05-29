@@ -15,6 +15,7 @@ import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import ProfileAvatar from '../../components/ProfileAvatar';
 import { useAuthStore } from '../../store/useAuthStore';
+import DatePickerField from '../../components/DatePickerField';
 
 function formatPrice(val) {
   if (val == null) return '0đ';
@@ -42,6 +43,11 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
   const [cancelingPackage, setCancelingPackage] = useState(false);
   const [cancelingPT, setCancelingPT] = useState(false);
 
+  // Cancellation modal states
+  const [cancelModalVisible, setCancelModalVisible] = useState(false);
+  const [cancelRefund, setCancelRefund] = useState('');
+  const [cancelReason, setCancelReason] = useState('Hủy gói bởi Admin qua ứng dụng di động');
+
   // States for inline editing
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editType, setEditType] = useState('gym'); // 'gym' | 'pt'
@@ -52,20 +58,22 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
   const [savingEdit, setSavingEdit] = useState(false);
 
   const handleEditPackageClick = () => {
+    const activePkg = member?.goi_tap_hien_tai[0];
     if (!activePkg) return;
     setEditType('gym');
     setEditTuNgay(activePkg.tu_ngay ? activePkg.tu_ngay.split('T')[0] : '');
     setEditDenNgay(activePkg.den_ngay ? activePkg.den_ngay.split('T')[0] : '');
-    setEditGiaThucTe(String(activePkg.gia_thuc_te || 0));
+    setEditGiaThucTe(formatPrice(activePkg.gia_thuc_te));
     setEditModalVisible(true);
   };
 
   const handleEditPTClick = () => {
+    const activePT = member?.pt_hien_tai[0];
     if (!activePT) return;
     setEditType('pt');
     setEditTuNgay(activePT.tu_ngay ? activePT.tu_ngay.split('T')[0] : '');
     setEditDenNgay(activePT.den_ngay ? activePT.den_ngay.split('T')[0] : '');
-    setEditGiaThucTe(String(activePT.gia_thuc_te || 0));
+    setEditGiaThucTe(formatPrice(activePT.gia_thuc_te));
     setEditSoBuoi(String(activePT.buoi_dang_ky || 0));
     setEditModalVisible(true);
   };
@@ -76,12 +84,22 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
       Alert.alert('Lỗi', 'Ngày phải có định dạng YYYY-MM-DD (VD: 2026-05-28).');
       return;
     }
-    const priceVal = Number(editGiaThucTe);
-    if (isNaN(priceVal) || priceVal < 0) {
-      Alert.alert('Lỗi', 'Giá thực tế không hợp lệ.');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const startD = new Date(editTuNgay);
+    const endD = editDenNgay ? new Date(editDenNgay) : null;
+    if (startD < today) {
+      Alert.alert('Lỗi', 'Ngày bắt đầu không được ở quá khứ.');
       return;
     }
-
+    if (endD && endD < today) {
+      Alert.alert('Lỗi', 'Ngày kết thúc không được ở quá khứ.');
+      return;
+    }
+    if (endD && endD <= startD) {
+      Alert.alert('Lỗi', 'Ngày kết thúc phải sau ngày bắt đầu.');
+      return;
+    }
     setSavingEdit(true);
     try {
       if (editType === 'gym') {
@@ -89,7 +107,7 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
         const res = await api.patch(`/members/${memberId}/package/${activePackage.id}`, {
           tu_ngay: editTuNgay,
           den_ngay: editDenNgay,
-          gia_thuc_te: priceVal
+          gia_thuc_te: activePackage.gia_thuc_te
         });
         if (res.data?.success) {
           Alert.alert('Thành công', 'Đã cập nhật thông tin gói Gym.');
@@ -105,7 +123,7 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
           goi_pt_id: activePT.goi_pt_id,
           tu_ngay: editTuNgay,
           den_ngay: editDenNgay,
-          gia_thuc_te: priceVal,
+          gia_thuc_te: activePT.gia_thuc_te,
           so_buoi_dang_ky: Number(editSoBuoi)
         });
         if (res.data?.success) {
@@ -221,37 +239,39 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
 
   const handleCancelPackage = () => {
     if (!member?.goi_tap_hien_tai?.length) return;
-    const activePackage = member.goi_tap_hien_tai[0];
-    Alert.alert(
-      'Xác nhận hủy gói',
-      `Bạn có chắc chắn muốn hủy gói "${activePackage.ten_goi}" của ${member.ho_ten}?`,
-      [
-        { text: 'Hủy', style: 'cancel' },
-        {
-          text: 'Hủy gói',
-          style: 'destructive',
-          onPress: async () => {
-            setCancelingPackage(true);
-            try {
-              const res = await api.patch(`/members/${memberId}/package/${activePackage.id}/cancel`, {
-                ly_do_huy: 'Hủy gói bởi Admin qua ứng dụng di động',
-                so_tien_hoan: 0
-              });
-              if (res.data?.success) {
-                Alert.alert('Thành công', 'Đã hủy gói tập của hội viên.');
-                fetchDetail();
-              } else {
-                Alert.alert('Lỗi', res.data?.message || 'Không thể hủy gói này.');
-              }
-            } catch (err) {
-              Alert.alert('Lỗi', err?.response?.data?.message || err?.message || 'Có lỗi khi hủy gói.');
-            } finally {
-              setCancelingPackage(false);
-            }
-          }
-        }
-      ]
-    );
+    setCancelRefund('');
+    setCancelReason('Hủy gói bởi Admin qua ứng dụng di động');
+    setCancelModalVisible(true);
+  };
+
+  const submitCancelPackage = async () => {
+    const activePackage = member?.goi_tap_hien_tai[0];
+    if (!activePackage) return;
+    // Remove dots if formatted
+    const cleanRefund = String(cancelRefund).replace(/\./g, '').replace(/,/g, '');
+    const refundVal = Number(cleanRefund);
+    if (isNaN(refundVal) || refundVal <= 0) {
+      Alert.alert('Lỗi', 'Số tiền hoàn trả bắt buộc nhập và phải lớn hơn 0đ.');
+      return;
+    }
+    setCancelingPackage(true);
+    try {
+      const res = await api.patch(`/members/${memberId}/package/${activePackage.id}/cancel`, {
+        ly_do_huy: cancelReason.trim() || 'Hủy gói bởi Admin qua ứng dụng di động',
+        so_tien_hoan: refundVal
+      });
+      if (res.data?.success) {
+        Alert.alert('Thành công', 'Đã hủy gói tập của hội viên.');
+        setCancelModalVisible(false);
+        fetchDetail();
+      } else {
+        Alert.alert('Lỗi', res.data?.message || 'Không thể hủy gói này.');
+      }
+    } catch (err) {
+      Alert.alert('Lỗi', err?.response?.data?.message || err?.message || 'Có lỗi khi hủy gói.');
+    } finally {
+      setCancelingPackage(false);
+    }
   };
 
   const handleCancelPT = () => {
@@ -714,32 +734,35 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
             </View>
 
             <View style={{ gap: 8 }}>
-              <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Ngày bắt đầu (YYYY-MM-DD)</Text>
-              <TextInput
-                style={[styles.modalInput, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
+              <DatePickerField
+                label="Ngày bắt đầu"
                 value={editTuNgay}
                 onChangeText={setEditTuNgay}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={colors.textMuted}
+                placeholder="Chọn ngày bắt đầu"
+                colors={colors}
+                returnFormat="YYYY-MM-DD"
+                minDate={new Date()}
               />
 
-              <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Ngày kết thúc (YYYY-MM-DD)</Text>
-              <TextInput
-                style={[styles.modalInput, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
+              <DatePickerField
+                label="Ngày kết thúc"
                 value={editDenNgay}
                 onChangeText={setEditDenNgay}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={colors.textMuted}
+                placeholder="Chọn ngày kết thúc"
+                colors={colors}
+                returnFormat="YYYY-MM-DD"
+                minDate={new Date()}
               />
 
               <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Giá thực tế (đ)</Text>
               <TextInput
-                style={[styles.modalInput, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
+                style={[styles.modalInput, { backgroundColor: colors.surfaceVariant, color: colors.textMuted, borderColor: colors.border, opacity: 0.6 }]}
                 value={editGiaThucTe}
                 onChangeText={setEditGiaThucTe}
                 keyboardType="numeric"
                 placeholder="0"
                 placeholderTextColor={colors.textMuted}
+                editable={false}
               />
 
               {editType === 'pt' && (
@@ -773,6 +796,73 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
                   <Text style={[styles.modalBtnText, { color: '#fff' }]}>Lưu lại</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Cancellation Modal */}
+      <Modal
+        visible={cancelModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setCancelModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                Hủy Gói Tập Hội Viên
+              </Text>
+              <TouchableOpacity onPress={() => setCancelModalVisible(false)}>
+                <X color={colors.text} size={20} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ gap: 8, marginTop: 10 }}>
+              <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Số tiền hoàn trả (đ) *</Text>
+              <TextInput
+                style={[styles.modalInput, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
+                value={cancelRefund}
+                onChangeText={(val) => {
+                  const clean = val.replace(/\D/g, '');
+                  const formatted = clean ? clean.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '';
+                  setCancelRefund(formatted);
+                }}
+                keyboardType="numeric"
+                placeholder="Nhập số tiền hoàn trả..."
+                placeholderTextColor={colors.textMuted}
+              />
+
+              <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Lý do hủy</Text>
+              <TextInput
+                style={[styles.modalInput, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border, height: 60, textAlignVertical: 'top' }]}
+                value={cancelReason}
+                onChangeText={setCancelReason}
+                placeholder="Nhập lý do hủy gói..."
+                placeholderTextColor={colors.textMuted}
+                multiline
+              />
+            </View>
+
+            <View style={[styles.modalBtnRow, { marginTop: 20 }]}>
+              <TouchableOpacity
+                style={[styles.modalBtn, { backgroundColor: colors.surfaceVariant }]}
+                onPress={() => setCancelModalVisible(false)}
+              >
+                <Text style={[styles.modalBtnText, { color: colors.text }]}>Đóng</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalBtn, { backgroundColor: colors.danger || '#dc2626' }]}
+                onPress={submitCancelPackage}
+                disabled={cancelingPackage}
+              >
+                {cancelingPackage ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={[styles.modalBtnText, { color: '#fff' }]}>Xác nhận hủy</Text>
                 )}
               </TouchableOpacity>
             </View>

@@ -156,17 +156,21 @@ export const createRegistration = (req, res) => {
   // Tự điền so_buoi_dang_ky từ gói nếu không truyền
   const soBuoi = so_buoi_dang_ky ? parseInt(so_buoi_dang_ky) : (goiPt.so_buoi || null);
 
+  const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
+  const finalStatus = tu_ngay > todayStr ? 'cho_kich_hoat' : 'dang_hoat_dong';
+
   const result = db.prepare(`
     INSERT INTO dang_ky_pt
       (hoi_vien_id, pt_id, goi_pt_id, so_buoi_dang_ky, so_buoi_da_tap,
-       tu_ngay, den_ngay, gia_thuc_te, phuong_thuc_tt, ma_giao_dich, ghi_chu_tt, nguoi_tao_id, ngay_thanh_toan)
-    VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?)
+       tu_ngay, den_ngay, gia_thuc_te, phuong_thuc_tt, ma_giao_dich, ghi_chu_tt, nguoi_tao_id, ngay_thanh_toan, trang_thai)
+    VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     hoi_vien_id, pt_id, goi_pt_id,
     soBuoi, tu_ngay, den_ngay || null,
     parseFloat(gia_thuc_te), phuong_thuc_tt,
-    ma_giao_dich || null, ghi_chu_tt || null, req.user.id, tu_ngay
+    ma_giao_dich || null, ghi_chu_tt || null, req.user.id, tu_ngay, finalStatus
   );
+
 
   ghi_audit_log(req, 'CREATE', 'dang_ky_pt', result.lastInsertRowid, null,
     { hoi_vien_id, pt_id, so_buoi_dang_ky }, 'Đăng ký gói PT');
