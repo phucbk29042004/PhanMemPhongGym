@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import {
-  BarChart3, Package, Users, User, LayoutDashboard, Dumbbell,
+  Package, Users, User, LayoutDashboard, GraduationCap,
 } from 'lucide-react-native';
 
 import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
@@ -82,7 +82,7 @@ function AdminTabs() {
         component={AdminPTScreen}
         options={{
           tabBarLabel: ({ color, focused }) => <TabLabel label="PT" color={color} focused={focused} />,
-          tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={Dumbbell} color={color} focused={focused} colors={colors} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={GraduationCap} color={color} focused={focused} colors={colors} />,
         }}
       />
 

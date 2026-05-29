@@ -11,6 +11,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function formatPrice(val) {
   if (val == null) return '—';
@@ -223,6 +224,7 @@ const ptPkgCard = StyleSheet.create({
 export default function AdminPackagesScreen({ navigation }) {
   const { colors, isDark } = useTheme();
   const { role } = useAuthStore();
+  const insets = useSafeAreaInsets();
   const [gymPkgs, setGymPkgs] = useState([]);
   const [ptPkgs, setPtPkgs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -299,7 +301,7 @@ export default function AdminPackagesScreen({ navigation }) {
       <StatusBar barStyle={colors.statusBar} backgroundColor={colors.statusBarBg} />
 
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.primaryDark }]}>
+      <View style={[styles.header, { backgroundColor: colors.primaryDark, paddingTop: insets.top + 16 }]}>
         <View>
           <Text style={styles.headerTitle}>Gói tập</Text>
           <Text style={styles.headerSub}>

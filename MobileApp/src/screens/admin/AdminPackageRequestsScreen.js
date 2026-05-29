@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import {
   ActivityIndicator, Alert, FlatList, RefreshControl,
   StatusBar, StyleSheet, Text, TouchableOpacity, View,
@@ -9,6 +9,7 @@ import {
   Clock, CreditCard, DollarSign, ShieldAlert, X, XCircle, Building2, MessageSquare
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -37,6 +38,7 @@ function parseInputMoney(val) {
 
 export default function AdminPackageRequestsScreen({ navigation }) {
   const { colors, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -209,7 +211,7 @@ export default function AdminPackageRequestsScreen({ navigation }) {
       <StatusBar barStyle={colors.statusBar} backgroundColor={colors.statusBarBg} />
       
       {/* Custom Header */}
-      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border, paddingTop: insets.top, height: 60 + insets.top }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <X color={colors.text} size={22} />
         </TouchableOpacity>

@@ -22,6 +22,12 @@ function formatPrice(val) {
   return Number(val).toLocaleString('vi-VN') + 'đ';
 }
 
+function formatInputMoney(val) {
+  if (val == null || val === '') return '';
+  const clean = String(val).replace(/\D/g, '');
+  return clean.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
 function formatDate(val) {
   if (!val) return '—';
   const d = new Date(val);
@@ -45,6 +51,7 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
 
   // Cancellation modal states
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
+  const [cancelType, setCancelType] = useState('gym'); // 'gym' | 'pt'
   const [cancelRefund, setCancelRefund] = useState('');
   const [cancelReason, setCancelReason] = useState('Hủy gói bởi Admin qua ứng dụng di động');
 
@@ -239,73 +246,73 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
 
   const handleCancelPackage = () => {
     if (!member?.goi_tap_hien_tai?.length) return;
-    setCancelRefund('');
+    const activePkg = member.goi_tap_hien_tai[0];
+    setCancelType('gym');
+    setCancelRefund(formatInputMoney(String(activePkg.gia_thuc_te)));
     setCancelReason('Hủy gói bởi Admin qua ứng dụng di động');
     setCancelModalVisible(true);
   };
 
-  const submitCancelPackage = async () => {
-    const activePackage = member?.goi_tap_hien_tai[0];
-    if (!activePackage) return;
-    // Remove dots if formatted
+  const handleCancelPT = () => {
+    if (!member?.pt_hien_tai?.length) return;
+    const activePT = member.pt_hien_tai[0];
+    setCancelType('pt');
+    setCancelRefund(formatInputMoney(String(activePT.gia_thuc_te)));
+    setCancelReason('Hủy gói PT bởi Admin qua ứng dụng di động');
+    setCancelModalVisible(true);
+  };
+
+  const submitCancel = async () => {
     const cleanRefund = String(cancelRefund).replace(/\./g, '').replace(/,/g, '');
     const refundVal = Number(cleanRefund);
     if (isNaN(refundVal) || refundVal <= 0) {
       Alert.alert('Lỗi', 'Số tiền hoàn trả bắt buộc nhập và phải lớn hơn 0đ.');
       return;
     }
-    setCancelingPackage(true);
-    try {
-      const res = await api.patch(`/members/${memberId}/package/${activePackage.id}/cancel`, {
-        ly_do_huy: cancelReason.trim() || 'Hủy gói bởi Admin qua ứng dụng di động',
-        so_tien_hoan: refundVal
-      });
-      if (res.data?.success) {
-        Alert.alert('Thành công', 'Đã hủy gói tập của hội viên.');
-        setCancelModalVisible(false);
-        fetchDetail();
-      } else {
-        Alert.alert('Lỗi', res.data?.message || 'Không thể hủy gói này.');
-      }
-    } catch (err) {
-      Alert.alert('Lỗi', err?.response?.data?.message || err?.message || 'Có lỗi khi hủy gói.');
-    } finally {
-      setCancelingPackage(false);
-    }
-  };
 
-  const handleCancelPT = () => {
-    if (!member?.pt_hien_tai?.length) return;
-    const activePT = member.pt_hien_tai[0];
-    Alert.alert(
-      'Xác nhận hủy PT',
-      `Bạn có chắc chắn muốn hủy gói PT "${activePT.ten_goi_pt}" của ${member.ho_ten}?`,
-      [
-        { text: 'Hủy', style: 'cancel' },
-        {
-          text: 'Hủy PT',
-          style: 'destructive',
-          onPress: async () => {
-            setCancelingPT(true);
-            try {
-              const res = await api.put(`/pt/registrations/${activePT.id}/cancel`, {
-                ly_do: 'Hủy PT bởi Admin qua ứng dụng di động'
-              });
-              if (res.data?.success) {
-                Alert.alert('Thành công', 'Đã hủy gói PT của hội viên.');
-                fetchDetail();
-              } else {
-                Alert.alert('Lỗi', res.data?.message || 'Không thể hủy gói PT.');
-              }
-            } catch (err) {
-              Alert.alert('Lỗi', err?.response?.data?.message || err?.message || 'Có lỗi khi hủy gói PT.');
-            } finally {
-              setCancelingPT(false);
-            }
-          }
+    if (cancelType === 'gym') {
+      const activePackage = member?.goi_tap_hien_tai[0];
+      if (!activePackage) return;
+      setCancelingPackage(true);
+      try {
+        const res = await api.patch(`/members/${memberId}/package/${activePackage.id}/cancel`, {
+          ly_do_huy: cancelReason.trim() || 'Hủy gói bởi Admin qua ứng dụng di động',
+          so_tien_hoan: refundVal
+        });
+        if (res.data?.success) {
+          Alert.alert('Thành công', 'Đã hủy gói tập của hội viên.');
+          setCancelModalVisible(false);
+          fetchDetail();
+        } else {
+          Alert.alert('Lỗi', res.data?.message || 'Không thể hủy gói này.');
         }
-      ]
-    );
+      } catch (err) {
+        Alert.alert('Lỗi', err?.response?.data?.message || err?.message || 'Có lỗi khi hủy gói.');
+      } finally {
+        setCancelingPackage(false);
+      }
+    } else {
+      const activePT = member?.pt_hien_tai[0];
+      if (!activePT) return;
+      setCancelingPT(true);
+      try {
+        const res = await api.put(`/pt/registrations/${activePT.id}/cancel`, {
+          ly_do_huy: cancelReason.trim() || 'Hủy gói PT bởi Admin qua ứng dụng di động',
+          so_tien_hoan: refundVal
+        });
+        if (res.data?.success) {
+          Alert.alert('Thành công', 'Đã hủy gói PT của hội viên.');
+          setCancelModalVisible(false);
+          fetchDetail();
+        } else {
+          Alert.alert('Lỗi', res.data?.message || 'Không thể hủy gói PT.');
+        }
+      } catch (err) {
+        Alert.alert('Lỗi', err?.response?.data?.message || err?.message || 'Có lỗi khi hủy gói PT.');
+      } finally {
+        setCancelingPT(false);
+      }
+    }
   };
 
   const handleDelete = () => {
@@ -814,7 +821,7 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
           <View style={[styles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>
-                Hủy Gói Tập Hội Viên
+                {cancelType === 'gym' ? 'Hủy Gói Tập Gym' : 'Hủy Gói PT'}
               </Text>
               <TouchableOpacity onPress={() => setCancelModalVisible(false)}>
                 <X color={colors.text} size={20} />
@@ -822,17 +829,12 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
             </View>
 
             <View style={{ gap: 8, marginTop: 10 }}>
-              <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Số tiền hoàn trả (đ) *</Text>
+              <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Số tiền hoàn trả (đ) - Cố định theo giá gói *</Text>
               <TextInput
-                style={[styles.modalInput, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
+                style={[styles.modalInput, { backgroundColor: colors.surfaceVariant, color: colors.textMuted, borderColor: colors.border, opacity: 0.8 }]}
                 value={cancelRefund}
-                onChangeText={(val) => {
-                  const clean = val.replace(/\D/g, '');
-                  const formatted = clean ? clean.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '';
-                  setCancelRefund(formatted);
-                }}
+                editable={false}
                 keyboardType="numeric"
-                placeholder="Nhập số tiền hoàn trả..."
                 placeholderTextColor={colors.textMuted}
               />
 
@@ -856,13 +858,21 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalBtn, { backgroundColor: colors.danger || '#dc2626' }]}
-                onPress={submitCancelPackage}
-                disabled={cancelingPackage}
+                onPress={submitCancel}
+                disabled={cancelType === 'gym' ? cancelingPackage : cancelingPT}
               >
-                {cancelingPackage ? (
-                  <ActivityIndicator size="small" color="#fff" />
+                {cancelType === 'gym' ? (
+                  cancelingPackage ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={[styles.modalBtnText, { color: '#fff' }]}>Xác nhận hủy</Text>
+                  )
                 ) : (
-                  <Text style={[styles.modalBtnText, { color: '#fff' }]}>Xác nhận hủy</Text>
+                  cancelingPT ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={[styles.modalBtnText, { color: '#fff' }]}>Xác nhận hủy</Text>
+                  )
                 )}
               </TouchableOpacity>
             </View>
