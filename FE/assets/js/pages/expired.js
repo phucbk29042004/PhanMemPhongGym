@@ -750,7 +750,7 @@ window.GymApp.pages['expired'] = {
     document.getElementById('btn-approve-submit').onclick = async () => {
       const data = {
         action: 'approve',
-        gia_thuc_te: document.getElementById('approve-price').value,
+        gia_thuc_te: _parseVND(document.getElementById('approve-price').value),
         phuong_thuc_tt: document.getElementById('approve-method').value,
         ghi_chu_tt: document.getElementById('approve-note').value
       };
