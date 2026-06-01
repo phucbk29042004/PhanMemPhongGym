@@ -17,7 +17,6 @@ window.GymApp.pages['revenue'] = {
         <!-- Bộ lọc khoảng thời gian -->
         <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 p-standard shadow-sm">
           <div class="flex flex-wrap items-center gap-standard">
-            <span class="text-on-surface-variant font-bold text-body-sm">Khoảng thời gian:</span>
             <div class="flex gap-1.5 p-1 bg-surface-container-low/40 rounded-2xl border border-outline-variant/30">
               <button class="rev-range-btn px-4 py-1.5 rounded-xl text-body-sm font-bold transition-all duration-300" data-days="today">Hôm nay</button>
               <button class="rev-range-btn px-4 py-1.5 rounded-xl text-body-sm font-bold transition-all duration-300" data-days="yesterday">Hôm qua</button>
@@ -37,14 +36,16 @@ window.GymApp.pages['revenue'] = {
               <button id="btn-compare-action" class="bg-brand-primary hover:bg-brand-primary/95 text-white text-body-sm font-bold px-4 py-1.5 rounded-lg active:scale-95 transition-all ml-2">So sánh</button>
             </div>
 
-            <button id="rev-reload" class="ml-auto flex items-center justify-center gap-xs px-4 py-2 rounded-xl border border-outline-variant bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer whitespace-nowrap">
-              <span class="material-symbols-outlined text-base">refresh</span>
-              Tải lại
-            </button>
-            <button id="btn-export-revenue" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border-2 border-outline-variant/50 bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer whitespace-nowrap">
-              <span class="material-symbols-outlined text-base text-[#1D9336]">download</span>
-              Xuất Excel
-            </button>
+            <div class="ml-auto flex items-center gap-standard flex-shrink-0">
+              <button id="rev-reload" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border border-outline-variant bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer whitespace-nowrap">
+                <span class="material-symbols-outlined text-base">refresh</span>
+                Tải lại
+              </button>
+              <button id="btn-export-revenue" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border-2 border-outline-variant/50 bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer whitespace-nowrap">
+                <span class="material-symbols-outlined text-base text-[#1D9336]">download</span>
+                Xuất Excel
+              </button>
+            </div>
           </div>
         </div>
 

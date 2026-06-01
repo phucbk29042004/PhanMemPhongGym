@@ -8,11 +8,25 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
-**✅ Sửa lỗi Gia hạn hội viên đã hết hạn trên Mobile App hiển thị màn hình đổi gói/khấu trừ** — Cập nhật `AdminExpiredMembersScreen.js` để chỉ truyền `activePkg` khi gia hạn hội viên *Sắp hết hạn* (còn hạn), và sửa logic khởi tạo `isSwitch` trong `AdminRegisterPackageScreen.js` để chặn hiển thị khấu trừ khi gói cũ đã hết hạn.
+**✅ Khắc phục lỗi lệch lề và ký tự lạ khi xuất Excel** — Chèn ký tự Tab ngầm (`\t`) vào đầu các trường ngày tháng, số điện thoại giúp Excel nhận diện đúng dạng văn bản (gióng lề trái nhất quán) mà hoàn toàn không để lộ ký tự nháy đơn `'` hay công thức thừa.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
+
+### [01/06/2026 13:35] — Sửa lỗi định dạng chia cột (CSV delimiter) khi xuất file Excel báo cáo
+- **Loại**: Sửa bug (Backend)
+- **File**: `BE/src/controllers/export.controller.js`
+- **Mô tả**:
+  1. Thay đổi ký tự phân cách trong tệp CSV từ dấu chấm phẩy `;` sang dấu phẩy `,` đúng chuẩn giúp Excel tự động chia các cột chính xác.
+  2. Thay thế dấu nháy đơn `'` bằng ký tự Tab ngầm (`\t`) chèn vào đầu các cột Ngày tháng, Số điện thoại và Thời gian. Kỹ thuật này giúp các phần mềm bảng tính hiểu đây là kiểu chữ (Text) giúp toàn bộ cột căn lề trái thẳng hàng và đồng bộ, đồng thời hoàn toàn không để lộ bất kỳ ký tự hiển thị thừa nào trên bảng tính.
+- **Kết quả**: Thành công — Dữ liệu hiển thị đẹp mắt, chia cột chính xác, gióng lề trái thẳng tắp và không chứa ký tự lạ.
+
+### [01/06/2026 13:15] — Sửa lỗi hiển thị nút "Xuất Excel" và "Tải lại" bị văng xuống dòng mới trên màn hình Doanh thu (Web)
+- **Loại**: Sửa lỗi giao diện (Frontend)
+- **File**: `FE/assets/js/pages/revenue.js`
+- **Mô tả**: Gộp cả hai nút "Tải lại" và "Xuất Excel" vào trong một thẻ `div` bọc ngoài có class `ml-auto flex items-center gap-standard flex-shrink-0`, đồng thời sắp xếp nút "Tải lại" nằm trước (bên trái) và nút "Xuất Excel" nằm sau (bên phải) theo yêu cầu. Điều này giúp giữ chặt hai nút này luôn đi liền cạnh nhau và tự động dạt về bên phải mà không lo bị văng dòng.
+- **Kết quả**: Giao diện các nút chức năng thẳng hàng cân đối: Tải lại (trái), Xuất Excel (phải).
 
 ### [01/06/2026 11:00] — Sửa lỗi luồng gia hạn hội viên hết hạn hiển thị Đổi gói và Khấu trừ gói cũ trên Mobile
 - **Loại**: Sửa bug (Mobile)

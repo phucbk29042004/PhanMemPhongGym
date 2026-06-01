@@ -9,19 +9,16 @@ import { error } from '../utils/response.js';
 function escapeCSV(val) {
   if (val == null) return '';
   const s = String(val);
-  if (s.startsWith('="') && s.endsWith('"')) {
-    return s;
-  }
-  if (s.includes(';') || s.includes('"') || s.includes('\n')) {
+  if (s.includes(',') || s.includes('"') || s.includes('\n')) {
     return `"${s.replace(/"/g, '""')}"`;
   }
   return s;
 }
 
 function toCSV(headers, rows, labelMap = {}) {
-  const headerLine = headers.map(h => escapeCSV(labelMap[h] || h)).join(';');
+  const headerLine = headers.map(h => escapeCSV(labelMap[h] || h)).join(',');
   const dataLines = rows.map(row =>
-    headers.map(h => escapeCSV(row[h])).join(';')
+    headers.map(h => escapeCSV(row[h])).join(',')
   );
   return [headerLine, ...dataLines].join('\r\n');
 }
@@ -41,19 +38,19 @@ function formatDate(dateStr) {
   // Định dạng YYYY-MM-DD -> DD/MM/YYYY
   const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (match) {
-    return `="${match[3]}/${match[2]}/${match[1]}"`;
+    return `\t${match[3]}/${match[2]}/${match[1]}`;
   }
-  return dateStr;
+  return `\t${dateStr}`;
 }
 
 function formatPhone(phoneStr) {
   if (!phoneStr) return '';
-  return `="${phoneStr}"`;
+  return `\t${phoneStr}`;
 }
 
 function formatTime(timeStr) {
   if (!timeStr) return '';
-  return `="${timeStr}"`;
+  return `\t${timeStr}`;
 }
 
 function translateGender(g) {
