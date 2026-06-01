@@ -685,21 +685,48 @@ export const registerPackage = (req, res) => {
   const goiTap = db.prepare('SELECT * FROM goi_tap WHERE id = ? AND is_deleted = 0').get(goi_tap_id);
   if (!goiTap) return error(res, 'Gói tập không tồn tại.', 404);
 
+  const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
+
+  // Tự động hủy toàn bộ các yêu cầu gia hạn đang ở trạng thái 'cho_duyet' của hội viên này
+  db.prepare(`
+    UPDATE dang_ky_goi_tap
+    SET trang_thai = 'huy', ly_do_huy = 'Hủy tự động do quản trị viên đã đăng ký gói mới trực tiếp cho hội viên'
+    WHERE ho_so_id = ? AND trang_thai = 'cho_duyet'
+  `).run(id);
+
+  // Kiểm tra gói tập đang hoạt động có ngày hết hạn xa nhất để thực hiện nối tiếp nếu có
+  const activePackage = db.prepare(`
+    SELECT den_ngay FROM dang_ky_goi_tap
+    WHERE ho_so_id = ? AND trang_thai = 'dang_hoat_dong'
+    ORDER BY den_ngay DESC LIMIT 1
+  `).get(id);
+
+  let finalTuNgay = tu_ngay;
+  if (activePackage && activePackage.den_ngay >= todayStr) {
+    const nextDayResult = db.prepare("SELECT date(?, '+1 day') AS next_day").get(activePackage.den_ngay);
+    if (nextDayResult && nextDayResult.next_day) {
+      finalTuNgay = nextDayResult.next_day;
+    }
+  } else {
+    // Nếu không có gói đang hoạt động hoặc gói đã hết hạn, ngày bắt đầu không được nhỏ hơn hôm nay
+    if (finalTuNgay < todayStr) {
+      finalTuNgay = todayStr;
+    }
+  }
+
   const denNgay = db.prepare(`
     SELECT date(?, '+' || ? || ' months', '+' || ? || ' days') AS den_ngay
-  `).get(tu_ngay, goiTap.so_thang, goiTap.so_ngay_them).den_ngay;
+  `).get(finalTuNgay, goiTap.so_thang, goiTap.so_ngay_them).den_ngay;
 
-  const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
-  const finalStatus = tu_ngay > todayStr ? 'cho_kich_hoat' : 'dang_hoat_dong';
+  const finalStatus = finalTuNgay > todayStr ? 'cho_kich_hoat' : 'dang_hoat_dong';
 
   const result = db.prepare(`
     INSERT INTO dang_ky_goi_tap
       (ho_so_id, goi_tap_id, tu_ngay, den_ngay, gia_thuc_te, ghi_chu_gia, phuong_thuc_tt, nguoi_thu_id, ma_giao_dich, ghi_chu_tt, ngay_thanh_toan, so_tien_da_thu, nguoi_tao_id, nguoi_cap_nhat_id, trang_thai)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(id, goi_tap_id, tu_ngay, denNgay, gia_thuc_te, ghi_chu_gia || null,
+  `).run(id, goi_tap_id, finalTuNgay, denNgay, gia_thuc_te, ghi_chu_gia || null,
     phuong_thuc_tt, req.user.id, ma_giao_dich || null, ghi_chu_tt || null, ngay_thanh_toan || null,
     paidAmount, req.user.id, req.user.id, finalStatus);
-
 
   ghi_audit_log(req, 'CREATE', 'dang_ky_goi_tap', result.lastInsertRowid, null,
     { ho_so_id: id, goi_tap_id, gia: gia_thuc_te }, 'Đăng ký gói tập cho hội viên');
@@ -1093,6 +1120,13 @@ export const approvePackageRequest = (req, res) => {
       ngay_thanh_toan = datetime('now', 'localtime')
     WHERE id = ?
   `).run(finalStatus, gia_thuc_te, phuong_thuc_tt || 'tien_mat', req.user.id, ghi_chu_tt || 'Duyệt thủ công', req.user.id, id);
+
+  // Tự động hủy các yêu cầu gia hạn khác đang chờ duyệt của hội viên này
+  db.prepare(`
+    UPDATE dang_ky_goi_tap
+    SET trang_thai = 'huy', ly_do_huy = 'Hủy tự động do yêu cầu gia hạn khác đã được phê duyệt'
+    WHERE ho_so_id = ? AND trang_thai = 'cho_duyet' AND id != ?
+  `).run(request.ho_so_id, id);
 
   ghi_audit_log(req, 'UPDATE', 'dang_ky_goi_tap', id, request, { trang_thai: finalStatus }, `Duyệt gia hạn gói tập cho ${member.ho_ten} (${finalStatus === 'dang_hoat_dong' ? 'Kích hoạt ngay' : 'Chờ kích hoạt nối tiếp'})`);
 
