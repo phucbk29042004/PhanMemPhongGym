@@ -613,7 +613,7 @@ window.GymApp.pages['dashboard'] = {
       </div>
       
       <div>
-        <h4 class="font-bold text-on-surface mb-1">📌 4 Chỉ số KPI hàng đầu:</h4>
+        <h4 class="font-bold text-on-surface mb-1">4 Chỉ số KPI hàng đầu:</h4>
         <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
           <li><strong>Tổng hội viên:</strong> Toàn bộ số lượng hội viên đã đăng ký trong cơ sở dữ liệu.</li>
           <li><strong>Check-in hôm nay:</strong> Lượt quét mã QR/nhập thẻ vào tập thực tế ghi nhận trong ngày.</li>
@@ -623,7 +623,7 @@ window.GymApp.pages['dashboard'] = {
       </div>
 
       <div>
-        <h4 class="font-bold text-on-surface mb-1">📊 Phân tích biểu đồ & Tiện ích:</h4>
+        <h4 class="font-bold text-on-surface mb-1">Phân tích biểu đồ & Tiện ích:</h4>
         <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
           <li><strong>Doanh thu 12 tháng:</strong> Biểu đồ so sánh trực quan doanh thu tháng này so với tháng trước để theo dõi tốc độ tăng trưởng.</li>
           <li><strong>Hội viên chăm chỉ:</strong> Liệt kê danh sách top 5 hội viên có số buổi quét mã check-in đi tập nhiều nhất trong tháng hiện tại.</li>

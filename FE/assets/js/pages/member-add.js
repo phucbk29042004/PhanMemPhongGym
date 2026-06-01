@@ -800,7 +800,7 @@ window.GymApp.pages['member-add'] = {
       </div>
 
       <div>
-        <h4 class="font-bold text-on-surface mb-1">📋 Các bước thực hiện:</h4>
+        <h4 class="font-bold text-on-surface mb-1">Các bước thực hiện:</h4>
         <ul class="list-decimal pl-5 space-y-1 text-on-surface-variant">
           <li><strong>Bước 1: Điền thông tin cá nhân:</strong> Nhập họ tên, số điện thoại, giới tính, ngày sinh. Tải ảnh đại diện (avatar) của hội viên để nhận diện khi check-in.</li>
           <li><strong>Bước 2: Chọn gói tập ban đầu:</strong> Lựa chọn gói tập phù hợp trong danh sách, hệ thống sẽ tự động tính ngày bắt đầu và kết thúc.</li>

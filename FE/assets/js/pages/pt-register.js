@@ -593,18 +593,18 @@ window.GymApp.pages['pt-register'] = {
                 <label class="block text-[11px] font-bold text-on-surface-variant mb-1.5">Giờ bắt đầu</label>
                 <div class="flex items-center gap-xs">
                   <select id="edit-start-hour" class="flex-1 bg-surface-container-low/30 border border-outline-variant/50 text-on-surface py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-xs font-semibold transition-all text-center cursor-pointer">
-                    ${[5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22].map(h => `<option value="${String(h).padStart(2,'0')}" ${String(h).padStart(2,'0') === startH ? 'selected' : ''}>${String(h).padStart(2,'0')}</option>`).join('')}
+                    ${[5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22].map(h => `<option value="${String(h).padStart(2, '0')}" ${String(h).padStart(2, '0') === startH ? 'selected' : ''}>${String(h).padStart(2, '0')}</option>`).join('')}
                   </select>
                   <span class="font-bold text-on-surface-variant">:</span>
                   <select id="edit-start-minute" class="flex-1 bg-surface-container-low/30 border border-outline-variant/50 text-on-surface py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-xs font-semibold transition-all text-center cursor-pointer">
-                    ${['00','10','15','20','30','40','45','50'].map(m => `<option value="${m}" ${m === startM ? 'selected' : ''}>${m}</option>`).join('')}
+                    ${['00', '10', '15', '20', '30', '40', '45', '50'].map(m => `<option value="${m}" ${m === startM ? 'selected' : ''}>${m}</option>`).join('')}
                   </select>
                 </div>
               </div>
               <div>
                 <label class="block text-[11px] font-bold text-on-surface-variant mb-1.5">Thời lượng</label>
                 <select id="edit-duration" class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-xs font-semibold transition-all cursor-pointer">
-                  ${[30,60,90,120].map(d => `<option value="${d}" ${d === durationMins ? 'selected' : ''}>${d === 30 ? '30 phút' : d === 60 ? '1 giờ' : d === 90 ? '1.5 giờ' : '2 giờ'}</option>`).join('')}
+                  ${[30, 60, 90, 120].map(d => `<option value="${d}" ${d === durationMins ? 'selected' : ''}>${d === 30 ? '30 phút' : d === 60 ? '1 giờ' : d === 90 ? '1.5 giờ' : '2 giờ'}</option>`).join('')}
                 </select>
               </div>
               <div>
@@ -631,7 +631,7 @@ window.GymApp.pages['pt-register'] = {
           const m = document.getElementById('edit-start-minute')?.value || '00';
           const dur = parseInt(document.getElementById('edit-duration')?.value || '60');
           const total = parseInt(h) * 60 + parseInt(m) + dur;
-          document.getElementById('edit-end').value = `${String(Math.floor(total/60)%24).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`;
+          document.getElementById('edit-end').value = `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
         };
         // Khóa giờ/phút trong quá khứ cho modal sửa
         const editToday = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
@@ -648,9 +648,9 @@ window.GymApp.pages['pt-register'] = {
             const h = parseInt(o.value);
             const past = isToday && h < nowH;
             o.disabled = past; o.style.color = past ? '#a3a3a3' : '';
-            if (!past && firstValidH === null) firstValidH = String(h).padStart(2,'0');
+            if (!past && firstValidH === null) firstValidH = String(h).padStart(2, '0');
           });
-          if (isToday && parseInt(hSel.value) < nowH) hSel.value = firstValidH || String(nowH+1).padStart(2,'0');
+          if (isToday && parseInt(hSel.value) < nowH) hSel.value = firstValidH || String(nowH + 1).padStart(2, '0');
           const selH = parseInt(hSel.value);
           Array.from(mSel.options).forEach(o => {
             const m = parseInt(o.value);
@@ -748,7 +748,7 @@ window.GymApp.pages['pt-register'] = {
       </div>
 
       <div>
-        <h4 class="font-bold text-on-surface mb-1">📋 Các bước đăng ký:</h4>
+        <h4 class="font-bold text-on-surface mb-1">Các bước đăng ký:</h4>
         <ul class="list-decimal pl-5 space-y-1 text-on-surface-variant">
           <li><strong>Bước 1: Chọn Huấn luyện viên (PT):</strong> Click chọn PT mong muốn trong danh sách bên trái.</li>
           <li><strong>Bước 2: Chọn Hội viên:</strong> Danh sách hội viên bên phải sẽ tự động hiển thị, click chọn hội viên muốn đăng ký tập với PT đã chọn.</li>

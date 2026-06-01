@@ -784,7 +784,7 @@ window.GymApp.pages['pt-training'] = {
       </div>
 
       <div>
-        <h4 class="font-bold text-on-surface mb-1">🔍 Tìm kiếm & Bộ lọc:</h4>
+        <h4 class="font-bold text-on-surface mb-1">Tìm kiếm & Bộ lọc:</h4>
         <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
           <li><strong>Tìm nhanh:</strong> Gõ tên PT hoặc hội viên vào ô tìm kiếm để lọc nhanh danh sách lịch tập.</li>
           <li><strong>Bộ lọc nâng cao:</strong> Bấm <strong>Bộ lọc</strong> để mở rộng tuỳ chọn lọc theo Huấn luyện viên cụ thể, Trạng thái buổi học, hoặc Khoảng ngày diễn ra buổi tập.</li>
@@ -792,7 +792,7 @@ window.GymApp.pages['pt-training'] = {
       </div>
 
       <div>
-        <h4 class="font-bold text-on-surface mb-1">⚙️ Cập nhật trạng thái buổi tập:</h4>
+        <h4 class="font-bold text-on-surface mb-1">Cập nhật trạng thái buổi tập:</h4>
         <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
           <li><strong>Điểm danh dạy (Duyệt dạy):</strong> Khi buổi tập diễn ra, bấm **Điểm danh** để đổi trạng thái sang <strong>Đã tập</strong> (ghi nhận buổi dạy cho PT).</li>
           <li><strong>Hủy buổi:</strong> Bấm **Hủy buổi** (nhập lý do) nếu hội viên bận đột xuất hoặc có việc riêng không thể tập.</li>
