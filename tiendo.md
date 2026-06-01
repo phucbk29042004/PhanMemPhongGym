@@ -8,11 +8,77 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
-**✅ Sửa lỗi ReferenceError, Khóa tiền hoàn hủy gói & Đồng bộ Trạng thái giao dịch di động** — Thực hiện Migration v19 bổ sung cột `so_tien_hoan`/`ly_do_huy` cho `dang_ky_pt`, nâng cấp logic hủy gói Gym/PT tại backend để khóa tiền hoàn khớp với giá thực tế của gói tập, đồng bộ hiển thị Badge trạng thái và chênh lệch dòng tiền (+/-) trong doanh thu di động giống như bản Web.
+**✅ Fix DatePickerField không đồng bộ ngày từ bên ngoài** — Thêm `useEffect` vào component `DatePickerField` để cập nhật state nội tại khi prop `value` thay đổi từ màn hình cha, fix ngày kết thúc không hiển thị sau khi tự động tính trên màn hình Đăng ký gói Gym và Đăng ký gói PT.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
+
+### [01/06/2026 10:20] — Phân trang danh sách giao dịch và gói tập trên ứng dụng Mobile
+- **Loại**: Cải tiến tính năng (Mobile)
+- **File**: `MobileApp/src/screens/admin/AdminRevenueScreen.js`
+- **Mô tả**: Thiết lập phân trang trực tiếp cho các phần hiển thị dữ liệu lớn trên màn hình Doanh thu Mobile:
+  1. **Danh sách giao dịch**: Phân trang tối đa 10 giao dịch trên mỗi trang. Thêm thanh điều khiển gồm trang hiện tại, tổng số trang, tổng số giao dịch và các nút "Trước"/"Sau".
+  2. **Gói tập bán chạy**: Phân trang tối đa 5 gói tập trên mỗi trang ở cả chế độ so sánh doanh thu và thống kê thông thường. Thêm các nút điều khiển chuyển trang trước/sau gọn gàng.
+- **Kết quả**: Thành công.
+
+### [01/06/2026 10:15] — Redesign bộ chọn lịch tháng so sánh doanh thu trên Web và Mobile
+- **Loại**: Cải tiến giao diện UI/UX & Đồng bộ Mobile
+- **File**: `FE/assets/js/pages/revenue.js`, `MobileApp/src/screens/admin/AdminRevenueScreen.js`
+- **Mô tả**:
+  1. **Web**: Loại bỏ các select box chọn tháng/năm cũ. Thay thế bằng 2 input readonly và tích hợp trực tiếp thư viện `AirDatepicker` với cấu hình chỉ cho phép chọn tháng và năm (`view: 'months', minView: 'months', dateFormat: 'MM/yyyy'`), mang lại trải nghiệm chuyên nghiệp, mượt mà và đồng bộ với hệ thống lịch chung.
+  2. **Mobile**: Thay thế các ô `TextInput` tự gõ tháng bằng `TouchableOpacity` kích hoạt Modal. Thiết kế và tích hợp Custom `MonthYearPickerModal` cho phép người dùng chọn Tháng (1-12) và Năm (2022-2026) bằng các nút bấm trực quan, loại bỏ hoàn toàn việc gõ tay và đảm bảo dữ liệu gửi lên API đúng chuẩn `YYYY-MM`.
+- **Kết quả**: Thành công.
+
+### [01/06/2026 10:05] — Việt hóa bộ lọc so sánh doanh thu và đồng bộ sang Mobile App Admin
+- **Loại**: Cải tiến tính năng & Đồng bộ Mobile
+- **File**: `BE/src/controllers/revenue.controller.js`, `FE/assets/js/pages/revenue.js`, `MobileApp/src/screens/admin/AdminRevenueScreen.js`
+- **Mô tả**:
+  1. **Backend**: Cập nhật API `compare-months` để tự động query thêm `packageStats` (gói tập bán chạy) và `transactions` (giao dịch chi tiết) của cả 2 tháng so sánh.
+  2. **Frontend**: Thiết kế lại bộ chọn tháng so sánh bằng ngôn ngữ Tiếng Việt, đổi input month sang giao diện gọn đẹp hơn. Đưa dữ liệu gói tập bán chạy và giao dịch gộp hiển thị bình thường khi ở chế độ so sánh (thay vì bị ẩn/rỗng).
+  3. **Mobile**: Đồng bộ tuỳ chọn "So sánh" vào `AdminRevenueScreen` trên ứng dụng mobile với đầy đủ biểu đồ 2 đường (react-native-svg), các Stat Cards và danh sách giao dịch, gói tập gộp của 2 tháng so sánh.
+- **Kết quả**: Thành công.
+
+### [01/06/2026 09:58] — Thêm tính năng so sánh doanh thu giữa 2 tháng tự chọn
+- **Loại**: Thêm tính năng
+- **File**: `BE/src/routes/revenue.routes.js`, `BE/src/controllers/revenue.controller.js`, `FE/assets/js/pages/revenue.js`
+- **Mô tả**: Bổ sung API và giao diện so sánh 2 tháng bất kỳ:
+  1. **Backend**: Viết API `/api/revenue/compare-months` nhận `month1` và `month2` dạng `YYYY-MM`. Query doanh thu chi tiết theo ngày và tổng doanh thu của mỗi tháng.
+  2. **Frontend**: Thêm lựa chọn "So sánh tháng" vào bộ lọc. Khi click sẽ hiện ra 2 ô chọn tháng và nút "So sánh". Nhấp vào sẽ fetch API và vẽ biểu đồ 2 đường (Tháng A xanh lá, Tháng B tím) cùng card tổng hợp so sánh trực quan.
+- **Kết quả**: Thành công.
+
+### [01/06/2026 09:39] — Fix hội viên vẫn hiện trong "Đã hết hạn" sau khi gia hạn thành công
+- **Loại**: Sửa bug (Backend + Mobile)
+- **File**: `BE/src/controllers/members.controller.js`, `MobileApp/src/screens/admin/AdminExpiredMembersScreen.js`
+- **Mô tả**: Tìm ra 2 nguyên nhân:
+  1. **Backend** — `getExpiredMembers` và `getExpiringMembers` không gọi `autoUpdateExpiredStatuses()` trước khi query. Gói cũ hết hạn vẫn còn `trang_thai = 'dang_hoat_dong'` trong DB → query NOT EXISTS bị sai. Đã thêm `autoUpdateExpiredStatuses()` vào đầu cả 2 hàm.
+  2. **Mobile** — `AdminExpiredMembersScreen` dùng `useEffect` thường → không tự refresh khi navigate back từ màn hình gia hạn. Đã đổi sang `useFocusEffect` để danh sách tự làm mới mỗi khi màn hình được focus.
+- **Kết quả**: Thành công — Hội viên biến mất khỏi danh sách hết hạn ngay sau khi gia hạn thành công.
+
+### [01/06/2026 09:28] — Redesign biểu đồ phương thức thanh toán thành Stacked Bar Chart theo ngày
+- **Loại**: Cải tiến tính năng
+- **File**: `FE/assets/js/pages/revenue.js`
+- **Mô tả**: Thay đổi biểu đồ `payment_method` (7/30 ngày) — hiển thị đủ N ngày trên trục X, mỗi cột là stacked bar gồm tiền mặt (cam, dưới) + chuyển khoản (xanh, trên). Tooltip hiện từng phương thức + tổng ngày. Với 30 ngày: tự ẩn bớt label trục X (mỗi 5 ngày).
+- **Kết quả**: Thành công — Biểu đồ trực quan, đầy đủ thông tin theo ngày.
+
+### [01/06/2026 09:07] — Fix DatePickerField không hiển thị ngày sau khi tự động tính
+- **Loại**: Sửa bug
+- **File**: `MobileApp/src/components/DatePickerField.js`
+- **Mô tả**: Thêm `useEffect` theo dõi prop `value`. Khi giá trị từ màn hình cha thay đổi (ví dụ: ngày kết thúc được tính tự động từ gói tập được chọn), component sẽ đồng bộ lại `selectedDate`, `currentMonth`, và `currentYear` để hiển thị đúng ngày lên UI. Lỗi này ảnh hưởng tới mọi màn hình dùng `DatePickerField` với ngày được set từ bên ngoài: `AdminRegisterPackageScreen`, `AdminRegisterPTScreen`.
+- **Kết quả**: Thành công — Ngày kết thúc hiển thị chính xác sau khi tự động tính.
+
+### [01/06/2026 09:19] — Fix biểu đồ phương thức thanh toán chỉ 1 cột bị mất
+- **Loại**: Sửa bug
+- **File**: `FE/assets/js/pages/revenue.js`
+- **Mô tả**: Đổi kiểu biểu đồ `payment_method` từ `line` sang `bar`. Chart line cần tối thiểu 2 điểm để vẽ đường liên kết — khi chỉ có 1 phương thức (ví dụ chỉ có tiền mặt), biểu đồ chỉ hiện 1 dấu chấm legend mà không có chart. Bar chart hiển thị 1 hoặc 2 cột đều bình thường. Đồng thời thêm legend tùy chỉnh phân biệt màu Tiền mặt (cam) và Chuyển khoản (xanh).
+- **Kết quả**: Thành công — Biểu đồ phương thức thanh toán hiển thị đúng với 1 hoặc 2 phương thức.
+
+### [01/06/2026 09:19] — Fix luồng gia hạn gói Gym và PT khi hội viên hết hạn
+- **Loại**: Sửa bug
+- **File**: `MobileApp/src/screens/admin/AdminMemberDetailScreen.js`
+- **Mô tả**: Thêm biến `activePkgForSwitch` và `activePTForSwitch` chỉ lấy gói còn thực sự hiệu lực (trạng thái `dang_hoat_dong` hoặc `cho_kich_hoat`). Khi gói đã `het_han`, biến này là `null` và màn hình đăng ký nhận tham số `activePkg: null` — đúng luồng "Đăng ký mới" thay vì nhầm sang "Đổi gói / Song song". Áp dụng cho cả gói Gym và gói PT.
+- **Kết quả**: Thành công — Hội viên hết hạn sẽ được gia hạn đúng luồng "Đăng ký mới", không bị hiện "Đổi gói".
+
 
 ### 29/05/2026 10:15 — Sửa lỗi ReferenceError, Khóa tiền hoàn hủy gói & Đồng bộ Trạng thái giao dịch di động
 - **Loại**: Sửa bug, Thêm tính năng mới, Nghiệp vụ, Database Migration (Fullstack)

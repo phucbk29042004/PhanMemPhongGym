@@ -23,7 +23,20 @@ window.GymApp.pages['revenue'] = {
               <button class="rev-range-btn px-4 py-1.5 rounded-xl text-body-sm font-bold transition-all duration-300" data-days="yesterday">Hôm qua</button>
               <button class="rev-range-btn px-4 py-1.5 rounded-xl text-body-sm font-bold transition-all duration-300" data-days="7">7 ngày</button>
               <button class="rev-range-btn px-4 py-1.5 rounded-xl text-body-sm font-bold transition-all duration-300" data-days="30">30 ngày</button>
+              <button class="rev-range-btn px-4 py-1.5 rounded-xl text-body-sm font-bold transition-all duration-300" data-days="compare">Theo tháng</button>
             </div>
+            
+            <!-- Chọn tháng so sánh -->
+            <div id="compare-months-inputs" class="hidden flex items-center gap-compact bg-surface-container-low/40 p-1.5 rounded-xl border border-outline-variant/30 flex-wrap">
+              <span class="text-on-surface-variant text-body-sm font-bold">Tháng A:</span>
+              <input type="text" id="compare-month-1" readonly class="bg-white dark:bg-[#1e1e1e] border border-outline-variant text-body-sm rounded-lg px-3 py-1 outline-none text-on-surface font-semibold focus:border-brand-primary w-28 cursor-pointer text-center" placeholder="Chọn tháng" />
+
+              <span class="text-on-surface-variant text-body-sm font-bold ml-2">Tháng B:</span>
+              <input type="text" id="compare-month-2" readonly class="bg-white dark:bg-[#1e1e1e] border border-outline-variant text-body-sm rounded-lg px-3 py-1 outline-none text-on-surface font-semibold focus:border-brand-primary w-28 cursor-pointer text-center" placeholder="Chọn tháng" />
+
+              <button id="btn-compare-action" class="bg-brand-primary hover:bg-brand-primary/95 text-white text-body-sm font-bold px-4 py-1.5 rounded-lg active:scale-95 transition-all ml-2">So sánh</button>
+            </div>
+
             <button id="rev-reload" class="ml-auto flex items-center justify-center gap-xs px-4 py-2 rounded-xl border border-outline-variant bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer whitespace-nowrap">
               <span class="material-symbols-outlined text-base">refresh</span>
               Tải lại
@@ -164,7 +177,56 @@ window.GymApp.pages['revenue'] = {
     const isSingleDay = isToday || isYesterday;
 
     let cards = [];
-    if (isSingleDay) {
+    if (this._days === 'compare') {
+      const compData = this._compareData || {};
+      const sum1 = compData.summary1 || { total: 0, orders: 0, goi_tap: 0, goi_pt: 0 };
+      const sum2 = compData.summary2 || { total: 0, orders: 0, goi_tap: 0, goi_pt: 0 };
+      const m1 = compData.month1 || '';
+      const m2 = compData.month2 || '';
+      const label1 = m1 ? `Tháng ${parseInt(m1.slice(5, 7), 10)}/${m1.slice(0, 4)}` : 'Tháng A';
+      const label2 = m2 ? `Tháng ${parseInt(m2.slice(5, 7), 10)}/${m2.slice(0, 4)}` : 'Tháng B';
+
+      const compareTrendHtml = this._formatTrend(sum1.total, sum2.total); // So sánh tổng tháng A vs tháng B
+
+      cards = [
+        {
+          label: `Tổng doanh thu ${label1}`,
+          value: this._formatMoney(sum1.total),
+          icon: 'payments',
+          iconBg: 'icon-bg-green',
+          color: 'text-brand-primary',
+          trendHtml: compareTrendHtml,
+          sub: `${label2}: ${this._formatMoney(sum2.total)}`,
+        },
+        {
+          label: `Tổng đơn hàng`,
+          value: `${sum1.orders} đơn`,
+          icon: 'receipt_long',
+          iconBg: 'icon-bg-green',
+          color: 'text-brand-primary',
+          trendHtml: '',
+          sub: `${label2}: ${sum2.orders} đơn`,
+        },
+        {
+          label: 'Doanh thu Gói tập',
+          value: this._formatMoney(sum1.goi_tap),
+          icon: 'card_membership',
+          iconBg: 'icon-bg-orange',
+          color: 'text-[#e65100]',
+          trendHtml: '',
+          sub: `${label2}: ${this._formatMoney(sum2.goi_tap)}`,
+        },
+        {
+          label: 'Doanh thu Gói PT',
+          value: this._formatMoney(sum1.goi_pt),
+          icon: 'sports_gymnastics',
+          iconBg: 'icon-bg-blue',
+          color: 'text-secondary',
+          trendHtml: '',
+          sub: `${label2}: ${this._formatMoney(sum2.goi_pt)}`,
+        },
+      ];
+    } else if (isSingleDay) {
       cards = [
         {
           label: 'Tổng doanh thu',
@@ -515,63 +577,123 @@ window.GymApp.pages['revenue'] = {
         }
       });
     } else if (this._chartType === 'payment_method') {
+      const daysInt = parseInt(this._days) || 7;
       const title = document.getElementById('rev-chart-title');
-      if (title) title.textContent = `Doanh thu theo phương thức thanh toán`;
+      if (title) title.textContent = `Doanh thu theo phương thức thanh toán (${daysInt} ngày)`;
 
-      let cashTotal = 0;
-      let bankTotal = 0;
       const transactions = this._transactionsData || [];
+
+      // Tạo danh sách đủ N ngày (từ N-1 ngày trước đến hôm nay)
+      const today = new Date();
+      const labels = [];
+      const cashByDay = {};
+      const bankByDay = {};
+
+      for (let i = daysInt - 1; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const label = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+        labels.push({ key, label });
+        cashByDay[key] = 0;
+        bankByDay[key] = 0;
+      }
 
       transactions.forEach(t => {
         const inflow = calcInflow(t);
         if (inflow <= 0) return;
-        if (t.phuong_thuc_tt === 'tien_mat') cashTotal += inflow;
-        else if (t.phuong_thuc_tt === 'chuyen_khoan') bankTotal += inflow;
+        const dateKey = t.thoi_gian ? t.thoi_gian.substring(0, 10) : null;
+        if (!dateKey || !(dateKey in cashByDay)) return;
+        if (t.phuong_thuc_tt === 'tien_mat') cashByDay[dateKey] += inflow;
+        else if (t.phuong_thuc_tt === 'chuyen_khoan') bankByDay[dateKey] += inflow;
       });
 
-      // Lọc bỏ phương thức không có giao dịch, sắp xếp tăng dần
-      const payPairs = [
-        { label: 'Tiền mặt', value: cashTotal },
-        { label: 'Chuyển khoản', value: bankTotal },
-      ].filter(p => p.value > 0).sort((a, b) => a.value - b.value);
-
-      if (payPairs.length === 0) {
+      const hasAny = labels.some(l => cashByDay[l.key] > 0 || bankByDay[l.key] > 0);
+      if (!hasAny) {
         const wrap = canvas.parentElement;
         if (wrap) wrap.innerHTML = '<p class="flex items-center justify-center h-full text-on-surface-variant text-body-sm">Chưa có giao dịch trong khoảng thời gian này</p>';
         return;
       }
 
-      const labels = payPairs.map(p => p.label);
-      const data = payPairs.map(p => p.value);
-      const colors = payPairs.map(p => p.label === 'Tiền mặt' ? '#e65100' : '#1D9336');
+      const xLabels = labels.map(l => l.label);
+      const cashData = labels.map(l => cashByDay[l.key]);
+      const bankData = labels.map(l => bankByDay[l.key]);
 
       this._chart = new Chart(canvas, {
-        type: 'line',
+        type: 'bar',
         data: {
-          labels,
-          datasets: [{
-            label: 'Doanh thu',
-            data,
-            borderColor: '#e65100',
-            backgroundColor: 'rgba(230,81,0,0.10)',
-            borderWidth: 2.5,
-            pointRadius: 10,
-            pointHoverRadius: 14,
-            pointBackgroundColor: colors,
-            pointBorderColor: '#fff',
-            pointBorderWidth: 2,
-            tension: 0,
-            fill: true,
-          }]
+          labels: xLabels,
+          datasets: [
+            {
+              label: 'Tiền mặt',
+              data: cashData,
+              backgroundColor: 'rgba(230,81,0,0.82)',
+              borderColor: '#e65100',
+              borderWidth: 0,
+              borderRadius: { topLeft: 0, topRight: 0, bottomLeft: 4, bottomRight: 4 },
+              borderSkipped: false,
+              stack: 'payment',
+            },
+            {
+              label: 'Chuyển khoản',
+              data: bankData,
+              backgroundColor: 'rgba(29,147,54,0.82)',
+              borderColor: '#1D9336',
+              borderWidth: 0,
+              borderRadius: { topLeft: 4, topRight: 4, bottomLeft: 0, bottomRight: 0 },
+              borderSkipped: false,
+              stack: 'payment',
+            },
+          ]
         },
         options: {
-          ...commonLineOptions(),
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: {
+              display: true,
+              labels: {
+                color: labelColor,
+                font: { size: 11, weight: 'bold' },
+                usePointStyle: true,
+                pointStyle: 'rect',
+              }
+            },
+            tooltip: {
+              enabled: true,
+              backgroundColor: isDark ? '#2a2a2a' : '#fff',
+              titleColor: isDark ? '#e0e0e0' : '#333',
+              bodyColor: isDark ? '#bbb' : '#555',
+              borderColor: isDark ? '#444' : '#ddd',
+              borderWidth: 1,
+              padding: 10,
+              callbacks: {
+                label: ctx => ` ${ctx.dataset.label}: ${new Intl.NumberFormat('vi-VN').format(ctx.raw ?? 0)} đ`,
+                footer: (items) => {
+                  const total = items.reduce((s, i) => s + (i.raw ?? 0), 0);
+                  return total > 0 ? `Tổng: ${new Intl.NumberFormat('vi-VN').format(total)} đ` : '';
+                }
+              },
+            },
+          },
           scales: {
             x: {
-              ticks: { color: labelColor, font: { size: 11, weight: 'bold' } },
+              stacked: true,
+              ticks: {
+                color: labelColor,
+                font: { size: daysInt > 14 ? 8 : 10, weight: 'bold' },
+                maxRotation: daysInt > 14 ? 45 : 0,
+                callback: function (val, index) {
+                  // Với 30 ngày: chỉ hiển thị ngày chẵn 5 để tránh chồng chữ
+                  if (daysInt > 14 && index % 5 !== 0) return '';
+                  return this.getLabelForValue(val);
+                }
+              },
               grid: { display: false }
             },
             y: {
+              stacked: true,
               min: 0,
               ticks: {
                 color: labelColor,
@@ -583,8 +705,95 @@ window.GymApp.pages['revenue'] = {
           }
         }
       });
+
     } else {
-      if (isSingleDay) {
+      if (this._days === 'compare') {
+        const compData = this._compareData || {};
+        const labels = (compData.labels || []).map(day => `${day}`);
+        const m1 = compData.month1 || '';
+        const m2 = compData.month2 || '';
+        const label1 = m1 ? `Tháng ${parseInt(m1.slice(5, 7), 10)}/${m1.slice(0, 4)}` : 'Tháng A';
+        const label2 = m2 ? `Tháng ${parseInt(m2.slice(5, 7), 10)}/${m2.slice(0, 4)}` : 'Tháng B';
+
+        const data1 = (compData.data1 || []).map(d => Math.max(0, d.tong_tien || 0));
+        const data2 = (compData.data2 || []).map(d => Math.max(0, d.tong_tien || 0));
+
+        const title = document.getElementById('rev-chart-title');
+        if (title) title.textContent = `So sánh doanh thu ${label1} / ${label2}`;
+
+        this._chart = new Chart(canvas, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [
+              {
+                label: label1,
+                data: data1,
+                borderColor: '#1D9336',
+                backgroundColor: 'rgba(29,147,54,0.10)',
+                borderWidth: 2.5,
+                pointRadius: 4,
+                pointHoverRadius: 7,
+                pointBackgroundColor: '#1D9336',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                tension: 0.35,
+                fill: false,
+              },
+              {
+                label: label2,
+                data: data2,
+                borderColor: '#6750a4',
+                backgroundColor: 'rgba(103,80,164,0.10)',
+                borderWidth: 2.5,
+                pointRadius: 4,
+                pointHoverRadius: 7,
+                pointBackgroundColor: '#6750a4',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                tension: 0.35,
+                fill: false,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+              legend: { labels: { color: labelColor, font: { size: 11 } } },
+              tooltip: {
+                enabled: true,
+                backgroundColor: isDark ? '#2a2a2a' : '#fff',
+                titleColor: isDark ? '#e0e0e0' : '#333',
+                bodyColor: isDark ? '#bbb' : '#555',
+                borderColor: isDark ? '#444' : '#ddd',
+                borderWidth: 1,
+                padding: 10,
+                callbacks: {
+                  label: ctx => ` ${new Intl.NumberFormat('vi-VN').format(ctx.raw ?? 0)} đ`,
+                },
+              },
+            },
+            scales: {
+              x: {
+                ticks: { color: labelColor, font: { size: 10 } },
+                grid: { color: gridColor },
+                title: { display: true, text: 'Ngày trong tháng', color: labelColor, font: { size: 10 } },
+              },
+              y: {
+                min: 0,
+                ticks: {
+                  color: labelColor,
+                  font: { size: 10 },
+                  callback: v => new Intl.NumberFormat('vi-VN', { notation: 'compact' }).format(v),
+                },
+                grid: { color: gridColor },
+              },
+            },
+          },
+        });
+      } else if (isSingleDay) {
         // Mode: so sánh tháng này vs tháng trước — chỉ dùng tong_tien dương (inflow)
         const monthData = monthComparison || {};
         const labels = (monthData.labels || []).map(day => `${day}`);
@@ -869,6 +1078,13 @@ window.GymApp.pages['revenue'] = {
     if (titleEl) {
       if (isToday) titleEl.textContent = 'Giao dịch hôm nay';
       else if (isYesterday) titleEl.textContent = 'Giao dịch hôm qua';
+      else if (this._days === 'compare') {
+        const m1 = this._compareData?.month1 || '';
+        const m2 = this._compareData?.month2 || '';
+        const label1 = m1 ? `tháng ${parseInt(m1.slice(5, 7), 10)}/${m1.slice(0, 4)}` : 'tháng A';
+        const label2 = m2 ? `tháng ${parseInt(m2.slice(5, 7), 10)}/${m2.slice(0, 4)}` : 'tháng B';
+        titleEl.textContent = `Giao dịch của ${label1} và ${label2}`;
+      }
       else titleEl.textContent = `Giao dịch ${this._days} ngày qua`;
     }
 
@@ -1030,7 +1246,13 @@ window.GymApp.pages['revenue'] = {
   _updateChartTypeSelect: function () {
     const sel = document.getElementById('rev-chart-type');
     if (!sel) return;
-    const key = this._days; // 'today', 'yesterday', 7, 30
+    const key = this._days; // 'today', 'yesterday', 7, 30, 'compare'
+    if (key === 'compare') {
+      sel.innerHTML = `<option value="default">Mặc định</option>`;
+      sel.value = 'default';
+      this._chartType = 'default';
+      return;
+    }
     const options = this._chartTypeOptions[key] || this._chartTypeOptions['today'];
     sel.innerHTML = options.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
     sel.value = 'default';
@@ -1056,6 +1278,24 @@ window.GymApp.pages['revenue'] = {
         ]);
         revData = revRes?.data || {};
         dayData = yesterdayRes?.data || { giao_dich: [] };
+      } else if (this._days === 'compare') {
+        const m1 = this._compareMonth1 || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+        const d2 = new Date();
+        d2.setMonth(d2.getMonth() - 1);
+        const m2 = this._compareMonth2 || `${d2.getFullYear()}-${String(d2.getMonth() + 1).padStart(2, '0')}`;
+
+        const res = await window.GymApp.api.get(`/revenue/compare-months?month1=${m1}&month2=${m2}`);
+        const compareData = res?.data || {};
+        this._compareData = compareData;
+
+        // Tổng hợp stats từ 2 tháng so sánh
+        this._renderStats(null, null, null);
+        this._renderChart(null, null);
+
+        // Render dữ liệu packageStats và transactions từ kết quả so sánh
+        this._renderPackageStats(compareData.packageStats || []);
+        this._renderTodayTable(compareData.transactions || []);
+        return;
       } else {
         const daysInt = parseInt(this._days) || 30;
         const revRes = await window.GymApp.api.get(`/revenue?days=${daysInt}`);
@@ -1088,6 +1328,45 @@ window.GymApp.pages['revenue'] = {
     this._chartType = 'default';
     this._updateRangeButtons();
     this._updateChartTypeSelect(); // Khởi tạo dropdown đúng theo bộ lọc mặc định
+
+    // Set default value cho Select Month Input
+    const today = new Date();
+    const lastMonth = new Date();
+    lastMonth.setMonth(lastMonth.getMonth() - 1);
+
+    self._compareMonth1 = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    self._compareMonth2 = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`;
+
+    if (typeof AirDatepicker !== 'undefined') {
+      self._dp1 = new AirDatepicker('#compare-month-1', {
+        locale: window.GymApp.localeVi,
+        view: 'months',
+        minView: 'months',
+        dateFormat: 'MM/yyyy',
+        autoClose: true,
+        selectedDates: [today],
+        onSelect({ date }) {
+          if (date) {
+            self._compareMonth1 = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          }
+        }
+      });
+
+      self._dp2 = new AirDatepicker('#compare-month-2', {
+        locale: window.GymApp.localeVi,
+        view: 'months',
+        minView: 'months',
+        dateFormat: 'MM/yyyy',
+        autoClose: true,
+        selectedDates: [lastMonth],
+        onSelect({ date }) {
+          if (date) {
+            self._compareMonth2 = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          }
+        }
+      });
+    }
+
     await this._fetchAndRender();
 
     // Lắng nghe đổi loại biểu đồ
@@ -1103,8 +1382,20 @@ window.GymApp.pages['revenue'] = {
         self._days = isNaN(val) ? val : parseInt(val);
         self._updateRangeButtons();
         self._updateChartTypeSelect(); // Reset dropdown về Mặc định và cập nhật options
+
+        const compareInputs = document.getElementById('compare-months-inputs');
+        if (self._days === 'compare') {
+          if (compareInputs) compareInputs.classList.remove('hidden');
+        } else {
+          if (compareInputs) compareInputs.classList.add('hidden');
+        }
         await self._fetchAndRender();
       });
+    });
+
+    // Nút thực hiện so sánh
+    document.getElementById('btn-compare-action')?.addEventListener('click', async () => {
+      await self._fetchAndRender();
     });
 
     // Nút tải lại
@@ -1132,6 +1423,14 @@ window.GymApp.pages['revenue'] = {
     if (this._chart) {
       this._chart.destroy();
       this._chart = null;
+    }
+    if (this._dp1) {
+      this._dp1.destroy();
+      this._dp1 = null;
+    }
+    if (this._dp2) {
+      this._dp2.destroy();
+      this._dp2 = null;
     }
   },
 

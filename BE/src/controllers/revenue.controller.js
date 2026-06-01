@@ -380,3 +380,120 @@ export const getDashboard = (req, res) => {
 
   return success(res, stats);
 };
+
+// ── GET /api/revenue/compare-months ──────────────────────
+// So sánh doanh thu giữa 2 tháng tự chọn (month1 và month2 có dạng YYYY-MM)
+export const getCompareMonths = (req, res) => {
+  const { month1, month2 } = req.query;
+  if (!month1 || !month2) {
+    return res.status(400).json({ success: false, message: 'Thiếu tham số month1 hoặc month2' });
+  }
+
+  // Lấy danh sách số ngày tối đa của 2 tháng để vẽ trục hoành (tối đa 31 ngày)
+  const month1Start = `${month1}-01`;
+  const month2Start = `${month2}-01`;
+
+  const month1End = db.prepare(`SELECT date(?, '+1 month') AS d`).get(month1Start).d;
+  const month2End = db.prepare(`SELECT date(?, '+1 month') AS d`).get(month2Start).d;
+
+  const month1Days = db.prepare(`SELECT CAST(strftime('%d', date(?, '-1 day')) AS INTEGER) AS d`).get(month1End).d;
+  const month2Days = db.prepare(`SELECT CAST(strftime('%d', date(?, '-1 day')) AS INTEGER) AS d`).get(month2End).d;
+
+  const maxDay = Math.max(month1Days, month2Days);
+  const labels = Array.from({ length: maxDay }, (_, index) => index + 1);
+
+  // Query dữ liệu của month1 và month2
+  const month1Rows = db.prepare(`
+    SELECT CAST(strftime('%d', ngay) AS INTEGER) AS ngay_trong_thang,
+           tong_tien, tong_don, tien_goi_tap, tien_goi_pt
+    FROM doanh_thu
+    WHERE ngay >= ? AND ngay < ?
+    ORDER BY ngay ASC
+  `).all(month1Start, month1End);
+
+  const month2Rows = db.prepare(`
+    SELECT CAST(strftime('%d', ngay) AS INTEGER) AS ngay_trong_thang,
+           tong_tien, tong_don, tien_goi_tap, tien_goi_pt
+    FROM doanh_thu
+    WHERE ngay >= ? AND ngay < ?
+    ORDER BY ngay ASC
+  `).all(month2Start, month2End);
+
+  const month1ByDay = new Map(month1Rows.map(row => [row.ngay_trong_thang, row]));
+  const month2ByDay = new Map(month2Rows.map(row => [row.ngay_trong_thang, row]));
+
+  // Thống kê gói tập bán chạy của cả 2 tháng (gộp lại)
+  const packageStats = db.prepare(`
+    SELECT gt.ten_goi, COUNT(dk.id) AS so_dang_ky, SUM(dk.gia_thuc_te) AS tong_tien
+    FROM dang_ky_goi_tap dk
+    JOIN goi_tap gt ON gt.id = dk.goi_tap_id
+    WHERE (dk.ngay_tao >= ? AND dk.ngay_tao < ?) OR (dk.ngay_tao >= ? AND dk.ngay_tao < ?)
+    GROUP BY gt.id, gt.ten_goi
+    ORDER BY so_dang_ky DESC
+  `).all(month1Start, month1End, month2Start, month2End);
+
+  // Lấy các giao dịch chi tiết của cả 2 tháng
+  const goiTapTransactions = db.prepare(`
+    SELECT dk.id, dk.ngay_tao AS thoi_gian, 'goi_tap' AS loai,
+           gt.ten_goi AS san_pham, h.ho_ten AS khach_hang, dk.gia_thuc_te, dk.phuong_thuc_tt, dk.trang_thai,
+           dk.ly_do_huy, dk.so_tien_hoan, dk.ghi_chu_tt
+    FROM dang_ky_goi_tap dk
+    JOIN goi_tap gt ON gt.id = dk.goi_tap_id
+    JOIN ho_so h ON h.id = dk.ho_so_id
+    WHERE (COALESCE(date(dk.ngay_thanh_toan), date(dk.ngay_tao)) >= ? AND COALESCE(date(dk.ngay_thanh_toan), date(dk.ngay_tao)) < ?)
+       OR (COALESCE(date(dk.ngay_thanh_toan), date(dk.ngay_tao)) >= ? AND COALESCE(date(dk.ngay_thanh_toan), date(dk.ngay_tao)) < ?)
+      AND dk.trang_thai IN ('dang_hoat_dong', 'het_han', 'huy', 'tam_dung', 'cho_kich_hoat')
+    ORDER BY dk.ngay_tao DESC
+  `).all(month1Start, month1End, month2Start, month2End);
+
+  const goiPTTransactions = db.prepare(`
+    SELECT dp.id, dp.ngay_tao AS thoi_gian, 'goi_pt' AS loai,
+           gp.ten_goi AS san_pham, h.ho_ten AS khach_hang, dp.gia_thuc_te, dp.phuong_thuc_tt, dp.trang_thai,
+           dp.ly_do_huy, dp.so_tien_hoan, dp.ghi_chu_tt
+    FROM dang_ky_pt dp
+    JOIN goi_pt gp ON gp.id = dp.goi_pt_id
+    JOIN ho_so h ON h.id = dp.hoi_vien_id
+    WHERE (COALESCE(date(dp.ngay_thanh_toan), date(dp.ngay_tao)) >= ? AND COALESCE(date(dp.ngay_thanh_toan), date(dp.ngay_tao)) < ?)
+       OR (COALESCE(date(dp.ngay_thanh_toan), date(dp.ngay_tao)) >= ? AND COALESCE(date(dp.ngay_thanh_toan), date(dp.ngay_tao)) < ?)
+      AND dp.trang_thai IN ('dang_hoat_dong', 'hoan_thanh', 'cho_kich_hoat', 'huy')
+    ORDER BY dp.ngay_tao DESC
+  `).all(month1Start, month1End, month2Start, month2End);
+
+  const transactions = [...goiTapTransactions, ...goiPTTransactions].sort((a, b) => b.thoi_gian.localeCompare(a.thoi_gian));
+
+  const comparison = {
+    month1: month1,
+    month2: month2,
+    labels,
+    data1: labels.map(day => ({
+      ngay_trong_thang: day,
+      tong_tien: month1ByDay.get(day)?.tong_tien || 0,
+      tong_don: month1ByDay.get(day)?.tong_don || 0,
+      tien_goi_tap: month1ByDay.get(day)?.tien_goi_tap || 0,
+      tien_goi_pt: month1ByDay.get(day)?.tien_goi_pt || 0,
+    })),
+    data2: labels.map(day => ({
+      ngay_trong_thang: day,
+      tong_tien: month2ByDay.get(day)?.tong_tien || 0,
+      tong_don: month2ByDay.get(day)?.tong_don || 0,
+      tien_goi_tap: month2ByDay.get(day)?.tien_goi_tap || 0,
+      tien_goi_pt: month2ByDay.get(day)?.tien_goi_pt || 0,
+    })),
+    summary1: {
+      total: month1Rows.reduce((sum, row) => sum + (row.tong_tien || 0), 0),
+      orders: month1Rows.reduce((sum, row) => sum + (row.tong_don || 0), 0),
+      goi_tap: month1Rows.reduce((sum, row) => sum + (row.tien_goi_tap || 0), 0),
+      goi_pt: month1Rows.reduce((sum, row) => sum + (row.tien_goi_pt || 0), 0),
+    },
+    summary2: {
+      total: month2Rows.reduce((sum, row) => sum + (row.tong_tien || 0), 0),
+      orders: month2Rows.reduce((sum, row) => sum + (row.tong_don || 0), 0),
+      goi_tap: month2Rows.reduce((sum, row) => sum + (row.tien_goi_tap || 0), 0),
+      goi_pt: month2Rows.reduce((sum, row) => sum + (row.tien_goi_pt || 0), 0),
+    },
+    packageStats,
+    transactions
+  };
+
+  return success(res, comparison);
+};

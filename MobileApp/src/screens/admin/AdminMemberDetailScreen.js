@@ -381,8 +381,12 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
     );
   }
 
+  // Gói đang thực sự hoạt động (dùng để hiển thị thông tin)
   const activePkg = member?.goi_tap_hien_tai?.length > 0 ? member.goi_tap_hien_tai[0] : null;
   const activePT = member?.pt_hien_tai?.length > 0 ? member.pt_hien_tai[0] : null;
+  // Chỉ truyền vào màn hình đăng ký khi gói THỰC SỰ còn hiệu lực (không tính het_han)
+  const activePkgForSwitch = activePkg && (activePkg.trang_thai === 'dang_hoat_dong' || activePkg.trang_thai === 'cho_kich_hoat') ? activePkg : null;
+  const activePTForSwitch = activePT && (activePT.trang_thai === 'dang_hoat_dong' || activePT.trang_thai === 'cho_kich_hoat') ? activePT : null;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -486,10 +490,10 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
 
           <TouchableOpacity
             style={[styles.actionBtn, { backgroundColor: colors.primaryLight, marginTop: activePkg ? 10 : 0 }]}
-            onPress={() => navigation.navigate('AdminRegisterPackage', { member, activePkg })}
+            onPress={() => navigation.navigate('AdminRegisterPackage', { member, activePkg: activePkgForSwitch })}
           >
             <Text style={[styles.actionBtnText, { color: colors.primary }]}>
-              {activePkg ? 'Gia hạn / Đổi gói Gym' : 'Đăng ký gói Gym mới'}
+              {activePkgForSwitch ? 'Gia hạn / Đổi gói Gym' : 'Đăng ký gói Gym mới'}
             </Text>
           </TouchableOpacity>
           {activePkg && (
@@ -544,10 +548,10 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
           )}
           <TouchableOpacity 
             style={[styles.actionBtn, { backgroundColor: colors.primaryLight, marginTop: activePT ? 12 : 0 }]}
-            onPress={() => navigation.navigate('AdminRegisterPT', { member, activePT })}
+            onPress={() => navigation.navigate('AdminRegisterPT', { member, activePT: activePTForSwitch })}
           >
             <Text style={[styles.actionBtnText, { color: colors.primary }]}>
-              {activePT ? 'Gia hạn / Đổi gói PT' : 'Đăng ký gói tập với HLV (PT)'}
+              {activePTForSwitch ? 'Gia hạn / Đổi gói PT' : 'Đăng ký gói tập với HLV (PT)'}
             </Text>
           </TouchableOpacity>
           {activePT && (

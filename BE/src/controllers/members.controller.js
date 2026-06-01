@@ -394,6 +394,7 @@ export const checkDuplicate = (req, res) => {
 // 🔧 ĐÃ SỬA: dùng query trực tiếp thay vì view để hỗ trợ days động
 // và trả về đủ fields mà FE cần (ten_goi_tap, ngay_het_han, so_dien_thoai)
 export const getExpiringMembers = (req, res) => {
+  autoUpdateExpiredStatuses(); // Cập nhật trạng thái hết hạn trước khi query
   const days = parseInt(req.query.days) || 30; // ← mặc định 30 ngày cho trang danh sách
 
   const rows = db.prepare(`
@@ -433,6 +434,7 @@ export const getExpiringMembers = (req, res) => {
 // ── GET /api/members/expired ──────────────────────────────
 // 🔧 ĐÃ SỬA: query trực tiếp để trả về đủ fields FE cần
 export const getExpiredMembers = (req, res) => {
+  autoUpdateExpiredStatuses(); // Cập nhật trạng thái hết hạn trước khi query
   const rows = db.prepare(`
     SELECT
       h.id, h.ma_ho_so, h.ho_ten, h.so_dien_thoai, h.email, h.avatar_url,

@@ -4,11 +4,13 @@ import {
   Alert,
   Dimensions,
   FlatList,
+  Modal,
   RefreshControl,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -121,12 +123,153 @@ export default function AdminRevenueScreen({ navigation }) {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
 
-  const [filter, setFilter] = useState('7'); // 'today' | 'yesterday' | '7' | '30'
+  const [filter, setFilter] = useState('7'); // 'today' | 'yesterday' | '7' | '30' | 'compare'
+  const [month1, setMonth1] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
+  const [month2, setMonth2] = useState(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    return d.toISOString().slice(0, 7);
+  });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [data, setData] = useState(null);
 
-  const fetchRevenueData = useCallback(async (selectedFilter) => {
+  const [picker1Visible, setPicker1Visible] = useState(false);
+  const [picker2Visible, setPicker2Visible] = useState(false);
+
+  const [txPage, setTxPage] = useState(1);
+  const [pkgPage, setPkgPage] = useState(1);
+
+  const formatMonthDisplay = (ymStr) => {
+    if (!ymStr) return '';
+    const parts = ymStr.split('-');
+    if (parts.length === 2) {
+      return `${parts[1]}/${parts[0]}`;
+    }
+    return ymStr;
+  };
+
+  const MonthYearPickerModal = ({ visible, setVisible, currentVal, onConfirm }) => {
+    if (!visible) return null;
+    const parts = currentVal.split('-');
+    const initialYear = parts.length === 2 ? parseInt(parts[0], 10) : new Date().getFullYear();
+    const initialMonth = parts.length === 2 ? parseInt(parts[1], 10) : new Date().getMonth() + 1;
+
+    const [tempMonth, setTempMonth] = useState(initialMonth);
+    const [tempYear, setTempYear] = useState(initialYear);
+
+    const years = [2026, 2025, 2024, 2023, 2022];
+    const months = Array.from({ length: 12 }, (_, i) => i + 1);
+
+    return (
+      <Modal
+        visible={visible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setVisible(false)}
+      >
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: 20
+        }}>
+          <View style={{
+            backgroundColor: colors.surface,
+            borderRadius: 16,
+            width: '100%',
+            maxWidth: 340,
+            padding: 16,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.25,
+            shadowRadius: 4,
+            elevation: 5
+          }}>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 16, textAlign: 'center' }}>
+              Chọn tháng và năm
+            </Text>
+
+            {/* Chọn năm */}
+            <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textMuted, marginBottom: 8 }}>Năm</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
+              {years.map(y => {
+                const isSelected = tempYear === y;
+                return (
+                  <TouchableOpacity
+                    key={y}
+                    onPress={() => setTempYear(y)}
+                    style={{
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: 20,
+                      backgroundColor: isSelected ? colors.primary : colors.surfaceVariant,
+                      borderWidth: 1,
+                      borderColor: isSelected ? colors.primary : colors.border
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, color: isSelected ? '#fff' : colors.text, fontWeight: '600' }}>
+                      {y}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Chọn tháng */}
+            <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textMuted, marginBottom: 8 }}>Tháng</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 20 }}>
+              {months.map(m => {
+                const isSelected = tempMonth === m;
+                return (
+                  <TouchableOpacity
+                    key={m}
+                    onPress={() => setTempMonth(m)}
+                    style={{
+                      width: 48,
+                      paddingVertical: 8,
+                      borderRadius: 8,
+                      backgroundColor: isSelected ? colors.primary : colors.surfaceVariant,
+                      borderWidth: 1,
+                      borderColor: isSelected ? colors.primary : colors.border,
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, color: isSelected ? '#fff' : colors.text, fontWeight: '600' }}>
+                      {m}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Actions */}
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}>
+              <TouchableOpacity
+                onPress={() => setVisible(false)}
+                style={{ paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 }}
+              >
+                <Text style={{ color: colors.textMuted, fontSize: 13, fontWeight: '600' }}>Hủy</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  onConfirm(`${tempYear}-${String(tempMonth).padStart(2, '0')}`);
+                  setVisible(false);
+                }}
+                style={{ backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 }}
+              >
+                <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>Xác nhận</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
+  const fetchRevenueData = useCallback(async (selectedFilter, m1 = month1, m2 = month2) => {
     try {
       if (selectedFilter === 'today') {
         const res = await api.get('/revenue/today');
@@ -137,6 +280,11 @@ export default function AdminRevenueScreen({ navigation }) {
         const res = await api.get('/revenue/yesterday');
         if (res.data?.success) {
           setData({ type: 'yesterday', ...res.data.data });
+        }
+      } else if (selectedFilter === 'compare') {
+        const res = await api.get(`/revenue/compare-months?month1=${m1}&month2=${m2}`);
+        if (res.data?.success) {
+          setData({ type: 'compare', ...res.data.data });
         }
       } else {
         const days = parseInt(selectedFilter);
@@ -152,10 +300,12 @@ export default function AdminRevenueScreen({ navigation }) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [month1, month2]);
 
   useEffect(() => {
     setLoading(true);
+    setTxPage(1);
+    setPkgPage(1);
     fetchRevenueData(filter);
   }, [filter, fetchRevenueData]);
 
@@ -175,6 +325,74 @@ export default function AdminRevenueScreen({ navigation }) {
     let subLabel = '';
     let isUp = true;
     let hasTrend = false;
+
+    if (data.type === 'compare') {
+      const sum1 = data.summary1 || { total: 0, orders: 0, goi_tap: 0, goi_pt: 0 };
+      const sum2 = data.summary2 || { total: 0, orders: 0, goi_tap: 0, goi_pt: 0 };
+      const m1 = data.month1 || '';
+      const m2 = data.month2 || '';
+      const label1 = m1 ? `Tháng ${parseInt(m1.slice(5, 7), 10)}/${m1.slice(0, 4)}` : 'Tháng A';
+      const label2 = m2 ? `Tháng ${parseInt(m2.slice(5, 7), 10)}/${m2.slice(0, 4)}` : 'Tháng B';
+
+      const diff = sum1.total - sum2.total;
+      isUp = diff >= 0;
+      hasTrend = true;
+      subVal = formatPrice(Math.abs(diff));
+      subLabel = isUp ? `tăng so với ${label2}` : `giảm so với ${label2}`;
+
+      const TrendIcon = isUp ? TrendingUp : TrendingDown;
+      const trendColor = isUp ? '#10b981' : '#ef4444';
+
+      return (
+        <View style={styles.statsGrid}>
+          {/* Doanh thu tháng A */}
+          <View style={[styles.statCard, { backgroundColor: colors.surface, width: '100%' }]}>
+            <View style={styles.statHeader}>
+              <Text style={[styles.statLabel, { color: colors.textMuted }]}>
+                Doanh thu {label1}
+              </Text>
+              <View style={[styles.iconContainer, { backgroundColor: colors.primaryLight }]}>
+                <DollarSign size={20} color={colors.primary} />
+              </View>
+            </View>
+            <Text style={[styles.statValue, { color: colors.text }]}>{formatPrice(sum1.total)}</Text>
+            <View style={styles.statFooter}>
+              <TrendIcon size={12} color={trendColor} style={{ marginRight: 4 }} />
+              <Text style={[styles.statSubText, { color: trendColor }]}>{subVal} </Text>
+              <Text style={[styles.statSubLabel, { color: colors.textMuted }]}>{subLabel} ({formatPrice(sum2.total)})</Text>
+            </View>
+          </View>
+
+          {/* Gói Gym Tháng A */}
+          <View style={[styles.statCard, { backgroundColor: colors.surface, width: '48%' }]}>
+            <View style={styles.statHeader}>
+              <Text style={[styles.statLabel, { color: colors.textMuted }]}>Gym {label1}</Text>
+              <View style={[styles.iconContainer, { backgroundColor: '#e0f2fe' }]}>
+                <Award size={16} color="#0284c7" />
+              </View>
+            </View>
+            <Text style={[styles.statValueSmall, { color: colors.text }]}>{formatPrice(sum1.goi_tap)}</Text>
+            <Text style={[styles.statPercent, { color: colors.textMuted }]}>
+              {label2}: {formatPrice(sum2.goi_tap)}
+            </Text>
+          </View>
+
+          {/* Gói PT Tháng A */}
+          <View style={[styles.statCard, { backgroundColor: colors.surface, width: '48%' }]}>
+            <View style={styles.statHeader}>
+              <Text style={[styles.statLabel, { color: colors.textMuted }]}>PT {label1}</Text>
+              <View style={[styles.iconContainer, { backgroundColor: '#f3e8ff' }]}>
+                <Zap size={16} color="#7c3aed" />
+              </View>
+            </View>
+            <Text style={[styles.statValueSmall, { color: colors.text }]}>{formatPrice(sum1.goi_pt)}</Text>
+            <Text style={[styles.statPercent, { color: colors.textMuted }]}>
+              {label2}: {formatPrice(sum2.goi_pt)}
+            </Text>
+          </View>
+        </View>
+      );
+    }
 
     if (data.type === 'today' || data.type === 'yesterday') {
       total = data.tong_tien || 0;
@@ -251,7 +469,129 @@ export default function AdminRevenueScreen({ navigation }) {
 
   // Draw line/area chart using react-native-svg
   const renderChart = () => {
-    if (!data || data.type === 'today' || data.type === 'yesterday' || !data.daily || data.daily.length < 2) {
+    if (!data) return null;
+
+    if (data.type === 'compare') {
+      const chartHeight = 180;
+      const paddingLeft = 80;
+      const paddingRight = 15;
+      const paddingTop = 20;
+      const paddingBottom = 30;
+      const chartWidth = screenWidth - 32;
+
+      const labels = data.labels || [];
+      const data1 = (data.data1 || []).map(d => d.tong_tien || 0);
+      const data2 = (data.data2 || []).map(d => d.tong_tien || 0);
+      const maxVal = Math.max(...data1, ...data2, 1000000);
+      const pointsCount = labels.length;
+
+      const points1 = data1.map((val, idx) => {
+        const x = paddingLeft + (idx * (chartWidth - paddingLeft - paddingRight)) / (pointsCount - 1);
+        const y = chartHeight - paddingBottom - (val / maxVal) * (chartHeight - paddingTop - paddingBottom);
+        return { x, y };
+      });
+
+      const points2 = data2.map((val, idx) => {
+        const x = paddingLeft + (idx * (chartWidth - paddingLeft - paddingRight)) / (pointsCount - 1);
+        const y = chartHeight - paddingBottom - (val / maxVal) * (chartHeight - paddingTop - paddingBottom);
+        return { x, y };
+      });
+
+      let pathD1 = '';
+      let pathD2 = '';
+      if (points1.length > 0) {
+        pathD1 = `M ${points1[0].x} ${points1[0].y}`;
+        for (let i = 1; i < points1.length; i++) pathD1 += ` L ${points1[i].x} ${points1[i].y}`;
+      }
+      if (points2.length > 0) {
+        pathD2 = `M ${points2[0].x} ${points2[0].y}`;
+        for (let i = 1; i < points2.length; i++) pathD2 += ` L ${points2[i].x} ${points2[i].y}`;
+      }
+
+      const gridLines = 4;
+      const gridYValues = Array.from({ length: gridLines }, (_, i) => {
+        const val = (maxVal / (gridLines - 1)) * i;
+        const y = chartHeight - paddingBottom - (val / maxVal) * (chartHeight - paddingTop - paddingBottom);
+        return { y, label: formatPrice(val) };
+      });
+
+      const labelStep = Math.max(1, Math.floor(pointsCount / 5));
+      const m1 = data.month1 || '';
+      const m2 = data.month2 || '';
+      const label1 = m1 ? `Tháng ${parseInt(m1.slice(5, 7), 10)}` : 'Tháng A';
+      const label2 = m2 ? `Tháng ${parseInt(m2.slice(5, 7), 10)}` : 'Tháng B';
+
+      return (
+        <View style={[styles.chartContainer, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.chartTitle, { color: colors.text }]}>So sánh doanh thu {label1} / {label2}</Text>
+          
+          <View style={{ flexDirection: 'row', gap: 12, marginBottom: 8, justifyContent: 'center' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <View style={{ width: 12, height: 6, backgroundColor: colors.primary, borderRadius: 2 }} />
+              <Text style={{ fontSize: 10, color: colors.textSecondary, fontWeight: '700' }}>{label1}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <View style={{ width: 12, height: 6, backgroundColor: '#7c3aed', borderRadius: 2 }} />
+              <Text style={{ fontSize: 10, color: colors.textSecondary, fontWeight: '700' }}>{label2}</Text>
+            </View>
+          </View>
+
+          <Svg width={chartWidth} height={chartHeight}>
+            {gridYValues.map((line, idx) => (
+              <React.Fragment key={idx}>
+                <Line
+                  x1={paddingLeft}
+                  y1={line.y}
+                  x2={chartWidth - paddingRight}
+                  y2={line.y}
+                  stroke={isDark ? '#374151' : '#e5e7eb'}
+                  strokeWidth={1}
+                  strokeDasharray="4 4"
+                />
+                <SvgText
+                  x={paddingLeft - 8}
+                  y={line.y + 4}
+                  fill={colors.textMuted}
+                  fontSize={9}
+                  fontWeight="500"
+                  textAnchor="end"
+                >
+                  {line.label}
+                </SvgText>
+              </React.Fragment>
+            ))}
+
+            {pathD1 !== '' && (
+              <Path d={pathD1} fill="none" stroke={colors.primary} strokeWidth={2.5} />
+            )}
+            {pathD2 !== '' && (
+              <Path d={pathD2} fill="none" stroke="#7c3aed" strokeWidth={2.5} strokeDasharray="3 3" />
+            )}
+
+            {points1.map((pt, idx) => {
+              if (idx % labelStep === 0 || idx === pointsCount - 1) {
+                return (
+                  <SvgText
+                    key={idx}
+                    x={pt.x}
+                    y={chartHeight - 10}
+                    fill={colors.textMuted}
+                    fontSize={9}
+                    fontWeight="600"
+                    textAnchor="middle"
+                  >
+                    {labels[idx]}
+                  </SvgText>
+                );
+              }
+              return null;
+            })}
+          </Svg>
+        </View>
+      );
+    }
+
+    if (data.type === 'today' || data.type === 'yesterday' || !data.daily || data.daily.length < 2) {
       return null;
     }
 
@@ -391,12 +731,131 @@ export default function AdminRevenueScreen({ navigation }) {
   const renderList = () => {
     if (!data) return null;
 
-    if (data.type === 'today' || data.type === 'yesterday') {
-      const txs = data.giao_dich || [];
-      const title = data.type === 'today' ? 'Chi tiết giao dịch hôm nay' : 'Chi tiết giao dịch hôm qua';
-      const emptyMsg = data.type === 'today' ? 'Chưa có giao dịch nào hôm nay' : 'Chưa có giao dịch nào hôm qua';
+    if (data.type === 'today' || data.type === 'yesterday' || data.type === 'compare') {
+      const txs = data.transactions || data.giao_dich || [];
+      
+      let title = '';
+      if (data.type === 'today') title = 'Chi tiết giao dịch hôm nay';
+      else if (data.type === 'yesterday') title = 'Chi tiết giao dịch hôm qua';
+      else {
+        const m1 = data.month1 || '';
+        const m2 = data.month2 || '';
+        const label1 = m1 ? `tháng ${parseInt(m1.slice(5, 7), 10)}/${m1.slice(0, 4)}` : 'tháng A';
+        const label2 = m2 ? `tháng ${parseInt(m2.slice(5, 7), 10)}/${m2.slice(0, 4)}` : 'tháng B';
+        title = `Giao dịch của ${label1} và ${label2}`;
+      }
+
+      const emptyMsg = data.type === 'today'
+        ? 'Chưa có giao dịch nào hôm nay'
+        : data.type === 'yesterday'
+          ? 'Chưa có giao dịch nào hôm qua'
+          : 'Chưa có giao dịch nào trong 2 tháng so sánh';
+
+      const packageStats = data.packageStats || [];
+
+      // Phân trang cho packageStats (5 items/trang)
+      const pkgsPerPage = 5;
+      const totalPkgPages = Math.ceil(packageStats.length / pkgsPerPage);
+      const currentPkgPage = Math.max(1, Math.min(pkgPage, totalPkgPages));
+      const startPkgIdx = (currentPkgPage - 1) * pkgsPerPage;
+      const paginatedPackageStats = packageStats.slice(startPkgIdx, startPkgIdx + pkgsPerPage);
+
+      // Phân trang cho txs (10 items/trang)
+      const txsPerPage = 10;
+      const totalTxPages = Math.ceil(txs.length / txsPerPage);
+      const currentTxPage = Math.max(1, Math.min(txPage, totalTxPages));
+      const startTxIdx = (currentTxPage - 1) * txsPerPage;
+      const paginatedTxs = txs.slice(startTxIdx, startTxIdx + txsPerPage);
+
       return (
         <View style={styles.listSection}>
+          {/* Render thêm Gói tập bán chạy ở mode compare */}
+          {data.type === 'compare' && (
+            <View style={{ marginBottom: 16 }}>
+              <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Gói tập bán chạy của 2 tháng</Text>
+              {packageStats.length === 0 ? (
+                <View style={[styles.emptyCard, { backgroundColor: colors.surface }]}>
+                  <Text style={{ color: colors.textMuted, fontSize: 13 }}>Không có dữ liệu gói tập</Text>
+                </View>
+              ) : (
+                <View style={[styles.listCard, { backgroundColor: colors.surface }]}>
+                  {paginatedPackageStats.map((item, idx) => (
+                    <View
+                      key={idx}
+                      style={[
+                        styles.txRow,
+                        { borderBottomColor: idx < paginatedPackageStats.length - 1 ? colors.border : 'transparent' },
+                      ]}
+                    >
+                      <View style={styles.txLeft}>
+                        <Text style={[styles.txTitle, { color: colors.text }]} numberOfLines={1}>
+                          {item.ten_goi}
+                        </Text>
+                        <Text style={[styles.txSubtitle, { color: colors.textSecondary }]}>
+                          {item.so_dang_ky} lượt đăng ký
+                        </Text>
+                      </View>
+                      <View style={styles.txRight}>
+                        <Text style={[styles.txAmount, { color: colors.text, fontWeight: '700' }]}>
+                          {formatPrice(item.tong_tien)}
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                  {/* Điều khiển phân trang cho packageStats */}
+                  {totalPkgPages > 1 && (
+                    <View style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      paddingHorizontal: 16,
+                      paddingVertical: 12,
+                      borderTopWidth: 1,
+                      borderTopColor: colors.border,
+                      backgroundColor: colors.surface
+                    }}>
+                      <Text style={{ fontSize: 12, color: colors.textMuted, fontWeight: '600' }}>
+                        Trang {currentPkgPage}/{totalPkgPages}
+                      </Text>
+                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                        <TouchableOpacity
+                          disabled={currentPkgPage === 1}
+                          onPress={() => setPkgPage(currentPkgPage - 1)}
+                          style={{
+                            paddingHorizontal: 10,
+                            paddingVertical: 6,
+                            borderRadius: 6,
+                            borderWidth: 1,
+                            borderColor: colors.border,
+                            backgroundColor: currentPkgPage === 1 ? colors.surfaceVariant : colors.surface,
+                            opacity: currentPkgPage === 1 ? 0.4 : 1
+                          }}
+                        >
+                          <Text style={{ fontSize: 11, fontWeight: '700', color: colors.text }}>Trước</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          disabled={currentPkgPage === totalPkgPages}
+                          onPress={() => setPkgPage(currentPkgPage + 1)}
+                          style={{
+                            paddingHorizontal: 10,
+                            paddingVertical: 6,
+                            borderRadius: 6,
+                            borderWidth: 1,
+                            borderColor: colors.border,
+                            backgroundColor: currentPkgPage === totalPkgPages ? colors.surfaceVariant : colors.surface,
+                            opacity: currentPkgPage === totalPkgPages ? 0.4 : 1
+                          }}
+                        >
+                          <Text style={{ fontSize: 11, fontWeight: '700', color: colors.text }}>Sau</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
+          )}
+
           <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>{title}</Text>
           {txs.length === 0 ? (
             <View style={[styles.emptyCard, { backgroundColor: colors.surface }]}>
@@ -404,18 +863,35 @@ export default function AdminRevenueScreen({ navigation }) {
             </View>
           ) : (
             <View style={[styles.listCard, { backgroundColor: colors.surface }]}>
-              {txs.map((item, idx) => {
+              {paginatedTxs.map((item, idx) => {
                 const txInfo = getTransactionStatusAndDiff(item);
                 const isGym = item.loai === 'goi_tap';
                 const typeColor = isGym ? colors.primary : '#8b5cf6';
                 const typeBg   = isGym ? colors.primaryLight : 'rgba(139,92,246,0.12)';
+                
+                let timeDisplay = '';
+                if (data.type === 'today' || data.type === 'yesterday') {
+                  timeDisplay = new Date(item.thoi_gian).toLocaleTimeString('vi-VN', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  });
+                } else {
+                  timeDisplay = new Date(item.thoi_gian).toLocaleDateString('vi-VN', {
+                    day: '2-digit',
+                    month: '2-digit',
+                  }) + ' ' + new Date(item.thoi_gian).toLocaleTimeString('vi-VN', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  });
+                }
+
                 return (
                   <View
                     key={idx}
                     style={[
                       styles.txCard,
                       {
-                        borderBottomColor: idx < txs.length - 1 ? colors.border : 'transparent',
+                        borderBottomColor: idx < paginatedTxs.length - 1 ? colors.border : 'transparent',
                       },
                     ]}
                   >
@@ -437,10 +913,7 @@ export default function AdminRevenueScreen({ navigation }) {
                         {item.san_pham}
                       </Text>
                       <Text style={[styles.txTime, { color: colors.textMuted }]}>
-                        {new Date(item.thoi_gian).toLocaleTimeString('vi-VN', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
+                        {timeDisplay}
                       </Text>
                     </View>
 
@@ -463,13 +936,68 @@ export default function AdminRevenueScreen({ navigation }) {
                   </View>
                 );
               })}
+              {/* Điều khiển phân trang cho giao dịch */}
+              {totalTxPages > 1 && (
+                <View style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  borderTopWidth: 1,
+                  borderTopColor: colors.border,
+                  backgroundColor: colors.surface
+                }}>
+                  <Text style={{ fontSize: 12, color: colors.textMuted, fontWeight: '600' }}>
+                    Trang {currentTxPage}/{totalTxPages} • {txs.length} GD
+                  </Text>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <TouchableOpacity
+                      disabled={currentTxPage === 1}
+                      onPress={() => setTxPage(currentTxPage - 1)}
+                      style={{
+                        paddingHorizontal: 10,
+                        paddingVertical: 6,
+                        borderRadius: 6,
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                        backgroundColor: currentTxPage === 1 ? colors.surfaceVariant : colors.surface,
+                        opacity: currentTxPage === 1 ? 0.4 : 1
+                      }}
+                    >
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: colors.text }}>Trước</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      disabled={currentTxPage === totalTxPages}
+                      onPress={() => setTxPage(currentTxPage + 1)}
+                      style={{
+                        paddingHorizontal: 10,
+                        paddingVertical: 6,
+                        borderRadius: 6,
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                        backgroundColor: currentTxPage === totalTxPages ? colors.surfaceVariant : colors.surface,
+                        opacity: currentTxPage === totalTxPages ? 0.4 : 1
+                      }}
+                    >
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: colors.text }}>Sau</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
             </View>
-
           )}
         </View>
       );
     } else {
       const stats = data.packageStats || [];
+      // Phân trang cho stats gói Gym (5 items/trang)
+      const pkgsPerPage = 5;
+      const totalPkgPages = Math.ceil(stats.length / pkgsPerPage);
+      const currentPkgPage = Math.max(1, Math.min(pkgPage, totalPkgPages));
+      const startPkgIdx = (currentPkgPage - 1) * pkgsPerPage;
+      const paginatedStats = stats.slice(startPkgIdx, startPkgIdx + pkgsPerPage);
+
       return (
         <View style={styles.listSection}>
           <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Doanh số theo gói Gym</Text>
@@ -479,12 +1007,12 @@ export default function AdminRevenueScreen({ navigation }) {
             </View>
           ) : (
             <View style={[styles.listCard, { backgroundColor: colors.surface }]}>
-              {stats.map((item, idx) => (
+              {paginatedStats.map((item, idx) => (
                 <View
                   key={idx}
                   style={[
                     styles.txRow,
-                    { borderBottomColor: idx < stats.length - 1 ? colors.border : 'transparent' },
+                    { borderBottomColor: idx < paginatedStats.length - 1 ? colors.border : 'transparent' },
                   ]}
                 >
                   <View style={styles.txLeft}>
@@ -502,6 +1030,55 @@ export default function AdminRevenueScreen({ navigation }) {
                   </View>
                 </View>
               ))}
+              {/* Điều khiển phân trang cho stats */}
+              {totalPkgPages > 1 && (
+                <View style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  borderTopWidth: 1,
+                  borderTopColor: colors.border,
+                  backgroundColor: colors.surface
+                }}>
+                  <Text style={{ fontSize: 12, color: colors.textMuted, fontWeight: '600' }}>
+                    Trang {currentPkgPage}/{totalPkgPages}
+                  </Text>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <TouchableOpacity
+                      disabled={currentPkgPage === 1}
+                      onPress={() => setPkgPage(currentPkgPage - 1)}
+                      style={{
+                        paddingHorizontal: 10,
+                        paddingVertical: 6,
+                        borderRadius: 6,
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                        backgroundColor: currentPkgPage === 1 ? colors.surfaceVariant : colors.surface,
+                        opacity: currentPkgPage === 1 ? 0.4 : 1
+                      }}
+                    >
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: colors.text }}>Trước</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      disabled={currentPkgPage === totalPkgPages}
+                      onPress={() => setPkgPage(currentPkgPage + 1)}
+                      style={{
+                        paddingHorizontal: 10,
+                        paddingVertical: 6,
+                        borderRadius: 6,
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                        backgroundColor: currentPkgPage === totalPkgPages ? colors.surfaceVariant : colors.surface,
+                        opacity: currentPkgPage === totalPkgPages ? 0.4 : 1
+                      }}
+                    >
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: colors.text }}>Sau</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
             </View>
           )}
         </View>
@@ -537,12 +1114,13 @@ export default function AdminRevenueScreen({ navigation }) {
       </View>
 
       {/* Pill Filters */}
-      <View style={[styles.filterBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+      <View style={[styles.filterBar, { backgroundColor: colors.surface, borderBottomColor: colors.border, flexWrap: 'wrap' }]}>
         {[
           { key: 'today', label: 'Hôm nay' },
           { key: 'yesterday', label: 'Hôm qua' },
           { key: '7', label: '7 ngày' },
           { key: '30', label: '30 ngày' },
+          { key: 'compare', label: 'So sánh' },
         ].map((item) => {
           const active = filter === item.key;
           return (
@@ -567,6 +1145,63 @@ export default function AdminRevenueScreen({ navigation }) {
           );
         })}
       </View>
+
+      {/* Select inputs for Compare Month mode */}
+      {filter === 'compare' && (
+        <View style={{ flexDirection: 'row', paddingHorizontal: 16, paddingBottom: 12, gap: 10, backgroundColor: colors.surface, alignItems: 'center' }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textMuted, marginBottom: 4 }}>Tháng A</Text>
+            <TouchableOpacity
+              style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 10, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}
+              onPress={() => setPicker1Visible(true)}
+              activeOpacity={0.7}
+            >
+              <Text style={{ fontSize: 13, color: colors.text, fontWeight: '600' }}>
+                {formatMonthDisplay(month1)}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textMuted, marginBottom: 4 }}>Tháng B</Text>
+            <TouchableOpacity
+              style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 10, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}
+              onPress={() => setPicker2Visible(true)}
+              activeOpacity={0.7}
+            >
+              <Text style={{ fontSize: 13, color: colors.text, fontWeight: '600' }}>
+                {formatMonthDisplay(month2)}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity
+            style={{ backgroundColor: colors.primary, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10, marginTop: 18 }}
+            onPress={() => fetchRevenueData('compare', month1, month2)}
+            activeOpacity={0.7}
+          >
+            <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>Lọc</Text>
+          </TouchableOpacity>
+
+          <MonthYearPickerModal
+            visible={picker1Visible}
+            setVisible={setPicker1Visible}
+            currentVal={month1}
+            onConfirm={(v) => {
+              setMonth1(v);
+              fetchRevenueData('compare', v, month2);
+            }}
+          />
+
+          <MonthYearPickerModal
+            visible={picker2Visible}
+            setVisible={setPicker2Visible}
+            currentVal={month2}
+            onConfirm={(v) => {
+              setMonth2(v);
+              fetchRevenueData('compare', month1, v);
+            }}
+          />
+        </View>
+      )}
 
       <ScrollView
         showsVerticalScrollIndicator={false}
