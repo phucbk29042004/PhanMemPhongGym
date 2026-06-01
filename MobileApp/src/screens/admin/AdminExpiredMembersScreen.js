@@ -115,7 +115,8 @@ export default function AdminExpiredMembersScreen({ navigation, route }) {
 
   const handleRenew = (item) => {
     // Navigate to AdminRegisterPackage with member and basic activePkg mock
-    const activePkgMock = item.ten_goi_tap ? {
+    const isExpired = activeTab === 'expired';
+    const activePkgMock = (!isExpired && item.ten_goi_tap) ? {
       ten_goi: item.ten_goi_tap,
       den_ngay: item.ngay_het_han,
       gia_thuc_te: 0 // Will fallback

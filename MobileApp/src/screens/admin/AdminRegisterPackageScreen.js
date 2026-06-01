@@ -127,7 +127,7 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
   const [note, setNote] = useState('');
 
   // Switch package specific states
-  const [isSwitch, setIsSwitch] = useState(!!activePkg);
+  const [isSwitch, setIsSwitch] = useState(!!(activePkg && oldPkgRemainingDays > 0));
   const [refundAmount, setRefundAmount] = useState(activePkg ? formatInputMoney(String(oldPkgCredit)) : '0');
   const [switchReason, setSwitchReason] = useState('Đổi sang gói mới');
 

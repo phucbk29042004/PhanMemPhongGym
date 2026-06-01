@@ -8,11 +8,21 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
-**✅ Fix DatePickerField không đồng bộ ngày từ bên ngoài** — Thêm `useEffect` vào component `DatePickerField` để cập nhật state nội tại khi prop `value` thay đổi từ màn hình cha, fix ngày kết thúc không hiển thị sau khi tự động tính trên màn hình Đăng ký gói Gym và Đăng ký gói PT.
+**✅ Sửa lỗi Gia hạn hội viên đã hết hạn trên Mobile App hiển thị màn hình đổi gói/khấu trừ** — Cập nhật `AdminExpiredMembersScreen.js` để chỉ truyền `activePkg` khi gia hạn hội viên *Sắp hết hạn* (còn hạn), và sửa logic khởi tạo `isSwitch` trong `AdminRegisterPackageScreen.js` để chặn hiển thị khấu trừ khi gói cũ đã hết hạn.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
+
+### [01/06/2026 11:00] — Sửa lỗi luồng gia hạn hội viên hết hạn hiển thị Đổi gói và Khấu trừ gói cũ trên Mobile
+- **Loại**: Sửa bug (Mobile)
+- **File**:
+  - `MobileApp/src/screens/admin/AdminExpiredMembersScreen.js`
+  - `MobileApp/src/screens/admin/AdminRegisterPackageScreen.js`
+- **Mô tả**:
+  1. **AdminExpiredMembersScreen.js**: Cập nhật hàm `handleRenew(item)` để kiểm tra tab hiện tại. Chỉ gán thông tin gói tập cũ `activePkgMock` khi thuộc tab "Sắp hết hạn" (`expiring`). Đối với tab "Đã hết hạn" (`expired`), gán `activePkgMock = null` để hệ thống tự động đi theo luồng Đăng ký mới.
+  2. **AdminRegisterPackageScreen.js**: Sửa giá trị khởi tạo của state `isSwitch` kiểm tra thêm số ngày còn lại của gói cũ (`activePkg && oldPkgRemainingDays > 0`) nhằm ngăn chặn việc hiển thị giao diện đổi gói và khấu trừ tiền khi gói tập cũ thực chất đã hết hạn hoàn toàn.
+- **Kết quả**: Thành công — Luồng gia hạn hoạt động đúng nghiệp vụ: Sắp hết hạn thì tính nối tiếp/cho phép đổi gói có khấu trừ, Đã hết hạn thì chuyển thẳng sang luồng Đăng ký mới, không bị khấu trừ.
 
 ### [01/06/2026 10:35] — Khắc phục lỗi duyệt giá 300đ (thay vì 300k) và sửa xung đột Git trong Backend
 - **Loại**: Sửa bug (Fullstack & Database)
