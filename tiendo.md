@@ -14,6 +14,17 @@
 
 ## 📋 Danh Sách Thay Đổi
 
+### [01/06/2026 10:35] — Khắc phục lỗi duyệt giá 300đ (thay vì 300k) và sửa xung đột Git trong Backend
+- **Loại**: Sửa bug (Fullstack & Database)
+- **File**:
+  - `FE/assets/js/pages/expired.js`
+  - `BE/src/controllers/members.controller.js`
+- **Mô tả**:
+  1. **Sửa lỗi duyệt gói tập bị đổi giá thành 300đ**: Phát hiện lỗi trong biểu mẫu duyệt của trang *Hết hạn / Sắp hết hạn* (`expired.js`) gửi thẳng chuỗi định dạng `"300.000"` lên backend mà không qua hàm `_parseVND` khiến SQLite/JS convert chuỗi có dấu chấm thập phân thành `300` (300đ). Đã sửa code bọc trường `gia_thuc_te` qua hàm `_parseVND` để gửi đúng `300000`.
+  2. **Khôi phục dữ liệu doanh thu**: Chạy SQL cập nhật lại `gia_thuc_te = 300000` cho 6 bản ghi bị lỗi này (mã đăng ký: 47, 49, 70, 82, 90, 106) giúp trigger tự động bù trừ doanh thu hôm nay (`2.800.000 đ`) và lịch sử hiển thị chính xác.
+  3. **Giải quyết xung đột Git**: Sửa đổi và loại bỏ các ký hiệu conflict (`<<<<<<< HEAD`, `=======`, `>>>>>>> main`) lỡ bị commit trong file `members.controller.js` giúp khôi phục biên dịch thành công cho Backend.
+- **Kết quả**: Thành công — nodemon tự động khởi chạy lại ổn định, dữ liệu doanh thu hiển thị đúng.
+
 ### [01/06/2026 10:28] — Sửa lỗi kích hoạt đồng thời 2 gói tập và trùng lặp yêu cầu gia hạn
 - **Loại**: Sửa bug (Backend)
 - **File**: `BE/src/controllers/members.controller.js`
