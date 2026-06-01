@@ -14,6 +14,16 @@
 
 ## 📋 Danh Sách Thay Đổi
 
+### [01/06/2026 10:28] — Sửa lỗi kích hoạt đồng thời 2 gói tập và trùng lặp yêu cầu gia hạn
+- **Loại**: Sửa bug (Backend)
+- **File**: `BE/src/controllers/members.controller.js`
+- **Mô tả**:
+  1. **Kích hoạt nối tiếp gói tập**: Cập nhật hàm `registerPackage` (khi Admin đăng ký gói trực tiếp) tự động kiểm tra xem hội viên có gói tập nào đang hoạt động (`dang_hoat_dong`) hay không. Nếu có, dịch chuyển ngày bắt đầu `tu_ngay` của gói tập mới thành ngày tiếp theo sau ngày kết thúc gói cũ (nối tiếp) và đặt trạng thái là `cho_kich_hoat` thay vì kích hoạt ngay lập tức.
+  2. **Hủy yêu cầu trùng lặp**:
+     - Khi Admin đăng ký trực tiếp (`registerPackage`), tự động hủy toàn bộ các yêu cầu gia hạn đang ở trạng thái `cho_duyet` của hội viên đó.
+     - Khi Admin duyệt yêu cầu gia hạn (`approvePackageRequest`), tự động hủy các yêu cầu gia hạn khác đang ở trạng thái `cho_duyet` của cùng hội viên này để tránh duyệt trùng gây tăng khống doanh thu và gói tập hoạt động song song.
+- **Kết quả**: Thành công — Đồng bộ luồng logic chuẩn xác giữa Web và Mobile.
+
 ### [01/06/2026 10:20] — Phân trang danh sách giao dịch và gói tập trên ứng dụng Mobile
 - **Loại**: Cải tiến tính năng (Mobile)
 - **File**: `MobileApp/src/screens/admin/AdminRevenueScreen.js`
