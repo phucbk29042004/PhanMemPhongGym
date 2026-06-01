@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal, StyleSheet, Text, TouchableOpacity, View,
   FlatList, Dimensions
@@ -54,6 +54,31 @@ export default function DatePickerField({
   const [currentYear, setCurrentYear] = useState(initialDate.getFullYear());
   const [currentMonth, setCurrentMonth] = useState(initialDate.getMonth()); // 0-indexed
   const [selectedDate, setSelectedDate] = useState(value ? initialDate : null);
+
+  // Đồng bộ selectedDate, currentMonth, currentYear khi prop `value` thay đổi từ bên ngoài
+  useEffect(() => {
+    if (!value) {
+      setSelectedDate(null);
+      return;
+    }
+    let parsed = null;
+    if (value.includes('/')) {
+      const parts = value.split('/');
+      if (parts.length === 3) {
+        const [d, m, y] = parts.map(Number);
+        const date = new Date(y, m - 1, d);
+        if (!isNaN(date)) parsed = date;
+      }
+    } else if (value.includes('-')) {
+      const date = new Date(value);
+      if (!isNaN(date)) parsed = date;
+    }
+    if (parsed) {
+      setSelectedDate(parsed);
+      setCurrentMonth(parsed.getMonth());
+      setCurrentYear(parsed.getFullYear());
+    }
+  }, [value]);
 
   // Parse minDate
   const getMinDateParsed = () => {

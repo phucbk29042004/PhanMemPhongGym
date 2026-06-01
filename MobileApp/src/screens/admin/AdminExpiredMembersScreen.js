@@ -1,4 +1,5 @@
 import React, { useCallback, useState, useEffect } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   ActivityIndicator, Alert, FlatList, RefreshControl,
   StatusBar, StyleSheet, Text, TextInput,
@@ -72,9 +73,17 @@ export default function AdminExpiredMembersScreen({ navigation, route }) {
     }
   }, [activeTab]);
 
+  // Refresh mỗi khi màn hình được focus (ví dụ: quay lại từ màn hình gia hạn)
+  useFocusEffect(
+    useCallback(() => {
+      fetchMembers();
+    }, [fetchMembers])
+  );
+
+  // Vẫn giữ useEffect để reload khi activeTab thay đổi
   useEffect(() => {
     fetchMembers();
-  }, [fetchMembers]);
+  }, [activeTab]); // chỉ theo dõi activeTab, fetchMembers được gọi từ useFocusEffect
 
   const onRefresh = () => {
     setRefreshing(true);
