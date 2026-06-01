@@ -77,6 +77,15 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
 
+  // Calculate old PT credit
+  let oldPTCredit = 0;
+  if (activePT) {
+    const buoiCon = (activePT.buoi_dang_ky || 0) - (activePT.buoi_da_tap || 0);
+    const tongBuoi = activePT.buoi_dang_ky || 0;
+    const giaThucTeCu = activePT.gia_thuc_te || 0;
+    oldPTCredit = tongBuoi > 0 ? Math.round((giaThucTeCu * buoiCon) / tongBuoi) : 0;
+  }
+
   // States
   const [trainers, setTrainers] = useState([]);
   const [ptPackages, setPtPackages] = useState([]);
@@ -98,6 +107,7 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
   const [sessionCount, setSessionCount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('tien_mat');
   const [note, setNote] = useState('');
+  const [refundAmount, setRefundAmount] = useState(activePT ? formatInputMoney(String(oldPTCredit)) : '0');
 
   // Khi có activePT và loại nối tiếp, tự động set ngày bắt đầu = den_ngay + 1 ngày
   useEffect(() => {
@@ -105,10 +115,14 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
       const endOfCurrent = new Date(activePT.den_ngay);
       endOfCurrent.setDate(endOfCurrent.getDate() + 1);
       setStartDate(dateToDMY(endOfCurrent));
+      setRefundAmount('0');
     } else if (!activePT || registrationType === 'song_song') {
       setStartDate(todayDMY);
+      if (activePT) {
+        setRefundAmount(formatInputMoney(String(oldPTCredit)));
+      }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [registrationType, activePT]);
 
   // Tự động tính ngày kết thúc và số buổi dựa trên gói và ngày bắt đầu
@@ -206,17 +220,20 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
 
         // Nếu song song: hủy PT cũ trước
         if (activePT && registrationType === 'song_song') {
+          const refundVal = parseInputMoney(refundAmount) || 0;
+          const maxRefund = activePT ? (activePT.gia_thuc_te || activePT.gia || 0) : 0;
+          if (refundVal > maxRefund) {
+            Alert.alert('Lỗi', `Số tiền khấu trừ không được vượt quá giá trị gói cũ (${formatPrice(maxRefund)}).`);
+            return;
+          }
+
           await api.put(`/pt/registrations/${activePT.id}/cancel`, {
-            ly_do_huy: 'Kích hoạt gói PT mới song song qua di động',
-            so_tien_hoan: activePT.gia_thuc_te
+            ly_do_huy: 'Đổi sang gói PT mới',
+            so_tien_hoan: refundVal
           });
 
-          const buoiCon = (activePT.buoi_dang_ky || 0) - (activePT.buoi_da_tap || 0);
-          const tongBuoi = activePT.buoi_dang_ky || 0;
           const giaThucTeCu = activePT.gia_thuc_te || 0;
-          const creditGoiCu = tongBuoi > 0 ? Math.round(giaThucTeCu * buoiCon / tongBuoi) : 0;
-
-          structuredGhiChu = `Đổi từ gói: ${activePT.ten_goi_pt || 'Gói PT'} (ID: ${activePT.id}, Giá cũ: ${giaThucTeCu}, Hoàn tiền: ${creditGoiCu})${note ? ' | ' + note : ''}`;
+          structuredGhiChu = `Đổi từ gói: ${activePT.ten_goi_pt || 'Gói PT'} (ID: ${activePT.id}, Giá cũ: ${giaThucTeCu}, Khấu trừ: ${refundVal})${note ? ' | ' + note : ''}`;
         }
 
         const payload = {
@@ -274,7 +291,7 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={colors.statusBar} backgroundColor={colors.statusBarBg} />
-      
+
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border, paddingTop: insets.top, height: 60 + insets.top }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
@@ -315,17 +332,50 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
               Số buổi còn lại: <Text style={{ fontWeight: '700', color: colors.text }}>{activePT.buoi_dang_ky - activePT.buoi_da_tap}</Text> buổi
             </Text>
 
-            {/* Loại đăng ký (Bắt buộc nối tiếp để không bị song song) */}
+            {/* Loại đăng ký */}
             <View style={{ borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 8 }}>
               <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textSecondary, marginBottom: 6 }}>Loại đăng ký:</Text>
-              <View style={[styles.typeBtn, { borderColor: colors.primary, backgroundColor: colors.primaryLight, alignSelf: 'flex-start' }]}>
-                <Text style={{ fontSize: 11, color: colors.primary, fontWeight: '700' }}>
-                  Nối tiếp sau gói hiện tại
-                </Text>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TouchableOpacity
+                  style={[
+                    styles.typeBtn,
+                    { borderColor: registrationType === 'noi_tiep' ? colors.primary : colors.border },
+                    registrationType === 'noi_tiep' && { backgroundColor: colors.primaryLight }
+                  ]}
+                  onPress={() => {
+                    setRegistrationType('noi_tiep');
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={{ fontSize: 11, color: registrationType === 'noi_tiep' ? colors.primary : colors.textSecondary, fontWeight: registrationType === 'noi_tiep' ? '700' : '500' }}>
+                    Nối tiếp sau gói hiện tại
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.typeBtn,
+                    { borderColor: registrationType === 'song_song' ? colors.primary : colors.border },
+                    registrationType === 'song_song' && { backgroundColor: colors.primaryLight }
+                  ]}
+                  onPress={() => {
+                    setRegistrationType('song_song');
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={{ fontSize: 11, color: registrationType === 'song_song' ? colors.primary : colors.textSecondary, fontWeight: registrationType === 'song_song' ? '700' : '500' }}>
+                    Đổi gói PT
+                  </Text>
+                </TouchableOpacity>
               </View>
-              <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 6 }}>
-                * Gói PT mới sẽ bắt đầu sau khi gói cũ hết hạn để tránh bị lỗi trùng lặp logic lịch tập.
-              </Text>
+              {registrationType === 'noi_tiep' ? (
+                <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 6 }}>
+                  * Gói PT mới sẽ bắt đầu sau khi gói cũ hết hạn để tránh bị lỗi trùng lặp logic lịch tập.
+                </Text>
+              ) : (
+                <Text style={{ fontSize: 11, color: '#d97706', marginTop: 6, fontWeight: '500' }}>
+                  * Gói PT hiện tại sẽ bị hủy ngay lập tức và kích hoạt gói mới từ hôm nay. Số tiền hoàn trả tương ứng số buổi còn lại sẽ được tính trừ vào gói mới.
+                </Text>
+              )}
             </View>
           </View>
         )}
@@ -391,17 +441,17 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
         {selectedPkg && selectedTrainer && (
           <View style={[styles.formCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <DatePickerField
-              label={activePT ? "Ngày bắt đầu (Tự động nối tiếp gói cũ)" : "Ngày bắt đầu"}
+              label={activePT && registrationType === 'noi_tiep' ? "Ngày bắt đầu (Tự động nối tiếp gói cũ)" : "Ngày bắt đầu"}
               required
               value={startDate}
               onChangeText={setStartDate}
               placeholder="Chọn ngày bắt đầu"
               colors={colors}
               returnFormat="DD/MM/YYYY"
-              disabled={!!activePT}
+              disabled={activePT && registrationType === 'noi_tiep'}
             />
 
-            {activePT && (
+            {activePT && registrationType === 'noi_tiep' && (
               <Text style={{ fontSize: 11, color: colors.primary, fontWeight: '600', marginTop: -4, marginBottom: 4 }}>
                 * Ngày bắt đầu được đặt tự động nối tiếp sau ngày kết thúc của hợp đồng PT hiện tại ({formatDate(activePT.den_ngay)})
               </Text>
@@ -434,7 +484,7 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
                 />
               </View>
               <View style={{ flex: 1 }}>
-                <FieldLabel label="Giá thanh toán (đ)" required colors={colors} />
+                <FieldLabel label={activePT && registrationType === 'song_song' ? "Giá thực tế gói mới (đ)" : "Giá thanh toán (đ)"} required colors={colors} />
                 <TextInput
                   style={[styles.input, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
                   value={actualPrice}
@@ -445,6 +495,43 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
                 />
               </View>
             </View>
+
+            {activePT && registrationType === 'song_song' && (
+              <View style={{ marginTop: 4 }}>
+                <FieldLabel label="Khấu trừ gói cũ (đ)" required colors={colors} />
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
+                  value={refundAmount}
+                  onChangeText={(val) => setRefundAmount(formatInputMoney(val))}
+                  keyboardType="numeric"
+                  placeholder="0"
+                  placeholderTextColor={colors.textMuted}
+                />
+              </View>
+            )}
+
+            {activePT && registrationType === 'song_song' && (
+              <View style={{ marginTop: 4 }}>
+                {(() => {
+                  const price = parseInputMoney(actualPrice) || 0;
+                  const refund = parseInputMoney(refundAmount) || 0;
+                  const oldPrice = activePT ? (activePT.gia_thuc_te || activePT.gia || 0) : 0;
+                  const isUpgrade = price >= refund;
+                  const label = isUpgrade ? 'Tiền đóng thêm (đ)' : 'Tiền hoàn trả khách (đ)';
+                  const diff = isUpgrade ? Math.max(0, price - refund) : Math.max(0, refund - price);
+                  const displayValue = formatPrice(diff);
+                  const bgStyle = isUpgrade ? { backgroundColor: '#e6f4ea', borderColor: '#34a853' } : { backgroundColor: '#fce8e6', borderColor: '#ea4335' };
+                  const textStyle = isUpgrade ? { color: '#137333' } : { color: '#c5221f' };
+
+                  return (
+                    <View style={[styles.diffContainer, bgStyle]}>
+                      <Text style={[styles.diffLabel, textStyle]}>{label}</Text>
+                      <Text style={[styles.diffValue, textStyle]}>{displayValue}</Text>
+                    </View>
+                  );
+                })()}
+              </View>
+            )}
 
             <FieldLabel label="Phương thức thanh toán" required colors={colors} />
             <View style={styles.paymentMethodRow}>
@@ -494,7 +581,7 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
           ) : (
             <Text style={styles.submitBtnText}>
               {isRenew
-                ? (registrationType === 'noi_tiep' ? 'Đăng ký Nối tiếp' : 'Kích hoạt Song song')
+                ? (registrationType === 'noi_tiep' ? 'Đăng ký Nối tiếp' : 'Xác nhận đổi gói')
                 : 'Đăng ký Gói PT'}
             </Text>
           )}
@@ -530,6 +617,23 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     marginBottom: 16,
+  },
+  diffContainer: {
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  diffLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  diffValue: {
+    fontSize: 16,
+    fontWeight: '800',
   },
   typeBtn: {
     flex: 1,

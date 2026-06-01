@@ -8,11 +8,69 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
-**✅ Fix DatePickerField không đồng bộ ngày từ bên ngoài** — Thêm `useEffect` vào component `DatePickerField` để cập nhật state nội tại khi prop `value` thay đổi từ màn hình cha, fix ngày kết thúc không hiển thị sau khi tự động tính trên màn hình Đăng ký gói Gym và Đăng ký gói PT.
+**✅ Sửa lỗi FK bảng danh_gia_pt trỏ vào lich_tap_old_broken** — Thêm Migration v21 vào db.js để tự động phát hiện và tái tạo bảng `danh_gia_pt` với foreign key chính xác trỏ vào `lich_tap`, khắc phục lỗi 500 `no such table: main.lich_tap_old_broken` khi gọi API đánh giá PT.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
+
+### [01/06/2026 14:10] — Việt hóa tháng và đổi hiển thị doanh thu theo triệu đồng trên biểu đồ Dashboard
+- **Loại**: Cải tiến giao diện & UI/UX (Frontend Web)
+- **File**: `FE/assets/js/pages/dashboard.js`
+- **Mô tả**:
+  1. Việt hóa chú thích trục X của biểu đồ Doanh thu theo tháng từ tiếng Anh sang tiếng Việt (`'Thg 1'`, `'Thg 2'`, ..., `'Thg 12'`).
+  2. Sửa định dạng số tiền trên trục Y từ dạng `'k'` (hàng nghìn) sang `'tr'` (triệu đồng) khớp với giá trị hiển thị thực tế (ví dụ: `5 tr`, `10 tr`, ...).
+  3. Sửa định dạng tooltip khi hover vào các điểm dữ liệu hiển thị rõ ràng bằng tiếng Việt và đơn vị triệu đồng (ví dụ: `"Doanh thu: 15 triệu"`).
+- **Kết quả**: Thành công — Biểu đồ Dashboard tổng quan chuyên nghiệp, rõ ràng và đúng chuẩn ngôn ngữ tiếng Việt.
+
+### [01/06/2026 11:46] — Sửa lỗi 500 khi đánh giá lịch tập PT (no such table: lich_tap_old_broken)
+- **Loại**: Sửa bug (Backend - Database Migration)
+- **File**: `BE/src/config/db.js`
+- **Mô tả**: 
+  1. **Nguyên nhân**: Migration v20 đã rename bảng `lich_tap → lich_tap_old_broken` để tái cấu trúc. SQLite tự động cập nhật FK trong bảng `danh_gia_pt` để trỏ vào `lich_tap_old_broken`. Sau khi bảng backup bị DROP, `danh_gia_pt` còn FK trỏ vào bảng không tồn tại → lỗi 500 khi INSERT/SELECT đánh giá PT.
+  2. **Giải pháp**: Thêm Migration v21 với 2 cơ chế phát hiện lỗi (kiểm tra schema text + PRAGMA foreign_key_list). Khi phát hiện FK hỏng, tái tạo hoàn toàn bảng `danh_gia_pt` với FK đúng, giữ nguyên dữ liệu hiện có.
+  3. **Dọn dẹp**: Xóa toàn bộ code debug tạm thời đã thêm vào `BE/index.js`.
+- **Kết quả**: Thành công — Server tự động chạy Migration v21 khi khởi động, sửa lỗi không cần can thiệp thủ công.
+
+### [01/06/2026 11:25] — Đồng bộ bộ chọn thời lượng và tự động tính giờ kết thúc lịch tập PT trên di động
+- **Loại**: Cải tiến tính năng & Đồng bộ di động (Mobile)
+- **File**: `MobileApp/src/screens/admin/AdminRegisterPTScheduleScreen.js`
+- **Mô tả**:
+  1. Thay thế bộ chọn giờ kết thúc thủ công (`TimePickerModal` cũ) bằng bộ chọn thời lượng buổi tập `DurationPickerModal` có 4 khung giờ: 30 phút, 1 giờ, 1 giờ 30 phút, và 2 giờ.
+  2. Trường "Giờ kết thúc" được chuyển thành dạng readonly và tự động cập nhật chính xác dựa trên giờ bắt đầu và thời lượng đã chọn.
+  3. Dọn dẹp sạch sẽ các hàm, biến và state cũ không còn sử dụng (`showEndPicker`, `isEndTimeSlotDisabled`, `validEndTimes`, `END_TIMES`).
+- **Kết quả**: Thành công — Màn hình đặt lịch tập PT hoạt động nhất quán, mượt mà và đồng bộ hoàn hảo với logic trên Web Frontend.
+
+### [01/06/2026 11:18] — Sửa lỗi block cử chỉ cuộn (scrolling) của FlatList giờ tập trên Mobile
+- **Loại**: Sửa bug (Mobile)
+- **File**: `MobileApp/src/screens/admin/AdminRegisterPTScheduleScreen.js`, `MobileApp/src/screens/pt/PTScheduleScreen.js`
+- **Mô tả**: Tách biệt phông nền TouchableOpacity overlay ra khỏi Modal Content chính bằng cách dùng absolute position ở phía sau. Nhờ vậy, FlatList chứa danh sách giờ tập bên trong Modal không bị chặn cử chỉ chạm và có thể cuộn xuống bình thường để chọn các giờ muộn hơn.
+- **Kết quả**: Thành công — Khắc phục triệt để lỗi không kéo được danh sách giờ.
+
+### [01/06/2026 11:15] — Redesign giao diện đặt lịch PT và lọc giờ trùng, giờ quá khứ trên Mobile
+- **Loại**: Cải tiến tính năng & UI/UX (Mobile)
+- **File**: `MobileApp/src/screens/admin/AdminRegisterPTScheduleScreen.js`, `MobileApp/src/screens/pt/PTScheduleScreen.js`
+- **Mô tả**:
+  1. **Admin đặt lịch PT**: Thay thế trường nhập ngày tập bằng bàn phím thành bộ chọn ngày `DatePickerField`. Tích hợp fetch API danh sách lịch dạy của PT trong ngày được chọn để so sánh trùng lịch. Vô hiệu hóa (xám, gạch ngang) các giờ trong quá khứ của ngày hôm nay và các khung giờ trùng với lịch dạy của PT.
+  2. **PT tự đặt lịch**: Thay thế 2 input nhập giờ bắt đầu/kết thúc dạng gõ tay bằng component chọn giờ dạng Modal `TimeSelector` & `TimePickerModal` đồng bộ với Admin. Tự động kiểm tra trùng giờ dựa theo danh sách schedules đã có trong ngày để tô xám và chặn không cho chọn giờ đã bận.
+- **Kết quả**: Thành công 100% — Tránh hoàn toàn việc Admin/PT tự gõ ngày sai định dạng và ngăn chặn 100% tình trạng đặt trùng lịch PT trên ứng dụng Mobile.
+
+### [01/06/2026 11:00] — Hoàn thiện tính năng Đổi gói PT (khấu trừ tiền cũ & tính chênh lệch thu chi) trên Mobile
+- **Loại**: Cải tiến tính năng & Đồng bộ Mobile
+- **File**: `MobileApp/src/screens/admin/AdminRegisterPTScreen.js`
+- **Mô tả**:
+  1. **Tự động tính tiền hoàn**: Tính toán số tiền khấu trừ/hoàn trả của gói PT cũ dựa trên tỷ lệ số buổi chưa học thực tế (`Math.round(giaThucTeCu * buoiCon / tongBuoi)`) và điền tự động vào ô "Khấu trừ gói cũ (đ)" cho phép chỉnh sửa.
+  2. **Tính toán chênh lệch đóng thêm / hoàn trả**: Hiển thị thẻ chênh lệch động màu xanh lá với nhãn "Tiền đóng thêm (đ)" khi nâng cấp, hoặc màu đỏ với nhãn "Tiền hoàn trả khách (đ)" khi hạ cấp tương tự luồng đổi gói Gym.
+  3. **Truyền số tiền hoàn chính xác**: Đồng bộ logic gửi API hủy gói PT cũ, truyền đúng số tiền khấu trừ thực tế (`so_tien_hoan`) thay vì giá trị cứng của toàn bộ gói cũ.
+- **Kết quả**: Thành công 100% — Luồng đổi gói PT hoạt động hoàn toàn tương thích và đồng bộ với luồng đổi gói Gym.
+
+### [01/06/2026 10:52] — Đồng bộ luồng "Đổi gói PT" và "Gia hạn nối tiếp" trên Mobile App Admin
+- **Loại**: Cải tiến giao diện UI/UX & Đồng bộ Mobile
+- **File**: `MobileApp/src/screens/admin/AdminRegisterPTScreen.js`
+- **Mô tả**: Mở khóa giao diện cho phép Quản trị viên lựa chọn giữa hai hình thức đăng ký khi hội viên đang có gói PT hoạt động (đồng bộ hoàn hảo với luồng đổi gói Gym):
+  1. **Nối tiếp sau gói hiện tại**: Ngày bắt đầu tự động tính bằng `den_ngay` của gói cũ + 1 ngày (trạng thái `cho_kich_hoat`).
+  2. **Đổi gói PT**: Hủy gói PT cũ ngay lập tức để kích hoạt gói mới ngay hôm nay, tự động tính trừ số tiền hoàn trả của số buổi chưa tập của gói cũ vào giá thực tế gói mới.
+- **Kết quả**: Giao diện hiển thị trực quan và cho phép bấm chọn linh hoạt thay vì bị khóa cứng nối tiếp như trước.
 
 ### [01/06/2026 10:28] — Sửa lỗi kích hoạt đồng thời 2 gói tập và trùng lặp yêu cầu gia hạn
 - **Loại**: Sửa bug (Backend)

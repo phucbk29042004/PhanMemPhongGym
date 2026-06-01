@@ -1517,4 +1517,77 @@ WHEN (SELECT MAX(d_ngay) FROM (
   console.error('[DB] ❌ Lỗi khi sửa tham chiếu v20:', err.message);
 }
 
+// ── Migration v21: Sửa lỗi FK bảng danh_gia_pt trỏ vào lich_tap_old_broken (do Migration v20 rename bảng) ──
+// Khi Migration v20 rename lich_tap → lich_tap_old_broken rồi tạo lại lich_tap mới,
+// SQLite tự động cập nhật FK trong danh_gia_pt để trỏ vào lich_tap_old_broken.
+// Sau khi drop lich_tap_old_broken, danh_gia_pt có FK trỏ vào bảng không tồn tại → lỗi 500 khi INSERT.
+try {
+  const schemaDanhGia = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='danh_gia_pt'").get();
+  // Kiểm tra bằng 2 cách: schema text có tên cũ hoặc PRAGMA fk_list phát hiện bảng tham chiếu không tồn tại
+  let needFix = false;
+  if (schemaDanhGia && schemaDanhGia.sql) {
+    needFix = schemaDanhGia.sql.includes('lich_tap_old_broken');
+    if (!needFix) {
+      // Kiểm tra thêm bằng PRAGMA: nếu bảng tham chiếu không tồn tại trong sqlite_master
+      try {
+        const fkList = db.prepare("PRAGMA foreign_key_list('danh_gia_pt')").all();
+        for (const fk of fkList) {
+          const refTableExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?").get(fk.table);
+          if (!refTableExists) { needFix = true; break; }
+        }
+      } catch (_) {}
+    }
+  }
+
+  if (needFix) {
+    console.log('[DB] 🛠️ Migration v21: Phát hiện danh_gia_pt có FK hỏng, đang sửa...');
+    db.pragma('foreign_keys = OFF');
+    // Dọn backup cũ nếu có
+    db.exec(`DROP TABLE IF EXISTS danh_gia_pt_old_v21;`);
+    db.transaction(() => {
+      db.exec(`ALTER TABLE danh_gia_pt RENAME TO danh_gia_pt_old_v21;`);
+      db.exec(`
+        CREATE TABLE danh_gia_pt (
+          id                INTEGER PRIMARY KEY AUTOINCREMENT,
+          lich_tap_id       INTEGER NOT NULL REFERENCES lich_tap(id) ON DELETE CASCADE,
+          pt_id             INTEGER NOT NULL REFERENCES ho_so(id),
+          hoi_vien_id       INTEGER NOT NULL REFERENCES ho_so(id),
+          so_sao            INTEGER NOT NULL CHECK (so_sao BETWEEN 1 AND 5),
+          tieu_chi_json     TEXT,
+          tag_json          TEXT,
+          noi_dung          TEXT,
+          nguoi_tao_id      INTEGER REFERENCES tai_khoan(id),
+          nguoi_cap_nhat_id INTEGER REFERENCES tai_khoan(id),
+          ngay_tao          DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
+          ngay_cap_nhat     DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
+          UNIQUE(lich_tap_id, hoi_vien_id)
+        );
+      `);
+      // Copy chỉ những dòng có lich_tap_id hợp lệ (tránh lỗi FK)
+      db.exec(`
+        INSERT INTO danh_gia_pt (
+          id, lich_tap_id, pt_id, hoi_vien_id, so_sao,
+          tieu_chi_json, tag_json, noi_dung,
+          nguoi_tao_id, nguoi_cap_nhat_id, ngay_tao, ngay_cap_nhat
+        )
+        SELECT
+          id, lich_tap_id, pt_id, hoi_vien_id, so_sao,
+          tieu_chi_json, tag_json, noi_dung,
+          nguoi_tao_id, nguoi_cap_nhat_id, ngay_tao, ngay_cap_nhat
+        FROM danh_gia_pt_old_v21
+        WHERE lich_tap_id IN (SELECT id FROM lich_tap);
+      `);
+      db.exec(`DROP TABLE danh_gia_pt_old_v21;`);
+      db.exec(`DROP INDEX IF EXISTS idx_dgpt_pt;`);
+      db.exec(`DROP INDEX IF EXISTS idx_dgpt_lich_tap;`);
+      db.exec(`CREATE INDEX idx_dgpt_pt ON danh_gia_pt(pt_id);`);
+      db.exec(`CREATE INDEX idx_dgpt_lich_tap ON danh_gia_pt(lich_tap_id);`);
+    })();
+    db.pragma('foreign_keys = ON');
+    console.log('[DB] ✅ Migration v21: Sửa xong FK bảng danh_gia_pt. API đánh giá PT hoạt động bình thường.');
+  }
+} catch (err) {
+  console.error('[DB] ❌ Lỗi khi sửa FK v21 (danh_gia_pt):', err.message);
+}
+
 export default db;

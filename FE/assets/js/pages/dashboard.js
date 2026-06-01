@@ -509,7 +509,7 @@ window.GymApp.pages['dashboard'] = {
         const month = parseInt(d.ngay.split('-')[1]);
         monthlyMap[month] = (monthlyMap[month] || 0) + (d.tong_tien || 0);
       });
-      const monthLabels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const monthLabels = ['Thg 1','Thg 2','Thg 3','Thg 4','Thg 5','Thg 6','Thg 7','Thg 8','Thg 9','Thg 10','Thg 11','Thg 12'];
       const monthData = Object.values(monthlyMap).map(v => Math.round(v / 1_000_000));
 
       window.GymApp._activeChart1 = new Chart(ctxRev, {
@@ -536,7 +536,7 @@ window.GymApp.pages['dashboard'] = {
           plugins: { 
             legend: { display: false },
             tooltip: {
-              callbacks: { label: function(c) { return c.parsed.y + ' Tr'; } }
+              callbacks: { label: function(c) { return 'Doanh thu: ' + c.parsed.y + ' triệu'; } }
             }
           },
           scales: {
@@ -544,7 +544,7 @@ window.GymApp.pages['dashboard'] = {
             y: { 
               beginAtZero: true, 
               grid: { color: gridColor }, 
-              ticks: { color: textColor, font: { size: 11 }, callback: function(v) { return v > 0 ? v + 'k' : '0'; } } 
+              ticks: { color: textColor, font: { size: 11 }, callback: function(v) { return v > 0 ? v + ' tr' : '0'; } } 
             }
           }
         }

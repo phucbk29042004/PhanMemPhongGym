@@ -1,12 +1,12 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import {
   ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform,
   RefreshControl, ScrollView, StatusBar, StyleSheet, Text,
-  TextInput, TouchableOpacity, View,
+  TextInput, TouchableOpacity, View, FlatList,
 } from 'react-native';
 import {
   CalendarCheck, Clock, Dumbbell,
-  Filter, Info, MapPin, Plus, X, Zap,
+  Filter, Info, MapPin, Plus, X, Zap, ChevronDown,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../services/api';
@@ -14,6 +14,133 @@ import { formatDate, scheduleStatusLabel, unwrapData } from '../../utils/data';
 import ProfileAvatar from '../../components/ProfileAvatar';
 import { useTheme } from '../../context/ThemeContext';
 import DatePickerField from '../../components/DatePickerField';
+
+// ── Tạo danh sách giờ từ 06:00 đến 21:00 mỗi 30 phút ──────────
+function buildTimeOptions(fromHour = 6, toHour = 21) {
+  const times = [];
+  for (let h = fromHour; h <= toHour; h++) {
+    times.push(`${String(h).padStart(2, '0')}:00`);
+    if (h < toHour) times.push(`${String(h).padStart(2, '0')}:30`);
+  }
+  return times;
+}
+
+const START_TIMES = buildTimeOptions(6, 21);
+const END_TIMES   = buildTimeOptions(6, 22);
+
+// ── Custom Time Picker ──────────────────────────────────────────
+function TimePickerModal({ visible, times, selected, onSelect, onClose, title, colors, checkDisabled }) {
+  const tp = StyleSheet.create({
+    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 24 },
+    sheet: { borderRadius: 20, borderWidth: 1, overflow: 'hidden' },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.06)' },
+    title: { fontSize: 15, fontWeight: '800' },
+    item: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 16 },
+    itemText: { fontSize: 15, fontWeight: '600', flex: 1 },
+    check: { width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  });
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={tp.overlay}>
+        {/* Lớp nền bắt chạm ra ngoài để đóng modal */}
+        <TouchableOpacity
+          style={StyleSheet.absoluteFill}
+          activeOpacity={1}
+          onPress={onClose}
+        />
+        
+        {/* Hộp thoại Modal thực tế */}
+        <View style={[tp.sheet, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={tp.header}>
+            <Text style={[tp.title, { color: colors.text }]}>{title}</Text>
+            <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <X color={colors.textSecondary} size={20} />
+            </TouchableOpacity>
+          </View>
+          <FlatList
+            data={times}
+            keyExtractor={(t) => t}
+            showsVerticalScrollIndicator={false}
+            style={{ maxHeight: 320 }}
+            renderItem={({ item }) => {
+              const isSelected = item === selected;
+              const isDisabled = checkDisabled ? checkDisabled(item) : false;
+              return (
+                <TouchableOpacity
+                  style={[
+                    tp.item,
+                    isSelected && { backgroundColor: colors.primaryLight },
+                    isDisabled && { opacity: 0.4 }
+                  ]}
+                  onPress={() => {
+                    if (isDisabled) return;
+                    onSelect(item);
+                    onClose();
+                  }}
+                  disabled={isDisabled}
+                  activeOpacity={0.7}
+                >
+                  <Clock color={isSelected ? colors.primary : colors.textMuted} size={14} />
+                  <Text style={[
+                    tp.itemText,
+                    { color: isSelected ? colors.primary : colors.text },
+                    isDisabled && { color: colors.textMuted, textDecorationLine: 'line-through' }
+                  ]}>
+                    {item} {isDisabled ? '(K.dụng)' : ''}
+                  </Text>
+                  {isSelected && (
+                    <View style={[tp.check, { backgroundColor: colors.primary }]}>
+                      <Text style={{ color: '#fff', fontSize: 9, fontWeight: '800' }}>✓</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            }}
+          />
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+// ── TimeSelector Button ─────────────────────────────────────────
+function TimeSelector({ label, value, onPress, colors, required }) {
+  const stylesLocal = StyleSheet.create({
+    label: { fontSize: 12, fontWeight: '600', marginTop: 8, marginBottom: 4 },
+    timeSelectorBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      height: 48,
+      borderRadius: 12,
+      borderWidth: 1,
+      paddingHorizontal: 12,
+      gap: 8,
+    },
+    timeSelectorText: {
+      flex: 1,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+  });
+
+  return (
+    <View style={{ flex: 1 }}>
+      <Text style={[stylesLocal.label, { color: colors.textSecondary }]}>
+        {label}{required && <Text style={{ color: '#ba1a1a', fontWeight: '700' }}> *</Text>}
+      </Text>
+      <TouchableOpacity
+        style={[stylesLocal.timeSelectorBtn, { borderColor: colors.border, backgroundColor: colors.surfaceVariant }]}
+        onPress={onPress}
+        activeOpacity={0.7}
+      >
+        <Clock color={colors.textMuted} size={16} />
+        <Text style={[stylesLocal.timeSelectorText, { color: colors.text }]}>{value}</Text>
+        <ChevronDown color={colors.textMuted} size={16} />
+      </TouchableOpacity>
+    </View>
+  );
+}
 
 // ── Màu sắc ────────────────────────────────────────────────
 const G = {
@@ -54,6 +181,99 @@ export default function PTScheduleScreen() {
   const [newEnd, setNewEnd] = useState('09:00');
   const [newNote, setNewNote] = useState('');
   const [creating, setCreating] = useState(false);
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
+
+  const isTimeSlotDisabled = (time) => {
+    const today = new Date();
+    const todayYMD = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    
+    if (newDate === todayYMD) {
+      const [h, m] = time.split(':').map(Number);
+      const nowH = today.getHours();
+      const nowM = today.getMinutes();
+      if (h < nowH || (h === nowH && m <= nowM)) {
+        return true;
+      }
+    }
+
+    if (schedules && schedules.length > 0) {
+      const [h, m] = time.split(':').map(Number);
+      let eh = h + 1;
+      let em = m;
+      const timeEnd = `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
+
+      return schedules.some(s => {
+        if (s.trang_thai === 'da_huy') return false;
+        const sDateYMD = s.ngay_tap ? s.ngay_tap.split('T')[0] : '';
+        if (sDateYMD !== newDate) return false;
+        return time < s.gio_ket_thuc && timeEnd > s.gio_bat_dau;
+      });
+    }
+    return false;
+  };
+
+  const isEndTimeSlotDisabled = (time) => {
+    if (time <= newStart) return true;
+    if (schedules && schedules.length > 0) {
+      return schedules.some(s => {
+        if (s.trang_thai === 'da_huy') return false;
+        const sDateYMD = s.ngay_tap ? s.ngay_tap.split('T')[0] : '';
+        if (sDateYMD !== newDate) return false;
+        return newStart < s.gio_ket_thuc && time > s.gio_bat_dau;
+      });
+    }
+    return false;
+  };
+
+  const handleSelectStart = (t) => {
+    setNewStart(t);
+    const [h, m] = t.split(':').map(Number);
+    let nh = h + 1;
+    const auto = `${String(nh).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    if (END_TIMES.includes(auto)) setNewEnd(auto);
+  };
+
+  // Tự động gán giờ bắt đầu hợp lệ đầu tiên khi PT thay đổi ngày đặt lịch
+  useEffect(() => {
+    if (!createModalVisible) return;
+    const today = new Date();
+    const todayYMD = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const isToday = newDate === todayYMD;
+    const nowH = today.getHours();
+    const nowM = today.getMinutes();
+
+    let foundStart = null;
+    for (const t of START_TIMES) {
+      if (isToday) {
+        const [h, m] = t.split(':').map(Number);
+        if (h < nowH || (h === nowH && m <= nowM)) continue;
+      }
+      const [h, m] = t.split(':').map(Number);
+      let eh = h + 1;
+      const tEnd = `${String(eh).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+      const overlapping = schedules.some(s => {
+        if (s.trang_thai === 'da_huy') return false;
+        const sDateYMD = s.ngay_tap ? s.ngay_tap.split('T')[0] : '';
+        if (sDateYMD !== newDate) return false;
+        return t < s.gio_ket_thuc && tEnd > s.gio_bat_dau;
+      });
+      if (overlapping) continue;
+
+      foundStart = t;
+      break;
+    }
+
+    if (foundStart) {
+      setNewStart(foundStart);
+      const [h, m] = foundStart.split(':').map(Number);
+      let nh = h + 1;
+      setNewEnd(`${String(nh).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+    } else {
+      setNewStart('');
+      setNewEnd('');
+    }
+  }, [newDate, createModalVisible, schedules]);
 
   const fetchSchedules = useCallback(async () => {
     try {
@@ -429,26 +649,20 @@ export default function PTScheduleScreen() {
               returnFormat="YYYY-MM-DD"
             />
             <View style={styles.rowInputs}>
-              <View style={styles.halfInput}>
-                <Text style={[styles.modalLabel, { color: colors.textMuted }]}>Giờ bắt đầu</Text>
-                <TextInput
-                  style={[styles.modalTextInput, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
-                  value={newStart}
-                  onChangeText={setNewStart}
-                  placeholder="HH:MM"
-                  placeholderTextColor={colors.textMuted}
-                />
-              </View>
-              <View style={styles.halfInput}>
-                <Text style={[styles.modalLabel, { color: colors.textMuted }]}>Giờ kết thúc</Text>
-                <TextInput
-                  style={[styles.modalTextInput, { backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
-                  value={newEnd}
-                  onChangeText={setNewEnd}
-                  placeholder="HH:MM"
-                  placeholderTextColor={colors.textMuted}
-                />
-              </View>
+              <TimeSelector
+                label="Giờ bắt đầu"
+                value={newStart}
+                onPress={() => setShowStartPicker(true)}
+                colors={colors}
+                required
+              />
+              <TimeSelector
+                label="Giờ kết thúc"
+                value={newEnd}
+                onPress={() => setShowEndPicker(true)}
+                colors={colors}
+                required
+              />
             </View>
             <Text style={[styles.modalLabel, { color: colors.textMuted }]}>Ghi chú</Text>
             <TextInput
@@ -514,6 +728,28 @@ export default function PTScheduleScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* Pickers */}
+      <TimePickerModal
+        visible={showStartPicker}
+        times={START_TIMES}
+        selected={newStart}
+        onSelect={handleSelectStart}
+        onClose={() => setShowStartPicker(false)}
+        title="Chọn giờ bắt đầu"
+        colors={colors}
+        checkDisabled={isTimeSlotDisabled}
+      />
+      <TimePickerModal
+        visible={showEndPicker}
+        times={END_TIMES.filter(t => t > newStart)}
+        selected={newEnd}
+        onSelect={setNewEnd}
+        onClose={() => setShowEndPicker(false)}
+        title="Chọn giờ kết thúc"
+        colors={colors}
+        checkDisabled={isEndTimeSlotDisabled}
+      />
     </View>
   );
 }
