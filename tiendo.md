@@ -1580,5 +1580,17 @@
   - Nâng cấp thuật toán so khớp: Viết hàm helper `stripExts` loại bỏ tất cả các đuôi mở rộng (`.jpg`, `.png`, `.webp`...) lặp lại của cả tên trong Excel và tên file trong ZIP để so sánh theo tên gốc (core name) duy nhất.
 - **Kết quả**: ✅ Khắc phục triệt để và tự động khớp thành công 100% ảnh đại diện dù có bị lỗi đuôi mở rộng kép.
 
+### 02/06/2026 14:52 — Bổ sung cơ chế tự động đối chiếu ảnh thông minh (Smart Fallback)
+- **Loại**: Thêm tính năng mới (Backend)
+- **File**: `BE/src/controllers/members.controller.js`
+- **Mô tả**:
+  - Bổ sung cơ chế tự động dò tìm ảnh đại diện trong file ZIP theo 3 cấp độ ưu tiên tăng dần:
+    1. So khớp theo **Tên file ảnh** khai báo trong file Excel (nếu có).
+    2. So khớp theo **Số điện thoại** của hội viên (ví dụ: file ZIP có ảnh là `0912345678.jpg`).
+    3. So khớp theo **Họ và tên** hội viên viết liền không dấu, viết liền có dấu, dùng dấu gạch dưới, gạch ngang (ví dụ: `nguyenvana`, `nguyen_van_a`, `nguyen-van-a`, `Nguyễn Văn A`).
+  - Hỗ trợ an toàn: Nếu Excel không có cột ảnh hoặc file ZIP không chứa ảnh có tên khớp với bất kỳ thông tin nào, hệ thống sẽ bỏ qua việc upload ảnh của hội viên đó (không báo lỗi) và lưu thông tin chữ bình thường.
+- **Kết quả**: ✅ Tăng tối đa tỷ lệ khớp ảnh tự động, giúp việc import cực kỳ tiện lợi và thân thiện.
+
+
 
 
