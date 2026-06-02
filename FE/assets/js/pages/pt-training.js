@@ -159,7 +159,7 @@ window.GymApp.pages['pt-training'] = {
 
       <!-- Modal Sửa lịch -->
       <div id="modal-edit-schedule" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-        <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 shadow-xl w-full max-w-md mx-loose p-standard flex flex-col gap-lg">
+        <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 shadow-xl w-full max-w-lg mx-loose p-standard flex flex-col gap-lg">
           <div class="flex items-center justify-between">
             <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface">Sửa lịch tập</h3>
             <button id="close-edit-schedule" class="material-symbols-outlined text-on-surface-variant hover:text-error transition-colors">close</button>
@@ -173,7 +173,7 @@ window.GymApp.pages['pt-training'] = {
             <div>
               <label class="block text-body-sm text-on-surface-variant font-bold mb-xs">Chọn giờ bắt đầu</label>
               <div id="edit-schedule-time-display" class="text-body-sm mb-compact font-bold" style="min-height:18px;color:#6e7a6b;">Chưa chọn giờ</div>
-              <div style="border:1px solid #becab9;border-radius:12px;overflow:hidden;max-height:180px;overflow-y:auto;" class="bg-surface-container-low">
+              <div style="border:1px solid #becab9;border-radius:12px;overflow:hidden;max-height:260px;overflow-y:auto;" class="bg-surface-container-low">
                 <div class="time-slot-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:4px;padding:8px;">
                   ${timeSlots.map(t => `<button class="edit-time-slot-btn bg-surface-container-lowest text-on-surface border border-outline-variant hover:bg-surface-container transition-all text-body-sm" data-time="${t}" style="padding:6px 2px;border-radius:8px;font-weight:600;cursor:pointer;text-align:center;">${t}</button>`).join('')}
                 </div>
@@ -681,7 +681,9 @@ window.GymApp.pages['pt-training'] = {
         }
       } catch (err) {
         console.error(err);
-        window.GymApp.toast('Lỗi kết nối máy chủ!', 'error');
+        if (err.message === 'Failed to fetch' || !err.message) {
+          window.GymApp.toast('Lỗi kết nối máy chủ!', 'error');
+        }
         btn.disabled = false;
       }
     });
@@ -735,7 +737,9 @@ window.GymApp.pages['pt-training'] = {
         }
       } catch (err) {
         console.error(err);
-        window.GymApp.toast('Lỗi kết nối máy chủ!', 'error');
+        if (err.message === 'Failed to fetch' || !err.message) {
+          window.GymApp.toast('Lỗi kết nối máy chủ!', 'error');
+        }
       }
       this.disabled = false;
       this.innerHTML = '<span class="material-symbols-outlined text-sm">save</span>Lưu thay đổi';
@@ -769,7 +773,9 @@ window.GymApp.pages['pt-training'] = {
         }
       } catch (err) {
         console.error(err);
-        window.GymApp.toast('Lỗi kết nối máy chủ!', 'error');
+        if (err.message === 'Failed to fetch' || !err.message) {
+          window.GymApp.toast('Lỗi kết nối máy chủ!', 'error');
+        }
         btn.disabled = false;
         btn.innerHTML = '<span class="material-symbols-outlined text-sm">undo</span>Hoàn tác';
       }

@@ -25,6 +25,7 @@ export const getTrainers = (req, res) => {
       h.so_dien_thoai, h.email, h.avatar_url, h.ghi_chu, h.ngay_tao,
       h.chi_nhanh, h.phong_tap, h.chuyen_mon, h.kinh_nghiem, h.tinh_thanh, h.quan_huyen,
       h.tai_khoan_id,
+      COALESCE(tk.trang_thai, 'hoat_dong') AS trang_thai,
       -- Số học viên đang tập
       (SELECT COUNT(DISTINCT dp.hoi_vien_id) FROM dang_ky_pt dp WHERE dp.pt_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS so_hoc_vien,
       -- Tổng buổi đã dạy
@@ -35,6 +36,7 @@ export const getTrainers = (req, res) => {
       ROUND((SELECT AVG(so_sao) FROM danh_gia_pt dg WHERE dg.pt_id = h.id), 1) AS danh_gia,
       (SELECT COUNT(*) FROM danh_gia_pt dg WHERE dg.pt_id = h.id) AS so_luot_danh_gia
     FROM ho_so h
+    LEFT JOIN tai_khoan tk ON tk.id = h.tai_khoan_id
     ${where}
     ORDER BY h.ho_ten ASC
   `).all(...params);
@@ -47,6 +49,7 @@ export const getTrainerById = (req, res) => {
   const { id } = req.params;
   const trainer = db.prepare(`
     SELECT h.*,
+           COALESCE(tk.trang_thai, 'hoat_dong') AS trang_thai,
            ROUND((SELECT AVG(so_sao) FROM danh_gia_pt dg WHERE dg.pt_id = h.id), 1) AS rating,
            ROUND((SELECT AVG(so_sao) FROM danh_gia_pt dg WHERE dg.pt_id = h.id), 1) AS danh_gia,
            (SELECT COUNT(*) FROM danh_gia_pt dg WHERE dg.pt_id = h.id) AS so_luot_danh_gia,
@@ -63,11 +66,29 @@ export const getTrainerById = (req, res) => {
            )) FROM dang_ky_pt dp JOIN ho_so hv ON hv.id = dp.hoi_vien_id
             WHERE dp.pt_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS hoc_vien_hien_tai
     FROM ho_so h
+    LEFT JOIN tai_khoan tk ON tk.id = h.tai_khoan_id
     WHERE h.id = ? AND h.loai_ho_so = 'pt' AND h.is_deleted = 0
   `).get(id);
 
   if (!trainer) return error(res, 'Không tìm thấy PT.', 404);
   trainer.hoc_vien_hien_tai = JSON.parse(trainer.hoc_vien_hien_tai || '[]');
+
+  // Lấy danh sách đánh giá của PT
+  const reviews = db.prepare(`
+    SELECT dg.id, dg.so_sao, dg.noi_dung, dg.ngay_tao, dg.tieu_chi_json, dg.tag_json,
+           hv.ho_ten AS ten_hoi_vien, hv.avatar_url AS avatar_hoi_vien
+    FROM danh_gia_pt dg
+    LEFT JOIN ho_so hv ON hv.id = dg.hoi_vien_id
+    WHERE dg.pt_id = ?
+    ORDER BY dg.ngay_tao DESC
+  `).all(id);
+
+  trainer.danh_sach_danh_gia = reviews.map(r => ({
+    ...r,
+    tieu_chi: JSON.parse(r.tieu_chi_json || '[]'),
+    tags: JSON.parse(r.tag_json || '[]')
+  }));
+
   return success(res, trainer);
 };
 

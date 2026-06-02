@@ -187,7 +187,13 @@ window.GymApp.pages['checkin'] = {
                       ${window.GymApp.avatarImg(c.avatar_url, c.ho_ten, 'lg')}
                       <div class="text-center">
                         <p class="font-bold text-on-surface text-body-md truncate w-full">${c.ho_ten}</p>
-                        <p class="text-on-surface-variant text-body-sm">${c.ma_ho_so}</p>
+                        <p class="text-on-surface-variant text-body-sm flex items-center justify-center gap-1">
+                          ${c.loai_ho_so === 'pt' ? '<span class="px-1.5 py-0.5 rounded bg-brand-primary/10 text-brand-primary text-[10px] font-bold">HLV</span>' : ''}
+                          ${c.loai_ho_so === 'hoi_vien' ? '<span class="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500 text-[10px] font-bold">HV</span>' : ''}
+                          ${c.loai_ho_so === 'le_tan' ? '<span class="px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-500 text-[10px] font-bold">Lễ tân</span>' : ''}
+                          ${c.loai_ho_so === 'nhan_vien' ? '<span class="px-1.5 py-0.5 rounded bg-gray-500/10 text-gray-500 text-[10px] font-bold">NV</span>' : ''}
+                          <span>${c.ma_ho_so}</span>
+                        </p>
                       </div>
                       ${c.raRecord 
                         ? `<div class="flex items-center gap-xs bg-surface-container rounded-full px-compact py-xs border border-outline-variant w-full justify-center">
@@ -241,7 +247,13 @@ window.GymApp.pages['checkin'] = {
             ${window.GymApp.avatarImg(c.avatar_url, c.ho_ten, 'sm')}
             <div>
               <span class="font-bold text-on-surface text-body-md">${c.ho_ten}</span>
-              <p class="text-on-surface-variant text-body-sm">${c.ma_ho_so}</p>
+              <p class="text-on-surface-variant text-body-sm flex items-center gap-1">
+                ${c.loai_ho_so === 'pt' ? '<span class="px-1.5 py-0.5 rounded bg-brand-primary/10 text-brand-primary text-[10px] font-bold">HLV</span>' : ''}
+                ${c.loai_ho_so === 'hoi_vien' ? '<span class="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500 text-[10px] font-bold">HV</span>' : ''}
+                ${c.loai_ho_so === 'le_tan' ? '<span class="px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-500 text-[10px] font-bold">Lễ tân</span>' : ''}
+                ${c.loai_ho_so === 'nhan_vien' ? '<span class="px-1.5 py-0.5 rounded bg-gray-500/10 text-gray-500 text-[10px] font-bold">NV</span>' : ''}
+                <span>${c.ma_ho_so}</span>
+              </p>
             </div>
           </div>
         </td>
@@ -365,7 +377,13 @@ window.GymApp.pages['checkin'] = {
               ${window.GymApp.avatarImg(c.avatar_url, c.ho_ten, 'lg')}
               <div class="text-center">
                 <p class="font-bold text-on-surface text-body-md truncate w-full">${c.ho_ten || 'Khách vãng lai'}</p>
-                <p class="text-on-surface-variant text-body-sm">${c.ma_ho_so || '—'}</p>
+                <p class="text-on-surface-variant text-body-sm flex items-center justify-center gap-1">
+                  ${c.loai_ho_so === 'pt' ? '<span class="px-1.5 py-0.5 rounded bg-brand-primary/10 text-brand-primary text-[10px] font-bold">HLV</span>' : ''}
+                  ${c.loai_ho_so === 'hoi_vien' ? '<span class="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500 text-[10px] font-bold">HV</span>' : ''}
+                  ${c.loai_ho_so === 'le_tan' ? '<span class="px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-500 text-[10px] font-bold">Lễ tân</span>' : ''}
+                  ${c.loai_ho_so === 'nhan_vien' ? '<span class="px-1.5 py-0.5 rounded bg-gray-500/10 text-gray-500 text-[10px] font-bold">NV</span>' : ''}
+                  <span>${c.ma_ho_so || '—'}</span>
+                </p>
               </div>
               ${c.raRecord 
                 ? `<div class="flex items-center gap-xs bg-surface-container rounded-full px-compact py-xs border border-outline-variant w-full justify-center">

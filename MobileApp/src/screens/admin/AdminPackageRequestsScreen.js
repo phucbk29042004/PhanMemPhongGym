@@ -97,17 +97,17 @@ export default function AdminPackageRequestsScreen({ navigation }) {
 
     setActionLoading(true);
     try {
-      const payload = actionType === 'approve' 
+      const payload = actionType === 'approve'
         ? {
-            action: 'approve',
-            gia_thuc_te: amount,
-            phuong_thuc_tt: paymentMethod,
-            ghi_chu_tt: note
-          }
+          action: 'approve',
+          gia_thuc_te: amount,
+          phuong_thuc_tt: paymentMethod,
+          ghi_chu_tt: note
+        }
         : { action: 'reject' };
 
       const res = await api.put(`/members/package-requests/${selectedReq.id}/approve`, payload);
-      
+
       if (res.data?.success) {
         Alert.alert('Thành công', actionType === 'approve' ? 'Đã duyệt yêu cầu gia hạn!' : 'Đã từ chối yêu cầu.');
         setModalVisible(false);
@@ -165,8 +165,8 @@ export default function AdminPackageRequestsScreen({ navigation }) {
           <View style={styles.infoRow}>
             <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Thanh toán:</Text>
             <Text style={[styles.infoVal, { color: colors.text }]}>
-              {item.phuong_thuc_tt === 'chuyen_khoan' ? 'Chuyển khoản' : 'Tiền mặt'} 
-              {isPayOS ? ' (PayOS)' : ''}
+              {item.phuong_thuc_tt === 'chuyen_khoan' ? 'Chuyển khoản' : 'Tiền mặt'}
+              {isPayOS ? ' QR' : ''}
             </Text>
           </View>
           <View style={styles.infoRow}>
@@ -185,7 +185,7 @@ export default function AdminPackageRequestsScreen({ navigation }) {
           ) : null}
         </View>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.actionBtnInline, { backgroundColor: colors.primary }]}
           onPress={() => openApproveModal(item)}
         >
@@ -209,7 +209,7 @@ export default function AdminPackageRequestsScreen({ navigation }) {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={colors.statusBar} backgroundColor={colors.statusBarBg} />
-      
+
       {/* Custom Header */}
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border, paddingTop: insets.top, height: 60 + insets.top }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -335,14 +335,14 @@ export default function AdminPackageRequestsScreen({ navigation }) {
                     <TouchableOpacity
                       key={m.key}
                       style={[
-                        styles.paymentMethodBtn, 
+                        styles.paymentMethodBtn,
                         { borderColor: active ? colors.primary : colors.border },
                         active && { backgroundColor: colors.primaryLight }
                       ]}
                       onPress={() => setPaymentMethod(m.key)}
                     >
                       <Text style={[
-                        styles.paymentMethodBtnText, 
+                        styles.paymentMethodBtnText,
                         { color: active ? colors.primary : colors.textSecondary, fontWeight: active ? '700' : '500' }
                       ]}>
                         {m.label}
