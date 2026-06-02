@@ -168,8 +168,12 @@ window.GymApp.pages['checkin'] = {
                 <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface">Check-in hôm nay</h3>
                 <span id="checkin-count-badge" class="bg-brand-primary text-white px-compact py-xs rounded-full text-label-xs font-bold ml-xs">${checkins.length}</span>
               </div>
-              <div class="flex items-center gap-standard">
-                <span class="text-on-surface-variant text-body-sm">${new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'numeric' })}</span>
+              <div class="flex items-center gap-standard flex-wrap">
+                <span class="text-on-surface-variant text-body-sm hidden sm:inline">${new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'numeric' })}</span>
+                <select id="checkin-branch-filter" class="bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-3 py-1.5 rounded-xl focus:border-brand-primary outline-none text-body-sm font-semibold transition-all cursor-pointer">
+                  <option value="">— Tất cả chi nhánh —</option>
+                  ${['Chi nhánh Gò Vấp', 'Chi nhánh Bình Thạnh', 'Chi nhánh Tân Bình', 'Chi nhánh Phú Nhuận', 'Chi nhánh Quận 1', 'Chi nhánh Quận 3', 'Chi nhánh Quận 5', 'Chi nhánh Quận 7', 'Chi nhánh Quận 10', 'Chi nhánh Bình Tân', 'Chi nhánh Thủ Đức', 'Chi nhánh Nhà Bè'].map(b => `<option value="${b}">${b}</option>`).join('')}
+                </select>
                 <button id="btn-checkin-reload" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border border-outline-variant bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer">
                   <span class="material-symbols-outlined text-base">refresh</span>Tải lại
                 </button>
@@ -263,6 +267,9 @@ window.GymApp.pages['checkin'] = {
             ${c.gio_hien_thi || c.thoi_diem.substring(11, 16)}
           </div>
         </td>
+        <td class="px-standard">
+          <span class="font-bold text-on-surface text-body-sm">${c.chi_nhanh_thuc_hien || '—'}</span>
+        </td>
         <td class="px-standard">${window.GymApp.statusBadge(c.loai === 'vao' ? 'active' : 'inactive')}</td>
         <td class="px-standard">
           ${isLatestVao 
@@ -282,11 +289,12 @@ window.GymApp.pages['checkin'] = {
             <tr class="h-10">
               <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Hội viên</th>
               <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Giờ</th>
+              <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Chi nhánh thực hiện</th>
               <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Trạng thái</th>
               <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Thao tác</th>
             </tr>
           </thead>
-          <tbody>${rows || `<tr><td colspan="4" class="px-standard py-standard text-center text-on-surface-variant">Không có dữ liệu</td></tr>`}</tbody>
+          <tbody>${rows || `<tr><td colspan="5" class="px-standard py-standard text-center text-on-surface-variant">Chưa có dữ liệu</td></tr>`}</tbody>
         </table>
       </div>
       ${window.GymApp.renderPagination(this._page, checkins.length, this._perPage)}
@@ -326,10 +334,17 @@ window.GymApp.pages['checkin'] = {
       yesterday.setDate(yesterday.getDate() - 1);
       const yyyymmdd = yesterday.toISOString().split('T')[0];
 
+      // Đọc chi nhánh lọc từ dropdown nếu có
+      const branchSelect = document.getElementById('checkin-branch-filter');
+      const branchVal = branchSelect ? branchSelect.value : '';
+
+      const queryStr = branchVal ? `?chi_nhanh=${encodeURIComponent(branchVal)}` : '';
+      const statsQueryStr = branchVal ? `&chi_nhanh=${encodeURIComponent(branchVal)}` : '';
+
       const [checkinsRes, statsRes, statsYesterdayRes] = await Promise.all([
-        window.GymApp.api.get('/checkins'),
-        window.GymApp.api.get('/checkins/stats'),
-        window.GymApp.api.get(`/checkins/stats?date=${yyyymmdd}`),
+        window.GymApp.api.get(`/checkins${queryStr}`),
+        window.GymApp.api.get(`/checkins/stats${queryStr}`),
+        window.GymApp.api.get(`/checkins/stats?date=${yyyymmdd}${statsQueryStr}`),
       ]);
 
       if (checkinsRes?.success) window.GymApp.data.checkins = checkinsRes.data || [];
@@ -470,6 +485,12 @@ window.GymApp.pages['checkin'] = {
 
     // Luôn fetch mới khi vào trang
     await this._fetchAndRefresh();
+
+    // Sự kiện thay đổi chi nhánh lọc
+    document.getElementById('checkin-branch-filter')?.addEventListener('change', async () => {
+      self._page = 1;
+      await self._fetchAndRefresh();
+    });
 
     // Nút tải lại thủ công
     document.getElementById('btn-checkin-reload')?.addEventListener('click', async () => {

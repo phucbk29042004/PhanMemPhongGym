@@ -10,7 +10,7 @@ import { ghi_audit_log } from '../utils/audit.js';
 // ── GET /api/checkins ─────────────────────────────────────
 // Lịch sử vào/ra (mặc định hôm nay hoặc tất cả nếu date === 'all')
 export const getCheckins = (req, res) => {
-  const { date, ho_so_id, loai, limit = 50 } = req.query;
+  const { date, ho_so_id, loai, chi_nhanh, limit = 50 } = req.query;
   const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
 
   let where = `WHERE 1=1`;
@@ -24,6 +24,7 @@ export const getCheckins = (req, res) => {
 
   if (ho_so_id) { where += ` AND lv.ho_so_id = ?`; params.push(ho_so_id); }
   if (loai) { where += ` AND lv.loai = ?`; params.push(loai); }
+  if (chi_nhanh) { where += ` AND lv.chi_nhanh_thuc_hien = ?`; params.push(chi_nhanh); }
 
   const rows = db.prepare(`
     SELECT
@@ -109,9 +110,21 @@ export const createCheckin = (req, res) => {
 // ── GET /api/checkins/stats ───────────────────────────────
 // Thống kê mật độ khách theo khung giờ hôm nay (dùng vẽ biểu đồ)
 export const getCheckinStats = (req, res) => {
-  const { date } = req.query;
+  const { date, chi_nhanh } = req.query;
   const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
   const targetDate = date || today;
+
+  let branchFilter = '';
+  const paramsByHour = [targetDate];
+  const paramsSummary = [targetDate];
+  const paramsInside = [targetDate, targetDate];
+
+  if (chi_nhanh) {
+    branchFilter = ' AND chi_nhanh_thuc_hien = ?';
+    paramsByHour.push(chi_nhanh);
+    paramsSummary.push(chi_nhanh);
+    paramsInside.push(chi_nhanh, chi_nhanh);
+  }
 
   // Mật độ theo từng giờ
   const byHour = db.prepare(`
@@ -119,10 +132,10 @@ export const getCheckinStats = (req, res) => {
       CAST(strftime('%H', thoi_diem) AS INTEGER) AS gio,
       COUNT(*) AS so_luot_vao
     FROM luot_vao_ra
-    WHERE loai = 'vao' AND date(thoi_diem) = ?
+    WHERE loai = 'vao' AND date(thoi_diem) = ?${branchFilter}
     GROUP BY gio
     ORDER BY gio
-  `).all(targetDate);
+  `).all(...paramsByHour);
 
   // Tổng hôm nay
   const summary = db.prepare(`
@@ -130,20 +143,20 @@ export const getCheckinStats = (req, res) => {
       COUNT(*) AS tong_luot,
       SUM(CASE WHEN loai = 'vao' THEN 1 ELSE 0 END) AS luot_vao,
       SUM(CASE WHEN loai = 'ra' THEN 1 ELSE 0 END) AS luot_ra
-    FROM luot_vao_ra WHERE date(thoi_diem) = ?
-  `).get(targetDate);
+    FROM luot_vao_ra WHERE date(thoi_diem) = ?${branchFilter}
+  `).get(...paramsSummary);
 
   // Đang trong phòng tập (vào mà chưa ra)
   const currentlyInside = db.prepare(`
     SELECT COUNT(DISTINCT ho_so_id) AS so_nguoi_trong_phong
     FROM luot_vao_ra lv
-    WHERE date(thoi_diem) = ? AND loai = 'vao'
+    WHERE date(thoi_diem) = ? AND loai = 'vao'${branchFilter}
       AND NOT EXISTS (
         SELECT 1 FROM luot_vao_ra lv2
-        WHERE lv2.ho_so_id = lv.ho_so_id AND lv2.loai = 'ra'
+        WHERE lv2.ho_so_id = lv.ho_so_id AND lv2.loai = 'ra'${branchFilter.replace('chi_nhanh_thuc_hien', 'lv2.chi_nhanh_thuc_hien')}
           AND lv2.thoi_diem > lv.thoi_diem AND date(lv2.thoi_diem) = ?
       )
-  `).get(targetDate, targetDate);
+  `).get(...paramsInside);
 
   return success(res, {
     ngay: targetDate,

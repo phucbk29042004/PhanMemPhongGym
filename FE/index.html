@@ -95,6 +95,7 @@
 
   <script>
     window.GymApp = {
+      selectedBranch: sessionStorage.getItem('selected_branch') || '',
       data: {
         members: [], pts: [], packages: [], checkins: [], ptSchedules: [], ptBookings: [], stats: null
       },
@@ -698,6 +699,22 @@
             <span class="material-symbols-outlined text-[16px]">send</span> Gửi ngay
           </button>
         </div>
+      </div>
+    </div>
+  <!-- Modal Chọn Chi Nhánh khi Login (Dành cho Admin/Lễ tân) -->
+  </div>
+  <div id="modal-select-branch-startup" style="display: none;"
+    class="fixed inset-0 z-[9200] bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
+    <div
+      class="bg-white/90 dark:bg-[#1e1e1e]/90 border border-outline-variant/40 rounded-3xl w-full max-w-sm shadow-2xl relative overflow-hidden flex flex-col p-6 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200">
+      <div class="text-center mb-6">
+        <span class="material-symbols-outlined text-[#3ecf8e] text-4xl mb-2 animate-bounce">storefront</span>
+        <h3 class="font-extrabold text-lg text-on-surface">Chọn chi nhánh quản lý</h3>
+        <p class="text-on-surface-variant text-xs mt-1">Vui lòng chọn phạm vi dữ liệu bạn muốn làm việc</p>
+      </div>
+
+      <div class="flex flex-col gap-3" id="startup-branch-options">
+        <!-- Render động từ JS -->
       </div>
     </div>
   </div>

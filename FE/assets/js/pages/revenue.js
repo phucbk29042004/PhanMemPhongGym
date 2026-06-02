@@ -36,7 +36,13 @@ window.GymApp.pages['revenue'] = {
               <button id="btn-compare-action" class="bg-brand-primary hover:bg-brand-primary/95 text-white text-body-sm font-bold px-4 py-1.5 rounded-lg active:scale-95 transition-all ml-2">So sánh</button>
             </div>
 
-            <button id="rev-reload" class="ml-auto flex items-center justify-center gap-xs px-4 py-2 rounded-xl border border-outline-variant bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer whitespace-nowrap">
+            <!-- Chọn chi nhánh -->
+            <select id="rev-branch-filter" class="bg-white dark:bg-[#1e1e1e] text-on-surface border border-outline-variant text-body-sm font-bold rounded-xl px-4 py-2 outline-none cursor-pointer">
+              <option value="">— Tất cả chi nhánh —</option>
+              ${(this._branches || []).map(b => `<option value="${b.ten}" ${this._selectedBranch === b.ten ? 'selected' : ''}>${b.ten}</option>`).join('')}
+            </select>
+
+            <button id="rev-reload" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border border-outline-variant bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer whitespace-nowrap">
               <span class="material-symbols-outlined text-base">refresh</span>
               Tải lại
             </button>
@@ -1262,18 +1268,22 @@ window.GymApp.pages['revenue'] = {
     try {
       let revData = {};
       let dayData = {};
+      const branchQ = this._selectedBranch ? `&chi_nhanh=${encodeURIComponent(this._selectedBranch)}` : '';
+      const branchOnlyQ = this._selectedBranch ? `?chi_nhanh=${encodeURIComponent(this._selectedBranch)}` : '';
 
       if (this._days === 'today') {
+        const todayUrl = '/revenue/today' + (this._selectedBranch ? `?chi_nhanh=${encodeURIComponent(this._selectedBranch)}` : '');
         const [revRes, todayRes] = await Promise.all([
-          window.GymApp.api.get('/revenue?days=1'),
-          window.GymApp.api.get('/revenue/today'),
+          window.GymApp.api.get(`/revenue?days=1${branchQ}`),
+          window.GymApp.api.get(todayUrl),
         ]);
         revData = revRes?.data || {};
         dayData = todayRes?.data || { giao_dich: [] };
       } else if (this._days === 'yesterday') {
+        const yesterdayUrl = '/revenue/yesterday' + (this._selectedBranch ? `?chi_nhanh=${encodeURIComponent(this._selectedBranch)}` : '');
         const [revRes, yesterdayRes] = await Promise.all([
-          window.GymApp.api.get('/revenue?days=1'),
-          window.GymApp.api.get('/revenue/yesterday'),
+          window.GymApp.api.get(`/revenue?days=1${branchQ}`),
+          window.GymApp.api.get(yesterdayUrl),
         ]);
         revData = revRes?.data || {};
         dayData = yesterdayRes?.data || { giao_dich: [] };
@@ -1283,7 +1293,8 @@ window.GymApp.pages['revenue'] = {
         d2.setMonth(d2.getMonth() - 1);
         const m2 = this._compareMonth2 || `${d2.getFullYear()}-${String(d2.getMonth() + 1).padStart(2, '0')}`;
 
-        const res = await window.GymApp.api.get(`/revenue/compare-months?month1=${m1}&month2=${m2}`);
+        const compareUrl = `/revenue/compare-months?month1=${m1}&month2=${m2}` + (this._selectedBranch ? `&chi_nhanh=${encodeURIComponent(this._selectedBranch)}` : '');
+        const res = await window.GymApp.api.get(compareUrl);
         const compareData = res?.data || {};
         this._compareData = compareData;
 
@@ -1297,7 +1308,7 @@ window.GymApp.pages['revenue'] = {
         return;
       } else {
         const daysInt = parseInt(this._days) || 30;
-        const revRes = await window.GymApp.api.get(`/revenue?days=${daysInt}`);
+        const revRes = await window.GymApp.api.get(`/revenue?days=${daysInt}${branchQ}`);
         revData = revRes?.data || {};
         dayData = {
           giao_dich: revData.transactions || [],
@@ -1325,6 +1336,16 @@ window.GymApp.pages['revenue'] = {
     this._packageStats = [];
     this._days = 'today';
     this._chartType = 'default';
+    this._selectedBranch = window.GymApp.selectedBranch || '';
+
+    // Tải danh sách chi nhánh
+    try {
+      const bRes = await fetch('assets/data/branches.json').then(r => r.json());
+      this._branches = bRes || [];
+    } catch (e) {
+      this._branches = [];
+    }
+
     this._updateRangeButtons();
     this._updateChartTypeSelect(); // Khởi tạo dropdown đúng theo bộ lọc mặc định
 
@@ -1367,6 +1388,15 @@ window.GymApp.pages['revenue'] = {
     }
 
     await this._fetchAndRender();
+
+    // Lắng nghe sự kiện đổi chi nhánh
+    document.getElementById('rev-branch-filter')?.addEventListener('change', async function() {
+      self._selectedBranch = this.value;
+      window.GymApp.selectedBranch = this.value;
+      sessionStorage.setItem('selected_branch', this.value);
+      await self._fetchAndRender();
+      window.GymApp.toast('Đã lọc doanh thu theo chi nhánh!', 'success');
+    });
 
     // Lắng nghe đổi loại biểu đồ
     document.getElementById('rev-chart-type')?.addEventListener('change', function () {

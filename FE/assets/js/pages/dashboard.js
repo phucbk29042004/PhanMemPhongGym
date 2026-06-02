@@ -17,6 +17,17 @@ window.GymApp.pages['dashboard'] = {
     if (!dbData.luot_vao_ra_hom_nay) dbData.luot_vao_ra_hom_nay = { tong_luot: 0, luot_vao: 0 };
     if (!dbData.lich_tap_hom_nay) dbData.lich_tap_hom_nay = { tong: 0, cho_tap: 0, da_tap: 0 };
     if (!dbData.percent_changes) dbData.percent_changes = { hoi_vien: "0.00", luot_vao: "0.00", doanh_thu: "0.00", sap_het_han: "0.00" };
+    const hasBranchData = !window.GymApp.selectedBranch
+      || (dbData.hoi_vien?.tong || 0) > 0
+      || (dbData.doanh_thu_hom_nay?.tong_tien || 0) > 0
+      || (dbData.luot_vao_ra_hom_nay?.tong_luot || 0) > 0
+      || (dbData.lich_tap_hom_nay?.tong || 0) > 0
+      || (dbData.recent_checkins || []).length > 0
+      || (dbData.top_hoi_vien || []).length > 0
+      || (dbData.peak_hours || []).length > 0
+      || (window.GymApp.data.revenueDaily || []).some(r => (r.tong_tien || 0) > 0 || (r.tong_don || 0) > 0)
+      || (window.GymApp.data.packageStats || []).length > 0
+      || (window.GymApp.data.ptPackageStats || []).length > 0;
 
     const recentCheckins = (dbData.recent_checkins || []).map(c => ({
       id: c.id, memberId: c.ma_ho_so, name: c.ho_ten, time: c.gio_hien_thi || c.thoi_diem.substring(11, 16), avatar: c.avatar_url
@@ -41,20 +52,36 @@ window.GymApp.pages['dashboard'] = {
 
     const cardClass = "bg-white dark:bg-[#1e1e1e] rounded-2xl shadow-sm border-2 border-outline-variant/50 hover:-translate-y-1 hover:shadow-md transition-all duration-300";
 
+    const branches = this._branches || [];
+    const branchOptions = branches.map(b => `<option value="${b.ten}" ${this._selectedBranch === b.ten ? 'selected' : ''}>${b.ten}</option>`).join('');
+
     return `
       <div class="flex flex-col gap-3 animate-in fade-in duration-500 pb-6">
 
         <!-- Header -->
-        <div class="flex items-center justify-between gap-3 px-1">
+        <div class="flex items-center justify-between gap-3 px-1 flex-wrap">
           <div class="flex items-center gap-2 text-sm text-on-surface-variant font-medium">
              <span class="material-symbols-outlined text-[18px]">calendar_today</span>
              ${new Date().toLocaleDateString('vi-VN', { year:'numeric', month:'long', day:'numeric' })}
           </div>
-          <button id="btn-dashboard-refresh" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border border-outline-variant bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer whitespace-nowrap">
-             <span id="dashboard-refresh-icon" class="material-symbols-outlined text-base" style="transition:transform 0.6s ease">refresh</span>
-             <span id="dashboard-refresh-text">Tải lại dữ liệu</span>
-          </button>
+          <div class="flex items-center gap-2 flex-wrap">
+            <select id="dash-branch-filter" class="bg-white dark:bg-[#1e1e1e] text-on-surface border border-outline-variant text-body-sm font-bold rounded-xl px-4 py-2 outline-none cursor-pointer">
+              <option value="">— Tất cả chi nhánh —</option>
+              ${branchOptions}
+            </select>
+            <button id="btn-dashboard-refresh" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border border-outline-variant bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer whitespace-nowrap">
+               <span id="dashboard-refresh-icon" class="material-symbols-outlined text-base" style="transition:transform 0.6s ease">refresh</span>
+               <span id="dashboard-refresh-text">Tải lại dữ liệu</span>
+            </button>
+          </div>
         </div>
+
+        ${!hasBranchData ? `
+          <div class="rounded-xl border border-outline-variant/50 bg-surface-container-low px-4 py-3 flex items-center gap-3 text-on-surface-variant">
+            <span class="material-symbols-outlined text-[20px] text-brand-primary">database_off</span>
+            <p class="text-body-sm font-bold">Chi nhánh này chưa có dữ liệu.</p>
+          </div>
+        ` : ''}
 
         <!-- Layout Grid -->
         <div class="flex flex-col gap-3">
@@ -388,7 +415,58 @@ window.GymApp.pages['dashboard'] = {
     this._topMembersPage = 1;
     this._recentCheckinsPage = 1;
     this._auditLogsPage = 1;
+    this._controlsReady = false;
+    this._selectedBranch = window.GymApp.selectedBranch || '';
+
+    // Tải danh sách chi nhánh
+    try {
+      const bRes = await fetch('assets/data/branches.json').then(r => r.json());
+      this._branches = bRes || [];
+    } catch (e) {
+      this._branches = [];
+    }
+
     await self._fetchAndRender();
+
+    // Lắng nghe sự kiện đổi chi nhánh
+    document.getElementById('dash-branch-filter')?.addEventListener('change', async function() {
+      self._selectedBranch = this.value;
+      window.GymApp.selectedBranch = this.value;
+      sessionStorage.setItem('selected_branch', this.value);
+      await self._fetchAndRender();
+      window.GymApp.toast('Đã lọc theo chi nhánh!', 'success');
+    });
+
+    document.getElementById('btn-dashboard-refresh')?.addEventListener('click', async () => {
+      const btn = document.getElementById('btn-dashboard-refresh');
+      const icon = document.getElementById('dashboard-refresh-icon');
+      if (!btn || btn.disabled) return;
+
+      btn.disabled = true;
+      let angle = 0;
+      const spin = setInterval(() => {
+        angle += 30;
+        if (icon) icon.style.transform = `rotate(${angle}deg)`;
+      }, 50);
+
+      await self._fetchAndRender();
+
+      clearInterval(spin);
+      if (icon) icon.style.transform = 'rotate(0deg)';
+      btn.disabled = false;
+      window.GymApp.toast('Đã cập nhật dữ liệu!', 'success');
+    });
+  },
+
+  _bindDashboardControls: function () {
+    const self = this;
+    document.getElementById('dash-branch-filter')?.addEventListener('change', async function() {
+      self._selectedBranch = this.value;
+      window.GymApp.selectedBranch = this.value;
+      sessionStorage.setItem('selected_branch', this.value);
+      await self._fetchAndRender();
+      window.GymApp.toast('Đã lọc theo chi nhánh!', 'success');
+    });
 
     document.getElementById('btn-dashboard-refresh')?.addEventListener('click', async () => {
       const btn = document.getElementById('btn-dashboard-refresh');
@@ -541,11 +619,20 @@ window.GymApp.pages['dashboard'] = {
   },
 
   _fetchAndRender: async function () {
+    window.GymApp.data.stats = null;
+    window.GymApp.data.revenueDaily = [];
+    window.GymApp.data.packageStats = [];
+    window.GymApp.data.ptPackageStats = [];
+    window.GymApp.data.auditLogs = [];
+
     try {
+      const q = this._selectedBranch ? `?chi_nhanh=${encodeURIComponent(this._selectedBranch)}` : '';
+      const revQ = this._selectedBranch ? `&chi_nhanh=${encodeURIComponent(this._selectedBranch)}` : '';
+      const auditQ = this._selectedBranch ? `&chi_nhanh=${encodeURIComponent(this._selectedBranch)}` : '';
       const [statsRes, revRes, auditRes] = await Promise.all([
-        window.GymApp.api.get('/revenue/dashboard'),
-        window.GymApp.api.get('/revenue?days=365'),
-        window.GymApp.api.get('/audit?limit=10')
+        window.GymApp.api.get(`/revenue/dashboard${q}`),
+        window.GymApp.api.get(`/revenue?days=365${revQ}`),
+        window.GymApp.api.get(`/audit?limit=10${auditQ}`)
       ]);
       if (statsRes && statsRes.success) window.GymApp.data.stats = statsRes.data;
       if (revRes && revRes.success) {
@@ -565,6 +652,11 @@ window.GymApp.pages['dashboard'] = {
       this._renderTopMembers();
       this._renderRecentCheckins();
       this._renderAuditLogs();
+      if (this._controlsReady) {
+        this._bindDashboardControls();
+      } else {
+        this._controlsReady = true;
+      }
     }
     this._initCharts();
   },

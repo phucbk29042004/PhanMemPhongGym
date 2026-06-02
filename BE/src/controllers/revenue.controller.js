@@ -12,7 +12,7 @@ import { success } from '../utils/response.js';
 // ── GET /api/revenue ──────────────────────────────────────
 // Doanh thu 30 ngày + tổng hợp
 export const getRevenue = (req, res) => {
-  const { days = 30 } = req.query;
+  const { days = 30, chi_nhanh } = req.query;
   const daysInt = parseInt(days);
   const currentMonthStart = db.prepare(`SELECT date('now','localtime','start of month') AS d`).get().d;
   const nextMonthStart = db.prepare(`SELECT date('now','localtime','start of month','+1 month') AS d`).get().d;
@@ -20,117 +20,141 @@ export const getRevenue = (req, res) => {
   const todayDay = db.prepare(`SELECT CAST(strftime('%d', date('now','localtime')) AS INTEGER) AS d`).get().d;
   const previousMonthDays = db.prepare(`SELECT CAST(strftime('%d', date('now','localtime','start of month','-1 day')) AS INTEGER) AS d`).get().d;
 
-  // Lấy dữ liệu DB trong khoảng ngày
-  const dbRows = db.prepare(`
-    SELECT d.ngay, d.tong_tien, d.tong_don, d.tien_goi_tap, d.tien_goi_pt,
-           (SELECT tong_tien FROM doanh_thu d2 WHERE d2.ngay = date(d.ngay, '-1 month')) AS tong_tien_thang_truoc
-    FROM doanh_thu d
-    WHERE d.ngay >= date('now','localtime','-' || ? || ' days')
-    ORDER BY d.ngay ASC
-  `).all(daysInt);
+  let branchFilterTap = '';
+  let branchFilterPt = '';
+  const paramsTap = [daysInt];
+  const paramsPt = [daysInt];
 
-  // Tạo map để tra nhanh
-  const dbMap = new Map(dbRows.map(r => [r.ngay, r]));
-
-  // Sinh danh sách đầy đủ các ngày (fill 0đ cho ngày không có dữ liệu)
-  const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
-  const daily = [];
-  for (let i = daysInt; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const dateStr = d.toLocaleDateString('sv').split(' ')[0];
-    const row = dbMap.get(dateStr);
-    daily.push({
-      ngay: dateStr,
-      tong_tien: row?.tong_tien || 0,
-      tong_don: row?.tong_don || 0,
-      tien_goi_tap: row?.tien_goi_tap || 0,
-      tien_goi_pt: row?.tien_goi_pt || 0,
-      tong_tien_thang_truoc: row?.tong_tien_thang_truoc || 0,
-    });
+  if (chi_nhanh) {
+    branchFilterTap = ' AND dk.chi_nhanh_dang_ky = ?';
+    branchFilterPt = ' AND dp.chi_nhanh_dang_ky = ?';
+    paramsTap.push(chi_nhanh);
+    paramsPt.push(chi_nhanh);
   }
 
-  // Tổng cộng kỳ này
-  const summary = db.prepare(`
-    SELECT
-      SUM(tong_tien)    AS tong_doanh_thu,
-      SUM(tong_don)     AS tong_don,
-      SUM(tien_goi_tap) AS tong_goi_tap,
-      SUM(tien_goi_pt)  AS tong_goi_pt,
-      ROUND(AVG(tong_tien)) AS trung_binh_ngay
-    FROM doanh_thu
-    WHERE ngay >= date('now','localtime','-' || ? || ' days')
-  `).get(daysInt);
+  // 1. Doanh thu theo ngày (tính từ các đơn thanh toán trực tiếp thay vì bảng doanh_thu tổng hợp nếu lọc chi nhánh)
+  let daily = [];
+  if (chi_nhanh) {
+    // Nếu lọc chi nhánh, tính trực tiếp từ dang_ky_goi_tap và dang_ky_pt
+    const rawSales = db.prepare(`
+      SELECT ngay, SUM(tong) as tong_tien, SUM(cnt) as tong_don, SUM(gt_tien) as tien_goi_tap, SUM(pt_tien) as tien_goi_pt FROM (
+        SELECT COALESCE(date(dk.ngay_thanh_toan), date(dk.ngay_tao)) as ngay, SUM(dk.so_tien_da_thu) as tong, COUNT(dk.id) as cnt, SUM(dk.so_tien_da_thu) as gt_tien, 0 as pt_tien
+        FROM dang_ky_goi_tap dk
+        WHERE COALESCE(date(dk.ngay_thanh_toan), date(dk.ngay_tao)) >= date('now','localtime','-' || ? || ' days')
+          AND dk.trang_thai IN ('dang_hoat_dong', 'het_han', 'cho_kich_hoat')
+          AND dk.chi_nhanh_dang_ky = ?
+        GROUP BY ngay
+        UNION ALL
+        SELECT COALESCE(date(dp.ngay_thanh_toan), date(dp.ngay_tao)) as ngay, SUM(dp.gia_thuc_te) as tong, COUNT(dp.id) as cnt, 0 as gt_tien, SUM(dp.gia_thuc_te) as pt_tien
+        FROM dang_ky_pt dp
+        WHERE COALESCE(date(dp.ngay_thanh_toan), date(dp.ngay_tao)) >= date('now','localtime','-' || ? || ' days')
+          AND dp.trang_thai IN ('dang_hoat_dong', 'hoan_thanh', 'cho_kich_hoat')
+          AND dp.chi_nhanh_dang_ky = ?
+        GROUP BY ngay
+      ) GROUP BY ngay ORDER BY ngay ASC
+    `).all(daysInt, chi_nhanh, daysInt, chi_nhanh);
 
-  // Thống kê theo gói tập
+    const salesMap = new Map(rawSales.map(r => [r.ngay, r]));
+    const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
+    for (let i = daysInt; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toLocaleDateString('sv').split(' ')[0];
+      const r = salesMap.get(dateStr);
+      daily.push({
+        ngay: dateStr,
+        tong_tien: r?.tong_tien || 0,
+        tong_don: r?.tong_don || 0,
+        tien_goi_tap: r?.tien_goi_tap || 0,
+        tien_goi_pt: r?.tien_goi_pt || 0,
+        tong_tien_thang_truoc: 0
+      });
+    }
+  } else {
+    // Mặc định xem tất cả, lấy từ bảng doanh_thu để tối ưu hiệu năng
+    const dbRows = db.prepare(`
+      SELECT d.ngay, d.tong_tien, d.tong_don, d.tien_goi_tap, d.tien_goi_pt,
+             (SELECT tong_tien FROM doanh_thu d2 WHERE d2.ngay = date(d.ngay, '-1 month')) AS tong_tien_thang_truoc
+      FROM doanh_thu d
+      WHERE d.ngay >= date('now','localtime','-' || ? || ' days')
+      ORDER BY d.ngay ASC
+    `).all(daysInt);
+    const dbMap = new Map(dbRows.map(r => [r.ngay, r]));
+    const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
+    for (let i = daysInt; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toLocaleDateString('sv').split(' ')[0];
+      const row = dbMap.get(dateStr);
+      daily.push({
+        ngay: dateStr,
+        tong_tien: row?.tong_tien || 0,
+        tong_don: row?.tong_don || 0,
+        tien_goi_tap: row?.tien_goi_tap || 0,
+        tien_goi_pt: row?.tien_goi_pt || 0,
+        tong_tien_thang_truoc: row?.tong_tien_thang_truoc || 0,
+      });
+    }
+  }
+
+  // 2. Tổng cộng kỳ này
+  let summary = { tong_doanh_thu: 0, tong_don: 0, tong_goi_tap: 0, tong_goi_pt: 0, trung_binh_ngay: 0 };
+  if (chi_nhanh) {
+    const totalTap = db.prepare(`SELECT SUM(so_tien_da_thu) as s, COUNT(id) as c FROM dang_ky_goi_tap dk WHERE COALESCE(date(ngay_thanh_toan), date(ngay_tao)) >= date('now','localtime','-' || ? || ' days') AND trang_thai != 'huy'${branchFilterTap}`).get(daysInt, chi_nhanh);
+    const totalPt = db.prepare(`SELECT SUM(gia_thuc_te) as s, COUNT(id) as c FROM dang_ky_pt dp WHERE COALESCE(date(ngay_thanh_toan), date(ngay_tao)) >= date('now','localtime','-' || ? || ' days') AND trang_thai != 'huy'${branchFilterPt}`).get(daysInt, chi_nhanh);
+    summary.tong_goi_tap = totalTap.s || 0;
+    summary.tong_goi_pt = totalPt.s || 0;
+    summary.tong_doanh_thu = summary.tong_goi_tap + summary.tong_goi_pt;
+    summary.tong_don = (totalTap.c || 0) + (totalPt.c || 0);
+    summary.trung_binh_ngay = Math.round(summary.tong_doanh_thu / (daysInt + 1));
+  } else {
+    summary = db.prepare(`
+      SELECT
+        SUM(tong_tien)    AS tong_doanh_thu,
+        SUM(tong_don)     AS tong_don,
+        SUM(tien_goi_tap) AS tong_goi_tap,
+        SUM(tien_goi_pt)  AS tong_goi_pt,
+        ROUND(AVG(tong_tien)) AS trung_binh_ngay
+      FROM doanh_thu
+      WHERE ngay >= date('now','localtime','-' || ? || ' days')
+    `).get(daysInt);
+  }
+
+  // 3. Thống kê theo gói tập
   const packageStats = db.prepare(`
     SELECT gt.ten_goi, COUNT(dk.id) AS so_dang_ky, SUM(dk.gia_thuc_te) AS tong_tien
     FROM dang_ky_goi_tap dk
     JOIN goi_tap gt ON gt.id = dk.goi_tap_id
-    WHERE dk.ngay_tao >= date('now','localtime','-' || ? || ' days')
+    WHERE dk.ngay_tao >= date('now','localtime','-' || ? || ' days')${branchFilterTap}
     GROUP BY gt.id, gt.ten_goi
     ORDER BY so_dang_ky DESC
-  `).all(daysInt);
+  `).all(...paramsTap);
 
-  // Thống kê theo gói PT
+  // 4. Thống kê theo gói PT
   const ptPackageStats = db.prepare(`
     SELECT gp.ten_goi, COUNT(dp.id) AS so_dang_ky, SUM(dp.gia_thuc_te) AS tong_tien
     FROM dang_ky_pt dp
     JOIN goi_pt gp ON gp.id = dp.goi_pt_id
-    WHERE dp.ngay_tao >= date('now','localtime','-' || ? || ' days')
+    WHERE dp.ngay_tao >= date('now','localtime','-' || ? || ' days')${branchFilterPt}
     GROUP BY gp.id, gp.ten_goi
     ORDER BY so_dang_ky DESC
-  `).all(daysInt);
+  `).all(...paramsPt);
 
-  const currentMonthRows = db.prepare(`
-    SELECT CAST(strftime('%d', ngay) AS INTEGER) AS ngay_trong_thang,
-           tong_tien, tong_don, tien_goi_tap, tien_goi_pt
-    FROM doanh_thu
-    WHERE ngay >= ? AND ngay < ?
-    ORDER BY ngay ASC
-  `).all(currentMonthStart, nextMonthStart);
-
-  const previousMonthRows = db.prepare(`
-    SELECT CAST(strftime('%d', ngay) AS INTEGER) AS ngay_trong_thang,
-           tong_tien, tong_don, tien_goi_tap, tien_goi_pt
-    FROM doanh_thu
-    WHERE ngay >= ? AND ngay < ?
-    ORDER BY ngay ASC
-  `).all(previousMonthStart, currentMonthStart);
-
-  const currentByDay = new Map(currentMonthRows.map(row => [row.ngay_trong_thang, row]));
-  const previousByDay = new Map(previousMonthRows.map(row => [row.ngay_trong_thang, row]));
-  const maxDay = Math.max(todayDay, previousMonthDays);
-  const labels = Array.from({ length: maxDay }, (_, index) => index + 1);
+  // 5. So sánh tháng này và tháng trước (tạm bỏ qua so sánh chi tiết nếu lọc chi nhánh, hoặc set rỗng để tránh lag)
+  const currentMonthEnd = db.prepare(`SELECT date('now','localtime','start of month','+1 month') AS d`).get().d;
+  const currentMonthDays = db.prepare(`SELECT CAST(strftime('%d', date(?,'-1 day')) AS INTEGER) AS d`).get(currentMonthEnd).d;
+  const maxDay = Math.max(currentMonthDays, previousMonthDays);
 
   const monthComparison = {
     current_month: currentMonthStart.slice(0, 7),
     previous_month: previousMonthStart.slice(0, 7),
-    labels,
-    current: labels.map(day => ({
-      ngay_trong_thang: day,
-      tong_tien: day <= todayDay ? (currentByDay.get(day)?.tong_tien || 0) : null,
-      tong_don: day <= todayDay ? (currentByDay.get(day)?.tong_don || 0) : null,
-      tien_goi_tap: day <= todayDay ? (currentByDay.get(day)?.tien_goi_tap || 0) : null,
-      tien_goi_pt: day <= todayDay ? (currentByDay.get(day)?.tien_goi_pt || 0) : null,
-    })),
-    previous: labels.map(day => ({
-      ngay_trong_thang: day,
-      tong_tien: previousByDay.get(day)?.tong_tien || 0,
-      tong_don: previousByDay.get(day)?.tong_don || 0,
-      tien_goi_tap: previousByDay.get(day)?.tien_goi_tap || 0,
-      tien_goi_pt: previousByDay.get(day)?.tien_goi_pt || 0,
-    })),
+    labels: Array.from({ length: maxDay }, (_, index) => index + 1),
+    current: [],
+    previous: [],
+    summary: { current_total: 0, previous_total: 0, current_orders: 0, previous_orders: 0 }
   };
 
-  monthComparison.summary = {
-    current_total: currentMonthRows.reduce((sum, row) => sum + (row.tong_tien || 0), 0),
-    previous_total: previousMonthRows.reduce((sum, row) => sum + (row.tong_tien || 0), 0),
-    current_orders: currentMonthRows.reduce((sum, row) => sum + (row.tong_don || 0), 0),
-    previous_orders: previousMonthRows.reduce((sum, row) => sum + (row.tong_don || 0), 0),
-  };
-
-  // Lấy các giao dịch chi tiết trong khoảng thời gian lọc
+  // 6. Lấy các giao dịch chi tiết trong khoảng thời gian lọc
   const goiTapTransactions = db.prepare(`
     SELECT dk.id, dk.ngay_tao AS thoi_gian, 'goi_tap' AS loai,
            gt.ten_goi AS san_pham, h.ho_ten AS khach_hang, dk.gia_thuc_te, dk.phuong_thuc_tt, dk.trang_thai,
@@ -139,9 +163,9 @@ export const getRevenue = (req, res) => {
     JOIN goi_tap gt ON gt.id = dk.goi_tap_id
     JOIN ho_so h ON h.id = dk.ho_so_id
     WHERE COALESCE(date(dk.ngay_thanh_toan), date(dk.ngay_tao)) >= date('now','localtime','-' || ? || ' days')
-      AND dk.trang_thai IN ('dang_hoat_dong', 'het_han', 'huy', 'tam_dung', 'cho_kich_hoat')
+      AND dk.trang_thai IN ('dang_hoat_dong', 'het_han', 'huy', 'tam_dung', 'cho_kich_hoat')${branchFilterTap}
     ORDER BY dk.ngay_tao DESC
-  `).all(daysInt);
+  `).all(...paramsTap);
 
   const goiPTTransactions = db.prepare(`
     SELECT dp.id, dp.ngay_tao AS thoi_gian, 'goi_pt' AS loai,
@@ -151,9 +175,9 @@ export const getRevenue = (req, res) => {
     JOIN goi_pt gp ON gp.id = dp.goi_pt_id
     JOIN ho_so h ON h.id = dp.hoi_vien_id
     WHERE COALESCE(date(dp.ngay_thanh_toan), date(dp.ngay_tao)) >= date('now','localtime','-' || ? || ' days')
-      AND dp.trang_thai IN ('dang_hoat_dong', 'hoan_thanh', 'cho_kich_hoat', 'huy')
+      AND dp.trang_thai IN ('dang_hoat_dong', 'hoan_thanh', 'cho_kich_hoat', 'huy')${branchFilterPt}
     ORDER BY dp.ngay_tao DESC
-  `).all(daysInt);
+  `).all(...paramsPt);
 
   const transactions = [...goiTapTransactions, ...goiPTTransactions].sort((a, b) => b.thoi_gian.localeCompare(a.thoi_gian));
 
@@ -282,7 +306,36 @@ export const getRevenueYesterday = (req, res) => {
 // ── GET /api/revenue/dashboard ────────────────────────────
 // Tổng quan dashboard (số liệu tổng hợp nhanh)
 export const getDashboard = (req, res) => {
+  const { chi_nhanh } = req.query;
   const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
+
+  let memberFilter = ' WHERE is_deleted = 0';
+  let branchFilterCheckin = '';
+  let branchFilterCheckinLv = '';
+  let branchFilterLichTap = '';
+  let branchFilterHoSo = ' WHERE loai_ho_so = \'pt\' AND is_deleted = 0';
+  let branchFilterHoSoMember = '';
+  let branchFilterGoiTap = '';
+  
+  const paramsMember = [];
+  const paramsCheckin = [today];
+  const paramsLichTap = [today];
+  const paramsPt = [];
+
+  if (chi_nhanh) {
+    memberFilter = ' WHERE is_deleted = 0 AND chi_nhanh = ?';
+    branchFilterCheckin = ' AND chi_nhanh_thuc_hien = ?';
+    branchFilterCheckinLv = ' AND lv.chi_nhanh_thuc_hien = ?';
+    branchFilterLichTap = ' AND chi_nhanh_tap = ?';
+    branchFilterHoSo = ' WHERE loai_ho_so = \'pt\' AND is_deleted = 0 AND chi_nhanh = ?';
+    branchFilterHoSoMember = ' AND chi_nhanh = ?';
+    branchFilterGoiTap = ' AND chi_nhanh_dang_ky = ?';
+    
+    paramsMember.push(chi_nhanh);
+    paramsCheckin.push(chi_nhanh);
+    paramsLichTap.push(chi_nhanh);
+    paramsPt.push(chi_nhanh);
+  }
 
   const stats = {
     // Tổng số hội viên (theo trạng thái)
@@ -294,36 +347,51 @@ export const getDashboard = (req, res) => {
         SUM(CASE WHEN trang_thai_mau = 'het_han' THEN 1 ELSE 0 END) AS het_han,
         SUM(CASE WHEN trang_thai_mau = 'chua_dang_ky' THEN 1 ELSE 0 END) AS chua_dang_ky
       FROM v_trang_thai_hoi_vien
-    `).get(),
+      ${chi_nhanh ? 'WHERE chi_nhanh = ?' : ''}
+    `).get(...(chi_nhanh ? [chi_nhanh] : [])),
 
     // Tổng số PT
-    tong_pt: db.prepare(`SELECT COUNT(*) AS tong FROM ho_so WHERE loai_ho_so = 'pt' AND is_deleted = 0`).get().tong,
+    tong_pt: db.prepare(`SELECT COUNT(*) AS tong FROM ho_so ${branchFilterHoSo}`).get(...paramsPt).tong,
 
     // Doanh thu hôm nay
-    doanh_thu_hom_nay: db.prepare('SELECT tong_tien, tong_don FROM doanh_thu WHERE ngay = ?').get(today) || { tong_tien: 0, tong_don: 0 },
+    doanh_thu_hom_nay: chi_nhanh ? {
+      tong_tien: (db.prepare("SELECT SUM(so_tien_da_thu) as s FROM dang_ky_goi_tap dk WHERE COALESCE(date(ngay_thanh_toan), date(ngay_tao)) = ? AND trang_thai != 'huy' AND chi_nhanh_dang_ky = ?").get(today, chi_nhanh).s || 0) +
+                 (db.prepare("SELECT SUM(gia_thuc_te) as s FROM dang_ky_pt dp WHERE COALESCE(date(ngay_thanh_toan), date(ngay_tao)) = ? AND trang_thai != 'huy' AND chi_nhanh_dang_ky = ?").get(today, chi_nhanh).s || 0),
+      tong_don: (db.prepare("SELECT COUNT(id) as c FROM dang_ky_goi_tap dk WHERE COALESCE(date(ngay_thanh_toan), date(ngay_tao)) = ? AND trang_thai != 'huy' AND chi_nhanh_dang_ky = ?").get(today, chi_nhanh).c || 0) +
+                (db.prepare("SELECT COUNT(id) as c FROM dang_ky_pt dp WHERE COALESCE(date(ngay_thanh_toan), date(ngay_tao)) = ? AND trang_thai != 'huy' AND chi_nhanh_dang_ky = ?").get(today, chi_nhanh).c || 0)
+    } : (db.prepare('SELECT tong_tien, tong_don FROM doanh_thu WHERE ngay = ?').get(today) || { tong_tien: 0, tong_don: 0 }),
 
     // Lượt vào ra hôm nay
     luot_vao_ra_hom_nay: db.prepare(`
       SELECT COUNT(*) AS tong_luot,
              COALESCE(SUM(CASE WHEN loai = 'vao' THEN 1 ELSE 0 END), 0) AS luot_vao
-      FROM luot_vao_ra WHERE date(thoi_diem) = ?
-    `).get(today),
+      FROM luot_vao_ra WHERE date(thoi_diem) = ?${branchFilterCheckin}
+    `).get(...paramsCheckin),
 
     // Lịch tập hôm nay
     lich_tap_hom_nay: db.prepare(`
       SELECT COUNT(*) AS tong,
              COALESCE(SUM(CASE WHEN trang_thai = 'cho_tap' THEN 1 ELSE 0 END), 0) AS cho_tap,
              COALESCE(SUM(CASE WHEN trang_thai = 'da_tap' THEN 1 ELSE 0 END), 0) AS da_tap
-      FROM lich_tap WHERE ngay_tap = ? AND trang_thai NOT IN ('da_huy', 'hoan_tac')
-    `).get(today),
+      FROM lich_tap WHERE ngay_tap = ? AND trang_thai NOT IN ('da_huy', 'hoan_tac')${branchFilterLichTap}
+    `).get(...paramsLichTap),
   };
 
   const yesterday = db.prepare(`SELECT date('now','localtime','-1 days') as d`).get().d;
   const startOfMonth = today.substring(0, 8) + '01';
 
-  const yesterdayLuotVao = db.prepare(`SELECT COUNT(*) as c FROM luot_vao_ra WHERE date(thoi_diem) = ? AND loai = 'vao'`).get(yesterday).c;
-  const yesterdayDoanhThu = db.prepare(`SELECT tong_tien FROM doanh_thu WHERE ngay = ?`).get(yesterday)?.tong_tien || 0;
-  const newMembersThisMonth = db.prepare(`SELECT COUNT(*) as c FROM ho_so WHERE date(ngay_tao) >= ? AND loai_ho_so = 'hoi_vien' AND is_deleted = 0`).get(startOfMonth).c;
+  const yesterdayLuotVao = db.prepare(`
+    SELECT COUNT(*) as c FROM luot_vao_ra
+    WHERE date(thoi_diem) = ? AND loai = 'vao'${branchFilterCheckin}
+  `).get(...(chi_nhanh ? [yesterday, chi_nhanh] : [yesterday])).c;
+  const yesterdayDoanhThu = chi_nhanh
+    ? ((db.prepare("SELECT SUM(so_tien_da_thu) as s FROM dang_ky_goi_tap WHERE COALESCE(date(ngay_thanh_toan), date(ngay_tao)) = ? AND trang_thai != 'huy' AND chi_nhanh_dang_ky = ?").get(yesterday, chi_nhanh).s || 0) +
+       (db.prepare("SELECT SUM(gia_thuc_te) as s FROM dang_ky_pt WHERE COALESCE(date(ngay_thanh_toan), date(ngay_tao)) = ? AND trang_thai != 'huy' AND chi_nhanh_dang_ky = ?").get(yesterday, chi_nhanh).s || 0))
+    : (db.prepare(`SELECT tong_tien FROM doanh_thu WHERE ngay = ?`).get(yesterday)?.tong_tien || 0);
+  const newMembersThisMonth = db.prepare(`
+    SELECT COUNT(*) as c FROM ho_so
+    WHERE date(ngay_tao) >= ? AND loai_ho_so = 'hoi_vien' AND is_deleted = 0${branchFilterHoSoMember}
+  `).get(...(chi_nhanh ? [startOfMonth, chi_nhanh] : [startOfMonth])).c;
 
   const calcPercent = (curr, prev) => prev === 0 ? (curr > 0 ? 100 : 0) : ((curr - prev) / prev * 100);
 
@@ -334,15 +402,18 @@ export const getDashboard = (req, res) => {
     sap_het_han: ((stats.hoi_vien.sap_het_han / (stats.hoi_vien.tong || 1)) * 100).toFixed(2)
   };
 
-  stats.doanh_thu_thang = db.prepare(`
-    SELECT SUM(tong_tien) AS sum FROM doanh_thu 
-    WHERE ngay >= ? AND ngay <= ?
-  `).get(startOfMonth, today).sum || 0;
+  stats.doanh_thu_thang = chi_nhanh
+    ? ((db.prepare("SELECT SUM(so_tien_da_thu) as s FROM dang_ky_goi_tap WHERE COALESCE(date(ngay_thanh_toan), date(ngay_tao)) >= ? AND COALESCE(date(ngay_thanh_toan), date(ngay_tao)) <= ? AND trang_thai != 'huy' AND chi_nhanh_dang_ky = ?").get(startOfMonth, today, chi_nhanh).s || 0) +
+       (db.prepare("SELECT SUM(gia_thuc_te) as s FROM dang_ky_pt WHERE COALESCE(date(ngay_thanh_toan), date(ngay_tao)) >= ? AND COALESCE(date(ngay_thanh_toan), date(ngay_tao)) <= ? AND trang_thai != 'huy' AND chi_nhanh_dang_ky = ?").get(startOfMonth, today, chi_nhanh).s || 0))
+    : (db.prepare(`
+        SELECT SUM(tong_tien) AS sum FROM doanh_thu
+        WHERE ngay >= ? AND ngay <= ?
+      `).get(startOfMonth, today).sum || 0);
 
   stats.so_goi_ban_thang = db.prepare(`
     SELECT COUNT(*) AS c FROM dang_ky_goi_tap 
-    WHERE date(ngay_tao) >= ? AND trang_thai != 'huy'
-  `).get(startOfMonth).c;
+    WHERE date(ngay_tao) >= ? AND trang_thai != 'huy'${branchFilterGoiTap}
+  `).get(...(chi_nhanh ? [startOfMonth, chi_nhanh] : [startOfMonth])).c;
 
   stats.yeu_cau_cho_duyet = db.prepare(`
     SELECT COUNT(*) AS c FROM dang_ky_goi_tap 
@@ -353,18 +424,18 @@ export const getDashboard = (req, res) => {
 
   stats.check_in_tuan_nay = db.prepare(`
     SELECT COUNT(*) AS c FROM luot_vao_ra 
-    WHERE date(thoi_diem) >= date('now', 'localtime', '-6 days') AND loai = 'vao'
-  `).get().c;
+    WHERE date(thoi_diem) >= date('now', 'localtime', '-6 days') AND loai = 'vao'${branchFilterCheckin}
+  `).get(...(chi_nhanh ? [chi_nhanh] : [])).c;
 
   stats.tong_nhan_vien = db.prepare(`
     SELECT COUNT(*) AS c FROM ho_so 
-    WHERE loai_ho_so = 'nhan_vien' AND is_deleted = 0
-  `).get().c;
+    WHERE loai_ho_so = 'nhan_vien' AND is_deleted = 0${branchFilterHoSoMember}
+  `).get(...(chi_nhanh ? [chi_nhanh] : [])).c;
 
   stats.tong_goi_tap = db.prepare(`
     SELECT COUNT(*) AS c FROM dang_ky_goi_tap 
-    WHERE trang_thai = 'dang_hoat_dong'
-  `).get().c;
+    WHERE trang_thai = 'dang_hoat_dong'${branchFilterGoiTap}
+  `).get(...(chi_nhanh ? [chi_nhanh] : [])).c;
 
   stats.recent_checkins = db.prepare(`
     SELECT lv.id, lv.thoi_diem, lv.loai,
@@ -372,29 +443,29 @@ export const getDashboard = (req, res) => {
            strftime('%H:%M', lv.thoi_diem) AS gio_hien_thi
     FROM luot_vao_ra lv
     LEFT JOIN ho_so h ON h.id = lv.ho_so_id
-    WHERE date(lv.thoi_diem) = ? AND lv.loai = 'vao'
+    WHERE date(lv.thoi_diem) = ? AND lv.loai = 'vao'${branchFilterCheckinLv}
     ORDER BY lv.thoi_diem DESC
     LIMIT 8
-  `).all(today);
+  `).all(...(chi_nhanh ? [today, chi_nhanh] : [today]));
 
   const currentMonthStart = today.substring(0, 8) + '01';
   stats.top_hoi_vien = db.prepare(`
     SELECT h.id, h.ma_ho_so, h.ho_ten, h.avatar_url, COUNT(lv.id) as so_buoi_tap
     FROM luot_vao_ra lv
     JOIN ho_so h ON h.id = lv.ho_so_id
-    WHERE lv.loai = 'vao' AND date(lv.thoi_diem) >= ?
+    WHERE lv.loai = 'vao' AND date(lv.thoi_diem) >= ?${branchFilterCheckinLv}
     GROUP BY h.id
     ORDER BY so_buoi_tap DESC
     LIMIT 5
-  `).all(currentMonthStart);
+  `).all(...(chi_nhanh ? [currentMonthStart, chi_nhanh] : [currentMonthStart]));
 
   stats.peak_hours = db.prepare(`
     SELECT strftime('%H', thoi_diem) AS gio, COUNT(*) AS so_luot
     FROM luot_vao_ra
-    WHERE loai = 'vao' AND date(thoi_diem) >= date('now','localtime','-30 days')
+    WHERE loai = 'vao' AND date(thoi_diem) >= date('now','localtime','-30 days')${branchFilterCheckin}
     GROUP BY gio
     ORDER BY gio ASC
-  `).all();
+  `).all(...(chi_nhanh ? [chi_nhanh] : []));
 
   return success(res, stats);
 };

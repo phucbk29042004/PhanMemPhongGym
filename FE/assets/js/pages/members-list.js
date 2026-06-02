@@ -3818,6 +3818,12 @@ window.GymApp.pages['members-list'] = {
         </div>
         <div class="overflow-y-auto flex-1 px-loose py-standard flex flex-col gap-standard">
           <div class="border-b border-outline-variant/60 pb-standard">
+            <div class="flex items-center gap-xs mb-compact"><span class="material-symbols-outlined text-brand-primary text-base">store</span><h4 class="text-on-surface font-bold text-body-sm uppercase tracking-wider">Chi nhánh đăng ký</h4></div>
+            <div class="grid grid-cols-2 gap-xs bg-surface-container-lowest p-compact rounded-xl border border-outline-variant/40 max-h-40 overflow-y-auto">
+              ${radioGroup('f-branch', [['', 'Tất cả chi nhánh'], ...[...new Set(window.GymApp.data.members.map(m => m.chi_nhanh).filter(Boolean))].map(b => [b, b])], self._filterState.chi_nhanh)}
+            </div>
+          </div>
+          <div class="border-b border-outline-variant/60 pb-standard">
             <div class="flex items-center gap-xs mb-compact"><span class="material-symbols-outlined text-brand-primary text-base">donut_large</span><h4 class="text-on-surface font-bold text-body-sm uppercase tracking-wider">Trạng thái hội viên</h4></div>
             <div class="grid grid-cols-2 gap-xs bg-surface-container-lowest p-compact rounded-xl border border-outline-variant/40">
               ${radioGroup('f-status', [['', 'Tất cả'], ['con_han', 'Còn hạn'], ['sap_het_han', 'Sắp hết hạn'], ['het_han', 'Đã hết hạn'], ['chua_dang_ky', 'Chưa đăng ký']], self._filterState.status)}
@@ -3867,6 +3873,7 @@ window.GymApp.pages['members-list'] = {
       self._filterState.gender = overlay.querySelector('input[name="f-gender"]:checked')?.value || '';
       self._filterState.hasPt = overlay.querySelector('input[name="f-hasPt"]:checked')?.value || '';
       self._filterState.checkinToday = overlay.querySelector('input[name="f-checkinToday"]:checked')?.value || '';
+      self._filterState.chi_nhanh = overlay.querySelector('input[name="f-branch"]:checked')?.value || '';
       self._memberPage = 1; self._applyMemberFilter(); close();
     });
   },
@@ -3924,7 +3931,8 @@ window.GymApp.pages['members-list'] = {
   // ===== UI HELPERS =====
   _updateFilterUI: function () {
     const count = (this._filterState.status ? 1 : 0) + (this._filterState.pkg ? 1 : 0) +
-      (this._filterState.gender ? 1 : 0) + (this._filterState.hasPt ? 1 : 0) + (this._filterState.checkinToday ? 1 : 0);
+      (this._filterState.gender ? 1 : 0) + (this._filterState.hasPt ? 1 : 0) + 
+      (this._filterState.checkinToday ? 1 : 0) + (this._filterState.chi_nhanh ? 1 : 0);
     const badge = document.getElementById('filter-badge');
     const showAll = document.getElementById('btn-show-all');
     if (badge) { badge.textContent = count; badge.style.display = count > 0 ? 'flex' : 'none'; }
@@ -4791,7 +4799,7 @@ window.GymApp.pages['members-list'] = {
     document.getElementById('pt-search')?.addEventListener('input', () => self._applyPtFilter());
 
     document.getElementById('btn-view-all-members')?.addEventListener('click', () => {
-      self._filterState = { status: '', pkg: '', gender: '', hasPt: '', checkinToday: '' };
+      self._filterState = { status: '', pkg: '', gender: '', hasPt: '', checkinToday: '', chi_nhanh: '' };
       const s = document.getElementById('member-search'); if (s) s.value = '';
       self._memberPage = 1;
       self._fetchMembersData(1, false);
@@ -4800,7 +4808,7 @@ window.GymApp.pages['members-list'] = {
     });
 
     document.getElementById('btn-show-all')?.addEventListener('click', () => {
-      self._filterState = { status: '', pkg: '', gender: '', hasPt: '', checkinToday: '' };
+      self._filterState = { status: '', pkg: '', gender: '', hasPt: '', checkinToday: '', chi_nhanh: '' };
       self._memberSortState = ''; // Reset sort
       const s = document.getElementById('member-search'); if (s) s.value = '';
       self._memberPage = 1;

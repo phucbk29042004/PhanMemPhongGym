@@ -8,11 +8,38 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
-**✅ Sửa lỗi hiển thị yêu cầu PayOS chưa thanh toán ở hàng chờ duyệt** — Loại bỏ các yêu cầu thanh toán chuyển khoản PayOS đang ở trạng thái PENDING (chờ thanh toán) khỏi danh sách chờ duyệt thủ công và thống kê Dashboard, chỉ hiển thị các yêu cầu thanh toán bằng tiền mặt cần lễ tân xác nhận thực tế.
+**✅ Hoàn tất Quản lý Đa Chi Nhánh & Tích hợp Modal Chọn Chi Nhánh Đăng nhập** — Sửa sạch lỗi merge conflict database, cập nhật tự động view trạng thái hội viên, và thiết kế thêm Modal chọn chi nhánh cho Admin/Quản lý ngay sau khi đăng nhập Web.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
+
+### [02/06/2026 14:53] — Khắc phục lỗi kẹt màn hình loading vô hạn khi khởi động Web
+- **Loại**: Sửa bug (Frontend Web)
+- **File**: `FE/index.html`, `FE/assets/js/app.js`
+- **Mô tả**:
+  - **Khắc phục xung đột CSS**: Loại bỏ hoàn toàn lớp `hidden` của Tailwind CSS khỏi `#modal-select-branch-startup` trong `index.html` và thay thế bằng `style="display: none;"`. Điều này ngăn chặn việc lớp `hidden` (với thuộc tính `!important` từ Tailwind CDN) chặn đứng hiển thị của modal.
+  - **Tối ưu hóa mã JavaScript**: Chỉnh sửa hàm `_showStartupBranchModal()` trong `app.js` để chỉ điều khiển hiển thị modal trực tiếp bằng `style.display = 'flex'` và ẩn bằng `style.display = 'none'`, gỡ bỏ các thao tác thừa với `classList.remove('hidden')` / `classList.add('hidden')`.
+  - **Khắc phục lỗi kẹt luồng (Await block)**: Đảm bảo Modal chọn chi nhánh hiển thị bình thường khi người dùng là quản trị viên/lễ tân đăng nhập lần đầu, cho phép nhấp chọn chi nhánh để tiếp tục chạy các tiến trình API và chuyển hướng về trang Dashboard.
+- **Kết quả**: Thành công.
+
+### [02/06/2026 14:41] — Sửa lỗi Database và Tích hợp Modal Chọn Chi Nhánh khi Đăng nhập
+- **Loại**: Sửa bug & Thêm tính năng mới (Fullstack)
+- **File**: `BE/src/config/db.js`, `FE/index.html`, `FE/assets/js/app.js`, `FE/assets/js/pages/dashboard.js`, `FE/assets/js/pages/revenue.js`
+- **Mô tả**:
+  - **Sửa lỗi Database**: Sửa lỗi xung đột merge conflict cú pháp SQLite trong `db.js`. Tích hợp kiểm tra tự động rebuild view `v_trang_thai_hoi_vien` nếu thiếu cột `chi_nhanh` lúc khởi chạy backend.
+  - **Giao diện Modal Chọn Chi Nhánh**: Thiết kế HTML/CSS Modal chọn chi nhánh dạng Glassmorphism hiển thị chặn màn hình khi Admin đăng nhập vào trang chủ mà chưa chọn chi nhánh quản lý.
+  - **Logic Đồng bộ phiên**: Tải các chi nhánh động từ `branches.json`. Lưu chi nhánh được chọn vào `sessionStorage` để đồng bộ lọc thông tin cho Dashboard và Doanh thu. Tự động áp dụng chi nhánh cố định cho tài khoản nhân viên cơ sở.
+- **Kết quả**: Thành công.
+
+### [02/06/2026 14:32] — Quản lý Đa Chi Nhánh đồng bộ Web & Mobile và sửa lỗi API Backend
+- **Loại**: Cải tiến tính năng & Sửa bug (Fullstack)
+- **File**: `BE/src/controllers/revenue.controller.js`, `FE/assets/js/pages/dashboard.js`, `FE/assets/js/pages/revenue.js`, `MobileApp/src/screens/admin/AdminDashboardScreen.js`, `MobileApp/src/screens/admin/AdminRevenueScreen.js`
+- **Mô tả**:
+  - **Sửa lỗi Backend**: Khắc phục lỗi `maxDay is not defined` ở API `getRevenue` của backend bằng cách tính và định nghĩa đúng số ngày lớn nhất của tháng hiện tại và tháng trước trước khi dựng mảng so sánh `monthComparison`.
+  - **Lọc chi nhánh Web**: Bổ sung dropdown lọc chi nhánh nạp từ `branches.json` ở giao diện chính Dashboard (`dashboard.js`) và Báo cáo Doanh thu (`revenue.js`), gửi tham số `chi_nhanh` tương ứng lên API Backend.
+  - **Lọc chi nhánh Mobile**: Tải danh sách chi nhánh và bổ sung thanh cuộn ngang chọn chi nhánh ở đầu màn hình Admin Dashboard (`AdminDashboardScreen.js`) và Admin Revenue (`AdminRevenueScreen.js`), lọc dữ liệu thống kê doanh thu và check-in thời gian thực theo cơ sở.
+- **Kết quả**: Thành công.
 
 ### [02/06/2026 13:50] — Thiết kế lại Logo Paradise GYM và Tối ưu hóa bộ chọn giờ đặt lịch PT
 - **Loại**: Cải tiến giao diện UI/UX & logic ứng dụng (Fullstack)

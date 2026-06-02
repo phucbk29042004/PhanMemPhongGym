@@ -207,30 +207,38 @@ export default function AdminDashboardScreen({ navigation }) {
 
   const PAGE_SIZE = 10;
 
+  const [selectedBranch, setSelectedBranch] = useState('');
+  const [branches, setBranches] = useState([]);
+
   const fetchData = useCallback(async () => {
     try {
-      const [dashRes, todayRes, notifsRes, unreadRes] = await Promise.all([
-        api.get('/revenue/dashboard'),
-        api.get('/revenue/today'),
+      const q = selectedBranch ? `?chi_nhanh=${encodeURIComponent(selectedBranch)}` : '';
+      const revQ = selectedBranch ? `&chi_nhanh=${encodeURIComponent(selectedBranch)}` : '';
+      const [dashRes, todayRes, notifsRes, unreadRes, branchesRes] = await Promise.all([
+        api.get(`/revenue/dashboard${q}`),
+        api.get(`/revenue/today${q}`),
         api.get('/notifications'),
         api.get('/notifications/unread-count'),
+        api.get('/branches'),
       ]);
       if (dashRes.data?.success) setDash(dashRes.data.data);
       if (todayRes.data?.success) setTodayRevenue(todayRes.data.data);
       if (notifsRes.data?.success) setNotifications(notifsRes.data.data || []);
       if (unreadRes.data?.success) setUnreadCount(unreadRes.data.data?.count || 0);
+      if (branchesRes.data?.success) setBranches(branchesRes.data.data || []);
     } catch (err) {
       console.error('[AdminDashboard] fetch error:', err?.message);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [selectedBranch]);
 
   const fetchCheckinsToday = async () => {
     setCheckinsLoading(true);
     try {
-      const res = await api.get('/checkins?limit=100');
+      const q = selectedBranch ? `&chi_nhanh=${encodeURIComponent(selectedBranch)}` : '';
+      const res = await api.get(`/checkins?limit=100${q}`);
       if (res.data?.success) {
         setTodayCheckins(res.data.data || []);
       }
@@ -369,6 +377,40 @@ export default function AdminDashboardScreen({ navigation }) {
             </Text>
           </View>
         </View>
+      </View>
+
+      {/* ── Bộ lọc chi nhánh (ScrollView ngang) ── */}
+      <View style={{ backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: 8 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
+          <TouchableOpacity
+            style={[
+              { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, borderOpacity: 0.8 },
+              { backgroundColor: selectedBranch === '' ? colors.primary : colors.surfaceVariant }
+            ]}
+            onPress={() => setSelectedBranch('')}
+          >
+            <Text style={{ fontSize: 12, fontWeight: '700', color: selectedBranch === '' ? '#fff' : colors.textSecondary }}>
+              Tất cả chi nhánh
+            </Text>
+          </TouchableOpacity>
+          {branches.map((b) => {
+            const isSelected = selectedBranch === b.ten;
+            return (
+              <TouchableOpacity
+                key={b.id || b.ten}
+                style={[
+                  { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16 },
+                  { backgroundColor: isSelected ? colors.primary : colors.surfaceVariant }
+                ]}
+                onPress={() => setSelectedBranch(b.ten)}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '700', color: isSelected ? '#fff' : colors.textSecondary }}>
+                  {b.ten}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
 
       <ScrollView
