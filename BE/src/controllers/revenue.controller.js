@@ -72,6 +72,16 @@ export const getRevenue = (req, res) => {
     ORDER BY so_dang_ky DESC
   `).all(daysInt);
 
+  // Thống kê theo gói PT
+  const ptPackageStats = db.prepare(`
+    SELECT gp.ten_goi, COUNT(dp.id) AS so_dang_ky, SUM(dp.gia_thuc_te) AS tong_tien
+    FROM dang_ky_pt dp
+    JOIN goi_pt gp ON gp.id = dp.goi_pt_id
+    WHERE dp.ngay_tao >= date('now','localtime','-' || ? || ' days')
+    GROUP BY gp.id, gp.ten_goi
+    ORDER BY so_dang_ky DESC
+  `).all(daysInt);
+
   const currentMonthRows = db.prepare(`
     SELECT CAST(strftime('%d', ngay) AS INTEGER) AS ngay_trong_thang,
            tong_tien, tong_don, tien_goi_tap, tien_goi_pt
@@ -147,7 +157,7 @@ export const getRevenue = (req, res) => {
 
   const transactions = [...goiTapTransactions, ...goiPTTransactions].sort((a, b) => b.thoi_gian.localeCompare(a.thoi_gian));
 
-  return success(res, { daily, summary, packageStats, monthComparison, transactions });
+  return success(res, { daily, summary, packageStats, ptPackageStats, monthComparison, transactions });
 };
 
 // ── GET /api/revenue/today ────────────────────────────────
@@ -377,6 +387,14 @@ export const getDashboard = (req, res) => {
     ORDER BY so_buoi_tap DESC
     LIMIT 5
   `).all(currentMonthStart);
+
+  stats.peak_hours = db.prepare(`
+    SELECT strftime('%H', thoi_diem) AS gio, COUNT(*) AS so_luot
+    FROM luot_vao_ra
+    WHERE loai = 'vao' AND date(thoi_diem) >= date('now','localtime','-30 days')
+    GROUP BY gio
+    ORDER BY gio ASC
+  `).all();
 
   return success(res, stats);
 };

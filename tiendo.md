@@ -14,6 +14,84 @@
 
 ## 📋 Danh Sách Thay Đổi
 
+### [01/06/2026 17:09] — Sửa đổi định dạng payload Gemini (snake_case) & Thay đổi model Groq fallback
+- **Loại**: Sửa bug (Backend)
+- **File**: `BE/src/controllers/assistant.controller.js`
+- **Mô tả**:
+  - Đổi các trường payload Gemini REST API v1 về định dạng `snake_case` (`system_instruction`, `generation_config`, `tools`, `function_declarations`) theo đúng đặc tả API chính thức thay vì camelCase.
+  - Thay đổi Groq fallback model cũ (`mixtral-8x7b-32768`) đã bị ngừng hoạt động thành `llama-3.1-8b-instant` để tránh lỗi 400 từ Groq.
+- **Kết quả**: Thành công.
+
+### [01/06/2026 17:08] — Cập nhật phiên bản API Gemini sang v1
+- **Loại**: Sửa bug (Backend)
+- **File**: `BE/src/controllers/assistant.controller.js`
+- **Mô tả**: Sửa lỗi 404 NOT_FOUND của Gemini bằng cách đổi endpoint từ `/v1beta/` sang `/v1/` để gọi model `gemini-1.5-flash` chính thức.
+- **Kết quả**: Thành công.
+
+### [01/06/2026 17:07] — Sửa lỗi 502 Bad Gateway và chuẩn hóa payload API Gemini
+- **Loại**: Sửa bug (Backend)
+- **File**: `BE/src/controllers/assistant.controller.js`
+- **Mô tả**:
+  - Khắc phục lỗi 502 Bad Gateway do payload gửi tới Gemini bị từ chối (400 Bad Request) làm tất cả các model đều bị sập.
+  - Chuẩn hóa các trường snake_case thành camelCase cho API Gemini: `systemInstruction`, `generationConfig`, `functionDeclarations`.
+  - Viết hàm `toGeminiSchema()` tự động convert kiểu dữ liệu của OpenAPI parameters thành chữ hoa (`OBJECT`, `STRING`) theo đúng đặc tả của Gemini.
+  - Thay đổi `role` từ `'user'` thành `'function'` khi gửi kết quả thực thi tool (SQL SELECT) về cho Gemini.
+  - Cải tiến log lỗi ghi rõ exception stack trace giúp dev dễ debug lỗi API Key từ Groq hoặc Gemini.
+- **Kết quả**: Thành công — chatbot tự động fallback trơn tru sang Gemini khi Groq gặp sự cố.
+
+### [01/06/2026 16:56] — Tích hợp Gemini API làm fallback cho AI Chatbot
+- **Loại**: Tính năng mới (Backend)
+- **File**: `BE/.env`, `BE/src/controllers/assistant.controller.js`
+- **Mô tả**:
+  - Thêm `GEMINI_API_KEY` vào file `.env`
+  - Thêm hàm `callGeminiWithTools()` gọi Gemini 1.5 Flash API với function calling (format khác hoàn toàn với Groq/OpenAI — dùng `generateContent`, `functionCall`/`functionResponse`)
+  - Triển khai **3 tầng fallback** cho AI:
+    1. **Groq với tool calling** (llama-3.3-70b-versatile, llama-3.1-8b-instant, llama3-8b-8192)
+    2. **Groq không tool** (mixtral-8x7b-32768) — khi tool models thất bại
+    3. **Gemini 1.5 Flash** — khi tất cả Groq thất bại/hết quota
+  - Gemini fallback cũng hỗ trợ đầy đủ function calling (SQL tool) giống Groq
+  - Thông báo lỗi cuối được cải thiện thành "Dịch vụ AI tạm thời không khả dụng" thay vì chỉ đề cập Groq
+- **Kết quả**: Thành công — AI sẽ tự động luân phiên giữa Groq và Gemini
+
+
+- **Loại**: Tính năng mới (Backend)
+- **File**: `BE/src/controllers/assistant.controller.js`
+- **Mô tả**:
+  - Viết lại hoàn toàn `assistant.controller.js` để tích hợp **Groq Function Calling**.
+  - Định nghĩa tool `run_readonly_sql_query` cho phép AI tự động viết và thực thi câu lệnh `SELECT` để trả lời câu hỏi về dữ liệu lịch sử (doanh thu, check-in, lịch tập, hội viên...).
+  - Cung cấp toàn bộ **DB Schema** trong mô tả tool để AI hiểu cấu trúc bảng.
+  - Triển khai **bảo mật nhiều lớp**:
+    - Chỉ cho phép câu lệnh bắt đầu bằng `SELECT`
+    - Chặn từ khóa nguy hiểm (INSERT, UPDATE, DELETE, DROP, ALTER...)
+    - Hội viên và PT chỉ truy vấn được dữ liệu cá nhân của mình (lọc theo `id`)
+    - Bảng `tai_khoan` (chứa password hash) chỉ Admin/Lễ tân mới truy vấn được
+    - Tự động thêm `LIMIT 200` nếu query chưa có LIMIT
+  - Triển khai **conversation loop 3 bước**: gửi message → AI gọi tool → thực thi SQL → AI tổng hợp trả lời
+  - Giữ nguyên cơ chế fallback models (danh sách models ưu tiên tool calling, sau đó fallback không tool)
+- **Kết quả**: Thành công — AI có thể trả lời câu hỏi về mọi dữ liệu lịch sử trong DB
+
+### [01/06/2026 15:19] — Tráo đổi vị trí các card Dashboard tối ưu không gian hiển thị
+- **Loại**: Cải tiến giao diện UI/UX (Frontend Web)
+- **File**: `FE/assets/js/pages/dashboard.js`
+- **Mô tả**:
+  1. **Đổi chỗ các card hàng 2 và 3**:
+     - Đưa "Hội viên chăm chỉ nhất" và "Check-in gần nhất" lên Hàng 2 (cùng hàng Peak Hours) với chiều cao vừa phải (`min-height: 250px`).
+     - Chuyển "Doanh thu gói tập" và "Doanh thu gói PT" xuống Hàng 3 (cùng hàng Hoạt động gần đây) vì các widget doanh thu chứa nhiều dữ liệu gói cần nhiều không gian hiển thị dọc hơn.
+  2. **Tăng kích thước hiển thị Doanh thu & Thay đổi bố cục**:
+     - Tăng chiều cao của Hàng 3 lên `min-height: 350px`.
+     - Thay đổi bố cục của 2 card doanh thu từ hàng ngang (biểu đồ trái, chú thích phải) thành **hàng dọc** (biểu đồ rộng 100% nằm ở trên, danh sách chú thích các gói có scrollbar nằm ở dưới). Chiều cao tối đa cuộn của phần chú thích được đặt là `130px`.
+- **Kết quả**: Thành công 100% — Giao diện 2 card doanh thu cực kỳ trực quan, tận dụng tốt chiều rộng của card để vẽ biểu đồ và có nhiều chỗ để hiển thị tên các gói tập.
+
+### [01/06/2026 14:52] — Nâng cấp Dashboard với KPI PT, doanh thu gói PT và biểu đồ giờ check-in cao điểm (Peak Hours)
+- **Loại**: Cải tiến tính năng & UI/UX (Fullstack)
+- **File**: `BE/src/controllers/revenue.controller.js`, `FE/assets/js/pages/dashboard.js`
+- **Mô tả**:
+  1. **Bổ sung KPI Card PT**: Thêm card "Buổi PT đã dạy" thể hiện số buổi PT dạy thực tế trên tổng số lịch hẹn hôm nay. Thiết kế responsive grid 5 cột thích ứng linh hoạt trên Mobile (1 cột), Tablet (3 cột), và Desktop (5 cột).
+  2. **Bổ sung Biểu đồ Doanh thu gói PT**: Thêm API thống kê và cấu hình vẽ biểu đồ cột doanh thu theo từng loại gói PT (`chart-packages-pt-bar`), sử dụng tông màu tím hài hòa để phân biệt với gói tập thường.
+  3. **Bổ sung Biểu đồ Peak Hours**: Thêm API tổng hợp dữ liệu check-in theo giờ trong 30 ngày qua và vẽ biểu đồ tần suất check-in theo giờ (`chart-peak-hours`) từ 6h - 22h để theo dõi giờ cao điểm phòng tập.
+  4. **Sửa lỗi cú pháp phát sinh**: Khắc phục lỗi thiếu đóng câu lệnh `.all(currentMonthStart)` ở query `stats.top_hoi_vien` trong `revenue.controller.js` do tác vụ gộp trước đó làm mất.
+- **Kết quả**: Thành công 100% — Giao diện Dashboard cực kỳ cao cấp, đầy đủ thông tin hữu ích và server hoạt động trơn tru.
+
 ### [01/06/2026 14:10] — Việt hóa tháng và đổi hiển thị doanh thu theo triệu đồng trên biểu đồ Dashboard
 - **Loại**: Cải tiến giao diện & UI/UX (Frontend Web)
 - **File**: `FE/assets/js/pages/dashboard.js`

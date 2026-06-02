@@ -36,6 +36,7 @@ window.GymApp.pages['dashboard'] = {
       { label: 'Check-in hôm nay', value: dbData.luot_vao_ra_hom_nay?.luot_vao || 0, percent: formatPercent(dbData.percent_changes.luot_vao), page: 'checkin' },
       { label: 'Doanh thu hôm nay', value: window.GymApp.formatCurrency(dbData.doanh_thu_hom_nay?.tong_tien || 0), percent: formatPercent(dbData.percent_changes.doanh_thu), page: 'revenue' },
       { label: 'Sắp hết hạn', value: dbData.hoi_vien?.sap_het_han || 0, percent: formatPercent(dbData.percent_changes.sap_het_han), page: 'expired' },
+      { label: 'Buổi PT đã dạy', value: `${dbData.lich_tap_hom_nay?.da_tap || 0}/${dbData.lich_tap_hom_nay?.tong || 0}`, percent: `<span class="text-on-surface-variant font-medium text-body-sm ml-2">lượt hôm nay</span>`, page: 'pt-training' },
     ];
 
     const cardClass = "bg-white dark:bg-[#1e1e1e] rounded-2xl shadow-sm border-2 border-outline-variant/50 hover:-translate-y-1 hover:shadow-md transition-all duration-300";
@@ -56,136 +57,167 @@ window.GymApp.pages['dashboard'] = {
         </div>
 
         <!-- Layout Grid -->
-        <div class="grid grid-cols-1 xl:grid-cols-4 gap-3">
-          
-          <!-- LEFT / MAIN CONTENT (Spans 3 cols) -->
-          <div class="xl:col-span-3 flex flex-col gap-3">
+        <div class="flex flex-col gap-3">
+
+          <!-- 5 Stat Cards -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            ${stats.map(c => `
+              <div data-page="${c.page}" class="bg-brand-primary/5 dark:bg-brand-primary/10 rounded-2xl p-4 hover:scale-[1.02] active:scale-98 hover:shadow-md hover:bg-brand-primary/10 transition-all duration-300 border border-brand-primary/20 cursor-pointer">
+                <p class="text-on-surface-variant text-body-sm font-bold uppercase tracking-wider mb-2">${c.label}</p>
+                <div class="flex items-baseline flex-wrap gap-x-2 gap-y-1">
+                  <h3 class="text-xl font-bold text-on-surface truncate max-w-full" title="${c.value}">${c.value}</h3>
+                  ${c.percent}
+                </div>
+              </div>
+            `).join('')}
+          </div>
             
-            <!-- 4 Stat Cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              ${stats.map(c => `
-                <div data-page="${c.page}" class="bg-brand-primary/5 dark:bg-brand-primary/10 rounded-2xl p-4 hover:scale-[1.02] active:scale-98 hover:shadow-md hover:bg-brand-primary/10 transition-all duration-300 border border-brand-primary/20 cursor-pointer">
-                  <p class="text-on-surface-variant text-body-sm font-bold uppercase tracking-wider mb-2">${c.label}</p>
-                  <div class="flex items-baseline flex-wrap gap-x-2 gap-y-1">
-                    <h3 class="text-xl font-bold text-on-surface truncate max-w-full" title="${c.value}">${c.value}</h3>
-                    ${c.percent}
-                  </div>
+          <!-- Row 1: Doanh thu 12 tháng + Tình trạng hội viên -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+            
+            <!-- Revenue Chart -->
+            <div class="lg:col-span-2 ${cardClass} p-4">
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex gap-4">
+                  <button class="font-bold text-on-surface border-b-2 border-brand-primary pb-1">Doanh thu 12 tháng</button>
                 </div>
-              `).join('')}
-            </div>
-
-            <!-- Middle Row (Revenue Chart + Top Members) -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
-              
-              <!-- Revenue Chart -->
-              <div class="lg:col-span-2 ${cardClass} p-4">
-                <div class="flex items-center justify-between mb-4">
-                  <div class="flex gap-4">
-                    <button class="font-bold text-on-surface border-b-2 border-brand-primary pb-1">Doanh thu 12 tháng</button>
-                  </div>
-                  <div class="flex gap-4 text-xs font-medium text-on-surface-variant">
-                     <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-brand-primary"></span> Thực tế</div>
-                  </div>
-                </div>
-                <div style="height: 250px; width: 100%;">
-                  <canvas id="chart-revenue"></canvas>
+                <div class="flex gap-4 text-xs font-medium text-on-surface-variant">
+                   <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-brand-primary"></span> Thực tế</div>
                 </div>
               </div>
-
-              <!-- Traffic by Website -> Top Hội viên chăm chỉ -->
-              <div class="${cardClass} p-4 flex flex-col justify-between" style="min-height: 280px;">
-                <h3 class="text-sm font-bold text-on-surface mb-4">Hội viên chăm chỉ nhất</h3>
-                <div id="dash-top-members-container" class="flex-grow flex flex-col justify-between">
-                   <p class="text-center text-on-surface-variant text-body-sm mt-10">Đang tải...</p>
-                </div>
+              <div style="height: 250px; width: 100%;">
+                <canvas id="chart-revenue"></canvas>
               </div>
             </div>
 
-            <!-- Bottom Row (Bar Chart + Doughnut) -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
-              
-              <!-- Bar Chart: Revenue by Package -->
-              <div class="${cardClass} p-4 flex flex-col">
-                <h3 class="text-sm font-bold text-on-surface mb-4">Doanh thu theo gói tập</h3>
-                <div class="flex-1 flex items-center">
-                  <div style="height: 180px; width: 50%;">
-                    <canvas id="chart-packages-bar"></canvas>
-                  </div>
-                  <div class="flex-1 flex flex-col justify-center gap-2 pl-4 text-xs">
-                    ${(function() {
-                      const packageStats = d.packageStats || [];
-                      const topPkgs = packageStats.slice(0, 5);
-                      return topPkgs.map((p, idx) => {
-                        const totalMoney = window.GymApp.formatCurrency(p.tong_tien);
-                        const colors = ['bg-[#1D9336]', 'bg-[#34d399]', 'bg-[#60a5fa]', 'bg-[#f59e0b]', 'bg-[#ec4899]'];
-                        const color = colors[idx] || 'bg-outline';
-                        return `
-                        <div class="flex flex-col gap-0.5">
-                          <div class="flex items-center gap-1.5">
-                            <span class="w-2 h-2 rounded-full ${color} flex-shrink-0"></span>
-                            <span class="text-on-surface font-bold truncate w-24 sm:w-28 md:w-32 lg:w-36" title="${p.ten_goi}">${p.ten_goi}</span>
-                          </div>
-                          <div class="flex justify-between items-center pl-3.5 text-on-surface-variant font-medium">
-                            <span>${p.so_dang_ky} lượt</span>
-                            <span class="font-bold text-brand-primary">${totalMoney}</span>
-                          </div>
-                        </div>
-                        `;
-                      }).join('') || '<p class="text-center text-on-surface-variant w-full">Chưa có dữ liệu</p>';
-                    })()}
-                  </div>
+            <!-- Doughnut: Member Status -->
+            <div class="${cardClass} p-4 flex flex-col justify-between" style="min-height: 310px;">
+              <h3 class="text-sm font-bold text-on-surface mb-2">Tình trạng hội viên</h3>
+              <div class="flex-1 flex items-center justify-center">
+                <div style="height: 160px; width: 50%;">
+                  <canvas id="chart-packages-pie"></canvas>
                 </div>
-              </div>
-
-              <!-- Doughnut: Member Status -->
-              <div class="${cardClass} p-4 flex flex-col">
-                <h3 class="text-sm font-bold text-on-surface mb-4">Tình trạng hội viên</h3>
-                <div class="flex-1 flex items-center">
-                  <div style="height: 180px; width: 50%;">
-                    <canvas id="chart-packages-pie"></canvas>
-                  </div>
-                  <div class="flex-1 flex flex-col justify-center gap-3 pl-4 text-xs">
-                    ${[
-                      { label: 'Còn hạn', value: dbData.hoi_vien.con_han, color: 'bg-brand-primary', textColor: 'text-on-surface' },
-                      { label: 'Sắp hết hạn', value: dbData.hoi_vien.sap_het_han, color: 'bg-[#f59e0b]', textColor: 'text-on-surface-variant' },
-                      { label: 'Hết hạn', value: dbData.hoi_vien.het_han, color: 'bg-error', textColor: 'text-on-surface-variant' },
-                      { label: 'Chưa đ.ký', value: dbData.hoi_vien.chua_dang_ky, color: 'bg-outline', textColor: 'text-on-surface-variant' },
-                    ].map(r => {
-                      const total = dbData.hoi_vien.tong || 1;
-                      const pct = ((r.value / total) * 100).toFixed(1);
-                      return `
-                      <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                          <span class="w-2 h-2 rounded-full ${r.color}"></span>
-                          <span class="${r.textColor}">${r.label}</span>
-                        </div>
-                        <span class="font-medium text-on-surface">${pct}%</span>
+                <div class="flex-1 flex flex-col justify-center gap-2 pl-4 text-xs">
+                  ${[
+                    { label: 'Còn hạn', value: dbData.hoi_vien.con_han, color: 'bg-brand-primary', textColor: 'text-on-surface' },
+                    { label: 'Sắp hết hạn', value: dbData.hoi_vien.sap_het_han, color: 'bg-[#f59e0b]', textColor: 'text-on-surface-variant' },
+                    { label: 'Hết hạn', value: dbData.hoi_vien.het_han, color: 'bg-error', textColor: 'text-on-surface-variant' },
+                    { label: 'Chưa đ.ký', value: dbData.hoi_vien.chua_dang_ky, color: 'bg-outline', textColor: 'text-on-surface-variant' },
+                  ].map(r => {
+                    const total = dbData.hoi_vien.tong || 1;
+                    const pct = ((r.value / total) * 100).toFixed(1);
+                    return `
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full ${r.color}"></span>
+                        <span class="${r.textColor} truncate w-14 sm:w-16">${r.label}</span>
                       </div>
-                    `}).join('')}
-                  </div>
+                      <span class="font-bold text-on-surface">${pct}%</span>
+                    </div>
+                  `}).join('')}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Row 2: Hội viên chăm chỉ + Check-in gần nhất + Tần suất Peak Hours -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+            
+            <!-- Hội viên chăm chỉ nhất -->
+            <div class="${cardClass} p-4 flex flex-col justify-between" style="min-height: 250px;">
+              <h3 class="text-sm font-bold text-on-surface mb-3">Hội viên chăm chỉ nhất</h3>
+              <div id="dash-top-members-container" class="flex-grow flex flex-col justify-between">
+                 <p class="text-center text-on-surface-variant text-body-sm mt-10">Đang tải...</p>
+              </div>
+            </div>
+
+            <!-- Check-in gần nhất -->
+            <div class="${cardClass} p-4 flex flex-col justify-between" style="min-height: 250px;">
+              <h3 class="text-sm font-bold text-on-surface mb-3">Check-in gần nhất</h3>
+              <div id="dash-recent-checkins-container" class="flex-grow flex flex-col justify-between">
+                <p class="text-center text-on-surface-variant text-body-sm mt-10">Đang tải...</p>
+              </div>
+            </div>
+
+            <!-- Peak Hours Check-in -->
+            <div class="${cardClass} p-4 flex flex-col justify-between" style="min-height: 250px;">
+              <h3 class="text-sm font-bold text-on-surface mb-2">Giờ check-in cao điểm</h3>
+              <div class="flex-1 flex items-center justify-center">
+                <div style="height: 170px; width: 100%;">
+                  <canvas id="chart-peak-hours"></canvas>
                 </div>
               </div>
             </div>
 
           </div>
 
-          <!-- RIGHT SIDEBAR (Spans 1 col) -->
-          <div class="xl:col-span-1 flex flex-col gap-3">
-            
-            <!-- Check-in gần nhất (Activities) -->
-            <div class="${cardClass} p-4 flex flex-col flex-1" style="min-height: 280px;">
-              <h3 class="text-sm font-bold text-on-surface mb-4">Check-in gần nhất</h3>
-              <div id="dash-recent-checkins-container" class="flex-grow flex flex-col justify-between">
-                <p class="text-center text-on-surface-variant text-body-sm mt-10">Đang tải...</p>
+          <!-- Row 3: Doanh thu gói tập + Doanh thu gói PT + Hoạt động gần đây -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+
+            <!-- Bar Chart: Revenue by Package -->
+            <div class="${cardClass} p-4 flex flex-col justify-between" style="min-height: 350px;">
+              <h3 class="text-sm font-bold text-on-surface mb-2">Doanh thu gói tập</h3>
+              <div class="w-full" style="height: 130px;">
+                <canvas id="chart-packages-bar"></canvas>
+              </div>
+              <div class="w-full overflow-y-auto pr-1 flex flex-col gap-1.5 mt-2 text-xs" style="max-height: 130px; scrollbar-width: thin; scrollbar-color: var(--outline-variant) transparent;">
+                ${(function() {
+                  const packageStats = d.packageStats || [];
+                  return packageStats.map((p, idx) => {
+                    const totalMoney = window.GymApp.formatCurrency(p.tong_tien);
+                    const colors = ['bg-[#1D9336]', 'bg-[#34d399]', 'bg-[#60a5fa]', 'bg-[#f59e0b]', 'bg-[#ec4899]'];
+                    const color = colors[idx] || 'bg-outline';
+                    return `
+                    <div class="flex flex-col gap-0.5 border-b border-outline-variant/10 pb-1 last:border-0 last:pb-0">
+                      <div class="flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full ${color} flex-shrink-0"></span>
+                        <span class="text-on-surface font-bold truncate w-24 sm:w-32 md:w-28 lg:w-32 xl:w-40" title="${p.ten_goi}">${p.ten_goi}</span>
+                      </div>
+                      <div class="flex justify-between items-center pl-2.5 text-on-surface-variant font-medium">
+                        <span>${p.so_dang_ky} lượt</span>
+                        <span class="font-bold text-brand-primary">${totalMoney}</span>
+                      </div>
+                    </div>
+                    `;
+                  }).join('') || '<p class="text-center text-on-surface-variant w-full">Chưa có dữ liệu</p>';
+                })()}
               </div>
             </div>
 
+            <!-- Bar Chart: Revenue by PT Package -->
+            <div class="${cardClass} p-4 flex flex-col justify-between" style="min-height: 350px;">
+              <h3 class="text-sm font-bold text-on-surface mb-2">Doanh thu gói PT</h3>
+              <div class="w-full" style="height: 130px;">
+                <canvas id="chart-packages-pt-bar"></canvas>
+              </div>
+              <div class="w-full overflow-y-auto pr-1 flex flex-col gap-1.5 mt-2 text-xs" style="max-height: 130px; scrollbar-width: thin; scrollbar-color: var(--outline-variant) transparent;">
+                ${(function() {
+                  const ptPackageStats = d.ptPackageStats || [];
+                  return ptPackageStats.map((p, idx) => {
+                    const totalMoney = window.GymApp.formatCurrency(p.tong_tien);
+                    const colors = ['bg-[#8b5cf6]', 'bg-[#a78bfa]', 'bg-[#c4b5fd]', 'bg-[#ddd6fe]', 'bg-[#ede9fe]'];
+                    const color = colors[idx] || 'bg-outline';
+                    return `
+                    <div class="flex flex-col gap-0.5 border-b border-outline-variant/10 pb-1 last:border-0 last:pb-0">
+                      <div class="flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full ${color} flex-shrink-0"></span>
+                        <span class="text-on-surface font-bold truncate w-24 sm:w-32 md:w-28 lg:w-32 xl:w-40" title="${p.ten_goi}">${p.ten_goi}</span>
+                      </div>
+                      <div class="flex justify-between items-center pl-2.5 text-on-surface-variant font-medium">
+                        <span>${p.so_dang_ky} lượt</span>
+                        <span class="font-bold text-brand-primary">${totalMoney}</span>
+                      </div>
+                    </div>
+                    `;
+                  }).join('') || '<p class="text-center text-on-surface-variant w-full">Chưa có dữ liệu</p>';
+                })()}
+              </div>
+            </div>
 
-
-            <!-- Hoạt động gần đây -->
-            <div class="${cardClass} p-4 flex flex-col flex-1" style="min-height: 280px;">
-              <h3 class="text-sm font-bold text-on-surface mb-4">Hoạt động gần đây</h3>
-              <div id="dash-audit-logs-container" class="flex-1 overflow-y-auto pr-1 flex flex-col gap-3" style="scrollbar-width: thin; scrollbar-color: var(--outline-variant) transparent;">
+            <!-- Hoạt động gần đây (Có phân trang) -->
+            <div class="${cardClass} p-4 flex flex-col justify-between" style="min-height: 350px;">
+              <h3 class="text-sm font-bold text-on-surface mb-3">Hoạt động gần đây</h3>
+              <div id="dash-audit-logs-container" class="flex-grow flex flex-col justify-between">
                 <p class="text-center text-on-surface-variant text-body-sm mt-10">Đang tải...</p>
               </div>
             </div>
@@ -355,6 +387,7 @@ window.GymApp.pages['dashboard'] = {
     const self = this;
     this._topMembersPage = 1;
     this._recentCheckinsPage = 1;
+    this._auditLogsPage = 1;
     await self._fetchAndRender();
 
     document.getElementById('btn-dashboard-refresh')?.addEventListener('click', async () => {
@@ -387,17 +420,22 @@ window.GymApp.pages['dashboard'] = {
       return;
     }
 
-    // Lọc bỏ log system login, chỉ giữ hoạt động thật của người dùng, tối đa 4 mục mới nhất
-    const displayLogs = logs
-      .filter(log => !(log.ten_dang_nhap === 'system' && (log.hanh_dong || '').toUpperCase() === 'LOGIN'))
-      .slice(0, 4);
+    // Lọc bỏ log system login, chỉ giữ hoạt động thật của người dùng
+    const filteredLogs = logs.filter(log => !(log.ten_dang_nhap === 'system' && (log.hanh_dong || '').toUpperCase() === 'LOGIN'));
 
-    if (displayLogs.length === 0) {
+    if (filteredLogs.length === 0) {
       el.innerHTML = '<p class="text-center text-on-surface-variant text-body-sm mt-4">Không có hoạt động nào</p>';
       return;
     }
 
-    el.innerHTML = displayLogs.map(log => {
+    this._auditLogsPage = this._auditLogsPage || 1;
+    const perPage = 4;
+    const totalPages = Math.ceil(filteredLogs.length / perPage);
+    this._auditLogsPage = Math.max(1, Math.min(this._auditLogsPage, totalPages));
+    const start = (this._auditLogsPage - 1) * perPage;
+    const paginated = filteredLogs.slice(start, start + perPage);
+
+    const itemsHtml = paginated.map(log => {
       let icon = 'history';
       let colorClass = 'text-brand-primary bg-brand-primary/10';
       const action = (log.hanh_dong || '').toLowerCase();
@@ -444,9 +482,9 @@ window.GymApp.pages['dashboard'] = {
       if (action === 'login') actionText = 'vừa đăng nhập vào';
 
       return `
-        <div class="flex items-start gap-3 border-b border-outline-variant/30 pb-3 last:border-0 last:pb-0">
-          <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${colorClass}">
-            <span class="material-symbols-outlined text-[16px]">${icon}</span>
+        <div class="flex items-start gap-2.5 border-b border-outline-variant/30 pb-2.5 last:border-0 last:pb-0">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${colorClass}">
+            <span class="material-symbols-outlined text-[15px]">${icon}</span>
           </div>
           <div class="flex-1 min-w-0">
             <p class="text-body-sm text-on-surface truncate">
@@ -458,6 +496,48 @@ window.GymApp.pages['dashboard'] = {
         </div>
       `;
     }).join('');
+
+    const paginationHtml = totalPages > 1 ? `
+      <div class="flex items-center justify-between pt-standard border-t border-outline-variant/30 mt-auto text-body-sm">
+        <span class="text-on-surface-variant font-bold">Trang ${this._auditLogsPage}/${totalPages}</span>
+        <div class="flex gap-1">
+          <button id="btn-audit-prev" ${this._auditLogsPage === 1 ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : 'style="cursor:pointer;"'} class="w-7 h-7 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-brand-primary/5 hover:text-brand-primary transition-all active:scale-95">
+            <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+          </button>
+          <button id="btn-audit-next" ${this._auditLogsPage === totalPages ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : 'style="cursor:pointer;"'} class="w-7 h-7 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-brand-primary/5 hover:text-brand-primary transition-all active:scale-95">
+            <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+          </button>
+        </div>
+      </div>
+    ` : '';
+
+    el.innerHTML = `
+      <div class="flex flex-col justify-between flex-grow">
+        <div class="flex flex-col gap-2 flex-grow my-1">
+          ${itemsHtml}
+        </div>
+        ${paginationHtml}
+      </div>
+    `;
+
+    const prevBtn = document.getElementById('btn-audit-prev');
+    const nextBtn = document.getElementById('btn-audit-next');
+    if (prevBtn) {
+      prevBtn.addEventListener('click', () => {
+        if (this._auditLogsPage > 1) {
+          this._auditLogsPage--;
+          this._renderAuditLogs();
+        }
+      });
+    }
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => {
+        if (this._auditLogsPage < totalPages) {
+          this._auditLogsPage++;
+          this._renderAuditLogs();
+        }
+      });
+    }
   },
 
   _fetchAndRender: async function () {
@@ -471,6 +551,7 @@ window.GymApp.pages['dashboard'] = {
       if (revRes && revRes.success) {
         window.GymApp.data.revenueDaily = revRes.data.daily || [];
         window.GymApp.data.packageStats = revRes.data.packageStats || [];
+        window.GymApp.data.ptPackageStats = revRes.data.ptPackageStats || [];
       }
       if (auditRes && auditRes.success) {
         window.GymApp.data.auditLogs = auditRes.data.logs || [];
@@ -600,6 +681,79 @@ window.GymApp.pages['dashboard'] = {
           responsive: true, maintainAspectRatio: false,
           plugins: { legend: { display: false } },
           cutout: '70%',
+        }
+      });
+    }
+
+    // --- Bar Chart (PT Package Revenue) ---
+    const ctxPtPkgBar = document.getElementById('chart-packages-pt-bar');
+    if (ctxPtPkgBar) {
+      const ptPkgStats = window.GymApp.data.ptPackageStats || [];
+      const topPkgs = ptPkgStats.slice(0, 5);
+      const labels = topPkgs.map((p, idx) => 'Gói PT ' + (idx + 1));
+      const data = topPkgs.map(p => p.tong_tien / 1_000_000);
+
+      window.GymApp._activeChart4 = new Chart(ctxPtPkgBar, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: data,
+            backgroundColor: ['#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe', '#ede9fe'],
+            hoverBackgroundColor: ['#7c3aed', '#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe'],
+            borderRadius: 6,
+            barThickness: 16
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: textColor, font: { size: 10 } } },
+            y: { grid: { display: false }, ticks: { display: false }, border: {display: false} }
+          }
+        }
+      });
+    }
+
+    // --- Bar Chart (Peak Hours Check-in) ---
+    const ctxPeak = document.getElementById('chart-peak-hours');
+    if (ctxPeak) {
+      const peakHoursData = dbData.peak_hours || [];
+      const peakLabels = [];
+      const peakCounts = [];
+      for (let h = 6; h <= 21; h++) {
+        const hStr = h.toString().padStart(2, '0');
+        peakLabels.push(hStr + 'h');
+        const found = peakHoursData.find(item => item.gio === hStr);
+        peakCounts.push(found ? found.so_luot : 0);
+      }
+
+      window.GymApp._activeChart5 = new Chart(ctxPeak, {
+        type: 'bar',
+        data: {
+          labels: peakLabels,
+          datasets: [{
+            label: 'Lượt check-in (30 ngày)',
+            data: peakCounts,
+            backgroundColor: '#1D9336b0',
+            hoverBackgroundColor: '#1D9336',
+            borderRadius: 4,
+            barThickness: 8
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { 
+            legend: { display: false },
+            tooltip: {
+              callbacks: { label: function(c) { return c.parsed.y + ' lượt vào'; } }
+            }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: textColor, font: { size: 9 }, maxRotation: 0 } },
+            y: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 9 } } }
+          }
         }
       });
     }
