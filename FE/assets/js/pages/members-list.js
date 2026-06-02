@@ -2,7 +2,7 @@ window.GymApp.pages['members-list'] = {
   _tab: 'members',
   _memberPage: 1, _memberFiltered: [],
   _ptPage: 1, _ptFiltered: [],
-  _perPage: 7,
+  _perPage: 20,
   _filterState: { status: '', pkg: '', gender: '', hasPt: '', checkinToday: '' },
   _ptFilterState: { specialty: '', status: '' },
   _ptSortState: '',
@@ -125,6 +125,11 @@ window.GymApp.pages['members-list'] = {
                   <span>Tải lại</span>
                 </button>
 
+                <button id="btn-import-members" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border-2 border-outline-variant/50 bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer group">
+                  <span class="material-symbols-outlined text-base text-[#0284c7]">upload</span>
+                  <span>Nhập Excel</span>
+                </button>
+
                 <button id="btn-export-members" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border-2 border-outline-variant/50 bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer group">
                   <span class="material-symbols-outlined text-base text-[#1D9336]">download</span>
                   <span>Xuất Excel</span>
@@ -179,7 +184,7 @@ window.GymApp.pages['members-list'] = {
                 </button>
               </div>
             </div>
-            <div id="pt-cards-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-standard">
+            <div id="pt-cards-container" class="w-full">
               ${this._renderPtCards()}
             </div>
           </div>
@@ -196,11 +201,63 @@ window.GymApp.pages['members-list'] = {
     return [];
   },
 
+  _fetchMembersData: async function (page = 1, isAppend = false) {
+    const self = this;
+    const q = document.getElementById('member-search')?.value.trim() || '';
+    const { status } = self._filterState;
+    try {
+      const url = `/members?page=${page}&limit=${self._perPage}&search=${encodeURIComponent(q)}&status=${status}`;
+      const res = await window.GymApp.api.get(url);
+      const newData = self._normalizeListResponse(res) || [];
+      
+      if (isAppend) {
+        const merged = [...(window.GymApp.data.members || []), ...newData];
+        const unique = [];
+        const seen = new Set();
+        for (const m of merged) {
+          if (!seen.has(m.id)) {
+            seen.add(m.id);
+            unique.push(m);
+          }
+        }
+        window.GymApp.data.members = unique;
+      } else {
+        window.GymApp.data.members = newData;
+      }
+      
+      self._applyMemberFilterLocal();
+      self._refreshMemberTable(isAppend);
+    } catch (err) {
+      console.error('Failed to fetch members page:', err);
+    }
+  },
+
+  _applyMemberFilterLocal: function () {
+    const q = document.getElementById('member-search')?.value.toLowerCase() || '';
+    const { status, pkg, gender, hasPt, checkinToday } = this._filterState;
+    const members = Array.isArray(window.GymApp.data.members) ? window.GymApp.data.members : [];
+
+    let filtered = members.filter(m => {
+      const matchQ = !q || (m.ho_ten || '').toLowerCase().includes(q) || (m.ma_ho_so || '').toLowerCase().includes(q) || (m.so_dien_thoai || '').includes(q);
+      const matchStatus = !status || m.trang_thai === status;
+      const matchPkg = !pkg || m.ten_goi_tap === pkg;
+      let mGender = m.gioi_tinh;
+      if (mGender === 'male' || mGender === 'nam') mGender = 'Nam';
+      if (mGender === 'female' || mGender === 'nu') mGender = 'Nữ';
+      const matchGender = !gender || mGender === gender;
+      const matchHasPt = !hasPt || (hasPt === 'yes' ? (m.co_pt > 0) : (m.co_pt == 0));
+      const matchCheckinToday = !checkinToday || (checkinToday === 'yes' ? (m.da_check_in_hom_nay == 1) : (!m.da_check_in_hom_nay));
+      return matchQ && matchStatus && matchPkg && matchGender && matchHasPt && matchCheckinToday;
+    });
+
+    this._memberFiltered = this._sortMemberList(filtered);
+    this._updateFilterUI();
+    this._updateMemberSortUI();
+  },
+
   _refreshMembersFromApi: async function () {
-    const membersRes = await window.GymApp.api.get('/members?limit=100');
-    window.GymApp.data.members = this._normalizeListResponse(membersRes);
-    this._memberFiltered = [...window.GymApp.data.members];
-    this._refreshMemberTable();
+    this._memberPage = 1;
+    await this._fetchMembersData(1, false);
   },
 
   _refreshPtsFromApi: async function () {
@@ -212,8 +269,7 @@ window.GymApp.pages['members-list'] = {
 
   _renderMemberTable: function () {
     const self = this;
-    const start = (self._memberPage - 1) * self._perPage;
-    const paginated = self._memberFiltered.slice(start, start + self._perPage);
+    const paginated = self._memberFiltered.slice(0, self._memberPage * self._perPage);
 
     let rowsHtml = '';
     if (paginated.length === 0) {
@@ -387,6 +443,7 @@ window.GymApp.pages['members-list'] = {
         .member-table-col-han    { display: table-cell; }
         .member-table-desktop    { display: block; }
         .member-table-mobile     { display: none; }
+        #members-scroll-container th { border-radius: 0 !important; }
         @media (max-width: 900px) {
           .member-table-col-pt   { display: none; }
           .member-table-col-han  { display: none; }
@@ -404,18 +461,18 @@ window.GymApp.pages['members-list'] = {
       <div class="col-span-full w-full rounded-2xl overflow-hidden border border-outline-variant shadow-sm">
 
         <!-- TABLE (≥641px) -->
-        <div class="member-table-desktop" style="overflow-x:auto;">
-          <table style="width:100%;border-collapse:collapse;min-width:480px;">
+        <div id="members-scroll-container" class="member-table-desktop" style="max-height: 500px; overflow-y: auto; overflow-x: auto; position: relative; background: linear-gradient(to bottom, #1D9336 38px, transparent 38px);">
+          <table style="width:100%;border-collapse:collapse;min-width:480px;position:relative;">
             <thead>
-              <tr style="position:sticky;top:0;z-index:10;background:linear-gradient(135deg,#6dac7b 0%,#1D9336 100%);">
-                <th style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Họ và tên</th>
-                <th class="member-table-col-mahv" style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Mã HV</th>
-                <th class="member-table-col-sdt" style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Số ĐT</th>
-                <th class="member-table-col-goi" style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Gói tập</th>
-                <th class="member-table-col-pt" style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">PT</th>
-                <th style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Trạng thái</th>
-                <th class="member-table-col-han" style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Hết hạn</th>
-                <th style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Thao tác</th>
+              <tr>
+                <th style="position:sticky;top:0;z-index:10;background:#1D9336;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Họ và tên</th>
+                <th class="member-table-col-mahv" style="position:sticky;top:0;z-index:10;background:#1D9336;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Mã HV</th>
+                <th class="member-table-col-sdt" style="position:sticky;top:0;z-index:10;background:#1D9336;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Số ĐT</th>
+                <th class="member-table-col-goi" style="position:sticky;top:0;z-index:10;background:#1D9336;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Gói tập</th>
+                <th class="member-table-col-pt" style="position:sticky;top:0;z-index:10;background:#1D9336;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">PT</th>
+                <th style="position:sticky;top:0;z-index:10;background:#1D9336;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Trạng thái</th>
+                <th class="member-table-col-han" style="position:sticky;top:0;z-index:10;background:#1D9336;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Hết hạn</th>
+                <th style="position:sticky;top:0;z-index:10;background:#1D9336;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Thao tác</th>
               </tr>
             </thead>
             <tbody>${rowsHtml}</tbody>
@@ -423,13 +480,13 @@ window.GymApp.pages['members-list'] = {
         </div>
 
         <!-- CARD LIST (≤640px) -->
-        <div class="member-table-mobile">
+        <div id="members-scroll-mobile-container" class="member-table-mobile" style="max-height: 500px; overflow-y: auto;">
           ${cardRowsHtml}
         </div>
 
-        <!-- PAGINATION -->
-        <div class="px-standard py-standard border-t border-outline-variant bg-white dark:bg-[#1e1e1e]">
-          ${window.GymApp.renderPagination(self._memberPage, self._memberFiltered.length, self._perPage)}
+        <!-- INFO / FOOTER -->
+        <div class="px-standard py-standard border-t border-outline-variant bg-white dark:bg-[#1e1e1e] flex justify-between items-center text-body-sm font-medium text-on-surface-variant">
+          <span>Hiển thị ${Math.min(self._memberPage * self._perPage, self._memberFiltered.length)} / ${self._memberFiltered.length} hội viên</span>
         </div>
       </div>
     `;
@@ -437,8 +494,7 @@ window.GymApp.pages['members-list'] = {
 
   _renderPtCards: function () {
     const self = this;
-    const start = (self._ptPage - 1) * self._perPage;
-    const paginated = self._ptFiltered.slice(start, start + self._perPage);
+    const paginated = self._ptFiltered.slice(0, self._ptPage * self._perPage);
 
     if (paginated.length === 0) {
       return `
@@ -450,77 +506,185 @@ window.GymApp.pages['members-list'] = {
         </div>`;
     }
 
-    const cards = paginated.map(pt => {
+    let rowsHtml = paginated.map(pt => {
       const rating = pt.danh_gia || pt.rating || 0;
       const ratingDisplay = rating ? rating.toFixed(1) : '—';
-      const isActive = pt.trang_thai === 'hoat_dong' || pt.trang_thai === 'active';
+      const isActive = pt.trang_thai === 'hoat_dong' || pt.trang_thai === 'active' || pt.trang_thai === 'kich_hoat';
+      
+      const ratingStars = Array.from({ length: 5 }, (_, i) =>
+        `<span class="material-symbols-outlined text-xs" style="color:${i < Math.round(rating) ? '#fbbf24' : 'rgba(0,0,0,0.15)'};font-variation-settings:'FILL' 1;">star</span>`
+      ).join('');
+      
+      const ratingHtml = `
+        <div class="inline-flex items-center gap-1" title="${ratingDisplay}/5">
+          <span class="font-bold text-body-sm text-brand-primary" style="margin-right:2px;">${ratingDisplay}</span>
+          ${ratingStars}
+        </div>
+      `;
+
+      const statusBadge = isActive 
+        ? `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-[#e7f5e9] dark:bg-[#0b2010] text-[#1D9336] dark:text-[#4cce5f]"><span class="w-1.5 h-1.5 rounded-full bg-[#1D9336] dark:bg-[#4cce5f]"></span>Đang làm việc</span>`
+        : `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-[#f1f5f9] dark:bg-[#1e293b] text-[#64748b] dark:text-[#94a3b8]"><span class="w-1.5 h-1.5 rounded-full bg-[#64748b] dark:bg-[#94a3b8]"></span>Tạm nghỉ</span>`;
 
       return `
-        <div class="member-card group relative rounded-3xl overflow-hidden flex flex-col gap-standard
-          shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-500">
-
-          <!-- Card Header: Avatar & Quick Info -->
-          <div class="flex items-start gap-standard pt-standard px-standard">
-            <div class="relative flex-shrink-0">
-              ${window.GymApp.avatarImg(pt.avatar_url, pt.ho_ten, 'lg')}
-              <span class="member-card-dot absolute -bottom-1 -right-1 w-5 h-5 rounded-full shadow-sm"
-                style="background:${isActive ? '#22c55e' : '#94a3b8'};${isActive ? 'animation:pulse 2s infinite;' : ''}"></span>
-            </div>
-            
-            <div class="flex flex-col min-w-0 pt-1 flex-1">
-              <div class="flex items-start justify-between gap-xs">
-                <button class="pt-name-link member-name-link text-left font-bold text-body-md truncate cursor-pointer block leading-tight transition-colors" data-id="${pt.id}" title="${pt.ho_ten}">
-                  ${pt.ho_ten}
-                </button>
+        <tr class="pt-row transition-colors hover:bg-brand-primary/5 dark:hover:bg-brand-primary/10 border-b border-outline-variant/30 cursor-pointer bg-white dark:bg-[#1e1e1e] odd:bg-[#fafafa] odd:dark:bg-[#15171e]" data-id="${pt.id}">
+          <!-- Cột 1: Họ và tên -->
+          <td class="border-r border-outline-variant/30" style="padding:8px 14px; white-space:nowrap; text-align:left;">
+            <div style="display:flex; align-items:center; justify-content:left; gap:12px; margin:0 auto; max-width:240px;">
+              <div style="width:38px;height:38px;border-radius:50%;overflow:hidden;flex-shrink:0; border:2px solid #e2e8f0;box-shadow:0 2px 4px rgba(0,0,0,0.05);">
+                ${window.GymApp.avatarImg(pt.avatar_url, pt.ho_ten, 'sm', 'width:100%;height:100%;')}
               </div>
-              <span class="text-body-sm font-medium mt-0.5" style="color:#4ade80;letter-spacing:0.03em">PT-${pt.id || ''}</span>
+              <div style="min-width:0; text-align:left;">
+                <div style="font-size:15px;font-weight:700;color:var(--text-on-surface); white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;">
+                  <button class="pt-name-link hover:text-brand-primary text-left font-bold text-body-md truncate cursor-pointer transition-colors" data-id="${pt.id}" title="${pt.ho_ten}">
+                    ${pt.ho_ten}
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
+          </td>
 
-          <!-- Info Grid -->
-          <div class="grid grid-cols-2 gap-2 px-standard">
-            <div class="member-card-info-cell flex flex-col p-2.5 rounded-2xl transition-colors duration-300">
-              <span class="member-card-info-label text-label-xs uppercase font-bold tracking-widest mb-1">Chuyên môn</span>
-              <span class="member-card-info-value font-bold text-body-sm truncate">${pt.chuyen_mon || pt.specialty || 'Huấn luyện viên'}</span>
-            </div>
-            <div class="member-card-info-cell flex flex-col p-2.5 rounded-2xl transition-colors duration-300">
-              <span class="member-card-info-label text-label-xs uppercase font-bold tracking-widest mb-1">Kinh nghiệm</span>
-              <span class="member-card-info-value font-bold text-body-sm">${pt.kinh_nghiem || 0} năm</span>
-            </div>
-          </div>
+          <!-- Cột 2: Mã HLV -->
+          <td class="pt-table-col-code border-r border-outline-variant/30" style="padding:8px 14px; font-size:14px; font-weight:700; color:var(--text-on-surface-variant); white-space:nowrap; text-align:center;">
+            PT-${pt.id || ''}
+          </td>
 
-          <!-- Rating -->
-          <div class="flex items-center px-standard">
-            <div class="pt-rating-badge flex items-center gap-1.5 bg-brand-primary/10 text-brand-primary px-3 py-1.5 rounded-xl border border-brand-primary/20 transition-all duration-300">
-              <span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL' 1">star</span>
-              <span class="font-bold text-body-sm">${ratingDisplay}</span>
-            </div>
-          </div>
+          <!-- Cột 3: Chuyên môn -->
+          <td class="pt-table-col-spec border-r border-outline-variant/30" style="padding:8px 14px; font-size:14px; font-weight:600; color:var(--text-on-surface-variant); text-align:center;">
+            ${pt.chuyen_mon || pt.specialty || 'Huấn luyện viên'}
+          </td>
 
-          <!-- Actions Footer -->
-          <div class="member-card-footer mt-auto px-standard pb-standard pt-compact flex items-center justify-end">
-            <div class="flex gap-1">
-              <button class="member-action-btn w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-300 pt-view-btn shadow-sm" data-id="${pt.id}" title="Xem chi tiết">
-                <span class="material-symbols-outlined text-lg">visibility</span>
+          <!-- Cột 4: Kinh nghiệm -->
+          <td class="pt-table-col-exp border-r border-outline-variant/30" style="padding:8px 14px; font-size:14px; font-weight:600; color:var(--text-on-surface-variant); white-space:nowrap; text-align:center;">
+            ${pt.kinh_nghiem || 0} năm
+          </td>
+
+          <!-- Cột 5: Đánh giá -->
+          <td class="pt-table-col-rating border-r border-outline-variant/30" style="padding:8px 14px; text-align:center; white-space:nowrap;">
+            ${ratingHtml}
+          </td>
+
+          <!-- Cột 6: Trạng thái -->
+          <td class="pt-table-col-status border-r border-outline-variant/30" style="padding:8px 14px; white-space:nowrap; text-align:center;">
+            ${statusBadge}
+          </td>
+
+          <!-- Cột 7: Thao tác -->
+          <td style="padding:8px 14px; text-align:center; white-space:nowrap;">
+            <div style="display:inline-flex;gap:4px;align-items:center;">
+              <button class="pt-view-btn w-[30px] h-[30px] rounded-lg flex items-center justify-center transition-all bg-[#f0fdf4] dark:bg-[#0b2010] text-[#1D9336] dark:text-[#4cce5f] hover:bg-[#1D9336] dark:hover:bg-[#4cce5f] hover:text-white dark:hover:text-[#111318]" data-id="${pt.id}" title="Xem chi tiết">
+                <span class="material-symbols-outlined" style="font-size:15px;">visibility</span>
               </button>
-              <button class="member-action-btn w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-300 pt-edit-btn shadow-sm" data-id="${pt.id}" title="Chỉnh sửa">
-                <span class="material-symbols-outlined text-lg">edit</span>
+              <button class="pt-edit-btn w-[30px] h-[30px] rounded-lg flex items-center justify-center transition-all bg-[#eff6ff] dark:bg-[#0b1a30] text-[#3b82f6] dark:text-[#60a5fa] hover:bg-[#3b82f6] dark:hover:bg-[#60a5fa] hover:text-white dark:hover:text-[#111318]" data-id="${pt.id}" title="Chỉnh sửa">
+                <span class="material-symbols-outlined" style="font-size:15px;">edit</span>
               </button>
               ${window.GymApp.auth.user?.vai_tro === 'admin' ? `
-              <button class="member-delete-btn w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-300 pt-delete-btn shadow-sm" data-id="${pt.id}" data-name="${pt.ho_ten}" title="Xóa">
-                <span class="material-symbols-outlined text-lg">delete</span>
+              <button class="pt-delete-btn w-[30px] h-[30px] rounded-lg flex items-center justify-center transition-all bg-[#fff1f2] dark:bg-[#2e0b10] text-[#f43f5e] dark:text-[#f87171] hover:bg-[#f43f5e] dark:hover:bg-[#f87171] hover:text-white dark:hover:text-[#111318]" data-id="${pt.id}" data-name="${pt.ho_ten || ''}" title="Xóa">
+                <span class="material-symbols-outlined" style="font-size:15px;">delete</span>
               </button>
               ` : ''}
             </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    const cardRowsHtml = paginated.map(pt => {
+      const rating = pt.danh_gia || pt.rating || 0;
+      const ratingDisplay = rating ? rating.toFixed(1) : '—';
+      const isActive = pt.trang_thai === 'hoat_dong' || pt.trang_thai === 'active' || pt.trang_thai === 'kich_hoat';
+      return `
+        <div class="member-row" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--outline-variant,#e2e8f0);cursor:pointer;transition:background 0.12s;background:var(--bg-surface-lowest,#fff);" onmouseover="this.style.background='rgba(29,147,54,0.04)'" onmouseout="this.style.background='var(--bg-surface-lowest,#fff)'">
+          <div style="flex-shrink:0;">
+            <div style="width:38px;height:38px;border-radius:50%;overflow:hidden;border:2px solid #e2e8f0;">
+              ${window.GymApp.avatarImg(pt.avatar_url, pt.ho_ten, 'sm', 'width:100%;height:100%;')}
+            </div>
+          </div>
+          <div style="flex:1;min-width:0;text-align:left;">
+            <div style="font-size:14px;font-weight:700;color:var(--text-on-surface);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              <button class="pt-name-link text-left" data-id="${pt.id}" style="font-weight:700;background:transparent;border:none;padding:0;cursor:pointer;color:var(--text-on-surface);">${pt.ho_ten || '—'}</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:2px;flex-wrap:wrap;">
+              <span style="font-size:11px;font-weight:600;color:var(--text-on-surface-variant);">PT-${pt.id || ''}</span>
+              <span style="font-size:11px;color:var(--text-on-surface-variant);">· ${pt.chuyen_mon || pt.specialty || 'Huấn luyện viên'}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:5px;margin-top:3px;flex-wrap:wrap;">
+              ${isActive 
+                ? `<span style="font-size:10px;font-weight:800;padding:1px 6px;border-radius:4px;background:#e7f5e9;color:#1D9336;">Đang làm việc</span>`
+                : `<span style="font-size:10px;font-weight:800;padding:1px 6px;border-radius:4px;background:#f1f5f9;color:#64748b;">Tạm nghỉ</span>`}
+              <span style="font-size:11px;font-weight:600;color:var(--text-on-surface-variant);background:var(--bg-surface-container,#ebeef3);padding:1px 6px;border-radius:4px;white-space:nowrap;">KN: ${pt.kinh_nghiem || 0} năm</span>
+              <span style="font-size:11px;font-weight:600;color:#fbbf24;">★ ${ratingDisplay}</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:4px;align-items:center;flex-shrink:0;">
+            <button class="pt-view-btn" data-id="${pt.id}" title="Xem" style="width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#f0fdf4;color:#1D9336;border:none;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='#1D9336';this.style.color='#fff'" onmouseout="this.style.background='#f0fdf4';this.style.color='#1D9336'">
+              <span class="material-symbols-outlined" style="font-size:15px;">visibility</span>
+            </button>
+            <button class="pt-edit-btn" data-id="${pt.id}" title="Sửa" style="width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#eff6ff;color:#3b82f6;border:none;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='#3b82f6';this.style.color='#fff'" onmouseout="this.style.background='#eff6ff';this.style.color='#3b82f6'">
+              <span class="material-symbols-outlined" style="font-size:15px;">edit</span>
+            </button>
+            ${window.GymApp.auth.user?.vai_tro === 'admin' ? `
+            <button class="pt-delete-btn" data-id="${pt.id}" data-name="${pt.ho_ten || ''}" title="Xóa" style="width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#fff1f2;color:#f43f5e;border:none;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='#f43f5e';this.style.color='#fff'" onmouseout="this.style.background='#fff1f2';this.style.color='#f43f5e'">
+              <span class="material-symbols-outlined" style="font-size:15px;">delete</span>
+            </button>
+            ` : ''}
           </div>
         </div>
       `;
     }).join('');
 
     return `
-      ${cards}
-      <div class="col-span-full mt-loose">
-        ${window.GymApp.renderPagination(self._ptPage, self._ptFiltered.length, self._perPage)}
+      <style>
+        .pt-table-col-code      { display: table-cell; }
+        .pt-table-col-spec      { display: table-cell; }
+        .pt-table-col-exp       { display: table-cell; }
+        .pt-table-col-rating    { display: table-cell; }
+        .pt-table-col-status    { display: table-cell; }
+        .pt-table-desktop       { display: block; }
+        .pt-table-mobile        { display: none; }
+        #pt-scroll-container th { border-radius: 0 !important; }
+        @media (max-width: 900px) {
+          .pt-table-col-rating  { display: none; }
+          .pt-table-col-exp     { display: none; }
+        }
+        @media (max-width: 700px) {
+          .pt-table-col-code    { display: none; }
+          .pt-table-col-status  { display: none; }
+        }
+        @media (max-width: 640px) {
+          .pt-table-desktop     { display: none; }
+          .pt-table-mobile      { display: block; }
+        }
+      </style>
+      
+      <div class="col-span-full w-full rounded-2xl overflow-hidden border border-outline-variant shadow-sm">
+        <!-- TABLE (≥641px) -->
+        <div id="pt-scroll-container" class="pt-table-desktop" style="max-height: 500px; overflow-y: auto; overflow-x: auto; position: relative; background: linear-gradient(to bottom, #065f46 38px, transparent 38px);">
+          <table style="width:100%;border-collapse:collapse;min-width:480px;position:relative;">
+            <thead>
+              <tr>
+                <th style="position:sticky;top:0;z-index:10;background:#065f46;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Họ và tên</th>
+                <th class="pt-table-col-code" style="position:sticky;top:0;z-index:10;background:#065f46;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Mã HLV</th>
+                <th class="pt-table-col-spec" style="position:sticky;top:0;z-index:10;background:#065f46;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Chuyên môn</th>
+                <th class="pt-table-col-exp" style="position:sticky;top:0;z-index:10;background:#065f46;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Kinh nghiệm</th>
+                <th class="pt-table-col-rating" style="position:sticky;top:0;z-index:10;background:#065f46;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Đánh giá</th>
+                <th class="pt-table-col-status" style="position:sticky;top:0;z-index:10;background:#065f46;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Trạng thái</th>
+                <th style="position:sticky;top:0;z-index:10;background:#065f46;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+        </div>
+
+        <!-- CARD LIST (≤640px) -->
+        <div id="pt-scroll-mobile-container" class="pt-table-mobile" style="max-height: 500px; overflow-y: auto;">
+          ${cardRowsHtml}
+        </div>
+
+        <!-- INFO / FOOTER -->
+        <div class="px-standard py-standard border-t border-outline-variant bg-white dark:bg-[#1e1e1e] flex justify-between items-center text-body-sm font-medium text-on-surface-variant">
+          <span>Hiển thị ${Math.min(self._ptPage * self._perPage, self._ptFiltered.length)} / ${self._ptFiltered.length} huấn luyện viên</span>
+        </div>
       </div>
     `;
   },
@@ -625,7 +789,7 @@ window.GymApp.pages['members-list'] = {
 
         <!-- Tab Bar -->
         <div style="display:flex;background:var(--bg-surface-lowest);border-bottom:1px solid var(--outline-variant);flex-shrink:0;padding:0 16px;">
-          ${[['info', 'Thông tin', 'info'], ['members', 'Học viên', 'people'], ['schedule', 'Lịch dạy', 'event_note']].map(([t, l, ic]) => `
+          ${[['info', 'Thông tin', 'info'], ['members', 'Học viên', 'people'], ['schedule', 'Lịch dạy', 'event_note'], ['reviews', 'Đánh giá', 'star']].map(([t, l, ic]) => `
             <button class="pt-detail-tab" data-ptab="${t}" style="display:flex;align-items:center;gap:6px;padding:12px 16px;font-size:13px;font-weight:700;border:none;background:transparent;cursor:pointer;border-bottom:2.5px solid transparent;transition:all 0.2s;color:var(--text-on-surface-variant);white-space:nowrap;">
               <span class="material-symbols-outlined" style="font-size:16px;">${ic}</span>${l}
             </button>
@@ -849,6 +1013,62 @@ window.GymApp.pages['members-list'] = {
             </div>
           `;
       }).join('')}
+      `;
+    }
+
+    if (tab === 'reviews') {
+      const reviews = pt.danh_sach_danh_gia || [];
+      if (reviews.length === 0) {
+        return `
+          <div style="text-align:center;padding:60px 20px;color:var(--text-on-surface-variant, #64748b);background:var(--bg-surface-low, #f8fafc);border-radius:16px;border:1px dashed var(--outline-variant, #cbd5e1);">
+            <span class="material-symbols-outlined" style="font-size:48px;opacity:0.3;display:block;margin-bottom:12px;">rate_review</span>
+            <p style="font-size:14px;font-weight:600;margin:0;">Chưa có đánh giá nào từ hội viên</p>
+          </div>`;
+      }
+
+      return `
+        <div style="margin-bottom:12px;">
+          <h4 style="font-size:14px;font-weight:800;color:var(--text-on-surface);margin:0 0 8px;">Nhận xét từ hội viên (${reviews.length} lượt)</h4>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          ${reviews.map(r => {
+            const stars = Array.from({ length: 5 }, (_, i) =>
+              `<span class="material-symbols-outlined text-[13px]" style="color:${i < r.so_sao ? '#fbbf24' : 'rgba(0,0,0,0.12)'};font-variation-settings:'FILL' 1;">star</span>`
+            ).join('');
+            const dateStr = window.GymApp.formatDate(r.ngay_tao);
+            
+            let tagsHtml = '';
+            if (Array.isArray(r.tags) && r.tags.length > 0) {
+              tagsHtml = `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">
+                ${r.tags.map(tag => `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(29, 147, 54, 0.08);color:#1D9336;"># ${tag}</span>`).join('')}
+              </div>`;
+            }
+
+            return `
+              <div style="background:var(--bg-surface-lowest, #fff);border:1px solid var(--outline-variant, #e2e8f0);border-radius:14px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.02);">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="flex-shrink:0;width:36px;height:36px;border-radius:50%;overflow:hidden;border:1.5px solid #e2e8f0;">
+                      ${window.GymApp.avatarImg(r.avatar_hoi_vien, r.ten_hoi_vien, 'sm', 'width:100%;height:100%;')}
+                    </div>
+                    <div>
+                      <div style="font-size:13px;font-weight:800;color:var(--text-on-surface);">${r.ten_hoi_vien || 'Hội viên ẩn danh'}</div>
+                      <div style="display:flex;align-items:center;gap:4px;margin-top:2px;">
+                        ${stars}
+                        <span style="font-size:11px;color:var(--text-on-surface-variant,#64748b);font-weight:600;margin-left:4px;">${r.so_sao} sao</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div style="font-size:11px;color:var(--text-on-surface-variant, #94a3b8);font-weight:600;">
+                    ${dateStr}
+                  </div>
+                </div>
+                ${r.noi_dung ? `<div style="margin-top:10px;font-size:13px;color:var(--text-on-surface,#334155);line-height:1.5;padding:8px 12px;background:var(--bg-surface-low, #f8fafc);border-radius:8px;font-style:italic;">"${r.noi_dung}"</div>` : ''}
+                ${tagsHtml}
+              </div>
+            `;
+          }).join('')}
+        </div>
       `;
     }
     return '';
@@ -3730,29 +3950,8 @@ window.GymApp.pages['members-list'] = {
 
   // =====================================================================
   _applyMemberFilter: function () {
-    const q = document.getElementById('member-search')?.value.toLowerCase() || '';
-    const { status, pkg, gender, hasPt, checkinToday } = this._filterState;
-    const members = Array.isArray(window.GymApp.data.members) ? window.GymApp.data.members : [];
-
-    // Áp dụng lọc và sắp xếp
-    let filtered = members.filter(m => {
-      const matchQ = !q || (m.ho_ten || '').toLowerCase().includes(q) || (m.ma_ho_so || '').toLowerCase().includes(q) || (m.so_dien_thoai || '').includes(q);
-      const matchStatus = !status || m.trang_thai === status;
-      const matchPkg = !pkg || m.ten_goi_tap === pkg;
-      let mGender = m.gioi_tinh;
-      if (mGender === 'male' || mGender === 'nam') mGender = 'Nam';
-      if (mGender === 'female' || mGender === 'nu') mGender = 'Nữ';
-      const matchGender = !gender || mGender === gender;
-      const matchHasPt = !hasPt || (hasPt === 'yes' ? (m.co_pt > 0) : (m.co_pt == 0));
-      const matchCheckinToday = !checkinToday || (checkinToday === 'yes' ? (m.da_check_in_hom_nay == 1) : (!m.da_check_in_hom_nay));
-      return matchQ && matchStatus && matchPkg && matchGender && matchHasPt && matchCheckinToday;
-    });
-
-    this._memberFiltered = this._sortMemberList(filtered);
     this._memberPage = 1;
-    this._refreshMemberTable();
-    this._updateFilterUI();
-    this._updateMemberSortUI();
+    this._fetchMembersData(1, false);
   },
 
   _sortMemberList: function (list) {
@@ -3803,35 +4002,45 @@ window.GymApp.pages['members-list'] = {
   },
 
   // ===== REFRESH =====
-  _refreshMemberTable: function () {
+  _refreshMemberTable: function (isAppend = false) {
     const c = document.getElementById('members-table-container');
     if (c) {
-      c.style.transition = 'none';
-      c.style.opacity = '0';
-      c.style.transform = 'translateY(15px)';
-      c.innerHTML = this._renderMemberTable();
-      this._bindMemberTableEvents();
-      setTimeout(() => {
-        c.style.transition = 'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-        c.style.opacity = '1';
-        c.style.transform = 'translateY(0)';
-      }, 30);
+      if (isAppend) {
+        c.innerHTML = this._renderMemberTable();
+        this._bindMemberTableEvents();
+      } else {
+        c.style.transition = 'none';
+        c.style.opacity = '0';
+        c.style.transform = 'translateY(15px)';
+        c.innerHTML = this._renderMemberTable();
+        this._bindMemberTableEvents();
+        setTimeout(() => {
+          c.style.transition = 'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+          c.style.opacity = '1';
+          c.style.transform = 'translateY(0)';
+        }, 30);
+      }
     }
   },
 
-  _refreshPtCards: function () {
+  _refreshPtCards: function (isAppend = false) {
     const c = document.getElementById('pt-cards-container');
     if (c) {
-      c.style.transition = 'none';
-      c.style.opacity = '0';
-      c.style.transform = 'translateY(15px)';
-      c.innerHTML = this._renderPtCards();
-      this._bindPtCardEvents();
-      setTimeout(() => {
-        c.style.transition = 'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-        c.style.opacity = '1';
-        c.style.transform = 'translateY(0)';
-      }, 30);
+      if (isAppend) {
+        c.innerHTML = this._renderPtCards();
+        this._bindPtCardEvents();
+      } else {
+        c.style.transition = 'none';
+        c.style.opacity = '0';
+        c.style.transform = 'translateY(15px)';
+        c.innerHTML = this._renderPtCards();
+        this._bindPtCardEvents();
+        setTimeout(() => {
+          c.style.transition = 'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+          c.style.opacity = '1';
+          c.style.transform = 'translateY(0)';
+        }, 30);
+      }
     }
   },
 
@@ -3839,7 +4048,6 @@ window.GymApp.pages['members-list'] = {
     const self = this;
     document.querySelectorAll('.member-row').forEach(row => {
       row.addEventListener('click', (e) => {
-        // Không trigger nếu click vào action buttons
         if (e.target.closest('button')) return;
         self._showMemberModal(row.dataset.id);
       });
@@ -3853,10 +4061,48 @@ window.GymApp.pages['members-list'] = {
     document.querySelectorAll('.member-delete-btn').forEach(el => {
       el.addEventListener('click', () => self._confirmDeleteMember(el.dataset.id, el.dataset.name));
     });
+
+    // Infinite Scroll Events
+    const container = document.getElementById('members-scroll-container');
+    if (container) {
+      container.addEventListener('scroll', async function () {
+        if (container.scrollTop + container.clientHeight >= container.scrollHeight - 20) {
+          const currentTotal = self._memberFiltered.length;
+          if (self._memberPage * self._perPage <= currentTotal) {
+            self._memberPage++;
+            const scrollPos = container.scrollTop;
+            await self._fetchMembersData(self._memberPage, true);
+            const newContainer = document.getElementById('members-scroll-container');
+            if (newContainer) newContainer.scrollTop = scrollPos;
+          }
+        }
+      });
+    }
+    const mobileContainer = document.getElementById('members-scroll-mobile-container');
+    if (mobileContainer) {
+      mobileContainer.addEventListener('scroll', async function () {
+        if (mobileContainer.scrollTop + mobileContainer.clientHeight >= mobileContainer.scrollHeight - 20) {
+          const currentTotal = self._memberFiltered.length;
+          if (self._memberPage * self._perPage <= currentTotal) {
+            self._memberPage++;
+            const scrollPos = mobileContainer.scrollTop;
+            await self._fetchMembersData(self._memberPage, true);
+            const newMobileContainer = document.getElementById('members-scroll-mobile-container');
+            if (newMobileContainer) newMobileContainer.scrollTop = scrollPos;
+          }
+        }
+      });
+    }
   },
 
   _bindPtCardEvents: function () {
     const self = this;
+    document.querySelectorAll('.pt-row').forEach(row => {
+      row.addEventListener('click', (e) => {
+        if (e.target.closest('button') || e.target.closest('a')) return;
+        self._showPtModal(parseInt(row.dataset.id));
+      });
+    });
     document.querySelectorAll('.pt-view-btn, .pt-name-link').forEach(el => {
       el.addEventListener('click', (e) => { e.stopPropagation(); self._showPtModal(parseInt(el.dataset.id)); });
     });
@@ -3866,6 +4112,36 @@ window.GymApp.pages['members-list'] = {
     document.querySelectorAll('.pt-delete-btn').forEach(el => {
       el.addEventListener('click', (e) => { e.stopPropagation(); self._confirmDeletePt(el.dataset.id, el.dataset.name); });
     });
+
+    // Infinite Scroll Events
+    const container = document.getElementById('pt-scroll-container');
+    if (container) {
+      container.addEventListener('scroll', function () {
+        if (container.scrollTop + container.clientHeight >= container.scrollHeight - 20) {
+          if (self._ptPage * self._perPage < self._ptFiltered.length) {
+            self._ptPage++;
+            const scrollPos = container.scrollTop;
+            self._refreshPtCards(true);
+            const newContainer = document.getElementById('pt-scroll-container');
+            if (newContainer) newContainer.scrollTop = scrollPos;
+          }
+        }
+      });
+    }
+    const mobileContainer = document.getElementById('pt-scroll-mobile-container');
+    if (mobileContainer) {
+      mobileContainer.addEventListener('scroll', function () {
+        if (mobileContainer.scrollTop + mobileContainer.clientHeight >= mobileContainer.scrollHeight - 20) {
+          if (self._ptPage * self._perPage < self._ptFiltered.length) {
+            self._ptPage++;
+            const scrollPos = mobileContainer.scrollTop;
+            self._refreshPtCards(true);
+            const newMobileContainer = document.getElementById('pt-scroll-mobile-container');
+            if (newMobileContainer) newMobileContainer.scrollTop = scrollPos;
+          }
+        }
+      });
+    }
   },
 
   _confirmDeletePt: function (id, name) {
@@ -4168,6 +4444,283 @@ window.GymApp.pages['members-list'] = {
     }
   },
 
+  _showImportModal: function () {
+    const self = this;
+    self._loadXlsxLibrary();
+
+    document.getElementById('gym-import-modal')?.remove();
+    const overlay = document.createElement('div');
+    overlay.id = 'gym-import-modal';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);backdrop-filter:blur(6px);padding:16px;';
+
+    overlay.innerHTML = `
+      <div style="border-radius:24px;width:100%;max-width:540px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.2);background:var(--bg-surface-lowest);">
+        
+        <!-- Header -->
+        <div style="padding:24px 24px 16px;flex-shrink:0;position:relative;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--outline-variant);border-top-left-radius:24px;border-top-right-radius:24px;">
+          <div>
+            <h3 style="font-size:18px;font-weight:800;color:var(--text-on-surface);margin:0 0 4px;">Nhập danh sách hội viên từ Excel</h3>
+            <p style="font-size:13px;color:var(--text-on-surface-variant);margin:0;opacity:0.8;">Hỗ trợ file định dạng .xlsx, .xls, .csv</p>
+          </div>
+          <button id="close-import-modal" style="background:var(--bg-surface-variant);border:none;cursor:pointer;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;" class="hover:bg-outline-variant/30 transition-all">
+            <span class="material-symbols-outlined" style="color:var(--text-on-surface);font-size:20px;">close</span>
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div style="overflow-y:auto;flex:1;padding:24px;display:flex;flex-direction:column;gap:20px;" class="bg-surface-container-lowest">
+          
+          <!-- Tải file mẫu -->
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(2, 132, 199, 0.08);border:1px solid rgba(2, 132, 199, 0.2);border-radius:12px;">
+            <div style="flex:1;">
+              <h4 style="font-size:13px;font-weight:800;color:#0284c7;margin:0 0 2px;">Tải file Excel mẫu</h4>
+              <p style="font-size:11px;color:#0369a1;margin:0;">Vui lòng điền thông tin hội viên theo đúng định dạng cột mẫu.</p>
+            </div>
+            <button id="btn-download-template" style="background:#0284c7;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;" class="hover:bg-[#0369a1] active:scale-95 transition-all">
+              <span class="material-symbols-outlined" style="font-size:16px;">download</span> Tải mẫu
+            </button>
+          </div>
+
+          <!-- Khu vực upload file -->
+          <div id="excel-drop-zone" style="border:2px dashed var(--outline-variant);border-radius:16px;padding:32px 20px;text-align:center;cursor:pointer;transition:all 0.2s;" class="hover:bg-brand-primary/5 hover:border-brand-primary group">
+            <input type="file" id="excel-file-input" accept=".xlsx, .xls, .csv" style="display:none;" />
+            <span class="material-symbols-outlined text-[48px] text-outline group-hover:text-brand-primary transition-colors" style="margin-bottom:8px;">cloud_upload</span>
+            <p style="font-size:14px;font-weight:700;color:var(--text-on-surface);margin:0 0 4px;">Chọn hoặc kéo thả file Excel vào đây</p>
+            <p style="font-size:12px;color:var(--text-on-surface-variant);margin:0;opacity:0.6;">Dung lượng tối đa 10MB</p>
+          </div>
+
+          <!-- File selected status -->
+          <div id="excel-file-status" style="display:none;align-items:center;gap:12px;padding:12px;border:1px solid var(--outline-variant);border-radius:12px;background:var(--bg-surface-low);">
+            <span class="material-symbols-outlined text-[28px] text-[#1D9336]">description</span>
+            <div style="flex:1;min-width:0;">
+              <p id="excel-file-name" style="font-size:13px;font-weight:700;color:var(--text-on-surface);margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></p>
+              <p id="excel-file-size" style="font-size:11px;color:var(--text-on-surface-variant);margin:0;opacity:0.7;"></p>
+            </div>
+            <button id="btn-remove-file" style="background:transparent;border:none;cursor:pointer;color:var(--text-on-surface-variant);" class="hover:text-error">
+              <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+            </button>
+          </div>
+
+          <!-- Kết quả Import -->
+          <div id="import-result-area" style="display:none;flex-direction:column;gap:12px;">
+            <div id="import-result-alert" style="padding:12px;border-radius:12px;display:flex;align-items:start;gap:8px;">
+              <span class="material-symbols-outlined text-lg" id="import-result-icon">check_circle</span>
+              <p style="font-size:13px;font-weight:700;margin:0;" id="import-result-msg"></p>
+            </div>
+            <div id="import-errors-container" style="display:none;flex-direction:column;gap:6px;">
+              <p style="font-size:12px;font-weight:800;color:#ba1a1a;margin:0 0 2px;">Chi tiết lỗi từng dòng:</p>
+              <div style="max-height:160px;overflow-y:auto;border:1px solid #fecaca;border-radius:8px;background:#fff5f5;">
+                <table style="width:100%;border-collapse:collapse;font-size:12px;text-align:left;">
+                  <thead>
+                    <tr style="background:#fee2e2;border-bottom:1px solid #fecaca;">
+                      <th style="padding:6px 10px;font-weight:700;color:#991b1b;width:60px;text-align:center;">Dòng</th>
+                      <th style="padding:6px 10px;font-weight:700;color:#991b1b;">Mô tả lỗi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="import-errors-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div style="padding:16px 24px;border-top:1px solid var(--outline-variant);display:flex;gap:12px;justify-content:flex-end;background:var(--bg-surface-low);flex-shrink:0;border-bottom-left-radius:24px;border-bottom-right-radius:24px;">
+          <button id="btn-import-cancel" style="padding:10px 20px;border-radius:12px;font-weight:700;font-size:14px;border:1px solid var(--outline-variant);color:var(--text-on-surface-variant);background:transparent;cursor:pointer;" class="hover:bg-outline-variant/10 active:scale-95 transition-all">Đóng</button>
+          <button id="btn-import-submit" style="padding:10px 24px;border-radius:12px;font-weight:700;font-size:14px;border:none;color:#fff;background:#1D9336;cursor:pointer;display:flex;align-items:center;gap:6px;" class="hover:opacity-90 active:scale-95 transition-all" disabled>
+            <span class="material-symbols-outlined" style="font-size:18px;">cloud_upload</span> Bắt đầu nhập
+          </button>
+        </div>
+
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+
+    const fileInput = overlay.querySelector('#excel-file-input');
+    const dropZone = overlay.querySelector('#excel-drop-zone');
+    const fileStatus = overlay.querySelector('#excel-file-status');
+    const fileName = overlay.querySelector('#excel-file-name');
+    const fileSize = overlay.querySelector('#excel-file-size');
+    const removeBtn = overlay.querySelector('#btn-remove-file');
+    const submitBtn = overlay.querySelector('#btn-import-submit');
+    const cancelBtn = overlay.querySelector('#btn-import-cancel');
+    const closeBtn = overlay.querySelector('#close-import-modal');
+    
+    let selectedFile = null;
+
+    overlay.querySelector('#btn-download-template').addEventListener('click', async () => {
+      await self._loadXlsxLibrary();
+      if (!window.XLSX) {
+        return window.GymApp.toast('Không thể tải thư viện xuất Excel mẫu, vui lòng thử lại.', 'error');
+      }
+      self._downloadTemplate();
+    });
+
+    const updateFileDisplay = (file) => {
+      if (file) {
+        selectedFile = file;
+        fileName.textContent = file.name;
+        fileSize.textContent = (file.size / 1024).toFixed(1) + ' KB';
+        dropZone.style.display = 'none';
+        fileStatus.style.display = 'flex';
+        submitBtn.disabled = false;
+      } else {
+        selectedFile = null;
+        fileInput.value = '';
+        dropZone.style.display = 'block';
+        fileStatus.style.display = 'none';
+        submitBtn.disabled = true;
+        overlay.querySelector('#import-result-area').style.display = 'none';
+      }
+    };
+
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) updateFileDisplay(e.target.files[0]);
+    });
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.style.borderColor = '#1D9336';
+      dropZone.style.background = 'rgba(29, 147, 54, 0.05)';
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.style.borderColor = '';
+      dropZone.style.background = '';
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.style.borderColor = '';
+      dropZone.style.background = '';
+      if (e.dataTransfer.files.length > 0) {
+        const file = e.dataTransfer.files[0];
+        const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
+        if (['.xlsx', '.xls', '.csv'].includes(ext)) {
+          updateFileDisplay(file);
+        } else {
+          window.GymApp.toast('Chỉ chấp nhận file Excel (.xlsx, .xls, .csv)', 'error');
+        }
+      }
+    });
+
+    removeBtn.addEventListener('click', () => updateFileDisplay(null));
+
+    submitBtn.addEventListener('click', async () => {
+      if (!selectedFile) return;
+      
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="animate-spin material-symbols-outlined" style="font-size:18px;">sync</span> Đang xử lý...';
+      cancelBtn.disabled = true;
+
+      const fd = new FormData();
+      fd.append('file', selectedFile);
+
+      try {
+        const token = localStorage.getItem('gym-token');
+        const fetchRes = await fetch('http://localhost:3000/api/members/import', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: fd,
+        });
+
+        const res = await fetchRes.json();
+        
+        const resultArea = overlay.querySelector('#import-result-area');
+        const alertDiv = overlay.querySelector('#import-result-alert');
+        const alertIcon = overlay.querySelector('#import-result-icon');
+        const alertMsg = overlay.querySelector('#import-result-msg');
+        const errContainer = overlay.querySelector('#import-errors-container');
+        const errTbody = overlay.querySelector('#import-errors-tbody');
+
+        resultArea.style.display = 'flex';
+        errTbody.innerHTML = '';
+        
+        if (res.success) {
+          const { successCount, failCount, errors } = res.data;
+          
+          alertMsg.innerHTML = `Đã nhập thành công <strong>${successCount}</strong> hội viên.<br/>Thất bại <strong>${failCount}</strong> dòng.`;
+          
+          if (failCount === 0) {
+            alertDiv.style.background = '#f0fdf4';
+            alertDiv.style.border = '1px solid #bbf7d0';
+            alertDiv.style.color = '#166534';
+            alertIcon.textContent = 'check_circle';
+            errContainer.style.display = 'none';
+            window.GymApp.toast(`Đã import thành công ${successCount} hội viên!`, 'success');
+            
+            setTimeout(async () => {
+              await self._refreshMembersFromApi();
+              close();
+            }, 1500);
+          } else {
+            alertDiv.style.background = '#fffbeb';
+            alertDiv.style.border = '1px solid #fef3c7';
+            alertDiv.style.color = '#b45309';
+            alertIcon.textContent = 'warning';
+            
+            errContainer.style.display = 'flex';
+            errTbody.innerHTML = errors.map(e => `
+              <tr style="border-bottom:1px solid #fecaca; background:#fff;">
+                <td style="padding:6px 10px; font-weight:700; color:#ba1a1a; text-align:center;">${e.row}</td>
+                <td style="padding:6px 10px; color:#7f1d1d;">${e.error}</td>
+              </tr>
+            `).join('');
+            
+            window.GymApp.toast(`Import hoàn thành với ${failCount} dòng lỗi.`, 'warning');
+            await self._refreshMembersFromApi();
+          }
+        } else {
+          alertDiv.style.background = '#fef2f2';
+          alertDiv.style.border = '1px solid #fecaca';
+          alertDiv.style.color = '#991b1b';
+          alertIcon.textContent = 'error';
+          alertMsg.textContent = res.message || 'Lỗi khi nhập file Excel.';
+          errContainer.style.display = 'none';
+          window.GymApp.toast(res.message || 'Import thất bại!', 'error');
+        }
+      } catch (err) {
+        window.GymApp.toast('Lỗi kết nối máy chủ.', 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;">cloud_upload</span> Bắt đầu nhập';
+        cancelBtn.disabled = false;
+      }
+    });
+
+    closeBtn.addEventListener('click', close);
+    cancelBtn.addEventListener('click', close);
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+  },
+
+  _loadXlsxLibrary: function () {
+    return new Promise((resolve) => {
+      if (window.XLSX) return resolve();
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+      script.onload = () => resolve();
+      document.head.appendChild(script);
+    });
+  },
+
+  _downloadTemplate: function () {
+    if (!window.XLSX) return;
+    const headers = [['Họ và tên', 'Số điện thoại', 'Giới tính', 'Ngày sinh', 'Email', 'Địa chỉ', 'Ghi chú']];
+    const data = [
+      ['Nguyễn Văn A', '0912345678', 'Nam', '1995-05-15', 'anguyen@gmail.com', '123 Đường ABC, Hà Nội', 'Hội viên đăng ký mới'],
+      ['Trần Thị B', '0987654321', 'Nữ', '1998-10-20', 'btran@gmail.com', '456 Đường XYZ, TP.HCM', 'Khách hàng chuyển từ chi nhánh khác']
+    ];
+    const worksheet = XLSX.utils.aoa_to_sheet([...headers, ...data]);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Template Hội Viên");
+    XLSX.writeFile(workbook, "template-import-hoi-vien.xlsx");
+  },
+
   _setupPgHandler: function () {
     const self = this;
     window.GymApp._pgHandler = function (page) {
@@ -4204,27 +4757,37 @@ window.GymApp.pages['members-list'] = {
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => self._switchTab(btn.dataset.tab));
     });
-    this._refreshMemberTable();
+    this._fetchMembersData(1, false);
     this._refreshPtCards();
     self._switchTab(self._tab);
 
-    document.getElementById('member-search')?.addEventListener('input', () => self._applyMemberFilter());
+    let searchTimeout = null;
+    document.getElementById('member-search')?.addEventListener('input', () => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        self._memberPage = 1;
+        self._fetchMembersData(1, false);
+      }, 300);
+    });
     document.getElementById('pt-search')?.addEventListener('input', () => self._applyPtFilter());
 
     document.getElementById('btn-view-all-members')?.addEventListener('click', () => {
       self._filterState = { status: '', pkg: '', gender: '', hasPt: '', checkinToday: '' };
       const s = document.getElementById('member-search'); if (s) s.value = '';
-      self._memberFiltered = [...window.GymApp.data.members];
-      self._memberPage = 1; self._refreshMemberTable(); self._updateFilterUI();
-      window.GymApp.toast(`Hiển thị tất cả ${window.GymApp.data.members.length} hội viên`, 'info');
+      self._memberPage = 1;
+      self._fetchMembersData(1, false);
+      self._updateFilterUI();
+      window.GymApp.toast(`Đã tải lại danh sách hội viên`, 'info');
     });
 
     document.getElementById('btn-show-all')?.addEventListener('click', () => {
       self._filterState = { status: '', pkg: '', gender: '', hasPt: '', checkinToday: '' };
       self._memberSortState = ''; // Reset sort
       const s = document.getElementById('member-search'); if (s) s.value = '';
-      self._memberFiltered = [...window.GymApp.data.members];
-      self._memberPage = 1; self._refreshMemberTable(); self._updateFilterUI(); self._updateMemberSortUI();
+      self._memberPage = 1;
+      self._fetchMembersData(1, false);
+      self._updateFilterUI();
+      self._updateMemberSortUI();
     });
 
     document.getElementById('btn-sort-member')?.addEventListener('click', () => self._showMemberSortModal());
@@ -4295,6 +4858,8 @@ window.GymApp.pages['members-list'] = {
         }
       }
     });
+
+    document.getElementById('btn-import-members')?.addEventListener('click', () => self._showImportModal());
 
     document.getElementById('btn-export-members')?.addEventListener('click', async () => {
       window.GymApp.toast('Đang xuất danh sách hội viên...', 'info');

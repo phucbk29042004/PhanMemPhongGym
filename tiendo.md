@@ -8,11 +8,67 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
-**✅ Sửa lỗi FK bảng danh_gia_pt trỏ vào lich_tap_old_broken** — Thêm Migration v21 vào db.js để tự động phát hiện và tái tạo bảng `danh_gia_pt` với foreign key chính xác trỏ vào `lich_tap`, khắc phục lỗi 500 `no such table: main.lich_tap_old_broken` khi gọi API đánh giá PT.
+**✅ Sửa lỗi hiển thị yêu cầu PayOS chưa thanh toán ở hàng chờ duyệt** — Loại bỏ các yêu cầu thanh toán chuyển khoản PayOS đang ở trạng thái PENDING (chờ thanh toán) khỏi danh sách chờ duyệt thủ công và thống kê Dashboard, chỉ hiển thị các yêu cầu thanh toán bằng tiền mặt cần lễ tân xác nhận thực tế.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
+
+### [02/06/2026 11:46] — Sửa lỗi trùng tên đăng nhập khi Import Excel lại sau khi xóa hội viên
+- **Loại**: Sửa bug (Backend)
+- **File**: `BE/src/controllers/members.controller.js`
+- **Mô tả**: Thay đổi hành vi xóa hội viên trong hàm `deleteMember`. Khi xóa hồ sơ hội viên (`is_deleted = 1`), hệ thống sẽ thực hiện xóa tài khoản liên kết trong bảng `tai_khoan` (thay vì chỉ khóa `trang_thai = 'khoa'`). Việc này giúp giải phóng hoàn toàn Số điện thoại / Tên đăng nhập của tài khoản đó, cho phép import lại file Excel chứa các số điện thoại này mà không bị lỗi trùng lặp `ten_dang_nhap`.
+- **Kết quả**: Thành công.
+
+### [02/06/2026 11:39] — Khắc phục lỗi CHECK constraint gioi_tinh khi Import Excel
+- **Loại**: Sửa bug (Backend)
+- **File**: `BE/src/controllers/members.controller.js`
+- **Mô tả**: Sửa lỗi `CHECK constraint failed: gioi_tinh IN ('nam','nu','khac')` khi import file Excel. Chuẩn hóa giới tính đầu vào thành chữ thường `'nam'`, `'nu'`, `'khac'` theo đúng ràng buộc CHECK constraint của SQLite (trước đó đang lưu `'Nam'`, `'Nữ'`). Mặc định gán `'nam'` nếu trường dữ liệu trống.
+- **Kết quả**: Thành công.
+
+### [02/06/2026 11:15] — Khắc phục lỗi khoảng trắng bảng và tích hợp tính năng Import Excel động cho Hội viên
+- **Loại**: Cải tiến giao diện & Tính năng mới (Fullstack)
+- **File**: `FE/assets/js/pages/members-list.js`, `BE/src/middlewares/upload.js`, `BE/src/controllers/members.controller.js`, `BE/src/routes/members.routes.js`
+- **Mô tả**:
+  - **Sửa lỗi khoảng trắng bảng**: Gỡ bỏ thuộc tính bo góc mặc định (`border-radius: 0 !important;`) cho tất cả các ô `th` ở thead. Áp dụng kỹ thuật CSS background linear-gradient cho các container chứa table cuộn (`#members-scroll-container` và `#pt-scroll-container`), tô màu xanh thương hiệu tiệp màu ở phần header (độ cao 38px) giúp che đi khoảng trắng dọc do scrollbar xuất hiện ở phía bên phải cột Thao tác.
+  - **Import Excel động**:
+    - **Backend**: Xây dựng middleware `uploadExcel` để chấp nhận upload file `.xlsx`, `.xls`, `.csv`. Viết API `POST /api/members/import` sử dụng thư viện `xlsx` để phân tích dữ liệu động, tích hợp SQLite Transaction giúp thực thi hàng trăm bản ghi cực nhanh (<0.3s) và an toàn (tự động rollback nếu có dòng lỗi). Sinh mật khẩu hash mặc định (`123456`) ngoài vòng lặp để tránh nghẽn CPU và tự động tạo tài khoản đăng nhập cho hội viên.
+    - **Frontend**: Thêm nút "Nhập Excel" vào tab Hội viên. Thiết kế Modal kéo thả upload file trực quan. Tích hợp nạp động thư viện `xlsx` từ CDN khi tải trang để cho phép tự động sinh và tải xuống file template Excel mẫu có dữ liệu ví dụ. Hiển thị báo cáo kết quả chi tiết kèm bảng thống kê các dòng bị lỗi để admin dễ dàng điều chỉnh.
+- **Kết quả**: Thành công.
+
+### [02/06/2026 10:52] — Sửa lỗi cú pháp pt-register.js và chuyển đổi Infinite Scroll kết nối trực tiếp API Database
+- **Loại**: Sửa bug & Cải tiến tính năng (Fullstack)
+- **File**: `FE/assets/js/pages/pt-register.js`, `FE/assets/js/pages/members-list.js`
+- **Mô tả**:
+  - **pt-register.js**: Định nghĩa chính xác hàm `validateTimeOptions` (khắc phục hoàn toàn lỗi `Uncaught SyntaxError: Unexpected token ';'`) và khai báo biến `totalBookings` trong hàm `render` để tránh lỗi `ReferenceError`.
+  - **members-list.js**: Nâng cấp lưới cuộn vô hạn (Infinite Scroll) của Hội viên kết nối trực tiếp với Database API của Backend (`/members?page=X&limit=20`) thay vì phân trang tĩnh trên client. Tích hợp bộ lọc online, tìm kiếm online kèm debounce (300ms) để tối ưu số lượng request lên SQLite.
+- **Kết quả**: Thành công.
+
+### [02/06/2026 10:10] — Tích hợp hiển thị Đánh giá & Nhận xét của hội viên dành cho PT
+- **Loại**: Tính năng mới (Fullstack)
+- **File**: `BE/src/controllers/trainers.controller.js`, `FE/assets/js/pages/members-list.js`
+- **Mô tả**:
+  - **Backend**: Cập nhật API `getTrainerById` thực hiện truy vấn thêm danh sách đánh giá từ bảng `danh_gia_pt` (kèm theo các tiêu chí, tags, số sao, nội dung ghi chú và thông tin hội viên như avatar, họ tên).
+  - **Frontend**: Bổ sung tab **"Đánh giá"** (Reviews) vào Modal chi tiết PT. Thiết kế UI hiển thị danh sách nhận xét đẹp mắt, trực quan bao gồm: số sao rating dạng sao vàng, ngày tạo, avatar và họ tên hội viên, nội dung text note phản hồi và các thẻ tags tiêu chí.
+- **Kết quả**: Thành công.
+
+### [02/06/2026 09:46] — Loại bỏ yêu cầu PayOS chưa thanh toán (PENDING) khỏi danh sách duyệt thủ công
+- **Loại**: Sửa bug (Backend)
+- **File**: `BE/src/controllers/members.controller.js`, `BE/src/controllers/revenue.controller.js`
+- **Mô tả**:
+  - Tại `getPackageRequests` (lấy danh sách yêu cầu gia hạn): Cập nhật điều kiện WHERE thay thế `(dk.payos_status IS NULL OR dk.payos_status = 'PENDING')` bằng `dk.payos_status IS NULL` để lọc bỏ các yêu cầu thanh toán qua PayOS đang ở trạng thái PENDING.
+  - Tại `getDashboard` (thống kê Dashboard): Đồng bộ hóa điều kiện đếm `stats.yeu_cau_cho_duyet` tương tự để tránh thống kê các giao dịch chuyển khoản chưa hoàn tất.
+  - Khắc phục lỗ hổng logic cho phép lễ tân/admin duyệt khống các gói tập chưa được thanh toán thành công qua PayOS.
+- **Kết quả**: Thành công.
+
+### [02/06/2026 09:36] — Đồng bộ logic đếm trạng thái hội viên giữa Dashboard và Danh sách hội viên
+- **Loại**: Sửa bug (Fullstack)
+- **File**: `BE/src/config/db.js`
+- **Mô tả**:
+  - Cập nhật hàm `recreateMemberStatusView()` thay đổi logic cột `trang_thai_mau` để kiểm tra các gói tập đã hết hạn (`trang_thai = 'het_han'`) hoặc gói PT đã hoàn thành (`hoan_thanh`, `het_han`) trước khi gắn nhãn hội viên là `chua_dang_ky`.
+  - Tự động gọi `recreateMemberStatusView()` khi khởi động Backend để đảm bảo View SQLite luôn được đồng bộ và cập nhật logic mới nhất.
+  - Khắc phục triệt để lỗi thống kê lệch số lượng hội viên Chưa đăng ký hiển thị trên biểu đồ tròn Dashboard (giảm từ 3 xuống 2, khớp hoàn toàn với kết quả lọc ở trang danh sách).
+- **Kết quả**: Thành công.
 
 ### [01/06/2026 17:09] — Sửa đổi định dạng payload Gemini (snake_case) & Thay đổi model Groq fallback
 - **Loại**: Sửa bug (Backend)
@@ -1240,4 +1296,27 @@
     - Sắp xếp các tin nhắn của mục "PT & Tôi" theo thứ tự tin nhắn mới nhất hiển thị lên đầu (sắp xếp giảm dần theo thời gian tạo).
     - Hiển thị ngày đầy đủ và giờ cho mỗi tin nhắn (ví dụ: `08:30 29/05/2026`) thay vì chỉ hiển thị giờ như trước đây.
 - **Kết quả**: ✅ Khắc phục hoàn toàn lỗi crash khi đăng ký nối tiếp PT và cải thiện trải nghiệm chat.
+
+### 02/06/2026 10:00 — Chuyển đổi giao diện tab PT sang dạng bảng (Table)
+- **Loại**: Chỉnh sửa & Cải tiến UI/UX (Frontend)
+- **File**: `FE/assets/js/pages/members-list.js`
+- **Mô tả**: 
+  - Đã chuyển đổi giao diện hiển thị danh sách huấn luyện viên (PT) từ dạng thẻ (card-based grid) sang dạng bảng (table-based layout) đồng bộ hoàn toàn với tab Hội viên.
+  - Sửa wrapper `id="pt-cards-container"` sang dạng full-width (`w-full`) để bảng trải rộng tối đa.
+  - Thiết kế lại hàm `_renderPtCards` để render table trên desktop (gồm các cột: Họ tên, Mã HLV, Chuyên môn, Kinh nghiệm, Đánh giá, Trạng thái, Thao tác) và dạng list gọn gàng trên mobile.
+  - Tích hợp sự kiện click dòng bảng (`.pt-row`) vào `_bindPtCardEvents` để mở chi tiết PT tương tự như Hội viên.
+- **Kết quả**: ✅ Thành công. Giao diện bảng PT đồng bộ, đẹp mắt và các chức năng cũ (Xem, Sửa, Xóa, Lọc, Sắp xếp, Tìm kiếm) hoạt động mượt mà.
+
+### 02/06/2026 10:15 — Sửa lỗi trạng thái PT và Thêm badge vai trò trang Check-in
+- **Loại**: Sửa bug & Cải tiến UI/UX (Fullstack)
+- **File**: 
+  - `BE/src/controllers/trainers.controller.js` (Backend)
+  - `FE/assets/js/pages/members-list.js` (Web Frontend - members-list)
+  - `FE/assets/js/pages/checkin.js` (Web Frontend - checkin)
+- **Mô tả**:
+  - **Sửa lỗi trạng thái PT hiển thị "Tạm nghỉ"**: Do Backend SQL select thiếu trường trạng thái tài khoản. Khắc phục bằng cách `LEFT JOIN tai_khoan` và select `COALESCE(tk.trang_thai, 'hoat_dong') AS trang_thai`. Đồng thời sửa Frontend map thêm trạng thái `'kich_hoat'` của tài khoản.
+  - **Cải tiến hiển thị check-in**: Bổ sung hiển thị badge loại tài khoản (HLV, HV, Lễ tân, NV) bên cạnh mã hồ sơ của từng người trong danh sách/bảng check-in để dễ phân biệt.
+- **Kết quả**: ✅ Khắc phục triệt để lỗi hiển thị sai trạng thái HLV. Thống kê check-in rõ ràng, trực quan hơn.
+
+
 

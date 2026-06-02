@@ -9,6 +9,12 @@ window.GymApp.pages['pt-register'] = {
     const schedules = Array.isArray(window.GymApp.data.ptSchedules) ? window.GymApp.data.ptSchedules : [];
     const bookings = Array.isArray(window.GymApp.data.ptBookings) ? window.GymApp.data.ptBookings : [];
     const totalBookings = schedules.length + bookings.length;
+    const timeSlots = [];
+    for (let h = 5; h <= 22; h++) {
+      for (let mn = 0; mn < 60; mn += 15) {
+        timeSlots.push(`${String(h).padStart(2, '0')}:${String(mn).padStart(2, '0')}`);
+      }
+    }
 
     return `
       <div class="flex flex-col gap-lg">
@@ -94,42 +100,15 @@ window.GymApp.pages['pt-register'] = {
                 <div>
                   <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5 flex items-center gap-xs">
                     <span class="material-symbols-outlined text-brand-primary text-sm" style="font-variation-settings:'FILL' 1">schedule</span>
-                    Giờ bắt đầu
+                    Chọn giờ bắt đầu
                   </label>
-                  <input id="reg-start" type="hidden" value="06:00" />
-                  <div class="flex items-center gap-xs">
-                    <select id="reg-start-hour" class="flex-1 bg-surface-container-low/30 border border-outline-variant/50 text-on-surface py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all text-center cursor-pointer">
-                      <option value="05">05</option>
-                      <option value="06" selected>06</option>
-                      <option value="07">07</option>
-                      <option value="08">08</option>
-                      <option value="09">09</option>
-                      <option value="10">10</option>
-                      <option value="11">11</option>
-                      <option value="12">12</option>
-                      <option value="13">13</option>
-                      <option value="14">14</option>
-                      <option value="15">15</option>
-                      <option value="16">16</option>
-                      <option value="17">17</option>
-                      <option value="18">18</option>
-                      <option value="19">19</option>
-                      <option value="20">20</option>
-                      <option value="21">21</option>
-                      <option value="22">22</option>
-                    </select>
-                    <span class="text-on-surface-variant font-bold">:</span>
-                    <select id="reg-start-minute" class="flex-1 bg-surface-container-low/30 border border-outline-variant/50 text-on-surface py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all text-center cursor-pointer">
-                      <option value="00" selected>00</option>
-                      <option value="10">10</option>
-                      <option value="15">15</option>
-                      <option value="20">20</option>
-                      <option value="30">30</option>
-                      <option value="40">40</option>
-                      <option value="45">45</option>
-                      <option value="50">50</option>
-                    </select>
+                  <div id="reg-time-display" class="text-body-sm mb-compact font-bold" style="min-height:18px;color:#6e7a6b;">Chưa chọn giờ</div>
+                  <div style="border:1px solid #becab9;border-radius:12px;overflow:hidden;max-height:150px;overflow-y:auto;" class="bg-surface-container-low">
+                    <div class="time-slot-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(65px,1fr));gap:4px;padding:8px;">
+                      ${timeSlots.map(t => `<button type="button" class="reg-time-slot-btn bg-surface-container-lowest text-on-surface border border-outline-variant hover:bg-surface-container transition-all text-xs" data-time="${t}" style="padding:6px 2px;border-radius:8px;font-weight:600;cursor:pointer;text-align:center;">${t}</button>`).join('')}
+                    </div>
                   </div>
+                  <input id="reg-start" type="hidden" value="" />
                 </div>
                 <div>
                   <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5 flex items-center gap-xs">
@@ -387,72 +366,109 @@ window.GymApp.pages['pt-register'] = {
     // ── Hàm khóa giờ/phút trong quá khứ khi chọn ngày hôm nay ──
     const validateTimeOptions = () => {
       const selectedDate = document.getElementById('reg-date')?.value;
-      const hourSel = document.getElementById('reg-start-hour');
-      const minSel = document.getElementById('reg-start-minute');
-      if (!hourSel || !minSel) return;
+      const buttons = document.querySelectorAll('.reg-time-slot-btn');
+      if (buttons.length === 0) return;
 
       const now = new Date();
       const nowH = now.getHours();
       const nowM = now.getMinutes();
       const isToday = selectedDate === today;
 
-      // Khóa / mở các option giờ
-      let firstValidHour = null;
-      Array.from(hourSel.options).forEach(opt => {
-        const h = parseInt(opt.value);
-        const isPast = isToday && h < nowH;
-        opt.disabled = isPast;
-        opt.style.color = isPast ? '#a3a3a3' : '';
-        if (!isPast && firstValidHour === null) firstValidHour = String(h).padStart(2, '0');
+      buttons.forEach(btn => {
+        const t = btn.dataset.time;
+        const [h, m] = t.split(':').map(Number);
+        const isPast = isToday && (h < nowH || (h === nowH && m <= nowM));
+        btn.disabled = isPast;
+        if (isPast) {
+          btn.style.opacity = '0.35';
+          btn.style.cursor = 'not-allowed';
+          btn.style.background = '';
+          btn.style.color = '';
+        } else {
+          btn.style.opacity = '';
+          btn.style.cursor = 'pointer';
+        }
       });
 
-      // Nếu giờ hiện tại đang chọn bị khóa → chuyển sang giờ hợp lệ đầu tiên
-      if (isToday && parseInt(hourSel.value) < nowH) {
-        hourSel.value = firstValidHour || String(nowH + 1).padStart(2, '0');
-      }
-
-      // Khóa / mở các option phút (chỉ khi chọn giờ hiện tại)
-      const selectedH = parseInt(hourSel.value);
-      Array.from(minSel.options).forEach(opt => {
-        const m = parseInt(opt.value);
-        const isPast = isToday && selectedH === nowH && m <= nowM;
-        opt.disabled = isPast;
-        opt.style.color = isPast ? '#a3a3a3' : '';
-      });
-      // Nếu phút đang chọn bị khóa → chuyển sang phút hợp lệ đầu tiên
-      if (isToday && selectedH === nowH && parseInt(minSel.value) <= nowM) {
-        const firstValidMin = Array.from(minSel.options).find(o => !o.disabled);
-        if (firstValidMin) minSel.value = firstValidMin.value;
-        else {
-          // Đã hết giờ hợp lệ trong ngày hôm nay → chuyển sang ngày mai
-          const tomorrow = new Date();
-          tomorrow.setDate(tomorrow.getDate() + 1);
-          const tomorrowStr = tomorrow.toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
-          if (regDate) regDate.value = tomorrowStr;
-          Array.from(hourSel.options).forEach(o => { o.disabled = false; o.style.color = ''; });
-          Array.from(minSel.options).forEach(o => { o.disabled = false; o.style.color = ''; });
-          hourSel.value = '06'; minSel.value = '00';
+      // Nếu giờ đã chọn trước đó giờ bị khóa → reset
+      const startInput = document.getElementById('reg-start');
+      if (startInput && startInput.value) {
+        const [sh, sm] = startInput.value.split(':').map(Number);
+        const isPast = isToday && (sh < nowH || (sh === nowH && sm <= nowM));
+        if (isPast) {
+          startInput.value = '';
+          const display = document.getElementById('reg-time-display');
+          if (display) {
+            display.textContent = 'Chưa chọn giờ';
+            display.style.color = '';
+            display.style.fontWeight = '';
+          }
+          buttons.forEach(b => {
+            if (!b.disabled) {
+              b.style.transform = 'scale(1)';
+              b.style.background = '';
+              b.style.color = '';
+            }
+          });
         }
       }
-      updateStartTime();
     };
 
-    // Tự tính giờ kết thúc khi đổi giờ bắt đầu hoặc thời lượng
-    const updateStartTime = () => {
-      const h = document.getElementById('reg-start-hour')?.value || '06';
-      const m = document.getElementById('reg-start-minute')?.value || '00';
-      const startInput = document.getElementById('reg-start');
-      if (startInput) {
-        startInput.value = `${h}:${m}`;
-        self._calcEndTime();
+    // Tương tác khi click các slot giờ
+    const bindTimeSlotEvents = () => {
+      document.querySelectorAll('.reg-time-slot-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          if (btn.disabled) return;
+          const t = btn.dataset.time;
+          const startEl = document.getElementById('reg-start');
+          const timeDisplay = document.getElementById('reg-time-display');
+
+          // Reset styles
+          document.querySelectorAll('.reg-time-slot-btn').forEach(b => {
+            if (!b.disabled) {
+              b.style.transform = 'scale(1)';
+              b.style.background = '';
+              b.style.color = '';
+            }
+          });
+
+          // Style active button
+          btn.style.transform = 'scale(1.05)';
+          btn.style.background = '#1D9336';
+          btn.style.color = '#fff';
+
+          if (startEl) {
+            startEl.value = t;
+            self._calcEndTime();
+          }
+
+          if (timeDisplay) {
+            const endEl = document.getElementById('reg-end');
+            timeDisplay.textContent = `Đã chọn: ${t} — ${endEl?.value || '—'}`;
+            timeDisplay.style.color = '#1D9336';
+            timeDisplay.style.fontWeight = '700';
+          }
+        });
+      });
+    };
+
+    // Cập nhật lại khi thay đổi thời lượng
+    document.getElementById('reg-duration')?.addEventListener('change', () => {
+      self._calcEndTime();
+      const startEl = document.getElementById('reg-start');
+      const timeDisplay = document.getElementById('reg-time-display');
+      if (startEl && startEl.value && timeDisplay) {
+        const endEl = document.getElementById('reg-end');
+        timeDisplay.textContent = `Đã chọn: ${startEl.value} — ${endEl?.value || '—'}`;
       }
-    };
-    document.getElementById('reg-start-hour')?.addEventListener('change', () => { validateTimeOptions(); });
-    document.getElementById('reg-start-minute')?.addEventListener('change', updateStartTime);
-    document.getElementById('reg-duration')?.addEventListener('change', () => self._calcEndTime());
-    document.getElementById('reg-date')?.addEventListener('change', validateTimeOptions);
+    });
 
-    // Khởi tạo giờ kết thúc mặc định lúc load trang
+    document.getElementById('reg-date')?.addEventListener('change', () => {
+      validateTimeOptions();
+    });
+
+    bindTimeSlotEvents();
     validateTimeOptions();
 
     // Search PT
@@ -507,6 +523,14 @@ window.GymApp.pages['pt-register'] = {
       if (!start) { window.GymApp.toast('Vui lòng chọn giờ bắt đầu!', 'error'); return; }
       if (!end) { window.GymApp.toast('Giờ kết thúc chưa được tính. Hãy chọn giờ bắt đầu và thời lượng!', 'error'); return; }
 
+      // Kiểm tra xem thời gian đặt lịch có ở quá khứ không
+      const now = new Date();
+      const selectedDateTime = new Date(`${date}T${start}`);
+      if (selectedDateTime < now) {
+        window.GymApp.toast('Không thể đặt lịch ở thời gian quá khứ!', 'error');
+        return;
+      }
+
       try {
         const bookingData = {
           dang_ky_pt_id: self._selectedMember.dang_ky_pt_id,
@@ -526,17 +550,23 @@ window.GymApp.pages['pt-register'] = {
           self._refreshBookingList();
 
           document.getElementById('clear-pt').click();
-          if (document.getElementById('reg-start-hour')) document.getElementById('reg-start-hour').value = '06';
-          if (document.getElementById('reg-start-minute')) document.getElementById('reg-start-minute').value = '00';
+          const display = document.getElementById('reg-time-display');
+          if (display) {
+            display.textContent = 'Chưa chọn giờ';
+            display.style.color = '';
+            display.style.fontWeight = '';
+          }
           const st = document.getElementById('reg-start');
-          if (st) { st.value = '06:00'; self._calcEndTime(); }
+          if (st) { st.value = ''; }
           document.getElementById('reg-notes').value = '';
         } else {
           window.GymApp.toast(res?.message || 'Đặt lịch thất bại!', 'error');
         }
       } catch (err) {
         console.error('Booking failed', err);
-        window.GymApp.toast('Lỗi kết nối máy chủ', 'error');
+        if (err.message === 'Failed to fetch' || !err.message) {
+          window.GymApp.toast('Lỗi kết nối máy chủ', 'error');
+        }
       }
     });
 
@@ -559,7 +589,9 @@ window.GymApp.pages['pt-register'] = {
             window.GymApp.toast(res?.message || 'Hủy lịch thất bại!', 'error');
           }
         } catch (err) {
-          window.GymApp.toast('Lỗi kết nối máy chủ', 'error');
+          if (err.message === 'Failed to fetch' || !err.message) {
+            window.GymApp.toast('Lỗi kết nối máy chủ', 'error');
+          }
         }
         return;
       }
@@ -689,7 +721,9 @@ window.GymApp.pages['pt-register'] = {
               window.GymApp.toast(res?.message || 'Cập nhật thất bại!', 'error');
             }
           } catch (err) {
-            window.GymApp.toast('Lỗi kết nối máy chủ', 'error');
+            if (err.message === 'Failed to fetch' || !err.message) {
+              window.GymApp.toast('Lỗi kết nối máy chủ', 'error');
+            }
           }
         });
       }

@@ -416,22 +416,27 @@ function recreateMemberStatusView() {
            SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
         )) AS den_ngay_xa_nhat,
         CASE
-            WHEN NOT EXISTS (SELECT 1 FROM dang_ky_goi_tap dk WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong')
-                 AND NOT EXISTS (SELECT 1 FROM dang_ky_pt dp WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong')
-THEN 'chua_dang_ky'
-            WHEN (SELECT MAX(d_ngay) FROM (
-                    SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
-                    UNION ALL
-                    SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
-                 )) < date('now','localtime')
+            WHEN EXISTS (SELECT 1 FROM dang_ky_goi_tap dk WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong')
+                 OR EXISTS (SELECT 1 FROM dang_ky_pt dp WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong')
+                THEN CASE
+                    WHEN (SELECT MAX(d_ngay) FROM (
+                            SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+                            UNION ALL
+                            SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+                         )) < date('now','localtime')
+                        THEN 'het_han'
+                    WHEN (SELECT MAX(d_ngay) FROM (
+                            SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+                            UNION ALL
+                            SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+                         )) <= date('now','localtime','+7 days')
+                        THEN 'sap_het_han'
+                    ELSE 'con_han'
+                END
+            WHEN EXISTS (SELECT 1 FROM dang_ky_goi_tap dk WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'het_han')
+                 OR EXISTS (SELECT 1 FROM dang_ky_pt dp WHERE dp.hoi_vien_id = h.id AND dp.trang_thai IN ('het_han','hoan_thanh'))
                 THEN 'het_han'
-            WHEN (SELECT MAX(d_ngay) FROM (
-                    SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
-                    UNION ALL
-                    SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
-                 )) <= date('now','localtime','+7 days')
-                THEN 'sap_het_han'
-            ELSE 'con_han'
+            ELSE 'chua_dang_ky'
         END AS trang_thai_mau,
         (SELECT COUNT(*) FROM dang_ky_pt dp
          WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS so_goi_pt_dang_tap,
@@ -1588,6 +1593,14 @@ try {
   }
 } catch (err) {
   console.error('[DB] ❌ Lỗi khi sửa FK v21 (danh_gia_pt):', err.message);
+}
+
+// Tự động đồng bộ lại View v_trang_thai_hoi_vien khi khởi động để cập nhật logic mới nhất
+try {
+  recreateMemberStatusView();
+  console.log('[DB] ✅ Đồng bộ View v_trang_thai_hoi_vien thành công.');
+} catch (e) {
+  console.error('[DB] ❌ Lỗi khi đồng bộ View v_trang_thai_hoi_vien:', e.message);
 }
 
 export default db;

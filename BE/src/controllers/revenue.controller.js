@@ -347,7 +347,7 @@ export const getDashboard = (req, res) => {
   stats.yeu_cau_cho_duyet = db.prepare(`
     SELECT COUNT(*) AS c FROM dang_ky_goi_tap 
     WHERE trang_thai = 'cho_duyet'
-      AND (payos_status IS NULL OR payos_status = 'PENDING')
+      AND payos_status IS NULL
       AND ngay_thanh_toan IS NULL
   `).get().c;
 

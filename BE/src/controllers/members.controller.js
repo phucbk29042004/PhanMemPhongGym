@@ -10,6 +10,7 @@ import { ghi_audit_log } from '../utils/audit.js';
 import { createNotification, createUserNotification } from '../utils/notifications.js';
 import bcrypt from 'bcryptjs';
 import { createPaymentLink, getPaymentLinkInformation } from '../utils/payos.js';
+import xlsx from 'xlsx';
 
 // Tự động cập nhật các gói tập/PT đã quá hạn sử dụng sang trạng thái tương ứng
 const autoUpdateExpiredStatuses = () => {
@@ -339,7 +340,7 @@ export const deleteMember = (req, res) => {
     `).run(req.user.id, reason, id);
 
     if (member.tai_khoan_id) {
-      db.prepare("UPDATE tai_khoan SET trang_thai = 'khoa' WHERE id = ?").run(member.tai_khoan_id);
+      db.prepare("DELETE FROM tai_khoan WHERE id = ?").run(member.tai_khoan_id);
     }
 
     db.prepare(`
@@ -1053,7 +1054,7 @@ export const getPackageRequests = (req, res) => {
     JOIN ho_so h ON h.id = dk.ho_so_id
     JOIN goi_tap gt ON gt.id = dk.goi_tap_id
     WHERE dk.trang_thai = 'cho_duyet'
-      AND (dk.payos_status IS NULL OR dk.payos_status = 'PENDING')
+      AND dk.payos_status IS NULL
       AND dk.ngay_thanh_toan IS NULL
     ORDER BY dk.ngay_tao DESC
   `).all();
@@ -1935,3 +1936,173 @@ export const getInvoice = (req, res) => {
     ngay_in: new Date().toISOString(),
   });
 };
+
+// ── POST /api/members/import ─────────────────────────────
+// Import hội viên từ file Excel
+export const importMembers = async (req, res) => {
+  if (!req.file) {
+    return error(res, 'Vui lòng chọn file Excel để nhập.', 400);
+  }
+
+  try {
+    const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+    const firstSheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[firstSheetName];
+    const rawData = xlsx.utils.sheet_to_json(worksheet);
+
+    if (rawData.length === 0) {
+      return error(res, 'File Excel không có dữ liệu.', 400);
+    }
+
+    const vaiTroHoiVien = db.prepare("SELECT id FROM vai_tro WHERE ma_vai_tro = 'hoi_vien'").get();
+    const defaultPasswordHash = await bcrypt.hash('123456', 12);
+
+    // Sử dụng SQLite Transaction để thực thi nhanh chóng hàng trăm dòng và rollback nếu có lỗi hệ thống
+    const importTx = db.transaction((membersData, creatorId) => {
+      let successCount = 0;
+      let failCount = 0;
+      const errors = [];
+
+      // Lấy mã số hội viên lớn nhất hiện tại làm mốc tăng dần
+      const lastHoSo = db.prepare(`
+        SELECT ma_ho_so FROM ho_so WHERE loai_ho_so = 'hoi_vien' ORDER BY id DESC LIMIT 1
+      `).get();
+      
+      let baseNum = 0;
+      if (lastHoSo && lastHoSo.ma_ho_so) {
+        const match = lastHoSo.ma_ho_so.match(/\d+/);
+        if (match) baseNum = parseInt(match[0]);
+      }
+
+      const stmtCheckPhone = db.prepare("SELECT id FROM ho_so WHERE so_dien_thoai = ? AND is_deleted = 0");
+      const stmtCheckUsername = db.prepare("SELECT id FROM tai_khoan WHERE ten_dang_nhap = ?");
+
+      const stmtInsertHoSo = db.prepare(`
+        INSERT INTO ho_so (
+          ma_ho_so, loai_ho_so, ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email,
+          dia_chi_tam_tru, ghi_chu, nguoi_tao_id, tai_khoan_id
+        ) VALUES (?, 'hoi_vien', ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+
+      const stmtInsertTaiKhoan = db.prepare(`
+        INSERT INTO tai_khoan (ten_dang_nhap, mat_khau_hash, vai_tro_id, nguoi_tao_id)
+        VALUES (?, ?, ?, ?)
+      `);
+
+      for (let i = 0; i < membersData.length; i++) {
+        const row = membersData[i];
+        const index = i + 2; // Dòng thứ i trong Excel (dòng 1 là tiêu đề cột)
+
+        const ho_ten = (row['Họ và tên'] || row['Ho va ten'] || row['ho_ten'] || row['Full Name'] || '').toString().trim();
+        let so_dien_thoai = (row['Số điện thoại'] || row['So dien thoai'] || row['so_dien_thoai'] || row['Phone'] || '').toString().trim();
+        let gioi_tinh = (row['Giới tính'] || row['Gioi tinh'] || row['gioi_tinh'] || row['Gender'] || '').toString().trim();
+        let ngay_sinh = row['Ngày sinh'] || row['Ngay sinh'] || row['ngay_sinh'] || row['Birthdate'] || null;
+        const email = (row['Email'] || row['email'] || '').toString().trim() || null;
+        const dia_chi = (row['Địa chỉ'] || row['Dia chi'] || row['address'] || '').toString().trim() || null;
+        const ghi_chu = (row['Ghi chú'] || row['Ghi chu'] || row['note'] || '').toString().trim() || null;
+
+        // Validation
+        if (!ho_ten) {
+          errors.push({ row: index, error: 'Họ và tên không được để trống.' });
+          failCount++;
+          continue;
+        }
+
+        if (!so_dien_thoai) {
+          errors.push({ row: index, error: 'Số điện thoại không được để trống.' });
+          failCount++;
+          continue;
+        }
+
+        if (!/^\d{8,12}$/.test(so_dien_thoai)) {
+          errors.push({ row: index, error: `Số điện thoại "${so_dien_thoai}" không hợp lệ.` });
+          failCount++;
+          continue;
+        }
+
+        const dupPhone = stmtCheckPhone.get(so_dien_thoai);
+        if (dupPhone) {
+          errors.push({ row: index, error: `Số điện thoại "${so_dien_thoai}" đã được đăng ký.` });
+          failCount++;
+          continue;
+        }
+
+        const dupUser = stmtCheckUsername.get(so_dien_thoai);
+        if (dupUser) {
+          errors.push({ row: index, error: `Tên đăng nhập "${so_dien_thoai}" đã được sử dụng.` });
+          failCount++;
+          continue;
+        }
+
+        // Chuẩn hóa giới tính theo ràng buộc DB: 'nam', 'nu', 'khac'
+        if (gioi_tinh) {
+          const gtLower = gioi_tinh.toLowerCase();
+          if (gtLower === 'nam' || gtLower === 'male') {
+            gioi_tinh = 'nam';
+          } else if (gtLower === 'nữ' || gtLower === 'nu' || gtLower === 'female') {
+            gioi_tinh = 'nu';
+          } else {
+            gioi_tinh = 'khac';
+          }
+        } else {
+          gioi_tinh = 'nam'; // Mặc định nếu trống
+        }
+
+        // Chuẩn hóa ngày sinh
+        if (ngay_sinh) {
+          if (typeof ngay_sinh === 'number') {
+            // Trường hợp ngày Excel lưu dạng Serial Number
+            const dateObj = new Date((ngay_sinh - 25569) * 86400 * 1000);
+            ngay_sinh = dateObj.toISOString().split('T')[0];
+          } else {
+            let dateStr = ngay_sinh.toString().trim();
+            const parts = dateStr.split('/');
+            if (parts.length === 3) {
+              // DD/MM/YYYY
+              ngay_sinh = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+            } else {
+              const parsedDate = new Date(dateStr);
+              if (!isNaN(parsedDate.getTime())) {
+                ngay_sinh = parsedDate.toISOString().split('T')[0];
+              } else {
+                ngay_sinh = null;
+              }
+            }
+          }
+        }
+
+        // Tạo tài khoản đăng nhập
+        let tai_khoan_id = null;
+        if (vaiTroHoiVien) {
+          const resTk = stmtInsertTaiKhoan.run(so_dien_thoai, defaultPasswordHash, vaiTroHoiVien.id, creatorId);
+          tai_khoan_id = resTk.lastInsertRowid;
+        }
+
+        // Tăng mã hồ sơ
+        baseNum++;
+        const ma_ho_so = `HV${String(baseNum).padStart(3, '0')}`;
+
+        // Lưu hồ sơ
+        stmtInsertHoSo.run(
+          ma_ho_so, ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email,
+          dia_chi, ghi_chu, creatorId, tai_khoan_id
+        );
+
+        successCount++;
+      }
+
+      return { successCount, failCount, errors };
+    });
+
+    const result = importTx(rawData, req.user.id);
+    
+    // Ghi audit log
+    ghi_audit_log(req, 'CREATE', 'ho_so', null, null, { successCount: result.successCount }, `Import ${result.successCount} hội viên từ file Excel`);
+
+    return success(res, result, `Import thành công ${result.successCount} hội viên, thất bại ${result.failCount} dòng.`);
+  } catch (err) {
+    console.error('Import Excel error:', err);
+    return error(res, `Lỗi xử lý file Excel: ${err.message}`, 500);
+  }
+};
+

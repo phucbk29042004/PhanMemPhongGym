@@ -13,11 +13,11 @@ import {
   notifyMember, markMyNotificationsRead, clearMyNotifications, deleteMyNotification,
   cancelPackage, editPackage, switchPackage,
   lookupMember, getMyPayments, requestPackagePause, getInvoice,
-  sendBirthdayWish, sendBirthdayWishAll,
+  sendBirthdayWish, sendBirthdayWishAll, importMembers,
 } from '../controllers/members.controller.js';
 import { verifyToken } from '../middlewares/auth.js';
 import { requireRole } from '../middlewares/role.js';
-import { uploadAvatar } from '../middlewares/upload.js';
+import { uploadAvatar, uploadExcel } from '../middlewares/upload.js';
 
 const router = Router();
 // Tất cả routes bên dưới yêu cầu đăng nhập
@@ -48,6 +48,7 @@ router.put('/package-requests/:id/approve', requireRole('admin', 'le_tan'), appr
 router.get('/',    requireRole('admin', 'le_tan'), getMembers);
 router.get('/:id', requireRole('admin', 'le_tan'), getMemberById);
 router.post('/',   requireRole('admin', 'le_tan'), uploadAvatar, createMember);
+router.post('/import', requireRole('admin', 'le_tan'), uploadExcel, importMembers);
 router.put('/:id', requireRole('admin', 'le_tan'), updateMember);
 router.delete('/:id', requireRole('admin'), deleteMember);
 
