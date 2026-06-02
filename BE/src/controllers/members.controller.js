@@ -2017,12 +2017,8 @@ export const importMembers = async (req, res) => {
   }
 
   try {
-    fs.writeFileSync('import-diagnostic.log', `=== DIAGNOSTIC LOG ${new Date().toISOString()} ===\n`);
     const logDiag = (msg) => {
       console.log(msg);
-      try {
-        fs.appendFileSync('import-diagnostic.log', msg + '\n');
-      } catch (e) {}
     };
 
     logDiag(`Excel File Name: ${excelFile.originalname}, Size: ${excelFile.size} bytes`);
@@ -2345,6 +2341,7 @@ export const importMembers = async (req, res) => {
         } else {
           logDiag(`   ⚠️ Không thể tự động tìm thấy ảnh cho hội viên ${m.ma_ho_so} trong file ZIP.`);
         }
+      }
     }
     
     // Ghi audit log

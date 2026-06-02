@@ -1591,6 +1591,8 @@
   - Hỗ trợ an toàn: Nếu Excel không có cột ảnh hoặc file ZIP không chứa ảnh có tên khớp với bất kỳ thông tin nào, hệ thống sẽ bỏ qua việc upload ảnh của hội viên đó (không báo lỗi) và lưu thông tin chữ bình thường.
 - **Kết quả**: ✅ Tăng tối đa tỷ lệ khớp ảnh tự động, giúp việc import cực kỳ tiện lợi và thân thiện.
 
-
-
-
+### 02/06/2026 15:28 — Loại bỏ việc ghi file log chẩn đoán trong workspace để tránh reload trình duyệt
+- **Loại**: Sửa lỗi (Backend)
+- **File**: `BE/src/controllers/members.controller.js`
+- **Mô tả**: Loại bỏ hành động ghi file `import-diagnostic.log` trực tiếp vào thư mục dự án khi import. Do công cụ Live Server (của VS Code) đang theo dõi toàn bộ thư mục và tự động reload trang web khi phát hiện có bất kỳ thay đổi nào về file, việc ghi file log này khiến trình duyệt bị tải lại trang ngay lập tức khi đang trong tiến trình import, dẫn đến mất Toast thông báo thành công và người dùng bị đẩy về tab mặc định "Tổng quan".
+- **Kết quả**: ✅ Khắc phục triệt để lỗi reload trang, hiển thị đầy đủ thông báo Toast thành công mà không bị chuyển trang ngoài ý muốn.
