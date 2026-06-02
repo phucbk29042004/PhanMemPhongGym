@@ -218,5 +218,18 @@ graph TD
   - **Backend API**: Nâng cấp API hủy gói Gym và PT để kiểm duyệt và bắt buộc số tiền hoàn trả phải khớp chính xác 100% với giá thực tế ban đầu của gói tập, ngăn chặn sai lệch dòng tiền.
   - **Giao diện di động**: Khóa trường nhập tiền hoàn trả (read-only) và tự động điền sẵn giá trị gói đang hủy. Đồng bộ Badge hiển thị Trạng thái nghiệp vụ (Đăng ký mới, Đổi gói, Hủy gói, Tạm dừng, Hết hạn) kèm chênh lệch dòng tiền (+/-) lên modal chi tiết giao dịch hôm nay trên Dashboard và trang Doanh thu di động.
 
+# Cập nhật kiến trúc 01/06/2026 — Hoàn thiện nghiệp vụ Đổi gói PT tương thích với Đổi gói Gym (Mobile & Web)
+
+- **Quy tắc nghiệp vụ**:
+  - Hỗ trợ đổi gói tập PT (nâng cấp hoặc hạ cấp) ngay trên Mobile App Admin, tính số tiền khấu trừ/hoàn trả tự động dựa trên tỷ lệ số buổi chưa học thực tế (`Math.round(giaThucTeCu * buoiCon / tongBuoi)`) và hiển thị khung chênh lệch dòng tiền màu xanh (Tiền đóng thêm) hoặc màu đỏ (Tiền hoàn trả khách) tương tự gói Gym.
+  - API hủy gói PT cũ nhận đúng tham số `so_tien_hoan` được khấu trừ truyền lên để ghi nhận doanh thu chính xác thay vì lấy toàn bộ giá trị gói cũ.
+
+# Cập nhật kiến trúc 01/06/2026 (Lần 2) — Nâng cấp cơ chế đặt lịch PT, ngăn trùng lịch dạy trên Mobile App
+
+- **Quy tắc nghiệp vụ & UI/UX**:
+  - Chuyển toàn bộ các trường chọn ngày đặt lịch PT trên Mobile App sang sử dụng component `DatePickerField` để đồng bộ và chặn hoàn toàn việc nhập tay sai định dạng ngày.
+  - Tích hợp gọi API `/api/trainers/:ptId/schedules?date=YYYY-MM-DD` tại màn hình đặt lịch của Admin và sử dụng trực tiếp cache schedules có sẵn ở màn hình PT để phân tích trùng lịch.
+  - Cơ chế kiểm soát giờ đặt lịch chặt chẽ: Vô hiệu hóa (tô xám, gạch ngang, hiển thị nhãn không khả dụng) các khung giờ trong quá khứ đối với ngày hôm nay và các khung giờ bận do trùng lặp lịch dạy khác của PT.
+
 
 

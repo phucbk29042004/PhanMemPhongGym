@@ -8,12 +8,17 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
+<<<<<<< HEAD
 **✅ Hoàn tất tái cấu trúc 2 cột rộng toàn màn hình cho trang "Thêm hội viên mới"** — Tận dụng tối đa không gian màn hình rộng (`w-full px-4`), phân chia thông tin thành 2 cột song song (Trái: Cá nhân; Phải: Địa chỉ & Tài khoản), rút gọn chiều cao biểu mẫu giúp hiển thị vừa khít trong một màn hình, nâng cao tối đa trải nghiệm người dùng mà không cần kéo cuộn chuột.
+=======
+**✅ Sửa lỗi FK bảng danh_gia_pt trỏ vào lich_tap_old_broken** — Thêm Migration v21 vào db.js để tự động phát hiện và tái tạo bảng `danh_gia_pt` với foreign key chính xác trỏ vào `lich_tap`, khắc phục lỗi 500 `no such table: main.lich_tap_old_broken` khi gọi API đánh giá PT.
+>>>>>>> main
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
 
+<<<<<<< HEAD
 ### [01/06/2026 16:41] — Sửa lỗi khoảng trống bên phải toàn bộ trang (tác dụng phụ từ flex layout cũ)
 - **Loại**: Sửa bug UI (Frontend)
 - **File**: `FE/index.html`
@@ -130,6 +135,143 @@
   2. **Khôi phục dữ liệu doanh thu**: Chạy SQL cập nhật lại `gia_thuc_te = 300000` cho 6 bản ghi bị lỗi này (mã đăng ký: 47, 49, 70, 82, 90, 106) giúp trigger tự động bù trừ doanh thu hôm nay (`2.800.000 đ`) và lịch sử hiển thị chính xác.
   3. **Giải quyết xung đột Git**: Sửa đổi và loại bỏ các ký hiệu conflict (`<<<<<<< HEAD`, `=======`, `>>>>>>> main`) lỡ bị commit trong file `members.controller.js` giúp khôi phục biên dịch thành công cho Backend.
 - **Kết quả**: Thành công — nodemon tự động khởi chạy lại ổn định, dữ liệu doanh thu hiển thị đúng.
+=======
+### [01/06/2026 17:09] — Sửa đổi định dạng payload Gemini (snake_case) & Thay đổi model Groq fallback
+- **Loại**: Sửa bug (Backend)
+- **File**: `BE/src/controllers/assistant.controller.js`
+- **Mô tả**:
+  - Đổi các trường payload Gemini REST API v1 về định dạng `snake_case` (`system_instruction`, `generation_config`, `tools`, `function_declarations`) theo đúng đặc tả API chính thức thay vì camelCase.
+  - Thay đổi Groq fallback model cũ (`mixtral-8x7b-32768`) đã bị ngừng hoạt động thành `llama-3.1-8b-instant` để tránh lỗi 400 từ Groq.
+- **Kết quả**: Thành công.
+
+### [01/06/2026 17:08] — Cập nhật phiên bản API Gemini sang v1
+- **Loại**: Sửa bug (Backend)
+- **File**: `BE/src/controllers/assistant.controller.js`
+- **Mô tả**: Sửa lỗi 404 NOT_FOUND của Gemini bằng cách đổi endpoint từ `/v1beta/` sang `/v1/` để gọi model `gemini-1.5-flash` chính thức.
+- **Kết quả**: Thành công.
+
+### [01/06/2026 17:07] — Sửa lỗi 502 Bad Gateway và chuẩn hóa payload API Gemini
+- **Loại**: Sửa bug (Backend)
+- **File**: `BE/src/controllers/assistant.controller.js`
+- **Mô tả**:
+  - Khắc phục lỗi 502 Bad Gateway do payload gửi tới Gemini bị từ chối (400 Bad Request) làm tất cả các model đều bị sập.
+  - Chuẩn hóa các trường snake_case thành camelCase cho API Gemini: `systemInstruction`, `generationConfig`, `functionDeclarations`.
+  - Viết hàm `toGeminiSchema()` tự động convert kiểu dữ liệu của OpenAPI parameters thành chữ hoa (`OBJECT`, `STRING`) theo đúng đặc tả của Gemini.
+  - Thay đổi `role` từ `'user'` thành `'function'` khi gửi kết quả thực thi tool (SQL SELECT) về cho Gemini.
+  - Cải tiến log lỗi ghi rõ exception stack trace giúp dev dễ debug lỗi API Key từ Groq hoặc Gemini.
+- **Kết quả**: Thành công — chatbot tự động fallback trơn tru sang Gemini khi Groq gặp sự cố.
+
+### [01/06/2026 16:56] — Tích hợp Gemini API làm fallback cho AI Chatbot
+- **Loại**: Tính năng mới (Backend)
+- **File**: `BE/.env`, `BE/src/controllers/assistant.controller.js`
+- **Mô tả**:
+  - Thêm `GEMINI_API_KEY` vào file `.env`
+  - Thêm hàm `callGeminiWithTools()` gọi Gemini 1.5 Flash API với function calling (format khác hoàn toàn với Groq/OpenAI — dùng `generateContent`, `functionCall`/`functionResponse`)
+  - Triển khai **3 tầng fallback** cho AI:
+    1. **Groq với tool calling** (llama-3.3-70b-versatile, llama-3.1-8b-instant, llama3-8b-8192)
+    2. **Groq không tool** (mixtral-8x7b-32768) — khi tool models thất bại
+    3. **Gemini 1.5 Flash** — khi tất cả Groq thất bại/hết quota
+  - Gemini fallback cũng hỗ trợ đầy đủ function calling (SQL tool) giống Groq
+  - Thông báo lỗi cuối được cải thiện thành "Dịch vụ AI tạm thời không khả dụng" thay vì chỉ đề cập Groq
+- **Kết quả**: Thành công — AI sẽ tự động luân phiên giữa Groq và Gemini
+
+
+- **Loại**: Tính năng mới (Backend)
+- **File**: `BE/src/controllers/assistant.controller.js`
+- **Mô tả**:
+  - Viết lại hoàn toàn `assistant.controller.js` để tích hợp **Groq Function Calling**.
+  - Định nghĩa tool `run_readonly_sql_query` cho phép AI tự động viết và thực thi câu lệnh `SELECT` để trả lời câu hỏi về dữ liệu lịch sử (doanh thu, check-in, lịch tập, hội viên...).
+  - Cung cấp toàn bộ **DB Schema** trong mô tả tool để AI hiểu cấu trúc bảng.
+  - Triển khai **bảo mật nhiều lớp**:
+    - Chỉ cho phép câu lệnh bắt đầu bằng `SELECT`
+    - Chặn từ khóa nguy hiểm (INSERT, UPDATE, DELETE, DROP, ALTER...)
+    - Hội viên và PT chỉ truy vấn được dữ liệu cá nhân của mình (lọc theo `id`)
+    - Bảng `tai_khoan` (chứa password hash) chỉ Admin/Lễ tân mới truy vấn được
+    - Tự động thêm `LIMIT 200` nếu query chưa có LIMIT
+  - Triển khai **conversation loop 3 bước**: gửi message → AI gọi tool → thực thi SQL → AI tổng hợp trả lời
+  - Giữ nguyên cơ chế fallback models (danh sách models ưu tiên tool calling, sau đó fallback không tool)
+- **Kết quả**: Thành công — AI có thể trả lời câu hỏi về mọi dữ liệu lịch sử trong DB
+
+### [01/06/2026 15:19] — Tráo đổi vị trí các card Dashboard tối ưu không gian hiển thị
+- **Loại**: Cải tiến giao diện UI/UX (Frontend Web)
+- **File**: `FE/assets/js/pages/dashboard.js`
+- **Mô tả**:
+  1. **Đổi chỗ các card hàng 2 và 3**:
+     - Đưa "Hội viên chăm chỉ nhất" và "Check-in gần nhất" lên Hàng 2 (cùng hàng Peak Hours) với chiều cao vừa phải (`min-height: 250px`).
+     - Chuyển "Doanh thu gói tập" và "Doanh thu gói PT" xuống Hàng 3 (cùng hàng Hoạt động gần đây) vì các widget doanh thu chứa nhiều dữ liệu gói cần nhiều không gian hiển thị dọc hơn.
+  2. **Tăng kích thước hiển thị Doanh thu & Thay đổi bố cục**:
+     - Tăng chiều cao của Hàng 3 lên `min-height: 350px`.
+     - Thay đổi bố cục của 2 card doanh thu từ hàng ngang (biểu đồ trái, chú thích phải) thành **hàng dọc** (biểu đồ rộng 100% nằm ở trên, danh sách chú thích các gói có scrollbar nằm ở dưới). Chiều cao tối đa cuộn của phần chú thích được đặt là `130px`.
+- **Kết quả**: Thành công 100% — Giao diện 2 card doanh thu cực kỳ trực quan, tận dụng tốt chiều rộng của card để vẽ biểu đồ và có nhiều chỗ để hiển thị tên các gói tập.
+
+### [01/06/2026 14:52] — Nâng cấp Dashboard với KPI PT, doanh thu gói PT và biểu đồ giờ check-in cao điểm (Peak Hours)
+- **Loại**: Cải tiến tính năng & UI/UX (Fullstack)
+- **File**: `BE/src/controllers/revenue.controller.js`, `FE/assets/js/pages/dashboard.js`
+- **Mô tả**:
+  1. **Bổ sung KPI Card PT**: Thêm card "Buổi PT đã dạy" thể hiện số buổi PT dạy thực tế trên tổng số lịch hẹn hôm nay. Thiết kế responsive grid 5 cột thích ứng linh hoạt trên Mobile (1 cột), Tablet (3 cột), và Desktop (5 cột).
+  2. **Bổ sung Biểu đồ Doanh thu gói PT**: Thêm API thống kê và cấu hình vẽ biểu đồ cột doanh thu theo từng loại gói PT (`chart-packages-pt-bar`), sử dụng tông màu tím hài hòa để phân biệt với gói tập thường.
+  3. **Bổ sung Biểu đồ Peak Hours**: Thêm API tổng hợp dữ liệu check-in theo giờ trong 30 ngày qua và vẽ biểu đồ tần suất check-in theo giờ (`chart-peak-hours`) từ 6h - 22h để theo dõi giờ cao điểm phòng tập.
+  4. **Sửa lỗi cú pháp phát sinh**: Khắc phục lỗi thiếu đóng câu lệnh `.all(currentMonthStart)` ở query `stats.top_hoi_vien` trong `revenue.controller.js` do tác vụ gộp trước đó làm mất.
+- **Kết quả**: Thành công 100% — Giao diện Dashboard cực kỳ cao cấp, đầy đủ thông tin hữu ích và server hoạt động trơn tru.
+
+### [01/06/2026 14:10] — Việt hóa tháng và đổi hiển thị doanh thu theo triệu đồng trên biểu đồ Dashboard
+- **Loại**: Cải tiến giao diện & UI/UX (Frontend Web)
+- **File**: `FE/assets/js/pages/dashboard.js`
+- **Mô tả**:
+  1. Việt hóa chú thích trục X của biểu đồ Doanh thu theo tháng từ tiếng Anh sang tiếng Việt (`'Thg 1'`, `'Thg 2'`, ..., `'Thg 12'`).
+  2. Sửa định dạng số tiền trên trục Y từ dạng `'k'` (hàng nghìn) sang `'tr'` (triệu đồng) khớp với giá trị hiển thị thực tế (ví dụ: `5 tr`, `10 tr`, ...).
+  3. Sửa định dạng tooltip khi hover vào các điểm dữ liệu hiển thị rõ ràng bằng tiếng Việt và đơn vị triệu đồng (ví dụ: `"Doanh thu: 15 triệu"`).
+- **Kết quả**: Thành công — Biểu đồ Dashboard tổng quan chuyên nghiệp, rõ ràng và đúng chuẩn ngôn ngữ tiếng Việt.
+
+### [01/06/2026 11:46] — Sửa lỗi 500 khi đánh giá lịch tập PT (no such table: lich_tap_old_broken)
+- **Loại**: Sửa bug (Backend - Database Migration)
+- **File**: `BE/src/config/db.js`
+- **Mô tả**: 
+  1. **Nguyên nhân**: Migration v20 đã rename bảng `lich_tap → lich_tap_old_broken` để tái cấu trúc. SQLite tự động cập nhật FK trong bảng `danh_gia_pt` để trỏ vào `lich_tap_old_broken`. Sau khi bảng backup bị DROP, `danh_gia_pt` còn FK trỏ vào bảng không tồn tại → lỗi 500 khi INSERT/SELECT đánh giá PT.
+  2. **Giải pháp**: Thêm Migration v21 với 2 cơ chế phát hiện lỗi (kiểm tra schema text + PRAGMA foreign_key_list). Khi phát hiện FK hỏng, tái tạo hoàn toàn bảng `danh_gia_pt` với FK đúng, giữ nguyên dữ liệu hiện có.
+  3. **Dọn dẹp**: Xóa toàn bộ code debug tạm thời đã thêm vào `BE/index.js`.
+- **Kết quả**: Thành công — Server tự động chạy Migration v21 khi khởi động, sửa lỗi không cần can thiệp thủ công.
+
+### [01/06/2026 11:25] — Đồng bộ bộ chọn thời lượng và tự động tính giờ kết thúc lịch tập PT trên di động
+- **Loại**: Cải tiến tính năng & Đồng bộ di động (Mobile)
+- **File**: `MobileApp/src/screens/admin/AdminRegisterPTScheduleScreen.js`
+- **Mô tả**:
+  1. Thay thế bộ chọn giờ kết thúc thủ công (`TimePickerModal` cũ) bằng bộ chọn thời lượng buổi tập `DurationPickerModal` có 4 khung giờ: 30 phút, 1 giờ, 1 giờ 30 phút, và 2 giờ.
+  2. Trường "Giờ kết thúc" được chuyển thành dạng readonly và tự động cập nhật chính xác dựa trên giờ bắt đầu và thời lượng đã chọn.
+  3. Dọn dẹp sạch sẽ các hàm, biến và state cũ không còn sử dụng (`showEndPicker`, `isEndTimeSlotDisabled`, `validEndTimes`, `END_TIMES`).
+- **Kết quả**: Thành công — Màn hình đặt lịch tập PT hoạt động nhất quán, mượt mà và đồng bộ hoàn hảo với logic trên Web Frontend.
+
+### [01/06/2026 11:18] — Sửa lỗi block cử chỉ cuộn (scrolling) của FlatList giờ tập trên Mobile
+- **Loại**: Sửa bug (Mobile)
+- **File**: `MobileApp/src/screens/admin/AdminRegisterPTScheduleScreen.js`, `MobileApp/src/screens/pt/PTScheduleScreen.js`
+- **Mô tả**: Tách biệt phông nền TouchableOpacity overlay ra khỏi Modal Content chính bằng cách dùng absolute position ở phía sau. Nhờ vậy, FlatList chứa danh sách giờ tập bên trong Modal không bị chặn cử chỉ chạm và có thể cuộn xuống bình thường để chọn các giờ muộn hơn.
+- **Kết quả**: Thành công — Khắc phục triệt để lỗi không kéo được danh sách giờ.
+
+### [01/06/2026 11:15] — Redesign giao diện đặt lịch PT và lọc giờ trùng, giờ quá khứ trên Mobile
+- **Loại**: Cải tiến tính năng & UI/UX (Mobile)
+- **File**: `MobileApp/src/screens/admin/AdminRegisterPTScheduleScreen.js`, `MobileApp/src/screens/pt/PTScheduleScreen.js`
+- **Mô tả**:
+  1. **Admin đặt lịch PT**: Thay thế trường nhập ngày tập bằng bàn phím thành bộ chọn ngày `DatePickerField`. Tích hợp fetch API danh sách lịch dạy của PT trong ngày được chọn để so sánh trùng lịch. Vô hiệu hóa (xám, gạch ngang) các giờ trong quá khứ của ngày hôm nay và các khung giờ trùng với lịch dạy của PT.
+  2. **PT tự đặt lịch**: Thay thế 2 input nhập giờ bắt đầu/kết thúc dạng gõ tay bằng component chọn giờ dạng Modal `TimeSelector` & `TimePickerModal` đồng bộ với Admin. Tự động kiểm tra trùng giờ dựa theo danh sách schedules đã có trong ngày để tô xám và chặn không cho chọn giờ đã bận.
+- **Kết quả**: Thành công 100% — Tránh hoàn toàn việc Admin/PT tự gõ ngày sai định dạng và ngăn chặn 100% tình trạng đặt trùng lịch PT trên ứng dụng Mobile.
+
+### [01/06/2026 11:00] — Hoàn thiện tính năng Đổi gói PT (khấu trừ tiền cũ & tính chênh lệch thu chi) trên Mobile
+- **Loại**: Cải tiến tính năng & Đồng bộ Mobile
+- **File**: `MobileApp/src/screens/admin/AdminRegisterPTScreen.js`
+- **Mô tả**:
+  1. **Tự động tính tiền hoàn**: Tính toán số tiền khấu trừ/hoàn trả của gói PT cũ dựa trên tỷ lệ số buổi chưa học thực tế (`Math.round(giaThucTeCu * buoiCon / tongBuoi)`) và điền tự động vào ô "Khấu trừ gói cũ (đ)" cho phép chỉnh sửa.
+  2. **Tính toán chênh lệch đóng thêm / hoàn trả**: Hiển thị thẻ chênh lệch động màu xanh lá với nhãn "Tiền đóng thêm (đ)" khi nâng cấp, hoặc màu đỏ với nhãn "Tiền hoàn trả khách (đ)" khi hạ cấp tương tự luồng đổi gói Gym.
+  3. **Truyền số tiền hoàn chính xác**: Đồng bộ logic gửi API hủy gói PT cũ, truyền đúng số tiền khấu trừ thực tế (`so_tien_hoan`) thay vì giá trị cứng của toàn bộ gói cũ.
+- **Kết quả**: Thành công 100% — Luồng đổi gói PT hoạt động hoàn toàn tương thích và đồng bộ với luồng đổi gói Gym.
+
+### [01/06/2026 10:52] — Đồng bộ luồng "Đổi gói PT" và "Gia hạn nối tiếp" trên Mobile App Admin
+- **Loại**: Cải tiến giao diện UI/UX & Đồng bộ Mobile
+- **File**: `MobileApp/src/screens/admin/AdminRegisterPTScreen.js`
+- **Mô tả**: Mở khóa giao diện cho phép Quản trị viên lựa chọn giữa hai hình thức đăng ký khi hội viên đang có gói PT hoạt động (đồng bộ hoàn hảo với luồng đổi gói Gym):
+  1. **Nối tiếp sau gói hiện tại**: Ngày bắt đầu tự động tính bằng `den_ngay` của gói cũ + 1 ngày (trạng thái `cho_kich_hoat`).
+  2. **Đổi gói PT**: Hủy gói PT cũ ngay lập tức để kích hoạt gói mới ngay hôm nay, tự động tính trừ số tiền hoàn trả của số buổi chưa tập của gói cũ vào giá thực tế gói mới.
+- **Kết quả**: Giao diện hiển thị trực quan và cho phép bấm chọn linh hoạt thay vì bị khóa cứng nối tiếp như trước.
+>>>>>>> main
 
 ### [01/06/2026 10:28] — Sửa lỗi kích hoạt đồng thời 2 gói tập và trùng lặp yêu cầu gia hạn
 - **Loại**: Sửa bug (Backend)

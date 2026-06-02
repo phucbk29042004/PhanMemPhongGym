@@ -27,11 +27,11 @@ window.GymApp.pages['revenue'] = {
             
             <!-- Chọn tháng so sánh -->
             <div id="compare-months-inputs" class="hidden flex items-center gap-compact bg-surface-container-low/40 p-1.5 rounded-xl border border-outline-variant/30 flex-wrap">
-              <span class="text-on-surface-variant text-body-sm font-bold">Tháng A:</span>
-              <input type="text" id="compare-month-1" readonly class="bg-white dark:bg-[#1e1e1e] border border-outline-variant text-body-sm rounded-lg px-3 py-1 outline-none text-on-surface font-semibold focus:border-brand-primary w-28 cursor-pointer text-center" placeholder="Chọn tháng" />
+              <span class="text-on-surface-variant text-body-sm font-bold">Tháng:</span>
+              <input type="text" id="compare-month-1" readonly class="bg-white dark:bg-[#1e1e1e] border border-outline-variant text-body-sm rounded-lg px-3 py-1 outline-none text-on-surface font-semibold focus:border-brand-primary w-20 cursor-pointer text-center" placeholder="Chọn tháng" />
 
-              <span class="text-on-surface-variant text-body-sm font-bold ml-2">Tháng B:</span>
-              <input type="text" id="compare-month-2" readonly class="bg-white dark:bg-[#1e1e1e] border border-outline-variant text-body-sm rounded-lg px-3 py-1 outline-none text-on-surface font-semibold focus:border-brand-primary w-28 cursor-pointer text-center" placeholder="Chọn tháng" />
+              <span class="text-on-surface-variant text-body-sm font-bold ml-2">Tháng:</span>
+              <input type="text" id="compare-month-2" readonly class="bg-white dark:bg-[#1e1e1e] border border-outline-variant text-body-sm rounded-lg px-3 py-1 outline-none text-on-surface font-semibold focus:border-brand-primary w-20 cursor-pointer text-center" placeholder="Chọn tháng" />
 
               <button id="btn-compare-action" class="bg-brand-primary hover:bg-brand-primary/95 text-white text-body-sm font-bold px-4 py-1.5 rounded-lg active:scale-95 transition-all ml-2">So sánh</button>
             </div>
