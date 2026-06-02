@@ -4540,15 +4540,15 @@ window.GymApp.pages['members-list'] = {
             </button>
           </div>
 
-          <!-- Khu vực upload file -->
-          <div id="excel-drop-zone" style="border:2px dashed var(--outline-variant);border-radius:16px;padding:32px 20px;text-align:center;cursor:pointer;transition:all 0.2s;" class="hover:bg-brand-primary/5 hover:border-brand-primary group">
+          <!-- Khu vực upload file Excel -->
+          <div id="excel-drop-zone" style="border:2px dashed var(--outline-variant);border-radius:16px;padding:24px 20px;text-align:center;cursor:pointer;transition:all 0.2s;" class="hover:bg-brand-primary/5 hover:border-brand-primary group">
             <input type="file" id="excel-file-input" accept=".xlsx, .xls, .csv" style="display:none;" />
-            <span class="material-symbols-outlined text-[48px] text-outline group-hover:text-brand-primary transition-colors" style="margin-bottom:8px;">cloud_upload</span>
-            <p style="font-size:14px;font-weight:700;color:var(--text-on-surface);margin:0 0 4px;">Chọn hoặc kéo thả file Excel vào đây</p>
-            <p style="font-size:12px;color:var(--text-on-surface-variant);margin:0;opacity:0.6;">Dung lượng tối đa 10MB</p>
+            <span class="material-symbols-outlined text-[40px] text-outline group-hover:text-brand-primary transition-colors" style="margin-bottom:6px;">cloud_upload</span>
+            <p style="font-size:13px;font-weight:700;color:var(--text-on-surface);margin:0 0 2px;">Chọn hoặc kéo thả file Excel vào đây *</p>
+            <p style="font-size:11px;color:var(--text-on-surface-variant);margin:0;opacity:0.6;">Dung lượng tối đa 10MB</p>
           </div>
 
-          <!-- File selected status -->
+          <!-- File Excel selected status -->
           <div id="excel-file-status" style="display:none;align-items:center;gap:12px;padding:12px;border:1px solid var(--outline-variant);border-radius:12px;background:var(--bg-surface-low);">
             <span class="material-symbols-outlined text-[28px] text-[#1D9336]">description</span>
             <div style="flex:1;min-width:0;">
@@ -4556,6 +4556,26 @@ window.GymApp.pages['members-list'] = {
               <p id="excel-file-size" style="font-size:11px;color:var(--text-on-surface-variant);margin:0;opacity:0.7;"></p>
             </div>
             <button id="btn-remove-file" style="background:transparent;border:none;cursor:pointer;color:var(--text-on-surface-variant);" class="hover:text-error">
+              <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+            </button>
+          </div>
+
+          <!-- Khu vực upload file ZIP ảnh đại diện -->
+          <div id="zip-drop-zone" style="border:2px dashed var(--outline-variant);border-radius:16px;padding:20px 20px;text-align:center;cursor:pointer;transition:all 0.2s;" class="hover:bg-brand-primary/5 hover:border-brand-primary group">
+            <input type="file" id="zip-file-input" accept=".zip" style="display:none;" />
+            <span class="material-symbols-outlined text-[36px] text-outline group-hover:text-brand-primary transition-colors" style="margin-bottom:4px;">folder_zip</span>
+            <p style="font-size:13px;font-weight:700;color:var(--text-on-surface);margin:0 0 2px;">Chọn hoặc kéo thả file ZIP ảnh đại diện</p>
+            <p style="font-size:11px;color:var(--text-on-surface-variant);margin:0;opacity:0.6;">(Không bắt buộc) Dung lượng tối đa 50MB</p>
+          </div>
+
+          <!-- File ZIP selected status -->
+          <div id="zip-file-status" style="display:none;align-items:center;gap:12px;padding:12px;border:1px solid var(--outline-variant);border-radius:12px;background:var(--bg-surface-low);">
+            <span class="material-symbols-outlined text-[28px] text-[#b45309]">folder_zip</span>
+            <div style="flex:1;min-width:0;">
+              <p id="zip-file-name" style="font-size:13px;font-weight:700;color:var(--text-on-surface);margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></p>
+              <p id="zip-file-size" style="font-size:11px;color:var(--text-on-surface-variant);margin:0;opacity:0.7;"></p>
+            </div>
+            <button id="btn-remove-zip" style="background:transparent;border:none;cursor:pointer;color:var(--text-on-surface-variant);" class="hover:text-error">
               <span class="material-symbols-outlined" style="font-size:18px;">close</span>
             </button>
           </div>
@@ -4604,11 +4624,20 @@ window.GymApp.pages['members-list'] = {
     const fileName = overlay.querySelector('#excel-file-name');
     const fileSize = overlay.querySelector('#excel-file-size');
     const removeBtn = overlay.querySelector('#btn-remove-file');
+
+    const zipFileInput = overlay.querySelector('#zip-file-input');
+    const zipDropZone = overlay.querySelector('#zip-drop-zone');
+    const zipFileStatus = overlay.querySelector('#zip-file-status');
+    const zipFileName = overlay.querySelector('#zip-file-name');
+    const zipFileSize = overlay.querySelector('#zip-file-size');
+    const removeZipBtn = overlay.querySelector('#btn-remove-zip');
+
     const submitBtn = overlay.querySelector('#btn-import-submit');
     const cancelBtn = overlay.querySelector('#btn-import-cancel');
     const closeBtn = overlay.querySelector('#close-import-modal');
     
     let selectedFile = null;
+    let selectedZipFile = null;
 
     overlay.querySelector('#btn-download-template').addEventListener('click', async () => {
       await self._loadXlsxLibrary();
@@ -4633,6 +4662,21 @@ window.GymApp.pages['members-list'] = {
         fileStatus.style.display = 'none';
         submitBtn.disabled = true;
         overlay.querySelector('#import-result-area').style.display = 'none';
+      }
+    };
+
+    const updateZipFileDisplay = (file) => {
+      if (file) {
+        selectedZipFile = file;
+        zipFileName.textContent = file.name;
+        zipFileSize.textContent = (file.size / (1024 * 1024)).toFixed(1) + ' MB';
+        zipDropZone.style.display = 'none';
+        zipFileStatus.style.display = 'flex';
+      } else {
+        selectedZipFile = null;
+        zipFileInput.value = '';
+        zipDropZone.style.display = 'block';
+        zipFileStatus.style.display = 'none';
       }
     };
 
@@ -4670,6 +4714,41 @@ window.GymApp.pages['members-list'] = {
 
     removeBtn.addEventListener('click', () => updateFileDisplay(null));
 
+    // Event listeners cho ZIP file
+    zipDropZone.addEventListener('click', () => zipFileInput.click());
+
+    zipFileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) updateZipFileDisplay(e.target.files[0]);
+    });
+
+    zipDropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      zipDropZone.style.borderColor = '#b45309';
+      zipDropZone.style.background = 'rgba(180, 83, 9, 0.05)';
+    });
+
+    zipDropZone.addEventListener('dragleave', () => {
+      zipDropZone.style.borderColor = '';
+      zipDropZone.style.background = '';
+    });
+
+    zipDropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      zipDropZone.style.borderColor = '';
+      zipDropZone.style.background = '';
+      if (e.dataTransfer.files.length > 0) {
+        const file = e.dataTransfer.files[0];
+        const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
+        if (ext === '.zip') {
+          updateZipFileDisplay(file);
+        } else {
+          window.GymApp.toast('Chỉ chấp nhận file ZIP (.zip)', 'error');
+        }
+      }
+    });
+
+    removeZipBtn.addEventListener('click', () => updateZipFileDisplay(null));
+
     submitBtn.addEventListener('click', async () => {
       if (!selectedFile) return;
       
@@ -4679,6 +4758,9 @@ window.GymApp.pages['members-list'] = {
 
       const fd = new FormData();
       fd.append('file', selectedFile);
+      if (selectedZipFile) {
+        fd.append('zip', selectedZipFile);
+      }
 
       try {
         const token = localStorage.getItem('gym-token');
@@ -4769,10 +4851,10 @@ window.GymApp.pages['members-list'] = {
 
   _downloadTemplate: function () {
     if (!window.XLSX) return;
-    const headers = [['Họ và tên', 'Số điện thoại', 'Giới tính', 'Ngày sinh', 'Email', 'Địa chỉ', 'Ghi chú']];
+    const headers = [['Họ và tên', 'Số điện thoại', 'Giới tính', 'Ngày sinh', 'Email', 'Địa chỉ', 'Ghi chú', 'Tên file ảnh']];
     const data = [
-      ['Nguyễn Văn A', '0912345678', 'Nam', '1995-05-15', 'anguyen@gmail.com', '123 Đường ABC, Hà Nội', 'Hội viên đăng ký mới'],
-      ['Trần Thị B', '0987654321', 'Nữ', '1998-10-20', 'btran@gmail.com', '456 Đường XYZ, TP.HCM', 'Khách hàng chuyển từ chi nhánh khác']
+      ['Nguyễn Văn A', '0912345678', 'Nam', '1995-05-15', 'anguyen@gmail.com', '123 Đường ABC, Hà Nội', 'Hội viên đăng ký mới', 'anh_nguyen_van_a.jpg'],
+      ['Trần Thị B', '0987654321', 'Nữ', '1998-10-20', 'btran@gmail.com', '456 Đường XYZ, TP.HCM', 'Khách hàng chuyển từ chi nhánh khác', 'anh_tran_thi_b.png']
     ];
     const worksheet = XLSX.utils.aoa_to_sheet([...headers, ...data]);
     const workbook = XLSX.utils.book_new();

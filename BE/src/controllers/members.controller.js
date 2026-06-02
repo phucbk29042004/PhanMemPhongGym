@@ -11,6 +11,8 @@ import { createNotification, createUserNotification } from '../utils/notificatio
 import bcrypt from 'bcryptjs';
 import { createPaymentLink, getPaymentLinkInformation } from '../utils/payos.js';
 import xlsx from 'xlsx';
+import path from 'path';
+import fs from 'fs';
 
 // Tự động cập nhật các gói tập/PT đã quá hạn sử dụng sang trạng thái tương ứng
 const autoUpdateExpiredStatuses = () => {
@@ -2007,18 +2009,74 @@ export const getInvoice = (req, res) => {
 // ── POST /api/members/import ─────────────────────────────
 // Import hội viên từ file Excel
 export const importMembers = async (req, res) => {
-  if (!req.file) {
+  const excelFile = req.files && req.files['file'] ? req.files['file'][0] : null;
+  const zipFile = req.files && req.files['zip'] ? req.files['zip'][0] : null;
+
+  if (!excelFile) {
     return error(res, 'Vui lòng chọn file Excel để nhập.', 400);
   }
 
   try {
-    const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+    fs.writeFileSync('import-diagnostic.log', `=== DIAGNOSTIC LOG ${new Date().toISOString()} ===\n`);
+    const logDiag = (msg) => {
+      console.log(msg);
+      try {
+        fs.appendFileSync('import-diagnostic.log', msg + '\n');
+      } catch (e) {}
+    };
+
+    logDiag(`Excel File Name: ${excelFile.originalname}, Size: ${excelFile.size} bytes`);
+    logDiag(`ZIP File Present: ${!!zipFile}`);
+    if (zipFile) {
+      logDiag(`ZIP File Name: ${zipFile.originalname}, Size: ${zipFile.size} bytes`);
+    }
+
+    const workbook = xlsx.read(excelFile.buffer, { type: 'buffer' });
     const firstSheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[firstSheetName];
     const rawData = xlsx.utils.sheet_to_json(worksheet);
 
+    logDiag(`Raw Excel Data length: ${rawData.length}`);
+    if (rawData.length > 0) {
+      logDiag(`First Excel Row Keys: ${JSON.stringify(Object.keys(rawData[0]))}`);
+      logDiag(`First Excel Row Values: ${JSON.stringify(rawData[0])}`);
+    }
+
     if (rawData.length === 0) {
       return error(res, 'File Excel không có dữ liệu.', 400);
+    }
+
+    // Đọc danh sách file trong file ZIP (nếu có)
+    const zipImagesMap = new Map();
+    if (zipFile) {
+      try {
+        const AdmZip = (await import('adm-zip')).default;
+        const zip = new AdmZip(zipFile.buffer);
+        const zipEntries = zip.getEntries();
+        const allowedImgExts = ['.jpg', '.jpeg', '.png', '.webp'];
+        
+        logDiag(`Total ZIP Entries found: ${zipEntries.length}`);
+        for (const entry of zipEntries) {
+          if (entry.isDirectory) {
+            logDiag(`Directory entry inside ZIP: ${entry.entryName}`);
+            continue;
+          }
+          const ext = path.extname(entry.entryName).toLowerCase();
+          if (allowedImgExts.includes(ext)) {
+            const baseName = entry.entryName.split('/').pop().normalize('NFC');
+            // Chuẩn hóa key về chữ thường để so khớp không phân biệt hoa thường
+            zipImagesMap.set(baseName.toLowerCase(), entry);
+            logDiag(`Mapped ZIP image key: "${baseName.toLowerCase()}" (Entry path: "${entry.entryName}")`);
+          } else {
+            logDiag(`Skipped ZIP entry (ext not allowed): "${entry.entryName}"`);
+          }
+        }
+        logDiag(`📁 Giải nén ZIP thành công, tìm thấy ${zipImagesMap.size} ảnh hợp lệ.`);
+      } catch (zipErr) {
+        logDiag(`Lỗi giải nén ZIP: ${zipErr.message}`);
+        console.error('Lỗi giải nén ZIP:', zipErr);
+        return error(res, `Lỗi đọc file ZIP: ${zipErr.message}`, 400);
+      }
     }
 
     const vaiTroHoiVien = db.prepare("SELECT id FROM vai_tro WHERE ma_vai_tro = 'hoi_vien'").get();
@@ -2029,6 +2087,7 @@ export const importMembers = async (req, res) => {
       let successCount = 0;
       let failCount = 0;
       const errors = [];
+      const createdMembers = [];
 
       // Lấy mã số hội viên lớn nhất hiện tại làm mốc tăng dần
       const lastHoSo = db.prepare(`
@@ -2056,17 +2115,29 @@ export const importMembers = async (req, res) => {
         VALUES (?, ?, ?, ?)
       `);
 
+      const getRowValue = (rowObj, possibleKeys) => {
+        const normPossible = possibleKeys.map(k => k.trim().toLowerCase().normalize('NFC'));
+        for (const k of Object.keys(rowObj)) {
+          const normKey = k.trim().toLowerCase().normalize('NFC');
+          if (normPossible.includes(normKey)) {
+            return rowObj[k];
+          }
+        }
+        return '';
+      };
+
       for (let i = 0; i < membersData.length; i++) {
         const row = membersData[i];
         const index = i + 2; // Dòng thứ i trong Excel (dòng 1 là tiêu đề cột)
 
-        const ho_ten = (row['Họ và tên'] || row['Ho va ten'] || row['ho_ten'] || row['Full Name'] || '').toString().trim();
-        let so_dien_thoai = (row['Số điện thoại'] || row['So dien thoai'] || row['so_dien_thoai'] || row['Phone'] || '').toString().trim();
-        let gioi_tinh = (row['Giới tính'] || row['Gioi tinh'] || row['gioi_tinh'] || row['Gender'] || '').toString().trim();
-        let ngay_sinh = row['Ngày sinh'] || row['Ngay sinh'] || row['ngay_sinh'] || row['Birthdate'] || null;
-        const email = (row['Email'] || row['email'] || '').toString().trim() || null;
-        const dia_chi = (row['Địa chỉ'] || row['Dia chi'] || row['address'] || '').toString().trim() || null;
-        const ghi_chu = (row['Ghi chú'] || row['Ghi chu'] || row['note'] || '').toString().trim() || null;
+        const ho_ten = (getRowValue(row, ['Họ và tên', 'Ho va ten', 'ho_ten', 'Full Name'])).toString().trim();
+        let so_dien_thoai = (getRowValue(row, ['Số điện thoại', 'So dien thoai', 'so_dien_thoai', 'Phone'])).toString().trim();
+        let gioi_tinh = (getRowValue(row, ['Giới tính', 'Gioi tinh', 'gioi_tinh', 'Gender'])).toString().trim();
+        let ngay_sinh = getRowValue(row, ['Ngày sinh', 'Ngay sinh', 'ngay_sinh', 'Birthdate']) || null;
+        const email = (getRowValue(row, ['Email', 'email'])).toString().trim() || null;
+        const dia_chi = (getRowValue(row, ['Địa chỉ', 'Dia chi', 'address', 'dia_chi'])).toString().trim() || null;
+        const ghi_chu = (getRowValue(row, ['Ghi chú', 'Ghi chu', 'note', 'ghi_chu'])).toString().trim() || null;
+        const ten_file_anh = (getRowValue(row, ['Tên file ảnh', 'Ten file anh', 'ten_file_anh', 'Ảnh đại diện', 'Anh dai dien'])).toString().trim() || null;
 
         // Validation
         if (!ho_ten) {
@@ -2118,14 +2189,12 @@ export const importMembers = async (req, res) => {
         // Chuẩn hóa ngày sinh
         if (ngay_sinh) {
           if (typeof ngay_sinh === 'number') {
-            // Trường hợp ngày Excel lưu dạng Serial Number
             const dateObj = new Date((ngay_sinh - 25569) * 86400 * 1000);
             ngay_sinh = dateObj.toISOString().split('T')[0];
           } else {
             let dateStr = ngay_sinh.toString().trim();
             const parts = dateStr.split('/');
             if (parts.length === 3) {
-              // DD/MM/YYYY
               ngay_sinh = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
             } else {
               const parsedDate = new Date(dateStr);
@@ -2150,23 +2219,105 @@ export const importMembers = async (req, res) => {
         const ma_ho_so = `HV${String(baseNum).padStart(3, '0')}`;
 
         // Lưu hồ sơ
-        stmtInsertHoSo.run(
+        const resHoSo = stmtInsertHoSo.run(
           ma_ho_so, ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email,
           dia_chi, ghi_chu, creatorId, tai_khoan_id
         );
 
+        createdMembers.push({
+          id: resHoSo.lastInsertRowid,
+          ma_ho_so,
+          ten_file_anh
+        });
+
         successCount++;
       }
 
-      return { successCount, failCount, errors };
+      return { successCount, failCount, errors, createdMembers };
     });
 
     const result = importTx(rawData, req.user.id);
+
+    // Xử lý upload ảnh bất đồng bộ lên Cloudinary sau khi transaction thành công
+    logDiag(`Checking if ZIP matching should run: zipFile=${!!zipFile}, zipImagesMap.size=${zipImagesMap.size}, createdMembers.length=${result.createdMembers.length}`);
+    if (zipFile && zipImagesMap.size > 0 && result.createdMembers.length > 0) {
+      logDiag(`🚀 Đang tiến hành upload ảnh lên Cloudinary cho các hội viên vừa import...`);
+      for (const m of result.createdMembers) {
+        logDiag(`Processing created member: ${m.ma_ho_so} (ID: ${m.id}), Excel input image: "${m.ten_file_anh}"`);
+        if (m.ten_file_anh) {
+          const cleanName = m.ten_file_anh.trim().toLowerCase().normalize('NFC');
+          logDiag(`  Normalized image name to match: "${cleanName}"`);
+          
+          // 1. Tìm chính xác theo tên (đã lowercase và NFC)
+          let entry = zipImagesMap.get(cleanName);
+          if (entry) {
+            logDiag(`  -> Direct match found in ZIP: "${entry.entryName}"`);
+          }
+          
+          // 2. Thử so khớp theo tên gốc (loại bỏ tất cả phần mở rộng của cả Excel và ZIP) để tránh lỗi trùng lặp/double extensions
+          if (!entry) {
+            const stripExts = (filename) => {
+              let name = filename;
+              let ext = path.extname(name);
+              while (ext) {
+                name = name.slice(0, -ext.length);
+                ext = path.extname(name);
+              }
+              return name;
+            };
+            
+            const excelCoreName = stripExts(cleanName);
+            logDiag(`  Direct match failed. Trying core name match for: "${excelCoreName}"`);
+            
+            for (const [key, val] of zipImagesMap.entries()) {
+              const zipCoreName = stripExts(key);
+              if (excelCoreName === zipCoreName) {
+                entry = val;
+                logDiag(`  -> Core name match found: "${entry.entryName}" matches Excel "${m.ten_file_anh}"`);
+                break;
+              }
+            }
+          }
+          
+          if (entry) {
+            try {
+              const imgBuffer = entry.getData();
+              logDiag(`  Uploading image to Cloudinary (buffer size: ${imgBuffer.length} bytes)...`);
+              
+              // Upload lên Cloudinary
+              const uploadRes = await uploadImage(imgBuffer, 'paradise-gym/profiles', m.ma_ho_so);
+              logDiag(`  -> Cloudinary success! URL: ${uploadRes.url}, PublicId: ${uploadRes.publicId}`);
+              
+              // Cập nhật Database SQLite
+              const dbUpdate = db.prepare(`
+                UPDATE ho_so 
+                SET avatar_url = ?, cloudinary_public_id = ? 
+                WHERE id = ?
+              `).run(uploadRes.url, uploadRes.publicId, m.id);
+              logDiag(`  -> SQLite DB update result: changes=${dbUpdate.changes}, lastInsertRowid=${dbUpdate.lastInsertRowid}`);
+              
+              logDiag(`   ✅ Đã gán ảnh "${m.ten_file_anh}" cho hội viên ${m.ma_ho_so}`);
+            } catch (uploadErr) {
+              logDiag(`   ❌ Lỗi upload ảnh "${m.ten_file_anh}" cho ${m.ma_ho_so}: ${uploadErr.message}`);
+              console.error(`   ❌ Lỗi upload ảnh "${m.ten_file_anh}" cho ${m.ma_ho_so}:`, uploadErr.message);
+            }
+          } else {
+            logDiag(`   ⚠️ Không tìm thấy ảnh "${m.ten_file_anh}" trong file ZIP (kiểm tra lại tên file).`);
+          }
+        } else {
+          logDiag(`  No image name specified in Excel row for this member.`);
+        }
+      }
+    }
     
     // Ghi audit log
     ghi_audit_log(req, 'CREATE', 'ho_so', null, null, { successCount: result.successCount }, `Import ${result.successCount} hội viên từ file Excel`);
 
-    return success(res, result, `Import thành công ${result.successCount} hội viên, thất bại ${result.failCount} dòng.`);
+    return success(res, {
+      successCount: result.successCount,
+      failCount: result.failCount,
+      errors: result.errors
+    }, `Import thành công ${result.successCount} hội viên, thất bại ${result.failCount} dòng.`);
   } catch (err) {
     console.error('Import Excel error:', err);
     return error(res, `Lỗi xử lý file Excel: ${err.message}`, 500);

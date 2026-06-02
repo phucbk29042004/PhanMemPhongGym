@@ -44,12 +44,12 @@ export const uploadAvatar = (req, res, next) => {
 };
 
 const excelFilter = (req, file, cb) => {
-  const allowedExtensions = ['.xlsx', '.xls', '.csv'];
+  const allowedExtensions = ['.xlsx', '.xls', '.csv', '.zip'];
   const ext = file.originalname.slice(file.originalname.lastIndexOf('.')).toLowerCase();
   if (allowedExtensions.includes(ext)) {
     cb(null, true);
   } else {
-    cb(new Error('Chỉ chấp nhận file Excel định dạng .xlsx, .xls hoặc .csv'), false);
+    cb(new Error('Chỉ chấp nhận file Excel (.xlsx, .xls, .csv) hoặc file ZIP chứa ảnh (.zip)'), false);
   }
 };
 
@@ -57,17 +57,20 @@ const uploadExcelConfig = multer({
   storage: multer.memoryStorage(),
   fileFilter: excelFilter,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB
+    fileSize: 50 * 1024 * 1024, // 50MB (vì file zip ảnh có thể lớn hơn)
   },
 });
 
 export const uploadExcel = (req, res, next) => {
-  uploadExcelConfig.single('file')(req, res, (err) => {
+  uploadExcelConfig.fields([
+    { name: 'file', maxCount: 1 },
+    { name: 'zip', maxCount: 1 }
+  ])(req, res, (err) => {
     if (err instanceof multer.MulterError) {
       if (err.code === 'LIMIT_FILE_SIZE') {
-        return error(res, 'File quá lớn. Tối đa 10MB.', 400);
+        return error(res, 'File tải lên quá lớn. Tối đa 50MB.', 400);
       }
-      return error(res, `Lỗi upload file Excel: ${err.message}`, 400);
+      return error(res, `Lỗi upload file: ${err.message}`, 400);
     }
     if (err) return error(res, err.message, 400);
     next();

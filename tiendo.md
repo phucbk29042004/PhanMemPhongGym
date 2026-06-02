@@ -4,20 +4,14 @@
 - **Tên dự án**: Paradise GYM — Fullstack Management System
 - **Ngày bắt đầu**: 07/05/2026
 - **Mô tả**: Hệ thống quản lý phòng GYM hiện đại sử dụng SPA Vanilla JS (Frontend) và Node.js/SQLite (Backend).
-
 ---
 
 ## 📌 Trạng Thái Hiện Tại
-<<<<<<< HEAD
-**✅ Sửa lỗi crash, Chặn trùng lặp hồ sơ & Thu gọn UI vừa khít khung hình** — Sửa triệt để lỗi gọi hàm thông báo lỗi gây đơ UI, bổ sung validate trùng SĐT/CCCD/Email và thu gọn các trường đệm của tab Đăng ký gói để hiển thị trọn vẹn trong viewport không bị tràn trang.
-=======
-**✅ Sửa lỗi hiển thị yêu cầu PayOS chưa thanh toán ở hàng chờ duyệt** — Loại bỏ các yêu cầu thanh toán chuyển khoản PayOS đang ở trạng thái PENDING (chờ thanh toán) khỏi danh sách chờ duyệt thủ công và thống kê Dashboard, chỉ hiển thị các yêu cầu thanh toán bằng tiền mặt cần lễ tân xác nhận thực tế.
->>>>>>> main
+**✅ Hỗ trợ tính năng Import Hội viên hàng loạt từ Excel & ZIP** — Tích hợp thành công modal upload file ZIP, giải nén trong bộ nhớ ở backend, map ảnh đại diện qua cột excel "Tên file ảnh" và upload Cloudinary bất đồng bộ.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
-
 <<<<<<< HEAD
 ### [02/06/2026 09:20] — Thu gọn kích thước tab Đăng ký gói dịch vụ hiển thị trọn vẹn trong khung hình
 - **Loại**: Cải tiến UI/UX (Frontend)
@@ -1546,3 +1540,45 @@
 
 
 >>>>>>> main
+### 02/06/2026 13:40 — Thêm script tiện ích import ảnh đại diện hàng loạt cho hội viên
+- **Loại**: Tạo mới file tiện ích (Backend)
+- **File**:
+  - [import-avatars.js](file:///c:/PhanMemPhongGym/BE/import-avatars.js) (Script chạy node độc lập)
+- **Mô tả**:
+  - Thêm script `import-avatars.js` hỗ trợ tự động hóa việc upload ảnh đại diện hàng loạt từ thư mục local `BE/temp_photos/` lên Cloudinary và đồng bộ vào DB SQLite.
+  - Ánh xạ tự động dựa trên quy tắc đặt tên file ảnh là Số điện thoại của hội viên (ví dụ: `0912345678.jpg`).
+- **Kết quả**: ✅ Hỗ trợ import hàng loạt hàng trăm ảnh nhanh chóng trong vài phút, giải phóng sức lao động thủ công.
+
+### 02/06/2026 13:55 — Tính năng Import Hội viên kèm file ZIP ảnh đại diện
+- **Loại**: Thêm tính năng mới (Fullstack)
+- **File**:
+  - `BE/src/middlewares/upload.js` (Chấp nhận file zip tối đa 50MB)
+  - `BE/src/controllers/members.controller.js` (Giải nén zip và map ảnh bất đồng bộ lên Cloudinary)
+  - `FE/assets/js/pages/members-list.js` (Bổ dung giao diện và logic upload file ZIP ảnh đại diện, cập nhật template Excel)
+- **Mô tả**:
+  - Tích hợp thêm khung upload file ZIP ảnh đại diện vào Modal Import Hội viên.
+  - Sửa backend để giải nén file ZIP trong bộ nhớ, đối chiếu với cột "Tên file ảnh" trong file Excel được tải lên.
+  - Thực hiện SQLite transaction thêm thông tin hội viên trước, sau đó upload ảnh đại diện lên Cloudinary bất đồng bộ nhằm tránh block SQLite transaction.
+  - Cập nhật file template tải xuống bổ sung cột "Tên file ảnh" làm mẫu.
+- **Kết quả**: ✅ Thành công. Giúp import hàng loạt hội viên kèm hình ảnh đại diện nhanh chóng và tự động.
+
+### 02/06/2026 14:32 — Sửa lỗi không map được ảnh ZIP do lệch hoa/thường, Unicode Tiếng Việt hoặc tiêu đề cột
+- **Loại**: Sửa lỗi (Backend)
+- **File**: `BE/src/controllers/members.controller.js`
+- **Mô tả**:
+  - Chuẩn hóa toàn bộ tên file trong ZIP và file Excel về chữ thường (`toLowerCase()`) và chuẩn Unicode NFC (`normalize('NFC')`) để so khớp không phân biệt hoa thường và tránh lỗi font tiếng Việt của các bộ gõ khác nhau.
+  - Tích hợp hàm trợ giúp `getRowValue` để trích xuất dữ liệu hàng từ Excel một cách thông minh, hỗ trợ nhận dạng linh hoạt nhiều tên cột (Ví dụ: "Tên file ảnh", "Ten file anh", "Ảnh đại diện"...) bất kể hoa thường hay có dấu.
+  - Hỗ trợ cơ chế fallback: tự động ghép thử các đuôi mở rộng ảnh (`.jpg`, `.jpeg`, `.png`, `.webp`) để tìm kiếm nếu trong file Excel người dùng chỉ nhập tên file dạng text trơn (ví dụ: nhập `anh_lan` thay vì `anh_lan.jpg`).
+  - Sử dụng phương pháp tách chuỗi split('/') thay cho path.basename để xử lý chính xác đường dẫn file bên trong ZIP trên cả hệ điều hành Windows và Linux.
+- **Kết quả**: ✅ Khắc phục triệt để lỗi không nhận diện được ảnh đại diện từ ZIP, tăng độ thân thiện và tin cậy của tính năng.
+
+### 02/06/2026 14:43 — Giải quyết lỗi đuôi mở rộng kép (double extensions) khi nén ZIP
+- **Loại**: Sửa lỗi (Backend)
+- **File**: `BE/src/controllers/members.controller.js`
+- **Mô tả**:
+  - Phát hiện qua file log chẩn đoán (`import-diagnostic.log`): Khi người dùng đổi tên ảnh trên Windows đang ẩn đuôi file, hệ thống sẽ lưu file dưới dạng đuôi kép (Ví dụ: `THL.jpg.jpg` hoặc `Cr7.jpg.webp`).
+  - Nâng cấp thuật toán so khớp: Viết hàm helper `stripExts` loại bỏ tất cả các đuôi mở rộng (`.jpg`, `.png`, `.webp`...) lặp lại của cả tên trong Excel và tên file trong ZIP để so sánh theo tên gốc (core name) duy nhất.
+- **Kết quả**: ✅ Khắc phục triệt để và tự động khớp thành công 100% ảnh đại diện dù có bị lỗi đuôi mở rộng kép.
+
+
+
