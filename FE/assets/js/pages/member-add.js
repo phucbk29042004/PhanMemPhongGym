@@ -190,65 +190,121 @@ window.GymApp.pages['member-add'] = {
           <div id="form-package" class="hidden p-4 flex-grow flex flex-col animate-fadeIn">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch flex-grow">
               
-              <!-- CỘT TRÁI: Gói tập -->
-              <div class="lg:col-span-7 space-y-4">
-                <div id="selected-member-info" class="p-3 bg-gradient-to-r from-brand-primary/10 to-brand-primary/5 border border-brand-primary/20 rounded-2xl hidden">
-                  <div class="flex items-center gap-standard">
-                    <div class="w-10 h-10 rounded-xl bg-brand-primary text-white flex items-center justify-center font-extrabold text-body-sm shadow" id="selected-member-avatar-text">?</div>
-                    <div>
-                      <p class="text-[8.5px] text-brand-primary/95 font-bold uppercase tracking-wider">Đang đăng ký cho:</p>
-                      <h4 class="text-on-surface font-extrabold text-body-sm" id="selected-member-name-display">Chưa chọn hội viên</h4>
-                    </div>
-                  </div>
-                </div>
- 
-                <div class="bg-slate-50/10 dark:bg-[#1c2028]/5 border border-outline-variant/20 rounded-2xl p-4 space-y-3 shadow-sm">
-                  <div class="flex items-center gap-standard border-b border-outline-variant/15 pb-1">
-                    <span class="material-symbols-outlined text-brand-primary text-base">card_membership</span>
-                    <h4 class="font-extrabold text-on-surface text-body-sm uppercase tracking-wider">Gói tập đăng ký</h4>
-                  </div>
+              <!-- CỘT TRÁI: Gói tập & Thanh toán -->
+              <div class="lg:col-span-7 flex flex-col justify-between h-full space-y-4">
+                <div class="space-y-4 flex-grow flex flex-col justify-start">
                   
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div class="mb-1.5">
-                      <label class="block text-body-sm font-extrabold text-on-surface-variant/80 mb-0.5 uppercase tracking-wider text-[9.5px]">Chọn gói tập <span class="text-red-500">*</span></label>
-                      <select id="pkg-select" class="w-full bg-slate-50/50 dark:bg-slate-900/30 border border-outline-variant/40 text-on-surface px-4 py-2.5 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1a1c23] outline-none text-body-md font-semibold transition-all cursor-pointer shadow-sm focus:ring-2 focus:ring-brand-primary/10">
-                        <option value="">— Chọn gói tập —</option>
-                        ${(window.GymApp.data.packages || []).map(p => `<option value="${p.id}" data-gia="${p.gia}" data-thang="${p.so_thang || 0}" data-them="${p.so_ngay_them || 0}">${p.ten_goi} — ${window.GymApp.formatCurrency(p.gia)}</option>`).join('')}
-                      </select>
+                  <div id="selected-member-info" class="p-3 bg-gradient-to-r from-brand-primary/10 to-brand-primary/5 border border-brand-primary/20 rounded-2xl hidden">
+                    <div class="flex items-center gap-standard">
+                      <div class="w-10 h-10 rounded-xl bg-brand-primary text-white flex items-center justify-center font-extrabold text-body-sm shadow" id="selected-member-avatar-text">?</div>
+                      <div>
+                        <p class="text-[8.5px] text-brand-primary/95 font-bold uppercase tracking-wider">Đang đăng ký cho:</p>
+                        <h4 class="text-on-surface font-extrabold text-body-sm" id="selected-member-name-display">Chưa chọn hội viên</h4>
+                      </div>
                     </div>
-                    ${this._field('Giá thực tế gói tập (đ) *', 'pkg-price', 'text', '0', true)}
-                    ${this._field('Mã giảm giá', 'pkg-coupon', 'text', 'Không có')}
-                    ${this._field('Từ ngày', 'pkg-from', 'date')}
-                    ${this._field('Đến ngày (tự động tính)', 'pkg-to', 'date', '', true)}
-                    ${this._field('Tổng số tiền cần trả (đ)', 'pkg-total', 'text', '0', true)}
+                  </div>
+
+                  <div class="bg-slate-50/10 dark:bg-[#1c2028]/5 border border-outline-variant/20 rounded-2xl p-4 space-y-3 shadow-sm">
+                    <div class="flex items-center gap-standard border-b border-outline-variant/15 pb-1">
+                      <span class="material-symbols-outlined text-brand-primary text-base">assignment</span>
+                      <h4 class="font-extrabold text-on-surface text-body-sm uppercase tracking-wider">Thông tin Đăng ký & Thanh toán</h4>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
+                      <div class="mb-1.5">
+                        <label class="block text-body-sm font-extrabold text-on-surface-variant/80 mb-0.5 uppercase tracking-wider text-[9.5px]">Chọn gói tập <span class="text-red-500">*</span></label>
+                        <select id="pkg-select" class="w-full bg-slate-50/50 dark:bg-slate-900/30 border border-outline-variant/40 text-on-surface px-3 py-1.5 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1a1c23] outline-none text-body-md font-semibold transition-all cursor-pointer shadow-sm focus:ring-2 focus:ring-brand-primary/10">
+                          <option value="">— Chọn gói tập —</option>
+                          ${(window.GymApp.data.packages || []).map(p => `<option value="${p.id}" data-gia="${p.gia}" data-thang="${p.so_thang || 0}" data-them="${p.so_ngay_them || 0}">${p.ten_goi} — ${window.GymApp.formatCurrency(p.gia)}</option>`).join('')}
+                        </select>
+                      </div>
+                      ${this._field('Giá thực tế gói tập (đ) *', 'pkg-price', 'text', '0', true)}
+                      ${this._field('Mã giảm giá', 'pkg-coupon', 'text', 'Không có')}
+                      ${this._field('Từ ngày', 'pkg-from', 'date')}
+                      ${this._field('Đến ngày (tự động tính)', 'pkg-to', 'date', '', true)}
+                      ${this._field('Tổng số tiền cần trả (đ)', 'pkg-total', 'text', '0', true)}
+                      
+                      <div class="mb-1.5">
+                        <label class="block text-body-sm font-extrabold text-on-surface-variant/80 mb-0.5 uppercase tracking-wider text-[9.5px]">Số tiền khách trả (đ) <span class="text-red-500">*</span></label>
+                        <input id="pkg-paid" type="text" inputmode="numeric" placeholder="VD: 1.500.000"
+                          class="w-full bg-slate-50/50 dark:bg-slate-900/30 border border-outline-variant/40 text-on-surface px-3 py-1.5 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1a1c23] outline-none text-body-md font-semibold transition-all shadow-sm focus:shadow-md focus:ring-2 focus:ring-brand-primary/10" />
+                        <p id="err-pkg-paid" class="hidden text-body-xs mt-xs font-semibold text-red-500"></p>
+                      </div>
+                      ${this._field('Ngày thu tiền *', 'pkg-pay-date', 'date', '', true)}
+                      ${this._select('Phương thức thanh toán', 'pkg-method', [{ v: 'tien_mat', t: 'Tiền mặt' }, { v: 'chuyen_khoan', t: 'Chuyển khoản' }])}
+                      ${this._field('Ghi chú giao dịch', 'pkg-note', 'text', 'Ghi chú thanh toán...')}
+                    </div>
                   </div>
                 </div>
               </div>
-  
-              <!-- CỘT PHẢI: Thanh toán -->
+   
+              <!-- CỘT PHẢI: Hóa đơn tạm tính & Quyền lợi & Actions -->
               <div class="lg:col-span-5 flex flex-col justify-between h-full space-y-4">
-                <div class="bg-slate-50/10 dark:bg-[#1c2028]/5 border border-outline-variant/20 rounded-2xl p-4 space-y-3 shadow-sm flex-grow flex flex-col justify-start">
-                  <div class="flex items-center gap-standard border-b border-outline-variant/15 pb-1">
-                    <span class="material-symbols-outlined text-brand-primary text-base">payments</span>
-                    <h4 class="font-extrabold text-on-surface text-body-sm uppercase tracking-wider">Thanh toán & Giao dịch</h4>
+                <div id="pkg-summary-card" class="bg-gradient-to-br from-slate-50/90 to-slate-100/50 dark:from-[#232836]/40 dark:to-[#1a1d26]/20 border border-outline-variant/15 rounded-2xl p-4 space-y-3.5 shadow-md flex-grow flex flex-col justify-between">
+                  <!-- Receipt Header -->
+                  <div class="flex items-center justify-between border-b border-dashed border-outline-variant/40 pb-2">
+                    <div class="flex items-center gap-compact">
+                      <span class="material-symbols-outlined text-brand-primary text-base">receipt_long</span>
+                      <span class="font-extrabold text-on-surface text-body-sm uppercase tracking-wider">Hóa đơn tạm tính</span>
+                    </div>
+                    <span class="text-[9px] font-bold text-on-surface-variant bg-slate-200/50 dark:bg-slate-800/50 px-2 py-0.5 rounded-full uppercase tracking-wider">Tạm tính</span>
                   </div>
-                  
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-grow content-start">
-                    <div class="mb-1.5">
-                      <label class="block text-body-sm font-extrabold text-on-surface-variant/80 mb-0.5 uppercase tracking-wider text-[9.5px]">Số tiền khách trả (đ) <span class="text-red-500">*</span></label>
-                      <input id="pkg-paid" type="text" inputmode="numeric" placeholder="VD: 1.500.000"
-                        class="w-full bg-slate-50/50 dark:bg-slate-900/30 border border-outline-variant/40 text-on-surface px-4 py-2.5 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1a1c23] outline-none text-body-md font-semibold transition-all shadow-sm focus:shadow-md focus:ring-2 focus:ring-brand-primary/10" />
-                      <p id="err-pkg-paid" class="hidden text-body-xs mt-xs font-semibold text-red-500"></p>
+
+                  <!-- Receipt items -->
+                  <div class="space-y-2 text-body-sm flex-grow">
+                    <!-- Member Info in receipt -->
+                    <div class="flex justify-between items-center text-[10px] text-on-surface-variant/90 border-b border-outline-variant/10 pb-1.5">
+                      <span class="font-bold uppercase tracking-wider text-[9px]">Hội viên:</span>
+                      <span id="receipt-member-name" class="font-extrabold text-on-surface text-right truncate max-w-[180px]">Chưa lưu hồ sơ</span>
                     </div>
-                    ${this._field('Ngày thu tiền *', 'pkg-pay-date', 'date', '', true)}
-                    <div class="col-span-full">
-                      ${this._select('Phương thức thanh toán', 'pkg-method', [{ v: 'tien_mat', t: 'Tiền mặt' }, { v: 'chuyen_khoan', t: 'Chuyển khoản' }])}
+
+                    <!-- Package Name -->
+                    <div class="flex justify-between items-start text-body-sm border-b border-outline-variant/10 pb-1.5">
+                      <span class="font-bold text-on-surface-variant/80">Gói tập:</span>
+                      <span id="receipt-package-name" class="font-extrabold text-on-surface text-right max-w-[180px]">Chưa chọn</span>
                     </div>
-                    
-                    <div class="col-span-full mb-1.5 flex-grow flex flex-col">
-                      <label class="block text-body-sm font-extrabold text-on-surface-variant/80 mb-0.5 uppercase tracking-wider text-[9.5px]">Ghi chú giao dịch</label>
-                      <textarea id="pkg-note" rows="3" placeholder="Ghi chú thanh toán..."
-                        class="w-full flex-grow bg-slate-50/50 dark:bg-slate-900/30 border border-outline-variant/40 text-on-surface px-4 py-2.5 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1a1c23] outline-none text-body-md font-semibold resize-none transition-all shadow-sm focus:shadow-md focus:ring-2 focus:ring-brand-primary/10"></textarea>
+
+                    <!-- Duration -->
+                    <div class="flex justify-between items-center text-body-sm border-b border-outline-variant/10 pb-1.5">
+                      <span class="font-bold text-on-surface-variant/80">Thời hạn:</span>
+                      <span id="receipt-duration" class="font-extrabold text-on-surface text-right">--</span>
+                    </div>
+
+                    <!-- Apply Date -->
+                    <div class="flex justify-between items-center text-body-sm border-b border-outline-variant/10 pb-1.5">
+                      <span class="font-bold text-on-surface-variant/80">Hiệu lực:</span>
+                      <span id="receipt-validity" class="font-extrabold text-on-surface text-right text-xs">--</span>
+                    </div>
+
+                    <!-- Calculation details -->
+                    <div class="space-y-1.5 pt-1.5">
+                      <div class="flex justify-between items-center text-body-sm">
+                        <span class="font-bold text-on-surface-variant/80">Cần thanh toán:</span>
+                        <span id="receipt-total" class="font-extrabold text-on-surface">0 đ</span>
+                      </div>
+                      <div class="flex justify-between items-center text-body-sm">
+                        <span class="font-bold text-on-surface-variant/80">Đã trả:</span>
+                        <span id="receipt-paid" class="font-extrabold text-brand-primary">0 đ</span>
+                      </div>
+                      <!-- Remaining / Overpaid -->
+                      <div class="flex justify-between items-center text-body-sm pt-1.5 border-t border-dashed border-outline-variant/40">
+                        <span id="receipt-status-label" class="font-extrabold uppercase text-[10px] tracking-wider text-on-surface-variant/80">Còn thiếu:</span>
+                        <span id="receipt-status-value" class="font-black text-body-md text-red-500">0 đ</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Mini Package Benefits (Quyền lợi gói tập) -->
+                  <div class="border-t border-outline-variant/15 pt-3 space-y-1.5">
+                    <div class="flex items-center gap-compact text-on-surface-variant/80">
+                      <span class="material-symbols-outlined text-[15px] text-brand-primary">workspace_premium</span>
+                      <span class="font-bold text-[9px] uppercase tracking-wider">Đặc quyền hội viên (Mini)</span>
+                    </div>
+                    <div id="receipt-benefits" class="grid grid-cols-2 gap-1.5 text-[9.5px] text-on-surface-variant/80 font-semibold">
+                      <div class="flex items-center gap-xs"><span class="material-symbols-outlined text-[12px] text-emerald-500">check_circle</span>Tập tự do</div>
+                      <div class="flex items-center gap-xs"><span class="material-symbols-outlined text-[12px] text-emerald-500">check_circle</span>Tủ Locker</div>
+                      <div class="flex items-center gap-xs"><span class="material-symbols-outlined text-[12px] text-emerald-500">check_circle</span>Nước uống</div>
+                      <div class="flex items-center gap-xs"><span class="material-symbols-outlined text-[12px] text-emerald-500">check_circle</span>InBody/BMI</div>
                     </div>
                   </div>
                 </div>
@@ -398,6 +454,7 @@ window.GymApp.pages['member-add'] = {
         formPackage.classList.remove('hidden');
         formRegister.classList.add('hidden');
         self._syncSelectedMemberInfo();
+        self._updatePackageSummary();
       });
     }
 
@@ -508,6 +565,7 @@ window.GymApp.pages['member-add'] = {
           pkgPriceInput.value = '0';
           pkgTotalInput.value = '0';
           pkgToInput.value = '';
+          self._updatePackageSummary();
           return;
         }
         const rawGia = parseFloat(opt.getAttribute('data-gia') || 0);
@@ -515,6 +573,7 @@ window.GymApp.pages['member-add'] = {
         pkgTotalInput.value = window.GymApp.formatCurrency(rawGia).replace(' đ', '');
         pkgPaidInput.value = window.GymApp.formatCurrency(rawGia).replace(' đ', '');
         self._calculateEndDate();
+        self._updatePackageSummary();
       });
     }
 
@@ -522,6 +581,7 @@ window.GymApp.pages['member-add'] = {
       pkgFromInput.value = new Date().toISOString().split('T')[0];
       pkgFromInput.addEventListener('change', function () {
         self._calculateEndDate();
+        self._updatePackageSummary();
       });
     }
 
@@ -538,6 +598,7 @@ window.GymApp.pages['member-add'] = {
         } else {
           this.value = '';
         }
+        self._updatePackageSummary();
       });
     }
 
@@ -898,6 +959,133 @@ window.GymApp.pages['member-add'] = {
         btn.disabled = false;
         btn.innerHTML = '<span class="material-symbols-outlined text-sm">save</span> Lưu đăng ký gói';
       });
+  },
+
+  _updatePackageSummary: function () {
+    const elMemberName = document.getElementById('receipt-member-name');
+    const elPkgName = document.getElementById('receipt-package-name');
+    const elDuration = document.getElementById('receipt-duration');
+    const elValidity = document.getElementById('receipt-validity');
+    const elTotal = document.getElementById('receipt-total');
+    const elPaid = document.getElementById('receipt-paid');
+    const elStatusLabel = document.getElementById('receipt-status-label');
+    const elStatusVal = document.getElementById('receipt-status-value');
+    const elBenefits = document.getElementById('receipt-benefits');
+
+    if (!elPkgName) return;
+
+    // 1. Member Name
+    if (elMemberName) {
+      elMemberName.textContent = this._currentMemberName || 'Chưa lưu hồ sơ';
+    }
+
+    const pkgSelect = document.getElementById('pkg-select');
+    if (!pkgSelect) return;
+
+    const opt = pkgSelect.options[pkgSelect.selectedIndex];
+    if (!opt || !opt.value) {
+      elPkgName.textContent = 'Chưa chọn';
+      if (elDuration) elDuration.textContent = '--';
+      if (elValidity) elValidity.textContent = '--';
+      if (elTotal) elTotal.textContent = '0 đ';
+      if (elPaid) elPaid.textContent = '0 đ';
+      if (elStatusLabel) elStatusLabel.textContent = 'Còn thiếu:';
+      if (elStatusVal) {
+        elStatusVal.textContent = '0 đ';
+        elStatusVal.className = 'font-black text-body-md text-red-500';
+      }
+      if (elBenefits) {
+        elBenefits.innerHTML = `
+          <div class="flex items-center gap-xs"><span class="material-symbols-outlined text-[12px] text-emerald-500">check_circle</span>Tập tự do</div>
+          <div class="flex items-center gap-xs"><span class="material-symbols-outlined text-[12px] text-emerald-500">check_circle</span>Tủ Locker</div>
+          <div class="flex items-center gap-xs"><span class="material-symbols-outlined text-[12px] text-emerald-500">check_circle</span>Nước uống</div>
+          <div class="flex items-center gap-xs"><span class="material-symbols-outlined text-[12px] text-emerald-500">check_circle</span>InBody/BMI</div>
+        `;
+      }
+      return;
+    }
+
+    // 2. Package info
+    const fullText = opt.textContent;
+    const cleanPkgName = fullText.split(' — ')[0] || fullText;
+    elPkgName.textContent = cleanPkgName;
+
+    const months = parseInt(opt.getAttribute('data-thang') || 0);
+    const extraDays = parseInt(opt.getAttribute('data-them') || 0);
+    let durationText = `${months} tháng`;
+    if (extraDays > 0) {
+      durationText += ` + ${extraDays} ngày`;
+    }
+    if (elDuration) elDuration.textContent = durationText;
+
+    // 3. Validity
+    const pkgFromVal = document.getElementById('pkg-from').value;
+    const pkgToVal = document.getElementById('pkg-to').value;
+    if (elValidity) {
+      if (pkgFromVal && pkgToVal) {
+        const fmtDate = (dStr) => {
+          if (!dStr) return '';
+          const parts = dStr.split('-');
+          if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+          return dStr;
+        };
+        elValidity.textContent = `Từ: ${fmtDate(pkgFromVal)} - Đến: ${fmtDate(pkgToVal)}`;
+      } else {
+        elValidity.textContent = '--';
+      }
+    }
+
+    // 4. Calculation
+    const pkgTotalInput = document.getElementById('pkg-total');
+    const pkgPaidInput = document.getElementById('pkg-paid');
+
+    const totalRaw = pkgTotalInput ? parseFloat(pkgTotalInput.value.replace(/[^0-9]/g, '')) || 0 : 0;
+    const paidRaw = pkgPaidInput ? parseFloat(pkgPaidInput.value.replace(/[^0-9]/g, '')) || 0 : 0;
+
+    if (elTotal) elTotal.textContent = window.GymApp.formatCurrency(totalRaw);
+    if (elPaid) elPaid.textContent = window.GymApp.formatCurrency(paidRaw);
+
+    const diff = totalRaw - paidRaw;
+    if (elStatusLabel && elStatusVal) {
+      if (diff > 0) {
+        elStatusLabel.textContent = 'Còn thiếu:';
+        elStatusVal.textContent = window.GymApp.formatCurrency(diff);
+        elStatusVal.className = 'font-black text-body-md text-red-500';
+      } else if (diff === 0) {
+        elStatusLabel.textContent = 'Trạng thái:';
+        elStatusVal.textContent = 'Đã thu đủ';
+        elStatusVal.className = 'font-black text-body-md text-emerald-500 dark:text-emerald-400';
+      } else {
+        elStatusLabel.textContent = 'Thối lại:';
+        elStatusVal.textContent = window.GymApp.formatCurrency(Math.abs(diff));
+        elStatusVal.className = 'font-black text-body-md text-emerald-500 dark:text-emerald-400';
+      }
+    }
+
+    // 5. Dynamic benefits
+    if (elBenefits) {
+      let items = [
+        'Tập tự do',
+        'Tủ Locker',
+        'Nước uống',
+        'InBody/BMI'
+      ];
+      if (months >= 3) {
+        items.push('Đặt PT ưu tiên');
+      }
+      if (months >= 6) {
+        items.push('Giảm 10% dịch vụ');
+      }
+      if (months >= 12) {
+        items.push('1 buổi PT/tháng');
+      }
+      elBenefits.innerHTML = items.map(it => `
+        <div class="flex items-center gap-xs">
+          <span class="material-symbols-outlined text-[12px] text-emerald-500">check_circle</span>
+          ${it}
+        </div>
+      `).join('');
+    }
   },
 
   guideHtml: `

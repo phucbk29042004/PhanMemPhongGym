@@ -14,6 +14,12 @@
 
 ## 📋 Danh Sách Thay Đổi
 
+### [02/06/2026 08:38] — Thiết kế Khung Hóa đơn & Đặc quyền gói tập lấp đầy khoảng trống tab Đăng ký gói
+- **Loại**: Cải tiến UI/UX (Frontend)
+- **File**: `FE/assets/js/pages/member-add.js`
+- **Mô tả**: Tích hợp khung hiển thị "Hóa đơn tạm tính" (Receipt style) và danh sách "Quyền lợi hội viên" phiên bản mini ở cột phải dưới phần thanh toán. Biên lai tự động cập nhật động các thông tin: tên gói, thời hạn, ngày hiệu lực, tiền cần thanh toán, tiền đã đóng, tiền còn thiếu/nợ, giúp loại bỏ hoàn toàn khoảng trống lớn và mang lại giao diện premium chuyên nghiệp.
+- **Kết quả**: Thành công — Giao diện tab đăng ký gói dịch vụ hiển thị đầy đủ, cân đối.
+
 ### [02/06/2026 08:27] — Giải quyết xung đột Git trong db.js làm sập Backend
 - **Loại**: Sửa lỗi cấu trúc / Git (Backend)
 - **File**: `BE/src/config/db.js`
@@ -1380,3 +1386,12 @@
     - Hiển thị ngày đầy đủ và giờ cho mỗi tin nhắn (ví dụ: `08:30 29/05/2026`) thay vì chỉ hiển thị giờ như trước đây.
 - **Kết quả**: ✅ Khắc phục hoàn toàn lỗi crash khi đăng ký nối tiếp PT và cải thiện trải nghiệm chat.
 
+### 02/06/2026 08:50 — Cấu trúc lại giao diện tab Đăng ký gói dịch vụ
+- **Loại**: Chỉnh sửa giao diện Web (Frontend)
+- **File**: `FE/assets/js/pages/member-add.js`
+- **Mô tả**:
+  - Cấu trúc lại giao diện tab "Đăng ký gói dịch vụ" thành layout 2 cột cân đối, vừa vặn trong màn hình, không xuất hiện thanh cuộn dọc (scrollbar).
+  - Cột trái (`lg:col-span-7`): Gom toàn bộ 10 trường nhập liệu từ cả hai nhóm "Gói tập" và "Thanh toán" vào một grid 2 cột gọn gàng. Chuyển đổi trường Ghi chú từ textarea thành input text 1 dòng để tối ưu chiều cao.
+  - Cột phải (`lg:col-span-5`): Chứa card "Hóa đơn tạm tính" thiết kế phong cách Receipt, hiển thị trực quan thông tin gói tập, ngày áp dụng, tính toán số tiền khách trả, tiền còn thiếu/thối lại và danh sách "Quyền lợi hội viên (Mini)" tự động cập nhật theo gói tập được chọn.
+  - Tích hợp sự kiện tự động tính toán và hiển thị hóa đơn, đặc quyền ngay khi người dùng chọn gói, thay đổi tiền khách trả hoặc ngày bắt đầu.
+- **Kết quả**: ✅ Giao diện hoạt động trơn tru, hiển thị đẹp mắt, tính toán chính xác và không bị thừa khoảng trống hay xuất hiện scrollbar.
