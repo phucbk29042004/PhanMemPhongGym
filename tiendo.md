@@ -1447,3 +1447,13 @@
   - Cập nhật catch block của `_handleSaveMember` và `_handleSavePackage` sử dụng `err.message` để hiển thị đúng lỗi nghiệp vụ từ backend (ví dụ: trùng SĐT/CCCD/Email) thay vì toast cứng lỗi "Lỗi kết nối máy chủ".
   - Sửa lỗi trong `_handleSavePackage`: Thay đổi endpoint gọi API từ `/api/members/register-package` thành đúng route backend `/api/members/:id/package`, đồng thời sửa tên trường số tiền khách trả trong payload từ `so_tien_tra` thành `so_tien_da_thu` để khớp với controller.
 - **Kết quả**: ✅ Đã xử lý triệt để lỗi "Lỗi kết nối máy chủ" giả lập khi lưu hồ sơ trùng thông tin và hoàn thiện luồng đăng ký/thanh toán gói tập mới từ frontend.
+### 02/06/2026 09:28 — Khôi phục kích thước form bình thường và sử dụng thông tin hội viên inline để chống thanh cuộn dọc
+- **Loại**: Cải tiến giao diện Web (Frontend)
+- **File**:
+  - [member-add.js](file:///c:/PhanMemPhongGym/FE/assets/js/pages/member-add.js) (Layout & style các trường)
+- **Mô tả**:
+  - Khôi phục padding và margin các helper trường nhập liệu (`py-1.5`, `mb-1.5`) cùng layout chính (`p-4`, `gap-4`) của tab Đăng ký gói để giao diện rộng rãi thoáng đãng bình thường.
+  - Xóa bỏ card "Quy định & Lưu ý Giao dịch" ở tab 2 để chừa khoảng trống thoáng tự nhiên phía dưới.
+  - Loại bỏ hoàn toàn alert thông tin hội viên cũ `#selected-member-info` ở tab 2 (đây là thành phần chính gây phình chiều cao đẩy form xuống làm xuất hiện scrollbar trình duyệt).
+  - Tích hợp nhãn tên hội viên dạng inline trực tiếp cạnh tiêu đề: *"Thông tin Đăng ký & Thanh toán (Hội viên: Tên - #Mã)"*.
+- **Kết quả**: ✅ Khi chưa lưu thì giao diện trống thoáng tự nhiên, còn khi lưu xong chuyển tab đăng ký gói, chiều cao form hoàn toàn không thay đổi và nằm gọn toàn bộ trong khung hình không xuất hiện thanh cuộn dọc.

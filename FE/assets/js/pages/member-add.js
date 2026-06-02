@@ -187,33 +187,26 @@ window.GymApp.pages['member-add'] = {
           </div> <!-- End form-register -->
  
           <!-- Content Area: Đăng ký gói tập -->
-          <div id="form-package" class="hidden p-2.5 flex-grow flex flex-col animate-fadeIn">
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch flex-grow">
+          <div id="form-package" class="hidden p-4 flex-grow flex flex-col animate-fadeIn">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch flex-grow">
               
               <!-- CỘT TRÁI: Gói tập & Thanh toán -->
-              <div class="lg:col-span-7 flex flex-col justify-between h-full space-y-2.5">
-                <div class="space-y-2.5 flex-grow flex flex-col justify-start">
-                  
-                  <div id="selected-member-info" class="p-2.5 bg-gradient-to-r from-brand-primary/10 to-brand-primary/5 border border-brand-primary/20 rounded-2xl hidden">
-                    <div class="flex items-center gap-standard">
-                      <div class="w-8 h-8 rounded-xl bg-brand-primary text-white flex items-center justify-center font-extrabold text-body-sm shadow" id="selected-member-avatar-text">?</div>
-                      <div>
-                        <p class="text-[8.5px] text-brand-primary/95 font-bold uppercase tracking-wider">Đang đăng ký cho:</p>
-                        <h4 class="text-on-surface font-extrabold text-body-sm" id="selected-member-name-display">Chưa chọn hội viên</h4>
-                      </div>
-                    </div>
-                  </div>
+              <div class="lg:col-span-7 flex flex-col justify-between h-full space-y-4">
+                <div class="space-y-4 flex-grow flex flex-col justify-start">
 
-                  <div class="bg-slate-50/10 dark:bg-[#1c2028]/5 border border-outline-variant/20 rounded-2xl p-3.5 py-3 space-y-2.5 shadow-sm">
+                  <div class="bg-slate-50/10 dark:bg-[#1c2028]/5 border border-outline-variant/20 rounded-2xl p-4 space-y-4 shadow-sm">
                     <div class="flex items-center gap-standard border-b border-outline-variant/15 pb-1">
                       <span class="material-symbols-outlined text-brand-primary text-base">assignment</span>
-                      <h4 class="font-extrabold text-on-surface text-body-sm uppercase tracking-wider">Thông tin Đăng ký & Thanh toán</h4>
+                      <h4 class="font-extrabold text-on-surface text-body-sm uppercase tracking-wider">
+                        Thông tin Đăng ký & Thanh toán
+                        <span id="selected-member-name-inline" class="text-brand-primary text-[11px] normal-case ml-2 font-bold hidden"></span>
+                      </h4>
                     </div>
                     
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
-                      <div class="mb-1">
+                      <div class="mb-1.5">
                         <label class="block text-body-sm font-extrabold text-on-surface-variant/80 mb-0.5 uppercase tracking-wider text-[9.5px]">Chọn gói tập <span class="text-red-500">*</span></label>
-                        <select id="pkg-select" class="w-full bg-slate-50/50 dark:bg-slate-900/30 border border-outline-variant/40 text-on-surface px-3 py-1 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1a1c23] outline-none text-body-md font-semibold transition-all cursor-pointer shadow-sm focus:ring-2 focus:ring-brand-primary/10">
+                        <select id="pkg-select" class="w-full bg-slate-50/50 dark:bg-slate-900/30 border border-outline-variant/40 text-on-surface px-3 py-1.5 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1a1c23] outline-none text-body-md font-semibold transition-all cursor-pointer shadow-sm focus:ring-2 focus:ring-brand-primary/10">
                           <option value="">— Chọn gói tập —</option>
                           ${(window.GymApp.data.packages || []).map(p => `<option value="${p.id}" data-gia="${p.gia}" data-thang="${p.so_thang || 0}" data-them="${p.so_ngay_them || 0}">${p.ten_goi} — ${window.GymApp.formatCurrency(p.gia)}</option>`).join('')}
                         </select>
@@ -224,10 +217,10 @@ window.GymApp.pages['member-add'] = {
                       ${this._field('Đến ngày (tự động tính)', 'pkg-to', 'date', '', true)}
                       ${this._field('Tổng số tiền cần trả (đ)', 'pkg-total', 'text', '0', true)}
                       
-                      <div class="mb-1">
+                      <div class="mb-1.5">
                         <label class="block text-body-sm font-extrabold text-on-surface-variant/80 mb-0.5 uppercase tracking-wider text-[9.5px]">Số tiền khách trả (đ) <span class="text-red-500">*</span></label>
                         <input id="pkg-paid" type="text" inputmode="numeric" placeholder="VD: 1.500.000"
-                          class="w-full bg-slate-50/50 dark:bg-slate-900/30 border border-outline-variant/40 text-on-surface px-3 py-1 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1a1c23] outline-none text-body-md font-semibold transition-all shadow-sm focus:shadow-md focus:ring-2 focus:ring-brand-primary/10" />
+                          class="w-full bg-slate-50/50 dark:bg-slate-900/30 border border-outline-variant/40 text-on-surface px-3 py-1.5 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1a1c23] outline-none text-body-md font-semibold transition-all shadow-sm focus:shadow-md focus:ring-2 focus:ring-brand-primary/10" />
                         <p id="err-pkg-paid" class="hidden text-body-xs mt-xs font-semibold text-red-500"></p>
                       </div>
                       ${this._field('Ngày thu tiền *', 'pkg-pay-date', 'date', '', true)}
@@ -235,26 +228,12 @@ window.GymApp.pages['member-add'] = {
                       ${this._field('Ghi chú giao dịch', 'pkg-note', 'text', 'Ghi chú thanh toán...')}
                     </div>
                   </div>
-
-                  <!-- Khung Lưu ý & Quy định Giao dịch -->
-                  <div class="bg-slate-50/5 dark:bg-[#1c2028]/2 border border-dashed border-outline-variant/25 rounded-2xl p-2.5 py-2 space-y-1.5 flex-grow">
-                    <div class="flex items-center gap-compact text-on-surface-variant/80">
-                      <span class="material-symbols-outlined text-[16px] text-brand-primary">gavel</span>
-                      <span class="font-bold text-[9px] uppercase tracking-wider">Quy định & Lưu ý Giao dịch</span>
-                    </div>
-                    <ul class="text-[9px] text-on-surface-variant/70 space-y-0.5 list-disc pl-4 leading-normal">
-                      <li><strong>Chính sách kích hoạt:</strong> Gói tập có hiệu lực ngay khi thanh toán đủ hoặc theo ngày bắt đầu đã chọn.</li>
-                      <li><strong>Chính sách bảo lưu:</strong> Hỗ trợ bảo lưu tối đa 30 ngày (chỉ áp dụng đối với các gói tập từ 3 tháng trở lên).</li>
-                      <li><strong>Chính sách chuyển nhượng:</strong> Phí chuyển nhượng gói tập sang hội viên khác là 10% giá trị gói.</li>
-                      <li><strong>Hoàn trả/Hủy gói:</strong> Không áp dụng chính sách hoàn tiền sau khi gói tập đã kích hoạt và sử dụng.</li>
-                    </ul>
-                  </div>
                 </div>
               </div>
    
               <!-- CỘT PHẢI: Hóa đơn tạm tính & Quyền lợi & Actions -->
               <div class="lg:col-span-5 flex flex-col justify-between h-full space-y-3">
-                <div id="pkg-summary-card" class="bg-gradient-to-br from-slate-50/90 to-slate-100/50 dark:from-[#232836]/40 dark:to-[#1a1d26]/20 border border-outline-variant/15 rounded-2xl p-3 py-2.5 space-y-2.5 shadow-md flex-grow flex flex-col justify-between">
+                <div id="pkg-summary-card" class="bg-gradient-to-br from-slate-50/90 to-slate-100/50 dark:from-[#232836]/40 dark:to-[#1a1d26]/20 border border-outline-variant/15 rounded-2xl p-4 py-3 space-y-3 shadow-md flex-grow flex flex-col justify-between">
                   <!-- Receipt Header -->
                   <div class="flex items-center justify-between border-b border-dashed border-outline-variant/40 pb-1.5">
                     <div class="flex items-center gap-compact">
@@ -341,15 +320,15 @@ window.GymApp.pages['member-add'] = {
 
   _field: function (label, id, type, placeholder = '', readonly = false) {
     const formattedLabel = label.replace('*', ' <span style="color:#ba1a1a;margin-left:2px;font-weight:700;">*</span>');
-    const base = 'w-full border border-outline-variant/40 text-on-surface px-3 py-1 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1a1c23] outline-none text-body-md font-semibold transition-all duration-200 focus:ring-2 focus:ring-brand-primary/10';
+    const base = 'w-full border border-outline-variant/40 text-on-surface px-3 py-1.5 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1a1c23] outline-none text-body-md font-semibold transition-all duration-200 focus:ring-2 focus:ring-brand-primary/10';
     if (readonly) {
-      return `<div class="mb-1">
+      return `<div class="mb-1.5">
         <label class="block text-body-sm font-bold text-on-surface-variant/80 mb-0.5 uppercase tracking-wider text-[9.5px]">${formattedLabel}</label>
         <input id="${id}" type="${type}" placeholder="${placeholder}" readonly
           class="${base} bg-slate-200/50 dark:bg-slate-800/50 text-on-surface-variant cursor-not-allowed opacity-75 shadow-none border-dashed" />
       </div>`;
     }
-    return `<div class="mb-1">
+    return `<div class="mb-1.5">
       <label class="block text-body-sm font-bold text-on-surface-variant/80 mb-0.5 uppercase tracking-wider text-[9.5px]">${formattedLabel}</label>
       <input id="${id}" type="${type}" placeholder="${placeholder}"
         class="${base} bg-slate-50/50 dark:bg-slate-900/30 shadow-sm focus:shadow-md" />
@@ -358,9 +337,9 @@ window.GymApp.pages['member-add'] = {
 
   _select: function (label, id, options) {
     const formattedLabel = label.replace('*', ' <span style="color:#ba1a1a;margin-left:2px;font-weight:700;">*</span>');
-    return `<div class="mb-1">
+    return `<div class="mb-1.5">
       <label class="block text-body-sm font-bold text-on-surface-variant/80 mb-0.5 uppercase tracking-wider text-[9.5px]">${formattedLabel}</label>
-      <select id="${id}" class="w-full bg-slate-50/50 dark:bg-slate-900/30 border border-outline-variant/40 text-on-surface px-3 py-1 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1a1c23] outline-none text-body-md font-semibold transition-all cursor-pointer shadow-sm focus:shadow-md focus:ring-2 focus:ring-brand-primary/10">
+      <select id="${id}" class="w-full bg-slate-50/50 dark:bg-slate-900/30 border border-outline-variant/40 text-on-surface px-3 py-1.5 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1a1c23] outline-none text-body-md font-semibold transition-all cursor-pointer shadow-sm focus:shadow-md focus:ring-2 focus:ring-brand-primary/10">
         <option value="">— ${label.replace('*', '').trim()} —</option>
         ${options.map(o => `<option value="${o.v}">${o.t}</option>`).join('')}
       </select>
@@ -369,8 +348,8 @@ window.GymApp.pages['member-add'] = {
 
   _datalistInput: function (label, id, listId, placeholder = '') {
     const formattedLabel = label.replace('*', ' <span style="color:#ba1a1a;margin-left:2px;font-weight:700;">*</span>');
-    const base = 'w-full bg-slate-50/50 dark:bg-slate-900/30 border border-outline-variant/40 text-on-surface px-3 py-1 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1a1c23] outline-none text-body-md font-semibold transition-all duration-200 focus:ring-2 focus:ring-brand-primary/10 shadow-sm focus:shadow-md';
-    return `<div class="mb-1">
+    const base = 'w-full bg-slate-50/50 dark:bg-slate-900/30 border border-outline-variant/40 text-on-surface px-3 py-1.5 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1a1c23] outline-none text-body-md font-semibold transition-all duration-200 focus:ring-2 focus:ring-brand-primary/10 shadow-sm focus:shadow-md';
+    return `<div class="mb-1.5">
       <label class="block text-body-sm font-bold text-on-surface-variant/80 mb-0.5 uppercase tracking-wider text-[9.5px]">${formattedLabel}</label>
       <input id="${id}" type="text" list="${listId}" placeholder="${placeholder}"
         class="${base}" autocomplete="off" />
@@ -627,15 +606,16 @@ window.GymApp.pages['member-add'] = {
   },
 
   _syncSelectedMemberInfo: function () {
-    const avatarTxt = document.getElementById('selected-member-avatar-text');
-    const nameDisplay = document.getElementById('selected-member-name-display');
-    const boxInfo = document.getElementById('selected-member-info');
+    const nameDisplayInline = document.getElementById('selected-member-name-inline');
+    const nameDisplayReceipt = document.getElementById('receipt-member-name');
 
-    if (this._currentMemberId && nameDisplay && boxInfo) {
-      boxInfo.classList.remove('hidden');
-      nameDisplay.textContent = `${this._currentMemberName} (Mã số: #${this._currentMemberId})`;
-      if (avatarTxt) {
-        avatarTxt.textContent = this._currentMemberName.charAt(0).toUpperCase();
+    if (this._currentMemberId) {
+      if (nameDisplayInline) {
+        nameDisplayInline.textContent = `(Hội viên: ${this._currentMemberName} - #${this._currentMemberId})`;
+        nameDisplayInline.classList.remove('hidden');
+      }
+      if (nameDisplayReceipt) {
+        nameDisplayReceipt.textContent = this._currentMemberName;
       }
     }
   },
