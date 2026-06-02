@@ -99,4 +99,44 @@
             return data;
         }
     };
+
+    window.GymApp.fetchAPI = async (url, options = {}) => {
+        const baseUrl = 'http://localhost:3000';
+        const finalUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
+        const token = localStorage.getItem('gym-token');
+
+        const headers = {
+            ...options.headers,
+        };
+
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        if (!(options.body instanceof FormData)) {
+            headers['Content-Type'] = 'application/json';
+        }
+
+        try {
+            const response = await fetch(finalUrl, {
+                ...options,
+                headers,
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    window.GymApp.auth.logout();
+                    return null;
+                }
+                throw new Error(data.message || 'Có lỗi xảy ra');
+            }
+
+            return data;
+        } catch (error) {
+            console.error(`fetchAPI Error [${url}]:`, error);
+            throw error;
+        }
+    };
 })();

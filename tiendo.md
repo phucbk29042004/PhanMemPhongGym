@@ -8,11 +8,25 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
-**✅ Tái cấu trúc giao diện "Thêm hội viên mới" & Giải quyết các vấn đề Cấu trúc Database (Migration v21)** — Giao diện thêm hội viên mới được thiết kế lại tối ưu thành 2 cột cân đối, không còn khoảng trống thừa, đồng thời sửa lỗi FK trong bảng `danh_gia_pt` và khôi phục ứng dụng backend sau xung đột merge.
+**✅ Sửa lỗi crash, Chặn trùng lặp hồ sơ & Thu gọn UI vừa khít khung hình** — Sửa triệt để lỗi gọi hàm thông báo lỗi gây đơ UI, bổ sung validate trùng SĐT/CCCD/Email và thu gọn các trường đệm của tab Đăng ký gói để hiển thị trọn vẹn trong viewport không bị tràn trang.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
+
+### [02/06/2026 09:20] — Thu gọn kích thước tab Đăng ký gói dịch vụ hiển thị trọn vẹn trong khung hình
+- **Loại**: Cải tiến UI/UX (Frontend)
+- **File**: `FE/assets/js/pages/member-add.js`
+- **Mô tả**: Tinh chỉnh toàn bộ padding, margins, và chiều cao của các trường nhập liệu (py-1.5 -> py-1, mb-1.5 -> mb-1) và các card phụ (Quy định giao dịch, Biên lai tạm tính) ở tab Đăng ký gói dịch vụ thành phong cách compact. Việc này giúp giảm chiều cao tổng thể của tab xuống khoảng 70px, làm cho toàn bộ giao diện, bao gồm cả cụm nút Lưu dưới cùng, nằm trọn vẹn trong khung hình (viewport) mà không gây tràn trang và không xuất hiện thanh cuộn dọc ngoài cùng.
+- **Kết quả**: Thành công — Tab 2 hiển thị khít đẹp, vừa vặn trên các màn hình máy tính có độ phân giải thông thường.
+
+### [02/06/2026 09:15] — Chặn trùng lặp SĐT/CCCD/Email và sửa lỗi crash thông báo khi lưu hồ sơ
+- **Loại**: Sửa lỗi & Tính năng mới (Fullstack)
+- **File**: `BE/src/controllers/members.controller.js`, `FE/assets/js/pages/member-add.js`
+- **Mô tả**:
+  1. **Backend**: Cập nhật hàm `createMember` và `updateMember` thực hiện truy vấn kiểm tra trùng lặp thông tin Số điện thoại, CCCD, Email với các hồ sơ hiện có trong DB (được active, loại bỏ hồ sơ bị xóa `is_deleted = 0`). Trả về mã lỗi 409 Conflict kèm thông báo cụ thể (Ví dụ: *"Số điện thoại này đã được sử dụng bởi hội viên Nguyễn Văn A."*).
+  2. **Frontend**: Sửa lỗi crash JavaScript ngầm do gọi sai tên hàm thông báo hệ thống (`window.GymApp.showToast` -> `window.GymApp.toast`) trong `member-add.js`. Điều này giúp hệ thống hiển thị thông báo "Thêm hồ sơ thành công!" bình thường khi lưu và tự động chuyển tiếp mượt mà sang tab Đăng ký gói tập, đồng thời hiển thị thông báo cảnh báo trùng thông tin từ Backend trả về để người dùng không bấm lưu lặp lại nhiều lần.
+- **Kết quả**: Thành công — Khắc phục triệt để lỗi không thông báo, không chuyển tab khi lưu và ngăn chặn hoàn toàn việc tạo trùng lặp tài khoản/hội viên.
 
 ### [02/06/2026 08:38] — Thiết kế Khung Hóa đơn & Đặc quyền gói tập lấp đầy khoảng trống tab Đăng ký gói
 - **Loại**: Cải tiến UI/UX (Frontend)
@@ -1402,3 +1416,34 @@
   - Thêm card "Quy định & Lưu ý Giao dịch" ở phía dưới cột trái của tab Đăng ký gói tập, có cơ chế `flex-grow` để tự động kéo dài và lấp đầy khoảng trống ở góc trái một cách cân đối với cột phải.
   - Hiển thị các lưu ý nghiệp vụ hữu ích cho lễ tân như chính sách kích hoạt, điều kiện bảo lưu gói (cho các gói >= 3 tháng), phí chuyển nhượng (10%), và quy định hoàn trả.
 - **Kết quả**: ✅ Giao diện đầy đặn, cân đối hơn, tận dụng tối đa không gian trống phía dưới mà vẫn đảm bảo không có thanh cuộn dọc (scrollbar).
+### 02/06/2026 08:58 — Loại bỏ ký tự tiền tệ đ / ₫ bên trong các ô nhập tiền
+- **Loại**: Chỉnh sửa giao diện Web (Frontend)
+- **File**: `FE/assets/js/pages/member-add.js`
+- **Mô tả**:
+  - Thay thế cách định dạng số tiền cũ sử dụng `.replace(' đ', '')` sang sử dụng trực tiếp hàm chuẩn `new Intl.NumberFormat('vi-VN').format(...)`.
+  - Giúp loại bỏ hoàn toàn các ký tự tiền tệ dư thừa (`đ` hoặc `₫`) bên trong các ô nhập: *Số tiền khách trả*, *Giá thực tế*, và *Tổng số tiền cần trả* (tránh xung đột định dạng của từng trình duyệt/hệ điều hành), trong khi vẫn giữ nguyên dấu phân tách hàng nghìn thuận tiện cho việc gõ và đọc.
+- **Kết quả**: ✅ Hoàn thành yêu cầu của người dùng, giao diện các ô nhập tiền sạch đẹp hơn.
+### 02/06/2026 09:05 — Sửa lỗi thiếu hàm fetchAPI gây sập chức năng Lưu hồ sơ và Đăng ký gói
+- **Loại**: Sửa bug hệ thống (Fullstack)
+- **File**:
+  - [api.js](file:///c:/PhanMemPhongGym/FE/assets/js/api.js) (Khai báo fetchAPI dùng chung)
+- **Mô tả**:
+  - Triển khai và khai báo phương thức dùng chung `window.GymApp.fetchAPI` trong `api.js`. Hàm này tự động đính kèm token xác thực JWT từ `localStorage`, tự động nhận diện dạng dữ liệu (bỏ qua Content-Type đối với `FormData` khi tải lên hình ảnh avatar, và tự động set `application/json` đối với dữ liệu JSON của đăng ký gói tập).
+  - Khắc phục hoàn toàn lỗi `window.GymApp.fetchAPI is not a function` gây sập và chặn đứng nút Lưu hồ sơ cá nhân cũng như nút Xác nhận đăng ký gói dịch vụ.
+- **Kết quả**: ✅ Thêm mới hồ sơ và đăng ký kích hoạt gói tập hoạt động trơn tru 100%.
+### 02/06/2026 09:08 — Sửa lỗi không tạo được tài khoản đăng nhập khi lưu hội viên
+- **Loại**: Sửa bug hệ thống (Fullstack)
+- **File**:
+  - [member-add.js](file:///c:/PhanMemPhongGym/FE/assets/js/pages/member-add.js) (Logic lưu hội viên)
+- **Mô tả**:
+  - Tích hợp thêm lời gọi API kích hoạt tài khoản đăng nhập `/api/members/:id/create-account` sau khi thêm hồ sơ mới thành công (chỉ khi người dùng chọn checkbox "Kích hoạt tài khoản đăng nhập").
+  - Trước đây, dữ liệu tài khoản đăng nhập được đóng gói gửi kèm trong request `/api/members` nhưng không được backend xử lý, dẫn đến việc tài khoản đăng nhập của hội viên không được tạo.
+- **Kết quả**: ✅ Tài khoản đăng nhập của hội viên/PT/nhân viên mới đã được kích hoạt thành công đồng bộ cùng hồ sơ.
+### 02/06/2026 09:20 — Sửa lỗi hiển thị lỗi kết nối giả lập và sửa route/payload đăng ký gói
+- **Loại**: Sửa bug hệ thống (Fullstack)
+- **File**:
+  - [member-add.js](file:///c:/PhanMemPhongGym/FE/assets/js/pages/member-add.js) (Logic lưu hội viên và gói tập)
+- **Mô tả**:
+  - Cập nhật catch block của `_handleSaveMember` và `_handleSavePackage` sử dụng `err.message` để hiển thị đúng lỗi nghiệp vụ từ backend (ví dụ: trùng SĐT/CCCD/Email) thay vì toast cứng lỗi "Lỗi kết nối máy chủ".
+  - Sửa lỗi trong `_handleSavePackage`: Thay đổi endpoint gọi API từ `/api/members/register-package` thành đúng route backend `/api/members/:id/package`, đồng thời sửa tên trường số tiền khách trả trong payload từ `so_tien_tra` thành `so_tien_da_thu` để khớp với controller.
+- **Kết quả**: ✅ Đã xử lý triệt để lỗi "Lỗi kết nối máy chủ" giả lập khi lưu hồ sơ trùng thông tin và hoàn thiện luồng đăng ký/thanh toán gói tập mới từ frontend.

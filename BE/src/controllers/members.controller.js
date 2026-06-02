@@ -179,6 +179,39 @@ export const createMember = async (req, res) => {
   if (!ho_ten) return error(res, 'Họ tên là bắt buộc.', 400);
   const loai = loai_ho_so || 'hoi_vien';
 
+  // Kiểm tra trùng lặp Số điện thoại (chỉ kiểm tra nếu có nhập)
+  if (so_dien_thoai && so_dien_thoai.trim()) {
+    const existingPhone = db.prepare(`
+      SELECT id, ho_ten FROM ho_so 
+      WHERE so_dien_thoai = ? AND is_deleted = 0
+    `).get(so_dien_thoai.trim());
+    if (existingPhone) {
+      return error(res, `Số điện thoại này đã được sử dụng bởi hội viên ${existingPhone.ho_ten}.`, 409);
+    }
+  }
+
+  // Kiểm tra trùng lặp CCCD (chỉ kiểm tra nếu có nhập)
+  if (cccd && cccd.trim()) {
+    const existingCccd = db.prepare(`
+      SELECT id, ho_ten FROM ho_so 
+      WHERE cccd = ? AND is_deleted = 0
+    `).get(cccd.trim());
+    if (existingCccd) {
+      return error(res, `Số CCCD này đã được sử dụng bởi hội viên ${existingCccd.ho_ten}.`, 409);
+    }
+  }
+
+  // Kiểm tra trùng lặp Email (chỉ kiểm tra nếu có nhập)
+  if (email && email.trim()) {
+    const existingEmail = db.prepare(`
+      SELECT id, ho_ten FROM ho_so 
+      WHERE email = ? AND is_deleted = 0
+    `).get(email.trim());
+    if (existingEmail) {
+      return error(res, `Email này đã được sử dụng bởi hội viên ${existingEmail.ho_ten}.`, 409);
+    }
+  }
+
   let avatar_url = null;
   let cloudinary_public_id = null;
 
@@ -254,6 +287,39 @@ export const updateMember = (req, res) => {
     chi_nhanh, phong_tap, noi_sinh, cccd, que_quan, tinh_thanh, quan_huyen, phuong_xa,
     chuyen_mon, chuc_vu, loai_hv, kinh_nghiem
   } = req.body;
+
+  // Kiểm tra trùng lặp Số điện thoại khi cập nhật (loại trừ chính nó)
+  if (so_dien_thoai && so_dien_thoai.trim()) {
+    const existingPhone = db.prepare(`
+      SELECT id, ho_ten FROM ho_so 
+      WHERE so_dien_thoai = ? AND id != ? AND is_deleted = 0
+    `).get(so_dien_thoai.trim(), id);
+    if (existingPhone) {
+      return error(res, `Số điện thoại này đã được sử dụng bởi hội viên ${existingPhone.ho_ten}.`, 409);
+    }
+  }
+
+  // Kiểm tra trùng lặp CCCD khi cập nhật (loại trừ chính nó)
+  if (cccd && cccd.trim()) {
+    const existingCccd = db.prepare(`
+      SELECT id, ho_ten FROM ho_so 
+      WHERE cccd = ? AND id != ? AND is_deleted = 0
+    `).get(cccd.trim(), id);
+    if (existingCccd) {
+      return error(res, `Số CCCD này đã được sử dụng bởi hội viên ${existingCccd.ho_ten}.`, 409);
+    }
+  }
+
+  // Kiểm tra trùng lặp Email khi cập nhật (loại trừ chính nó)
+  if (email && email.trim()) {
+    const existingEmail = db.prepare(`
+      SELECT id, ho_ten FROM ho_so 
+      WHERE email = ? AND id != ? AND is_deleted = 0
+    `).get(email.trim(), id);
+    if (existingEmail) {
+      return error(res, `Email này đã được sử dụng bởi hội viên ${existingEmail.ho_ten}.`, 409);
+    }
+  }
 
   db.prepare(`
     UPDATE ho_so SET
