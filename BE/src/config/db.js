@@ -1595,6 +1595,42 @@ try {
   console.error('[DB] ❌ Lỗi khi sửa FK v21 (danh_gia_pt):', err.message);
 }
 
+// ── Migration v22: Thêm các cột phục vụ quản lý đa chi nhánh ──
+try {
+  db.exec(`ALTER TABLE ho_so ADD COLUMN chi_nhanh TEXT;`);
+  console.log('[DB] ✅ Thêm cột chi_nhanh vào bảng ho_so.');
+} catch (_) { }
+
+try {
+  db.exec(`ALTER TABLE tai_khoan ADD COLUMN chi_nhanh TEXT;`);
+  console.log('[DB] ✅ Thêm cột chi_nhanh vào bảng tai_khoan.');
+} catch (_) { }
+
+try {
+  db.exec(`ALTER TABLE check_in ADD COLUMN chi_nhanh_thuc_hien TEXT;`);
+  console.log('[DB] ✅ Thêm cột chi_nhanh_thuc_hien vào bảng check_in.');
+} catch (_) { }
+
+try {
+  db.exec(`ALTER TABLE luot_vao_ra ADD COLUMN chi_nhanh_thuc_hien TEXT;`);
+  console.log('[DB] ✅ Thêm cột chi_nhanh_thuc_hien vào bảng luot_vao_ra.');
+} catch (_) { }
+
+try {
+  db.exec(`ALTER TABLE lich_tap ADD COLUMN chi_nhanh_tap TEXT;`);
+  console.log('[DB] ✅ Thêm cột chi_nhanh_tap vào bảng lich_tap.');
+} catch (_) { }
+
+try {
+  db.exec(`ALTER TABLE dang_ky_goi_tap ADD COLUMN chi_nhanh_dang_ky TEXT;`);
+  console.log('[DB] ✅ Thêm cột chi_nhanh_dang_ky vào bảng dang_ky_goi_tap.');
+} catch (_) { }
+
+try {
+  db.exec(`ALTER TABLE dang_ky_pt ADD COLUMN chi_nhanh_dang_ky TEXT;`);
+  console.log('[DB] ✅ Thêm cột chi_nhanh_dang_ky vào bảng dang_ky_pt.');
+} catch (_) { }
+
 // Tự động đồng bộ lại View v_trang_thai_hoi_vien khi khởi động để cập nhật logic mới nhất
 try {
   recreateMemberStatusView();

@@ -3,7 +3,7 @@ window.GymApp.pages['members-list'] = {
   _memberPage: 1, _memberFiltered: [],
   _ptPage: 1, _ptFiltered: [],
   _perPage: 20,
-  _filterState: { status: '', pkg: '', gender: '', hasPt: '', checkinToday: '' },
+  _filterState: { status: '', pkg: '', gender: '', hasPt: '', checkinToday: '', chi_nhanh: '' },
   _ptFilterState: { specialty: '', status: '' },
   _ptSortState: '',
   _memberSortState: '',
@@ -204,9 +204,12 @@ window.GymApp.pages['members-list'] = {
   _fetchMembersData: async function (page = 1, isAppend = false) {
     const self = this;
     const q = document.getElementById('member-search')?.value.trim() || '';
-    const { status } = self._filterState;
+    const { status, chi_nhanh } = self._filterState;
     try {
-      const url = `/members?page=${page}&limit=${self._perPage}&search=${encodeURIComponent(q)}&status=${status}`;
+      let url = `/members?page=${page}&limit=${self._perPage}&search=${encodeURIComponent(q)}&status=${status}`;
+      if (chi_nhanh) {
+        url += `&chi_nhanh=${encodeURIComponent(chi_nhanh)}`;
+      }
       const res = await window.GymApp.api.get(url);
       const newData = self._normalizeListResponse(res) || [];
       
@@ -234,7 +237,7 @@ window.GymApp.pages['members-list'] = {
 
   _applyMemberFilterLocal: function () {
     const q = document.getElementById('member-search')?.value.toLowerCase() || '';
-    const { status, pkg, gender, hasPt, checkinToday } = this._filterState;
+    const { status, pkg, gender, hasPt, checkinToday, chi_nhanh } = this._filterState;
     const members = Array.isArray(window.GymApp.data.members) ? window.GymApp.data.members : [];
 
     let filtered = members.filter(m => {
@@ -247,7 +250,8 @@ window.GymApp.pages['members-list'] = {
       const matchGender = !gender || mGender === gender;
       const matchHasPt = !hasPt || (hasPt === 'yes' ? (m.co_pt > 0) : (m.co_pt == 0));
       const matchCheckinToday = !checkinToday || (checkinToday === 'yes' ? (m.da_check_in_hom_nay == 1) : (!m.da_check_in_hom_nay));
-      return matchQ && matchStatus && matchPkg && matchGender && matchHasPt && matchCheckinToday;
+      const matchBranch = !chi_nhanh || m.chi_nhanh === chi_nhanh;
+      return matchQ && matchStatus && matchPkg && matchGender && matchHasPt && matchCheckinToday && matchBranch;
     });
 
     this._memberFiltered = this._sortMemberList(filtered);
@@ -352,7 +356,16 @@ window.GymApp.pages['members-list'] = {
               ${window.GymApp.statusBadge(m.trang_thai)}
             </td>
 
-            <!-- Cell 7: Hết hạn -->
+            <!-- Cell 7: Chi nhánh -->
+            <td class="member-table-col-branch border-r border-outline-variant/30" style="padding:8px 14px; text-align:center;">
+              <span style="font-size:13px;font-weight:600;color:var(--text-on-surface-variant);
+                white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:130px; margin:0 auto;"
+                title="${m.chi_nhanh || '—'}">
+                ${m.chi_nhanh || '—'}
+              </span>
+            </td>
+
+            <!-- Cell 8: Hết hạn -->
             <td class="member-table-col-han border-r border-outline-variant/30" style="padding:8px 14px; white-space:nowrap; text-align:center;">
               <span style="font-size:13px;font-weight:600;
                 color:${isExpiringSoon ? '#d97706' : 'var(--text-on-surface-variant)'};">
@@ -360,7 +373,7 @@ window.GymApp.pages['members-list'] = {
               </span>
             </td>
 
-            <!-- Cell 8: Hành động -->
+            <!-- Cell 9: Hành động -->
             <td style="padding:8px 14px; text-align:center; white-space:nowrap;">
               <div style="display:inline-flex;gap:4px;align-items:center;">
                 
@@ -410,6 +423,7 @@ window.GymApp.pages['members-list'] = {
             <div style="display:flex;align-items:center;gap:6px;margin-top:2px;flex-wrap:wrap;">
               <span style="font-size:11px;font-weight:600;color:var(--text-on-surface-variant);">${m.ma_ho_so || '—'}</span>
               ${m.so_dien_thoai ? `<span style="font-size:11px;color:var(--text-on-surface-variant);">· ${m.so_dien_thoai}</span>` : ''}
+              ${m.chi_nhanh ? `<span style="font-size:11px;color:#1D9336;font-weight:600;">· ${m.chi_nhanh}</span>` : ''}
             </div>
             <div style="display:flex;align-items:center;gap:5px;margin-top:3px;flex-wrap:wrap;">
               ${window.GymApp.statusBadge(m.trang_thai)}
@@ -440,12 +454,16 @@ window.GymApp.pages['members-list'] = {
         .member-table-col-sdt    { display: table-cell; }
         .member-table-col-goi    { display: table-cell; }
         .member-table-col-pt     { display: table-cell; }
+        .member-table-col-branch { display: table-cell; }
         .member-table-col-han    { display: table-cell; }
         .member-table-desktop    { display: block; }
         .member-table-mobile     { display: none; }
         #members-scroll-container th { border-radius: 0 !important; }
-        @media (max-width: 900px) {
+        @media (max-width: 1000px) {
           .member-table-col-pt   { display: none; }
+          .member-table-col-branch { display: none; }
+        }
+        @media (max-width: 900px) {
           .member-table-col-han  { display: none; }
         }
         @media (max-width: 700px) {
@@ -471,6 +489,7 @@ window.GymApp.pages['members-list'] = {
                 <th class="member-table-col-goi" style="position:sticky;top:0;z-index:10;background:#1D9336;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Gói tập</th>
                 <th class="member-table-col-pt" style="position:sticky;top:0;z-index:10;background:#1D9336;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">PT</th>
                 <th style="position:sticky;top:0;z-index:10;background:#1D9336;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Trạng thái</th>
+                <th class="member-table-col-branch" style="position:sticky;top:0;z-index:10;background:#1D9336;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Chi nhánh</th>
                 <th class="member-table-col-han" style="position:sticky;top:0;z-index:10;background:#1D9336;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Hết hạn</th>
                 <th style="position:sticky;top:0;z-index:10;background:#1D9336;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Thao tác</th>
               </tr>

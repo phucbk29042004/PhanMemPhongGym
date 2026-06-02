@@ -14,6 +14,14 @@
 
 ## 📋 Danh Sách Thay Đổi
 
+### [02/06/2026 13:50] — Thiết kế lại Logo Paradise GYM và Tối ưu hóa bộ chọn giờ đặt lịch PT
+- **Loại**: Cải tiến giao diện UI/UX & logic ứng dụng (Fullstack)
+- **File**: `FE/index.html`, `FE/pt-portal.html`, `FE/member-portal.html`, `FE/login.html`, `FE/assets/js/pages/pt-register.js`
+- **Mô tả**:
+  - **Thiết kế lại Logo**: Cập nhật chữ `P` viết hoa trực tiếp vào SVG text logo của Paradise GYM ở cả 4 file HTML (`index.html` ở cả sidebar và loading screen, `pt-portal.html`, `member-portal.html`, `login.html` ở cả 2 bản trắng và xanh) để đồng điệu với các ký tự còn lại và giúp chữ đứng xích lại gần hơn, giữ nguyên logo lục giác làm biểu tượng thuần túy.
+  - **Tối ưu bộ chọn giờ**: Cập nhật file `pt-register.js` để tự động ẩn khung chọn giờ (time picker container) ngay khi người dùng chọn xong giờ bắt đầu. Thêm nút xóa (x) bên cạnh giờ hiển thị; khi người dùng nhấp vào nút này hoặc sau khi đặt lịch tập thành công, giờ được reset và khung chọn giờ sẽ xuất hiện trở lại.
+- **Kết quả**: Thành công.
+
 ### [02/06/2026 11:46] — Sửa lỗi trùng tên đăng nhập khi Import Excel lại sau khi xóa hội viên
 - **Loại**: Sửa bug (Backend)
 - **File**: `BE/src/controllers/members.controller.js`

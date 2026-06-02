@@ -27,7 +27,7 @@ export const getCheckins = (req, res) => {
 
   const rows = db.prepare(`
     SELECT
-      lv.id, lv.thoi_diem, lv.loai, lv.phuong_thuc, lv.ghi_chu,
+      lv.id, lv.thoi_diem, lv.loai, lv.phuong_thuc, lv.ghi_chu, lv.chi_nhanh_thuc_hien,
       h.id AS ho_so_id, h.ma_ho_so, h.ho_ten, h.avatar_url, h.loai_ho_so,
       strftime('%H:%M', lv.thoi_diem) AS gio_hien_thi
     FROM luot_vao_ra lv
@@ -43,7 +43,7 @@ export const getCheckins = (req, res) => {
 // ── POST /api/checkins ────────────────────────────────────
 // Thêm lượt check-in/check-out
 export const createCheckin = (req, res) => {
-  const { ho_so_id, loai = 'vao', phuong_thuc = 'thu_cong', ghi_chu } = req.body;
+  const { ho_so_id, loai = 'vao', phuong_thuc = 'thu_cong', ghi_chu, chi_nhanh_thuc_hien } = req.body;
   if (!loai || !['vao', 'ra'].includes(loai)) {
     return error(res, 'loai phải là "vao" hoặc "ra".', 400);
   }
@@ -54,10 +54,22 @@ export const createCheckin = (req, res) => {
     if (!profile) return error(res, 'Hồ sơ không tồn tại.', 404);
   }
 
+  // Xác định chi nhánh thực hiện check-in
+  let branch = chi_nhanh_thuc_hien;
+  if (!branch) {
+    const actor = db.prepare('SELECT chi_nhanh FROM ho_so WHERE tai_khoan_id = ?').get(req.user.id);
+    if (actor && actor.chi_nhanh) {
+      branch = actor.chi_nhanh;
+    } else if (ho_so_id) {
+      const member = db.prepare('SELECT chi_nhanh FROM ho_so WHERE id = ?').get(ho_so_id);
+      branch = member ? member.chi_nhanh : null;
+    }
+  }
+
   const result = db.prepare(`
-    INSERT INTO luot_vao_ra (ho_so_id, loai, phuong_thuc, ghi_chu)
-    VALUES (?, ?, ?, ?)
-  `).run(ho_so_id || null, loai, phuong_thuc, ghi_chu || null);
+    INSERT INTO luot_vao_ra (ho_so_id, loai, phuong_thuc, ghi_chu, chi_nhanh_thuc_hien)
+    VALUES (?, ?, ?, ?, ?)
+  `).run(ho_so_id || null, loai, phuong_thuc, ghi_chu || null, branch || null);
 
   // Cập nhật da_checkin = 1 cho các buổi tập PT của hội viên này hôm nay nếu vào
   if (loai === 'vao' && ho_so_id) {

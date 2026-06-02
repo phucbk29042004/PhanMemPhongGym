@@ -39,11 +39,16 @@ const autoUpdateExpiredStatuses = () => {
 // Lấy danh sách hội viên (hỗ trợ filter và phân trang)
 export const getMembers = (req, res) => {
   autoUpdateExpiredStatuses();
-  const { search, status, page = 1, limit = 20 } = req.query;
+  const { search, status, chi_nhanh, page = 1, limit = 20 } = req.query;
   const offset = (parseInt(page) - 1) * parseInt(limit);
 
   let where = `WHERE h.loai_ho_so = 'hoi_vien' AND h.is_deleted = 0`;
   const params = [];
+
+  if (chi_nhanh) {
+    where += ` AND h.chi_nhanh = ?`;
+    params.push(chi_nhanh);
+  }
 
   if (search) {
     where += ` AND (h.ho_ten LIKE ? OR h.ma_ho_so LIKE ? OR h.so_dien_thoai LIKE ?)`;
