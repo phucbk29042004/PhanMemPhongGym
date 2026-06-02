@@ -8,22 +8,24 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
-<<<<<<< HEAD
-**✅ Hoàn tất tái cấu trúc 2 cột rộng toàn màn hình cho trang "Thêm hội viên mới"** — Tận dụng tối đa không gian màn hình rộng (`w-full px-4`), phân chia thông tin thành 2 cột song song (Trái: Cá nhân; Phải: Địa chỉ & Tài khoản), rút gọn chiều cao biểu mẫu giúp hiển thị vừa khít trong một màn hình, nâng cao tối đa trải nghiệm người dùng mà không cần kéo cuộn chuột.
-=======
-**✅ Sửa lỗi FK bảng danh_gia_pt trỏ vào lich_tap_old_broken** — Thêm Migration v21 vào db.js để tự động phát hiện và tái tạo bảng `danh_gia_pt` với foreign key chính xác trỏ vào `lich_tap`, khắc phục lỗi 500 `no such table: main.lich_tap_old_broken` khi gọi API đánh giá PT.
->>>>>>> main
+**✅ Tái cấu trúc giao diện "Thêm hội viên mới" & Giải quyết các vấn đề Cấu trúc Database (Migration v21)** — Giao diện thêm hội viên mới được thiết kế lại tối ưu thành 2 cột cân đối, không còn khoảng trống thừa, đồng thời sửa lỗi FK trong bảng `danh_gia_pt` và khôi phục ứng dụng backend sau xung đột merge.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
 
-<<<<<<< HEAD
+### [02/06/2026 08:27] — Giải quyết xung đột Git trong db.js làm sập Backend
+- **Loại**: Sửa lỗi cấu trúc / Git (Backend)
+- **File**: `BE/src/config/db.js`
+- **Mô tả**: Sửa đổi và loại bỏ các ký hiệu conflict (`<<<<<<< HEAD`, `=======`, `>>>>>>> main`) lỡ bị commit trong file `db.js` do quá trình git pull và git merge. Kết hợp thành công tính năng tạo View `v_trang_thai_hoi_vien` của nhánh hiện tại và Migration v21 (sửa FK bảng `danh_gia_pt`) từ nhánh main để nodemon khởi chạy lại ổn định.
+- **Kết quả**: Thành công — nodemon tự khởi động lại trơn tru không còn lỗi cú pháp.
+
 ### [01/06/2026 16:41] — Sửa lỗi khoảng trống bên phải toàn bộ trang (tác dụng phụ từ flex layout cũ)
 - **Loại**: Sửa bug UI (Frontend)
 - **File**: `FE/index.html`
 - **Mô tả**: Xóa class `flex flex-col items-start` khỏi `<main id="content-area">`. Class này được thêm trước đây để fix trang member-add, nhưng gây tác dụng phụ làm tất cả trang khác (danh sách hội viên, check-in, doanh thu, hết hạn, lịch PT, đặt lịch PT, gói tập, sinh nhật) bị co lại không chiếm full width — phần bên phải bị trống. Trang member-add có `w-full` riêng nên không bị ảnh hưởng.
 - **Kết quả**: Thành công — Tất cả trang đã chiếm full width đúng chuẩn
+
 
 ### [01/06/2026 16:35] — Hoàn thiện layout 2 cột Premium + Panel Đặc quyền hội viên động
 - **Loại**: Cải tiến UI/UX (Frontend)
@@ -33,11 +35,13 @@
   2. **Panel Đặc quyền động**: Mặc định hiển thị empty-state (icon mờ + hướng dẫn). Khi chọn gói tập: tên gói hiện màu vàng gold, badge thời hạn, 6 quyền lợi cố định (locker, nước uống, InBody...) + quyền lợi thêm tự động theo số tháng (3 tháng → đặt lịch ưu tiên; 6 tháng → giảm 10%; 12 tháng → PT miễn phí), giá trị gói hiển thị ở footer.
 - **Kết quả**: Thành công — Tab đăng ký gói không còn khoảng trống, giao diện premium sang xịn
 
+
 ### [01/06/2026 16:25] — Tích hợp Khung Quyền Lợi Động và tối ưu hoá flex-grow cân bằng 2 cột
 - **Loại**: Cải tiến UI/UX (Frontend)
 - **File**: `FE/assets/js/pages/member-add.js`
 - **Mô tả**: Thiết lập layout flex full-height cho cả hai cột ở tab đăng ký gói dịch vụ. Thiết kế và tích hợp thêm khung "Đặc quyền hội viên" hiển thị động các check-list quyền lợi sang trọng (tự do tập luyện, locker, nước uống, InBody/BMI...) khi chọn gói tập, lấp đầy hoàn hảo khoảng trống ở nửa dưới form.
 - **Kết quả**: Thành công
+
 
 ### [01/06/2026 16:23] — Sửa lỗi khoảng trắng khổng lồ / vỡ layout tab Đăng ký gói dịch vụ
 - **Loại**: Sửa bug UI (Frontend)
@@ -45,11 +49,13 @@
 - **Mô tả**: Loại bỏ thẻ đóng `</div>` thừa ở cuối form hồ sơ cá nhân. Lỗi này làm Main Container màu trắng bị đóng sớm khiến form đăng ký gói dịch vụ bị văng ra ngoài, tạo ra khoảng trắng khổng lồ rỗng tuếch dưới tab bar khi chuyển tab.
 - **Kết quả**: Thành công
 
+
 ### [01/06/2026 16:18] — Tự động điền thông tin khi kích hoạt tài khoản đăng nhập
 - **Loại**: Thêm tính năng (Frontend)
 - **File**: `FE/assets/js/pages/member-add.js`
 - **Mô tả**: Khi checkbox "Kích hoạt tài khoản đăng nhập" được tick: Tên đăng nhập tự động điền số điện thoại (đã có sẵn từ trước), mật khẩu tự động điền `123456`. Chỉ điền nếu các ô chưa có giá trị, tránh ghi đè dữ liệu người dùng đã nhập.
 - **Kết quả**: Thành công
+
 
 ### [01/06/2026 16:12] — Fix triệt để khoảng trắng giữa 2 cột grid trang Thêm hội viên
 - **Loại**: Sửa lỗi UI (Frontend)
@@ -57,17 +63,20 @@
 - **Mô tả**: Bỏ `items-start` khỏi grid, thêm `flex flex-col` vào cả 2 cột, thêm `flex-grow` vào card cuối của mỗi cột (Cá nhân & Liên hệ + Kích hoạt tài khoản). Kết quả: 2 cột bằng nhau chiều cao, card cuối giãn lấp đầy không để lộ nền xám.
 - **Kết quả**: Thành công
 
+
 ### [01/06/2026 16:03] — Fix khoảng nền xám phía dưới form: kéo thẻ trắng lấp đầy màn hình
 - **Loại**: Cải tiến UI/UX (Frontend)
 - **File**: `FE/assets/js/pages/member-add.js`
 - **Mô tả**: Thêm `flex-grow` vào outer div (dòng 29) và white card container (dòng 31). Kết hợp với `flex flex-col items-start` đã thêm vào `main#content-area` ở `index.html`, thẻ trắng giờ giãn ra lấp đầy toàn bộ phần còn lại của màn hình — không còn nền xám thừa hiện ra phía dưới form.
 - **Kết quả**: Thành công
 
+
 ### [01/06/2026 15:58] — Fix khoảng trắng thừa: Thêm flex layout vào main#content-area
 - **Loại**: Sửa lỗi UI (Frontend)
 - **File**: `FE/index.html`
 - **Mô tả**: Thêm class `flex flex-col items-start` vào thẻ `<main id="content-area">` (dòng 415). Biến `main` thành flex container, nội dung bên trong chỉ chiếm đúng chiều cao cần thiết, không bị kéo giãn xuống đáy màn hình — khắc phục triệt để khoảng trắng thừa dưới các card thông tin trong trang "Thêm hội viên mới".
 - **Kết quả**: Thành công
+
 
 ### [01/06/2026 15:50] — Khắc phục triệt để khoảng trắng thừa dưới form, kéo cụm nút Actions lên sát nội dung
 - **Loại**: Cải tiến UI/UX (Frontend)
@@ -76,6 +85,7 @@
   1. **Kéo cụm nút bấm lên sát**: Loại bỏ class `flex-grow flex flex-col` ở thẻ container của `form-register` (dòng 53). Khung chứa form giờ hoạt động như một block bình thường, giúp cụm nút Actions "Hủy / Lưu hồ sơ" được kéo sát lên ngay dưới các card thông tin thay vì bị đẩy xuống đáy card trắng.
   2. **Loại bỏ khoảng trống thừa**: Khung viền trắng ngoài cùng tự động co ngắn ôm khít nội dung thực tế của form.
 - **Kết quả**: Giao diện ôm khít gọn gàng, hoàn toàn không còn bất kỳ khoảng trống thừa nào dưới các card nhập liệu, cụm nút nằm ngay dưới form.
+
 
 ### [01/06/2026 15:15] — Tối giản hóa địa chỉ: Loại bỏ ô Quận/Huyện & liên kết trực tiếp Tỉnh/Thành -> Phường/Xã
 - **Loại**: Cải tiến UI/UX & Sửa đổi nghiệp vụ (Frontend)
@@ -86,11 +96,13 @@
   3. **Tự động suy diễn Quận/Huyện khi lưu**: Khi lưu hồ sơ (`_handleSaveMember`), hệ thống sẽ tự động tìm đối tượng Phường được chọn trong cache, đối chiếu trường `district_code` để tìm tên Quận tương ứng từ `_districts` và gửi ngầm lên Server. Điều này giúp giao diện tinh gọn tuyệt đối nhưng backend vẫn nhận đầy đủ, chuẩn xác thông tin Quận/Huyện.
 - **Kết quả**: Giao diện siêu gọn gàng, người dùng chỉ cần Click chọn Tỉnh -> Click chọn Phường là xong, cực kỳ nhanh chóng và không có sai sót.
 
+
 ### [01/06/2026 14:15] — Sửa lỗi cú pháp SyntaxError trong tệp member-add.js và hoàn tất layout Compact
 - **Loại**: Sửa lỗi cú pháp / UI UX (Frontend)
 - **File**: `FE/assets/js/pages/member-add.js`
 - **Mô tả**: Khôi phục biến `specialtyDatalist` và cú pháp chuỗi template literal ở đầu hàm `render()`, giúp sửa triệt để lỗi biên dịch `SyntaxError` và đưa giao diện compact 2 cột lấp đầy khoảng trống (full-width) đi vào hoạt động chính thức.
 - **Kết quả**: Thành công — Tệp tin sạch lỗi cú pháp, hiển thị giao diện thêm hội viên mới cực kỳ gọn gàng trên 1 trang duy nhất không cần cuộn chuột.
+
 
 ### [01/06/2026 14:10] — Tái cấu trúc layout 2 Cột Song Song rộng toàn màn hình cho trang "Thêm hội viên mới"
 - **Loại**: Cải tiến UI/UX (Frontend)
@@ -101,6 +113,7 @@
   3. Cải tiến tương tự với Tab "Đăng ký gói tập" sang 2 cột: Cột trái là Thông tin hội viên & Gói tập; Cột phải là Thanh toán & Ghi chú.
 - **Kết quả**: Thành công — Giao diện hiển thị cân đối tuyệt đối, gọn gàng, hiển thị trọn vẹn trong một màn hình máy tính không cần cuộn chuột, bảo toàn 100% các ID nghiệp vụ.
 
+
 ### [01/06/2026 13:35] — Sửa lỗi định dạng chia cột (CSV delimiter) khi xuất file Excel báo cáo
 - **Loại**: Sửa bug (Backend)
 - **File**: `BE/src/controllers/export.controller.js`
@@ -109,11 +122,13 @@
   2. Thay thế dấu nháy đơn `'` bằng ký tự Tab ngầm (`\t`) chèn vào đầu các cột Ngày tháng, Số điện thoại và Thời gian. Kỹ thuật này giúp các phần mềm bảng tính hiểu đây là kiểu chữ (Text) giúp toàn bộ cột căn lề trái thẳng hàng và đồng bộ, đồng thời hoàn toàn không để lộ bất kỳ ký tự hiển thị thừa nào trên bảng tính.
 - **Kết quả**: Thành công — Dữ liệu hiển thị đẹp mắt, chia cột chính xác, gióng lề trái thẳng tắp và không chứa ký tự lạ.
 
+
 ### [01/06/2026 13:15] — Sửa lỗi hiển thị nút "Xuất Excel" và "Tải lại" bị văng xuống dòng mới trên màn hình Doanh thu (Web)
 - **Loại**: Sửa lỗi giao diện (Frontend)
 - **File**: `FE/assets/js/pages/revenue.js`
 - **Mô tả**: Gộp cả hai nút "Tải lại" và "Xuất Excel" vào trong một thẻ `div` bọc ngoài có class `ml-auto flex items-center gap-standard flex-shrink-0`, đồng thời sắp xếp nút "Tải lại" nằm trước (bên trái) và nút "Xuất Excel" nằm sau (bên phải) theo yêu cầu. Điều này giúp giữ chặt hai nút này luôn đi liền cạnh nhau và tự động dạt về bên phải mà không lo bị văng dòng.
 - **Kết quả**: Giao diện các nút chức năng thẳng hàng cân đối: Tải lại (trái), Xuất Excel (phải).
+
 
 ### [01/06/2026 11:00] — Sửa lỗi luồng gia hạn hội viên hết hạn hiển thị Đổi gói và Khấu trừ gói cũ trên Mobile
 - **Loại**: Sửa bug (Mobile)
@@ -125,6 +140,7 @@
   2. **AdminRegisterPackageScreen.js**: Sửa giá trị khởi tạo của state `isSwitch` kiểm tra thêm số ngày còn lại của gói cũ (`activePkg && oldPkgRemainingDays > 0`) nhằm ngăn chặn việc hiển thị giao diện đổi gói và khấu trừ tiền khi gói tập cũ thực chất đã hết hạn hoàn toàn.
 - **Kết quả**: Thành công — Luồng gia hạn hoạt động đúng nghiệp vụ: Sắp hết hạn thì tính nối tiếp/cho phép đổi gói có khấu trừ, Đã hết hạn thì chuyển thẳng sang luồng Đăng ký mới, không bị khấu trừ.
 
+
 ### [01/06/2026 10:35] — Khắc phục lỗi duyệt giá 300đ (thay vì 300k) và sửa xung đột Git trong Backend
 - **Loại**: Sửa bug (Fullstack & Database)
 - **File**:
@@ -133,7 +149,7 @@
 - **Mô tả**:
   1. **Sửa lỗi duyệt gói tập bị đổi giá thành 300đ**: Phát hiện lỗi trong biểu mẫu duyệt của trang *Hết hạn / Sắp hết hạn* (`expired.js`) gửi thẳng chuỗi định dạng `"300.000"` lên backend mà không qua hàm `_parseVND` khiến SQLite/JS convert chuỗi có dấu chấm thập phân thành `300` (300đ). Đã sửa code bọc trường `gia_thuc_te` qua hàm `_parseVND` để gửi đúng `300000`.
   2. **Khôi phục dữ liệu doanh thu**: Chạy SQL cập nhật lại `gia_thuc_te = 300000` cho 6 bản ghi bị lỗi này (mã đăng ký: 47, 49, 70, 82, 90, 106) giúp trigger tự động bù trừ doanh thu hôm nay (`2.800.000 đ`) và lịch sử hiển thị chính xác.
-  3. **Giải quyết xung đột Git**: Sửa đổi và loại bỏ các ký hiệu conflict (`<<<<<<< HEAD`, `=======`, `>>>>>>> main`) lỡ bị commit trong file `members.controller.js` giúp khôi phục biên dịch thành công cho Backend.
+  3. **Giải quyết xung đột Git**: Sửa đổi và loại bỏ các ký hiệu conflict (`<<<<<<< HEAD`, ``) lỡ bị commit trong file `members.controller.js` giúp khôi phục biên dịch thành công cho Backend.
 - **Kết quả**: Thành công — nodemon tự động khởi chạy lại ổn định, dữ liệu doanh thu hiển thị đúng.
 =======
 ### [01/06/2026 17:09] — Sửa đổi định dạng payload Gemini (snake_case) & Thay đổi model Groq fallback

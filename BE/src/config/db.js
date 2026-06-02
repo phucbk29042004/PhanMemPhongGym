@@ -1503,7 +1503,6 @@ WHEN (SELECT MAX(d_ngay) FROM (
   console.error('[DB] ❌ Lỗi khi sửa tham chiếu v20:', err.message);
 }
 
-<<<<<<< HEAD
 // ── Cưỡng bức tạo lại View v_trang_thai_hoi_vien chính xác ──
 try {
   db.exec(`DROP VIEW IF EXISTS v_trang_thai_hoi_vien;`);
@@ -1556,7 +1555,8 @@ try {
   console.log('[DB] ✅ Khởi tạo/Cập nhật View v_trang_thai_hoi_vien thành công.');
 } catch (e) {
   console.error('[DB] Lỗi khi tạo View v_trang_thai_hoi_vien:', e.message);
-=======
+}
+
 // ── Migration v21: Sửa lỗi FK bảng danh_gia_pt trỏ vào lich_tap_old_broken (do Migration v20 rename bảng) ──
 // Khi Migration v20 rename lich_tap → lich_tap_old_broken rồi tạo lại lich_tap mới,
 // SQLite tự động cập nhật FK trong danh_gia_pt để trỏ vào lich_tap_old_broken.
@@ -1628,7 +1628,6 @@ try {
   }
 } catch (err) {
   console.error('[DB] ❌ Lỗi khi sửa FK v21 (danh_gia_pt):', err.message);
->>>>>>> main
 }
 
 export default db;
