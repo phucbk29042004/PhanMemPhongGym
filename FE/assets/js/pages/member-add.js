@@ -191,8 +191,8 @@ window.GymApp.pages['member-add'] = {
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch flex-grow">
               
               <!-- CỘT TRÁI: Gói tập & Thanh toán -->
-              <div class="lg:col-span-7 flex flex-col justify-between h-full space-y-4">
-                <div class="space-y-4 flex-grow flex flex-col justify-start">
+              <div class="lg:col-span-7 flex flex-col justify-between h-full space-y-3">
+                <div class="space-y-3 flex-grow flex flex-col justify-start">
                   
                   <div id="selected-member-info" class="p-3 bg-gradient-to-r from-brand-primary/10 to-brand-primary/5 border border-brand-primary/20 rounded-2xl hidden">
                     <div class="flex items-center gap-standard">
@@ -234,6 +234,20 @@ window.GymApp.pages['member-add'] = {
                       ${this._select('Phương thức thanh toán', 'pkg-method', [{ v: 'tien_mat', t: 'Tiền mặt' }, { v: 'chuyen_khoan', t: 'Chuyển khoản' }])}
                       ${this._field('Ghi chú giao dịch', 'pkg-note', 'text', 'Ghi chú thanh toán...')}
                     </div>
+                  </div>
+
+                  <!-- Khung Lưu ý & Quy định Giao dịch -->
+                  <div class="bg-slate-50/5 dark:bg-[#1c2028]/2 border border-dashed border-outline-variant/25 rounded-2xl p-3.5 space-y-2 flex-grow">
+                    <div class="flex items-center gap-compact text-on-surface-variant/80">
+                      <span class="material-symbols-outlined text-[16px] text-brand-primary">gavel</span>
+                      <span class="font-bold text-[9px] uppercase tracking-wider">Quy định & Lưu ý Giao dịch</span>
+                    </div>
+                    <ul class="text-[9.5px] text-on-surface-variant/70 space-y-1 list-disc pl-4 leading-normal">
+                      <li><strong>Chính sách kích hoạt:</strong> Gói tập có hiệu lực ngay khi thanh toán đủ hoặc theo ngày bắt đầu đã chọn.</li>
+                      <li><strong>Chính sách bảo lưu:</strong> Hỗ trợ bảo lưu tối đa 30 ngày (chỉ áp dụng đối với các gói tập từ 3 tháng trở lên).</li>
+                      <li><strong>Chính sách chuyển nhượng:</strong> Phí chuyển nhượng gói tập sang hội viên khác là 10% giá trị gói.</li>
+                      <li><strong>Hoàn trả/Hủy gói:</strong> Không áp dụng chính sách hoàn tiền sau khi gói tập đã kích hoạt và sử dụng.</li>
+                    </ul>
                   </div>
                 </div>
               </div>
@@ -298,7 +312,7 @@ window.GymApp.pages['member-add'] = {
                   <div class="border-t border-outline-variant/15 pt-3 space-y-1.5">
                     <div class="flex items-center gap-compact text-on-surface-variant/80">
                       <span class="material-symbols-outlined text-[15px] text-brand-primary">workspace_premium</span>
-                      <span class="font-bold text-[9px] uppercase tracking-wider">Đặc quyền hội viên (Mini)</span>
+                      <span class="font-bold text-[9px] uppercase tracking-wider">Đặc quyền hội viên </span>
                     </div>
                     <div id="receipt-benefits" class="grid grid-cols-2 gap-1.5 text-[9.5px] text-on-surface-variant/80 font-semibold">
                       <div class="flex items-center gap-xs"><span class="material-symbols-outlined text-[12px] text-emerald-500">check_circle</span>Tập tự do</div>

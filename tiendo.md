@@ -1395,3 +1395,10 @@
   - Cột phải (`lg:col-span-5`): Chứa card "Hóa đơn tạm tính" thiết kế phong cách Receipt, hiển thị trực quan thông tin gói tập, ngày áp dụng, tính toán số tiền khách trả, tiền còn thiếu/thối lại và danh sách "Quyền lợi hội viên (Mini)" tự động cập nhật theo gói tập được chọn.
   - Tích hợp sự kiện tự động tính toán và hiển thị hóa đơn, đặc quyền ngay khi người dùng chọn gói, thay đổi tiền khách trả hoặc ngày bắt đầu.
 - **Kết quả**: ✅ Giao diện hoạt động trơn tru, hiển thị đẹp mắt, tính toán chính xác và không bị thừa khoảng trống hay xuất hiện scrollbar.
+### 02/06/2026 08:55 — Thêm Khung Lưu ý & Quy định Giao dịch để lấp đầy khoảng trống
+- **Loại**: Cải tiến giao diện Web (Frontend)
+- **File**: `FE/assets/js/pages/member-add.js`
+- **Mô tả**:
+  - Thêm card "Quy định & Lưu ý Giao dịch" ở phía dưới cột trái của tab Đăng ký gói tập, có cơ chế `flex-grow` để tự động kéo dài và lấp đầy khoảng trống ở góc trái một cách cân đối với cột phải.
+  - Hiển thị các lưu ý nghiệp vụ hữu ích cho lễ tân như chính sách kích hoạt, điều kiện bảo lưu gói (cho các gói >= 3 tháng), phí chuyển nhượng (10%), và quy định hoàn trả.
+- **Kết quả**: ✅ Giao diện đầy đặn, cân đối hơn, tận dụng tối đa không gian trống phía dưới mà vẫn đảm bảo không có thanh cuộn dọc (scrollbar).
