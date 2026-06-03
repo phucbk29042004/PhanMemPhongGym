@@ -189,6 +189,19 @@
 - **Kết quả**: Thành công — nodemon tự động khởi chạy lại ổn định, dữ liệu doanh thu hiển thị đúng.
 
 
+### [03/06/2026 14:38] — Khắc phục 3 lỗi logic nghiệp vụ về check-in thủ công và đặt lịch/dời lịch tập PT trong quá khứ
+- **Loại**: Sửa bug / Cải tiến nghiệp vụ (Fullstack Web & Mobile)
+- **File**: `BE/src/controllers/checkins.controller.js`, `BE/src/controllers/pt-schedules.controller.js`, `MobileApp/src/screens/admin/AdminRegisterPTScheduleScreen.js`, `FE/assets/js/pages/pt-training.js`
+- **Mô tả**:
+  - **Check-in thủ công khi hết hạn gói (Backend)**: Bổ sung bước kiểm tra thời hạn gói tập / gói PT của hội viên trong API `createCheckin` (check-in thủ công từ lễ tân). Trả về lỗi `403` chặn check-in nếu hội viên không có gói hoạt động hoặc gói đã hết hạn (đồng bộ với logic quét QR).
+  - **Chặn đặt lịch PT trong quá khứ (Backend & Mobile App)**:
+    - **Backend**: Thêm logic validate ngày hiện tại trong API tạo lịch tập `createSchedule`. Trả về lỗi `400` nếu ngày tập nhỏ hơn ngày hôm nay theo múi giờ địa phương.
+    - **Mobile FE**: Gán thuộc tính `minDate={new Date()}` cho component `DatePickerField` ở màn hình đặt lịch PT trên Mobile (`AdminRegisterPTScheduleScreen.js`) để vô hiệu hóa việc chọn ngày trong quá khứ từ UI.
+  - **Chặn dời lịch PT trong quá khứ (Backend & Web Frontend)**:
+    - **Backend**: Thêm logic validate ngày hiện tại trong API dời lịch tập `updateSchedule`.
+    - **Web FE**: Cập nhật trang quản lý lịch tập PT (`pt-training.js`) — tự động gán thuộc tính `min` là ngày hôm nay cho input date sửa lịch tập, và bổ sung validate thông báo lỗi ở frontend nếu người dùng cố dời lịch về quá khứ.
+- **Kết quả**: Thành công.
+
 ### [03/06/2026 14:20] — Sửa lỗi luồng đổi gói Gym và cải thiện UI chọn chi nhánh (Mobile)
 - **Loại**: Sửa bug & Cải tiến UI (Mobile)
 - **File**: `MobileApp/src/screens/admin/AdminRegisterPackageScreen.js`, `MobileApp/src/screens/admin/AdminDashboardScreen.js`

@@ -89,6 +89,12 @@ export const createSchedule = (req, res) => {
     return error(res, 'Thiếu: dang_ky_pt_id, ngay_tap, gio_bat_dau, gio_ket_thuc', 400);
   }
 
+  // Chặn đặt lịch trong quá khứ
+  const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
+  if (ngay_tap < todayStr) {
+    return error(res, 'Không thể đặt lịch tập ở ngày trong quá khứ.', 400);
+  }
+
   // Lấy thông tin đăng ký PT
   const dkpt = db.prepare(`
     SELECT dp.*, h_hv.id AS hv_id, h_hv.ho_ten AS ho_ten_hv, h_pt.id AS pt_hoso_id, h_pt.ho_ten AS ho_ten_pt
@@ -465,6 +471,14 @@ export const updateSchedule = (req, res) => {
   const schedule = db.prepare('SELECT * FROM lich_tap WHERE id = ?').get(id);
   if (!schedule) return error(res, 'Không tìm thấy lịch tập.', 404);
   if (schedule.trang_thai !== 'cho_tap') return error(res, 'Chỉ có thể sửa lịch đang ở trạng thái "cho_tap".', 400);
+
+  // Chặn dời lịch sang ngày trong quá khứ
+  if (ngay_tap) {
+    const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
+    if (ngay_tap < todayStr) {
+      return error(res, 'Không thể dời lịch tập sang ngày trong quá khứ.', 400);
+    }
+  }
 
   // PT chỉ sửa lịch của chính mình
   if (req.user.vai_tro === 'pt') {

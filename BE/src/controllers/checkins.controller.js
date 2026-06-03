@@ -51,8 +51,29 @@ export const createCheckin = (req, res) => {
 
   // Kiểm tra hồ sơ nếu có
   if (ho_so_id) {
-    const profile = db.prepare('SELECT id FROM ho_so WHERE id = ? AND is_deleted = 0').get(ho_so_id);
+    const profile = db.prepare('SELECT id, ho_ten, loai_ho_so FROM ho_so WHERE id = ? AND is_deleted = 0').get(ho_so_id);
     if (!profile) return error(res, 'Hồ sơ không tồn tại.', 404);
+
+    // Chỉ check hạn đối với hội viên (bỏ qua PT và Nhân viên/Lễ tân)
+    if (profile.loai_ho_so === 'hoi_vien') {
+      const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
+      const activeCheck = db.prepare(`
+        SELECT (
+          SELECT MAX(d_ngay) FROM (
+            SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = ? AND trang_thai = 'dang_hoat_dong' AND tu_ngay <= ?
+            UNION ALL
+            SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = ? AND trang_thai = 'dang_hoat_dong' AND tu_ngay <= ?
+          )
+        ) AS ngay_ket_thuc
+      `).get(ho_so_id, today, ho_so_id, today);
+
+      if (!activeCheck || !activeCheck.ngay_ket_thuc) {
+        return error(res, `Hội viên ${profile.ho_ten} không có gói tập hoặc gói PT đang hoạt động.`, 403);
+      }
+      if (activeCheck.ngay_ket_thuc < today) {
+        return error(res, `Gói dịch vụ của ${profile.ho_ten} đã hết hạn (${activeCheck.ngay_ket_thuc}).`, 403);
+      }
+    }
   }
 
   // Xác định chi nhánh thực hiện check-in
