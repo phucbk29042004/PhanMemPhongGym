@@ -38,6 +38,7 @@ import Svg, {
 } from 'react-native-svg';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuthStore } from '../../store/useAuthStore';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -121,6 +122,7 @@ function formatDate(dateStr) {
 
 export default function AdminRevenueScreen({ navigation }) {
   const { colors, isDark } = useTheme();
+  const { selectedBranch, setSelectedBranch } = useAuthStore();
   const insets = useSafeAreaInsets();
 
   const [filter, setFilter] = useState('7'); // 'today' | 'yesterday' | '7' | '30' | 'compare'
@@ -269,7 +271,6 @@ export default function AdminRevenueScreen({ navigation }) {
     );
   };
 
-  const [selectedBranch, setSelectedBranch] = useState('');
   const [branches, setBranches] = useState([]);
 
   const fetchRevenueData = useCallback(async (selectedFilter, m1 = month1, m2 = month2) => {

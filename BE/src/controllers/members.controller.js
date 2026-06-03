@@ -405,7 +405,7 @@ export const getExpiringMembers = (req, res) => {
 
   const rows = db.prepare(`
     SELECT
-      h.id, h.ma_ho_so, h.ho_ten, h.so_dien_thoai, h.email, h.avatar_url,
+      h.id, h.ma_ho_so, h.ho_ten, h.so_dien_thoai, h.email, h.avatar_url, h.chi_nhanh,
       'sap_het_han' AS trang_thai,
       (SELECT MAX(d_ngay) FROM (
          SELECT den_ngay as d_ngay FROM dang_ky_goi_tap
@@ -443,7 +443,7 @@ export const getExpiredMembers = (req, res) => {
   autoUpdateExpiredStatuses(); // Cập nhật trạng thái hết hạn trước khi query
   const rows = db.prepare(`
     SELECT
-      h.id, h.ma_ho_so, h.ho_ten, h.so_dien_thoai, h.email, h.avatar_url,
+      h.id, h.ma_ho_so, h.ho_ten, h.so_dien_thoai, h.email, h.avatar_url, h.chi_nhanh,
       'het_han' AS trang_thai,
       (SELECT MAX(d_ngay) FROM (
          SELECT den_ngay as d_ngay FROM dang_ky_goi_tap

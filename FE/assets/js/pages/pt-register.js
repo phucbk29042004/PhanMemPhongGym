@@ -787,7 +787,11 @@ window.GymApp.pages['pt-register'] = {
   },
 
   _renderPTList: function () {
-    const pts = window.GymApp.data.pts || [];
+    let pts = window.GymApp.data.pts || [];
+    const branch = window.GymApp.selectedBranch || '';
+    if (branch) {
+      pts = pts.filter(pt => pt.chi_nhanh === branch);
+    }
     const list = document.getElementById('pt-list');
     if (!list) return;
 

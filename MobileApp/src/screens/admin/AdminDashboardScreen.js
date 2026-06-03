@@ -181,7 +181,7 @@ const revRow = StyleSheet.create({
 // ── Màn hình chính ────────────────────────────────────────
 // ── Màn hình chính ────────────────────────────────────────
 export default function AdminDashboardScreen({ navigation }) {
-  const { user } = useAuthStore();
+  const { user, selectedBranch, setSelectedBranch } = useAuthStore();
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const [dash, setDash] = useState(null);
@@ -207,7 +207,7 @@ export default function AdminDashboardScreen({ navigation }) {
 
   const PAGE_SIZE = 10;
 
-  const [selectedBranch, setSelectedBranch] = useState('');
+
   const [branches, setBranches] = useState([]);
 
   const fetchData = useCallback(async () => {

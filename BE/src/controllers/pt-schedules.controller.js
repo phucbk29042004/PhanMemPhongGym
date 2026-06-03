@@ -20,10 +20,15 @@ const toJson = (value) => {
 // ── GET /api/pt/schedules ─────────────────────────────────
 // Xem lịch tập toàn phòng (admin) hoặc lịch cá nhân (PT/hội viên)
 export const getSchedules = (req, res) => {
-  const { date, pt_id, hoi_vien_id, trang_thai } = req.query;
+  const { date, pt_id, hoi_vien_id, trang_thai, chi_nhanh } = req.query;
 
   let where = 'WHERE 1=1';
   const params = [];
+
+  if (chi_nhanh) {
+    where += ' AND lt.chi_nhanh_tap = ?';
+    params.push(chi_nhanh);
+  }
 
   // Nếu là PT: chỉ xem lịch của mình
   if (req.user.vai_tro === 'pt') {

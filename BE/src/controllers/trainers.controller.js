@@ -10,9 +10,14 @@ import { ghi_audit_log } from '../utils/audit.js';
 
 // ── GET /api/trainers ─────────────────────────────────────
 export const getTrainers = (req, res) => {
-  const { search } = req.query;
+  const { search, chi_nhanh } = req.query;
   let where = `WHERE h.loai_ho_so = 'pt' AND h.is_deleted = 0`;
   const params = [];
+
+  if (chi_nhanh) {
+    where += ` AND h.chi_nhanh = ?`;
+    params.push(chi_nhanh);
+  }
 
   if (search) {
     where += ` AND (h.ho_ten LIKE ? OR h.so_dien_thoai LIKE ?)`;

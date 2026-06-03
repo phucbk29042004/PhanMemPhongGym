@@ -1270,6 +1270,7 @@ window.GymApp.pages['revenue'] = {
 
   _fetchAndRender: async function () {
     try {
+      this._selectedBranch = window.GymApp.selectedBranch || '';
       let revData = {};
       let dayData = {};
       const branchQ = this._selectedBranch ? `&chi_nhanh=${encodeURIComponent(this._selectedBranch)}` : '';
@@ -1306,8 +1307,13 @@ window.GymApp.pages['revenue'] = {
         this._renderStats(null, null, null);
         this._renderChart(null, null);
 
-        // Render dữ liệu packageStats và transactions từ kết quả so sánh
-        this._renderPackageStats(compareData.packageStats || []);
+        // Render dữ liệu packageStats và transactions từ kết quả so sánh (gộp cả Gym và PT)
+        const allComparePackageStats = [
+          ...(compareData.packageStats || []).map(p => ({ ...p, ten_goi: `${p.ten_goi} (Gym)` })),
+          ...(compareData.ptPackageStats || []).map(p => ({ ...p, ten_goi: `${p.ten_goi} (PT)` }))
+        ].sort((a, b) => b.so_dang_ky - a.so_dang_ky);
+
+        this._renderPackageStats(allComparePackageStats);
         this._renderTodayTable(compareData.transactions || []);
         return;
       } else {
@@ -1323,10 +1329,16 @@ window.GymApp.pages['revenue'] = {
       this._monthComparisonData = revData.monthComparison || {};
       this._transactionsData = dayData.giao_dich || [];
 
+      // Gộp packageStats và ptPackageStats hiển thị ở phần gói tập bán chạy
+      const allPackageStats = [
+        ...(revData.packageStats || []).map(p => ({ ...p, ten_goi: `${p.ten_goi} (Gym)` })),
+        ...(revData.ptPackageStats || []).map(p => ({ ...p, ten_goi: `${p.ten_goi} (PT)` }))
+      ].sort((a, b) => b.so_dang_ky - a.so_dang_ky);
+
       this._renderStats(revData.summary, dayData, revData.monthComparison);
       // FIX: truyền daily vào _renderChart để mode 7/30 ngày vẽ đúng
       this._renderChart(this._dailyData, this._monthComparisonData);
-      this._renderPackageStats(revData.packageStats);
+      this._renderPackageStats(allPackageStats);
       this._renderTodayTable(dayData.giao_dich || []);
     } catch (err) {
       console.error('Revenue fetch error', err);

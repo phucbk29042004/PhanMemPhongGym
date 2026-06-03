@@ -294,7 +294,7 @@ window.GymApp.pages['members-list'] = {
           <tr class="member-row transition-colors hover:bg-brand-primary/5 dark:hover:bg-brand-primary/10 border-b border-outline-variant/30 cursor-pointer bg-white dark:bg-[#1e1e1e] odd:bg-[#fafafa] odd:dark:bg-[#15171e]" data-id="${m.id}">
             
             <!-- Cell 1: Avatar + Tên -->
-            <td class="border-r border-outline-variant/30" style="padding:8px 14px; white-space:nowrap; text-align:left;">
+            <td class="border-r border-outline-variant/30 sticky-col-left" style="padding:8px 14px; white-space:nowrap; text-align:left;">
               <div style="display:flex; align-items:center; justify-content:left; gap:12px; margin:0 auto; max-width:240px;">
                 
                 <!-- Avatar bigger -->
@@ -374,7 +374,7 @@ window.GymApp.pages['members-list'] = {
             </td>
 
             <!-- Cell 9: Hành động -->
-            <td style="padding:8px 14px; text-align:center; white-space:nowrap;">
+            <td class="sticky-col-right" style="padding:8px 14px; text-align:center; white-space:nowrap;">
               <div style="display:inline-flex;gap:4px;align-items:center;">
                 
                 <!-- Xem -->
@@ -458,6 +458,86 @@ window.GymApp.pages['members-list'] = {
         .member-table-col-han    { display: table-cell; }
         .member-table-desktop    { display: block; }
         .member-table-mobile     { display: none; }
+        
+        /* Custom scrollbar cho bảng để tránh lổm màu trắng ở góc */
+        #members-scroll-container::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+        #members-scroll-container::-webkit-scrollbar-track {
+          background: linear-gradient(to bottom, #1D9336 40px, transparent 40px) !important;
+        }
+        #members-scroll-container::-webkit-scrollbar-thumb {
+          background: rgba(0, 0, 0, 0.15);
+          border-radius: 4px;
+        }
+        .dark #members-scroll-container::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.15);
+        }
+        #members-scroll-container::-webkit-scrollbar-corner {
+          background: transparent !important;
+        }
+        
+        /* Cột cố định (Sticky) */
+        .sticky-col-left {
+          position: sticky !important;
+          left: 0;
+          z-index: 2;
+          box-shadow: 2px 0 5px -2px rgba(0,0,0,0.1);
+          transition: background-color 0.15s ease-in-out;
+        }
+        .sticky-col-right {
+          position: sticky !important;
+          right: 0;
+          z-index: 2;
+          box-shadow: -2px 0 5px -2px rgba(0,0,0,0.1);
+          transition: background-color 0.15s ease-in-out;
+        }
+        th.sticky-col-left {
+          z-index: 12 !important;
+          background: #1D9336 !important;
+        }
+        th.sticky-col-right {
+          z-index: 12 !important;
+          background: #1D9336 !important;
+        }
+        
+        /* Đồng bộ màu nền cho cột sticky theo dòng chẵn/lẻ */
+        tr.member-row td.sticky-col-left,
+        tr.member-row td.sticky-col-right {
+          background: #fff !important;
+        }
+        tr.member-row:nth-child(odd) td.sticky-col-left,
+        tr.member-row:nth-child(odd) td.sticky-col-right {
+          background: #fafafa !important;
+        }
+        .dark tr.member-row td.sticky-col-left,
+        .dark tr.member-row td.sticky-col-right {
+          background: #1e1e1e !important;
+        }
+        .dark tr.member-row:nth-child(odd) td.sticky-col-left,
+        .dark tr.member-row:nth-child(odd) td.sticky-col-right {
+          background: #15171e !important;
+        }
+
+        /* Hiệu ứng hover đồng bộ cho các cột sticky (dùng mã màu solid pha trộn hoàn hảo để không bị lệch màu) */
+        tr.member-row:hover td.sticky-col-left,
+        tr.member-row:hover td.sticky-col-right {
+          background: #f4faf5 !important; /* Trắng + 5% xanh thương hiệu */
+        }
+        tr.member-row:nth-child(odd):hover td.sticky-col-left,
+        tr.member-row:nth-child(odd):hover td.sticky-col-right {
+          background: #eff5f0 !important; /* Xám nhạt + 5% xanh thương hiệu */
+        }
+        .dark tr.member-row:hover td.sticky-col-left,
+        .dark tr.member-row:hover td.sticky-col-right {
+          background: #1e2a20 !important; /* Tối + 10% xanh thương hiệu */
+        }
+        .dark tr.member-row:nth-child(odd):hover td.sticky-col-left,
+        .dark tr.member-row:nth-child(odd):hover td.sticky-col-right {
+          background: #162320 !important; /* Tối lẻ + 10% xanh thương hiệu */
+        }
+
         #members-scroll-container th { border-radius: 0 !important; }
         @media (max-width: 1000px) {
           .member-table-col-pt   { display: none; }
@@ -479,11 +559,11 @@ window.GymApp.pages['members-list'] = {
       <div class="col-span-full w-full rounded-2xl overflow-hidden border border-outline-variant shadow-sm">
 
         <!-- TABLE (≥641px) -->
-        <div id="members-scroll-container" class="member-table-desktop" style="max-height: 500px; overflow-y: auto; overflow-x: auto; position: relative; background: linear-gradient(to bottom, #1D9336 38px, transparent 38px);">
+        <div id="members-scroll-container" class="member-table-desktop" style="max-height: 500px; overflow-y: auto; overflow-x: auto; position: relative;">
           <table style="width:100%;border-collapse:collapse;min-width:480px;position:relative;">
             <thead>
               <tr>
-                <th style="position:sticky;top:0;z-index:10;background:#1D9336;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Họ và tên</th>
+                <th class="sticky-col-left" style="position:sticky;top:0;z-index:10;background:#1D9336;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Họ và tên</th>
                 <th class="member-table-col-mahv" style="position:sticky;top:0;z-index:10;background:#1D9336;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Mã HV</th>
                 <th class="member-table-col-sdt" style="position:sticky;top:0;z-index:10;background:#1D9336;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Số ĐT</th>
                 <th class="member-table-col-goi" style="position:sticky;top:0;z-index:10;background:#1D9336;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Gói tập</th>
@@ -491,7 +571,7 @@ window.GymApp.pages['members-list'] = {
                 <th style="position:sticky;top:0;z-index:10;background:#1D9336;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Trạng thái</th>
                 <th class="member-table-col-branch" style="position:sticky;top:0;z-index:10;background:#1D9336;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Chi nhánh</th>
                 <th class="member-table-col-han" style="position:sticky;top:0;z-index:10;background:#1D9336;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Hết hạn</th>
-                <th style="position:sticky;top:0;z-index:10;background:#1D9336;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Thao tác</th>
+                <th class="sticky-col-right" style="position:sticky;top:0;z-index:10;background:#1D9336;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Thao tác</th>
               </tr>
             </thead>
             <tbody>${rowsHtml}</tbody>
@@ -662,6 +742,26 @@ window.GymApp.pages['members-list'] = {
         .pt-table-desktop       { display: block; }
         .pt-table-mobile        { display: none; }
         #pt-scroll-container th { border-radius: 0 !important; }
+        
+        /* Custom scrollbar cho bảng HLV */
+        #pt-scroll-container::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+        #pt-scroll-container::-webkit-scrollbar-track {
+          background: linear-gradient(to bottom, #065f46 40px, transparent 40px) !important;
+        }
+        #pt-scroll-container::-webkit-scrollbar-thumb {
+          background: rgba(0, 0, 0, 0.15);
+          border-radius: 4px;
+        }
+        .dark #pt-scroll-container::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.15);
+        }
+        #pt-scroll-container::-webkit-scrollbar-corner {
+          background: transparent !important;
+        }
+        
         @media (max-width: 900px) {
           .pt-table-col-rating  { display: none; }
           .pt-table-col-exp     { display: none; }
@@ -678,7 +778,7 @@ window.GymApp.pages['members-list'] = {
       
       <div class="col-span-full w-full rounded-2xl overflow-hidden border border-outline-variant shadow-sm">
         <!-- TABLE (≥641px) -->
-        <div id="pt-scroll-container" class="pt-table-desktop" style="max-height: 500px; overflow-y: auto; overflow-x: auto; position: relative; background: linear-gradient(to bottom, #065f46 38px, transparent 38px);">
+        <div id="pt-scroll-container" class="pt-table-desktop" style="max-height: 500px; overflow-y: auto; overflow-x: auto; position: relative;">
           <table style="width:100%;border-collapse:collapse;min-width:480px;position:relative;">
             <thead>
               <tr>
@@ -4768,6 +4868,7 @@ window.GymApp.pages['members-list'] = {
     const self = this;
     this._memberPage = 1;
     this._ptPage = 1;
+    this._filterState.chi_nhanh = window.GymApp.selectedBranch || ''; // Gán chi nhánh chung khi khởi tạo
 
     // Đồng bộ lại dữ liệu từ API khi load trang
     try {

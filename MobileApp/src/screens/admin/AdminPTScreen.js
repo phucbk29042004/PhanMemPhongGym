@@ -153,7 +153,8 @@ const ptCard = StyleSheet.create({
 // ── Màn hình chính ────────────────────────────────────────
 export default function AdminPTScreen({ navigation, route }) {
   const { colors } = useTheme();
-  const { role } = useAuthStore();
+  const { role, selectedBranch, setSelectedBranch } = useAuthStore();
+  const [branches, setBranches] = useState([]);
   const insets = useSafeAreaInsets();
   const [trainers, setTrainers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -174,9 +175,21 @@ export default function AdminPTScreen({ navigation, route }) {
 
   const today = new Date().toISOString().slice(0, 10);
 
+  const fetchBranches = useCallback(async () => {
+    try {
+      const res = await api.get('/branches');
+      if (res.data?.success) {
+        setBranches(res.data.data || []);
+      }
+    } catch (err) {
+      console.error('[AdminPT] fetch branches error:', err?.message);
+    }
+  }, []);
+
   const fetchTrainers = useCallback(async () => {
     try {
-      const res = await api.get('/trainers');
+      const q = selectedBranch ? `?chi_nhanh=${encodeURIComponent(selectedBranch)}` : '';
+      const res = await api.get(`/trainers${q}`);
       if (res.data?.success) {
         const list = res.data.data?.trainers || res.data.data || [];
         // Fetch today schedules cho mỗi PT
@@ -198,19 +211,20 @@ export default function AdminPTScreen({ navigation, route }) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [today]);
+  }, [today, selectedBranch]);
 
   const fetchTodaySchedules = useCallback(async () => {
     setScheduleLoading(true);
     try {
-      const res = await api.get('/pt/schedules');
+      const q = selectedBranch ? `?chi_nhanh=${encodeURIComponent(selectedBranch)}` : '';
+      const res = await api.get(`/pt/schedules${q}`);
       setTodaySchedules(res.data?.data || []);
     } catch (err) {
       console.error('[AdminPT] schedules error:', err?.message);
     } finally {
       setScheduleLoading(false);
     }
-  }, []);
+  }, [selectedBranch]);
 
   const groupedSchedules = useMemo(() => {
     const groups = {};
@@ -227,9 +241,10 @@ export default function AdminPTScreen({ navigation, route }) {
   }, [todaySchedules]);
 
   useFocusEffect(useCallback(() => {
+    fetchBranches();
     fetchTrainers();
     fetchTodaySchedules();
-  }, [fetchTrainers, fetchTodaySchedules]));
+  }, [fetchBranches, fetchTrainers, fetchTodaySchedules]));
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -306,6 +321,40 @@ export default function AdminPTScreen({ navigation, route }) {
             <Dumbbell color="#ffffff" size={18} strokeWidth={2} />
           </View>
         </View>
+      </View>
+
+      {/* ── Bộ lọc chi nhánh (ScrollView ngang) ── */}
+      <View style={{ backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: 8 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
+          <TouchableOpacity
+            style={[
+              { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16 },
+              { backgroundColor: selectedBranch === '' ? colors.primary : colors.surfaceVariant }
+            ]}
+            onPress={() => setSelectedBranch('')}
+          >
+            <Text style={{ fontSize: 12, fontWeight: '700', color: selectedBranch === '' ? '#fff' : colors.textSecondary }}>
+              Tất cả chi nhánh
+            </Text>
+          </TouchableOpacity>
+          {branches.map((b) => {
+            const isSelected = selectedBranch === b.ten;
+            return (
+              <TouchableOpacity
+                key={b.id || b.ten}
+                style={[
+                  { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16 },
+                  { backgroundColor: isSelected ? colors.primary : colors.surfaceVariant }
+                ]}
+                onPress={() => setSelectedBranch(b.ten)}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '700', color: isSelected ? '#fff' : colors.textSecondary }}>
+                  {b.ten}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
 
       {/* Tabs */}

@@ -18,8 +18,10 @@ import {
 import { verifyToken } from '../middlewares/auth.js';
 import { requireRole } from '../middlewares/role.js';
 import { uploadAvatar, uploadExcel } from '../middlewares/upload.js';
+import db from '../config/db.js';
 
 const router = Router();
+
 // Tất cả routes bên dưới yêu cầu đăng nhập
 router.use(verifyToken);
 

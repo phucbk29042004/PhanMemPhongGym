@@ -261,16 +261,16 @@ window.GymApp.pages['audit-logs'] = {
     }).join('');
 
     const desktopHtml = `
-      <div class="hidden md:block overflow-x-auto" style="scrollbar-width: thin; scrollbar-color: var(--outline-variant) transparent;">
+      <div id="audit-scroll-container" class="hidden md:block overflow-x-auto overflow-y-auto" style="max-height: 500px; scrollbar-width: thin; scrollbar-color: var(--outline-variant) transparent;">
         <table class="w-full text-left border-collapse table-auto">
           <thead>
             <tr class="h-10 border-b border-outline-variant/40 bg-surface-container-low/10">
-              <th class="px-4 font-bold text-on-surface-variant uppercase tracking-wider text-xs whitespace-nowrap">Thời điểm</th>
-              <th class="px-4 font-bold text-on-surface-variant uppercase tracking-wider text-xs whitespace-nowrap">Tài khoản thực hiện</th>
-              <th class="px-4 font-bold text-on-surface-variant uppercase tracking-wider text-xs whitespace-nowrap">Vai trò</th>
-              <th class="px-4 font-bold text-on-surface-variant uppercase tracking-wider text-xs whitespace-nowrap">Hành động</th>
-              <th class="px-4 font-bold text-on-surface-variant uppercase tracking-wider text-xs whitespace-nowrap">Đối tượng</th>
-              <th class="px-4 font-bold text-on-surface-variant uppercase tracking-wider text-xs">Ghi chú</th>
+              <th style="position:sticky;top:0;z-index:10;" class="bg-white dark:bg-[#1e1e1e] px-4 font-bold text-on-surface-variant uppercase tracking-wider text-xs whitespace-nowrap">Thời điểm</th>
+              <th style="position:sticky;top:0;z-index:10;" class="bg-white dark:bg-[#1e1e1e] px-4 font-bold text-on-surface-variant uppercase tracking-wider text-xs whitespace-nowrap">Tài khoản thực hiện</th>
+              <th style="position:sticky;top:0;z-index:10;" class="bg-white dark:bg-[#1e1e1e] px-4 font-bold text-on-surface-variant uppercase tracking-wider text-xs whitespace-nowrap">Vai trò</th>
+              <th style="position:sticky;top:0;z-index:10;" class="bg-white dark:bg-[#1e1e1e] px-4 font-bold text-on-surface-variant uppercase tracking-wider text-xs whitespace-nowrap">Hành động</th>
+              <th style="position:sticky;top:0;z-index:10;" class="bg-white dark:bg-[#1e1e1e] px-4 font-bold text-on-surface-variant uppercase tracking-wider text-xs whitespace-nowrap">Đối tượng</th>
+              <th style="position:sticky;top:0;z-index:10;" class="bg-white dark:bg-[#1e1e1e] px-4 font-bold text-on-surface-variant uppercase tracking-wider text-xs">Ghi chú</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-outline-variant/30">
@@ -330,36 +330,50 @@ window.GymApp.pages['audit-logs'] = {
     }).join('');
 
     const mobileHtml = `
-      <div class="md:hidden flex flex-col gap-compact">
+      <div id="audit-scroll-mobile-container" class="md:hidden flex flex-col gap-compact overflow-y-auto" style="max-height: 500px;">
         ${mobileCardsHtml}
       </div>
     `;
 
-    // Pagination container static wrapper at bottom
-    const paginationHtml = `
-      <div id="audit-pagination-container">
-        <!-- Phân trang sẽ render qua _renderPaginationOnly() -->
+    // Footer info
+    const footerHtml = `
+      <div class="px-standard py-standard border-t border-outline-variant bg-white dark:bg-[#1e1e1e] flex justify-between items-center text-body-sm font-medium text-on-surface-variant mt-4">
+        <span>Hiển thị ${displayLogs.length} / ${self.pagination?.total || 0} nhật ký</span>
       </div>
     `;
 
-    return desktopHtml + mobileHtml + paginationHtml;
+    return desktopHtml + mobileHtml + footerHtml;
   },
 
-  _renderPaginationOnly: function () {
+  _bindScrollEvents: function () {
     const self = this;
-    const container = document.getElementById('audit-pagination-container');
-    if (container && self.pagination) {
-      container.innerHTML = window.GymApp.renderPagination(self.pagination.page, self.pagination.total, self.pagination.limit, null);
-      
-      // Gắn lại sự kiện phân trang
-      container.querySelectorAll('[data-pg]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const targetPage = parseInt(btn.dataset.pg);
-          if (!isNaN(targetPage) && targetPage > 0) {
-            self.currentPageNum = targetPage;
-            self._loadData({ keepDOM: true });
+    const container = document.getElementById('audit-scroll-container');
+    if (container) {
+      container.addEventListener('scroll', async function () {
+        if (container.scrollTop + container.clientHeight >= container.scrollHeight - 20) {
+          if (self.pagination && self.currentPageNum * self.limitPerPage < self.pagination.total) {
+            self.currentPageNum++;
+            const scrollPos = container.scrollTop;
+            await self._loadData({ keepDOM: true, isAppend: true });
+            const newContainer = document.getElementById('audit-scroll-container');
+            if (newContainer) newContainer.scrollTop = scrollPos;
           }
-        });
+        }
+      });
+    }
+
+    const mobileContainer = document.getElementById('audit-scroll-mobile-container');
+    if (mobileContainer) {
+      mobileContainer.addEventListener('scroll', async function () {
+        if (mobileContainer.scrollTop + mobileContainer.clientHeight >= mobileContainer.scrollHeight - 20) {
+          if (self.pagination && self.currentPageNum * self.limitPerPage < self.pagination.total) {
+            self.currentPageNum++;
+            const scrollPos = mobileContainer.scrollTop;
+            await self._loadData({ keepDOM: true, isAppend: true });
+            const newMobileContainer = document.getElementById('audit-scroll-mobile-container');
+            if (newMobileContainer) newMobileContainer.scrollTop = scrollPos;
+          }
+        }
       });
     }
   },
@@ -376,7 +390,7 @@ window.GymApp.pages['audit-logs'] = {
     // Render danh sách logs (cả Desktop table và Mobile cards)
     const contentContainer = document.getElementById('audit-logs-content');
     if (contentContainer) contentContainer.innerHTML = self._renderLogsList();
-    self._renderPaginationOnly();
+    self._bindScrollEvents();
 
     // 1. Tự động tìm kiếm tức thì khi gõ từ khóa
     const searchInput = document.getElementById('audit-filter-keyword');
@@ -384,7 +398,7 @@ window.GymApp.pages['audit-logs'] = {
       searchInput.addEventListener('input', (e) => {
         self.searchKeyword = e.target.value.trim();
         if (contentContainer) contentContainer.innerHTML = self._renderLogsList();
-        self._renderPaginationOnly();
+        self._bindScrollEvents();
       });
     }
 
@@ -432,6 +446,7 @@ window.GymApp.pages['audit-logs'] = {
         btn.style.opacity = '0.7';
       }
       
+      self.currentPageNum = 1;
       await self._loadData({ keepDOM: true });
       
       if (icon) icon.classList.remove('animate-spin');
@@ -463,10 +478,11 @@ window.GymApp.pages['audit-logs'] = {
   // ===== PRIVATE HELPERS =====
   _loadData: async function (options = {}) {
     const self = this;
+    const isAppend = options.isAppend || false;
     const contentContainer = document.getElementById('audit-logs-content');
 
-    // Hiển thị trạng thái loading spinner nếu không giữ DOM
-    if (!options.keepDOM && contentContainer) {
+    // Hiển thị trạng thái loading spinner nếu không giữ DOM và không append
+    if (!options.keepDOM && !isAppend && contentContainer) {
       contentContainer.innerHTML = `
         <div class="text-center py-16">
           <span class="material-symbols-outlined animate-spin text-brand-primary text-3xl mb-compact">autorenew</span>
@@ -488,10 +504,16 @@ window.GymApp.pages['audit-logs'] = {
       if (self.currentAction) queryStr += `&hanh_dong=${encodeURIComponent(self.currentAction)}`;
       if (self.fromDate) queryStr += `&tu_ngay=${self.fromDate}`;
       if (self.toDate) queryStr += `&den_ngay=${self.toDate}`;
+      if (window.GymApp.selectedBranch) queryStr += `&chi_nhanh=${encodeURIComponent(window.GymApp.selectedBranch)}`;
 
       const res = await window.GymApp.api.get(`/audit?${queryStr}`);
       if (res?.success) {
-        self.logs = res.data.logs || [];
+        const newLogs = res.data.logs || [];
+        if (isAppend) {
+          self.logs = [...self.logs, ...newLogs];
+        } else {
+          self.logs = newLogs;
+        }
         self.pagination = res.data.pagination || null;
 
         // Tải stats thống kê tổng số lượng
@@ -503,9 +525,9 @@ window.GymApp.pages['audit-logs'] = {
       console.error(err);
       window.GymApp.toast('Lỗi kết nối máy chủ!', 'error');
     } finally {
-      if (options.keepDOM) {
+      if (options.keepDOM || isAppend) {
         if (contentContainer) contentContainer.innerHTML = self._renderLogsList();
-        self._renderPaginationOnly();
+        self._bindScrollEvents();
       } else {
         self._refreshView();
       }
@@ -514,13 +536,14 @@ window.GymApp.pages['audit-logs'] = {
 
   _loadStats: async function () {
     const self = this;
+    const branchQ = window.GymApp.selectedBranch ? `&chi_nhanh=${encodeURIComponent(window.GymApp.selectedBranch)}` : '';
     try {
       const [allRes, adminRes, letanRes, ptRes, hvRes] = await Promise.all([
-        window.GymApp.api.get('/audit?limit=1'),
-        window.GymApp.api.get('/audit?vai_tro=admin&limit=1'),
-        window.GymApp.api.get('/audit?vai_tro=le_tan&limit=1'),
-        window.GymApp.api.get('/audit?vai_tro=pt&limit=1'),
-        window.GymApp.api.get('/audit?vai_tro=hoi_vien&limit=1')
+        window.GymApp.api.get(`/audit?limit=1${branchQ}`),
+        window.GymApp.api.get(`/audit?vai_tro=admin&limit=1${branchQ}`),
+        window.GymApp.api.get(`/audit?vai_tro=le_tan&limit=1${branchQ}`),
+        window.GymApp.api.get(`/audit?vai_tro=pt&limit=1${branchQ}`),
+        window.GymApp.api.get(`/audit?vai_tro=hoi_vien&limit=1${branchQ}`)
       ]);
 
       self.stats.total = allRes?.data?.pagination?.total ?? 0;
