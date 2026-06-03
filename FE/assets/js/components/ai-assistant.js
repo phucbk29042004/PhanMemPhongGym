@@ -219,7 +219,8 @@
       scrollToBottom();
 
       try {
-        const response = await window.GymApp.api.post('/assistant/chat', { message: text });
+        const chi_nhanh = window.GymApp?.selectedBranch || '';
+        const response = await window.GymApp.api.post('/assistant/chat', { message: text, chi_nhanh });
         // Hide Typing Indicator
         typingIndicator.classList.add('hidden');
 

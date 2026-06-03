@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { Bot, ChevronLeft, Send, User } from 'lucide-react-native';
 import { api } from '../../services/api';
+import { useAuthStore } from '../../store/useAuthStore';
 import { useTheme } from '../../context/ThemeContext';
 
 const G = {
@@ -71,6 +72,7 @@ const renderFormattedText = (text, isUser, colors, isDark) => {
 
 export default function AIAssistantScreen({ navigation }) {
   const { colors, isDark } = useTheme();
+  const { selectedBranch } = useAuthStore();
   const [messages, setMessages] = useState([
     {
       id: 'welcome',
@@ -100,7 +102,7 @@ export default function AIAssistantScreen({ navigation }) {
     setLoading(true);
 
     try {
-      const response = await api.post('/assistant/chat', { message: text });
+      const response = await api.post('/assistant/chat', { message: text, chi_nhanh: selectedBranch || '' });
       const reply = response.data?.data?.reply || 'Rất tiếc, mình gặp sự cố khi xử lý câu hỏi này.';
       
       setMessages((prev) => [
