@@ -846,7 +846,7 @@
       branches = [];
     }
 
-    const branchOptions = ['<option value="">— Tất cả chi nhánh —</option>']
+    const branchOptions = ['<option value="">Tất cả chi nhánh</option>']
       .concat(branches.map(b => `<option value="${b.ten}">${b.ten}</option>`))
       .join('');
 
