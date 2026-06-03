@@ -71,6 +71,10 @@
       });
     }
 
+    document.querySelectorAll('select[id$="-branch-filter"]').forEach(el => {
+      el.value = window.GymApp.selectedBranch || '';
+    });
+
     window.GymApp.currentPage = pageName;
 
     // Birthday: render page immediately, then auto-run celebration effect.
@@ -831,6 +835,38 @@
   }
 
   // ===== DOM READY =====
+  async function _initBranchFilter() {
+    const headerSelect = document.getElementById('header-branch-filter');
+    if (!headerSelect) return;
+
+    let branches = [];
+    try {
+      branches = await fetch('assets/data/branches.json').then(r => r.json());
+    } catch (e) {
+      branches = [];
+    }
+
+    const branchOptions = ['<option value="">— Tất cả chi nhánh —</option>']
+      .concat(branches.map(b => `<option value="${b.ten}">${b.ten}</option>`))
+      .join('');
+
+    headerSelect.innerHTML = branchOptions;
+    headerSelect.value = window.GymApp.selectedBranch || '';
+
+    headerSelect.addEventListener('change', async function () {
+      const branch = this.value;
+      window.GymApp.selectedBranch = branch;
+      sessionStorage.setItem('selected_branch', branch);
+      document.querySelectorAll('select[id$="-branch-filter"]').forEach(el => {
+        el.value = branch;
+      });
+      if (window.GymApp.currentPage) {
+        window.GymApp.navigate(window.GymApp.currentPage);
+      }
+      window.GymApp.toast(branch ? `Đã lọc theo chi nhánh ${branch}` : 'Đã xóa bộ lọc chi nhánh', 'success');
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', async function () {
     console.log('Paradise GYM: DOMContentLoaded');
     
@@ -868,6 +904,9 @@
 
     // 3. Áp dụng Theme
     _applyTheme(localStorage.getItem('gym-theme') || 'light');
+
+    // 4. Khởi tạo header branch filter
+    await _initBranchFilter();
     // Sidebar dark-mode handlers cần DOM sẵn
     setTimeout(() => _applySidebarDarkMode(document.documentElement.classList.contains('dark')), 0);
 
@@ -899,6 +938,10 @@
     });
 
     document.getElementById('btn-qr-scan')?.addEventListener('click', () => {
+      window._openQrModal?.();
+    });
+
+    document.getElementById('btn-admin-qr-scan')?.addEventListener('click', () => {
       window._openQrModal?.();
     });
 

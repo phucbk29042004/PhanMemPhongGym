@@ -145,13 +145,117 @@ export const getRevenue = (req, res) => {
   const currentMonthDays = db.prepare(`SELECT CAST(strftime('%d', date(?,'-1 day')) AS INTEGER) AS d`).get(currentMonthEnd).d;
   const maxDay = Math.max(currentMonthDays, previousMonthDays);
 
+  // FIX: populate monthComparison.current và .previous với dữ liệu thực tế (support cả lọc chi nhánh)
+  let current = [];
+  let previous = [];
+  let currentTotal = 0;
+  let previousTotal = 0;
+
+  if (!chi_nhanh) {
+    // Lấy dữ liệu từ bảng doanh_thu (tất cả chi nhánh)
+    const currentMonthData = db.prepare(`
+      SELECT CAST(strftime('%d', ngay) AS INTEGER) as day, tong_tien, tong_don
+      FROM doanh_thu
+      WHERE ngay >= ? AND ngay < ?
+      ORDER BY ngay ASC
+    `).all(currentMonthStart, currentMonthEnd);
+
+    const previousMonthEnd = currentMonthStart;
+    const previousMonthData = db.prepare(`
+      SELECT CAST(strftime('%d', ngay) AS INTEGER) as day, tong_tien, tong_don
+      FROM doanh_thu
+      WHERE ngay >= ? AND ngay < ?
+      ORDER BY ngay ASC
+    `).all(previousMonthStart, previousMonthEnd);
+
+    const currentMap = new Map(currentMonthData.map(r => [r.day, r]));
+    const previousMap = new Map(previousMonthData.map(r => [r.day, r]));
+
+    for (let day = 1; day <= maxDay; day++) {
+      const curr = currentMap.get(day);
+      const prev = previousMap.get(day);
+      current.push({ day, tong_tien: curr?.tong_tien || 0, tong_don: curr?.tong_don || 0 });
+      previous.push({ day, tong_tien: prev?.tong_tien || 0, tong_don: prev?.tong_don || 0 });
+      if (curr) currentTotal += curr.tong_tien;
+      if (prev) previousTotal += prev.tong_tien;
+    }
+  } else {
+    // Nếu lọc chi nhánh, tính trực tiếp từ dang_ky_goi_tap và dang_ky_pt
+    const currentMonthData = db.prepare(`
+      SELECT CAST(strftime('%d', COALESCE(date(dk.ngay_thanh_toan), date(dk.ngay_tao))) AS INTEGER) as day, 
+             SUM(dk.gia_thuc_te) as tong_tien, COUNT(dk.id) as tong_don
+      FROM dang_ky_goi_tap dk
+      WHERE COALESCE(date(dk.ngay_thanh_toan), date(dk.ngay_tao)) >= ? 
+        AND COALESCE(date(dk.ngay_thanh_toan), date(dk.ngay_tao)) < ?
+        AND dk.trang_thai IN ('dang_hoat_dong', 'het_han', 'cho_kich_hoat')
+        AND dk.chi_nhanh_dang_ky = ?
+      GROUP BY day
+      UNION ALL
+      SELECT CAST(strftime('%d', COALESCE(date(dp.ngay_thanh_toan), date(dp.ngay_tao))) AS INTEGER) as day,
+             SUM(dp.gia_thuc_te) as tong_tien, COUNT(dp.id) as tong_don
+      FROM dang_ky_pt dp
+      WHERE COALESCE(date(dp.ngay_thanh_toan), date(dp.ngay_tao)) >= ?
+        AND COALESCE(date(dp.ngay_thanh_toan), date(dp.ngay_tao)) < ?
+        AND dp.trang_thai IN ('dang_hoat_dong', 'hoan_thanh', 'cho_kich_hoat')
+        AND dp.chi_nhanh_dang_ky = ?
+      GROUP BY day
+    `).all(currentMonthStart, currentMonthEnd, chi_nhanh, currentMonthStart, currentMonthEnd, chi_nhanh);
+
+    const previousMonthEnd = currentMonthStart;
+    const previousMonthData = db.prepare(`
+      SELECT CAST(strftime('%d', COALESCE(date(dk.ngay_thanh_toan), date(dk.ngay_tao))) AS INTEGER) as day,
+             SUM(dk.gia_thuc_te) as tong_tien, COUNT(dk.id) as tong_don
+      FROM dang_ky_goi_tap dk
+      WHERE COALESCE(date(dk.ngay_thanh_toan), date(dk.ngay_tao)) >= ?
+        AND COALESCE(date(dk.ngay_thanh_toan), date(dk.ngay_tao)) < ?
+        AND dk.trang_thai IN ('dang_hoat_dong', 'het_han', 'cho_kich_hoat')
+        AND dk.chi_nhanh_dang_ky = ?
+      GROUP BY day
+      UNION ALL
+      SELECT CAST(strftime('%d', COALESCE(date(dp.ngay_thanh_toan), date(dp.ngay_tao))) AS INTEGER) as day,
+             SUM(dp.gia_thuc_te) as tong_tien, COUNT(dp.id) as tong_don
+      FROM dang_ky_pt dp
+      WHERE COALESCE(date(dp.ngay_thanh_toan), date(dp.ngay_tao)) >= ?
+        AND COALESCE(date(dp.ngay_thanh_toan), date(dp.ngay_tao)) < ?
+        AND dp.trang_thai IN ('dang_hoat_dong', 'hoan_thanh', 'cho_kich_hoat')
+        AND dp.chi_nhanh_dang_ky = ?
+      GROUP BY day
+    `).all(previousMonthStart, previousMonthEnd, chi_nhanh, previousMonthStart, previousMonthEnd, chi_nhanh);
+
+    // Gộp dữ liệu theo ngày
+    const currentMap = new Map();
+    currentMonthData.forEach(r => {
+      const existing = currentMap.get(r.day) || { day: r.day, tong_tien: 0, tong_don: 0 };
+      existing.tong_tien += r.tong_tien || 0;
+      existing.tong_don += r.tong_don || 0;
+      currentMap.set(r.day, existing);
+    });
+
+    const previousMap = new Map();
+    previousMonthData.forEach(r => {
+      const existing = previousMap.get(r.day) || { day: r.day, tong_tien: 0, tong_don: 0 };
+      existing.tong_tien += r.tong_tien || 0;
+      existing.tong_don += r.tong_don || 0;
+      previousMap.set(r.day, existing);
+    });
+
+    for (let day = 1; day <= maxDay; day++) {
+      const curr = currentMap.get(day);
+      const prev = previousMap.get(day);
+      current.push({ day, tong_tien: curr?.tong_tien || 0, tong_don: curr?.tong_don || 0 });
+      previous.push({ day, tong_tien: prev?.tong_tien || 0, tong_don: prev?.tong_don || 0 });
+      if (curr) currentTotal += curr.tong_tien;
+      if (prev) previousTotal += prev.tong_tien;
+    }
+  }
+
   const monthComparison = {
     current_month: currentMonthStart.slice(0, 7),
     previous_month: previousMonthStart.slice(0, 7),
     labels: Array.from({ length: maxDay }, (_, index) => index + 1),
-    current: [],
-    previous: [],
-    summary: { current_total: 0, previous_total: 0, current_orders: 0, previous_orders: 0 }
+    current,
+    previous,
+    summary: { current_total: currentTotal, previous_total: previousTotal, current_orders: 0, previous_orders: 0 }
   };
 
   // 6. Lấy các giao dịch chi tiết trong khoảng thời gian lọc

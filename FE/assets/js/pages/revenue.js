@@ -36,20 +36,16 @@ window.GymApp.pages['revenue'] = {
               <button id="btn-compare-action" class="bg-brand-primary hover:bg-brand-primary/95 text-white text-body-sm font-bold px-4 py-1.5 rounded-lg active:scale-95 transition-all ml-2">So sánh</button>
             </div>
 
-            <!-- Chọn chi nhánh -->
-            <select id="rev-branch-filter" class="bg-white dark:bg-[#1e1e1e] text-on-surface border border-outline-variant text-body-sm font-bold rounded-xl px-4 py-2 outline-none cursor-pointer">
-              <option value="">— Tất cả chi nhánh —</option>
-              ${(this._branches || []).map(b => `<option value="${b.ten}" ${this._selectedBranch === b.ten ? 'selected' : ''}>${b.ten}</option>`).join('')}
-            </select>
-
-            <button id="rev-reload" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border border-outline-variant bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer whitespace-nowrap">
-              <span class="material-symbols-outlined text-base">refresh</span>
-              Tải lại
-            </button>
-            <button id="btn-export-revenue" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border-2 border-outline-variant/50 bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer whitespace-nowrap">
-              <span class="material-symbols-outlined text-base text-[#1D9336]">download</span>
-              Xuất Excel
-            </button>
+            <div class="ml-auto flex items-center gap-2 flex-wrap">
+              <button id="rev-reload" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border border-outline-variant bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer whitespace-nowrap">
+                <span class="material-symbols-outlined text-base">refresh</span>
+                Tải lại
+              </button>
+              <button id="btn-export-revenue" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border-2 border-outline-variant/50 bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer whitespace-nowrap">
+                <span class="material-symbols-outlined text-base text-[#1D9336]">download</span>
+                Xuất Excel
+              </button>
+            </div>
           </div>
         </div>
 
@@ -808,6 +804,14 @@ window.GymApp.pages['revenue'] = {
         const currentData = (monthData.current || []).map(d => Math.max(0, d.tong_tien || 0));
         const previousData = (monthData.previous || []).map(d => Math.max(0, d.tong_tien || 0));
 
+        // FIX: kiểm tra nếu không có dữ liệu, hiển thị thông báo thay vì biểu đồ rỗng
+        const hasData = currentData.length > 0 && (currentData.some(v => v > 0) || previousData.some(v => v > 0));
+        if (!hasData) {
+          const wrap = canvas.parentElement;
+          if (wrap) wrap.innerHTML = '<p class="flex items-center justify-center h-full text-on-surface-variant text-body-sm">Chưa có dữ liệu biểu đồ</p>';
+          return;
+        }
+
         const title = document.getElementById('rev-chart-title');
         if (title) title.textContent = `So sánh doanh thu ${currentMonthLabel} / ${previousMonthLabel}`;
 
@@ -1338,14 +1342,6 @@ window.GymApp.pages['revenue'] = {
     this._chartType = 'default';
     this._selectedBranch = window.GymApp.selectedBranch || '';
 
-    // Tải danh sách chi nhánh
-    try {
-      const bRes = await fetch('assets/data/branches.json').then(r => r.json());
-      this._branches = bRes || [];
-    } catch (e) {
-      this._branches = [];
-    }
-
     this._updateRangeButtons();
     this._updateChartTypeSelect(); // Khởi tạo dropdown đúng theo bộ lọc mặc định
 
@@ -1389,14 +1385,6 @@ window.GymApp.pages['revenue'] = {
 
     await this._fetchAndRender();
 
-    // Lắng nghe sự kiện đổi chi nhánh
-    document.getElementById('rev-branch-filter')?.addEventListener('change', async function() {
-      self._selectedBranch = this.value;
-      window.GymApp.selectedBranch = this.value;
-      sessionStorage.setItem('selected_branch', this.value);
-      await self._fetchAndRender();
-      window.GymApp.toast('Đã lọc doanh thu theo chi nhánh!', 'success');
-    });
 
     // Lắng nghe đổi loại biểu đồ
     document.getElementById('rev-chart-type')?.addEventListener('change', function () {

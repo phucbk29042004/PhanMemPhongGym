@@ -52,9 +52,6 @@ window.GymApp.pages['dashboard'] = {
 
     const cardClass = "bg-white dark:bg-[#1e1e1e] rounded-2xl shadow-sm border-2 border-outline-variant/50 hover:-translate-y-1 hover:shadow-md transition-all duration-300";
 
-    const branches = this._branches || [];
-    const branchOptions = branches.map(b => `<option value="${b.ten}" ${this._selectedBranch === b.ten ? 'selected' : ''}>${b.ten}</option>`).join('');
-
     return `
       <div class="flex flex-col gap-3 animate-in fade-in duration-500 pb-6">
 
@@ -65,11 +62,7 @@ window.GymApp.pages['dashboard'] = {
              ${new Date().toLocaleDateString('vi-VN', { year:'numeric', month:'long', day:'numeric' })}
           </div>
           <div class="flex items-center gap-2 flex-wrap">
-            <select id="dash-branch-filter" class="bg-white dark:bg-[#1e1e1e] text-on-surface border border-outline-variant text-body-sm font-bold rounded-xl px-4 py-2 outline-none cursor-pointer">
-              <option value="">— Tất cả chi nhánh —</option>
-              ${branchOptions}
-            </select>
-            <button id="btn-dashboard-refresh" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border border-outline-variant bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer whitespace-nowrap">
+              <button id="btn-dashboard-refresh" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border border-outline-variant bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer whitespace-nowrap">
                <span id="dashboard-refresh-icon" class="material-symbols-outlined text-base" style="transition:transform 0.6s ease">refresh</span>
                <span id="dashboard-refresh-text">Tải lại dữ liệu</span>
             </button>
@@ -418,24 +411,7 @@ window.GymApp.pages['dashboard'] = {
     this._controlsReady = false;
     this._selectedBranch = window.GymApp.selectedBranch || '';
 
-    // Tải danh sách chi nhánh
-    try {
-      const bRes = await fetch('assets/data/branches.json').then(r => r.json());
-      this._branches = bRes || [];
-    } catch (e) {
-      this._branches = [];
-    }
-
     await self._fetchAndRender();
-
-    // Lắng nghe sự kiện đổi chi nhánh
-    document.getElementById('dash-branch-filter')?.addEventListener('change', async function() {
-      self._selectedBranch = this.value;
-      window.GymApp.selectedBranch = this.value;
-      sessionStorage.setItem('selected_branch', this.value);
-      await self._fetchAndRender();
-      window.GymApp.toast('Đã lọc theo chi nhánh!', 'success');
-    });
 
     document.getElementById('btn-dashboard-refresh')?.addEventListener('click', async () => {
       const btn = document.getElementById('btn-dashboard-refresh');
@@ -460,13 +436,6 @@ window.GymApp.pages['dashboard'] = {
 
   _bindDashboardControls: function () {
     const self = this;
-    document.getElementById('dash-branch-filter')?.addEventListener('change', async function() {
-      self._selectedBranch = this.value;
-      window.GymApp.selectedBranch = this.value;
-      sessionStorage.setItem('selected_branch', this.value);
-      await self._fetchAndRender();
-      window.GymApp.toast('Đã lọc theo chi nhánh!', 'success');
-    });
 
     document.getElementById('btn-dashboard-refresh')?.addEventListener('click', async () => {
       const btn = document.getElementById('btn-dashboard-refresh');
