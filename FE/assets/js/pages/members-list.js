@@ -1692,11 +1692,7 @@ window.GymApp.pages['members-list'] = {
         m = self._syncExpiredPackages(m);
         pkgHistory = Array.isArray(historyRes.data) ? historyRes.data : [];
         memberSchedules = Array.isArray(schedRes.data) ? schedRes.data : [];
-<<<<<<< HEAD
-        
-=======
 
->>>>>>> main
         self._memberFiltered = [...(window.GymApp.data.members || [])];
         self._refreshMemberTable();
       } catch (_) { }
@@ -3110,16 +3106,6 @@ window.GymApp.pages['members-list'] = {
         const to = new Date(fromVal);
         to.setMonth(to.getMonth() + soThang);
         document.getElementById('ptreg-to').value = to.toISOString().split('T')[0];
-        
-        if (!e || e.target.id !== 'ptreg-sessions') {
-          const diffDays = Math.ceil((to - from) / (1000 * 60 * 60 * 24));
-          document.getElementById('ptreg-sessions').value = diffDays;
-        }
-      } else if (numSessions > 0 && fromVal) {
-        const from = new Date(fromVal);
-        const to = new Date(fromVal);
-        to.setDate(to.getDate() + numSessions);
-        document.getElementById('ptreg-to').value = to.toISOString().split('T')[0];
 
         if (!e || e.target.id !== 'ptreg-sessions') {
           const diffDays = Math.ceil((to - from) / (1000 * 60 * 60 * 24));
@@ -3355,16 +3341,6 @@ window.GymApp.pages['members-list'] = {
         const from = new Date(fromVal);
         const to = new Date(fromVal);
         to.setMonth(to.getMonth() + soThang);
-        document.getElementById('ptedit-to').value = to.toISOString().split('T')[0];
-        
-        if (!e || e.target.id !== 'ptedit-sessions') {
-          const diffDays = Math.ceil((to - from) / (1000 * 60 * 60 * 24));
-          document.getElementById('ptedit-sessions').value = diffDays;
-        }
-      } else if (numSessions > 0 && fromVal) {
-        const from = new Date(fromVal);
-        const to = new Date(fromVal);
-        to.setDate(to.getDate() + numSessions);
         document.getElementById('ptedit-to').value = to.toISOString().split('T')[0];
 
         if (!e || e.target.id !== 'ptedit-sessions') {
@@ -3639,16 +3615,6 @@ window.GymApp.pages['members-list'] = {
         const from = new Date(fromVal);
         const to = new Date(fromVal);
         to.setMonth(to.getMonth() + soThang);
-        document.getElementById('ptswitch-to').value = to.toISOString().split('T')[0];
-        
-        if (!e || e.target.id !== 'ptswitch-sessions') {
-          const diffDays = Math.ceil((to - from) / (1000 * 60 * 60 * 24));
-          document.getElementById('ptswitch-sessions').value = diffDays;
-        }
-      } else if (numSessions > 0 && fromVal) {
-        const from = new Date(fromVal);
-        const to = new Date(fromVal);
-        to.setDate(to.getDate() + numSessions);
         document.getElementById('ptswitch-to').value = to.toISOString().split('T')[0];
 
         if (!e || e.target.id !== 'ptswitch-sessions') {
@@ -5059,19 +5025,11 @@ window.GymApp.pages['members-list'] = {
   _showCancelPtRegistrationModal: function (contractId, ptName, memberName) {
     const self = this;
     document.getElementById('gym-sub-modal')?.remove();
-<<<<<<< HEAD
-    
-    const overlay = document.createElement('div');
-    overlay.id = 'gym-sub-modal';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(15, 23, 42, 0.45);backdrop-filter:blur(8px);padding:16px;';
-    
-=======
 
     const overlay = document.createElement('div');
     overlay.id = 'gym-sub-modal';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(15, 23, 42, 0.45);backdrop-filter:blur(8px);padding:16px;';
 
->>>>>>> main
     overlay.innerHTML = `
       <div class="modal-card bg-surface-container-lowest border border-outline-variant animate-in zoom-in-95 duration-200" style="border-radius:24px;width:100%;max-width:500px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(15,23,42,0.3);">
         
@@ -5131,36 +5089,22 @@ window.GymApp.pages['members-list'] = {
         
       </div>
     `;
-<<<<<<< HEAD
-    
-    document.body.appendChild(overlay);
-    
-=======
 
     document.body.appendChild(overlay);
 
->>>>>>> main
     // Bind modal close events
     const close = () => overlay.remove();
     overlay.querySelector('#close-cancel-modal').addEventListener('click', close);
     overlay.querySelector('#btn-close-cancel-modal').addEventListener('click', close);
     overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> main
     // Auto-focus and select text for quick editing
     const reasonInput = overlay.querySelector('#cancel-pt-reason');
     setTimeout(() => {
       reasonInput.focus();
       reasonInput.select();
     }, 100);
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> main
     // Submit cancel event
     overlay.querySelector('#btn-submit-cancel-modal').addEventListener('click', async () => {
       const reason = reasonInput.value.trim();
@@ -5169,15 +5113,9 @@ window.GymApp.pages['members-list'] = {
         reasonInput.focus();
         return;
       }
-<<<<<<< HEAD
-      
-      close();
-      
-=======
 
       close();
 
->>>>>>> main
       self._showLoadingOverlay('Đang hủy hợp đồng PT...');
       try {
         const res = await window.GymApp.api.put(`/pt/registrations/${contractId}/cancel`, { ly_do: reason });
@@ -5223,11 +5161,7 @@ window.GymApp.pages['members-list'] = {
       overlay.style.color = '#fff';
       overlay.style.fontFamily = 'Inter, sans-serif';
       overlay.style.transition = 'opacity 0.25s ease';
-<<<<<<< HEAD
-      
-=======
 
->>>>>>> main
       overlay.innerHTML = `
         <div style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); padding: 24px 40px; border-radius: 20px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3); display: flex; flex-direction: column; align-items: center; gap: 16px;">
           <div style="width: 48px; height: 48px; border: 4px solid rgba(255, 255, 255, 0.1); border-top-color: #22c55e; border-radius: 50%; animation: spin-loading-overlay 0.8s linear infinite;"></div>
