@@ -38,6 +38,7 @@ import Svg, {
 } from 'react-native-svg';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuthStore } from '../../store/useAuthStore';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -121,6 +122,7 @@ function formatDate(dateStr) {
 
 export default function AdminRevenueScreen({ navigation }) {
   const { colors, isDark } = useTheme();
+  const { selectedBranch, setSelectedBranch } = useAuthStore();
   const insets = useSafeAreaInsets();
 
   const [filter, setFilter] = useState('7'); // 'today' | 'yesterday' | '7' | '30' | 'compare'
@@ -269,29 +271,40 @@ export default function AdminRevenueScreen({ navigation }) {
     );
   };
 
+  const [branches, setBranches] = useState([]);
+
   const fetchRevenueData = useCallback(async (selectedFilter, m1 = month1, m2 = month2) => {
     try {
+      const q = selectedBranch ? `?chi_nhanh=${encodeURIComponent(selectedBranch)}` : '';
+      const andQ = selectedBranch ? `&chi_nhanh=${encodeURIComponent(selectedBranch)}` : '';
+
       if (selectedFilter === 'today') {
-        const res = await api.get('/revenue/today');
+        const res = await api.get(`/revenue/today${q}`);
         if (res.data?.success) {
           setData({ type: 'today', ...res.data.data });
         }
       } else if (selectedFilter === 'yesterday') {
-        const res = await api.get('/revenue/yesterday');
+        const res = await api.get(`/revenue/yesterday${q}`);
         if (res.data?.success) {
           setData({ type: 'yesterday', ...res.data.data });
         }
       } else if (selectedFilter === 'compare') {
-        const res = await api.get(`/revenue/compare-months?month1=${m1}&month2=${m2}`);
+        const res = await api.get(`/revenue/compare-months?month1=${m1}&month2=${m2}${andQ}`);
         if (res.data?.success) {
           setData({ type: 'compare', ...res.data.data });
         }
       } else {
         const days = parseInt(selectedFilter);
-        const res = await api.get(`/revenue?days=${days}`);
+        const res = await api.get(`/revenue?days=${days}${andQ}`);
         if (res.data?.success) {
           setData({ type: 'period', ...res.data.data });
         }
+      }
+
+      // Fetch branches list
+      const branchesRes = await api.get('/branches');
+      if (branchesRes.data?.success) {
+        setBranches(branchesRes.data.data || []);
       }
     } catch (err) {
       console.error('[AdminRevenue] fetch error:', err?.message);
@@ -300,14 +313,14 @@ export default function AdminRevenueScreen({ navigation }) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [month1, month2]);
+  }, [month1, month2, selectedBranch]);
 
   useEffect(() => {
     setLoading(true);
     setTxPage(1);
     setPkgPage(1);
     fetchRevenueData(filter);
-  }, [filter, fetchRevenueData]);
+  }, [filter, fetchRevenueData, selectedBranch]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -1202,6 +1215,40 @@ export default function AdminRevenueScreen({ navigation }) {
           />
         </View>
       )}
+
+      {/* ── Bộ lọc chi nhánh (ScrollView ngang) ── */}
+      <View style={{ backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: 8 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
+          <TouchableOpacity
+            style={[
+              { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16 },
+              { backgroundColor: selectedBranch === '' ? colors.primary : colors.surfaceVariant }
+            ]}
+            onPress={() => setSelectedBranch('')}
+          >
+            <Text style={{ fontSize: 12, fontWeight: '700', color: selectedBranch === '' ? '#fff' : colors.textSecondary }}>
+              Tất cả chi nhánh
+            </Text>
+          </TouchableOpacity>
+          {branches.map((b) => {
+            const isSelected = selectedBranch === b.ten;
+            return (
+              <TouchableOpacity
+                key={b.id || b.ten}
+                style={[
+                  { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16 },
+                  { backgroundColor: isSelected ? colors.primary : colors.surfaceVariant }
+                ]}
+                onPress={() => setSelectedBranch(b.ten)}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '700', color: isSelected ? '#fff' : colors.textSecondary }}>
+                  {b.ten}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}

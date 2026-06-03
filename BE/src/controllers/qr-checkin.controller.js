@@ -137,11 +137,23 @@ export const scanQr = (req, res) => {
     }
   }
 
+  // Xác định chi nhánh thực hiện check-in
+  let branch = chi_nhanh;
+  if (!branch) {
+    const actor = db.prepare('SELECT chi_nhanh FROM ho_so WHERE tai_khoan_id = ?').get(req.user.id);
+    if (actor && actor.chi_nhanh) {
+      branch = actor.chi_nhanh;
+    } else {
+      const member = db.prepare('SELECT chi_nhanh FROM ho_so WHERE id = ?').get(ho_so_id);
+      branch = member ? member.chi_nhanh : null;
+    }
+  }
+
   // Ghi nhận check-in / check-out
   const result = db.prepare(`
-    INSERT INTO luot_vao_ra (ho_so_id, loai, phuong_thuc, ghi_chu)
-    VALUES (?, ?, 'qr_code', ?)
-  `).run(ho_so_id, loaiCheckin, chi_nhanh ? `Chi nhánh: ${chi_nhanh} (${labelAction})` : labelAction);
+    INSERT INTO luot_vao_ra (ho_so_id, loai, phuong_thuc, ghi_chu, chi_nhanh_thuc_hien)
+    VALUES (?, ?, 'qr_code', ?, ?)
+  `).run(ho_so_id, loaiCheckin, chi_nhanh ? `Chi nhánh: ${chi_nhanh} (${labelAction})` : labelAction, branch);
 
   // Cập nhật da_checkin = 1 cho các buổi tập PT của hội viên này hôm nay
   if (loaiCheckin === 'vao' && !isPt) {

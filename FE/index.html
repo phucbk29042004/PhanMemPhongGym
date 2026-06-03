@@ -95,6 +95,7 @@
 
   <script>
     window.GymApp = {
+      selectedBranch: sessionStorage.getItem('selected_branch') || '',
       data: {
         members: [], pts: [], packages: [], checkins: [], ptSchedules: [], ptBookings: [], stats: null
       },
@@ -119,26 +120,16 @@
         </button>
         <div class="sidebar-label flex items-center gap-compact overflow-hidden flex-1">
           <!-- White Hexagon Logo -->
-          <svg viewBox="0 0 45 45" width="32" height="32" class="flex-shrink-0">
-            <polygon points="22.5,2 42,13 42,35 22.5,46 3,35 3,13" fill="#ffffff" stroke="#166534" stroke-width="1.5" />
-            <path d="M19,37 C19,31 18,24 20,15" fill="none" stroke="#14532d" stroke-width="3" stroke-linecap="round" />
-            <path d="M20,15 C23,11 31,11 34,15 C36,18 35,24 29,26 C24,27 20,26.5 20,26.5" fill="none" stroke="#14532d"
-              stroke-width="2.5" stroke-linecap="round" />
-            <path d="M20.5,19 C24,18 28.5,18.5 30,21" fill="none" stroke="#14532d" stroke-width="1.2"
-              stroke-linecap="round" />
-            <path d="M20,23.5 C23.5,23 27,24 28.5,22.5" fill="none" stroke="#14532d" stroke-width="1"
-              stroke-linecap="round" />
-          </svg>
           <div class="min-w-0">
             <svg viewBox="0 0 190 40" width="140" height="30" style="display:block;">
               <g font-family="'Outfit', 'Inter', 'Roboto', sans-serif" font-weight="800" font-size="22">
-                <text x="5" y="27" fill="#1D9336" letter-spacing="-0.5">arad</text>
-                <text x="53" y="27" fill="#1D9336" letter-spacing="-0.5">ı</text>
-                <path d="M54.5,10 C56.5,8 59,8 59.5,10 C59.5,12.5 57,14 55.5,14 C54.5,14 53.5,12.5 54.5,10 Z"
+                <text x="5" y="27" fill="#1D9336" letter-spacing="-0.5">Parad</text>
+                <text x="68" y="27" fill="#1D9336" letter-spacing="-0.5">ı</text>
+                <path d="M69.5,10 C71.5,8 74,8 74.5,10 C74.5,12.5 72,14 70.5,14 C69.5,14 68.5,12.5 69.5,10 Z"
                   fill="#16a34a" />
-                <text x="64" y="27" fill="#14532d" letter-spacing="-0.5">seGy</text>
-                <text x="112" y="27" fill="#14532d" letter-spacing="-0.5">m</text>
-                <g transform="translate(116, 9) rotate(15)">
+                <text x="79" y="27" fill="#14532d" letter-spacing="-0.5">seGy</text>
+                <text x="127" y="27" fill="#14532d" letter-spacing="-0.5">m</text>
+                <g transform="translate(131, 9) rotate(15)">
                   <line x1="1" y1="8" x2="13" y2="2" stroke="#1D9336" stroke-width="1.5" stroke-linecap="round" />
                   <rect x="0" y="5" width="2.5" height="5" rx="0.8" fill="#14532d" />
                   <rect x="-2" y="4" width="2" height="7" rx="0.8" fill="#1D9336" />
@@ -337,13 +328,9 @@
 
         <!-- Right Actions -->
         <div class="flex items-center gap-standard">
-          <button id="btn-qr-scan"
-            class="flex items-center gap-xs px-compact py-xs rounded-lg bg-brand-primary text-white hover:bg-[#157a2a] transition-all font-bold text-body-sm"
-            title="Quét QR Check-in hội viên" style="font-size:13px">
-            <span class="material-symbols-outlined text-white"
-              style="font-size:16px;font-variation-settings:'FILL' 1">qr_code_scanner</span>
-            Quét QR
-          </button>
+          <select id="header-branch-filter" class="bg-white dark:bg-[#1e1e1e] text-on-surface border border-outline-variant text-body-sm font-bold rounded-xl px-4 py-2 outline-none cursor-pointer">
+            <option value="">Tất cả chi nhánh</option>
+          </select>
 
           <!-- Bell Icon Notifications -->
           <div class="relative" id="notif-wrapper">
@@ -398,6 +385,11 @@
                   <span class="material-symbols-outlined text-lg">person</span>
                   Thông tin cá nhân
                 </button>
+                <button id="btn-admin-qr-scan"
+                  class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container rounded-lg transition-colors">
+                  <span class="material-symbols-outlined text-lg">qr_code_scanner</span>
+                  Quét QR
+                </button>
                 <button id="btn-admin-change-password"
                   class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container rounded-lg transition-colors">
                   <span class="material-symbols-outlined text-lg">key</span>
@@ -428,10 +420,6 @@
               class="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mx-auto mb-standard shadow-md border border-outline-variant/30">
               <!-- White Hexagon Logo -->
               <svg viewBox="0 0 45 45" width="56" height="56" class="flex-shrink-0">
-                <polygon points="22.5,2 42,13 42,35 22.5,46 3,35 3,13" fill="#ffffff" stroke="#166534"
-                  stroke-width="1.5" />
-                <path d="M19,37 C19,31 18,24 20,15" fill="none" stroke="#14532d" stroke-width="3"
-                  stroke-linecap="round" />
                 <path d="M20,15 C23,11 31,11 34,15 C36,18 35,24 29,26 C24,27 20,26.5 20,26.5" fill="none"
                   stroke="#14532d" stroke-width="2.5" stroke-linecap="round" />
                 <path d="M20.5,19 C24,18 28.5,18.5 30,21" fill="none" stroke="#14532d" stroke-width="1.2"
@@ -443,13 +431,13 @@
             <div class="flex items-center justify-center mb-standard">
               <svg viewBox="0 0 190 40" width="140" height="30" style="display:block;">
                 <g font-family="'Outfit', 'Inter', 'Roboto', sans-serif" font-weight="800" font-size="22">
-                  <text x="5" y="27" fill="#1D9336" letter-spacing="-0.5">arad</text>
-                  <text x="53" y="27" fill="#1D9336" letter-spacing="-0.5">ı</text>
-                  <path d="M54.5,10 C56.5,8 59,8 59.5,10 C59.5,12.5 57,14 55.5,14 C54.5,14 53.5,12.5 54.5,10 Z"
+                  <text x="5" y="27" fill="#1D9336" letter-spacing="-0.5">Parad</text>
+                  <text x="68" y="27" fill="#1D9336" letter-spacing="-0.5">ı</text>
+                  <path d="M69.5,10 C71.5,8 74,8 74.5,10 C74.5,12.5 72,14 70.5,14 C69.5,14 68.5,12.5 69.5,10 Z"
                     fill="#16a34a" />
-                  <text x="64" y="27" fill="#14532d" letter-spacing="-0.5">seGy</text>
-                  <text x="112" y="27" fill="#14532d" letter-spacing="-0.5">m</text>
-                  <g transform="translate(116, 9) rotate(15)">
+                  <text x="79" y="27" fill="#14532d" letter-spacing="-0.5">seGy</text>
+                  <text x="127" y="27" fill="#14532d" letter-spacing="-0.5">m</text>
+                  <g transform="translate(131, 9) rotate(15)">
                     <line x1="1" y1="8" x2="13" y2="2" stroke="#1D9336" stroke-width="1.5" stroke-linecap="round" />
                     <rect x="0" y="5" width="2.5" height="5" rx="0.8" fill="#14532d" />
                     <rect x="-2" y="4" width="2" height="7" rx="0.8" fill="#1D9336" />
@@ -712,6 +700,22 @@
             <span class="material-symbols-outlined text-[16px]">send</span> Gửi ngay
           </button>
         </div>
+      </div>
+    </div>
+  <!-- Modal Chọn Chi Nhánh khi Login (Dành cho Admin/Lễ tân) -->
+  </div>
+  <div id="modal-select-branch-startup" style="display: none;"
+    class="fixed inset-0 z-[9200] bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
+    <div
+      class="bg-white/90 dark:bg-[#1e1e1e]/90 border border-outline-variant/40 rounded-3xl w-full max-w-sm shadow-2xl relative overflow-hidden flex flex-col p-6 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200">
+      <div class="text-center mb-6">
+        <span class="material-symbols-outlined text-[#3ecf8e] text-4xl mb-2 animate-bounce">storefront</span>
+        <h3 class="font-extrabold text-lg text-on-surface">Chọn chi nhánh quản lý</h3>
+        <p class="text-on-surface-variant text-xs mt-1">Vui lòng chọn phạm vi dữ liệu bạn muốn làm việc</p>
+      </div>
+
+      <div class="flex flex-col gap-3" id="startup-branch-options">
+        <!-- Render động từ JS -->
       </div>
     </div>
   </div>

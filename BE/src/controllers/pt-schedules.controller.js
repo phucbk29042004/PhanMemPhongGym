@@ -20,10 +20,15 @@ const toJson = (value) => {
 // ── GET /api/pt/schedules ─────────────────────────────────
 // Xem lịch tập toàn phòng (admin) hoặc lịch cá nhân (PT/hội viên)
 export const getSchedules = (req, res) => {
-  const { date, pt_id, hoi_vien_id, trang_thai } = req.query;
+  const { date, pt_id, hoi_vien_id, trang_thai, chi_nhanh } = req.query;
 
   let where = 'WHERE 1=1';
   const params = [];
+
+  if (chi_nhanh) {
+    where += ' AND lt.chi_nhanh_tap = ?';
+    params.push(chi_nhanh);
+  }
 
   // Nếu là PT: chỉ xem lịch của mình
   if (req.user.vai_tro === 'pt') {
@@ -48,7 +53,7 @@ export const getSchedules = (req, res) => {
     SELECT
       lt.id, lt.ngay_tap, lt.gio_bat_dau, lt.gio_ket_thuc,
       lt.loai_buoi, lt.trang_thai, lt.ghi_chu, lt.ly_do_huy,
-      lt.pt_xac_nhan, lt.hv_xac_nhan,
+      lt.pt_xac_nhan, lt.hv_xac_nhan, lt.chi_nhanh_tap,
       hv.id AS hoi_vien_id, hv.ho_ten AS ten_hoi_vien, hv.avatar_url AS avatar_hoi_vien,
       pt.id AS pt_id, pt.ho_ten AS ten_pt, pt.avatar_url AS avatar_pt,
       (dk.so_buoi_dang_ky - dk.so_buoi_da_tap) AS buoi_con_lai,
@@ -133,10 +138,17 @@ export const createSchedule = (req, res) => {
 
   if (memberConflict) return error(res, 'Hội viên đã có lịch tập khác trong khung giờ này.', 409);
 
+  const { chi_nhanh_tap } = req.body;
+  let branchTap = chi_nhanh_tap;
+  if (!branchTap) {
+    const ptProfile = db.prepare('SELECT chi_nhanh FROM ho_so WHERE id = ?').get(dkpt.pt_id);
+    branchTap = ptProfile ? ptProfile.chi_nhanh : null;
+  }
+
   const result = db.prepare(`
-    INSERT INTO lich_tap (dang_ky_pt_id, pt_id, hoi_vien_id, ngay_tap, gio_bat_dau, gio_ket_thuc, loai_buoi, ghi_chu, nguoi_tao_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(dang_ky_pt_id, dkpt.pt_id, dkpt.hoi_vien_id, ngay_tap, gio_bat_dau, gio_ket_thuc, loai_buoi, ghi_chu || null, req.user.id);
+    INSERT INTO lich_tap (dang_ky_pt_id, pt_id, hoi_vien_id, ngay_tap, gio_bat_dau, gio_ket_thuc, loai_buoi, ghi_chu, nguoi_tao_id, chi_nhanh_tap)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(dang_ky_pt_id, dkpt.pt_id, dkpt.hoi_vien_id, ngay_tap, gio_bat_dau, gio_ket_thuc, loai_buoi, ghi_chu || null, req.user.id, branchTap);
 
   ghi_audit_log(req, 'CREATE', 'lich_tap', result.lastInsertRowid, null, { ngay_tap, gio_bat_dau, gio_ket_thuc }, 'Đặt lịch tập PT');
 

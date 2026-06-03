@@ -71,6 +71,10 @@
       });
     }
 
+    document.querySelectorAll('select[id$="-branch-filter"]').forEach(el => {
+      el.value = window.GymApp.selectedBranch || '';
+    });
+
     window.GymApp.currentPage = pageName;
 
     // Birthday: render page immediately, then auto-run celebration effect.
@@ -682,11 +686,12 @@
   // ===== DATA SYNC =====
   window.GymApp.fetchInitialData = async function () {
     try {
+      const branchQ = window.GymApp.selectedBranch ? `?chi_nhanh=${encodeURIComponent(window.GymApp.selectedBranch)}` : '';
       const [membersRes, ptsRes, packagesRes, dashboardRes, ptPackagesRes] = await Promise.all([
         window.GymApp.api.get('/members?limit=100'),
         window.GymApp.api.get('/trainers'),
         window.GymApp.api.get('/packages'),
-        window.GymApp.api.get('/revenue/dashboard'),
+        window.GymApp.api.get(`/revenue/dashboard${branchQ}`),
         window.GymApp.api.get('/packages/pt')
       ]);
 
@@ -721,18 +726,150 @@
     }
   };
 
+  // ===== STARTUP BRANCH SELECTION =====
+  async function _showStartupBranchModal() {
+    const modal = document.getElementById('modal-select-branch-startup');
+    const container = document.getElementById('startup-branch-options');
+    if (!modal || !container) return;
+
+    let branches = [];
+    try {
+      branches = await fetch('assets/data/branches.json').then(r => r.json());
+    } catch (e) {
+      console.error('Failed to load branches for startup modal', e);
+    }
+
+    let html = `
+      <button class="w-full flex items-center justify-between p-4 rounded-2xl bg-brand-primary/10 border-2 border-brand-primary text-brand-primary hover:bg-brand-primary/20 transition-all font-bold text-sm shadow-sm active:scale-98" data-branch="">
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-[20px]">language</span>
+          <span>Tất cả chi nhánh</span>
+        </div>
+        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+      </button>
+    `;
+
+    branches.forEach(b => {
+      html += `
+        <button class="w-full flex items-center justify-between p-4 rounded-2xl bg-surface-container-low border border-outline-variant hover:border-brand-primary hover:bg-brand-primary/5 text-on-surface hover:text-brand-primary transition-all font-bold text-sm active:scale-98" data-branch="${b.ten}">
+          <div class="flex items-center gap-3 text-left">
+            <span class="material-symbols-outlined text-[20px] text-on-surface-variant">store</span>
+            <div>
+              <p class="font-bold text-xs m-0 leading-tight">${b.ten}</p>
+              <p class="text-[10px] font-normal text-on-surface-variant m-0 mt-0.5 leading-none">${b.dia_chi}</p>
+            </div>
+          </div>
+          <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+        </button>
+      `;
+    });
+
+    container.innerHTML = html;
+    container.className = 'flex flex-col gap-2';
+
+    const allBranchButton = container.querySelector('button[data-branch=""]');
+    const branchButtons = Array.from(container.querySelectorAll('button[data-branch]:not([data-branch=""])'));
+    const list = document.createElement('div');
+    list.id = 'startup-branch-list';
+    list.className = 'grid grid-cols-1 gap-2 max-h-[42vh] overflow-y-auto pr-1';
+    list.style.cssText = 'scrollbar-width:thin;scrollbar-color:var(--outline-variant) transparent;';
+
+    branchButtons.forEach(btn => {
+      btn.classList.remove('p-4', 'rounded-2xl');
+      btn.classList.add('px-3', 'py-2.5', 'rounded-xl', 'startup-branch-item');
+      btn.dataset.search = btn.textContent.toLowerCase();
+      btn.querySelector('p:last-child')?.classList.remove('leading-none');
+      list.appendChild(btn);
+    });
+
+    if (allBranchButton) {
+      allBranchButton.classList.remove('p-4', 'rounded-2xl');
+      allBranchButton.classList.add('px-3', 'py-2.5', 'rounded-xl');
+      allBranchButton.insertAdjacentHTML('afterend', `
+        <div class="relative">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
+          <input id="startup-branch-search" type="text" placeholder="Tìm chi nhánh..."
+            class="w-full rounded-xl border border-outline-variant/60 bg-white dark:bg-[#1e1e1e] pl-9 pr-3 py-2 text-xs font-bold text-on-surface outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 transition-all" />
+        </div>
+      `);
+    }
+
+    container.appendChild(list);
+    container.insertAdjacentHTML('beforeend', '<p id="startup-branch-empty" class="hidden text-center text-on-surface-variant text-xs py-4">Không tìm thấy chi nhánh phù hợp</p>');
+
+    const modalCard = modal.firstElementChild;
+    if (modalCard) {
+      modalCard.style.maxHeight = '88vh';
+      modalCard.style.maxWidth = '460px';
+    }
+    modal.classList.remove('hidden');
+    modal.style.setProperty('display', 'flex', 'important');
+
+    return new Promise((resolve) => {
+      const searchInput = document.getElementById('startup-branch-search');
+      const emptyEl = document.getElementById('startup-branch-empty');
+      searchInput?.addEventListener('input', function () {
+        const keyword = this.value.trim().toLowerCase();
+        let visibleCount = 0;
+        container.querySelectorAll('.startup-branch-item').forEach(btn => {
+          const visible = !keyword || (btn.dataset.search || '').includes(keyword);
+          btn.style.display = visible ? 'flex' : 'none';
+          if (visible) visibleCount++;
+        });
+        emptyEl?.classList.toggle('hidden', visibleCount > 0);
+      });
+
+      container.querySelectorAll('button[data-branch]').forEach(btn => {
+        btn.addEventListener('click', function () {
+          const branch = this.dataset.branch;
+          sessionStorage.setItem('selected_branch', branch);
+          window.GymApp.selectedBranch = branch;
+          modal.style.setProperty('display', 'none', 'important');
+          modal.classList.add('hidden');
+          resolve();
+        });
+      });
+    });
+  }
+
   // ===== DOM READY =====
+  async function _initBranchFilter() {
+    const headerSelect = document.getElementById('header-branch-filter');
+    if (!headerSelect) return;
+
+    let branches = [];
+    try {
+      branches = await fetch('assets/data/branches.json').then(r => r.json());
+    } catch (e) {
+      branches = [];
+    }
+
+    const branchOptions = ['<option value="">Tất cả chi nhánh</option>']
+      .concat(branches.map(b => `<option value="${b.ten}">${b.ten}</option>`))
+      .join('');
+
+    headerSelect.innerHTML = branchOptions;
+    headerSelect.value = window.GymApp.selectedBranch || '';
+
+    headerSelect.addEventListener('change', async function () {
+      const branch = this.value;
+      window.GymApp.selectedBranch = branch;
+      sessionStorage.setItem('selected_branch', branch);
+      document.querySelectorAll('select[id$="-branch-filter"]').forEach(el => {
+        el.value = branch;
+      });
+      if (window.GymApp.currentPage) {
+        window.GymApp.navigate(window.GymApp.currentPage);
+      }
+      window.GymApp.toast(branch ? `Đã lọc theo chi nhánh ${branch}` : 'Đã xóa bộ lọc chi nhánh', 'success');
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', async function () {
     console.log('Paradise GYM: DOMContentLoaded');
 
-    // 1. Kiểm tra xác thực (Auth)
-    try {
-      const isAuthenticated = await window.GymApp.auth.init();
-      if (!isAuthenticated) return;
-    } catch (e) {
-      console.error('Auth check failed:', e);
-      // Nếu auth.js chưa load kịp hoặc bị lỗi, cho phép chạy tiếp nhưng báo lỗi
-    }
+
+
 
     // 2. Đồng bộ dữ liệu SQL
     try {
@@ -743,6 +880,9 @@
 
     // 3. Áp dụng Theme
     _applyTheme(localStorage.getItem('gym-theme') || 'light');
+
+    // 4. Khởi tạo header branch filter
+    await _initBranchFilter();
     // Sidebar dark-mode handlers cần DOM sẵn
     setTimeout(() => _applySidebarDarkMode(document.documentElement.classList.contains('dark')), 0);
 
@@ -774,6 +914,10 @@
     });
 
     document.getElementById('btn-qr-scan')?.addEventListener('click', () => {
+      window._openQrModal?.();
+    });
+
+    document.getElementById('btn-admin-qr-scan')?.addEventListener('click', () => {
       window._openQrModal?.();
     });
 

@@ -7,7 +7,11 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
+<<<<<<< HEAD
 **✅ Hỗ trợ tính năng Import Hội viên hàng loạt từ Excel & ZIP** — Tích hợp thành công modal upload file ZIP, giải nén trong bộ nhớ ở backend, map ảnh đại diện qua cột excel "Tên file ảnh" và upload Cloudinary bất đồng bộ.
+=======
+**✅ Hoàn tất Quản lý Đa Chi Nhánh & Tích hợp Modal Chọn Chi Nhánh Đăng nhập** — Sửa sạch lỗi merge conflict database, cập nhật tự động view trạng thái hội viên, và thiết kế thêm Modal chọn chi nhánh cho Admin/Quản lý ngay sau khi đăng nhập Web.
+>>>>>>> main
 
 ---
 
@@ -19,6 +23,7 @@
 - **Mô tả**: Tinh chỉnh toàn bộ padding, margins, và chiều cao của các trường nhập liệu (py-1.5 -> py-1, mb-1.5 -> mb-1) và các card phụ (Quy định giao dịch, Biên lai tạm tính) ở tab Đăng ký gói dịch vụ thành phong cách compact. Việc này giúp giảm chiều cao tổng thể của tab xuống khoảng 70px, làm cho toàn bộ giao diện, bao gồm cả cụm nút Lưu dưới cùng, nằm trọn vẹn trong khung hình (viewport) mà không gây tràn trang và không xuất hiện thanh cuộn dọc ngoài cùng.
 - **Kết quả**: Thành công — Tab 2 hiển thị khít đẹp, vừa vặn trên các màn hình máy tính có độ phân giải thông thường.
 
+<<<<<<< HEAD
 ### [02/06/2026 09:15] — Chặn trùng lặp SĐT/CCCD/Email và sửa lỗi crash thông báo khi lưu hồ sơ
 - **Loại**: Sửa lỗi & Tính năng mới (Fullstack)
 - **File**: `BE/src/controllers/members.controller.js`, `FE/assets/js/pages/member-add.js`
@@ -172,6 +177,119 @@
 - **Kết quả**: Thành công — nodemon tự động khởi chạy lại ổn định, dữ liệu doanh thu hiển thị đúng.
 =======
 =======
+=======
+### [03/06/2026 10:48] — Đồng bộ hiệu ứng hover đổi màu chuẩn xác cho toàn bộ dòng bao gồm cả các cột cố định (Sticky)
+- **Loại**: Cải tiến UI/UX (Frontend Web)
+- **File**: `FE/assets/js/pages/members-list.js`
+- **Mô tả**:
+  - Thêm hiệu ứng transition chuyển màu nền mượt mà cho `.sticky-col-left` và `.sticky-col-right` (`transition: background-color 0.15s ease-in-out`).
+  - Sử dụng các mã màu đơn sắc (solid color) được pha trộn chuẩn xác để hover các cột cố định khớp hoàn toàn với màu hover của các cột trong suốt ở giữa:
+    - Light Mode (Chẵn): `#f4faf5` (Trắng + 5% xanh thương hiệu)
+    - Light Mode (Lẻ): `#eff5f0` (Xám `#fafafa` + 5% xanh thương hiệu)
+    - Dark Mode (Chẵn): `#1e2a20`
+    - Dark Mode (Lẻ): `#162320`
+- **Kết quả**: Thành công.
+
+### [03/06/2026 10:44] — Di chuyển gradient từ container sang scrollbar track để sửa dứt điểm lỗi lổm trắng ở cột sticky
+- **Loại**: Cải tiến UI/UX & Sửa bug (Frontend Web)
+- **File**: `FE/assets/js/pages/members-list.js`
+- **Mô tả**:
+  - Gỡ bỏ thuộc tính `background: linear-gradient` ở container `#members-scroll-container` và `#pt-scroll-container`.
+  - Thay vào đó, áp dụng trực tiếp dải màu gradient cho `::-webkit-scrollbar-track` của 2 bảng: tô màu xanh lục (`#1D9336` / `#065f46`) ở phạm vi 40px đầu (khớp chiều cao thực tế của header) và trong suốt ở phần phía dưới.
+  - Giải quyết triệt để lỗi khuyết màu trắng (lổm trắng) ở cột sticky trái/phải khi cuộn, do nền gradient của container không bị tràn xuống đè lên nền các dòng dữ liệu cố định nữa.
+- **Kết quả**: Thành công.
+
+### [03/06/2026 10:38] — Tùy biến scrollbar & tăng chiều cao gradient nền để sửa dứt điểm lỗi lổm trắng góc bảng
+- **Loại**: Cải tiến UI/UX & Sửa bug (Frontend Web)
+- **File**: `FE/assets/js/pages/members-list.js`
+- **Mô tả**:
+  - Tùy biến CSS scrollbar cho `#members-scroll-container` bằng cách làm cho track và corner của scrollbar trong suốt (`background: transparent !important`).
+  - Tăng chiều cao của gradient màu xanh nền của container bảng từ `38px` lên `48px` để che phủ hoàn toàn chiều cao thực tế của header table (khoảng `40-42px`), ngăn chặn hoàn toàn việc lộ khoảng màu trắng ở góc dưới bên phải cột Thao tác.
+- **Kết quả**: Thành công.
+
+### [03/06/2026 10:33] — Tích hợp Infinite Scroll cho Nhật ký & Cố định cột Danh sách hội viên
+- **Loại**: Cải tiến UI/UX & Sửa lỗi hiển thị (Frontend Web)
+- **File**: `FE/assets/js/pages/audit-logs.js`, `FE/assets/js/pages/members-list.js`
+- **Mô tả**:
+  - Chuyển đổi cơ chế phân trang nút bấm truyền thống trên trang Nhật ký kiểm tra (`audit-logs.js`) sang cuộn vô hạn (infinite scroll) trên cả table (desktop) và card list (mobile).
+  - Cố định cột Họ và tên (sticky left) và cột Thao tác (sticky right) khi cuộn ngang trên trang Danh sách hội viên (`members-list.js`). Đồng bộ màu nền dòng chẵn/lẻ (cho cả Light/Dark Mode) của các cột cố định này để giải quyết triệt để lỗi "lổm" màu do thanh scrollbar đè lên.
+- **Kết quả**: Thành công.
+
+### [03/06/2026 10:28] — Sửa lỗi SQL khi so sánh doanh thu các tháng theo chi nhánh
+- **Loại**: Sửa bug (Backend)
+- **File**: `BE/src/controllers/revenue.controller.js`
+- **Mô tả**: Sửa lỗi `no such column: h.chi_nhanh` xảy ra khi gọi API so sánh doanh thu các tháng `/revenue/compare-months` có lọc theo chi nhánh bằng cách thêm `JOIN ho_so h ON h.id = dk.ho_so_id` trong truy vấn SQL gói tập bán chạy `packageStats`.
+- **Kết quả**: Thành công.
+
+### [03/06/2026 10:00] — Đồng bộ hoàn toàn bộ lọc chi nhánh thống kê gói Gym từ Backend
+- **Loại**: Sửa bug & Tối ưu hóa API (Fullstack)
+- **File**: `BE/src/controllers/revenue.controller.js`
+- **Mô tả**:
+  - Khắc phục triệt để lỗi không hiển thị dữ liệu "Gói tập bán chạy" và doanh thu gói Gym khi chuyển sang lọc theo một chi nhánh cụ thể trên trang Báo cáo doanh thu (chỉ hiện khi chọn Tất cả chi nhánh).
+  - Thay thế toàn bộ logic lọc `dk.chi_nhanh_dang_ky` cũ trong các hàm `getRevenueToday`, `getRevenueYesterday`, `getDashboard` và `getCompareMonths` của `revenue.controller.js` bằng cách `JOIN ho_so h ON h.id = dk.ho_so_id` và lọc theo chi nhánh của hội viên `h.chi_nhanh = ?`.
+  - Đồng bộ hóa dữ liệu lọc chính xác giữa hệ thống Web và Mobile App.
+- **Kết quả**: Thành công.
+
+### [03/06/2026 09:30] — Tự động đăng ký gói Gym & PT và gán chi nhánh mẫu cho hội viên chưa có gói
+- **Loại**: Cập nhật cơ sở dữ liệu & Nghiệp vụ backend
+- **File**: `BE/src/config/db.js`, `BE/src/routes/members.routes.js`
+- **Mô tả**:
+  - Gán chi nhánh ngẫu nhiên dựa trên danh sách chi nhánh chuẩn trong file `branches.json` cho các hội viên chưa được gán chi nhánh.
+  - Tự động đăng ký gói Gym và gói PT mẫu đang hoạt động cho toàn bộ hội viên hiện tại chưa có gói để phục vụ kiểm thử bộ lọc chi nhánh.
+  - Dọn dẹp sạch sẽ các câu lệnh và endpoint đăng ký tạm thời sau khi cập nhật thành công để bảo mật hệ thống.
+- **Kết quả**: Thành công.
+
+### [03/06/2026 09:03] — Đồng bộ bộ lọc chi nhánh chung & Bổ sung cột chi nhánh
+- **Loại**: Cải tiến tính năng & Sửa bug (Frontend Web)
+- **File**: `FE/assets/js/pages/checkin.js`, `FE/assets/js/pages/members-list.js`, `FE/assets/js/pages/pt-training.js`, `FE/assets/js/pages/expired.js`
+- **Mô tả**:
+  - **Sửa checkin.js**: Khắc phục lỗi gọi sai hàm phân trang `window.GymApp.pagination` thành `window.GymApp.renderPagination`, giúp trang hoạt động bình thường, các nút bấm click được bình thường.
+  - **Lọc hội viên & PT**: Tích hợp bộ lọc chi nhánh chung `window.GymApp.selectedBranch` vào trang Danh sách hội viên (`members-list.js`) và trang Lịch đào tạo PT (`pt-training.js`) để tự động lọc dữ liệu cục bộ và thống kê khi đổi chi nhánh ở Header.
+  - **Trang hết hạn**: Tích hợp lọc theo chi nhánh chung. Bổ sung cột hiển thị **Chi nhánh** cho cả hai bảng "Hội viên hết hạn" và "Sắp hết hạn" để dễ quản lý cơ sở nguồn của khách hàng.
+- **Kết quả**: Thành công.
+
+### [03/06/2026 08:56] — Sửa lỗi cú pháp checkin.js
+- **Loại**: Sửa bug (Frontend Web)
+- **File**: `FE/assets/js/pages/checkin.js`
+- **Mô tả**: Sửa lỗi `Uncaught SyntaxError: Unexpected token 'class'` do mã nguồn bị ghi đè trùng lặp và truncated. Khôi phục hoàn toàn cấu trúc SPA Vanilla JS sạch cho trang check-in.
+- **Kết quả**: Thành công.
+
+### [02/06/2026 14:53] — Khắc phục lỗi kẹt màn hình loading vô hạn khi khởi động Web
+- **Loại**: Sửa bug (Frontend Web)
+- **File**: `FE/index.html`, `FE/assets/js/app.js`
+- **Mô tả**:
+  - **Khắc phục xung đột CSS**: Loại bỏ hoàn toàn lớp `hidden` của Tailwind CSS khỏi `#modal-select-branch-startup` trong `index.html` và thay thế bằng `style="display: none;"`. Điều này ngăn chặn việc lớp `hidden` (với thuộc tính `!important` từ Tailwind CDN) chặn đứng hiển thị của modal.
+  - **Tối ưu hóa mã JavaScript**: Chỉnh sửa hàm `_showStartupBranchModal()` trong `app.js` để chỉ điều khiển hiển thị modal trực tiếp bằng `style.display = 'flex'` và ẩn bằng `style.display = 'none'`, gỡ bỏ các thao tác thừa với `classList.remove('hidden')` / `classList.add('hidden')`.
+  - **Khắc phục lỗi kẹt luồng (Await block)**: Đảm bảo Modal chọn chi nhánh hiển thị bình thường khi người dùng là quản trị viên/lễ tân đăng nhập lần đầu, cho phép nhấp chọn chi nhánh để tiếp tục chạy các tiến trình API và chuyển hướng về trang Dashboard.
+- **Kết quả**: Thành công.
+
+### [02/06/2026 14:41] — Sửa lỗi Database và Tích hợp Modal Chọn Chi Nhánh khi Đăng nhập
+- **Loại**: Sửa bug & Thêm tính năng mới (Fullstack)
+- **File**: `BE/src/config/db.js`, `FE/index.html`, `FE/assets/js/app.js`, `FE/assets/js/pages/dashboard.js`, `FE/assets/js/pages/revenue.js`
+- **Mô tả**:
+  - **Sửa lỗi Database**: Sửa lỗi xung đột merge conflict cú pháp SQLite trong `db.js`. Tích hợp kiểm tra tự động rebuild view `v_trang_thai_hoi_vien` nếu thiếu cột `chi_nhanh` lúc khởi chạy backend.
+  - **Giao diện Modal Chọn Chi Nhánh**: Thiết kế HTML/CSS Modal chọn chi nhánh dạng Glassmorphism hiển thị chặn màn hình khi Admin đăng nhập vào trang chủ mà chưa chọn chi nhánh quản lý.
+  - **Logic Đồng bộ phiên**: Tải các chi nhánh động từ `branches.json`. Lưu chi nhánh được chọn vào `sessionStorage` để đồng bộ lọc thông tin cho Dashboard và Doanh thu. Tự động áp dụng chi nhánh cố định cho tài khoản nhân viên cơ sở.
+- **Kết quả**: Thành công.
+
+### [02/06/2026 14:32] — Quản lý Đa Chi Nhánh đồng bộ Web & Mobile và sửa lỗi API Backend
+- **Loại**: Cải tiến tính năng & Sửa bug (Fullstack)
+- **File**: `BE/src/controllers/revenue.controller.js`, `FE/assets/js/pages/dashboard.js`, `FE/assets/js/pages/revenue.js`, `MobileApp/src/screens/admin/AdminDashboardScreen.js`, `MobileApp/src/screens/admin/AdminRevenueScreen.js`
+- **Mô tả**:
+  - **Sửa lỗi Backend**: Khắc phục lỗi `maxDay is not defined` ở API `getRevenue` của backend bằng cách tính và định nghĩa đúng số ngày lớn nhất của tháng hiện tại và tháng trước trước khi dựng mảng so sánh `monthComparison`.
+  - **Lọc chi nhánh Web**: Bổ sung dropdown lọc chi nhánh nạp từ `branches.json` ở giao diện chính Dashboard (`dashboard.js`) và Báo cáo Doanh thu (`revenue.js`), gửi tham số `chi_nhanh` tương ứng lên API Backend.
+  - **Lọc chi nhánh Mobile**: Tải danh sách chi nhánh và bổ sung thanh cuộn ngang chọn chi nhánh ở đầu màn hình Admin Dashboard (`AdminDashboardScreen.js`) và Admin Revenue (`AdminRevenueScreen.js`), lọc dữ liệu thống kê doanh thu và check-in thời gian thực theo cơ sở.
+- **Kết quả**: Thành công.
+
+### [02/06/2026 13:50] — Thiết kế lại Logo Paradise GYM và Tối ưu hóa bộ chọn giờ đặt lịch PT
+- **Loại**: Cải tiến giao diện UI/UX & logic ứng dụng (Fullstack)
+- **File**: `FE/index.html`, `FE/pt-portal.html`, `FE/member-portal.html`, `FE/login.html`, `FE/assets/js/pages/pt-register.js`
+- **Mô tả**:
+  - **Thiết kế lại Logo**: Cập nhật chữ `P` viết hoa trực tiếp vào SVG text logo của Paradise GYM ở cả 4 file HTML (`index.html` ở cả sidebar và loading screen, `pt-portal.html`, `member-portal.html`, `login.html` ở cả 2 bản trắng và xanh) để đồng điệu với các ký tự còn lại và giúp chữ đứng xích lại gần hơn, giữ nguyên logo lục giác làm biểu tượng thuần túy.
+  - **Tối ưu bộ chọn giờ**: Cập nhật file `pt-register.js` để tự động ẩn khung chọn giờ (time picker container) ngay khi người dùng chọn xong giờ bắt đầu. Thêm nút xóa (x) bên cạnh giờ hiển thị; khi người dùng nhấp vào nút này hoặc sau khi đặt lịch tập thành công, giờ được reset và khung chọn giờ sẽ xuất hiện trở lại.
+- **Kết quả**: Thành công.
+
+>>>>>>> main
 ### [02/06/2026 11:46] — Sửa lỗi trùng tên đăng nhập khi Import Excel lại sau khi xóa hội viên
 - **Loại**: Sửa bug (Backend)
 - **File**: `BE/src/controllers/members.controller.js`
@@ -1537,6 +1655,7 @@
   - **Cải tiến hiển thị check-in**: Bổ sung hiển thị badge loại tài khoản (HLV, HV, Lễ tân, NV) bên cạnh mã hồ sơ của từng người trong danh sách/bảng check-in để dễ phân biệt.
 - **Kết quả**: ✅ Khắc phục triệt để lỗi hiển thị sai trạng thái HLV. Thống kê check-in rõ ràng, trực quan hơn.
 
+<<<<<<< HEAD
 
 
 >>>>>>> main
@@ -1606,3 +1725,26 @@
   - Sau khi phản hồi được gửi đi, tiến trình chạy ngầm bắt đầu làm việc để upload từng bức ảnh lên Cloudinary và cập nhật lại `avatar_url` cho hội viên trong DB dưới nền.
   - Bổ sung ghi log tiến độ xử lý ảnh ngầm ra terminal console để dễ giám sát.
 - **Kết quả**: ✅ Hoàn thành. Ngăn ngừa hoàn toàn lỗi Timeout trình duyệt và lỗi tràn bộ nhớ khi import dữ liệu lớn lên đến hàng vạn hội viên.
+=======
+### [03/06/2026 09:50] — Đồng bộ bộ lọc chi nhánh toàn diện trên Backend và Mobile App
+- **Loại**: Cải tiến tính năng & Sửa lỗi đồng bộ (Fullstack)
+- **File**:
+  - `BE/src/controllers/revenue.controller.js`
+  - `BE/src/controllers/pt-registrations.controller.js`
+  - `BE/src/controllers/trainers.controller.js`
+  - `BE/src/controllers/pt-schedules.controller.js`
+  - `MobileApp/src/store/useAuthStore.js`
+  - `MobileApp/src/screens/admin/AdminDashboardScreen.js`
+  - `MobileApp/src/screens/admin/AdminRevenueScreen.js`
+  - `MobileApp/src/screens/admin/AdminPTScreen.js`
+  - `MobileApp/src/screens/admin/AdminMembersScreen.js`
+- **Mô tả**:
+  - **Backend**:
+    - Sửa stats.yeu_cau_cho_duyet trong `getDashboard` để lọc theo chi nhánh.
+    - Cập nhật các endpoint danh sách đăng ký PT (`getRegistrations`), danh sách huấn luyện viên (`getTrainers`), danh sách lịch tập PT (`getSchedules`) để hỗ trợ lọc theo tham số query `chi_nhanh`.
+  - **Mobile App**:
+    - Đưa trạng thái `selectedBranch` và `setSelectedBranch` vào Zustand store chung (`useAuthStore.js`) để đồng bộ phiên lọc trên toàn app.
+    - Cập nhật màn hình Dashboard, Revenue, PT, và Members để lấy/đổi chi nhánh qua store chung.
+    - Bổ sung thanh chọn chi nhánh (ScrollView ngang) và gửi tham số `chi_nhanh` khi gọi API trên màn hình PT và Members.
+- **Kết quả**: ✅ Hoàn thành đồng bộ bộ lọc chi nhánh toàn diện giữa Web và Mobile.
+>>>>>>> main

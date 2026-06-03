@@ -9,7 +9,7 @@ import { success, error } from '../utils/response.js';
 export const getAuditLogs = (req, res) => {
   const {
     page = 1, limit = 50,
-    tai_khoan_id, vai_tro, hanh_dong, doi_tuong,
+    tai_khoan_id, vai_tro, hanh_dong, doi_tuong, chi_nhanh,
     tu_ngay, den_ngay,
   } = req.query;
 
@@ -21,6 +21,10 @@ export const getAuditLogs = (req, res) => {
   if (vai_tro)      { where += ' AND a.vai_tro = ?';      params.push(vai_tro); }
   if (hanh_dong)    { where += ' AND a.hanh_dong = ?';    params.push(hanh_dong); }
   if (doi_tuong)    { where += ' AND a.doi_tuong = ?';    params.push(doi_tuong); }
+  if (chi_nhanh)    {
+    where += ' AND EXISTS (SELECT 1 FROM ho_so h WHERE h.tai_khoan_id = a.tai_khoan_id AND h.chi_nhanh = ?)';
+    params.push(chi_nhanh);
+  }
   if (tu_ngay)      { where += ' AND date(a.thoi_diem) >= ?'; params.push(tu_ngay); }
   if (den_ngay)     { where += ' AND date(a.thoi_diem) <= ?'; params.push(den_ngay); }
 
