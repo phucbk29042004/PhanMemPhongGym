@@ -335,6 +335,11 @@ window.GymApp.pages['member-add'] = {
       if (branchSelect) {
         branchSelect.innerHTML = '<option value="">— Chi nhánh —</option>' +
           branches.map(b => `<option value="${b.ten}">${b.ten}</option>`).join('');
+        
+        // Mặc định chọn chi nhánh đang đứng (nếu có)
+        if (window.GymApp.selectedBranch) {
+          branchSelect.value = window.GymApp.selectedBranch;
+        }
       }
 
       const pSelect = document.getElementById('reg-tinh-thanh');

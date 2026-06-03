@@ -835,10 +835,21 @@
   }
 
   // ===== DOM READY =====
-  async function _initBranchFilter() {
-    const headerSelect = document.getElementById('header-branch-filter');
-    if (!headerSelect) return;
 
+  async function _initBranchFilter() {
+    const triggerBtn = document.getElementById('header-branch-trigger');
+    const labelEl = document.getElementById('header-branch-current-label');
+    const modal = document.getElementById('modal-select-branch-header');
+    const container = document.getElementById('header-branch-options-container');
+    const closeBtn = document.getElementById('btn-close-branch-modal');
+
+    if (!triggerBtn || !labelEl || !modal || !container) return;
+
+    // Lấy chi nhánh hiện tại
+    const currentBranch = window.GymApp.selectedBranch || '';
+    labelEl.textContent = currentBranch || 'Tất cả chi nhánh';
+
+    // Đọc danh sách chi nhánh
     let branches = [];
     try {
       branches = await fetch('assets/data/branches.json').then(r => r.json());
@@ -846,24 +857,88 @@
       branches = [];
     }
 
-    const branchOptions = ['<option value="">Tất cả chi nhánh</option>']
-      .concat(branches.map(b => `<option value="${b.ten}">${b.ten}</option>`))
-      .join('');
+    // Nếu tài khoản có chi nhánh cố định (nhân viên cơ sở)
+    const user = window.GymApp.auth.user;
+    if (user && user.chi_nhanh) {
+      // Ẩn mũi tên dropdown và tắt click
+      triggerBtn.querySelector('.dropdown-arrow')?.classList.add('hidden');
+      triggerBtn.style.cursor = 'default';
+      triggerBtn.classList.remove('hover:bg-surface-container-high/40');
+      return;
+    }
 
-    headerSelect.innerHTML = branchOptions;
-    headerSelect.value = window.GymApp.selectedBranch || '';
+    // Dựng danh sách các nút bấm chọn chi nhánh trong modal
+    function renderBranchOptions() {
+      const selected = window.GymApp.selectedBranch || '';
+      
+      let html = `
+        <button class="w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all font-bold text-sm cursor-pointer active:scale-98 ${selected === '' ? 'border-brand-primary bg-brand-primary/5 text-brand-primary' : 'border-outline-variant hover:border-brand-primary hover:bg-brand-primary/5 text-on-surface'}" data-branch="">
+          <div class="flex items-center gap-3 text-left">
+            <span class="material-symbols-outlined text-[20px] ${selected === '' ? 'text-brand-primary' : 'text-on-surface-variant'}">store</span>
+            <span class="font-bold text-xs m-0 leading-tight">Tất cả chi nhánh</span>
+          </div>
+          <span class="material-symbols-outlined text-[18px] check-icon ${selected === '' ? '' : 'hidden'}">check</span>
+        </button>
+      `;
 
-    headerSelect.addEventListener('change', async function () {
-      const branch = this.value;
-      window.GymApp.selectedBranch = branch;
-      sessionStorage.setItem('selected_branch', branch);
-      document.querySelectorAll('select[id$="-branch-filter"]').forEach(el => {
-        el.value = branch;
+      branches.forEach(b => {
+        const isSelected = selected === b.ten;
+        html += `
+          <button class="w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all font-bold text-sm cursor-pointer active:scale-98 ${isSelected ? 'border-brand-primary bg-brand-primary/5 text-brand-primary' : 'border-outline-variant hover:border-brand-primary hover:bg-brand-primary/5 text-on-surface'}" data-branch="${b.ten}">
+            <div class="flex items-center gap-3 text-left">
+              <span class="material-symbols-outlined text-[20px] ${isSelected ? 'text-brand-primary' : 'text-on-surface-variant'}">store</span>
+              <div>
+                <p class="font-bold text-xs m-0 leading-tight">${b.ten}</p>
+                <p class="text-[10px] font-normal text-on-surface-variant m-0 mt-1 leading-none">${b.dia_chi || ''}</p>
+              </div>
+            </div>
+            <span class="material-symbols-outlined text-[18px] check-icon ${isSelected ? '' : 'hidden'}">check</span>
+          </button>
+        `;
       });
-      if (window.GymApp.currentPage) {
-        window.GymApp.navigate(window.GymApp.currentPage);
+
+      container.innerHTML = html;
+
+      // Bind sự kiện chọn chi nhánh
+      container.querySelectorAll('button[data-branch]').forEach(btn => {
+        btn.addEventListener('click', async function () {
+          const branch = this.dataset.branch;
+          window.GymApp.selectedBranch = branch;
+          sessionStorage.setItem('selected_branch', branch);
+          labelEl.textContent = branch || 'Tất cả chi nhánh';
+
+          // Đồng bộ các bộ lọc khác nếu có
+          document.querySelectorAll('select[id$="-branch-filter"]').forEach(el => {
+            el.value = branch;
+          });
+
+          // Ẩn modal
+          modal.style.display = 'none';
+
+          // Điều hướng tải lại trang hiện tại
+          if (window.GymApp.currentPage) {
+            window.GymApp.navigate(window.GymApp.currentPage);
+          }
+          window.GymApp.toast(branch ? `Đã lọc theo chi nhánh ${branch}` : 'Đã xóa bộ lọc chi nhánh', 'success');
+        });
+      });
+    }
+
+    // Mở modal khi bấm nút kích hoạt ở header
+    triggerBtn.addEventListener('click', function () {
+      renderBranchOptions();
+      modal.style.display = 'flex';
+    });
+
+    // Đóng modal khi bấm x hoặc click ra ngoài
+    closeBtn?.addEventListener('click', function () {
+      modal.style.display = 'none';
+    });
+
+    modal.addEventListener('click', function (e) {
+      if (e.target === modal) {
+        modal.style.display = 'none';
       }
-      window.GymApp.toast(branch ? `Đã lọc theo chi nhánh ${branch}` : 'Đã xóa bộ lọc chi nhánh', 'success');
     });
   }
 

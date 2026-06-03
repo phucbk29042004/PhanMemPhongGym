@@ -14,6 +14,22 @@
 
 ## 📋 Danh Sách Thay Đổi
 
+### [03/06/2026 11:29] — Tự động điền chi nhánh mặc định khi đăng ký hội viên mới trên Web & Mobile
+- **Loại**: Cải tiến nghiệp vụ & UI/UX (Fullstack Web & Mobile)
+- **File**: `FE/assets/js/pages/member-add.js`, `MobileApp/src/screens/admin/AdminAddEditMemberScreen.js`
+- **Mô tả**:
+  - **Web**: Cập nhật hàm `init()` trong `member-add.js` để tự động gán giá trị mặc định của trường chọn chi nhánh (`#reg-chi-nhanh`) là chi nhánh đang chọn hiện tại (`window.GymApp.selectedBranch`). Vẫn cho phép người dùng thay đổi sang chi nhánh khác.
+  - **Mobile**: Import store `useAuthStore` vào màn hình `AdminAddEditMemberScreen.js` và gán giá trị mặc định cho state `chiNhanh` là `selectedBranch` hiện tại từ Store khi tạo mới hồ sơ.
+- **Kết quả**: Thành công.
+
+### [03/06/2026 11:23] — Thiết kế lại bộ chọn chi nhánh ở Header Web từ Dropdown sang Modal
+- **Loại**: Cải tiến giao diện UI/UX (Frontend Web)
+- **File**: `FE/index.html`, `FE/assets/js/app.js`
+- **Mô tả**:
+  - **index.html**: Thay thế thẻ `<select>` dropdown cũ bằng nút bấm `#header-branch-trigger` đẹp mắt chứa logo cửa hàng và nhãn tên chi nhánh đang chọn. Bổ sung HTML cấu trúc Modal chọn chi nhánh `#modal-select-branch-header`.
+  - **app.js**: Viết lại logic khởi tạo bộ lọc `_initBranchFilter` để hỗ trợ hiển thị Modal chọn chi nhánh với giao diện tích chọn checkmark trực quan. Tự động kiểm tra quyền hạn, nếu tài khoản nhân viên có chi nhánh cố định sẽ ẩn mũi tên dropdown và khóa chức năng đổi chi nhánh.
+- **Kết quả**: Thành công.
+
 ### [03/06/2026 10:48] — Đồng bộ hiệu ứng hover đổi màu chuẩn xác cho toàn bộ dòng bao gồm cả các cột cố định (Sticky)
 - **Loại**: Cải tiến UI/UX (Frontend Web)
 - **File**: `FE/assets/js/pages/members-list.js`

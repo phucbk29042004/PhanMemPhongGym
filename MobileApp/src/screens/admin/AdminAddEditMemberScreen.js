@@ -12,6 +12,7 @@ import {
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import DatePickerField from '../../components/DatePickerField';
+import { useAuthStore } from '../../store/useAuthStore';
 
 // ── Helpers ──────────────────────────────────────────────────────────
 function RequiredStar() {
@@ -109,6 +110,7 @@ export default function AdminAddEditMemberScreen({ route, navigation }) {
   const isEdit = memberId != null;
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const { selectedBranch } = useAuthStore();
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -126,7 +128,7 @@ export default function AdminAddEditMemberScreen({ route, navigation }) {
   // ── Form: Địa chỉ & Phòng tập ────────────────────────────────────────
   const [queQuan, setQueQuan] = useState('');
   const [diaChi, setDiaChi] = useState('');
-  const [chiNhanh, setChiNhanh] = useState('');
+  const [chiNhanh, setChiNhanh] = useState(isEdit ? '' : (selectedBranch || ''));
   const [loaiHv, setLoaiHv] = useState('standard');
 
   // ── Form: PT / NV đặc thù ────────────────────────────────────────────
