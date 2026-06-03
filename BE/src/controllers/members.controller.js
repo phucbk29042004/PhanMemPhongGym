@@ -2237,121 +2237,120 @@ export const importMembers = async (req, res) => {
     const result = importTx(rawData, req.user.id);
 
     // Xử lý upload ảnh bất đồng bộ lên Cloudinary sau khi transaction thành công
-    logDiag(`Checking if ZIP matching should run: zipFile=${!!zipFile}, zipImagesMap.size=${zipImagesMap.size}, createdMembers.length=${result.createdMembers.length}`);
-    if (zipFile && zipImagesMap.size > 0 && result.createdMembers.length > 0) {
-      logDiag(`🚀 Đang tiến hành upload ảnh lên Cloudinary cho các hội viên vừa import...`);
-      for (const m of result.createdMembers) {
-        logDiag(`Processing created member: ${m.ma_ho_so} (ID: ${m.id}), Name: "${m.ho_ten}", Phone: "${m.so_dien_thoai}", Excel input image: "${m.ten_file_anh || ''}"`);
-        
-        let entry = null;
-        const stripExts = (filename) => {
-          let name = filename;
-          let ext = path.extname(name);
-          while (ext) {
-            name = name.slice(0, -ext.length);
-            ext = path.extname(name);
-          }
-          return name;
-        };
-
-        // 1. Dò theo "Tên file ảnh" từ Excel nếu có khai báo
-        if (m.ten_file_anh) {
-          const cleanName = m.ten_file_anh.trim().toLowerCase().normalize('NFC');
-          logDiag(`  Trying Excel name match for: "${cleanName}"`);
-          entry = zipImagesMap.get(cleanName);
-          
-          if (!entry) {
-            const excelCoreName = stripExts(cleanName);
-            for (const [key, val] of zipImagesMap.entries()) {
-              if (excelCoreName === stripExts(key)) {
-                entry = val;
-                logDiag(`  -> Excel name match (via core name): "${entry.entryName}"`);
-                break;
-              }
-            }
-          }
-        }
-
-        // 2. Dò theo Số điện thoại (Ví dụ: "0912345678.jpg" -> khớp với "0912345678")
-        if (!entry && m.so_dien_thoai) {
-          const phoneCore = m.so_dien_thoai.trim();
-          logDiag(`  Trying phone number match for: "${phoneCore}"`);
-          for (const [key, val] of zipImagesMap.entries()) {
-            if (phoneCore === stripExts(key)) {
-              entry = val;
-              logDiag(`  -> Smart match found by Phone Number: "${entry.entryName}"`);
-              break;
-            }
-          }
-        }
-
-        // 3. Dò theo Họ và tên (Ví dụ: "Nguyễn Văn A" -> khớp "nguyen_van_a.jpg" hoặc "nguyenvana.png")
-        if (!entry && m.ho_ten) {
-          const cleanName = m.ho_ten.trim().toLowerCase().normalize('NFC');
-          const cleanNameNoSpaces = cleanName.replace(/\s+/g, '');
-          const cleanNameUnderscore = cleanName.replace(/\s+/g, '_');
-          const cleanNameDash = cleanName.replace(/\s+/g, '-');
-          
-          const removeDiacritics = (str) => {
-            return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
-          };
-          const rawNoDiacritics = removeDiacritics(cleanName);
-          const noDiacriticsNoSpaces = rawNoDiacritics.replace(/\s+/g, '');
-          const noDiacriticsUnderscore = rawNoDiacritics.replace(/\s+/g, '_');
-          const noDiacriticsDash = rawNoDiacritics.replace(/\s+/g, '-');
-
-          const possibleCoreNames = [
-            cleanName, cleanNameNoSpaces, cleanNameUnderscore, cleanNameDash,
-            rawNoDiacritics, noDiacriticsNoSpaces, noDiacriticsUnderscore, noDiacriticsDash
-          ];
-
-          logDiag(`  Trying member name match. Candidate names: ${JSON.stringify(possibleCoreNames)}`);
-          for (const [key, val] of zipImagesMap.entries()) {
-            const zipCoreName = stripExts(key);
-            if (possibleCoreNames.includes(zipCoreName)) {
-              entry = val;
-              logDiag(`  -> Smart match found by Member Name: "${entry.entryName}"`);
-              break;
-            }
-          }
-        }
-        
-        if (entry) {
-          try {
-            const imgBuffer = entry.getData();
-            logDiag(`  Uploading image to Cloudinary (buffer size: ${imgBuffer.length} bytes)...`);
-            
-            // Upload lên Cloudinary
-            const uploadRes = await uploadImage(imgBuffer, 'paradise-gym/profiles', m.ma_ho_so);
-            logDiag(`  -> Cloudinary success! URL: ${uploadRes.url}, PublicId: ${uploadRes.publicId}`);
-            
-            // Cập nhật Database SQLite
-            const dbUpdate = db.prepare(`
-              UPDATE ho_so 
-              SET avatar_url = ?, cloudinary_public_id = ? 
-              WHERE id = ?
-            `).run(uploadRes.url, uploadRes.publicId, m.id);
-            logDiag(`  -> SQLite DB update result: changes=${dbUpdate.changes}`);
-            
-            logDiag(`   ✅ Đã gán ảnh "${entry.entryName}" cho hội viên ${m.ma_ho_so}`);
-          } catch (uploadErr) {
-            logDiag(`   ❌ Lỗi upload ảnh cho ${m.ma_ho_so}: ${uploadErr.message}`);
-            console.error(`   ❌ Lỗi upload ảnh cho ${m.ma_ho_so}:`, uploadErr.message);
-          }
-        } else {
-          logDiag(`   ⚠️ Không thể tự động tìm thấy ảnh cho hội viên ${m.ma_ho_so} trong file ZIP.`);
-        }
-      }
-    }
-    
     // Ghi audit log
     ghi_audit_log(req, 'CREATE', 'ho_so', null, null, { successCount: result.successCount }, `Import ${result.successCount} hội viên từ file Excel`);
 
-    return success(res, {
+    // Phản hồi thành công ngay lập tức cho Frontend
+    success(res, {
       successCount: result.successCount,
       failCount: result.failCount,
       errors: result.errors
     }, `Import thành công ${result.successCount} hội viên, thất bại ${result.failCount} dòng.`);
+
+    // Chạy ngầm tác vụ xử lý file ZIP và upload ảnh lên Cloudinary bất đồng bộ
+    logDiag(`Checking if ZIP matching should run in background: zipFile=${!!zipFile}, zipImagesMap.size=${zipImagesMap.size}, createdMembers.length=${result.createdMembers.length}`);
+    if (zipFile && zipImagesMap.size > 0 && result.createdMembers.length > 0) {
+      setImmediate(async () => {
+        console.log(`[Background Task] 🚀 Bắt đầu upload ngầm ${result.createdMembers.length} ảnh lên Cloudinary...`);
+        let processed = 0;
+        
+        for (const m of result.createdMembers) {
+          let entry = null;
+          const stripExts = (filename) => {
+            let name = filename;
+            let ext = path.extname(name);
+            while (ext) {
+              name = name.slice(0, -ext.length);
+              ext = path.extname(name);
+            }
+            return name;
+          };
+
+          // 1. Dò theo "Tên file ảnh" từ Excel nếu có khai báo
+          if (m.ten_file_anh) {
+            const cleanName = m.ten_file_anh.trim().toLowerCase().normalize('NFC');
+            entry = zipImagesMap.get(cleanName);
+            
+            if (!entry) {
+              const excelCoreName = stripExts(cleanName);
+              for (const [key, val] of zipImagesMap.entries()) {
+                if (excelCoreName === stripExts(key)) {
+                  entry = val;
+                  break;
+                }
+              }
+            }
+          }
+
+          // 2. Dò theo Số điện thoại (Ví dụ: "0912345678.jpg" -> khớp với "0912345678")
+          if (!entry && m.so_dien_thoai) {
+            const phoneCore = m.so_dien_thoai.trim();
+            for (const [key, val] of zipImagesMap.entries()) {
+              if (phoneCore === stripExts(key)) {
+                entry = val;
+                break;
+              }
+            }
+          }
+
+          // 3. Dò theo Họ và tên (Ví dụ: "Nguyễn Văn A" -> khớp "nguyen_van_a.jpg" hoặc "nguyenvana.png")
+          if (!entry && m.ho_ten) {
+            const cleanName = m.ho_ten.trim().toLowerCase().normalize('NFC');
+            const cleanNameNoSpaces = cleanName.replace(/\s+/g, '');
+            const cleanNameUnderscore = cleanName.replace(/\s+/g, '_');
+            const cleanNameDash = cleanName.replace(/\s+/g, '-');
+            
+            const removeDiacritics = (str) => {
+              return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
+            };
+            const rawNoDiacritics = removeDiacritics(cleanName);
+            const noDiacriticsNoSpaces = rawNoDiacritics.replace(/\s+/g, '');
+            const noDiacriticsUnderscore = rawNoDiacritics.replace(/\s+/g, '_');
+            const noDiacriticsDash = rawNoDiacritics.replace(/\s+/g, '-');
+
+            const possibleCoreNames = [
+              cleanName, cleanNameNoSpaces, cleanNameUnderscore, cleanNameDash,
+              rawNoDiacritics, noDiacriticsNoSpaces, noDiacriticsUnderscore, noDiacriticsDash
+            ];
+
+            for (const [key, val] of zipImagesMap.entries()) {
+              const zipCoreName = stripExts(key);
+              if (possibleCoreNames.includes(zipCoreName)) {
+                entry = val;
+                break;
+              }
+            }
+          }
+          
+          if (entry) {
+            try {
+              const imgBuffer = entry.getData();
+              
+              // Upload lên Cloudinary
+              const uploadRes = await uploadImage(imgBuffer, 'paradise-gym/profiles', m.ma_ho_so);
+              
+              // Cập nhật Database SQLite
+              db.prepare(`
+                UPDATE ho_so 
+                SET avatar_url = ?, cloudinary_public_id = ? 
+                WHERE id = ?
+              `).run(uploadRes.url, uploadRes.publicId, m.id);
+              
+              console.log(`[Background Task]  ✅ Đã tải lên và gán ảnh "${entry.entryName}" cho hội viên ${m.ma_ho_so}`);
+            } catch (uploadErr) {
+              console.error(`[Background Task]  ❌ Lỗi upload ảnh cho ${m.ma_ho_so}:`, uploadErr.message);
+            }
+          }
+          
+          processed++;
+          if (processed % 10 === 0 || processed === result.createdMembers.length) {
+            console.log(`[Background Task] Tiến độ: ${processed}/${result.createdMembers.length} ảnh đã xử lý.`);
+          }
+        }
+        
+        console.log(`[Background Task] 🎉 Đã hoàn thành xử lý và upload ảnh chạy ngầm.`);
+      });
+    }
   } catch (err) {
     console.error('Import Excel error:', err);
     return error(res, `Lỗi xử lý file Excel: ${err.message}`, 500);

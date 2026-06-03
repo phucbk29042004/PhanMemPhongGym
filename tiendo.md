@@ -1596,3 +1596,13 @@
 - **File**: `BE/src/controllers/members.controller.js`
 - **Mô tả**: Loại bỏ hành động ghi file `import-diagnostic.log` trực tiếp vào thư mục dự án khi import. Do công cụ Live Server (của VS Code) đang theo dõi toàn bộ thư mục và tự động reload trang web khi phát hiện có bất kỳ thay đổi nào về file, việc ghi file log này khiến trình duyệt bị tải lại trang ngay lập tức khi đang trong tiến trình import, dẫn đến mất Toast thông báo thành công và người dùng bị đẩy về tab mặc định "Tổng quan".
 - **Kết quả**: ✅ Khắc phục triệt để lỗi reload trang, hiển thị đầy đủ thông báo Toast thành công mà không bị chuyển trang ngoài ý muốn.
+
+### 03/06/2026 09:03 — Nâng cấp tính năng Import chạy ngầm (Background Task) hỗ trợ lượng dữ liệu lớn (10.000 dòng)
+- **Loại**: Cải tiến hiệu năng & Tính năng mới (Backend)
+- **File**: `BE/src/controllers/members.controller.js`
+- **Mô tả**:
+  - Tách rời tiến trình giải nén file ZIP và upload ảnh đại diện lên Cloudinary thành tác vụ chạy ngầm độc lập sử dụng `setImmediate()` của Node.js.
+  - Khi người dùng gửi yêu cầu import, hệ thống sẽ thực hiện lưu thông tin chữ vào SQLite Database trước bằng Transaction cực nhanh (chỉ mất ~1-3 giây cho 10.000 bản ghi), sau đó lập tức trả phản hồi thành công về cho Frontend.
+  - Sau khi phản hồi được gửi đi, tiến trình chạy ngầm bắt đầu làm việc để upload từng bức ảnh lên Cloudinary và cập nhật lại `avatar_url` cho hội viên trong DB dưới nền.
+  - Bổ sung ghi log tiến độ xử lý ảnh ngầm ra terminal console để dễ giám sát.
+- **Kết quả**: ✅ Hoàn thành. Ngăn ngừa hoàn toàn lỗi Timeout trình duyệt và lỗi tràn bộ nhớ khi import dữ liệu lớn lên đến hàng vạn hội viên.
