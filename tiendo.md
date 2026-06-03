@@ -8,13 +8,44 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
-**✅ Hoàn tất Quản lý Đa Chi Nhánh & Tích hợp Modal Chọn Chi Nhánh Đăng nhập** — Sửa sạch lỗi merge conflict database, cập nhật tự động view trạng thái hội viên, và thiết kế thêm Modal chọn chi nhánh cho Admin/Quản lý ngay sau khi đăng nhập Web.
+**✅ Hoàn tất Quản lý Đa Chi Nhánh & Tăng cường tính chính xác của AI Chatbot** — Sửa lỗi query thống kê chi nhánh của chatbot và bổ sung cơ chế kiểm soát chất lượng phản hồi, ngăn chặn AI tự động thay đổi số liệu đúng thành số liệu sai để chiều lòng người dùng.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
 
+### [03/06/2026 13:35] — Ngăn chặn AI tự ý sửa số liệu và nghiêm cấm hiển thị SQL thô cho người dùng
+- **Loại**: Sửa bug / Cải tiến (Backend)
+- **File**: `BE/src/controllers/assistant.controller.js`
+- **Mô tả**:
+  - Tạo chỉ thị hệ thống chung `accuracyRules` quy định nghiêm ngặt về tính chính xác của số liệu.
+  - Tích hợp `accuracyRules` vào cuối chỉ thị hệ thống (`systemInstruction`) của tất cả các phân hệ (Hội viên, PT, Admin/Lễ tân).
+  - Yêu cầu AI tuyệt đối không tự ý thay đổi dữ liệu theo khẳng định chủ quan từ phía người dùng, coi Database là nguồn sự thật duy nhất, và bắt buộc phải thực hiện lại câu lệnh SQL qua `run_readonly_sql_query` để đối chiếu mỗi khi người dùng phản bác số liệu.
+  - Nghiêm cấm AI xuất ra mã SQL thô, cấu trúc bảng hay giải thích câu truy vấn cho người dùng, yêu cầu bắt buộc phải chuyển hóa dữ liệu lấy được thành câu văn/đoạn văn tiếng Việt tự nhiên.
+- **Kết quả**: Thành công.
+
+### [03/06/2026 13:25] — Sửa lỗi query doanh thu & thống kê chi nhánh trong AI chatbot
+- **Loại**: Sửa bug (Backend)
+- **File**: `BE/src/controllers/assistant.controller.js`
+- **Mô tả**:
+  - Phát hiện 3 lỗi trong các query lọc theo chi nhánh cho Admin/Lễ tân:
+    1. **Doanh thu gói tập thường**: Đã dùng sai `dang_ky_goi_tap.chi_nhanh_dang_ky` (NULL) và `gia_thuc_te`. Sửa thành JOIN `ho_so h ON h.id = dk.ho_so_id` + `h.chi_nhanh` + `dk.so_tien_da_thu` — đồng bộ với `revenue.controller.js`.
+    2. **Gói tập đang hoạt động & Chờ duyệt**: Đã dùng sai `chi_nhanh_dang_ky`. Sửa thành JOIN `ho_so` + `h.chi_nhanh`.
+    3. **`branchSQLNote` (hướng dẫn AI sinh SQL)**: Cập nhật hướng dẫn đúng — yêu cầu AI phải JOIN `ho_so` khi query `dang_ky_goi_tap`, dùng `so_tien_da_thu` cho doanh thu.
+- **Kết quả**: Thành công.
+
+### [03/06/2026 13:15] — Đồng bộ bộ lọc chi nhánh cho Chat AI (Web & Mobile)
+
+- **Loại**: Cải tiến nghiệp vụ & Fullstack (Web + Mobile + Backend)
+- **File**: `FE/assets/js/components/ai-assistant.js`, `MobileApp/src/components/AIAssistantBubble.js`, `MobileApp/src/screens/member/AIAssistantScreen.js`, `BE/src/controllers/assistant.controller.js`
+- **Mô tả**:
+  - **Web**: Thêm `chi_nhanh: window.GymApp?.selectedBranch` vào body request `/assistant/chat`.
+  - **Mobile**: Import `selectedBranch` từ `useAuthStore` và gửi kèm request chat trong cả `AIAssistantBubble.js` và `AIAssistantScreen.js`.
+  - **Backend**: Nhận `chi_nhanh`, tạo `branchFilter`. Tất cả query thống kê hôm nay (hội viên, gói tập, check-in, doanh thu, lịch PT, chờ duyệt) đều lọc theo chi nhánh. Thêm `branchSQLNote` vào `systemInstruction` để AI biết cách tự thêm WHERE khi gọi tool `run_readonly_sql_query`. Cập nhật `DB_SCHEMA_DESCRIPTION` mô tả các cột chi nhánh.
+- **Kết quả**: Thành công.
+
 ### [03/06/2026 11:29] — Tự động điền chi nhánh mặc định khi đăng ký hội viên mới trên Web & Mobile
+
 - **Loại**: Cải tiến nghiệp vụ & UI/UX (Fullstack Web & Mobile)
 - **File**: `FE/assets/js/pages/member-add.js`, `MobileApp/src/screens/admin/AdminAddEditMemberScreen.js`
 - **Mô tả**:

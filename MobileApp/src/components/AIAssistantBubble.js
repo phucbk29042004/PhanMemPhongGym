@@ -26,7 +26,7 @@ const G = {
 
 export default function AIAssistantBubble() {
   const { colors, isDark } = useTheme();
-  const { user, role, token } = useAuthStore();
+  const { user, role, token, selectedBranch } = useAuthStore();
 
   const [isOpen, setIsOpen] = useState(false);
   const [showCard, setShowCard] = useState(false);
@@ -205,7 +205,7 @@ export default function AIAssistantBubble() {
     setLoading(true);
 
     try {
-      const response = await api.post('/assistant/chat', { message: text });
+      const response = await api.post('/assistant/chat', { message: text, chi_nhanh: selectedBranch || '' });
       const reply = response.data?.data?.reply || 'Rất tiếc, mình gặp sự cố khi xử lý câu hỏi này.';
       
       setMessages((prev) => [
