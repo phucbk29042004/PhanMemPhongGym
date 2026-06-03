@@ -56,10 +56,10 @@ try {
     INSERT OR IGNORE INTO tai_khoan (id, ten_dang_nhap, mat_khau_hash, vai_tro_id) VALUES (?, ?, ?, ?)
   `);
   const accounts = [
-    [1, 'admin',     hash, 1],
-    [2, 'letan01',   hash, 2],
-    [3, 'pt01',      hash, 3],
-    [4, 'pt02',      hash, 3],
+    [1, 'admin', hash, 1],
+    [2, 'letan01', hash, 2],
+    [3, 'pt01', hash, 3],
+    [4, 'pt02', hash, 3],
     [5, 'hoivien01', hash, 4],
     [6, 'hoivien02', hash, 4],
     [7, 'hoivien03', hash, 4],
@@ -166,7 +166,7 @@ try {
     (1, 'admin',   'admin',  'CREATE', 'goi_tap', 1, '{"ten_goi":"Gói 1 tháng","gia":500000}', '127.0.0.1', 'Khởi tạo hệ thống'),
     (2, 'letan01', 'le_tan', 'CREATE', 'ho_so',   5, '{"ho_ten":"Võ Văn Minh","loai":"hoi_vien"}', '192.168.1.10', 'Tạo hồ sơ ban đầu');
   `);
-  console.log('✅ Đã tạo audit log mẫu');
+  console.log('✅   Đã tạo audit log mẫu');
 
   console.log('\n🎉 Database đã được khởi tạo thành công tại:', DB_PATH);
   console.log('📋 Tài khoản mặc định:');
