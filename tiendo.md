@@ -14,6 +14,20 @@
 
 ## 📋 Danh Sách Thay Đổi
 
+### [03/06/2026 14:20] — Sửa lỗi luồng đổi gói Gym và cải thiện UI chọn chi nhánh (Mobile)
+- **Loại**: Sửa bug & Cải tiến UI (Mobile)
+- **File**: `MobileApp/src/screens/admin/AdminRegisterPackageScreen.js`, `MobileApp/src/screens/admin/AdminDashboardScreen.js`
+- **Mô tả**:
+  - **[Sửa bug] Luồng đổi gói Gym bị nhầm thành đăng ký nối tiếp**:
+    - Nguyên nhân: `startDate` được khởi tạo luôn = ngày nối tiếp sau gói cũ bất kể chế độ là "Đổi gói" hay "Đăng ký nối tiếp".
+    - Sửa bằng cách tách ra hàm `calcStartDate(switchMode)`: khi `switchMode=true` (đổi gói) → ngày bắt đầu = hôm nay; khi `switchMode=false` (đăng ký nối tiếp) → ngày bắt đầu = ngày liền sau khi gói cũ hết hạn.
+    - Khi bấm đổi giữa 2 chế độ, `startDate` cũng được cập nhật lại theo `calcStartDate`.
+    - Đổi tên nút `"Đăng ký song song"` → `"Đăng ký nối tiếp"` cho đúng với hành vi thực tế.
+  - **[Cải tiến UI] Bộ lọc chi nhánh trên Dashboard**:
+    - Thay thế `ScrollView` chip pills nằm ngang bằng 1 nút gọn `[Icon + Tên chi nhánh đang chọn + Mũi tên]`.
+    - Khi bấm vào nút → mở Modal danh sách chi nhánh dạng radio chọn (cuộn dọc), không cần kéo ngang nhiều lần.
+- **Kết quả**: Thành công.
+
 ### [03/06/2026 13:35] — Ngăn chặn AI tự ý sửa số liệu và nghiêm cấm hiển thị SQL thô cho người dùng
 - **Loại**: Sửa bug / Cải tiến (Backend)
 - **File**: `BE/src/controllers/assistant.controller.js`
