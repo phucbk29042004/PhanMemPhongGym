@@ -564,6 +564,11 @@ window.GymApp.pages['pt-training'] = {
       const selectedDate = btn.dataset.ngay || '';
       document.getElementById('edit-schedule-id').value = btn.dataset.id;
       document.getElementById('edit-schedule-date').value = selectedDate;
+      const todayStr = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' });
+      const dateInput = document.getElementById('edit-schedule-date');
+      if (dateInput) {
+        dateInput.min = todayStr;
+      }
       const startVal = btn.dataset.start || '';
       const endVal = btn.dataset.end || '';
       document.getElementById('edit-schedule-start').value = startVal;
@@ -713,6 +718,11 @@ window.GymApp.pages['pt-training'] = {
 
       if (!ngay_tap || !gio_bat_dau || !gio_ket_thuc) {
         window.GymApp.toast('Vui lòng điền đầy đủ ngày và giờ!', 'error');
+        return;
+      }
+      const todayStr = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
+      if (ngay_tap < todayStr) {
+        window.GymApp.toast('Không thể dời lịch tập về ngày trong quá khứ!', 'error');
         return;
       }
       if (gio_ket_thuc <= gio_bat_dau) {
