@@ -103,7 +103,7 @@ window.GymApp.pages['pt-register'] = {
                     Chọn giờ bắt đầu
                   </label>
                   <div id="reg-time-display" class="text-body-sm mb-compact font-bold" style="min-height:18px;color:#6e7a6b;">Chưa chọn giờ</div>
-                  <div style="border:1px solid #becab9;border-radius:12px;overflow:hidden;max-height:150px;overflow-y:auto;" class="bg-surface-container-low">
+                  <div id="reg-time-picker-container" style="border:1px solid #becab9;border-radius:12px;overflow:hidden;max-height:150px;overflow-y:auto;" class="bg-surface-container-low">
                     <div class="time-slot-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(65px,1fr));gap:4px;padding:8px;">
                       ${timeSlots.map(t => `<button type="button" class="reg-time-slot-btn bg-surface-container-lowest text-on-surface border border-outline-variant hover:bg-surface-container transition-all text-xs" data-time="${t}" style="padding:6px 2px;border-radius:8px;font-weight:600;cursor:pointer;text-align:center;">${t}</button>`).join('')}
                     </div>
@@ -403,6 +403,10 @@ window.GymApp.pages['pt-register'] = {
             display.style.color = '';
             display.style.fontWeight = '';
           }
+          const pickerContainer = document.getElementById('reg-time-picker-container');
+          if (pickerContainer) {
+            pickerContainer.classList.remove('hidden');
+          }
           buttons.forEach(b => {
             if (!b.disabled) {
               b.style.transform = 'scale(1)';
@@ -445,9 +449,35 @@ window.GymApp.pages['pt-register'] = {
 
           if (timeDisplay) {
             const endEl = document.getElementById('reg-end');
-            timeDisplay.textContent = `Đã chọn: ${t} — ${endEl?.value || '—'}`;
+            timeDisplay.innerHTML = `<span class="flex items-center gap-xs">Đã chọn: ${t} — ${endEl?.value || '—'} <button type="button" id="clear-reg-time" class="material-symbols-outlined text-[16px] text-outline hover:text-error ml-1 transition-colors" style="cursor:pointer;" title="Xóa giờ đã chọn">close</button></span>`;
             timeDisplay.style.color = '#1D9336';
             timeDisplay.style.fontWeight = '700';
+
+            const pickerContainer = document.getElementById('reg-time-picker-container');
+            if (pickerContainer) pickerContainer.classList.add('hidden');
+
+            document.getElementById('clear-reg-time')?.addEventListener('click', (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              
+              if (startEl) startEl.value = '';
+              const endInput = document.getElementById('reg-end');
+              if (endInput) endInput.value = '';
+
+              document.querySelectorAll('.reg-time-slot-btn').forEach(b => {
+                if (!b.disabled) {
+                  b.style.transform = 'scale(1)';
+                  b.style.background = '';
+                  b.style.color = '';
+                }
+              });
+
+              timeDisplay.textContent = 'Chưa chọn giờ';
+              timeDisplay.style.color = '';
+              timeDisplay.style.fontWeight = '';
+
+              if (pickerContainer) pickerContainer.classList.remove('hidden');
+            });
           }
         });
       });
@@ -460,7 +490,31 @@ window.GymApp.pages['pt-register'] = {
       const timeDisplay = document.getElementById('reg-time-display');
       if (startEl && startEl.value && timeDisplay) {
         const endEl = document.getElementById('reg-end');
-        timeDisplay.textContent = `Đã chọn: ${startEl.value} — ${endEl?.value || '—'}`;
+        timeDisplay.innerHTML = `<span class="flex items-center gap-xs">Đã chọn: ${startEl.value} — ${endEl?.value || '—'} <button type="button" id="clear-reg-time" class="material-symbols-outlined text-[16px] text-outline hover:text-error ml-1 transition-colors" style="cursor:pointer;" title="Xóa giờ đã chọn">close</button></span>`;
+        
+        document.getElementById('clear-reg-time')?.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          startEl.value = '';
+          const endInput = document.getElementById('reg-end');
+          if (endInput) endInput.value = '';
+
+          document.querySelectorAll('.reg-time-slot-btn').forEach(b => {
+            if (!b.disabled) {
+              b.style.transform = 'scale(1)';
+              b.style.background = '';
+              b.style.color = '';
+            }
+          });
+
+          timeDisplay.textContent = 'Chưa chọn giờ';
+          timeDisplay.style.color = '';
+          timeDisplay.style.fontWeight = '';
+
+          const pickerContainer = document.getElementById('reg-time-picker-container');
+          if (pickerContainer) pickerContainer.classList.remove('hidden');
+        });
       }
     });
 
@@ -558,6 +612,8 @@ window.GymApp.pages['pt-register'] = {
           }
           const st = document.getElementById('reg-start');
           if (st) { st.value = ''; }
+          const pickerContainer = document.getElementById('reg-time-picker-container');
+          if (pickerContainer) pickerContainer.classList.remove('hidden');
           document.getElementById('reg-notes').value = '';
         } else {
           window.GymApp.toast(res?.message || 'Đặt lịch thất bại!', 'error');
@@ -731,7 +787,11 @@ window.GymApp.pages['pt-register'] = {
   },
 
   _renderPTList: function () {
-    const pts = window.GymApp.data.pts || [];
+    let pts = window.GymApp.data.pts || [];
+    const branch = window.GymApp.selectedBranch || '';
+    if (branch) {
+      pts = pts.filter(pt => pt.chi_nhanh === branch);
+    }
     const list = document.getElementById('pt-list');
     if (!list) return;
 

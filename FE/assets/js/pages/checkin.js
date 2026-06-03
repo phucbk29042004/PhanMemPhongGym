@@ -32,7 +32,6 @@ window.GymApp.pages['checkin'] = {
     const hourCounts = {};
     for (let h = 5; h <= 22; h++) hourCounts[h] = 0;
     checkins.filter(c => c.loai === 'vao').forEach(c => {
-      // gio_hien_thi = "HH:MM" do backend trả về qua strftime — dùng thay vì parse thoi_diem
       const hour = c.gio_hien_thi
         ? parseInt(c.gio_hien_thi.split(':')[0])
         : parseInt(c.thoi_diem.substring(11, 13));
@@ -168,8 +167,8 @@ window.GymApp.pages['checkin'] = {
                 <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface">Check-in hôm nay</h3>
                 <span id="checkin-count-badge" class="bg-brand-primary text-white px-compact py-xs rounded-full text-label-xs font-bold ml-xs">${checkins.length}</span>
               </div>
-              <div class="flex items-center gap-standard">
-                <span class="text-on-surface-variant text-body-sm">${new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'numeric' })}</span>
+              <div class="flex items-center gap-standard flex-wrap">
+                <span class="text-on-surface-variant text-body-sm hidden sm:inline">${new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'numeric' })}</span>
                 <button id="btn-checkin-reload" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border border-outline-variant bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer">
                   <span class="material-symbols-outlined text-base">refresh</span>Tải lại
                 </button>
@@ -263,6 +262,9 @@ window.GymApp.pages['checkin'] = {
             ${c.gio_hien_thi || c.thoi_diem.substring(11, 16)}
           </div>
         </td>
+        <td class="px-standard">
+          <span class="font-bold text-on-surface text-body-sm">${c.chi_nhanh_thuc_hien || '—'}</span>
+        </td>
         <td class="px-standard">${window.GymApp.statusBadge(c.loai === 'vao' ? 'active' : 'inactive')}</td>
         <td class="px-standard">
           ${isLatestVao 
@@ -282,214 +284,192 @@ window.GymApp.pages['checkin'] = {
             <tr class="h-10">
               <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Hội viên</th>
               <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Giờ</th>
+              <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Chi nhánh thực hiện</th>
               <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Trạng thái</th>
-              <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Thao tác</th>
+              <th class="px-standard font-bold text-body-sm text-on-surface-wider">Thao tác</th>
             </tr>
           </thead>
-          <tbody>${rows || `<tr><td colspan="4" class="px-standard py-standard text-center text-on-surface-variant">Không có dữ liệu</td></tr>`}</tbody>
+          <tbody>${rows || `<tr><td colspan="5" class="px-standard py-standard text-center text-on-surface-variant">Chưa có dữ liệu</td></tr>`}</tbody>
         </table>
       </div>
       ${window.GymApp.renderPagination(this._page, checkins.length, this._perPage)}
     `;
   },
 
-  _bindCheckoutEvents: function () {
-    const self = this;
-    document.querySelectorAll('.btn-checkout').forEach(btn => {
-      // Prevent multiple bindings
-      if (btn.dataset.bound) return;
-      btn.dataset.bound = "true";
-      
-      btn.addEventListener('click', async function () {
-        const id = this.dataset.id;
-        if (!id) return;
-        this.disabled = true;
-        const oldHtml = this.innerHTML;
-        this.innerHTML = '<span class="material-symbols-outlined animate-spin" style="font-size:16px">sync</span> Đang xử lý...';
-        try {
-          await window.GymApp.api.post('/checkins', { ho_so_id: id, loai: 'ra', phuong_thuc: 'thu_cong' });
-          window.GymApp.toast('Đã check-out thành công!', 'success');
-          self._fetchAndRefresh();
-        } catch (err) {
-          window.GymApp.toast('Lỗi: ' + (err.message || 'Không thể check-out'), 'error');
-          this.disabled = false;
-          this.innerHTML = oldHtml;
-        }
-      });
-    });
-  },
-
   _fetchAndRefresh: async function () {
     try {
-      // Lấy ngày hôm qua để so sánh
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yyyymmdd = yesterday.toISOString().split('T')[0];
-
-      const [checkinsRes, statsRes, statsYesterdayRes] = await Promise.all([
-        window.GymApp.api.get('/checkins'),
-        window.GymApp.api.get('/checkins/stats'),
-        window.GymApp.api.get(`/checkins/stats?date=${yyyymmdd}`),
+      const branch = window.GymApp.selectedBranch || '';
+      const q = branch ? `?chi_nhanh=${encodeURIComponent(branch)}` : '';
+      
+      const [checkinsRes, statsRes] = await Promise.all([
+        window.GymApp.api.get(`/checkins${q}`),
+        window.GymApp.api.get(`/checkins/stats${q}`)
       ]);
 
-      if (checkinsRes?.success) window.GymApp.data.checkins = checkinsRes.data || [];
-      if (statsRes?.success) {
-        this._stats = statsRes.data || {};
-        this._stats.luot_vao_hom_qua = statsYesterdayRes?.data?.luot_vao ?? null;
+      if (checkinsRes && checkinsRes.success) {
+        window.GymApp.data.checkins = checkinsRes.data || [];
       }
-    } catch (err) { console.error('Failed to fetch checkins', err); }
-
-    const checkins = window.GymApp.data.checkins || [];
-
-    // Cập nhật stat cards
-    const statsGrid = document.getElementById('checkin-stats-grid');
-    if (statsGrid) {
-      const stats = this._buildStats(checkins);
-      statsGrid.innerHTML = stats.map(s => `
-        <div class="bg-brand-primary/5 dark:bg-brand-primary/10 rounded-2xl p-4 hover:-translate-y-1 hover:shadow-md hover:bg-brand-primary/10 transition-all duration-300 border border-brand-primary/20 flex flex-col justify-between" style="min-height: 104px;">
-          <div>
-            <p class="text-on-surface-variant text-body-sm font-bold uppercase tracking-wider mb-2 truncate" title="${s.label}">${s.label}</p>
-            <div class="flex items-baseline flex-wrap gap-x-2 gap-y-1">
-              <h3 class="text-xl font-bold text-on-surface truncate max-w-full" title="${s.value}">${s.value}</h3>
-              ${s.trendHtml || ''}
-            </div>
-          </div>
-          ${s.sub ? `<span class="text-on-surface-variant text-body-sm font-medium mt-1 truncate" title="${s.sub}">${s.sub}</span>` : ''}
-        </div>
-      `).join('');
+      if (statsRes && statsRes.success) {
+        this._stats = statsRes.data;
+      }
+      
+      if (window.GymApp.currentPage === 'checkin') {
+        const contentArea = document.getElementById('content-area');
+        if (contentArea) {
+          contentArea.innerHTML = this.render();
+          this._initHourlyChart();
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch checkins', err);
     }
-
-    // Cập nhật badge số lượng
-    const badge = document.getElementById('checkin-count-badge');
-    if (badge) badge.textContent = checkins.length;
-
-    // Cập nhật grid cards
-    const grid = document.getElementById('checkin-cards-grid');
-    if (grid) {
-      const grouped = this._getGroupedVisits(checkins);
-      grid.innerHTML = grouped.length === 0
-        ? `<div class="col-span-3 flex flex-col items-center justify-center py-standard text-center">
-             <span class="material-symbols-outlined text-4xl text-outline">person_off</span>
-             <p class="text-on-surface-variant text-body-sm mt-standard">Chưa có check-in hôm nay</p>
-           </div>`
-        : grouped.map(c => `
-            <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 p-standard shadow-sm flex flex-col items-center gap-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300">
-              ${window.GymApp.avatarImg(c.avatar_url, c.ho_ten, 'lg')}
-              <div class="text-center">
-                <p class="font-bold text-on-surface text-body-md truncate w-full">${c.ho_ten || 'Khách vãng lai'}</p>
-                <p class="text-on-surface-variant text-body-sm flex items-center justify-center gap-1">
-                  ${c.loai_ho_so === 'pt' ? '<span class="px-1.5 py-0.5 rounded bg-brand-primary/10 text-brand-primary text-[10px] font-bold">HLV</span>' : ''}
-                  ${c.loai_ho_so === 'hoi_vien' ? '<span class="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500 text-[10px] font-bold">HV</span>' : ''}
-                  ${c.loai_ho_so === 'le_tan' ? '<span class="px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-500 text-[10px] font-bold">Lễ tân</span>' : ''}
-                  ${c.loai_ho_so === 'nhan_vien' ? '<span class="px-1.5 py-0.5 rounded bg-gray-500/10 text-gray-500 text-[10px] font-bold">NV</span>' : ''}
-                  <span>${c.ma_ho_so || '—'}</span>
-                </p>
-              </div>
-              ${c.raRecord 
-                ? `<div class="flex items-center gap-xs bg-surface-container rounded-full px-compact py-xs border border-outline-variant w-full justify-center">
-                     <span class="material-symbols-outlined text-on-surface-variant" style="font-size:12px">logout</span>
-                     <span class="text-on-surface-variant text-body-sm font-bold">Đã ra: ${c.raRecord.gio_hien_thi || c.raRecord.thoi_diem.substring(11, 16)}</span>
-                   </div>`
-                : `<div class="flex items-center gap-xs bg-brand-primary/10 rounded-full px-compact py-xs mb-1 w-full justify-center">
-                     <span class="material-symbols-outlined text-brand-primary" style="font-size:12px">login</span>
-                     <span class="text-brand-primary text-body-sm font-bold">Vào: ${c.gio_hien_thi || c.thoi_diem.substring(11, 16)}</span>
-                   </div>
-                   <button class="btn-checkout flex items-center justify-center gap-xs bg-surface-container-high hover:bg-[#fee2e2] text-on-surface hover:text-[#dc2626] rounded-lg px-standard py-xs transition-colors border border-outline-variant w-full font-bold text-body-sm" data-id="${c.ho_so_id}">
-                     <span class="material-symbols-outlined" style="font-size:16px">logout</span> Check-out
-                   </button>`
-              }
-            </div>
-          `).join('');
-    }
-
-    // Cập nhật bảng chi tiết
-    const table = document.getElementById('checkin-table-container');
-    if (table) {
-        table.innerHTML = this._renderDetailTable();
-    }
-
-    // Cập nhật biểu đồ
-    this._updateChart(checkins);
-    
-    // Bind events for dynamically added buttons
-    this._bindCheckoutEvents();
   },
 
-  _updateChart: function (checkins) {
-    const chartCanvas = document.getElementById('chart-checkin-hourly');
-    if (!chartCanvas) return;
+  _initHourlyChart: function () {
+    const ctx = document.getElementById('chart-checkin-hourly');
+    if (!ctx) return;
 
-    const hourCounts = this._buildHourCounts(checkins);
-    const maxVal = Math.max(...Object.values(hourCounts), 1);
+    if (window.GymApp._activeCheckinChart) {
+      window.GymApp._activeCheckinChart.destroy();
+    }
 
-    if (window.GymApp._activeChart) {
-      // Cập nhật chart đã có thay vì tạo mới
-      window.GymApp._activeChart.data.datasets[0].data = Object.values(hourCounts);
-      window.GymApp._activeChart.data.datasets[0].backgroundColor = Object.values(hourCounts).map(v => v === maxVal && v > 0 ? '#1D9336' : 'rgba(29,147,54,0.25)');
-      window.GymApp._activeChart.update();
-    } else {
-      window.GymApp._activeChart = new Chart(chartCanvas, {
-        type: 'bar',
-        data: {
-          labels: Object.keys(hourCounts).map(h => h + ':00'),
-          datasets: [{
-            label: 'Lượt check-in',
-            data: Object.values(hourCounts),
-            backgroundColor: Object.values(hourCounts).map(v => v === maxVal && v > 0 ? '#1D9336' : 'rgba(29,147,54,0.25)'),
-            borderColor: '#1D9336',
-            borderWidth: 1,
-            borderRadius: 4,
-          }]
+    const dataTheoGio = this._stats?.theo_gio || [];
+    const labels = [];
+    const counts = [];
+
+    for (let h = 5; h <= 22; h++) {
+      labels.push(h + 'h');
+      const found = dataTheoGio.find(x => x.gio === h);
+      counts.push(found ? found.so_luot_vao : 0);
+    }
+
+    const isDark = document.documentElement.classList.contains('dark');
+    const textColor = isDark ? '#9ca3af' : '#64748b';
+    const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)';
+
+    window.GymApp._activeCheckinChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Lượt check-in',
+          data: counts,
+          backgroundColor: '#3ecf8e',
+          borderRadius: 4,
+          borderWidth: 0
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
         },
-        options: {
-          indexAxis: 'y',
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { beginAtZero: true, grid: { color: 'rgba(190,202,185,0.3)' }, ticks: { font: { size: 10 }, stepSize: 1 } },
-            y: { grid: { display: false }, ticks: { font: { size: 10 } } }
+        scales: {
+          x: {
+            grid: { color: gridColor },
+            ticks: { color: textColor, font: { size: 10 } }
+          },
+          y: {
+            grid: { display: false },
+            ticks: { color: textColor, font: { size: 10 } }
           }
         }
-      });
-    }
+      }
+    });
   },
 
   init: async function () {
     const self = this;
     this._page = 1;
+    this._stats = null;
 
-    window.GymApp._pgHandler = function (pg) {
-      self._page = pg;
-      const table = document.getElementById('checkin-table-container');
-      if (table) {
-          table.innerHTML = self._renderDetailTable();
-          self._bindCheckoutEvents();
+    await self._fetchAndRefresh();
+
+    // Check-out event delegation
+    const handleCheckout = async function (e) {
+      const btn = e.target.closest('.btn-checkout');
+      if (!btn) return;
+      
+      const ho_so_id = btn.getAttribute('data-id');
+      if (!ho_so_id) return;
+
+      const confirmOk = confirm('Bạn có chắc chắn muốn check-out cho hội viên này?');
+      if (!confirmOk) return;
+
+      try {
+        const res = await window.GymApp.api.post(`/checkins`, { 
+          ho_so_id, 
+          loai: 'ra', 
+          phuong_thuc: 'thu_cong' 
+        });
+        
+        if (res && res.success) {
+          window.GymApp.toast('Check-out thành công!', 'success');
+          await self._fetchAndRefresh();
+        } else {
+          window.GymApp.toast(res.message || 'Check-out thất bại!', 'error');
+        }
+      } catch (err) {
+        console.error(err);
+        window.GymApp.toast('Có lỗi xảy ra!', 'error');
       }
     };
 
-    // Luôn fetch mới khi vào trang
-    await this._fetchAndRefresh();
+    document.addEventListener('click', handleCheckout);
+    self._handleCheckoutListener = handleCheckout;
 
-    // Nút tải lại thủ công
-    document.getElementById('btn-checkin-reload')?.addEventListener('click', async () => {
-      const btn = document.getElementById('btn-checkin-reload');
-      const icon = btn?.querySelector('.material-symbols-outlined');
+    // Reload event listener
+    const handleReload = async function (e) {
+      const btn = e.target.closest('#btn-checkin-reload');
+      if (!btn) return;
+
+      const icon = btn.querySelector('.material-symbols-outlined');
       if (icon) icon.classList.add('animate-spin');
-      if (btn) btn.classList.add('opacity-50', 'pointer-events-none');
+      btn.classList.add('opacity-50', 'pointer-events-none');
+      
       await self._fetchAndRefresh();
+      
       if (icon) icon.classList.remove('animate-spin');
-      if (btn) btn.classList.remove('opacity-50', 'pointer-events-none');
+      btn.classList.remove('opacity-50', 'pointer-events-none');
       window.GymApp.toast('Đã cập nhật dữ liệu check-in!', 'success');
-    });
+    };
+    document.addEventListener('click', handleReload);
+    self._handleReloadListener = handleReload;
 
-    // Auto-refresh mỗi 30 giây
+    // Pagination buttons event listener
+    const handlePagination = function(e) {
+      const btn = e.target.closest('[data-pg]');
+      if (!btn) return;
+      const container = btn.closest('#checkin-table-container');
+      if (!container) return;
+      
+      const p = parseInt(btn.getAttribute('data-pg'));
+      if (p && p !== self._page) {
+        self._page = p;
+        container.innerHTML = self._renderDetailTable();
+      }
+    };
+    document.addEventListener('click', handlePagination);
+    self._handlePaginationListener = handlePagination;
+
+    // Auto-refresh timer
     this._autoRefreshTimer = setInterval(() => self._fetchAndRefresh(), 30000);
   },
 
   destroy: function () {
     clearInterval(this._autoRefreshTimer);
     this._autoRefreshTimer = null;
+    if (this._handleCheckoutListener) {
+      document.removeEventListener('click', this._handleCheckoutListener);
+    }
+    if (this._handleReloadListener) {
+      document.removeEventListener('click', this._handleReloadListener);
+    }
+    if (this._handlePaginationListener) {
+      document.removeEventListener('click', this._handlePaginationListener);
+    }
   },
 
   guideHtml: `

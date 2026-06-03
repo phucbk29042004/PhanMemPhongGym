@@ -6,15 +6,17 @@ export const useAuthStore = create((set) => ({
   token: null,
   role: null,
   isLoading: true,
+  selectedBranch: '',
+  setSelectedBranch: (branch) => set({ selectedBranch: branch }),
   login: async (userData, token) => {
     await AsyncStorage.setItem('token', token);
     await AsyncStorage.setItem('user', JSON.stringify(userData));
-    set({ user: userData, token, role: userData.role });
+    set({ user: userData, token, role: userData.role, selectedBranch: userData.chi_nhanh || '' });
   },
   logout: async () => {
     await AsyncStorage.removeItem('token');
     await AsyncStorage.removeItem('user');
-    set({ user: null, token: null, role: null });
+    set({ user: null, token: null, role: null, selectedBranch: '' });
   },
   checkAuth: async () => {
     try {
@@ -22,7 +24,7 @@ export const useAuthStore = create((set) => ({
       const userStr = await AsyncStorage.getItem('user');
       if (token && userStr) {
         const user = JSON.parse(userStr);
-        set({ user, token, role: user.role, isLoading: false });
+        set({ user, token, role: user.role, isLoading: false, selectedBranch: user.chi_nhanh || '' });
       } else {
         set({ isLoading: false });
       }

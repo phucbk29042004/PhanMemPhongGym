@@ -719,12 +719,69 @@ window.GymApp.pages['member-add'] = {
       return;
     }
 
+<<<<<<< HEAD
     // Validate phone format
     const phoneRegex = /^(03|05|07|08|09|01[2|6|8|9])+([0-9]{8})$/;
     if (!phoneRegex.test(sdt)) {
       if (errSdt) {
         errSdt.textContent = 'Số điện thoại không đúng định dạng VN (10 số)';
         errSdt.classList.remove('hidden');
+=======
+  // Kiểm tra trùng SĐT/CCCD với API, trả về true nếu hợp lệ (không trùng)
+  _validateDuplicate: async function () {
+    const sdt = document.getElementById('reg-so-dien-thoai').value.trim();
+    const cccd = document.getElementById('reg-cccd').value.trim();
+    let hasError = false;
+
+    if (sdt) {
+      try {
+        const r = await window.GymApp.api.get(`/members/check-duplicate?field=so_dien_thoai&value=${encodeURIComponent(sdt)}`);
+        if (r.data?.exists) {
+          this._setFieldError('err-sdt', 'Số điện thoại này đã được đăng ký trong hệ thống');
+          hasError = true;
+        }
+      } catch (_) { }
+    }
+    if (cccd && /^\d{9}$|^\d{12}$/.test(cccd)) {
+      try {
+        const r = await window.GymApp.api.get(`/members/check-duplicate?field=cccd&value=${encodeURIComponent(cccd)}`);
+        if (r.data?.exists) {
+          this._setFieldError('err-cccd', 'CCCD/CMND này đã tồn tại trong hệ thống');
+          hasError = true;
+        }
+      } catch (_) { }
+    }
+    return !hasError;
+  },
+
+  init: async function () {
+    const self = this;
+    const typeSelect = document.getElementById('reg-loai-ho-so');
+    const extraFields = document.getElementById('extra-fields');
+
+    // 1. Tải dữ liệu địa chính & chi nhánh
+    try {
+      const [pRes, dRes, wRes, hcmcRes, branchesRes] = await Promise.all([
+        fetch('assets/data/provinces.json').then(r => r.json()),
+        fetch('assets/data/districts.json').then(r => r.json()),
+        fetch('assets/data/wards.json').then(r => r.json()),
+        fetch('assets/data/hanh_chinh_tphcm.json').then(r => r.json()),
+        window.GymApp.api.get('/branches').catch(() => ({ success: false, data: [] }))
+      ]);
+      self._provinces = pRes; self._districts = dRes; self._wards = wRes;
+      self._hcmcWards = hcmcRes;
+
+      const branches = (branchesRes && branchesRes.success) ? (branchesRes.data || []) : [];
+      const branchSelect = document.getElementById('reg-chi-nhanh');
+      if (branchSelect) {
+        branchSelect.innerHTML = '<option value="">— Chi nhánh —</option>' +
+          branches.map(b => `<option value="${b.ten}">${b.ten}</option>`).join('');
+        
+        // Mặc định chọn chi nhánh đang đứng (nếu có)
+        if (window.GymApp.selectedBranch) {
+          branchSelect.value = window.GymApp.selectedBranch;
+        }
+>>>>>>> main
       }
       window.GymApp.toast('Số điện thoại không đúng định dạng!', 'error');
       return;

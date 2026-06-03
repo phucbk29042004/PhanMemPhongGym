@@ -39,6 +39,7 @@
                 if (res && res.success) {
                     // Fix: Access token and user from res.data
                     localStorage.setItem('gym-token', res.data.token);
+                    sessionStorage.removeItem('selected_branch');
                     this.user = res.data.user;
                     
                     window.GymApp.toast('Đăng nhập thành công!', 'success');
@@ -67,6 +68,7 @@
          */
         logout: function() {
             localStorage.removeItem('gym-token');
+            sessionStorage.removeItem('selected_branch');
             this.user = null;
             this.redirectToLogin();
         },

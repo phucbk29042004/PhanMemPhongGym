@@ -11,6 +11,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuthStore } from '../../store/useAuthStore';
 
 function formatDate(val) {
   if (!val) return '—';
@@ -154,6 +155,8 @@ const FILTERS = [
 
 export default function AdminMembersScreen({ navigation, route }) {
   const { colors } = useTheme();
+  const { selectedBranch, setSelectedBranch } = useAuthStore();
+  const [branches, setBranches] = useState([]);
   const insets = useSafeAreaInsets();
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -169,9 +172,21 @@ export default function AdminMembersScreen({ navigation, route }) {
     }
   }, [route?.params?.filter]);
 
+  const fetchBranches = useCallback(async () => {
+    try {
+      const res = await api.get('/branches');
+      if (res.data?.success) {
+        setBranches(res.data.data || []);
+      }
+    } catch (err) {
+      console.error('[AdminMembers] fetch branches error:', err?.message);
+    }
+  }, []);
+
   const fetchMembers = useCallback(async () => {
     try {
-      const res = await api.get('/members?limit=200&loai_ho_so=hoi_vien');
+      const q = selectedBranch ? `&chi_nhanh=${encodeURIComponent(selectedBranch)}` : '';
+      const res = await api.get(`/members?limit=200&loai_ho_so=hoi_vien${q}`);
       if (res.data?.success) {
         const payload = res.data.data;
         setMembers(Array.isArray(payload) ? payload : (payload?.data || payload?.members || []));
@@ -182,10 +197,13 @@ export default function AdminMembersScreen({ navigation, route }) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [selectedBranch]);
 
-  useFocusEffect(useCallback(() => { fetchMembers(); }, [fetchMembers]));
-  const onRefresh = () => { setRefreshing(true); fetchMembers(); };
+  useFocusEffect(useCallback(() => {
+    fetchBranches();
+    fetchMembers();
+  }, [fetchBranches, fetchMembers]));
+  const onRefresh = () => { setRefreshing(true); fetchBranches(); fetchMembers(); };
 
   const [page, setPage] = useState(1);
   const itemsPerPage = 10;
@@ -230,6 +248,40 @@ export default function AdminMembersScreen({ navigation, route }) {
             <Users color="#ffffff" size={18} strokeWidth={2} />
           </View>
         </View>
+      </View>
+
+      {/* ── Bộ lọc chi nhánh (ScrollView ngang) ── */}
+      <View style={{ backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: 8 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
+          <TouchableOpacity
+            style={[
+              { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16 },
+              { backgroundColor: selectedBranch === '' ? colors.primary : colors.surfaceVariant }
+            ]}
+            onPress={() => setSelectedBranch('')}
+          >
+            <Text style={{ fontSize: 12, fontWeight: '700', color: selectedBranch === '' ? '#fff' : colors.textSecondary }}>
+              Tất cả chi nhánh
+            </Text>
+          </TouchableOpacity>
+          {branches.map((b) => {
+            const isSelected = selectedBranch === b.ten;
+            return (
+              <TouchableOpacity
+                key={b.id || b.ten}
+                style={[
+                  { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16 },
+                  { backgroundColor: isSelected ? colors.primary : colors.surfaceVariant }
+                ]}
+                onPress={() => setSelectedBranch(b.ten)}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '700', color: isSelected ? '#fff' : colors.textSecondary }}>
+                  {b.ten}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
 
       {/* Search */}
