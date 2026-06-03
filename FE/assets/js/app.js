@@ -945,35 +945,27 @@
 
     // 1. Kiểm tra xác thực (Auth)
     try {
-<<<<<<< HEAD
       const isAuthenticated = await window.GymApp.auth.init();
       if (!isAuthenticated) return;
+
+      // Cấu hình chi nhánh cho phiên làm việc
+      const user = window.GymApp.auth.user;
+      if (user && user.chi_nhanh) {
+        // Tài khoản có chi nhánh cố định (nhân viên cơ sở)
+        sessionStorage.setItem('selected_branch', user.chi_nhanh);
+        window.GymApp.selectedBranch = user.chi_nhanh;
+      } else {
+        // Admin / Quản trị viên tối cao: Kiểm tra xem đã chọn chi nhánh chưa
+        let selectedBranch = sessionStorage.getItem('selected_branch');
+        if (selectedBranch === null) {
+          // Chưa chọn chi nhánh trong session -> Hiển thị Modal chọn
+          await _showStartupBranchModal();
+        } else {
+          window.GymApp.selectedBranch = selectedBranch;
+        }
+      }
     } catch (e) {
       console.error('Auth check failed:', e);
-      // Nếu auth.js chưa load kịp hoặc bị lỗi, cho phép chạy tiếp nhưng báo lỗi
-=======
-        const isAuthenticated = await window.GymApp.auth.init();
-        if (!isAuthenticated) return;
-
-        // Cấu hình chi nhánh cho phiên làm việc
-        const user = window.GymApp.auth.user;
-        if (user && user.chi_nhanh) {
-          // Tài khoản có chi nhánh cố định (nhân viên cơ sở)
-          sessionStorage.setItem('selected_branch', user.chi_nhanh);
-          window.GymApp.selectedBranch = user.chi_nhanh;
-        } else {
-          // Admin / Quản trị viên tối cao: Kiểm tra xem đã chọn chi nhánh chưa
-          let selectedBranch = sessionStorage.getItem('selected_branch');
-          if (selectedBranch === null) {
-            // Chưa chọn chi nhánh trong session -> Hiển thị Modal chọn
-            await _showStartupBranchModal();
-          } else {
-            window.GymApp.selectedBranch = selectedBranch;
-          }
-        }
-    } catch (e) {
-        console.error('Auth check failed:', e);
->>>>>>> main
     }
 
     // 2. Đồng bộ dữ liệu SQL

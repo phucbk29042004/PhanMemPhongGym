@@ -7,23 +7,27 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
-<<<<<<< HEAD
-**✅ Hỗ trợ tính năng Import Hội viên hàng loạt từ Excel & ZIP** — Tích hợp thành công modal upload file ZIP, giải nén trong bộ nhớ ở backend, map ảnh đại diện qua cột excel "Tên file ảnh" và upload Cloudinary bất đồng bộ.
-=======
-**✅ Hoàn tất Quản lý Đa Chi Nhánh & Tích hợp Modal Chọn Chi Nhánh Đăng nhập** — Sửa sạch lỗi merge conflict database, cập nhật tự động view trạng thái hội viên, và thiết kế thêm Modal chọn chi nhánh cho Admin/Quản lý ngay sau khi đăng nhập Web.
->>>>>>> main
+**✅ Quản lý Đa Chi Nhánh & Import Hội viên hàng loạt từ Excel & ZIP** — Tích hợp thành công modal chọn chi nhánh đăng nhập, đồng bộ bộ lọc; đồng thời hoàn thiện import dữ liệu hội viên từ Excel và ZIP, upload Cloudinary bất đồng bộ.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
-<<<<<<< HEAD
+### [03/06/2026 11:40] — Giải quyết dứt điểm xung đột Git merge nhánh main vào minh1
+- **Loại**: Gộp nhánh & Giải quyết xung đột (Git Merge)
+- **File**: `FE/assets/js/app.js`, `FE/assets/js/pages/member-add.js`, `FE/assets/js/pages/revenue.js`, `tiendo.md`
+- **Mô tả**:
+  - Giải quyết xung đột logic Auth khởi động ứng dụng và popup startup chọn chi nhánh của `app.js`.
+  - Khắc phục xung đột validation chèn nhầm vị trí trong `member-add.js`, khôi phục validation phone sạch sẽ.
+  - Sửa xung đột CSS class nút bấm và flex-wrap của `revenue.js`.
+  - Dọn sạch các dấu markers của Git trong `tiendo.md`.
+- **Kết quả**: Thành công — Nhánh `minh1` đã gộp sạch xung đột với `main`.
+
 ### [02/06/2026 09:20] — Thu gọn kích thước tab Đăng ký gói dịch vụ hiển thị trọn vẹn trong khung hình
 - **Loại**: Cải tiến UI/UX (Frontend)
 - **File**: `FE/assets/js/pages/member-add.js`
 - **Mô tả**: Tinh chỉnh toàn bộ padding, margins, và chiều cao của các trường nhập liệu (py-1.5 -> py-1, mb-1.5 -> mb-1) và các card phụ (Quy định giao dịch, Biên lai tạm tính) ở tab Đăng ký gói dịch vụ thành phong cách compact. Việc này giúp giảm chiều cao tổng thể của tab xuống khoảng 70px, làm cho toàn bộ giao diện, bao gồm cả cụm nút Lưu dưới cùng, nằm trọn vẹn trong khung hình (viewport) mà không gây tràn trang và không xuất hiện thanh cuộn dọc ngoài cùng.
 - **Kết quả**: Thành công — Tab 2 hiển thị khít đẹp, vừa vặn trên các màn hình máy tính có độ phân giải thông thường.
 
-<<<<<<< HEAD
 ### [02/06/2026 09:15] — Chặn trùng lặp SĐT/CCCD/Email và sửa lỗi crash thông báo khi lưu hồ sơ
 - **Loại**: Sửa lỗi & Tính năng mới (Fullstack)
 - **File**: `BE/src/controllers/members.controller.js`, `FE/assets/js/pages/member-add.js`
@@ -175,9 +179,8 @@
   2. **Khôi phục dữ liệu doanh thu**: Chạy SQL cập nhật lại `gia_thuc_te = 300000` cho 6 bản ghi bị lỗi này (mã đăng ký: 47, 49, 70, 82, 90, 106) giúp trigger tự động bù trừ doanh thu hôm nay (`2.800.000 đ`) và lịch sử hiển thị chính xác.
   3. **Giải quyết xung đột Git**: Sửa đổi và loại bỏ các ký hiệu conflict (`<<<<<<< HEAD`, ``) lỡ bị commit trong file `members.controller.js` giúp khôi phục biên dịch thành công cho Backend.
 - **Kết quả**: Thành công — nodemon tự động khởi chạy lại ổn định, dữ liệu doanh thu hiển thị đúng.
-=======
-=======
-=======
+
+
 ### [03/06/2026 11:29] — Tự động điền chi nhánh mặc định khi đăng ký hội viên mới trên Web & Mobile
 - **Loại**: Cải tiến nghiệp vụ & UI/UX (Fullstack Web & Mobile)
 - **File**: `FE/assets/js/pages/member-add.js`, `MobileApp/src/screens/admin/AdminAddEditMemberScreen.js`
@@ -305,7 +308,7 @@
   - **Tối ưu bộ chọn giờ**: Cập nhật file `pt-register.js` để tự động ẩn khung chọn giờ (time picker container) ngay khi người dùng chọn xong giờ bắt đầu. Thêm nút xóa (x) bên cạnh giờ hiển thị; khi người dùng nhấp vào nút này hoặc sau khi đặt lịch tập thành công, giờ được reset và khung chọn giờ sẽ xuất hiện trở lại.
 - **Kết quả**: Thành công.
 
->>>>>>> main
+
 ### [02/06/2026 11:46] — Sửa lỗi trùng tên đăng nhập khi Import Excel lại sau khi xóa hội viên
 - **Loại**: Sửa bug (Backend)
 - **File**: `BE/src/controllers/members.controller.js`

@@ -36,11 +36,7 @@ window.GymApp.pages['revenue'] = {
               <button id="btn-compare-action" class="bg-brand-primary hover:bg-brand-primary/95 text-white text-body-sm font-bold px-4 py-1.5 rounded-lg active:scale-95 transition-all ml-2">So sánh</button>
             </div>
 
-<<<<<<< HEAD
-            <div class="ml-auto flex items-center gap-standard flex-shrink-0">
-=======
-            <div class="ml-auto flex items-center gap-2 flex-wrap">
->>>>>>> main
+            <div class="ml-auto flex items-center gap-standard flex-shrink-0 flex-wrap">
               <button id="rev-reload" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border border-outline-variant bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer whitespace-nowrap">
                 <span class="material-symbols-outlined text-base">refresh</span>
                 Tải lại
