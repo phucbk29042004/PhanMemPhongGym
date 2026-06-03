@@ -868,10 +868,27 @@
   document.addEventListener('DOMContentLoaded', async function () {
     console.log('Paradise GYM: DOMContentLoaded');
 
+    // 1. Kiểm tra xác thực (Auth)
+    try {
+      const isAuthenticated = await window.GymApp.auth.init();
+      if (!isAuthenticated) return;
 
-
-
-    // 2. Đồng bộ dữ liệu SQL
+      // Cấu hình chi nhánh cho phiên làm việc
+      const user = window.GymApp.auth.user;
+      if (user && user.chi_nhanh) {
+        sessionStorage.setItem('selected_branch', user.chi_nhanh);
+        window.GymApp.selectedBranch = user.chi_nhanh;
+      } else {
+        let selectedBranch = sessionStorage.getItem('selected_branch');
+        if (selectedBranch === null) {
+          await _showStartupBranchModal();
+        } else {
+          window.GymApp.selectedBranch = selectedBranch;
+        }
+      }
+    } catch (e) {
+      console.error('Auth check failed:', e);
+    }
     try {
       await window.GymApp.fetchInitialData();
     } catch (e) {
