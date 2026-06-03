@@ -449,6 +449,7 @@ export default function AdminRegisterPTScheduleScreen({ route, navigation }) {
               placeholder="Chọn ngày tập"
               colors={colors}
               returnFormat="DD/MM/YYYY"
+              minDate={new Date()}
             />
 
             {/* Thời lượng buổi tập */}
