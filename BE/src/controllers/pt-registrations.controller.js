@@ -35,11 +35,16 @@ const autoUpdateExpiredStatuses = () => {
 // Danh sách đăng ký PT (admin/lễ tân xem tất cả, PT xem lịch của mình)
 export const getRegistrations = (req, res) => {
   autoUpdateExpiredStatuses();
-  const { hoi_vien_id, pt_id, trang_thai, page = 1, limit = 20 } = req.query;
+  const { hoi_vien_id, pt_id, trang_thai, chi_nhanh, page = 1, limit = 20 } = req.query;
   const offset = (parseInt(page) - 1) * parseInt(limit);
 
   let where = 'WHERE 1=1';
   const params = [];
+
+  if (chi_nhanh) {
+    where += ' AND dp.chi_nhanh_dang_ky = ?';
+    params.push(chi_nhanh);
+  }
 
   // PT chỉ xem đăng ký của mình
   if (req.user.vai_tro === 'pt') {

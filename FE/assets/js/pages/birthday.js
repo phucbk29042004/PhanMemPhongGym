@@ -6,7 +6,11 @@ window.GymApp.pages['birthday'] = {
 
   _getBirthdayGroups: function () {
     const currentYear = new Date().getFullYear();
-    const membersList = Array.isArray(window.GymApp.data.members) ? window.GymApp.data.members : [];
+    const branch = window.GymApp.selectedBranch || '';
+    let membersList = Array.isArray(window.GymApp.data.members) ? window.GymApp.data.members : [];
+    if (branch) {
+      membersList = membersList.filter(m => m.chi_nhanh === branch);
+    }
     return Array.from({ length: 12 }, (_, idx) => {
       const month = idx + 1;
       const members = membersList
@@ -27,7 +31,12 @@ window.GymApp.pages['birthday'] = {
   _getTodayBirthdays: function () {
     const today = new Date();
     const todayMD = `${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    return (Array.isArray(window.GymApp.data.members) ? window.GymApp.data.members : []).filter(m => {
+    const branch = window.GymApp.selectedBranch || '';
+    let membersList = Array.isArray(window.GymApp.data.members) ? window.GymApp.data.members : [];
+    if (branch) {
+      membersList = membersList.filter(m => m.chi_nhanh === branch);
+    }
+    return membersList.filter(m => {
       const bDay = m.ngay_sinh || m.dob;
       if (!bDay) return false;
       const parts = bDay.split('-');

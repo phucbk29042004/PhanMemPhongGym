@@ -28,6 +28,8 @@ window.GymApp.pages['gym-rules'] = {
       nhan_vien: { label: 'Nhân viên', class: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' }
     };
 
+    const isStaff = window.GymApp.auth.user?.vai_tro === 'admin' || window.GymApp.auth.user?.vai_tro === 'le_tan';
+
     return `
       <div class="flex flex-col gap-lg animate-fadeIn">
         
@@ -37,10 +39,12 @@ window.GymApp.pages['gym-rules'] = {
             <h2 class="font-display-lg text-display-lg text-on-surface font-bold">Nội quy phòng tập</h2>
             <p class="text-on-surface-variant text-body-sm mt-xs">Quản lý và điều chỉnh các quy định phòng tập dành cho Hội viên, PT và Nhân viên</p>
           </div>
+          ${isStaff ? `
           <button id="btn-add-rule" class="flex items-center gap-xs px-5 py-2.5 rounded-xl bg-brand-primary text-white font-bold text-body-md hover:shadow-lg hover:shadow-brand-primary/20 active:scale-95 transition-all">
             <span class="material-symbols-outlined text-[16px]">add</span>
             Thêm quy tắc mới
           </button>
+          ` : ''}
         </div>
 
         <!-- Stats Grid -->
@@ -115,10 +119,14 @@ window.GymApp.pages['gym-rules'] = {
                       </div>
                       
                       <!-- Active toggle switch -->
+                      ${isStaff ? `
                       <label class="relative inline-flex items-center cursor-pointer select-none">
                         <input type="checkbox" class="sr-only peer toggle-active-rule" data-id="${r.id}" ${r.is_active ? 'checked' : ''} />
                         <div class="w-10 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-primary"></div>
                       </label>
+                      ` : `
+                      <span class="text-xs font-bold ${r.is_active ? 'text-brand-primary' : 'text-outline-variant'}">${r.is_active ? 'Đang bật' : 'Đang tắt'}</span>
+                      `}
                     </div>
 
                     <!-- Rule description -->
@@ -132,7 +140,7 @@ window.GymApp.pages['gym-rules'] = {
                     </span>
 
                     <div class="flex items-center gap-xs">
-                      <button class="material-symbols-outlined text-outline hover:text-brand-primary text-lg p-1.5 rounded-lg hover:bg-surface-container-low transition-colors btn-edit-rule" data-id="${r.id}" title="Chỉnh sửa">edit</button>
+                      ${isStaff ? `<button class="material-symbols-outlined text-outline hover:text-brand-primary text-lg p-1.5 rounded-lg hover:bg-surface-container-low transition-colors btn-edit-rule" data-id="${r.id}" title="Chỉnh sửa">edit</button>` : ''}
                       ${window.GymApp.auth.user?.vai_tro === 'admin' ? `
                         <button class="material-symbols-outlined text-outline hover:text-error text-lg p-1.5 rounded-lg hover:bg-error/10 transition-colors btn-del-rule" data-id="${r.id}" data-title="${r.tieu_de}" title="Xóa">delete</button>
                       ` : ''}
@@ -223,8 +231,12 @@ window.GymApp.pages['gym-rules'] = {
         `;
       }
 
-      // Chỉ admin mới gọi được /config/rules/all để xem tất cả
-      const res = await window.GymApp.api.get('/config/rules/all');
+      // Nếu là admin hoặc le_tan (nhân viên), dùng /config/rules/all để xem tất cả kể cả quy tắc chưa kích hoạt.
+      // Ngược lại (ví dụ PT), chỉ xem các quy tắc đang hoạt động qua /config/rules.
+      const isStaff = window.GymApp.auth.user?.vai_tro === 'admin' || window.GymApp.auth.user?.vai_tro === 'le_tan';
+      const endpoint = isStaff ? '/config/rules/all' : '/config/rules';
+      
+      const res = await window.GymApp.api.get(endpoint);
       if (res?.success) {
         self.rules = res.data || [];
       } else {

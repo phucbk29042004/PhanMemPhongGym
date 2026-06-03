@@ -410,6 +410,7 @@ function recreateMemberStatusView() {
         h.email,
         h.avatar_url,
         h.is_deleted,
+        h.chi_nhanh,
         (SELECT MAX(d_ngay) FROM (
            SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
            UNION ALL
@@ -450,8 +451,8 @@ function recreateMemberStatusView() {
 
 // ── Sửa lỗi View bị hỏng sau khi migrate (SQLite tự động đổi tên ref sang _old) ──
 const checkView = db.prepare("SELECT sql FROM sqlite_master WHERE type='view' AND name='v_trang_thai_hoi_vien'").get();
-if (checkView && checkView.sql.toLowerCase().includes('old')) {
-  console.log('[DB] 🛠️ Phát hiện View v_trang_thai_hoi_vien bị hỏng (ref sang _old), đang tái tạo...');
+if (checkView && (checkView.sql.toLowerCase().includes('old') || !checkView.sql.toLowerCase().includes('chi_nhanh'))) {
+  console.log('[DB] 🛠️ Phát hiện View v_trang_thai_hoi_vien bị hỏng hoặc thiếu cột chi_nhanh, đang tái tạo...');
   db.transaction(() => {
     recreateMemberStatusView();
   })();
@@ -1182,22 +1183,8 @@ try {
 
       // 3. Copy dữ liệu từ bảng cũ sang bảng mới
       db.exec(`
-<<<<<<< HEAD
-        INSERT INTO dang_ky_pt (
-          id, hoi_vien_id, pt_id, goi_pt_id, so_buoi_dang_ky, so_buoi_da_tap,
-          tu_ngay, den_ngay, gia_thuc_te, ghi_chu_gia, trang_thai, phuong_thuc_tt,
-          nguoi_thu_id, ma_giao_dich, ghi_chu_tt, ngay_thanh_toan, nguoi_tao_id,
-          nguoi_cap_nhat_id, ngay_tao, ngay_cap_nhat
-        )
-        SELECT 
-          id, hoi_vien_id, pt_id, goi_pt_id, so_buoi_dang_ky, so_buoi_da_tap,
-          tu_ngay, den_ngay, gia_thuc_te, ghi_chu_gia, trang_thai, phuong_thuc_tt,
-nguoi_thu_id, ma_giao_dich, ghi_chu_tt, ngay_thanh_toan, nguoi_tao_id,
-          nguoi_tao_id, ngay_tao, ngay_cap_nhat
-=======
         INSERT INTO dang_ky_pt (${insertFields.join(', ')})
         SELECT ${selectFields.join(', ')}
->>>>>>> main
         FROM dang_ky_pt_old_v18;
       `);
 
@@ -1594,6 +1581,42 @@ try {
 } catch (err) {
   console.error('[DB] ❌ Lỗi khi sửa FK v21 (danh_gia_pt):', err.message);
 }
+
+// ── Migration v22: Thêm các cột phục vụ quản lý đa chi nhánh ──
+try {
+  db.exec(`ALTER TABLE ho_so ADD COLUMN chi_nhanh TEXT;`);
+  console.log('[DB] ✅ Thêm cột chi_nhanh vào bảng ho_so.');
+} catch (_) { }
+
+try {
+  db.exec(`ALTER TABLE tai_khoan ADD COLUMN chi_nhanh TEXT;`);
+  console.log('[DB] ✅ Thêm cột chi_nhanh vào bảng tai_khoan.');
+} catch (_) { }
+
+try {
+  db.exec(`ALTER TABLE check_in ADD COLUMN chi_nhanh_thuc_hien TEXT;`);
+  console.log('[DB] ✅ Thêm cột chi_nhanh_thuc_hien vào bảng check_in.');
+} catch (_) { }
+
+try {
+  db.exec(`ALTER TABLE luot_vao_ra ADD COLUMN chi_nhanh_thuc_hien TEXT;`);
+  console.log('[DB] ✅ Thêm cột chi_nhanh_thuc_hien vào bảng luot_vao_ra.');
+} catch (_) { }
+
+try {
+  db.exec(`ALTER TABLE lich_tap ADD COLUMN chi_nhanh_tap TEXT;`);
+  console.log('[DB] ✅ Thêm cột chi_nhanh_tap vào bảng lich_tap.');
+} catch (_) { }
+
+try {
+  db.exec(`ALTER TABLE dang_ky_goi_tap ADD COLUMN chi_nhanh_dang_ky TEXT;`);
+  console.log('[DB] ✅ Thêm cột chi_nhanh_dang_ky vào bảng dang_ky_goi_tap.');
+} catch (_) { }
+
+try {
+  db.exec(`ALTER TABLE dang_ky_pt ADD COLUMN chi_nhanh_dang_ky TEXT;`);
+  console.log('[DB] ✅ Thêm cột chi_nhanh_dang_ky vào bảng dang_ky_pt.');
+} catch (_) { }
 
 // Tự động đồng bộ lại View v_trang_thai_hoi_vien khi khởi động để cập nhật logic mới nhất
 try {

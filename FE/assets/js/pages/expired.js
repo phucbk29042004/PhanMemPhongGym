@@ -148,11 +148,17 @@ window.GymApp.pages['expired'] = {
   _refreshView: function () {
     const self = this;
     const query = (this._searchQuery || '').toLowerCase().trim();
+    const branch = window.GymApp.selectedBranch || '';
 
-    const filterFn = m => !query ||
-      (m.ho_ten && m.ho_ten.toLowerCase().includes(query)) ||
-      (m.ma_ho_so && m.ma_ho_so.toLowerCase().includes(query)) ||
-      (m.so_dien_thoai && m.so_dien_thoai.includes(query));
+    const filterFn = m => {
+      const matchQ = !query ||
+        (m.ho_ten && m.ho_ten.toLowerCase().includes(query)) ||
+        (m.ma_ho_so && m.ma_ho_so.toLowerCase().includes(query)) ||
+        (m.so_dien_thoai && m.so_dien_thoai.includes(query));
+      const mBranch = m.chi_nhanh || m.chi_nhanh_mua;
+      const matchBranch = !branch || mBranch === branch;
+      return matchQ && matchBranch;
+    };
 
     if (this._tab === 'expired') {
       const filtered = this._expiredList.filter(filterFn);
@@ -249,6 +255,9 @@ window.GymApp.pages['expired'] = {
             </div>
           </div>
         </td>
+        <td class="px-standard py-3">
+          <span class="font-bold text-on-surface text-body-sm">${m.chi_nhanh || '—'}</span>
+        </td>
         <td class="px-standard py-3 text-center">
           <div class="flex justify-center items-center gap-compact">
             <button class="notify-btn w-9 h-9 flex items-center justify-center rounded-xl bg-surface-container-low text-on-surface-variant hover:bg-brand-primary hover:text-white transition-all shadow-sm active:scale-95" data-id="${m.id}" title="Gửi nhắc nhở">
@@ -271,6 +280,7 @@ window.GymApp.pages['expired'] = {
                 <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60">Hội viên</th>
                 <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60">Mã HV</th>
                 <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60">Gói tập</th>
+                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60">Chi nhánh</th>
                 <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60 text-center">Thao tác</th>
               </tr>
             </thead>
@@ -326,6 +336,9 @@ window.GymApp.pages['expired'] = {
               </div>
             </div>
           </td>
+          <td class="px-standard py-3">
+            <span class="font-bold text-on-surface text-body-sm">${m.chi_nhanh || '—'}</span>
+          </td>
           <td class="px-standard py-3 text-center">
             <div class="flex justify-center items-center gap-compact">
               <button class="notify-btn w-9 h-9 flex items-center justify-center rounded-xl bg-surface-container-low text-on-surface-variant hover:bg-brand-primary hover:text-white transition-all shadow-sm active:scale-95" data-id="${m.id}" title="Gửi nhắc nhở">
@@ -349,6 +362,7 @@ window.GymApp.pages['expired'] = {
                 <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60">Hội viên</th>
                 <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60">Mã HV</th>
                 <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60">Gói tập</th>
+                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60">Chi nhánh</th>
                 <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60 text-center">Thao tác</th>
               </tr>
             </thead>

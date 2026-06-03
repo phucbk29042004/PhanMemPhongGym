@@ -12,7 +12,9 @@ window.GymApp.pages['pt-training'] = {
 
   render: function () {
     const pts = window.GymApp.data.pts || [];
-    const schedules = window.GymApp.data.ptSchedules || [];
+    const selectedBranch = window.GymApp.selectedBranch || '';
+    const allSchedules = window.GymApp.data.ptSchedules || [];
+    const schedules = selectedBranch ? allSchedules.filter(s => s.chi_nhanh_tap === selectedBranch) : allSchedules;
     const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
     const todaySchedules = schedules.filter(s => s.ngay_tap === today);
 
@@ -344,6 +346,7 @@ window.GymApp.pages['pt-training'] = {
     const memberId = this._filterMember;
     const fromDate = this._filterFrom;
     const toDate = this._filterTo;
+    const branch = window.GymApp.selectedBranch || '';
 
     const filtered = (window.GymApp.data.ptSchedules || []).filter(s => {
       const ptName = (s.ten_pt || s.ptName || '').toLowerCase();
@@ -353,12 +356,13 @@ window.GymApp.pages['pt-training'] = {
       const matchS = !status || s.trang_thai === status || s.status === status;
       const matchPt = !ptId || s.pt_id == ptId || s.ptId == ptId;
       const matchMember = !memberId || s.hoi_vien_id == memberId || s.memberId == memberId;
+      const matchBranch = !branch || s.chi_nhanh_tap === branch;
 
       const sDate = s.ngay_tap || '';
       const matchFrom = !fromDate || sDate >= fromDate;
       const matchTo = !toDate || sDate <= toDate;
 
-      return matchQ && matchS && matchPt && matchMember && matchFrom && matchTo;
+      return matchQ && matchS && matchPt && matchMember && matchFrom && matchTo && matchBranch;
     });
 
     // Khi áp dụng bộ lọc mới, Reset trang hiện tại về trang 1

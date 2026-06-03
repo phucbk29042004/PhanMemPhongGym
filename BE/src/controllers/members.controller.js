@@ -39,11 +39,16 @@ const autoUpdateExpiredStatuses = () => {
 // Lấy danh sách hội viên (hỗ trợ filter và phân trang)
 export const getMembers = (req, res) => {
   autoUpdateExpiredStatuses();
-  const { search, status, page = 1, limit = 20 } = req.query;
+  const { search, status, chi_nhanh, page = 1, limit = 20 } = req.query;
   const offset = (parseInt(page) - 1) * parseInt(limit);
 
   let where = `WHERE h.loai_ho_so = 'hoi_vien' AND h.is_deleted = 0`;
   const params = [];
+
+  if (chi_nhanh) {
+    where += ` AND h.chi_nhanh = ?`;
+    params.push(chi_nhanh);
+  }
 
   if (search) {
     where += ` AND (h.ho_ten LIKE ? OR h.ma_ho_so LIKE ? OR h.so_dien_thoai LIKE ?)`;
@@ -400,7 +405,7 @@ export const getExpiringMembers = (req, res) => {
 
   const rows = db.prepare(`
     SELECT
-      h.id, h.ma_ho_so, h.ho_ten, h.so_dien_thoai, h.email, h.avatar_url,
+      h.id, h.ma_ho_so, h.ho_ten, h.so_dien_thoai, h.email, h.avatar_url, h.chi_nhanh,
       'sap_het_han' AS trang_thai,
       (SELECT MAX(d_ngay) FROM (
          SELECT den_ngay as d_ngay FROM dang_ky_goi_tap
@@ -438,7 +443,7 @@ export const getExpiredMembers = (req, res) => {
   autoUpdateExpiredStatuses(); // Cập nhật trạng thái hết hạn trước khi query
   const rows = db.prepare(`
     SELECT
-      h.id, h.ma_ho_so, h.ho_ten, h.so_dien_thoai, h.email, h.avatar_url,
+      h.id, h.ma_ho_so, h.ho_ten, h.so_dien_thoai, h.email, h.avatar_url, h.chi_nhanh,
       'het_han' AS trang_thai,
       (SELECT MAX(d_ngay) FROM (
          SELECT den_ngay as d_ngay FROM dang_ky_goi_tap
