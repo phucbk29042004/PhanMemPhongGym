@@ -108,16 +108,18 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  // Form inputs
-  const [startDate, setStartDate] = useState(() => {
-    if (activePkg && oldPkgRemainingDays > 0 && activePkg.den_ngay) {
+  // Khi isSwitch=true (đổi gói): ngày bắt đầu = hôm nay
+  // Khi isSwitch=false (đăng ký nối tiếp): ngày bắt đầu = ngày liền sau ngày hết hạn gói cũ
+  const calcStartDate = (switchMode) => {
+    if (!switchMode && activePkg && oldPkgRemainingDays > 0 && activePkg.den_ngay) {
       const nextDay = new Date(activePkg.den_ngay);
       nextDay.setDate(nextDay.getDate() + 1);
-      return `${String(nextDay.getDate()).padStart(2, '0')}/${String(nextDay.getMonth() + 1).padStart(2, '0')}/${nextDay.getFullYear()}`;
+      return dateToDMY(nextDay);
     }
-    const today = new Date();
-    return `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
-  }); // DD/MM/YYYY
+    return dateToDMY(new Date());
+  };
+
+  const [startDate, setStartDate] = useState(() => calcStartDate(!!activePkg)); // DD/MM/YYYY
 
   const [endDate, setEndDate] = useState(''); // DD/MM/YYYY
   const [actualPrice, setActualPrice] = useState('');
@@ -345,6 +347,7 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
                   onPress={() => {
                     setIsSwitch(true);
                     setRefundAmount(String(oldPkgCredit));
+                    setStartDate(calcStartDate(true));
                   }}
                 >
                   <Text style={{ fontSize: 12, color: isSwitch ? colors.primary : colors.textSecondary, fontWeight: isSwitch ? '700' : '500' }}>
@@ -359,10 +362,11 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
                   ]}
                   onPress={() => {
                     setIsSwitch(false);
+                    setStartDate(calcStartDate(false));
                   }}
                 >
                   <Text style={{ fontSize: 12, color: !isSwitch ? colors.primary : colors.textSecondary, fontWeight: !isSwitch ? '700' : '500' }}>
-                    Đăng ký song song
+                    Đăng ký nối tiếp
                   </Text>
                 </TouchableOpacity>
               </View>

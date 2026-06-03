@@ -7,15 +7,19 @@
 ---
 
 ## 📌 Trạng Thái Hiện Tại
-<<<<<<< HEAD
-**✅ Quản lý Đa Chi Nhánh & Import Hội viên hàng loạt từ Excel & ZIP** — Tích hợp thành công modal chọn chi nhánh đăng nhập, đồng bộ bộ lọc; đồng thời hoàn thiện import dữ liệu hội viên từ Excel và ZIP, upload Cloudinary bất đồng bộ.
-=======
-**✅ Hoàn tất Quản lý Đa Chi Nhánh & Tăng cường tính chính xác của AI Chatbot** — Sửa lỗi query thống kê chi nhánh của chatbot và bổ sung cơ chế kiểm soát chất lượng phản hồi, ngăn chặn AI tự động thay đổi số liệu đúng thành số liệu sai để chiều lòng người dùng.
->>>>>>> main
+**✅ Quản lý Đa Chi Nhánh, Import Hội viên Excel/ZIP & Tối ưu AI Chatbot** — Tích hợp thành công modal chọn chi nhánh đăng nhập, đồng bộ bộ lọc, hoàn thiện import hội viên hàng loạt; đồng thời nâng cao độ chính xác truy vấn SQL của AI Chatbot và kiểm soát chất lượng phản hồi.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
+### [03/06/2026 14:27] — Hoàn tất Git merge nhánh main vào minh1
+- **Loại**: Gộp nhánh & Giải quyết xung đột (Git Merge)
+- **File**: `tiendo.md`, `BE/database/paradise_gym.db-wal`, `BE/database/paradise_gym.db-shm`
+- **Mô tả**:
+  - Gộp thành công các thay đổi mới nhất từ nhánh `main` (bao gồm tối ưu hóa AI Chatbot).
+  - Giải quyết xung đột nhị phân trên các file SQLite log tạm thời bằng cách giữ lại dữ liệu của nhánh hiện tại.
+- **Kết quả**: Thành công — Nhánh `minh1` đã đồng bộ hoàn toàn với `main`.
+
 ### [03/06/2026 11:40] — Giải quyết dứt điểm xung đột Git merge nhánh main vào minh1
 - **Loại**: Gộp nhánh & Giải quyết xung đột (Git Merge)
 - **File**: `FE/assets/js/app.js`, `FE/assets/js/pages/member-add.js`, `FE/assets/js/pages/revenue.js`, `tiendo.md`
@@ -184,6 +188,20 @@
   3. **Giải quyết xung đột Git**: Sửa đổi và loại bỏ các ký hiệu conflict (`<<<<<<< HEAD`, ``) lỡ bị commit trong file `members.controller.js` giúp khôi phục biên dịch thành công cho Backend.
 - **Kết quả**: Thành công — nodemon tự động khởi chạy lại ổn định, dữ liệu doanh thu hiển thị đúng.
 
+
+### [03/06/2026 14:20] — Sửa lỗi luồng đổi gói Gym và cải thiện UI chọn chi nhánh (Mobile)
+- **Loại**: Sửa bug & Cải tiến UI (Mobile)
+- **File**: `MobileApp/src/screens/admin/AdminRegisterPackageScreen.js`, `MobileApp/src/screens/admin/AdminDashboardScreen.js`
+- **Mô tả**:
+  - **[Sửa bug] Luồng đổi gói Gym bị nhầm thành đăng ký nối tiếp**:
+    - Nguyên nhân: `startDate` được khởi tạo luôn = ngày nối tiếp sau gói cũ bất kể chế độ là "Đổi gói" hay "Đăng ký nối tiếp".
+    - Sửa bằng cách tách ra hàm `calcStartDate(switchMode)`: khi `switchMode=true` (đổi gói) → ngày bắt đầu = hôm nay; khi `switchMode=false` (đăng ký nối tiếp) → ngày bắt đầu = ngày liền sau khi gói cũ hết hạn.
+    - Khi bấm đổi giữa 2 chế độ, `startDate` cũng được cập nhật lại theo `calcStartDate`.
+    - Đổi tên nút `"Đăng ký song song"` → `"Đăng ký nối tiếp"` cho đúng với hành vi thực tế.
+  - **[Cải tiến UI] Bộ lọc chi nhánh trên Dashboard**:
+    - Thay thế `ScrollView` chip pills nằm ngang bằng 1 nút gọn `[Icon + Tên chi nhánh đang chọn + Mũi tên]`.
+    - Khi bấm vào nút → mở Modal danh sách chi nhánh dạng radio chọn (cuộn dọc), không cần kéo ngang nhiều lần.
+- **Kết quả**: Thành công.
 
 ### [03/06/2026 13:35] — Ngăn chặn AI tự ý sửa số liệu và nghiêm cấm hiển thị SQL thô cho người dùng
 - **Loại**: Sửa bug / Cải tiến (Backend)

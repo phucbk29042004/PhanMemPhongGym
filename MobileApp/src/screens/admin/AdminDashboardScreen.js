@@ -8,8 +8,9 @@ import {
 import {
   AlertTriangle, BarChart3, CalendarCheck, CheckCircle2,
   Clock, CreditCard, DollarSign, TrendingUp, UserCheck, Users,
-  Bell, Trash2, Check, X,
+  Bell, Trash2, Check, X, Building2, ChevronDown,
 } from 'lucide-react-native';
+
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuthStore } from '../../store/useAuthStore';
 import { api } from '../../services/api';
@@ -209,6 +210,7 @@ export default function AdminDashboardScreen({ navigation }) {
 
 
   const [branches, setBranches] = useState([]);
+  const [showBranchModal, setShowBranchModal] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -379,39 +381,21 @@ export default function AdminDashboardScreen({ navigation }) {
         </View>
       </View>
 
-      {/* ── Bộ lọc chi nhánh (ScrollView ngang) ── */}
-      <View style={{ backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: 8 }}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
-          <TouchableOpacity
-            style={[
-              { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, borderOpacity: 0.8 },
-              { backgroundColor: selectedBranch === '' ? colors.primary : colors.surfaceVariant }
-            ]}
-            onPress={() => setSelectedBranch('')}
-          >
-            <Text style={{ fontSize: 12, fontWeight: '700', color: selectedBranch === '' ? '#fff' : colors.textSecondary }}>
-              Tất cả chi nhánh
-            </Text>
-          </TouchableOpacity>
-          {branches.map((b) => {
-            const isSelected = selectedBranch === b.ten;
-            return (
-              <TouchableOpacity
-                key={b.id || b.ten}
-                style={[
-                  { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16 },
-                  { backgroundColor: isSelected ? colors.primary : colors.surfaceVariant }
-                ]}
-                onPress={() => setSelectedBranch(b.ten)}
-              >
-                <Text style={{ fontSize: 12, fontWeight: '700', color: isSelected ? '#fff' : colors.textSecondary }}>
-                  {b.ten}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
+      {/* ── Bộ lọc chi nhánh — Nút mở Modal ── */}
+      <TouchableOpacity
+        style={[
+          styles.branchTrigger,
+          { backgroundColor: colors.surface, borderBottomColor: colors.border }
+        ]}
+        onPress={() => setShowBranchModal(true)}
+        activeOpacity={0.8}
+      >
+        <Building2 color={colors.primary} size={15} strokeWidth={2} />
+        <Text style={{ flex: 1, fontSize: 13, fontWeight: '700', color: colors.text, marginLeft: 8 }}>
+          {selectedBranch || 'Tất cả chi nhánh'}
+        </Text>
+        <ChevronDown color={colors.textSecondary} size={16} strokeWidth={2} />
+      </TouchableOpacity>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -796,6 +780,55 @@ export default function AdminDashboardScreen({ navigation }) {
           </View>
         </View>
       </Modal>
+
+      {/* ── MODAL CHỌN CHI NHÁNH ── */}
+      <Modal visible={showBranchModal} transparent animationType="slide" onRequestClose={() => setShowBranchModal(false)}>
+        <View style={modalStyles.backdrop}>
+          <View style={[modalStyles.container, { backgroundColor: colors.surface, maxHeight: '70%' }]}>
+            <View style={modalStyles.header}>
+              <Text style={[modalStyles.title, { color: colors.text }]}>Chọn chi nhánh</Text>
+              <TouchableOpacity onPress={() => setShowBranchModal(false)} style={modalStyles.closeBtn}>
+                <X color={colors.text} size={20} />
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              style={[branchPickerStyles.item, { borderBottomColor: colors.borderLight }]}
+              onPress={() => { setSelectedBranch(''); setShowBranchModal(false); }}
+            >
+              <View style={[
+                branchPickerStyles.radio,
+                { borderColor: selectedBranch === '' ? colors.primary : colors.border },
+                selectedBranch === '' && { backgroundColor: colors.primary }
+              ]} />
+              <Text style={[branchPickerStyles.itemText, { color: selectedBranch === '' ? colors.primary : colors.text, fontWeight: selectedBranch === '' ? '700' : '500' }]}>
+                Tất cả chi nhánh
+              </Text>
+            </TouchableOpacity>
+            <FlatList
+              data={branches}
+              keyExtractor={(item) => String(item.id || item.ten)}
+              renderItem={({ item }) => {
+                const isSelected = selectedBranch === item.ten;
+                return (
+                  <TouchableOpacity
+                    style={[branchPickerStyles.item, { borderBottomColor: colors.borderLight }]}
+                    onPress={() => { setSelectedBranch(item.ten); setShowBranchModal(false); }}
+                  >
+                    <View style={[
+                      branchPickerStyles.radio,
+                      { borderColor: isSelected ? colors.primary : colors.border },
+                      isSelected && { backgroundColor: colors.primary }
+                    ]} />
+                    <Text style={[branchPickerStyles.itemText, { color: isSelected ? colors.primary : colors.text, fontWeight: isSelected ? '700' : '500' }]}>
+                      {item.ten}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1049,4 +1082,30 @@ const styles = StyleSheet.create({
   statBox: { flex: 1, borderRadius: 14, padding: 14, alignItems: 'center', gap: 4 },
   statVal: { fontSize: 22, fontWeight: '800' },
   statLabel: { fontSize: 10, fontWeight: '600', textAlign: 'center' },
+  branchTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+  },
+});
+
+const branchPickerStyles = StyleSheet.create({
+  item: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    gap: 12,
+  },
+  radio: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+  },
+  itemText: {
+    fontSize: 14,
+  },
 });
