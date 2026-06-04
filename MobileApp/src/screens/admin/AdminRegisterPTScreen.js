@@ -8,6 +8,7 @@ import { X, Dumbbell, User, Save, AlertTriangle } from 'lucide-react-native';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import DatePickerField from '../../components/DatePickerField';
+import { useAuthStore } from '../../store/authStore';
 
 function formatPrice(val) {
   if (val == null) return '0đ';
@@ -76,6 +77,7 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
   const { member, activePT } = route.params || {};
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const { selectedBranch } = useAuthStore();
 
   // Calculate old PT credit
   let oldPTCredit = 0;
@@ -156,7 +158,12 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
           api.get('/packages/pt')
         ]);
         if (trainerRes.data?.success) {
-          setTrainers(trainerRes.data.data?.trainers || trainerRes.data.data || []);
+          const allTrainers = trainerRes.data.data?.trainers || trainerRes.data.data || [];
+          // Lọc HLV theo chi nhánh đang chọn (nếu có)
+          const filteredTrainers = selectedBranch
+            ? allTrainers.filter(t => t.chi_nhanh === selectedBranch)
+            : allTrainers;
+          setTrainers(filteredTrainers);
         }
         if (pkgRes.data?.success) {
           setPtPackages(pkgRes.data.data || []);

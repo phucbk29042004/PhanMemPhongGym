@@ -8,11 +8,20 @@
 ---
 
 ## 📌 Trạng thái hiện tại
-**✅ Sửa lỗi biểu đồ phương thức thanh toán (lần 2)** — Sửa 2 lỗi logic: (1) biểu đồ hôm nay/hôm qua tạo key sai 7 ngày → không khớp dữ liệu; (2) gói hết hạn (het_han) bị bỏ khỏi calcInflow → biểu đồ 7/30 ngày hiện trống dù đã có dữ liệu.
+**✅ Lọc PT theo chi nhánh khi đăng ký gói PT & Badge chi nhánh trên lịch tập** — Web & Mobile đã lọc HLV đúng chi nhánh trong modal đăng ký gói PT. Lịch đào tạo PT hiển thị badge chi nhánh khi xem tất cả chi nhánh.
 
 ---
 
 ## 📋 Danh Sách Thay Đổi
+
+### [04/06/2026 13:08] — Lọc PT theo chi nhánh khi đăng ký gói PT & Badge chi nhánh lịch tập (Fullstack)
+- **Loại**: Sửa bug & Chức năng mới (Web + Mobile)
+- **File**: `FE/assets/js/pages/pt-training.js`, `FE/assets/js/pages/members-list.js`, `MobileApp/src/screens/admin/AdminRegisterPTScreen.js`
+- **Mô tả**:
+  - **`pt-training.js`**: Bổ sung badge hiển thị tên chi nhánh (icon location_on + tên ngắn) trên mỗi thẻ lịch tập khi Admin đang xem “Tất cả chi nhánh”. Khi lọc chi nhánh cụ thể, badge ẩn đi để không thừa thông tin.
+  - **`members-list.js`**: Sửa 2 modal đăng ký gói PT (`_showAddPtRegistrationModal` và `_showEditPtRegistrationModal`): lọc danh sách HLV hiển thị chỉ theo chi nhánh đang chọn (`window.GymApp.selectedBranch`). Nếu đang xem tất cả chi nhánh thì vẫn hiển thị đầy đủ.
+  - **`AdminRegisterPTScreen.js` (Mobile)**: Import `useAuthStore`, lấy `selectedBranch`, lọc danh sách HLV sau khi fetch từ API — chỉ hiển HLV thuộc chi nhánh đang chọn.
+- **Kết quả**: Thành công.
 
 ### [04/06/2026 09:40] — Đồng bộ thông tin Chi nhánh HLV trên Mobile Admin
 - **Loại**: Chức năng mới (Mobile)

@@ -152,7 +152,7 @@ window.GymApp.pages['pt-training'] = {
 
         <!-- Cards lịch đào tạo -->
         <div id="pt-schedule-container" class="w-full">
-          ${this._renderCards(schedules)}
+          ${this._renderCards(schedules, selectedBranch)}
         </div>
 
         </div>
@@ -199,7 +199,7 @@ window.GymApp.pages['pt-training'] = {
     `;
   },
 
-  _renderCards: function (schedules) {
+  _renderCards: function (schedules, activeBranch) {
     const list = Array.isArray(schedules) ? schedules : [];
     if (list.length === 0) {
       return `
@@ -308,6 +308,12 @@ window.GymApp.pages['pt-training'] = {
                 <span class="bg-surface-container-low px-1.5 py-0.5 rounded-full text-[9px] uppercase tracking-wider font-extrabold border border-outline-variant/30 text-brand-primary shrink-0">${window.GymApp.formatEnumLabel(s.loai_buoi || s.type || 'ca_nhan')}</span>
                 ${s.ghi_chu || s.notes ? `<span class="text-on-surface-variant text-[11px] truncate" title="${s.ghi_chu || s.notes}">${s.ghi_chu || s.notes}</span>` : ''}
               </div>
+              <!-- Badge chi nhánh: chỉ hiện khi đang xem tất cả chi nhánh -->
+              ${!activeBranch && (s.chi_nhanh_tap) ? `
+              <div class="flex items-center gap-1 mt-0.5">
+                <span class="material-symbols-outlined text-[11px] text-[#1D9336]" style="font-variation-settings:'FILL' 1">location_on</span>
+                <span class="text-[10px] font-bold text-[#1D9336] truncate" title="${s.chi_nhanh_tap}">${s.chi_nhanh_tap.replace('Chi nhánh ', '')}</span>
+              </div>` : ''}
 
               <!-- Actions Footer -->
               ${hasActions ? `
@@ -366,7 +372,7 @@ window.GymApp.pages['pt-training'] = {
     });
 
     // Khi áp dụng bộ lọc mới, Reset trang hiện tại về trang 1
-    document.getElementById('pt-schedule-container').innerHTML = this._renderCards(filtered);
+    document.getElementById('pt-schedule-container').innerHTML = this._renderCards(filtered, branch);
   },
 
   init: async function (skipFetch = false) {
