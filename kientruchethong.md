@@ -231,5 +231,10 @@ graph TD
   - Tích hợp gọi API `/api/trainers/:ptId/schedules?date=YYYY-MM-DD` tại màn hình đặt lịch của Admin và sử dụng trực tiếp cache schedules có sẵn ở màn hình PT để phân tích trùng lịch.
   - Cơ chế kiểm soát giờ đặt lịch chặt chẽ: Vô hiệu hóa (tô xám, gạch ngang, hiển thị nhãn không khả dụng) các khung giờ trong quá khứ đối với ngày hôm nay và các khung giờ bận do trùng lặp lịch dạy khác của PT.
 
+# Cập nhật kiến trúc 04/06/2026 — Thiết kế lại giao diện lịch PT & Tích hợp In hóa đơn trực tiếp trên Web
 
-
+- **Giao diện Tab Đặt lịch PT**: Thiết kế lại giao diện quản lý gói PT trong modal chi tiết hội viên trên Web (`members-list.js`). Chuyển đổi các card thông tin gói PT thô cứng ban đầu thành bảng danh sách (`<table>`) nhỏ gọn, thu nhỏ kích thước chữ và các badge trạng thái để tối ưu không gian hiển thị.
+- **Tích hợp In hóa đơn Web**:
+  - Phát triển component in ấn độc lập `FE/assets/js/components/invoice-template.js` cung cấp hàm `window.GymApp.printInvoice(data)` thực hiện in qua iframe ẩn.
+  - Hóa đơn được thiết kế chuẩn khổ A4, font chữ Times New Roman truyền thống theo đúng quy chuẩn biên lai hóa đơn, hiển thị rõ ràng thông tin chi nhánh lấy động từ `branches.json`.
+  - Tích hợp các nút **"In hóa đơn"** (màu xanh lục) vào giao diện chi tiết Gói tập thường và Gói PT của hội viên trên Web.

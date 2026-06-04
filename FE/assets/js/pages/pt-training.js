@@ -304,16 +304,17 @@ window.GymApp.pages['pt-training'] = {
               </div>
 
               <!-- Notes Area -->
-              <div class="flex items-center justify-between gap-2 pt-1 pb-1">
-                <span class="bg-surface-container-low px-1.5 py-0.5 rounded-full text-[9px] uppercase tracking-wider font-extrabold border border-outline-variant/30 text-brand-primary shrink-0">${window.GymApp.formatEnumLabel(s.loai_buoi || s.type || 'ca_nhan')}</span>
+              <div class="flex flex-wrap items-center justify-between gap-1 pt-1 pb-1">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <span class="bg-surface-container-low px-1.5 py-0.5 rounded-full text-[9px] uppercase tracking-wider font-extrabold border border-outline-variant/30 text-brand-primary shrink-0">${window.GymApp.formatEnumLabel(s.loai_buoi || s.type || 'ca_nhan')}</span>
+                  ${!activeBranch && (s.chi_nhanh_tap) ? `
+                  <div class="flex items-center gap-0.5 shrink-0 bg-success/10 px-1.5 py-0.5 rounded-full border border-success/20">
+                    <span class="material-symbols-outlined text-[10px] text-[#1D9336]" style="font-variation-settings:'FILL' 1">location_on</span>
+                    <span class="text-[9px] font-bold text-[#1D9336] truncate" title="${s.chi_nhanh_tap}">${s.chi_nhanh_tap.replace('Chi nhánh ', '')}</span>
+                  </div>` : ''}
+                </div>
                 ${s.ghi_chu || s.notes ? `<span class="text-on-surface-variant text-[11px] truncate" title="${s.ghi_chu || s.notes}">${s.ghi_chu || s.notes}</span>` : ''}
               </div>
-              <!-- Badge chi nhánh: chỉ hiện khi đang xem tất cả chi nhánh -->
-              ${!activeBranch && (s.chi_nhanh_tap) ? `
-              <div class="flex items-center gap-1 mt-0.5">
-                <span class="material-symbols-outlined text-[11px] text-[#1D9336]" style="font-variation-settings:'FILL' 1">location_on</span>
-                <span class="text-[10px] font-bold text-[#1D9336] truncate" title="${s.chi_nhanh_tap}">${s.chi_nhanh_tap.replace('Chi nhánh ', '')}</span>
-              </div>` : ''}
 
               <!-- Actions Footer -->
               ${hasActions ? `
