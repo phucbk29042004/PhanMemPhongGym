@@ -6,13 +6,8 @@
 - **Mô tả**: Hệ thống quản lý phòng GYM hiện đại sử dụng SPA Vanilla JS (Frontend) và Node.js/SQLite (Backend).
 ---
 
-<<<<<<< HEAD
 ## 📌 Trạng Thái Hiện Tại
-**✅ Quản lý Đa Chi Nhánh, Import Hội viên Excel/ZIP & Tối ưu AI Chatbot** — Tích hợp thành công modal chọn chi nhánh đăng nhập, đồng bộ bộ lọc, hoàn thiện import hội viên hàng loạt; đồng thời nâng cao độ chính xác truy vấn SQL của AI Chatbot và kiểm soát chất lượng phản hồi.
-=======
-## 📌 Trạng thái hiện tại
-**✅ Sửa lỗi biểu đồ phương thức thanh toán (lần 2)** — Sửa 2 lỗi logic: (1) biểu đồ hôm nay/hôm qua tạo key sai 7 ngày → không khớp dữ liệu; (2) gói hết hạn (het_han) bị bỏ khỏi calcInflow → biểu đồ 7/30 ngày hiện trống dù đã có dữ liệu.
->>>>>>> main
+**✅ Quản lý Đa Chi Nhánh, Import Hội viên Excel/ZIP, Tối ưu AI Chatbot & Sửa lỗi biểu đồ** — Tích hợp thành công modal chọn chi nhánh đăng nhập, đồng bộ bộ lọc, hoàn thiện import hội viên hàng loạt; nâng cao độ chính xác truy vấn SQL của AI Chatbot, kiểm soát chất lượng phản hồi, và sửa lỗi hiển thị biểu đồ phương thức thanh toán.
 
 ---
 
@@ -1396,99 +1391,84 @@
   - `FE/assets/js/pages/member-add.js` — Viết lại hoàn toàn: (1) Validation format inline (SĐT 10 số 03-09, Email có @, CCCD 9/12 số); (2) Validation trùng SĐT/CCCD với API trước khi lưu; (3) Upload ảnh bằng FormData gửi cùng hồ sơ, lưu lên Cloudinary qua BE; (4) Input chuyên môn PT dùng datalist 15 gợi ý; (5) Quê quán dùng datalist 63 tỉnh/thành; (6) Ngày sinh có min/max hợp lý (10–100 tuổi); (7) Gói tập tự tính ngày kết thúc từ so_thang; (8) Thêm field kinh nghiệm (năm) cho PT
   - `BE/src/controllers/members.controller.js` — Thêm hàm `checkDuplicate`: kiểm tra SĐT/CCCD/email đã tồn tại chưa
   - `BE/src/routes/members.routes.js` — Thêm route `GET /api/members/check-duplicate`
-- **Mô tả**: Form thêm mới hồ sơ trước đây không có validation, ảnh chỉ preview nhưng không lưu. Đã fix toàn diện: validation real-time, check trùng với DB, upload ảnh Cloudinary ngay lúc tạo hồ sơ.
-- **Kết quả**: Thành công
+- **Mô tả**: Form thêm mới hồ sơ trước đây không có validation, ảnh chỉ preview nhưng không lưu. Đã fix toàn diện: validation real-time, check trùng với DB, upload ảnh Cloudinary ngay lúc t�### 02/06/2026 08:50 — Cấu trúc lại giao diện tab Đăng ký gói dịch vụ
+- **Loại**: Chỉnh sửa giao diện Web (Frontend)
+- **File**: `FE/assets/js/pages/member-add.js`
+- **Mô tả**:
+  - Cấu trúc lại giao diện tab "Đăng ký gói dịch vụ" thành layout 2 cột cân đối, vừa vặn trong màn hình, không xuất hiện thanh cuộn dọc (scrollbar).
+  - Cột trái (`lg:col-span-7`): Gom toàn bộ 10 trường nhập liệu từ cả hai nhóm "Gói tập" và "Thanh toán" vào một grid 2 cột gọn gàng. Chuyển đổi trường Ghi chú từ textarea thành input text 1 dòng để tối ưu chiều cao.
+  - Cột phải (`lg:col-span-5`): Chứa card "Hóa đơn tạm tính" thiết kế phong cách Receipt, hiển thị trực quan thông tin gói tập, ngày áp dụng, tính toán số tiền khách trả, tiền còn thiếu/thối lại và danh sách "Quyền lợi hội viên (Mini)" tự động cập nhật theo gói tập được chọn.
+  - Tích hợp sự kiện tự động tính toán và hiển thị hóa đơn, đặc quyền ngay khi người dùng chọn gói, thay đổi tiền khách trả hoặc ngày bắt đầu.
+- **Kết quả**: ✅ Giao diện hoạt động trơn tru, hiển thị đẹp mắt, tính toán chính xác và không bị thừa khoảng trống hay xuất hiện scrollbar.
+### 02/06/2026 08:55 — Thêm Khung Lưu ý & Quy định Giao dịch để lấp đầy khoảng trống
+- **Loại**: Cải tiến giao diện Web (Frontend)
+- **File**: `FE/assets/js/pages/member-add.js`
+- **Mô tả**:
+  - Thêm card "Quy định & Lưu ý Giao dịch" ở phía dưới cột trái của tab Đăng ký gói tập, có cơ chế `flex-grow` để tự động kéo dài và lấp đầy khoảng trống ở góc trái một cách cân đối với cột phải.
+  - Hiển thị các lưu ý nghiệp vụ hữu ích cho lễ tân như chính sách kích hoạt, điều kiện bảo lưu gói (cho các gói >= 3 tháng), phí chuyển nhượng (10%), và quy định hoàn trả.
+- **Kết quả**: ✅ Giao diện đầy đặn, cân đối hơn, tận dụng tối đa không gian trống phía dưới mà vẫn đảm bảo không có thanh cuộn dọc (scrollbar).
+### 02/06/2026 08:58 — Loại bỏ ký tự tiền tệ đ / ₫ bên trong các ô nhập tiền
+- **Loại**: Chỉnh sửa giao diện Web (Frontend)
+- **File**: `FE/assets/js/pages/member-add.js`
+- **Mô tả**:
+  - Thay thế cách định dạng số tiền cũ sử dụng `.replace(' đ', '')` sang sử dụng trực tiếp hàm chuẩn `new Intl.NumberFormat('vi-VN').format(...)`.
+  - Giúp loại bỏ hoàn toàn các ký tự tiền tệ dư thừa (`đ` hoặc `₫`) bên trong các ô nhập: *Số tiền khách trả*, *Giá thực tế*, và *Tổng số tiền cần trả* (tránh xung đột định dạng của từng trình duyệt/hệ điều hành), trong khi vẫn giữ nguyên dấu phân tách hàng nghìn thuận tiện cho việc gõ và đọc.
+- **Kết quả**: ✅ Hoàn thành yêu cầu của người dùng, giao diện các ô nhập tiền sạch đẹp hơn.
+### 02/06/2026 09:05 — Sửa lỗi thiếu hàm fetchAPI gây sập chức năng Lưu hồ sơ và Đăng ký gói
+- **Loại**: Sửa bug hệ thống (Fullstack)
+- **File**:
+  - [api.js](file:///c:/PhanMemPhongGym/FE/assets/js/api.js) (Khai báo fetchAPI dùng chung)
+- **Mô tả**:
+  - Triển khai và khai báo phương thức dùng chung `window.GymApp.fetchAPI` trong `api.js`. Hàm này tự động đính kèm token xác thực JWT từ `localStorage`, tự động nhận diện dạng dữ liệu (bỏ qua Content-Type đối với `FormData` khi tải lên hình ảnh avatar, và tự động set `application/json` đối với dữ liệu JSON của đăng ký gói tập).
+  - Khắc phục hoàn toàn lỗi `window.GymApp.fetchAPI is not a function` gây sập và chặn đứng nút Lưu hồ sơ cá nhân cũng như nút Xác nhận đăng ký gói dịch vụ.
+- **Kết quả**: ✅ Thêm mới hồ sơ và đăng ký kích hoạt gói tập hoạt động trơn tru 100%.
+### 02/06/2026 09:08 — Sửa lỗi không tạo được tài khoản đăng nhập khi lưu hội viên
+- **Loại**: Sửa bug hệ thống (Fullstack)
+- **File**:
+  - [member-add.js](file:///c:/PhanMemPhongGym/FE/assets/js/pages/member-add.js) (Logic lưu hội viên)
+- **Mô tả**:
+  - Tích hợp thêm lời gọi API kích hoạt tài khoản đăng nhập `/api/members/:id/create-account` sau khi thêm hồ sơ mới thành công (chỉ khi người dùng chọn checkbox "Kích hoạt tài khoản đăng nhập").
+  - Trước đây, dữ liệu tài khoản đăng nhập được đóng gói gửi kèm trong request `/api/members` nhưng không được backend xử lý, dẫn đến việc tài khoản đăng nhập của hội viên không được tạo.
+- **Kết quả**: ✅ Tài khoản đăng nhập của hội viên/PT/nhân viên mới đã được kích hoạt thành công đồng bộ cùng hồ sơ.
+### 02/06/2026 09:20 — Sửa lỗi hiển thị lỗi kết nối giả lập và sửa route/payload đăng ký gói
+- **Loại**: Sửa bug hệ thống (Fullstack)
+- **File**:
+  - [member-add.js](file:///c:/PhanMemPhongGym/FE/assets/js/pages/member-add.js) (Logic lưu hội viên và gói tập)
+- **Mô tả**:
+  - Cập nhật catch block của `_handleSaveMember` và `_handleSavePackage` sử dụng `err.message` để hiển thị đúng lỗi nghiệp vụ từ backend (ví dụ: trùng SĐT/CCCD/Email) thay vì toast cứng lỗi "Lỗi kết nối máy chủ".
+  - Sửa lỗi trong `_handleSavePackage`: Thay đổi endpoint gọi API từ `/api/members/register-package` thành đúng route backend `/api/members/:id/package`, đồng thời sửa tên trường số tiền khách trả trong payload từ `so_tien_tra` thành `so_tien_da_thu` để khớp với controller.
+- **Kết quả**: ✅ Đã xử lý triệt để lỗi "Lỗi kết nối máy chủ" giả lập khi lưu hồ sơ trùng thông tin và hoàn thiện luồng đăng ký/thanh toán gói tập mới từ frontend.
+### 02/06/2026 09:28 — Khôi phục kích thước form bình thường và sử dụng thông tin hội viên inline để chống thanh cuộn dọc
+- **Loại**: Cải tiến giao diện Web (Frontend)
+- **File**:
+  - [member-add.js](file:///c:/PhanMemPhongGym/FE/assets/js/pages/member-add.js) (Layout & style các trường)
+- **Mô tả**:
+  - Khôi phục padding và margin các helper trường nhập liệu (`py-1.5`, `mb-1.5`) cùng layout chính (`p-4`, `gap-4`) của tab Đăng ký gói để giao diện rộng rãi thoáng đãng bình thường.
+  - Xóa bỏ card "Quy định & Lưu ý Giao dịch" ở tab 2 để chừa khoảng trống thoáng tự nhiên phía dưới.
+  - Loại bỏ hoàn toàn alert thông tin hội viên cũ `#selected-member-info` ở tab 2 (đây là thành phần chính gây phình chiều cao đẩy form xuống làm xuất hiện scrollbar trình duyệt).
+  - Tích hợp nhãn tên hội viên dạng inline trực tiếp cạnh tiêu đề: *"Thông tin Đăng ký & Thanh toán (Hội viên: Tên - #Mã)"*.
+- **Kết quả**: ✅ Khi chưa lưu thì giao diện trống thoáng tự nhiên, còn khi lưu xong chuyển tab đăng ký gói, chiều cao form hoàn toàn không thay đổi và nằm gọn toàn bộ trong khung hình không xuất hiện thanh cuộn dọc.
 
-### 11/05/2026 — Batch 1: Fix UI danh sách hội viên & tab chi tiết
-- **Loại**: Sửa bug + Cải thiện (Frontend + Backend)
-- **File chỉnh sửa**:
-  - `FE/assets/js/app.js` — Bổ sung đầy đủ các status vào `statusBadge`: `con_han`, `sap_het_han`, `het_han`, `chua_dang_ky`, `cho_tap`, `da_xac_nhan`, `da_huy`, `hoan_tac`, `dang_hoat_dong`, `vao`, `ra`
-  - `FE/assets/js/pages/members-list.js` — Fix giới tính (`'male'` → `'nam'/'nu'`); hiển thị đúng địa chỉ (`dia_chi_tam_tru` + tỉnh/huyện/xã); tab Gói tập dùng `goi_tap_hien_tai[0]` thay vì `m.ngay_bat_dau`; auto-fill `den_ngay` khi chọn gói tập/gói PT; thêm `data-thang` vào option gói PT; sửa giá trị select giới tính trong modal edit (`'Nam'` → `'nam'`); thêm nút edit PT với class `pt-edit-btn`, bind event; thêm `_showPtEditModal()`; thêm `_bindPtCardEvents` binding cho `pt-edit-btn`
-  - `BE/src/controllers/members.controller.js` — Bổ sung `chuyen_mon`, `tu_ngay`, `den_ngay` vào JSON `pt_hien_tai` trong `getMemberById`
-- **Mô tả**: Sửa các bug hiển thị trong danh sách hội viên: badge trạng thái hiện đúng màu theo DB value, tab Thông tin hiển thị đầy đủ địa chỉ/CCCD/quê quán, tab Gói tập hiện dữ liệu gói đang dùng thật, đăng ký gói tự động tính ngày kết thúc, tab PT của danh sách PT đã có nút Sửa hoạt động
-- **Kết quả**: Thành công
+### 02/06/2026 10:00 — Chuyển đổi giao diện tab PT sang dạng bảng (Table)
+- **Loại**: Chỉnh sửa & Cải tiến UI/UX (Frontend)
+- **File**: `FE/assets/js/pages/members-list.js`
+- **Mô tả**: 
+  - Đã chuyển đổi giao diện hiển thị danh sách huấn luyện viên (PT) từ dạng thẻ (card-based grid) sang dạng bảng (table-based layout) đồng bộ hoàn toàn với tab Hội viên.
+  - Sửa wrapper `id="pt-cards-container"` sang dạng full-width (`w-full`) để bảng trải rộng tối đa.
+  - Thiết kế lại hàm `_renderPtCards` để render table trên desktop (gồm các cột: Họ tên, Mã HLV, Chuyên môn, Kinh nghiệm, Đánh giá, Trạng thái, Thao tác) và dạng list gọn gàng trên mobile.
+  - Tích hợp sự kiện click dòng bảng (`.pt-row`) vào `_bindPtCardEvents` để mở chi tiết PT tương tự như Hội viên.
+- **Kết quả**: ✅ Thành công. Giao diện bảng PT đồng bộ, đẹp mắt và các chức năng cũ (Xem, Sửa, Xóa, Lọc, Sắp xếp, Tìm kiếm) hoạt động mượt mà.
 
-### 11/05/2026 — Fix nút Sửa/Xóa hội viên + hiệu ứng nút Làm mới Dashboard
-- **Loại**: Sửa bug + Thêm tính năng (Frontend)
-- **File chỉnh sửa**:
-  - `FE/assets/js/pages/members-list.js` — Thêm `data-id`/class cho nút Sửa/Xóa, bind event, thêm `_showEditModal()` (modal chỉnh sửa inline), `_confirmDeleteMember()` (confirm dialog trước khi xóa)
-  - `FE/assets/js/pages/dashboard.js` — Đổi nút Làm mới thành có id, tách `_fetchAndRender()`, thêm hiệu ứng xoay icon + disable + text "Đang tải..." khi fetch
-- **Mô tả**: Nút Sửa/Xóa trên card hội viên trước đây không có `data-id` và không có event listener nên click không làm gì. Đã fix và thêm modal sửa thông tin (họ tên, SĐT, email, ngày sinh, giới tính, địa chỉ, ghi chú) + confirm dialog xóa. Nút Làm mới dashboard thêm hoạt ảnh xoay icon khi đang tải.
-- **Kết quả**: Thành công
-
-### 11/05/2026 — Fix Dashboard "Check-in gần nhất" + Biểu đồ doanh thu thật + Xóa mock code
-- **Loại**: Sửa bug + Refactor (Backend + Frontend)
-- **File chỉnh sửa**:
-  - `BE/src/controllers/revenue.controller.js` — Thêm query `recent_checkins` (8 lượt vào hôm nay) vào `/api/revenue/dashboard`
-  - `FE/assets/js/pages/dashboard.js` — Sửa parse giờ dùng `gio_hien_thi`, fetch `/revenue?days=365` song song, gộp theo tháng thay mock data
-  - `FE/assets/js/pages/members-list.js` — Xóa `_mockPkgHistory`, `_getPackagePrice`, `_getMemberPackageHistory` (dead code)
-  - `FE/assets/js/pages/packages.js` — Implement đầy đủ CRUD gói tập (modal Thêm/Sửa/Xóa)
-- **Kết quả**: Thành công
-
-### 09/05/2026 — Bổ sung upload ảnh QR và hướng dẫn sử dụng trong scan.html
-- **Loại**: Chỉnh sửa (Frontend)
-- **File chỉnh sửa**: `FE/scan.html`
-- **Mô tả**: Thêm nút "Tải ảnh QR lên" dùng `Html5Qrcode.scanFile()` để decode QR từ file ảnh (screenshot), thêm banner hướng dẫn cách quét đúng
-- **Kết quả**: Thành công
-
-### 09/05/2026 — Thêm nút "Quét QR" vào header Admin Portal
-- **Loại**: Chỉnh sửa (Frontend)
-- **File chỉnh sửa**:
-    - `FE/index.html` — Thêm nút "Quét QR" vào header (trước theme-toggle)
-    - `FE/assets/js/app.js` — Gắn sự kiện click mở `scan.html` trong tab mới
-- **Mô tả**: Lễ tân/admin có thể mở trang quét QR bằng 1 click từ header, không cần nhớ URL
-- **Kết quả**: Thành công
-
-### 09/05/2026 — Tính năng Check-in bằng QR Code (Fullstack)
-- **Loại**: Tính năng mới (Fullstack — BE + FE)
-- **File tạo mới**:
-    - `BE/src/controllers/qr-checkin.controller.js` — `getMyQr` (JWT 5 phút bằng QR_JWT_SECRET) + `scanQr` (xác thực token → kiểm tra gói → ghi luot_vao_ra)
-    - `BE/src/routes/qr-checkin.routes.js` — `GET /api/checkin/my-qr`, `POST /api/checkin/scan`
-    - `BE/src/jobs/cron-pt-confirm.js` — Cron job 22:00 tự động xác nhận buổi tập có check-in (node-cron)
-    - `FE/scan.html` — Trang standalone quét QR cho lễ tân (html5-qrcode + nhập thủ công)
-- **File chỉnh sửa**:
-    - `BE/src/config/db.js` — Migration: ALTER TABLE lich_tap ADD COLUMN da_checkin, CREATE TABLE cau_hinh
-    - `BE/src/app.js` — Mount `/api/checkin` routes, thêm PATCH vào CORS methods
-    - `BE/src/controllers/pt-schedules.controller.js` — Thêm `revertSchedule` (hoàn tác buổi do cron xác nhận)
-    - `BE/src/routes/pt-schedules.routes.js` — Thêm `PATCH /:id/hoan-tac`
-    - `BE/index.js` — Import + khởi động cron job khi server start
-    - `BE/package.json` — Thêm node-cron, restore đầy đủ dependencies
-    - `FE/member-portal.html` — Thêm tab "QR Check-in", import qrcode.js CDN
-    - `FE/assets/js/member-portal.js` — Thêm page `my-qr` (render QR, countdown 5 phút, auto-refresh)
-    - `FE/assets/js/pages/pt-training.js` — Thêm nút "Hoàn tác" trên card buổi `auto_cron`, event delegation + API call
-    - `FE/assets/js/api.js` — Thêm method `patch()`
-- **Chi tiết kỹ thuật**:
-    - QR token dùng `QR_JWT_SECRET` riêng (khác `JWT_SECRET`), TTL 5 phút
-    - Cron job dùng `confirmed_by_id = NULL + ghi_chu = 'auto_cron'` để phân biệt với xác nhận thủ công
-    - Hoàn tác chỉ được phép trong vòng 1 ngày và chỉ với buổi `auto_cron`
-    - Migration an toàn: ALTER TABLE trong try-catch (bỏ qua nếu cột đã tồn tại)
-    - scan.html hoạt động standalone, tự kiểm tra auth và vai_tro
-- **Kết quả**: Thành công
-
-### 09/05/2026 — Tạo tài khoản đăng nhập cho hồ sơ từ màn hình Admin
-- **Loại**: Tính năng mới (Fullstack)
-- **File chỉnh sửa**:
-    - `BE/src/controllers/members.controller.js` — Thêm function `createAccount` (bcrypt hash, transaction, audit log)
-    - `BE/src/routes/members.routes.js` — Thêm route `POST /api/members/:id/create-account` (chỉ admin/le_tan)
-    - `BE/src/controllers/trainers.controller.js` — Thêm `h.tai_khoan_id` vào query `getTrainers`
-    - `FE/assets/js/pages/member-add.js` — Thêm checkbox "Tạo tài khoản ngay" với auto-fill SĐT vào username
-    - `FE/assets/js/pages/members-list.js` — Thêm form tạo tài khoản trong modal chi tiết hội viên (tab info) và modal PT
-- **Chi tiết**:
-    - Backend: kiểm tra hồ sơ tồn tại, kiểm tra đã có tài khoản chưa, kiểm tra tên đăng nhập trùng, map `loai_ho_so → vai_tro`, bcrypt hash cost=12, transaction (INSERT tai_khoan + UPDATE ho_so.tai_khoan_id)
-    - Form thêm mới: checkbox toggle, tự fill username = SĐT, gọi API sau khi tạo hồ sơ thành công
-    - Modal hội viên: badge "Đã có / Chưa có tài khoản", form tạo có username (pre-fill SĐT) + password, sau thành công refresh tab
-    - Modal PT: tương tự modal hội viên, hiển thị trong `_showPtModal`
-- **Kết quả**: Thành công
-
-
-
-### 09/05/2026 — Tách Portal PT và Portal Hội viên theo role
-- **Loại**: Tính năng mới (Frontend)
-- **File tạo mới**:
-    - `FE/pt-portal.html` — Trang portal dành riêng cho Huấn luyện viên (PT)
-    - `FE/member-portal.html` — Trang portal dành riêng cho Hội viên
-    - `FE/assets/js/pt-portal.js` — SPA logic cho PT Portal: Dashboard, Lịch tập của tôi, Học viên của tôi, Hồ sơ cá nhân
-    - `FE/assets/js/member-portal.js` — SPA logic cho Member Portal: Dashboard (gói tập + cảnh báo + PT + lịch sắp tới), Lịch tập, Lịch sử vào/ra, Hồ sơ cá nhân
+### 02/06/2026 10:15 — Sửa lỗi trạng thái PT và Thêm badge vai trò trang Check-in
+- **Loại**: Sửa bug & Cải tiến UI/UX (Fullstack)
+- **File**: 
+  - `BE/src/controllers/trainers.controller.js` (Backend)
+  - `FE/assets/js/pages/members-list.js` (Web Frontend - members-list)
+  - `FE/assets/js/pages/checkin.js` (Web Frontend - checkin)
+- **Mô tả**:
+  - **Sửa lỗi trạng thái PT hiển thị "Tạm nghỉ"**: Do Backend SQL select thiếu trường trạng thái tài khoản. Khắc phục bằng cách `LEFT JOIN tai_khoan` và select `COALESCE(tk.trang_thai, 'hoat_dong') AS trang_thai`. Đồng thời sửa Frontend map thêm trạng thái `'kich_hoat'` của tài khoản.
+  - **Cải tiến hiển thị check-in**: Bổ sung hiển thị badge loại tài khoản (HLV, HV, Lễ tân, NV) bên cạnh mã hồ sơ của từng người trong danh sách/bảng check-in để dễ phân biệt.
+- **Kết quả**: ✅ Khắc phục triệt để lỗi hiển thị sai trạng thái HLV. Thống kê check-in rõ ràng, trực quan hơn.ts/js/member-portal.js` — SPA logic cho Member Portal: Dashboard (gói tập + cảnh báo + PT + lịch sắp tới), Lịch tập, Lịch sử vào/ra, Hồ sơ cá nhân
 - **File chỉnh sửa**:
     - `FE/assets/js/auth.js` — Đổi redirect sau login thành redirect theo `vai_tro`: admin/le_tan → `index.html`, pt → `pt-portal.html`, hoi_vien → `member-portal.html`
 - **Chi tiết**:
