@@ -354,7 +354,8 @@ window.GymApp.pages['revenue'] = {
     // Helper: tính tiền nhận vào thực tế (chỉ inflow, không tính refund/hủy)
     const calcInflow = (t) => {
       if (t.trang_thai === 'huy') return 0; // Hủy gói => không tính
-      if (t.trang_thai === 'tam_dung' || t.trang_thai === 'het_han') return 0;
+      if (t.trang_thai === 'tam_dung') return 0; // Tạm dừng => không tính
+      // 'het_han' vẫn tính vì tiền đã được thu tại thời điểm đăng ký
       const isSwitch = (t.ghi_chu_tt || '').includes('Đổi từ');
       if (isSwitch) {
         const matchHoanTien = (t.ghi_chu_tt || '').match(/Hoàn tiền:\s*([0-9.]+)/);
@@ -364,6 +365,7 @@ window.GymApp.pages['revenue'] = {
       }
       return t.gia_thuc_te || 0;
     };
+
 
     const commonLineOptions = (extraPlugins = {}) => ({
       responsive: true,
@@ -578,13 +580,22 @@ window.GymApp.pages['revenue'] = {
         }
       });
     } else if (this._chartType === 'payment_method') {
-      const daysInt = parseInt(this._days) || 7;
+      // Tính đúng số ngày và offset theo từng chế độ lọc
+      const isToday = this._days === 'today';
+      const isYesterday = this._days === 'yesterday';
+      const daysInt = isToday || isYesterday ? 1 : (parseInt(this._days) || 7);
+      // yesterday: offset = 1 (bắt đầu từ hôm qua)
+      // today: offset = 0 (chỉ hôm nay)
+      // 7/30: offset = 0 (kết thúc hôm nay)
+      const endOffset = isYesterday ? 1 : 0;
+
+      const periodLabel = isToday ? 'hôm nay' : isYesterday ? 'hôm qua' : `${daysInt} ngày`;
       const title = document.getElementById('rev-chart-title');
-      if (title) title.textContent = `Doanh thu theo phương thức thanh toán (${daysInt} ngày)`;
+      if (title) title.textContent = `Doanh thu theo phương thức thanh toán (${periodLabel})`;
 
       const transactions = this._transactionsData || [];
 
-      // Tạo danh sách đủ N ngày (từ N-1 ngày trước đến hôm nay)
+      // Tạo danh sách đủ N ngày
       const today = new Date();
       const labels = [];
       const cashByDay = {};
@@ -592,9 +603,9 @@ window.GymApp.pages['revenue'] = {
 
       for (let i = daysInt - 1; i >= 0; i--) {
         const d = new Date(today);
-        d.setDate(today.getDate() - i);
+        d.setDate(today.getDate() - i - endOffset);
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        const label = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+        const label = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
         labels.push({ key, label });
         cashByDay[key] = 0;
         bankByDay[key] = 0;
@@ -605,107 +616,191 @@ window.GymApp.pages['revenue'] = {
         if (inflow <= 0) return;
         const dateKey = t.thoi_gian ? t.thoi_gian.substring(0, 10) : null;
         if (!dateKey || !(dateKey in cashByDay)) return;
-        if (t.phuong_thuc_tt === 'tien_mat') cashByDay[dateKey] += inflow;
-        else if (t.phuong_thuc_tt === 'chuyen_khoan') bankByDay[dateKey] += inflow;
+        if (t.phuong_thuc_tt === 'tien_mat') {
+          cashByDay[dateKey] += inflow;
+        } else {
+          bankByDay[dateKey] += inflow;
+        }
       });
 
-      const hasAny = labels.some(l => cashByDay[l.key] > 0 || bankByDay[l.key] > 0);
-      if (!hasAny) {
-        const wrap = canvas.parentElement;
-        if (wrap) wrap.innerHTML = '<p class="flex items-center justify-center h-full text-on-surface-variant text-body-sm">Chưa có giao dịch trong khoảng thời gian này</p>';
-        return;
-      }
+      // Luôn vẽ biểu đồ kể cả khi không có dữ liệu (data = 0)
+      // KHÔNG dùng innerHTML để xóa canvas vì sẽ phá hỏng các bộ lọc khác
 
       const xLabels = labels.map(l => l.label);
       const cashData = labels.map(l => cashByDay[l.key]);
       const bankData = labels.map(l => bankByDay[l.key]);
 
-      this._chart = new Chart(canvas, {
-        type: 'bar',
-        data: {
-          labels: xLabels,
-          datasets: [
-            {
-              label: 'Tiền mặt',
-              data: cashData,
-              backgroundColor: 'rgba(230,81,0,0.82)',
-              borderColor: '#e65100',
-              borderWidth: 0,
-              borderRadius: { topLeft: 0, topRight: 0, bottomLeft: 4, bottomRight: 4 },
-              borderSkipped: false,
-              stack: 'payment',
-            },
-            {
-              label: 'Chuyển khoản',
-              data: bankData,
-              backgroundColor: 'rgba(29,147,54,0.82)',
-              borderColor: '#1D9336',
-              borderWidth: 0,
-              borderRadius: { topLeft: 4, topRight: 4, bottomLeft: 0, bottomRight: 0 },
-              borderSkipped: false,
-              stack: 'payment',
-            },
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: { mode: 'index', intersect: false },
-          plugins: {
-            legend: {
-              display: true,
-              labels: {
-                color: labelColor,
-                font: { size: 11, weight: 'bold' },
-                usePointStyle: true,
-                pointStyle: 'rect',
+      // Plugin inline: hiển thị "Chưa có giao dịch" lên canvas khi data toàn 0
+      const noDataPlugin = {
+        id: 'noData',
+        afterDraw(chart) {
+          const hasData = chart.data.datasets.some(ds => ds.data.some(v => v > 0));
+          if (hasData) return;
+          const { ctx, chartArea } = chart;
+          if (!chartArea) return;
+          ctx.save();
+          ctx.fillStyle = labelColor;
+          ctx.font = '13px Inter, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(
+            'Chưa có giao dịch trong khoảng thời gian này',
+            (chartArea.left + chartArea.right) / 2,
+            (chartArea.top + chartArea.bottom) / 2
+          );
+          ctx.restore();
+        }
+      };
+
+      if (isToday || isYesterday) {
+        const cashSum = cashData.reduce((a, b) => a + b, 0);
+        const bankSum = bankData.reduce((a, b) => a + b, 0);
+
+        this._chart = new Chart(canvas, {
+          type: 'doughnut',
+          plugins: [noDataPlugin],
+          data: {
+            labels: ['Tiền mặt', 'Chuyển khoản'],
+            datasets: [
+              {
+                data: [cashSum, bankSum],
+                backgroundColor: [
+                  'rgba(230,81,0,0.85)',
+                  'rgba(29,147,54,0.85)'
+                ],
+                borderColor: isDark ? '#2c2c2c' : '#ffffff',
+                borderWidth: 2,
+                hoverOffset: 6
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: true,
+                position: 'bottom',
+                labels: {
+                  color: labelColor,
+                  font: { size: 11, weight: 'bold' },
+                  usePointStyle: true,
+                  pointStyle: 'circle',
+                  padding: 15
+                }
+              },
+              tooltip: {
+                enabled: true,
+                backgroundColor: isDark ? '#2a2a2a' : '#fff',
+                titleColor: isDark ? '#e0e0e0' : '#333',
+                bodyColor: isDark ? '#bbb' : '#555',
+                borderColor: isDark ? '#444' : '#ddd',
+                borderWidth: 1,
+                padding: 10,
+                callbacks: {
+                  label: ctx => ` ${ctx.label}: ${new Intl.NumberFormat('vi-VN').format(ctx.raw ?? 0)} đ`,
+                  afterLabel: ctx => {
+                    const total = cashSum + bankSum;
+                    if (total === 0) return ' Tỷ lệ: 0%';
+                    const pct = ((ctx.raw / total) * 100).toFixed(1);
+                    return ` Tỷ lệ: ${pct}%`;
+                  }
+                }
               }
             },
-            tooltip: {
-              enabled: true,
-              backgroundColor: isDark ? '#2a2a2a' : '#fff',
-              titleColor: isDark ? '#e0e0e0' : '#333',
-              bodyColor: isDark ? '#bbb' : '#555',
-              borderColor: isDark ? '#444' : '#ddd',
-              borderWidth: 1,
-              padding: 10,
-              callbacks: {
-                label: ctx => ` ${ctx.dataset.label}: ${new Intl.NumberFormat('vi-VN').format(ctx.raw ?? 0)} đ`,
-                footer: (items) => {
-                  const total = items.reduce((s, i) => s + (i.raw ?? 0), 0);
-                  return total > 0 ? `Tổng: ${new Intl.NumberFormat('vi-VN').format(total)} đ` : '';
-                }
+            cutout: '65%'
+          }
+        });
+      } else {
+        this._chart = new Chart(canvas, {
+          type: 'bar',
+          plugins: [noDataPlugin],
+          data: {
+            labels: xLabels,
+            datasets: [
+              {
+                label: 'Tiền mặt',
+                data: cashData,
+                backgroundColor: 'rgba(230,81,0,0.82)',
+                borderColor: '#e65100',
+                borderWidth: 0,
+                borderRadius: { topLeft: 0, topRight: 0, bottomLeft: 4, bottomRight: 4 },
+                borderSkipped: false,
+                stack: 'payment',
               },
-            },
+              {
+                label: 'Chuyển khoản',
+                data: bankData,
+                backgroundColor: 'rgba(29,147,54,0.82)',
+                borderColor: '#1D9336',
+                borderWidth: 0,
+                borderRadius: { topLeft: 4, topRight: 4, bottomLeft: 0, bottomRight: 0 },
+                borderSkipped: false,
+                stack: 'payment',
+              },
+            ]
           },
-          scales: {
-            x: {
-              stacked: true,
-              ticks: {
-                color: labelColor,
-                font: { size: daysInt > 14 ? 8 : 10, weight: 'bold' },
-                maxRotation: daysInt > 14 ? 45 : 0,
-                callback: function (val, index) {
-                  // Với 30 ngày: chỉ hiển thị ngày chẵn 5 để tránh chồng chữ
-                  if (daysInt > 14 && index % 5 !== 0) return '';
-                  return this.getLabelForValue(val);
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+              legend: {
+                display: true,
+                labels: {
+                  color: labelColor,
+                  font: { size: 11, weight: 'bold' },
+                  usePointStyle: true,
+                  pointStyle: 'rect',
                 }
               },
-              grid: { display: false }
-            },
-            y: {
-              stacked: true,
-              min: 0,
-              ticks: {
-                color: labelColor,
-                font: { size: 9 },
-                callback: v => new Intl.NumberFormat('vi-VN', { notation: 'compact' }).format(v),
+              tooltip: {
+                enabled: true,
+                backgroundColor: isDark ? '#2a2a2a' : '#fff',
+                titleColor: isDark ? '#e0e0e0' : '#333',
+                bodyColor: isDark ? '#bbb' : '#555',
+                borderColor: isDark ? '#444' : '#ddd',
+                borderWidth: 1,
+                padding: 10,
+                callbacks: {
+                  label: ctx => ` ${ctx.dataset.label}: ${new Intl.NumberFormat('vi-VN').format(ctx.raw ?? 0)} đ`,
+                  footer: (items) => {
+                    const total = items.reduce((s, i) => s + (i.raw ?? 0), 0);
+                    return total > 0 ? `Tổng: ${new Intl.NumberFormat('vi-VN').format(total)} đ` : '';
+                  }
+                },
               },
-              grid: { color: gridColor }
+            },
+            scales: {
+              x: {
+                stacked: true,
+                ticks: {
+                  color: labelColor,
+                  font: { size: daysInt > 14 ? 8 : 10, weight: 'bold' },
+                  maxRotation: daysInt > 14 ? 45 : 0,
+                  callback: function (val, index) {
+                    if (daysInt > 14 && index % 5 !== 0) return '';
+                    return this.getLabelForValue(val);
+                  }
+                },
+                grid: { display: false }
+              },
+              y: {
+                stacked: true,
+                min: 0,
+                ticks: {
+                  color: labelColor,
+                  font: { size: 9 },
+                  callback: v => new Intl.NumberFormat('vi-VN', { notation: 'compact' }).format(v),
+                },
+                grid: { color: gridColor }
+              }
             }
           }
-        }
-      });
+        });
+      }
+
+
 
     } else {
       if (this._days === 'compare') {
@@ -1118,7 +1213,7 @@ window.GymApp.pages['revenue'] = {
       const time = t.thoi_gian ? new Date(t.thoi_gian).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '—';
       const timeDisplay = (isToday || isYesterday)
         ? time
-        : (t.thoi_gian ? new Date(t.thoi_gian).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }) + ' ' + time : '—');
+        : (t.thoi_gian ? new Date(t.thoi_gian).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' + time : '—');
 
       const loaiLabel = t.loai === 'goi_tap'
         ? `<span class="bg-[#e7f5e9] dark:bg-[#0b2010] text-[#1D9336] dark:text-[#4cce5f] px-2 py-0.5 rounded-full text-label-xs font-bold border border-[#1D9336]/20 dark:border-[#4cce5f]/20">Gói tập</span>`
@@ -1175,12 +1270,7 @@ window.GymApp.pages['revenue'] = {
       const statusLabel = `<span class="px-2 py-0.5 rounded-full text-label-xs font-bold ${statusClass}">${statusText}</span>`;
 
       const paymentLabel = t.phuong_thuc_tt
-        ? t.phuong_thuc_tt === 'tien_mat' ? 'Tiền mặt'
-          : t.phuong_thuc_tt === 'chuyen_khoan' ? 'Chuyển khoản'
-            : t.phuong_thuc_tt === 'the' ? 'Thẻ'
-              : t.phuong_thuc_tt === 'momo' ? 'MoMo'
-                : t.phuong_thuc_tt === 'zalopay' ? 'ZaloPay'
-                  : 'Khác'
+        ? t.phuong_thuc_tt === 'tien_mat' ? 'Tiền mặt' : 'Chuyển khoản'
         : '—';
 
       return `

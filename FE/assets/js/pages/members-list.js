@@ -50,8 +50,9 @@ window.GymApp.pages['members-list'] = {
   render: function () {
     const rawMembers = window.GymApp.data.members;
     const rawPts = window.GymApp.data.pts;
+    const branch = window.GymApp.selectedBranch || '';
     this._memberFiltered = Array.isArray(rawMembers) ? [...rawMembers] : [];
-    this._ptFiltered = Array.isArray(rawPts) ? [...rawPts] : [];
+    this._ptFiltered = Array.isArray(rawPts) ? rawPts.filter(pt => !branch || pt.chi_nhanh === branch) : [];
     this._ptSortState = '';
     return `
         <div class="flex flex-col gap-standard animate-in fade-in duration-500">
@@ -265,8 +266,7 @@ window.GymApp.pages['members-list'] = {
   _refreshPtsFromApi: async function () {
     const ptsRes = await window.GymApp.api.get('/trainers');
     window.GymApp.data.pts = this._normalizeListResponse(ptsRes);
-    this._ptFiltered = [...window.GymApp.data.pts];
-    this._refreshPtCards();
+    this._applyPtFilter();
   },
 
   _renderMemberTable: function () {
@@ -646,6 +646,11 @@ window.GymApp.pages['members-list'] = {
             PT-${pt.id || ''}
           </td>
 
+          <!-- Cột Chi nhánh -->
+          <td class="pt-table-col-branch border-r border-outline-variant/30" style="padding:8px 14px; font-size:14px; font-weight:600; color:var(--text-on-surface-variant); text-align:center;">
+            ${pt.chi_nhanh || '—'}
+          </td>
+
           <!-- Cột 3: Chuyên môn -->
           <td class="pt-table-col-spec border-r border-outline-variant/30" style="padding:8px 14px; font-size:14px; font-weight:600; color:var(--text-on-surface-variant); text-align:center;">
             ${pt.chuyen_mon || pt.specialty || 'Huấn luyện viên'}
@@ -711,6 +716,7 @@ window.GymApp.pages['members-list'] = {
           : `<span style="font-size:10px;font-weight:800;padding:1px 6px;border-radius:4px;background:#f1f5f9;color:#64748b;">Tạm nghỉ</span>`}
               <span style="font-size:11px;font-weight:600;color:var(--text-on-surface-variant);background:var(--bg-surface-container,#ebeef3);padding:1px 6px;border-radius:4px;white-space:nowrap;">KN: ${pt.kinh_nghiem || 0} năm</span>
               <span style="font-size:11px;font-weight:600;color:#fbbf24;">★ ${ratingDisplay}</span>
+              <span style="font-size:11px;font-weight:600;color:#0284c7;background:#e0f2fe;padding:1px 6px;border-radius:4px;white-space:nowrap;">${pt.chi_nhanh || 'Chưa rõ'}</span>
             </div>
           </div>
           <div style="display:flex;gap:4px;align-items:center;flex-shrink:0;">
@@ -733,6 +739,7 @@ window.GymApp.pages['members-list'] = {
     return `
       <style>
         .pt-table-col-code      { display: table-cell; }
+        .pt-table-col-branch    { display: table-cell; }
         .pt-table-col-spec      { display: table-cell; }
         .pt-table-col-exp       { display: table-cell; }
         .pt-table-col-rating    { display: table-cell; }
@@ -763,6 +770,7 @@ window.GymApp.pages['members-list'] = {
         @media (max-width: 900px) {
           .pt-table-col-rating  { display: none; }
           .pt-table-col-exp     { display: none; }
+          .pt-table-col-branch  { display: none; }
         }
         @media (max-width: 700px) {
           .pt-table-col-code    { display: none; }
@@ -782,6 +790,7 @@ window.GymApp.pages['members-list'] = {
               <tr>
                 <th style="position:sticky;top:0;z-index:10;background:#065f46;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Họ và tên</th>
                 <th class="pt-table-col-code" style="position:sticky;top:0;z-index:10;background:#065f46;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Mã HLV</th>
+                <th class="pt-table-col-branch" style="position:sticky;top:0;z-index:10;background:#065f46;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Chi nhánh</th>
                 <th class="pt-table-col-spec" style="position:sticky;top:0;z-index:10;background:#065f46;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Chuyên môn</th>
                 <th class="pt-table-col-exp" style="position:sticky;top:0;z-index:10;background:#065f46;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Kinh nghiệm</th>
                 <th class="pt-table-col-rating" style="position:sticky;top:0;z-index:10;background:#065f46;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Đánh giá</th>
@@ -968,8 +977,10 @@ window.GymApp.pages['members-list'] = {
       return `
         ${sectionTitle('badge', 'Thông tin cá nhân')}
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-[1px] bg-outline-variant rounded-xl overflow-hidden border border-outline-variant">
+          ${infoRow('badge', 'Mã HLV', `PT-${pt.id || ''}`)}
           ${infoRow('call', 'Số điện thoại', pt.so_dien_thoai || pt.phone)}
           ${infoRow('mail', 'Email', pt.email)}
+          ${infoRow('store', 'Chi nhánh', pt.chi_nhanh)}
           ${infoRow('sports_gymnastics', 'Chuyên môn', pt.chuyen_mon || pt.specialty)}
           ${infoRow('military_tech', 'Kinh nghiệm', `${pt.kinh_nghiem || 0} năm`)}
           ${infoRow('calendar_today', 'Ngày gia nhập', window.GymApp.formatDate(pt.ngay_tao || pt.joinDate))}
@@ -1241,6 +1252,21 @@ window.GymApp.pages['members-list'] = {
     }
     if (!pt) { window.GymApp.toast('Không tìm thấy thông tin PT!', 'error'); return; }
 
+    const branchOptions = [
+      { v: 'Chi nhánh Gò Vấp', l: 'Chi nhánh Gò Vấp' },
+      { v: 'Chi nhánh Bình Thạnh', l: 'Chi nhánh Bình Thạnh' },
+      { v: 'Chi nhánh Tân Bình', l: 'Chi nhánh Tân Bình' },
+      { v: 'Chi nhánh Phú Nhuận', l: 'Chi nhánh Phú Nhuận' },
+      { v: 'Chi nhánh Quận 1', l: 'Chi nhánh Quận 1' },
+      { v: 'Chi nhánh Quận 3', l: 'Chi nhánh Quận 3' },
+      { v: 'Chi nhánh Quận 5', l: 'Chi nhánh Quận 5' },
+      { v: 'Chi nhánh Quận 7', l: 'Chi nhánh Quận 7' },
+      { v: 'Chi nhánh Quận 10', l: 'Chi nhánh Quận 10' },
+      { v: 'Chi nhánh Bình Tân', l: 'Chi nhánh Bình Tân' },
+      { v: 'Chi nhánh Thủ Đức', l: 'Chi nhánh Thủ Đức' },
+      { v: 'Chi nhánh Nhà Bè', l: 'Chi nhánh Nhà Bè' }
+    ];
+
     document.getElementById('gym-pt-edit-modal')?.remove();
     const overlay = document.createElement('div');
     overlay.id = 'gym-pt-edit-modal';
@@ -1312,7 +1338,8 @@ window.GymApp.pages['members-list'] = {
             ${field('mail', 'Email', 'email', 'email', pt.email, false)}
             ${field('fitness_center', 'Chuyên môn', 'chuyen_mon', 'text', pt.chuyen_mon || pt.specialty, false)}
             ${field('work_history', 'Kinh nghiệm (năm)', 'kinh_nghiem', 'number', pt.kinh_nghiem || 0, false)}
-            ${selectField('toggle_on', 'Trạng thái', 'trang_thai', [{ v: 'hoat_dong', l: 'Đang làm việc' }, { v: 'tam_nghi', l: 'Tạm nghỉ' }], pt.trang_thai === 'active' ? 'hoat_dong' : pt.trang_thai === 'inactive' ? 'tam_nghi' : pt.trang_thai, true)}
+            ${selectField('store', 'Chi nhánh', 'chi_nhanh', branchOptions, pt.chi_nhanh, false)}
+            ${selectField('toggle_on', 'Trạng thái', 'trang_thai', [{ v: 'hoat_dong', l: 'Đang làm việc' }, { v: 'tam_nghi', l: 'Tạm nghỉ' }], pt.trang_thai === 'active' ? 'hoat_dong' : pt.trang_thai === 'inactive' ? 'tam_nghi' : pt.trang_thai, false)}
             ${textareaField('description', 'Ghi chú', 'ghi_chu', pt.ghi_chu, true)}
           </div>
         </div>
@@ -1372,6 +1399,7 @@ window.GymApp.pages['members-list'] = {
           email: document.getElementById('pte-email').value.trim(),
           chuyen_mon: document.getElementById('pte-chuyen_mon').value.trim(),
           kinh_nghiem: parseInt(document.getElementById('pte-kinh_nghiem').value) || 0,
+          chi_nhanh: document.getElementById('pte-chi_nhanh').value,
           trang_thai: document.getElementById('pte-trang_thai').value,
           ghi_chu: document.getElementById('pte-ghi_chu').value.trim(),
         };
@@ -1405,6 +1433,21 @@ window.GymApp.pages['members-list'] = {
     const overlay = document.createElement('div');
     overlay.id = 'gym-pt-add-modal';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);backdrop-filter:blur(6px);padding:16px;';
+
+    const branchOptions = [
+      { v: 'Chi nhánh Gò Vấp', l: 'Chi nhánh Gò Vấp' },
+      { v: 'Chi nhánh Bình Thạnh', l: 'Chi nhánh Bình Thạnh' },
+      { v: 'Chi nhánh Tân Bình', l: 'Chi nhánh Tân Bình' },
+      { v: 'Chi nhánh Phú Nhuận', l: 'Chi nhánh Phú Nhuận' },
+      { v: 'Chi nhánh Quận 1', l: 'Chi nhánh Quận 1' },
+      { v: 'Chi nhánh Quận 3', l: 'Chi nhánh Quận 3' },
+      { v: 'Chi nhánh Quận 5', l: 'Chi nhánh Quận 5' },
+      { v: 'Chi nhánh Quận 7', l: 'Chi nhánh Quận 7' },
+      { v: 'Chi nhánh Quận 10', l: 'Chi nhánh Quận 10' },
+      { v: 'Chi nhánh Bình Tân', l: 'Chi nhánh Bình Tân' },
+      { v: 'Chi nhánh Thủ Đức', l: 'Chi nhánh Thủ Đức' },
+      { v: 'Chi nhánh Nhà Bè', l: 'Chi nhánh Nhà Bè' }
+    ];
 
     const field = (icon, label, fid, type, required = false, isFull = false) => `
       <div class="${isFull ? 'col-span-full' : ''}">
@@ -1472,6 +1515,7 @@ window.GymApp.pages['members-list'] = {
             ${field('mail', 'Email', 'email', 'email', false)}
             ${field('fitness_center', 'Chuyên môn', 'chuyen_mon', 'text', false)}
             ${field('work_history', 'Kinh nghiệm (năm)', 'kinh_nghiem', 'number', false)}
+            ${selectField('store', 'Chi nhánh', 'chi_nhanh', branchOptions, false)}
             ${textareaField('description', 'Ghi chú', 'ghi_chu', true)}
           </div>
         </div>
@@ -1527,6 +1571,7 @@ window.GymApp.pages['members-list'] = {
         fd.append('email', document.getElementById('pta-email').value.trim());
         fd.append('chuyen_mon', document.getElementById('pta-chuyen_mon').value.trim());
         fd.append('kinh_nghiem', parseInt(document.getElementById('pta-kinh_nghiem').value) || 0);
+        fd.append('chi_nhanh', document.getElementById('pta-chi_nhanh').value);
         fd.append('ghi_chu', document.getElementById('pta-ghi_chu').value.trim());
         if (ptAvatarFile) {
           fd.append('avatar', ptAvatarFile);
@@ -1548,8 +1593,7 @@ window.GymApp.pages['members-list'] = {
         if (window.GymApp.fetchInitialData) {
           await window.GymApp.fetchInitialData();
         }
-        self._ptFiltered = [...(window.GymApp.data.pts || [])];
-        self._refreshPtCards();
+        self._applyPtFilter();
 
         close();
       } catch (err) {
@@ -2619,7 +2663,7 @@ window.GymApp.pages['members-list'] = {
     document.getElementById('gym-sub-modal')?.remove();
     const d0 = s => s ? s.substring(0, 10) : '';
     const iCls = `class="w-full bg-surface-container/30 border border-outline-variant text-on-surface rounded-xl focus:border-brand-primary focus:bg-surface-container-lowest outline-none transition-all placeholder-outline-variant/60 font-body-md text-body-md shadow-inner focus:shadow-none"`;
-    const PM = { tien_mat: 'Tiền mặt', chuyen_khoan: 'Chuyển khoản', the: 'Thẻ', momo: 'MoMo', zalopay: 'ZaloPay', khac: 'Khác' };
+    const PM = { tien_mat: 'Tiền mặt', chuyen_khoan: 'Chuyển khoản' };
     const overlay = document.createElement('div');
     overlay.id = 'gym-sub-modal';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);backdrop-filter:blur(6px);padding:16px;';
@@ -2751,7 +2795,7 @@ window.GymApp.pages['members-list'] = {
     const { remainingDays, credit, totalDays } = _calcRemainingCredit();
 
     const iCls = `class="bg-surface-container-lowest text-on-surface border border-outline-variant" style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;"`;
-    const PM = { tien_mat: 'Tiền mặt', chuyen_khoan: 'Chuyển khoản', the: 'Thẻ', momo: 'MoMo', zalopay: 'ZaloPay', khac: 'Khác' };
+    const PM = { tien_mat: 'Tiền mặt', chuyen_khoan: 'Chuyển khoản' };
     const overlay = document.createElement('div');
     overlay.id = 'gym-sub-modal';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);backdrop-filter:blur(6px);padding:16px;';
@@ -4166,6 +4210,7 @@ window.GymApp.pages['members-list'] = {
   _applyPtFilter: function () {
     const q = document.getElementById('pt-search')?.value.toLowerCase() || '';
     const { specialty, status } = this._ptFilterState;
+    const branch = window.GymApp.selectedBranch || '';
     this._ptFiltered = this._sortPtList((window.GymApp.data.pts || []).filter(pt => {
       const name = (pt.ho_ten || '').toLowerCase();
       // FIX: Dùng chuyen_mon (field DB) thay vì specialty
@@ -4177,7 +4222,8 @@ window.GymApp.pages['members-list'] = {
       // FIX: So sánh chuyen_mon đúng (không phải specialty)
       const ptSpec = pt.chuyen_mon || pt.specialty || '';
       const matchSpec = !specialty || ptSpec === specialty;
-      return matchQ && matchSpec && matchS;
+      const matchBranch = !branch || pt.chi_nhanh === branch;
+      return matchQ && matchSpec && matchS && matchBranch;
     }));
     this._ptPage = 1;
     this._refreshPtCards();
@@ -5201,8 +5247,9 @@ window.GymApp.pages['members-list'] = {
       }
     } catch (_) { }
 
+    const branch = window.GymApp.selectedBranch || '';
     this._memberFiltered = [...(window.GymApp.data.members || [])];
-    this._ptFiltered = [...(window.GymApp.data.pts || [])];
+    this._ptFiltered = (window.GymApp.data.pts || []).filter(pt => !branch || pt.chi_nhanh === branch);
     this._setupPgHandler();
     this._setupGlobalClickHandlers();
     this._bindMemberTableEvents();
@@ -5251,9 +5298,8 @@ window.GymApp.pages['members-list'] = {
       self._ptFilterState = { specialty: '', status: '' };
       self._ptSortState = '';
       const s = document.getElementById('pt-search'); if (s) s.value = '';
-      self._ptFiltered = [...window.GymApp.data.pts];
-      self._ptPage = 1; self._refreshPtCards(); self._updatePtFilterUI(); self._updatePtSortUI();
-      window.GymApp.toast(`Hiển thị tất cả ${window.GymApp.data.pts.length} huấn luyện viên`, 'info');
+      self._applyPtFilter();
+      window.GymApp.toast(`Đã đặt lại bộ lọc huấn luyện viên`, 'info');
     });
 
     document.getElementById('btn-show-all-pt')?.addEventListener('click', () => {
@@ -5261,8 +5307,7 @@ window.GymApp.pages['members-list'] = {
       self._ptFilterState = { specialty: '', status: '' };
       self._ptSortState = '';
       const s = document.getElementById('pt-search'); if (s) s.value = '';
-      self._ptFiltered = [...window.GymApp.data.pts];
-      self._ptPage = 1; self._refreshPtCards(); self._updatePtFilterUI(); self._updatePtSortUI();
+      self._applyPtFilter();
     });
 
     document.getElementById('btn-filter-pt')?.addEventListener('click', () => self._showPtFilterModal());

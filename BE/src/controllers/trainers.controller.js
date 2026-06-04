@@ -98,7 +98,7 @@ export const getTrainerById = (req, res) => {
 };
 
 export const createTrainer = async (req, res) => {
-  const { ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email, chuyen_mon, kinh_nghiem, ghi_chu } = req.body;
+  const { ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email, chuyen_mon, kinh_nghiem, chi_nhanh, ghi_chu } = req.body;
   if (!ho_ten) return error(res, 'Họ tên là bắt buộc.', 400);
 
   let avatar_url = null, cloudinary_public_id = null;
@@ -116,11 +116,18 @@ export const createTrainer = async (req, res) => {
   const nextNum = lastMaHoSo ? String(parseInt(lastMaHoSo.ma_ho_so.replace('PT', '')) + 1).padStart(3, '0') : '001';
   const ma_ho_so = `PT${nextNum}`;
 
+<<<<<<< HEAD
   try {
     const result = db.prepare(`
       INSERT INTO ho_so (ma_ho_so, loai_ho_so, ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email, chuyen_mon, kinh_nghiem, avatar_url, cloudinary_public_id, ghi_chu, nguoi_tao_id)
       VALUES (?, 'pt', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(ma_ho_so, ho_ten, gioi_tinh || null, ngay_sinh || null, so_dien_thoai || null, email || null, chuyen_mon || null, parseInt(kinh_nghiem) || 0, avatar_url, cloudinary_public_id, ghi_chu || null, req.user.id);
+=======
+  const result = db.prepare(`
+    INSERT INTO ho_so (ma_ho_so, loai_ho_so, ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email, chuyen_mon, kinh_nghiem, chi_nhanh, avatar_url, cloudinary_public_id, ghi_chu, nguoi_tao_id)
+    VALUES (?, 'pt', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(ma_ho_so, ho_ten, gioi_tinh || null, ngay_sinh || null, so_dien_thoai || null, email || null, chuyen_mon || null, parseInt(kinh_nghiem) || 0, chi_nhanh || null, avatar_url, cloudinary_public_id, ghi_chu || null, req.user.id);
+>>>>>>> main
 
     ghi_audit_log(req, 'CREATE', 'ho_so', result.lastInsertRowid, null, { ho_ten, loai_ho_so: 'pt' }, 'Thêm PT mới');
     return success(res, db.prepare('SELECT * FROM ho_so WHERE id = ?').get(result.lastInsertRowid), 'Thêm PT thành công', 201);
@@ -136,7 +143,7 @@ export const updateTrainer = (req, res) => {
   const old = db.prepare(`SELECT * FROM ho_so WHERE id = ? AND loai_ho_so = 'pt' AND is_deleted = 0`).get(id);
   if (!old) return error(res, 'Không tìm thấy PT.', 404);
 
-  const { ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email, chuyen_mon, kinh_nghiem, trang_thai, ghi_chu } = req.body;
+  const { ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email, chuyen_mon, kinh_nghiem, chi_nhanh, trang_thai, ghi_chu } = req.body;
   
   const tx = db.transaction(() => {
     db.prepare(`
@@ -144,17 +151,17 @@ export const updateTrainer = (req, res) => {
         ho_ten = COALESCE(?, ho_ten), gioi_tinh = COALESCE(?, gioi_tinh),
         ngay_sinh = COALESCE(?, ngay_sinh), so_dien_thoai = COALESCE(?, so_dien_thoai),
         email = COALESCE(?, email), chuyen_mon = COALESCE(?, chuyen_mon),
-        kinh_nghiem = COALESCE(?, kinh_nghiem),
+        kinh_nghiem = COALESCE(?, kinh_nghiem), chi_nhanh = COALESCE(?, chi_nhanh),
         ghi_chu = COALESCE(?, ghi_chu), nguoi_cap_nhat_id = ?
       WHERE id = ?
     `).run(
       ho_ten || null, gioi_tinh || null, ngay_sinh || null, so_dien_thoai || null, email || null,
       chuyen_mon || null, kinh_nghiem !== undefined ? parseInt(kinh_nghiem) || 0 : undefined,
-      ghi_chu || null, req.user.id, id
+      chi_nhanh || null, ghi_chu || null, req.user.id, id
     );
 
     if (trang_thai && old.tai_khoan_id) {
-      const tk_status = (trang_thai === 'hoat_dong' || trang_thai === 'active' || trang_thai === 'kich_hoat') ? 'kich_hoat' : 'khoa';
+      const tk_status = (trang_thai === 'hoat_dong' || trang_thai === 'active' || trang_thai === 'kich_hoat') ? 'hoat_dong' : 'khoa';
       db.prepare(`UPDATE tai_khoan SET trang_thai = ? WHERE id = ?`).run(tk_status, old.tai_khoan_id);
     }
   });

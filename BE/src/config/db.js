@@ -27,6 +27,25 @@ db.pragma('foreign_keys = ON');
 db.pragma('journal_mode = WAL');
 db.pragma('busy_timeout = 5000');
 
+// Đóng kết nối DB an toàn khi tắt/restart server (nodemon, Ctrl+C...) để tránh hỏng file WAL/SHM
+const closeDbGracefully = (signal) => {
+  try {
+    db.close();
+    console.log(`[DB] Đã đóng kết nối database an toàn (${signal}).`);
+  } catch (err) {
+    // Bỏ qua lỗi nếu database đã đóng trước đó
+    if (!err.message.includes('database connection is already closed')) {
+      console.error('[DB] Lỗi khi đóng database:', err.message);
+    }
+  }
+};
+process.once('SIGINT', () => { closeDbGracefully('SIGINT'); process.exit(0); });
+process.once('SIGTERM', () => { closeDbGracefully('SIGTERM'); process.exit(0); });
+process.once('SIGUSR2', () => {
+  closeDbGracefully('SIGUSR2');
+  process.kill(process.pid, 'SIGUSR2');
+});
+
 try { db.exec(`ALTER TABLE ho_so ADD COLUMN chieu_cao_cm REAL;`); } catch (_) { }
 try { db.exec(`ALTER TABLE ho_so ADD COLUMN can_nang_kg REAL;`); } catch (_) { }
 try { db.exec(`ALTER TABLE dang_ky_pt ADD COLUMN ngay_tao DATETIME DEFAULT (datetime('now','localtime'));`); } catch (_) { }
@@ -54,6 +73,27 @@ db.exec(`
 // Chèn cấu hình mặc định (bỏ qua nếu đã tồn tại)
 db.prepare(`INSERT OR IGNORE INTO cau_hinh (khoa, gia_tri, mo_ta) VALUES (?, ?, ?)`).run('gio_dong_cua', '22:00', 'Giờ cron job trừ buổi PT chạy');
 db.prepare(`INSERT OR IGNORE INTO cau_hinh (khoa, gia_tri, mo_ta) VALUES (?, ?, ?)`).run('qr_token_ttl_phut', '5', 'Thời gian hiệu lực QR Code (phút)');
+
+// ── Migration: Đồng bộ chi nhánh cho PT theo học viên cũ ──
+try {
+  db.exec(`
+    UPDATE ho_so
+    SET chi_nhanh = COALESCE(
+      (
+        SELECT m.chi_nhanh
+        FROM dang_ky_pt dp
+        JOIN ho_so m ON m.id = dp.hoi_vien_id
+        WHERE dp.pt_id = ho_so.id AND m.chi_nhanh IS NOT NULL AND m.chi_nhanh != ''
+        LIMIT 1
+      ),
+      'Chi nhánh Gò Vấp'
+    )
+    WHERE loai_ho_so = 'pt' AND (chi_nhanh IS NULL OR chi_nhanh = '');
+  `);
+  console.log('✅ [DB Migration] Đã đồng bộ chi nhánh cho PT theo học viên thành công!');
+} catch (e) {
+  console.error('❌ [DB Migration] Lỗi đồng bộ chi nhánh PT:', e.message);
+}
 
 // ── Migration v2: Tạo / nâng cấp bảng thong_bao lên 15 loại ──────
 // Dùng flag trong cau_hinh để chỉ chạy migration 1 lần duy nhất
@@ -1678,6 +1718,15 @@ try {
   console.log('[DB] ✅ Đồng bộ View v_trang_thai_hoi_vien thành công.');
 } catch (e) {
   console.error('[DB] ❌ Lỗi khi đồng bộ View v_trang_thai_hoi_vien:', e.message);
+}
+
+// Chuẩn hóa phương thức thanh toán cũ (chỉ chấp nhận tien_mat và chuyen_khoan)
+try {
+  db.prepare("UPDATE dang_ky_goi_tap SET phuong_thuc_tt = 'chuyen_khoan' WHERE phuong_thuc_tt NOT IN ('tien_mat', 'chuyen_khoan') AND phuong_thuc_tt IS NOT NULL").run();
+  db.prepare("UPDATE dang_ky_pt SET phuong_thuc_tt = 'chuyen_khoan' WHERE phuong_thuc_tt NOT IN ('tien_mat', 'chuyen_khoan') AND phuong_thuc_tt IS NOT NULL").run();
+  console.log('[DB] ✅ Chuẩn hóa phương thức thanh toán cũ thành công.');
+} catch (e) {
+  console.error('[DB] ❌ Lỗi khi chuẩn hóa phương thức thanh toán cũ:', e.message);
 }
 
 export default db;

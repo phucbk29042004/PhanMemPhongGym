@@ -6,8 +6,13 @@
 - **Mô tả**: Hệ thống quản lý phòng GYM hiện đại sử dụng SPA Vanilla JS (Frontend) và Node.js/SQLite (Backend).
 ---
 
+<<<<<<< HEAD
 ## 📌 Trạng Thái Hiện Tại
 **✅ Quản lý Đa Chi Nhánh, Import Hội viên Excel/ZIP & Tối ưu AI Chatbot** — Tích hợp thành công modal chọn chi nhánh đăng nhập, đồng bộ bộ lọc, hoàn thiện import hội viên hàng loạt; đồng thời nâng cao độ chính xác truy vấn SQL của AI Chatbot và kiểm soát chất lượng phản hồi.
+=======
+## 📌 Trạng thái hiện tại
+**✅ Sửa lỗi biểu đồ phương thức thanh toán (lần 2)** — Sửa 2 lỗi logic: (1) biểu đồ hôm nay/hôm qua tạo key sai 7 ngày → không khớp dữ liệu; (2) gói hết hạn (het_han) bị bỏ khỏi calcInflow → biểu đồ 7/30 ngày hiện trống dù đã có dữ liệu.
+>>>>>>> main
 
 ---
 
@@ -188,6 +193,79 @@
   3. **Giải quyết xung đột Git**: Sửa đổi và loại bỏ các ký hiệu conflict (`<<<<<<< HEAD`, ``) lỡ bị commit trong file `members.controller.js` giúp khôi phục biên dịch thành công cho Backend.
 - **Kết quả**: Thành công — nodemon tự động khởi chạy lại ổn định, dữ liệu doanh thu hiển thị đúng.
 
+
+### [04/06/2026 09:40] — Đồng bộ thông tin Chi nhánh HLV trên Mobile Admin
+- **Loại**: Chức năng mới (Mobile)
+- **File**: `MobileApp/src/screens/admin/AdminPTScreen.js`
+- **Mô tả**: Bổ sung hiển thị thông tin Chi nhánh của HLV ngay trên thẻ PTCard hiển thị ở danh sách HLV nhằm đồng bộ giao diện với bản Web.
+- **Kết quả**: Thành công.
+
+### [04/06/2026 09:29] — Sửa lỗi bố cục hiển thị chi tiết HLV (PT)
+- **Loại**: Sửa bug UI (Frontend)
+- **File**: `FE/assets/js/pages/members-list.js`
+- **Mô tả**: Bổ sung trường "Mã HLV" vào phần Thông tin cá nhân của popup chi tiết HLV. Việc này tăng tổng số ô thông tin lên 8 (số chẵn), giúp chia đều thành 4 hàng và lấp đầy khoảng trống thừa màu xám-xanh ở hàng thứ 4.
+- **Kết quả**: Thành công.
+
+### [04/06/2026 09:12] — Sửa lọc chi nhánh HLV và hiển thị thêm trường chi nhánh HLV
+- **Loại**: Sửa bug & Chức năng mới (Frontend)
+- **File**: `FE/assets/js/pages/members-list.js`
+- **Mô tả**:
+  - Khắc phục lỗi HLV không được lọc theo chi nhánh sau các thao tác (tải lại dữ liệu từ API, thêm mới HLV, reset bộ lọc). Thay gán trực tiếp danh sách HLV đầy đủ bằng việc gọi hàm `_applyPtFilter()`.
+  - Hiển thị thêm trường "Chi nhánh" cho HLV trong cột bảng trên Desktop, badge thông tin trong card mobile, và hiển thị thông tin Chi nhánh trong tab chi tiết HLV.
+- **Kết quả**: Thành công.
+
+### [04/06/2026 09:08] — Lọc danh sách HLV theo chi nhánh trên trang members-list.js
+- **Loại**: Sửa bug (Frontend)
+- **File**: `FE/assets/js/pages/members-list.js`
+- **Mô tả**: Bổ sung điều kiện so khớp chi nhánh `chi_nhanh` của PT với chi nhánh đang lọc `window.GymApp.selectedBranch` trong hàm `render`, `init` và hàm tìm kiếm/lọc `_applyPtFilter`. Trước đó, trang quản lý HLV hiển thị đầy đủ toàn bộ danh sách HLV từ DB mà không áp dụng bộ lọc chi nhánh toàn cục.
+- **Kết quả**: Thành công.
+
+### [04/06/2026 09:03] — Sửa lỗi CHECK constraint khi cập nhật trạng thái hoạt động của PT
+- **Loại**: Sửa bug (Backend)
+- **File**: `BE/src/controllers/trainers.controller.js`
+- **Mô tả**: Sửa giá trị trạng thái tài khoản của HLV từ `'kich_hoat'` (gây lỗi CHECK constraint do SQLite chỉ chấp nhận `'hoat_dong'`, `'khoa'`, `'cho_xac_nhan'`) thành `'hoat_dong'`. Lỗi này là nguyên nhân khiến yêu cầu sửa thông tin PT (bao gồm cập nhật chi nhánh) bị trả về mã lỗi 500 và không cập nhật được.
+- **Kết quả**: Thành công.
+
+### [04/06/2026 08:58] — Đồng bộ thông tin Chi nhánh của PT (Web, Mobile & DB Migration)
+- **Loại**: Sửa bug / Đồng nhất nghiệp vụ (Fullstack Web & Mobile & DB)
+- **File**: `BE/src/controllers/trainers.controller.js`, `BE/src/config/db.js`, `FE/assets/js/pages/members-list.js`, `MobileApp/src/screens/admin/AdminAddEditPTScreen.js`
+- **Mô tả**:
+  - **Lỗi**: Khi lọc chi nhánh, danh sách PT bị rỗng vì toàn bộ PT mẫu lẫn PT tạo mới đều bị trống trường `chi_nhanh` (do Backend và Frontend đều chưa hỗ trợ nhập/chọn và lưu trường này).
+  - **Khắc phục**:
+    - **Backend**: Cập nhật `trainers.controller.js` để nhận và lưu/cập nhật trường `chi_nhanh` cho HLV (PT).
+    - **Database Migration**: Thêm script tự động đồng bộ chi nhánh cho các PT cũ dựa trên chi nhánh của học viên đã đăng ký hợp đồng đào tạo PT với họ trước đó, giúp đồng bộ dữ liệu chuẩn xác. Nếu không có học viên nào, mặc định về "Chi nhánh Gò Vấp".
+    - **Web Frontend**: Thêm ô chọn chi nhánh vào form Thêm mới và Chỉnh sửa HLV trong `members-list.js`.
+    - **Mobile Frontend**: Thêm ô chọn chi nhánh và xác thực bắt buộc vào màn hình `AdminAddEditPTScreen.js`.
+- **Kết quả**: Thành công.
+
+### [04/06/2026 08:41] — Thiết kế lại biểu đồ Phương thức thanh toán cho Today/Yesterday
+- **Loại**: Cải tiến UI / Thiết kế (Frontend)
+- **File**: `FE/assets/js/pages/revenue.js`
+- **Mô tả**:
+  - Chuyển đổi biểu đồ cột chồng (`bar`) thành biểu đồ hình tròn khuyên (`doughnut`) đối với các bộ lọc **Hôm nay** và **Hôm qua** (ngày đơn).
+  - Biểu đồ Doughnut hiển thị chi tiết tỷ lệ phân bổ phần trăm giữa "Tiền mặt" và "Chuyển khoản", có tooltip rõ ràng giúp giao diện gọn gàng, chuyên nghiệp và không bị to thô.
+  - Vẫn giữ nguyên biểu đồ cột chồng (`bar`) cho bộ lọc nhiều ngày (7 ngày, 30 ngày).
+- **Kết quả**: Thành công.
+
+### [04/06/2026 08:40] — Sửa lỗi biểu đồ phương thức thanh toán (lần 2)
+- **Loại**: Sửa bug (Frontend)
+- **File**: `FE/assets/js/pages/revenue.js`
+- **Mô tả**:
+  - **Bug 1 — Sai daysInt cho today/yesterday**: Khi `this._days = 'today'`, `parseInt('today') = NaN` → fallback về `7`. Biểu đồ tạo key cho 7 ngày nhưng `_transactionsData` chỉ chứa giao dịch hôm nay → không có key nào khớp → hiện "Chưa có giao dịch". Fix: tính `daysInt = 1` và `endOffset` đúng cho today/yesterday.
+  - **Bug 2 — calcInflow bỏ gói hết hạn**: Hàm `calcInflow` trả về `0` cho `trang_thai = 'het_han'`. Gói đăng ký 7 ngày trước → đến nay đã hết hạn → bị loại khỏi tổng → biểu đồ 7/30 ngày hiện trống dù có dữ liệu. Fix: chỉ bỏ `huy` và `tam_dung`, giữ lại `het_han` vì tiền đã được thu.
+- **Kết quả**: Thành công.
+
+### [04/06/2026 08:30] — Đồng nhất phương thức thanh toán và sửa lỗi biểu đồ Doanh thu
+- **Loại**: Sửa bug / Đồng nhất nghiệp vụ (Fullstack Web & Mobile & DB)
+- **File**: `BE/src/config/db.js`, `FE/assets/js/pages/revenue.js`, `FE/assets/js/pages/members-list.js`
+- **Mô tả**:
+  - **Chuẩn hóa Database & Dữ liệu cũ**: Cập nhật `BE/src/config/db.js` tự động chuyển đổi tất cả các giao dịch cũ có phương thức thanh toán khác (`the`, `momo`, `zalopay`, `khac`) về `'chuyen_khoan'` khi server khởi động.
+  - **Sửa lỗi & Đồng bộ Biểu đồ Doanh thu**: 
+    - Cập nhật `revenue.js` đồng bộ định dạng nhãn biểu đồ hiển thị ngày dạng `dd/mm/yyyy` thay vì `dd/mm` để hiển thị rõ ràng và khớp với múi giờ của người dùng.
+    - Gom tất cả các phương thức thanh toán không phải `'tien_mat'` (bao gồm các phương thức cũ) vào cột biểu đồ `'Chuyển khoản'` để tránh lỗi rỗng dữ liệu khi lọc.
+    - Đồng bộ định dạng ngày giao dịch hiển thị trong bảng chi tiết là `dd/mm/yyyy` thay vì chỉ có `dd/mm` như trước.
+  - **Đồng nhất Giao diện chọn phương thức**: Cập nhật các đối tượng khai báo phương thức thanh toán `PM` trong `members-list.js` (modal Sửa gói và Đổi gói) chỉ hiển thị hai tùy chọn `'Tiền mặt'` và `'Chuyển khoản'`, đồng bộ hoàn toàn với logic backend và mobile app.
+- **Kết quả**: Thành công.
 
 ### [03/06/2026 14:38] — Khắc phục 3 lỗi logic nghiệp vụ về check-in thủ công và đặt lịch/dời lịch tập PT trong quá khứ
 - **Loại**: Sửa bug / Cải tiến nghiệp vụ (Fullstack Web & Mobile)
@@ -1832,4 +1910,19 @@
     - Cập nhật màn hình Dashboard, Revenue, PT, và Members để lấy/đổi chi nhánh qua store chung.
     - Bổ sung thanh chọn chi nhánh (ScrollView ngang) và gửi tham số `chi_nhanh` khi gọi API trên màn hình PT và Members.
 - **Kết quả**: ✅ Hoàn thành đồng bộ bộ lọc chi nhánh toàn diện giữa Web và Mobile.
+<<<<<<< HEAD
+>>>>>>> main
+=======
+
+### [03/06/2026 15:42] — Tạo script chẩn đoán và sửa lỗi cơ sở dữ liệu SQLite
+- **Loại**: Sửa lỗi database (DevOps/Database)
+- **File**: `BE/inspect_and_repair.js`, `BE/package.json`
+- **Mô tả**: Tạo file `inspect_and_repair.js` để tự động kiểm tra và sửa lỗi database. Người dùng thực hiện dọn dẹp file ghi tạm `.db-wal` và `.db-shm` rồi chạy thành công script sửa lỗi (thực hiện REINDEX và VACUUM thành công). Dọn dẹp lại các file tạm và script trong `package.json`.
+- **Kết quả**: ✅ Sửa lỗi hỏng database thành công. Database đã hoạt động bình thường.
+
+### [03/06/2026 15:56] — Triển khai Graceful Shutdown đóng SQLite an toàn
+- **Loại**: Cải tiến chất lượng code (Database)
+- **File**: `BE/src/config/db.js`
+- **Mô tả**: Lắng nghe các sự kiện tắt ứng dụng (`SIGINT`, `SIGTERM`) và đặc biệt là sự kiện restart của nodemon (`SIGUSR2`) để tự động đóng kết nối database bằng `db.close()`, ngăn chặn hỏng cấu trúc file WAL/SHM khi lưu code.
+- **Kết quả**: ✅ Tránh triệt để lỗi cơ sở dữ liệu khi phát triển và cập nhật code.
 >>>>>>> main
