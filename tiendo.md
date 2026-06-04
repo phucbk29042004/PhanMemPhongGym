@@ -1963,9 +1963,18 @@
 - **File**: `BE/src/config/db.js`
 - **Mô tả**: Lắng nghe các sự kiện tắt ứng dụng (`SIGINT`, `SIGTERM`) và đặc biệt là sự kiện restart của nodemon (`SIGUSR2`) để tự động đóng kết nối database bằng `db.close()`, ngăn chặn hỏng cấu trúc file WAL/SHM khi lưu code.
 - **Kết quả**: ✅ Tránh triệt để lỗi cơ sở dữ liệu khi phát triển và cập nhật code.
+<<<<<<< HEAD
 >>>>>>> main
 
 ### [04/06/2026 14:10] — Sửa lỗi import useAuthStore trên MobileApp
 - **Loại**: Sửa bug (MobileApp)
 - **File**: MobileApp/src/screens/admin/AdminRegisterPTScreen.js\n- **Mô tả**: Thay đổi đường dẫn import từ authStore thành useAuthStore để đúng tên file thực tế.
 - **Kết quả**: Thành công
+=======
+
+### [04/06/2026 16:35] - S?a l?i hi?n th? sai chi nh�nh PT
+- **Lo?i**: S?a bug
+- **File**: `MobileApp/src/screens/pt/PTScheduleScreen.js`, `BE/src/controllers/auth.controller.js`
+- **M� t?**: �?i `item.chi_nhanh` th�nh `item.chi_nhanh_tap` ? ph?n hi?n th? l?ch d?y c� nh�n PT. Th�m tru?ng `chi_nhanh` v�o API getMe c?a BE d? c�c file s? d?ng profile c� th�ng tin chi nh�nh.
+- **K?t qu?**: Th�nh c�ng
+>>>>>>> main

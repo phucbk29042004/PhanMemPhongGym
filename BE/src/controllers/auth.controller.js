@@ -122,7 +122,7 @@ export const getMe = (req, res) => {
     SELECT t.id, t.ten_dang_nhap, v.ma_vai_tro AS vai_tro, v.ten_hien_thi AS ten_vai_tro, v.quyen_json,
            h.id AS ho_so_id, h.ma_ho_so, h.ho_ten, h.avatar_url, h.loai_ho_so,
            h.so_dien_thoai, h.email, h.gioi_tinh, h.ngay_sinh, h.cccd,
-           h.dia_chi_tam_tru, h.que_quan, h.noi_sinh, h.tinh_thanh, h.quan_huyen, h.phuong_xa
+           h.dia_chi_tam_tru, h.que_quan, h.noi_sinh, h.tinh_thanh, h.quan_huyen, h.phuong_xa, h.chi_nhanh
     FROM tai_khoan t
     JOIN vai_tro v ON v.id = t.vai_tro_id
     LEFT JOIN ho_so h ON h.tai_khoan_id = t.id AND h.is_deleted = 0

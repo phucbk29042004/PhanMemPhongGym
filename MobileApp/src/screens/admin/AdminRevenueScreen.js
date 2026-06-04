@@ -920,11 +920,16 @@ export default function AdminRevenueScreen({ navigation }) {
                       </View>
                     </View>
 
-                    {/* Hàng 2: Tên sản phẩm + Giờ giao dịch */}
+                    {/* Hàng 2: Tên sản phẩm + Chi nhánh (khi xem tất cả) + Giờ giao dịch */}
                     <View style={[styles.txRowLine, { marginTop: 4 }]}>
                       <Text style={[styles.txSubtitle, { color: colors.textSecondary, flex: 1 }]} numberOfLines={1}>
                         {item.san_pham}
                       </Text>
+                      {!selectedBranch && item.chi_nhanh ? (
+                        <Text style={[styles.txSubtitle, { color: colors.textMuted, marginHorizontal: 6, fontSize: 10 }]} numberOfLines={1}>
+                          📍{item.chi_nhanh}
+                        </Text>
+                      ) : null}
                       <Text style={[styles.txTime, { color: colors.textMuted }]}>
                         {timeDisplay}
                       </Text>

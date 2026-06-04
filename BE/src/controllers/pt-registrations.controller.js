@@ -146,9 +146,10 @@ export const createRegistration = (req, res) => {
     return error(res, `phuong_thuc_tt phải là: ${validTT.join(', ')}`, 400);
   }
 
-  // Kiểm tra hội viên tồn tại
-  const hv = db.prepare("SELECT id FROM ho_so WHERE id = ? AND loai_ho_so = 'hoi_vien' AND is_deleted = 0").get(hoi_vien_id);
+  // Kiểm tra hội viên tồn tại — lấy luôn chi_nhanh để lưu vào đơn
+  const hv = db.prepare("SELECT id, chi_nhanh FROM ho_so WHERE id = ? AND loai_ho_so = 'hoi_vien' AND is_deleted = 0").get(hoi_vien_id);
   if (!hv) return error(res, 'Không tìm thấy hội viên.', 404);
+  const chiNhanhDangKy = hv.chi_nhanh || null;
 
   // Kiểm tra PT tồn tại
   const pt = db.prepare("SELECT id FROM ho_so WHERE id = ? AND loai_ho_so = 'pt' AND is_deleted = 0").get(pt_id);
@@ -167,13 +168,13 @@ export const createRegistration = (req, res) => {
   const result = db.prepare(`
     INSERT INTO dang_ky_pt
       (hoi_vien_id, pt_id, goi_pt_id, so_buoi_dang_ky, so_buoi_da_tap,
-       tu_ngay, den_ngay, gia_thuc_te, phuong_thuc_tt, ma_giao_dich, ghi_chu_tt, nguoi_tao_id, ngay_thanh_toan, trang_thai)
-    VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       tu_ngay, den_ngay, gia_thuc_te, phuong_thuc_tt, ma_giao_dich, ghi_chu_tt, nguoi_tao_id, ngay_thanh_toan, trang_thai, chi_nhanh_dang_ky)
+    VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     hoi_vien_id, pt_id, goi_pt_id,
     soBuoi, tu_ngay, den_ngay || null,
     parseFloat(gia_thuc_te), phuong_thuc_tt,
-    ma_giao_dich || null, ghi_chu_tt || null, req.user.id, tu_ngay, finalStatus
+    ma_giao_dich || null, ghi_chu_tt || null, req.user.id, tu_ngay, finalStatus, chiNhanhDangKy
   );
 
 
