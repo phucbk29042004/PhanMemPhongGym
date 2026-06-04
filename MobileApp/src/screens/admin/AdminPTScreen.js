@@ -67,7 +67,7 @@ function PTCard({ item, onPress, expanded, onEdit, onDelete, colors, isAdmin }) 
         <View style={ptCard.info}>
           <Text style={[ptCard.name, { color: colors.text }]} numberOfLines={1}>{item.ho_ten}</Text>
           <Text style={[ptCard.sub, { color: colors.primary }]}>{item.chuyen_mon || 'Gym / Fitness'}</Text>
-          <Text style={[ptCard.sub2, { color: colors.textSecondary }]}>{item.ma_ho_so} • {item.so_dien_thoai || '—'}</Text>
+          <Text style={[ptCard.sub2, { color: colors.textSecondary }]}>{item.ma_ho_so} • {item.so_dien_thoai || '—'} • {item.chi_nhanh || 'Chưa rõ'}</Text>
         </View>
         <View style={ptCard.stats}>
           <View style={[ptCard.statBadge, { backgroundColor: colors.primaryLight }]}>

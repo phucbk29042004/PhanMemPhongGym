@@ -22,6 +22,41 @@ function FieldLabel({ label, required = false, colors }) {
   );
 }
 
+function SelectField({ label, required = false, value, options, onSelect, colors }) {
+  const [open, setOpen] = useState(false);
+  const selected = options.find(o => o.v === value);
+  return (
+    <View style={{ marginBottom: 12 }}>
+      <FieldLabel label={label} required={required} colors={colors} />
+      <TouchableOpacity
+        style={[styles.input, { backgroundColor: colors.surfaceVariant, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14 }]}
+        onPress={() => setOpen(!open)}
+        activeOpacity={0.8}
+      >
+        <Text style={{ color: selected ? colors.text : colors.textMuted, fontSize: 14, fontWeight: '600', flex: 1 }}>
+          {selected ? selected.t : `— ${label.replace('*', '').trim()} —`}
+        </Text>
+        <ChevronDown color={colors.textMuted} size={16} />
+      </TouchableOpacity>
+      {open && (
+        <View style={{ borderWidth: 1, borderRadius: 12, marginTop: 4, overflow: 'hidden', zIndex: 100, backgroundColor: colors.surface, borderColor: colors.border }}>
+          {options.map((o) => (
+            <TouchableOpacity
+              key={o.v}
+              style={{ paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}
+              onPress={() => { onSelect(o.v); setOpen(false); }}
+            >
+              <Text style={{ color: o.v === value ? colors.primary : colors.text, fontWeight: o.v === value ? '700' : '500', fontSize: 14 }}>
+                {o.t}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
 export default function AdminAddEditPTScreen({ route, navigation }) {
   const ptId = route.params?.ptId; // undefined if adding new
   const isEdit = ptId != null;
@@ -40,13 +75,36 @@ export default function AdminAddEditPTScreen({ route, navigation }) {
   const [ngaySinh, setNgaySinh] = useState(''); // YYYY-MM-DD
   const [chuyenMon, setChuyenMon] = useState('Fitness');
   const [kinhNghiem, setKinhNghiem] = useState('1');
+  const [chiNhanh, setChiNhanh] = useState('');
   const [ghiChu, setGhiChu] = useState('');
+
+  // Branches list
+  const [branches, setBranches] = useState([
+    { id: 'go-vap', ten: 'Chi nhánh Gò Vấp' },
+    { id: 'binh-thanh', ten: 'Chi nhánh Bình Thạnh' },
+    { id: 'tan-binh', ten: 'Chi nhánh Tân Bình' },
+    { id: 'quan-1', ten: 'Chi nhánh Quận 1' },
+  ]);
 
   // Account creation states (only when adding new or no account exists yet)
   const [taiKhoanId, setTaiKhoanId] = useState(null);
   const [createAcc, setCreateAcc] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('123456');
+
+  useEffect(() => {
+    const loadBranches = async () => {
+      try {
+        const branchRes = await api.get('/branches');
+        if (branchRes.data?.success && Array.isArray(branchRes.data.data)) {
+          setBranches(branchRes.data.data);
+        }
+      } catch (err) {
+        console.log('[AdminAddEditPTScreen] branches load error:', err.message);
+      }
+    };
+    loadBranches();
+  }, []);
 
   useEffect(() => {
     if (isEdit) {
@@ -63,6 +121,7 @@ export default function AdminAddEditPTScreen({ route, navigation }) {
             setNgaySinh(data.ngay_sinh || '');
             setChuyenMon(data.chuyen_mon || 'Fitness');
             setKinhNghiem(String(data.kinh_nghiem || 0));
+            setChiNhanh(data.chi_nhanh || '');
             setGhiChu(data.ghi_chu || '');
             setTaiKhoanId(data.tai_khoan_id || null);
           }
@@ -105,6 +164,11 @@ export default function AdminAddEditPTScreen({ route, navigation }) {
       return;
     }
 
+    if (!chiNhanh) {
+      Alert.alert('Lỗi', 'Vui lòng chọn chi nhánh cho PT.');
+      return;
+    }
+
     setSaving(true);
     try {
       const payload = {
@@ -115,6 +179,7 @@ export default function AdminAddEditPTScreen({ route, navigation }) {
         ngay_sinh: ngaySinh.trim() || null,
         chuyen_mon: chuyenMon.trim(),
         kinh_nghiem: parseInt(kinhNghiem) || 0,
+        chi_nhanh: chiNhanh || null,
         ghi_chu: ghiChu.trim() || null,
         loai_ho_so: 'pt'
       };
@@ -262,6 +327,15 @@ export default function AdminAddEditPTScreen({ route, navigation }) {
               placeholder="Chọn ngày sinh"
               colors={colors}
               returnFormat="dd/mm/yyyy"
+            />
+
+            <SelectField
+              label="Chi nhánh trực thuộc"
+              required
+              value={chiNhanh}
+              options={branches.map(b => ({ v: b.ten || b.id, t: b.ten || b.id }))}
+              onSelect={setChiNhanh}
+              colors={colors}
             />
           </View>
 

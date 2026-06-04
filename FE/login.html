@@ -45,13 +45,27 @@
         }
 
         @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-8px); }
-            50% { transform: translateX(8px); }
-            75% { transform: translateX(-8px); }
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-8px);
+            }
+
+            50% {
+                transform: translateX(8px);
+            }
+
+            75% {
+                transform: translateX(-8px);
+            }
         }
+
         .animate-shake {
-            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+            animation: shake 0.4s cubic-bezier(.36, .07, .19, .97) both;
         }
     </style>
     <script id="tailwind-config">
@@ -93,32 +107,41 @@
                     class="absolute inset-0 bg-gradient-to-t from-primary via-primary/20 to-transparent flex flex-col justify-end p-12">
                     <div class="mb-6">
                         <div class="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mb-4 shadow-xl">
-                          <!-- White Hexagon Logo -->
-                          <svg viewBox="0 0 45 45" width="56" height="56" class="flex-shrink-0">
-                             <polygon points="22.5,2 42,13 42,35 22.5,46 3,35 3,13" fill="#ffffff" stroke="#166534" stroke-width="1.5"/>
-                             <path d="M19,37 C19,31 18,24 20,15" fill="none" stroke="#14532d" stroke-width="3" stroke-linecap="round"/>
-                             <path d="M20,15 C23,11 31,11 34,15 C36,18 35,24 29,26 C24,27 20,26.5 20,26.5" fill="none" stroke="#14532d" stroke-width="2.5" stroke-linecap="round"/>
-                             <path d="M20.5,19 C24,18 28.5,18.5 30,21" fill="none" stroke="#14532d" stroke-width="1.2" stroke-linecap="round"/>
-                             <path d="M20,23.5 C23.5,23 27,24 28.5,22.5" fill="none" stroke="#14532d" stroke-width="1" stroke-linecap="round"/>
-                          </svg>
+                            <!-- White Hexagon Logo -->
+                            <svg viewBox="0 0 45 45" width="56" height="56" class="flex-shrink-0">
+                                <polygon points="22.5,2 42,13 42,35 22.5,46 3,35 3,13" fill="#ffffff" stroke="#166534"
+                                    stroke-width="1.5" />
+                                <path d="M19,37 C19,31 18,24 20,15" fill="none" stroke="#14532d" stroke-width="3"
+                                    stroke-linecap="round" />
+                                <path d="M20,15 C23,11 31,11 34,15 C36,18 35,24 29,26 C24,27 20,26.5 20,26.5"
+                                    fill="none" stroke="#14532d" stroke-width="2.5" stroke-linecap="round" />
+                                <path d="M20.5,19 C24,18 28.5,18.5 30,21" fill="none" stroke="#14532d"
+                                    stroke-width="1.2" stroke-linecap="round" />
+                                <path d="M20,23.5 C23.5,23 27,24 28.5,22.5" fill="none" stroke="#14532d"
+                                    stroke-width="1" stroke-linecap="round" />
+                            </svg>
                         </div>
                         <div class="mb-4">
-                          <svg viewBox="0 0 190 40" width="160" height="34" style="display:block;">
-                            <g font-family="'Outfit', 'Inter', 'Roboto', sans-serif" font-weight="800" font-size="22">
-                              <text x="5" y="27" fill="#ffffff" letter-spacing="-0.5">Parad</text>
-                              <text x="68" y="27" fill="#ffffff" letter-spacing="-0.5">ı</text>
-                              <path d="M69.5,10 C71.5,8 74,8 74.5,10 C74.5,12.5 72,14 70.5,14 C69.5,14 68.5,12.5 69.5,10 Z" fill="#1D9336"/>
-                              <text x="79" y="27" fill="#ffffff" letter-spacing="-0.5">seGy</text>
-                              <text x="127" y="27" fill="#ffffff" letter-spacing="-0.5">m</text>
-                              <g transform="translate(131, 9) rotate(15)">
-                                <line x1="1" y1="8" x2="13" y2="2" stroke="#1D9336" stroke-width="1.5" stroke-linecap="round"/>
-                                <rect x="0" y="5" width="2.5" height="5" rx="0.8" fill="#ffffff"/>
-                                <rect x="-2" y="4" width="2" height="7" rx="0.8" fill="#1D9336"/>
-                                <rect x="11.5" y="0" width="2.5" height="5" rx="0.8" fill="#ffffff"/>
-                                <rect x="14" y="-1" width="2" height="7" rx="0.8" fill="#1D9336"/>
-                              </g>
-                            </g>
-                          </svg>
+                            <svg viewBox="0 0 190 40" width="160" height="34" style="display:block;">
+                                <g font-family="'Outfit', 'Inter', 'Roboto', sans-serif" font-weight="800"
+                                    font-size="22">
+                                    <text x="5" y="27" fill="#ffffff" letter-spacing="-0.5">Parad</text>
+                                    <text x="68" y="27" fill="#ffffff" letter-spacing="-0.5">ı</text>
+                                    <path
+                                        d="M69.5,10 C71.5,8 74,8 74.5,10 C74.5,12.5 72,14 70.5,14 C69.5,14 68.5,12.5 69.5,10 Z"
+                                        fill="#1D9336" />
+                                    <text x="79" y="27" fill="#ffffff" letter-spacing="-0.5">seGy</text>
+                                    <text x="127" y="27" fill="#ffffff" letter-spacing="-0.5">m</text>
+                                    <g transform="translate(131, 9) rotate(15)">
+                                        <line x1="1" y1="8" x2="13" y2="2" stroke="#1D9336" stroke-width="1.5"
+                                            stroke-linecap="round" />
+                                        <rect x="0" y="5" width="2.5" height="5" rx="0.8" fill="#ffffff" />
+                                        <rect x="-2" y="4" width="2" height="7" rx="0.8" fill="#1D9336" />
+                                        <rect x="11.5" y="0" width="2.5" height="5" rx="0.8" fill="#ffffff" />
+                                        <rect x="14" y="-1" width="2" height="7" rx="0.8" fill="#1D9336" />
+                                    </g>
+                                </g>
+                            </svg>
                         </div>
                         <div class="h-1 w-20 bg-white rounded-full"></div>
                     </div>
@@ -135,32 +158,41 @@
                     <div class="mb-6">
                         <div class="flex items-center justify-between mb-4 lg:hidden">
                             <div class="flex items-center gap-3">
-                              <!-- White Hexagon Logo -->
-                              <svg viewBox="0 0 45 45" width="36" height="36" class="flex-shrink-0">
-                                 <polygon points="22.5,2 42,13 42,35 22.5,46 3,35 3,13" fill="#ffffff" stroke="#166534" stroke-width="1.5"/>
-                                 <path d="M19,37 C19,31 18,24 20,15" fill="none" stroke="#14532d" stroke-width="3" stroke-linecap="round"/>
-                                 <path d="M20,15 C23,11 31,11 34,15 C36,18 35,24 29,26 C24,27 20,26.5 20,26.5" fill="none" stroke="#14532d" stroke-width="2.5" stroke-linecap="round"/>
-                                 <path d="M20.5,19 C24,18 28.5,18.5 30,21" fill="none" stroke="#14532d" stroke-width="1.2" stroke-linecap="round"/>
-                                 <path d="M20,23.5 C23.5,23 27,24 28.5,22.5" fill="none" stroke="#14532d" stroke-width="1" stroke-linecap="round"/>
-                              </svg>
-                              <div class="min-w-0">
-                                <svg viewBox="0 0 190 40" width="140" height="30" style="display:block;">
-                                  <g font-family="'Outfit', 'Inter', 'Roboto', sans-serif" font-weight="800" font-size="22">
-                                    <text x="5" y="27" fill="#1D9336" letter-spacing="-0.5">Parad</text>
-                                    <text x="68" y="27" fill="#1D9336" letter-spacing="-0.5">ı</text>
-                                    <path d="M69.5,10 C71.5,8 74,8 74.5,10 C74.5,12.5 72,14 70.5,14 C69.5,14 68.5,12.5 69.5,10 Z" fill="#16a34a"/>
-                                    <text x="79" y="27" fill="#14532d" letter-spacing="-0.5">seGy</text>
-                                    <text x="127" y="27" fill="#14532d" letter-spacing="-0.5">m</text>
-                                    <g transform="translate(131, 9) rotate(15)">
-                                      <line x1="1" y1="8" x2="13" y2="2" stroke="#1D9336" stroke-width="1.5" stroke-linecap="round"/>
-                                      <rect x="0" y="5" width="2.5" height="5" rx="0.8" fill="#14532d"/>
-                                      <rect x="-2" y="4" width="2" height="7" rx="0.8" fill="#1D9336"/>
-                                      <rect x="11.5" y="0" width="2.5" height="5" rx="0.8" fill="#14532d"/>
-                                      <rect x="14" y="-1" width="2" height="7" rx="0.8" fill="#1D9336"/>
-                                    </g>
-                                  </g>
+                                <!-- White Hexagon Logo -->
+                                <svg viewBox="0 0 45 45" width="36" height="36" class="flex-shrink-0">
+                                    <polygon points="22.5,2 42,13 42,35 22.5,46 3,35 3,13" fill="#ffffff"
+                                        stroke="#166534" stroke-width="1.5" />
+                                    <path d="M19,37 C19,31 18,24 20,15" fill="none" stroke="#14532d" stroke-width="3"
+                                        stroke-linecap="round" />
+                                    <path d="M20,15 C23,11 31,11 34,15 C36,18 35,24 29,26 C24,27 20,26.5 20,26.5"
+                                        fill="none" stroke="#14532d" stroke-width="2.5" stroke-linecap="round" />
+                                    <path d="M20.5,19 C24,18 28.5,18.5 30,21" fill="none" stroke="#14532d"
+                                        stroke-width="1.2" stroke-linecap="round" />
+                                    <path d="M20,23.5 C23.5,23 27,24 28.5,22.5" fill="none" stroke="#14532d"
+                                        stroke-width="1" stroke-linecap="round" />
                                 </svg>
-                              </div>
+                                <div class="min-w-0">
+                                    <svg viewBox="0 0 190 40" width="140" height="30" style="display:block;">
+                                        <g font-family="'Outfit', 'Inter', 'Roboto', sans-serif" font-weight="800"
+                                            font-size="22">
+                                            <text x="5" y="27" fill="#1D9336" letter-spacing="-0.5">Parad</text>
+                                            <text x="68" y="27" fill="#1D9336" letter-spacing="-0.5">ı</text>
+                                            <path
+                                                d="M69.5,10 C71.5,8 74,8 74.5,10 C74.5,12.5 72,14 70.5,14 C69.5,14 68.5,12.5 69.5,10 Z"
+                                                fill="#16a34a" />
+                                            <text x="79" y="27" fill="#14532d" letter-spacing="-0.5">seGy</text>
+                                            <text x="127" y="27" fill="#14532d" letter-spacing="-0.5">m</text>
+                                            <g transform="translate(131, 9) rotate(15)">
+                                                <line x1="1" y1="8" x2="13" y2="2" stroke="#1D9336" stroke-width="1.5"
+                                                    stroke-linecap="round" />
+                                                <rect x="0" y="5" width="2.5" height="5" rx="0.8" fill="#14532d" />
+                                                <rect x="-2" y="4" width="2" height="7" rx="0.8" fill="#1D9336" />
+                                                <rect x="11.5" y="0" width="2.5" height="5" rx="0.8" fill="#14532d" />
+                                                <rect x="14" y="-1" width="2" height="7" rx="0.8" fill="#1D9336" />
+                                            </g>
+                                        </g>
+                                    </svg>
+                                </div>
                             </div>
                         </div>
                         <h1 class="text-2xl font-extrabold text-on-surface mb-1">Đăng nhập</h1>
@@ -168,86 +200,88 @@
                     </div>
 
                     <form id="login-form" class="space-y-4">
-                    <!-- Username Input -->
-                    <div class="space-y-2">
-                        <label class="text-sm font-bold text-on-surface flex items-center gap-1" for="username">
-                            Tên đăng nhập <span class="text-error">*</span>
-                        </label>
-                        <div class="relative focus-halo rounded-xl transition-all">
-                            <span
-                                class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant">person</span>
-                            <input
-                                class="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-outline-variant focus:border-primary-container rounded-xl outline-none transition-all font-medium"
-                                id="username" placeholder="Nhập tên đăng nhập của bạn" type="text" required />
+                        <!-- Username Input -->
+                        <div class="space-y-2">
+                            <label class="text-sm font-bold text-on-surface flex items-center gap-1" for="username">
+                                Tên đăng nhập <span class="text-error">*</span>
+                            </label>
+                            <div class="relative focus-halo rounded-xl transition-all">
+                                <span
+                                    class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant">person</span>
+                                <input
+                                    class="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-outline-variant focus:border-primary-container rounded-xl outline-none transition-all font-medium"
+                                    id="username" placeholder="Nhập tên đăng nhập của bạn" type="text" required />
+                            </div>
                         </div>
-                    </div>
 
-                    <!-- Password Input -->
-                    <div class="space-y-2">
-                        <label class="text-sm font-bold text-on-surface flex items-center gap-1" for="password">
-                            Mật khẩu <span class="text-error">*</span>
-                        </label>
-                        <div class="relative focus-halo rounded-xl transition-all">
-                            <span
-                                class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant">lock</span>
-                            <input
-                                class="w-full pl-12 pr-12 py-3.5 bg-gray-50 border border-outline-variant focus:border-primary-container rounded-xl outline-none transition-all font-medium"
-                                id="password" placeholder="••••••••" type="password" required />
-                            <button type="button"
-                                class="absolute right-4 top-1/2 -translate-y-1/2 text-outline-variant hover:text-on-surface transition-colors">
-                                <span class="material-symbols-outlined text-xl">visibility</span>
+                        <!-- Password Input -->
+                        <div class="space-y-2">
+                            <label class="text-sm font-bold text-on-surface flex items-center gap-1" for="password">
+                                Mật khẩu <span class="text-error">*</span>
+                            </label>
+                            <div class="relative focus-halo rounded-xl transition-all">
+                                <span
+                                    class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant">lock</span>
+                                <input
+                                    class="w-full pl-12 pr-12 py-3.5 bg-gray-50 border border-outline-variant focus:border-primary-container rounded-xl outline-none transition-all font-medium"
+                                    id="password" placeholder="••••••••" type="password" required />
+                                <button type="button"
+                                    class="absolute right-4 top-1/2 -translate-y-1/2 text-outline-variant hover:text-on-surface transition-colors">
+                                    <span class="material-symbols-outlined text-xl">visibility</span>
+                                </button>
+                            </div>
+                            <div class="flex justify-end">
+                                <a class="text-xs font-bold text-primary-container hover:underline" href="#">Quên mật
+                                    khẩu?</a>
+                            </div>
+                        </div>
+
+                        <!-- Login Button -->
+                        <!-- Login Button -->
+                        <div class="flex justify-center pt-2">
+                            <button id="login-btn"
+                                class="w-fit px-12 py-2.5 bg-primary-container text-white font-semibold rounded-xl shadow-md shadow-green-100 hover:bg-primary transition-all focus:ring-4 focus:ring-primary/20 button-primary-active flex items-center justify-center gap-2 text-sm"
+                                type="submit">
+                                <span class="material-symbols-outlined text-lg">login</span>
+                                <span>Đăng nhập ngay</span>
                             </button>
                         </div>
-                        <div class="flex justify-end">
-                            <a class="text-xs font-bold text-primary-container hover:underline" href="#">Quên mật khẩu?</a>
+                    </form>
+
+                    <!-- Divider -->
+                    <div class="relative my-6">
+                        <div class="absolute inset-0 flex items-center">
+                            <div class="w-full border-t border-outline-variant/50"></div>
+                        </div>
+                        <div class="relative flex justify-center text-[10px] uppercase tracking-widest font-bold">
+                            <span class="bg-white px-4 text-outline-variant">Hoặc đăng nhập với</span>
                         </div>
                     </div>
 
-                    <!-- Login Button -->
-                    <!-- Login Button -->
-                    <div class="flex justify-center pt-2">
-                        <button id="login-btn"
-                            class="w-fit px-12 py-2.5 bg-primary-container text-white font-semibold rounded-xl shadow-md shadow-green-100 hover:bg-primary transition-all focus:ring-4 focus:ring-primary/20 button-primary-active flex items-center justify-center gap-2 text-sm"
-                            type="submit">
-                            <span class="material-symbols-outlined text-lg">login</span>
-                            <span>Đăng nhập ngay</span>
+                    <!-- Social Login -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <button
+                            class="flex items-center justify-center gap-3 py-3 border border-outline-variant rounded-xl hover:bg-gray-50 transition-all font-bold text-sm">
+                            <img alt="Google" class="w-5 h-5"
+                                src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" />
+                            <span>Google</span>
+                        </button>
+                        <button
+                            class="flex items-center justify-center gap-3 py-3 border border-outline-variant rounded-xl hover:bg-gray-50 transition-all font-bold text-sm">
+                            <span class="material-symbols-outlined text-blue-600">qr_code_scanner</span>
+                            <span>Quét QR</span>
                         </button>
                     </div>
-                </form>
 
-                <!-- Divider -->
-                <div class="relative my-6">
-                    <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t border-outline-variant/50"></div>
+                    <!-- Footer Link -->
+                    <div class="mt-6 text-center">
+                        <p class="text-sm text-on-surface-variant font-medium">
+                            Chưa có tài khoản?
+                            <a class="text-primary-container font-extrabold hover:underline ml-1" href="#">Liên hệ quản
+                                trị viên</a>
+                        </p>
                     </div>
-                    <div class="relative flex justify-center text-[10px] uppercase tracking-widest font-bold">
-                        <span class="bg-white px-4 text-outline-variant">Hoặc đăng nhập với</span>
-                    </div>
                 </div>
-
-                <!-- Social Login -->
-                <div class="grid grid-cols-2 gap-4">
-                    <button
-                        class="flex items-center justify-center gap-3 py-3 border border-outline-variant rounded-xl hover:bg-gray-50 transition-all font-bold text-sm">
-                        <img alt="Google" class="w-5 h-5"
-                            src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" />
-                        <span>Google</span>
-                    </button>
-                    <button
-                        class="flex items-center justify-center gap-3 py-3 border border-outline-variant rounded-xl hover:bg-gray-50 transition-all font-bold text-sm">
-                        <span class="material-symbols-outlined text-blue-600">qr_code_scanner</span>
-                        <span>Quét QR</span>
-                    </button>
-                </div>
-
-                <!-- Footer Link -->
-                <div class="mt-6 text-center">
-                    <p class="text-sm text-on-surface-variant font-medium">
-                        Chưa có tài khoản?
-                        <a class="text-primary-container font-extrabold hover:underline ml-1" href="#">Liên hệ quản trị viên</a>
-                    </p>
-                </div>
-            </div>
             </div>
         </div>
     </main>
@@ -284,12 +318,12 @@
                 window.GymApp.toast('Tên đăng nhập hoặc mật khẩu không chính xác. Vui lòng thử lại!', 'error');
                 btn.disabled = false;
                 btn.innerHTML = originalContent;
-                
+
                 // Visual feedback
                 const form = document.getElementById('login-form');
                 form.classList.add('animate-shake');
                 setTimeout(() => form.classList.remove('animate-shake'), 500);
-                
+
                 // Focus password input for retry
                 const passInput = document.getElementById('password');
                 passInput.value = '';
