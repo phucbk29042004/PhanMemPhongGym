@@ -265,7 +265,7 @@ export const getRevenue = (req, res) => {
   // 6. Lấy các giao dịch chi tiết trong khoảng thời gian lọc
   const goiTapTransactions = db.prepare(`
     SELECT dk.id, dk.ngay_tao AS thoi_gian, 'goi_tap' AS loai,
-           gt.ten_goi AS san_pham, h.ho_ten AS khach_hang, dk.gia_thuc_te, dk.phuong_thuc_tt, dk.trang_thai,
+           gt.ten_goi AS san_pham, h.ho_ten AS khach_hang, h.chi_nhanh, dk.gia_thuc_te, dk.phuong_thuc_tt, dk.trang_thai,
            dk.ly_do_huy, dk.so_tien_hoan, dk.ghi_chu_tt
     FROM dang_ky_goi_tap dk
     JOIN goi_tap gt ON gt.id = dk.goi_tap_id
@@ -277,7 +277,7 @@ export const getRevenue = (req, res) => {
 
   const goiPTTransactions = db.prepare(`
     SELECT dp.id, dp.ngay_tao AS thoi_gian, 'goi_pt' AS loai,
-           gp.ten_goi AS san_pham, h.ho_ten AS khach_hang, dp.gia_thuc_te, dp.phuong_thuc_tt, dp.trang_thai,
+           gp.ten_goi AS san_pham, h.ho_ten AS khach_hang, h.chi_nhanh, dp.gia_thuc_te, dp.phuong_thuc_tt, dp.trang_thai,
            dp.ly_do_huy, dp.so_tien_hoan, dp.ghi_chu_tt
     FROM dang_ky_pt dp
     JOIN goi_pt gp ON gp.id = dp.goi_pt_id
@@ -307,7 +307,7 @@ export const getRevenueToday = (req, res) => {
   const paramsPt = [today];
 
   if (chi_nhanh) {
-    branchFilterTap = ' AND dk.chi_nhanh_dang_ky = ?';
+    branchFilterTap = ' AND h.chi_nhanh = ?';
     branchFilterPt = ' AND dp.chi_nhanh_dang_ky = ?';
     paramsTap.push(chi_nhanh);
     paramsPt.push(chi_nhanh);
@@ -349,7 +349,7 @@ export const getRevenueToday = (req, res) => {
   const branchFilterTapForTx = chi_nhanh ? ' AND h.chi_nhanh = ?' : '';
   const goiTapToday = db.prepare(`
     SELECT dk.id, dk.ngay_tao AS thoi_gian, 'goi_tap' AS loai,
-           gt.ten_goi AS san_pham, h.ho_ten AS khach_hang, dk.gia_thuc_te, dk.phuong_thuc_tt, dk.trang_thai,
+           gt.ten_goi AS san_pham, h.ho_ten AS khach_hang, h.chi_nhanh, dk.gia_thuc_te, dk.phuong_thuc_tt, dk.trang_thai,
            dk.ly_do_huy, dk.so_tien_hoan, dk.ghi_chu_tt
     FROM dang_ky_goi_tap dk
     JOIN goi_tap gt ON gt.id = dk.goi_tap_id
@@ -362,7 +362,7 @@ export const getRevenueToday = (req, res) => {
   // FIX: lọc giao dịch theo COALESCE(ngay_thanh_toan, ngay_tao)
   const goiPTToday = db.prepare(`
     SELECT dp.id, dp.ngay_tao AS thoi_gian, 'goi_pt' AS loai,
-           gp.ten_goi AS san_pham, h.ho_ten AS khach_hang, dp.gia_thuc_te, dp.phuong_thuc_tt, dp.trang_thai,
+           gp.ten_goi AS san_pham, h.ho_ten AS khach_hang, h.chi_nhanh, dp.gia_thuc_te, dp.phuong_thuc_tt, dp.trang_thai,
            dp.ly_do_huy, dp.so_tien_hoan, dp.ghi_chu_tt
     FROM dang_ky_pt dp
     JOIN goi_pt gp ON gp.id = dp.goi_pt_id
@@ -408,7 +408,7 @@ export const getRevenueYesterday = (req, res) => {
   const paramsPt = [yesterday];
 
   if (chi_nhanh) {
-    branchFilterTap = ' AND dk.chi_nhanh_dang_ky = ?';
+    branchFilterTap = ' AND h.chi_nhanh = ?';
     branchFilterPt = ' AND dp.chi_nhanh_dang_ky = ?';
     paramsTap.push(chi_nhanh);
     paramsPt.push(chi_nhanh);
@@ -450,7 +450,7 @@ export const getRevenueYesterday = (req, res) => {
   const branchFilterTapForTx = chi_nhanh ? ' AND h.chi_nhanh = ?' : '';
   const goiTapYesterday = db.prepare(`
     SELECT dk.id, dk.ngay_tao AS thoi_gian, 'goi_tap' AS loai,
-           gt.ten_goi AS san_pham, h.ho_ten AS khach_hang, dk.gia_thuc_te, dk.phuong_thuc_tt, dk.trang_thai,
+           gt.ten_goi AS san_pham, h.ho_ten AS khach_hang, h.chi_nhanh, dk.gia_thuc_te, dk.phuong_thuc_tt, dk.trang_thai,
            dk.ly_do_huy, dk.so_tien_hoan, dk.ghi_chu_tt
     FROM dang_ky_goi_tap dk
     JOIN goi_tap gt ON gt.id = dk.goi_tap_id
@@ -463,7 +463,7 @@ export const getRevenueYesterday = (req, res) => {
   // FIX: lọc theo COALESCE(ngay_thanh_toan, ngay_tao)
   const goiPTYesterday = db.prepare(`
     SELECT dp.id, dp.ngay_tao AS thoi_gian, 'goi_pt' AS loai,
-           gp.ten_goi AS san_pham, h.ho_ten AS khach_hang, dp.gia_thuc_te, dp.phuong_thuc_tt, dp.trang_thai,
+           gp.ten_goi AS san_pham, h.ho_ten AS khach_hang, h.chi_nhanh, dp.gia_thuc_te, dp.phuong_thuc_tt, dp.trang_thai,
            dp.ly_do_huy, dp.so_tien_hoan, dp.ghi_chu_tt
     FROM dang_ky_pt dp
     JOIN goi_pt gp ON gp.id = dp.goi_pt_id

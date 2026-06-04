@@ -105,6 +105,7 @@ window.GymApp.pages['revenue'] = {
                   <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60">Khách hàng</th>
                   <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60">Sản phẩm</th>
                   <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60">Loại</th>
+                  <th id="rev-th-chinhanh" class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60">Chi nhánh</th>
                   <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60">Trạng thái</th>
                   <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60">Phương thức</th>
                   <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60 text-right">Số tiền</th>
@@ -113,7 +114,7 @@ window.GymApp.pages['revenue'] = {
                 </tr>
               </thead>
               <tbody id="rev-today-tbody">
-                <tr><td colspan="8" class="text-center py-margin text-on-surface-variant text-body-sm">Đang tải...</td></tr>
+                <tr><td colspan="9" class="text-center py-margin text-on-surface-variant text-body-sm">Đang tải...</td></tr>
               </tbody>
             </table>
           </div>
@@ -1195,9 +1196,15 @@ window.GymApp.pages['revenue'] = {
     const list = Array.isArray(transactions) ? transactions : [];
     if (countEl) countEl.textContent = list.length;
 
+    // Hiện/ẩn cột chi nhánh dựa trên bộ lọc
+    const showBranchCol = !this._selectedBranch;
+    const thBranch = document.getElementById('rev-th-chinhanh');
+    if (thBranch) thBranch.style.display = showBranchCol ? '' : 'none';
+    const totalCols = showBranchCol ? 9 : 8;
+
     if (list.length === 0) {
       const msg = isYesterday ? 'Chưa có giao dịch nào hôm qua' : isToday ? 'Chưa có giao dịch nào hôm nay' : `Chưa có giao dịch nào trong ${this._days} ngày qua`;
-      tbody.innerHTML = `<tr><td colspan="8" class="text-center py-margin text-on-surface-variant text-body-sm">${msg}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="${totalCols}" class="text-center py-margin text-on-surface-variant text-body-sm">${msg}</td></tr>`;
       return;
     }
 
@@ -1273,11 +1280,17 @@ window.GymApp.pages['revenue'] = {
         ? t.phuong_thuc_tt === 'tien_mat' ? 'Tiền mặt' : 'Chuyển khoản'
         : '—';
 
+      const branchLabel = t.chi_nhanh || '—';
+      const branchCell = showBranchCol
+        ? `<td class="px-standard py-3 text-on-surface-variant font-medium text-body-sm">${branchLabel}</td>`
+        : '';
+
       return `
         <tr class="border-b border-outline-variant/30 hover:bg-brand-primary/5 transition-colors">
           <td class="px-standard py-3 font-bold text-on-surface text-body-md">${t.khach_hang || '—'}</td>
           <td class="px-standard py-3 text-on-surface-variant font-medium text-body-sm">${t.san_pham || '—'}</td>
           <td class="px-standard py-3">${loaiLabel}</td>
+          ${branchCell}
           <td class="px-standard py-3">${statusLabel}</td>
           <td class="px-standard py-3">${paymentLabel}</td>
           <td class="px-standard py-3 text-right font-bold text-brand-primary text-body-md">${this._formatMoney(t.gia_thuc_te)}</td>
@@ -1292,7 +1305,7 @@ window.GymApp.pages['revenue'] = {
     if (totalPages > 1) {
       paginationHtml = `
         <tr class="bg-surface-container-low/20">
-          <td colspan="8" class="px-standard py-3">
+          <td colspan="${totalCols}" class="px-standard py-3">
             <div class="flex items-center justify-between">
               <span class="text-on-surface-variant text-body-sm font-bold">Trang ${this._transactionPage}/${totalPages} • ${list.length} giao dịch</span>
               <div class="flex gap-1">

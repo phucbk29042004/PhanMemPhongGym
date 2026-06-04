@@ -491,7 +491,7 @@ export default function PTScheduleScreen() {
                     </View>
                     <View style={styles.infoItem}>
                       <MapPin color={colors.textMuted} size={14} strokeWidth={2} />
-                      <Text style={[styles.infoVal, { color: colors.textSecondary }]} numberOfLines={1}>{item.chi_nhanh || 'Paradise GYM'}</Text>
+                      <Text style={[styles.infoVal, { color: colors.textSecondary }]} numberOfLines={1}>{item.chi_nhanh_tap || 'Paradise GYM'}</Text>
                     </View>
                   </View>
 

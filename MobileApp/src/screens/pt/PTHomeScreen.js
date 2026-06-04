@@ -191,7 +191,7 @@ export default function PTHomeScreen({ navigation }) {
           <View style={styles.contractGridItem}>
             <MapPin color={colors.textMuted} size={14} strokeWidth={2} />
             <Text style={[styles.contractGridLabel, { color: colors.textMuted }]}>Địa điểm</Text>
-            <Text style={[styles.contractGridValue, { color: colors.text }]} numberOfLines={1}>{next.chi_nhanh || 'Paradise'}</Text>
+            <Text style={[styles.contractGridValue, { color: colors.text }]} numberOfLines={1}>{next.chi_nhanh_tap || 'Paradise'}</Text>
           </View>
         </View>
 
