@@ -1964,3 +1964,8 @@
 - **Mô tả**: Lắng nghe các sự kiện tắt ứng dụng (`SIGINT`, `SIGTERM`) và đặc biệt là sự kiện restart của nodemon (`SIGUSR2`) để tự động đóng kết nối database bằng `db.close()`, ngăn chặn hỏng cấu trúc file WAL/SHM khi lưu code.
 - **Kết quả**: ✅ Tránh triệt để lỗi cơ sở dữ liệu khi phát triển và cập nhật code.
 >>>>>>> main
+
+### [04/06/2026 14:10] — Sửa lỗi import useAuthStore trên MobileApp
+- **Loại**: Sửa bug (MobileApp)
+- **File**: MobileApp/src/screens/admin/AdminRegisterPTScreen.js\n- **Mô tả**: Thay đổi đường dẫn import từ authStore thành useAuthStore để đúng tên file thực tế.
+- **Kết quả**: Thành công

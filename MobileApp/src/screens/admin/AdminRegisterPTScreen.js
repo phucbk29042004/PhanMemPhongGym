@@ -8,7 +8,7 @@ import { X, Dumbbell, User, Save, AlertTriangle } from 'lucide-react-native';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import DatePickerField from '../../components/DatePickerField';
-import { useAuthStore } from '../../store/authStore';
+import { useAuthStore } from '../../store/useAuthStore';
 
 function formatPrice(val) {
   if (val == null) return '0đ';
