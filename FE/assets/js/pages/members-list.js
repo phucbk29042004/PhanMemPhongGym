@@ -2965,7 +2965,9 @@ window.GymApp.pages['members-list'] = {
     document.getElementById('gym-sub-modal')?.remove();
     const REQ = `<span style="color:#ba1a1a;margin-left:2px;font-weight:700;">*</span>`;
     const inputCls = `class="bg-surface-container-lowest text-on-surface border border-outline-variant" style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;"`;
-    const pts = (window.GymApp.data.pts || []);
+    const selectedBranch = window.GymApp.selectedBranch || '';
+    const allPts = (window.GymApp.data.pts || []);
+    const pts = selectedBranch ? allPts.filter(p => p.chi_nhanh === selectedBranch) : allPts;
     let goiPtList = [];
     try { const res = await window.GymApp.api.get('/packages/pt'); goiPtList = Array.isArray(res.data) ? res.data : []; } catch (_) { }
 
@@ -3224,7 +3226,9 @@ window.GymApp.pages['members-list'] = {
     document.getElementById('gym-sub-modal')?.remove();
     const REQ = `<span style="color:#ba1a1a;margin-left:2px;font-weight:700;">*</span>`;
     const inputCls = `class="bg-surface-container-lowest text-on-surface border border-outline-variant" style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;"`;
-    const pts = (window.GymApp.data.pts || []);
+    const selectedBranch = window.GymApp.selectedBranch || '';
+    const allPts = (window.GymApp.data.pts || []);
+    const pts = selectedBranch ? allPts.filter(p => p.chi_nhanh === selectedBranch) : allPts;
     let goiPtList = [];
     try { const res = await window.GymApp.api.get('/packages/pt'); goiPtList = Array.isArray(res.data) ? res.data : []; } catch (_) { }
     const overlay = document.createElement('div');

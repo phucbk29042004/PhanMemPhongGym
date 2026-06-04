@@ -6,8 +6,13 @@
 - **Mô tả**: Hệ thống quản lý phòng GYM hiện đại sử dụng SPA Vanilla JS (Frontend) và Node.js/SQLite (Backend).
 ---
 
+<<<<<<< HEAD
 ## 📌 Trạng Thái Hiện Tại
 **✅ Quản lý Đa Chi Nhánh, Import Hội viên Excel/ZIP, Tối ưu AI Chatbot & Sửa lỗi biểu đồ** — Tích hợp thành công modal chọn chi nhánh đăng nhập, đồng bộ bộ lọc, hoàn thiện import hội viên hàng loạt; nâng cao độ chính xác truy vấn SQL của AI Chatbot, kiểm soát chất lượng phản hồi, và sửa lỗi hiển thị biểu đồ phương thức thanh toán.
+=======
+## 📌 Trạng thái hiện tại
+**✅ Lọc PT theo chi nhánh khi đăng ký gói PT & Badge chi nhánh trên lịch tập** — Web & Mobile đã lọc HLV đúng chi nhánh trong modal đăng ký gói PT. Lịch đào tạo PT hiển thị badge chi nhánh khi xem tất cả chi nhánh.
+>>>>>>> main
 
 ---
 
@@ -188,6 +193,15 @@
   3. **Giải quyết xung đột Git**: Sửa đổi và loại bỏ các ký hiệu conflict (`<<<<<<< HEAD`, ``) lỡ bị commit trong file `members.controller.js` giúp khôi phục biên dịch thành công cho Backend.
 - **Kết quả**: Thành công — nodemon tự động khởi chạy lại ổn định, dữ liệu doanh thu hiển thị đúng.
 
+
+### [04/06/2026 13:08] — Lọc PT theo chi nhánh khi đăng ký gói PT & Badge chi nhánh lịch tập (Fullstack)
+- **Loại**: Sửa bug & Chức năng mới (Web + Mobile)
+- **File**: `FE/assets/js/pages/pt-training.js`, `FE/assets/js/pages/members-list.js`, `MobileApp/src/screens/admin/AdminRegisterPTScreen.js`
+- **Mô tả**:
+  - **`pt-training.js`**: Bổ sung badge hiển thị tên chi nhánh (icon location_on + tên ngắn) trên mỗi thẻ lịch tập khi Admin đang xem “Tất cả chi nhánh”. Khi lọc chi nhánh cụ thể, badge ẩn đi để không thừa thông tin.
+  - **`members-list.js`**: Sửa 2 modal đăng ký gói PT (`_showAddPtRegistrationModal` và `_showEditPtRegistrationModal`): lọc danh sách HLV hiển thị chỉ theo chi nhánh đang chọn (`window.GymApp.selectedBranch`). Nếu đang xem tất cả chi nhánh thì vẫn hiển thị đầy đủ.
+  - **`AdminRegisterPTScreen.js` (Mobile)**: Import `useAuthStore`, lấy `selectedBranch`, lọc danh sách HLV sau khi fetch từ API — chỉ hiển HLV thuộc chi nhánh đang chọn.
+- **Kết quả**: Thành công.
 
 ### [04/06/2026 09:40] — Đồng bộ thông tin Chi nhánh HLV trên Mobile Admin
 - **Loại**: Chức năng mới (Mobile)
