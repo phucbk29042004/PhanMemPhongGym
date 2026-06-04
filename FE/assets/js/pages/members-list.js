@@ -1929,12 +1929,16 @@ window.GymApp.pages['members-list'] = {
         const blue = dark
           ? 'background:rgba(99,179,237,0.2);border:1px solid rgba(147,210,255,0.3);color:#bfdbfe;'
           : 'background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;';
+        const print = dark
+          ? 'background:rgba(29,147,54,0.25);border:1px solid rgba(100,255,100,0.3);color:#a7f3d0;'
+          : 'background:#e6f4ea;border:1px solid #b7e1cd;color:#137333;';
         const btn = (cls, icon, label, style) =>
           `<button class="${cls}" data-pkg-id="${p.id}" data-member-id="${m.id}"
             style="display:inline-flex;align-items:center;gap:3px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;${style}">
             <span class="material-symbols-outlined" style="font-size:13px;">${icon}</span>${label}
           </button>`;
         return `<div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;">
+          ${btn('btn-print-pkg', 'print', 'In hóa đơn', print)}
           ${btn('btn-edit-pkg', 'edit', 'Sửa', base)}
           ${btn('btn-switch-pkg', 'swap_horiz', 'Đổi gói', blue)}
           ${window.GymApp.auth.user?.vai_tro === 'admin' ? btn('btn-cancel-pkg', 'cancel', 'Hủy gói', danger) : ''}
@@ -2001,7 +2005,7 @@ window.GymApp.pages['members-list'] = {
         </div>
 
         ${activePkg ? `
-          <div style="background:linear-gradient(135deg,#14532d 0%,#1D9336 100%);border-radius:12px;padding:14px 16px;color:#fff;position:relative;overflow:hidden;margin-bottom:16px;">
+          <div style="background:linear-gradient(160deg,#2d6a4f 0%,#40916c 55%,#52b788 100%);border-radius:12px;padding:14px 16px;color:#fff;position:relative;overflow:hidden;margin-bottom:16px;">
             <div style="position:absolute;right:-12px;top:-12px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.07);pointer-events:none;"></div>
             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;position:relative;z-index:1;">
               <div style="min-width:0;">
@@ -2051,65 +2055,83 @@ window.GymApp.pages['members-list'] = {
         return buoiConLai > 0 && conHan;
       });
 
-      const ptContractsHTML = ptContracts.length === 0
-        ? `<div style="text-align:center;padding:24px;background:var(--bg-surface-low, #f8fafc);border-radius:12px;border:1px dashed var(--outline-variant, #cbd5e1);font-size:13px;color:var(--text-on-surface-variant, #cbd5e1);margin-bottom:16px;">Hội viên chưa đăng ký gói PT nào.</div>`
-        : ptContracts.map(c => {
-          const buoiConLai = (c.buoi_dang_ky || 0) - (c.buoi_da_tap || 0);
-          const conHan = !c.den_ngay || new Date(c.den_ngay) >= today;
-          const statusLabel = (!conHan) ? 'Hết hạn' : (buoiConLai <= 0 ? 'Hết buổi' : 'Đang hoạt động');
-          const statusColor = statusLabel === 'Đang hoạt động' ? '#1D9336' : (statusLabel === 'Hết buổi' ? '#f59e0b' : '#ba1a1a');
-          const bgStatus = statusLabel === 'Đang hoạt động' ? 'rgba(29, 147, 54, 0.1)' : (statusLabel === 'Hết buổi' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(186, 26, 26, 0.1)');
-          return `
-              <div style="display:flex;flex-direction:column;background:var(--bg-surface-lowest, #fff);border:1px solid var(--outline-variant, #e2e8f0);border-radius:12px;margin-bottom:16px;overflow:hidden;">
-                <div style="padding:16px;display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid var(--outline-variant, #e2e8f0);background:${bgStatus};">
-                  <div style="display:flex;align-items:center;gap:12px;">
-                    <div style="width:40px;height:40px;border-radius:50%;background:var(--bg-surface-lowest, #fff);display:flex;align-items:center;justify-content:center;border:1px solid ${statusColor}30;">
-                      <span class="material-symbols-outlined" style="color:${statusColor};">sports_gymnastics</span>
-                    </div>
-                    <div>
-                      <h5 style="font-size:15px;font-weight:800;color:var(--text-on-surface);margin:0 0 2px;">PT: ${c.ten_pt || '—'}</h5>
-                      <div style="font-size:12px;color:var(--text-on-surface-variant);">${c.chuyen_mon || 'Huấn luyện viên cá nhân'}</div>
-                    </div>
-                  </div>
-                  <span style="padding:4px 10px;border-radius:999px;font-size:11px;font-weight:800;background:${statusColor}20;color:${statusColor};border:1px solid ${statusColor}40;">${statusLabel}</span>
-                </div>
-                <div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-                  <div style="display:flex;align-items:center;gap:10px;">
-                    <div style="width:32px;height:32px;border-radius:8px;background:var(--bg-surface-low, #f1f5f9);display:flex;align-items:center;justify-content:center;">
-                      <span class="material-symbols-outlined" style="font-size:16px;color:var(--text-on-surface-variant, #64748b);">event</span>
-                    </div>
-                    <div>
-                      <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-on-surface-variant, #64748b);margin-bottom:2px;">Thời hạn</div>
-                      <div style="font-size:13px;font-weight:700;color:var(--text-on-surface, #1e293b);">${c.den_ngay ? window.GymApp.formatDate(c.den_ngay) : 'Không giới hạn'}</div>
-                    </div>
-                  </div>
-                  <div style="display:flex;align-items:center;gap:10px;">
-                    <div style="width:32px;height:32px;border-radius:8px;background:var(--bg-surface-low, #f1f5f9);display:flex;align-items:center;justify-content:center;">
-                      <span class="material-symbols-outlined" style="font-size:16px;color:var(--text-on-surface-variant, #64748b);">play_lesson</span>
-                    </div>
-                    <div>
-                      <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-on-surface-variant, #64748b);margin-bottom:2px;">Số buổi tập</div>
-                      <div style="font-size:13px;font-weight:800;color:var(--text-on-surface, #1e293b);">
-                        <span style="color:${buoiConLai > 0 ? '#1D9336' : '#ba1a1a'};font-size:15px;">${buoiConLai}</span> / ${c.buoi_dang_ky || 0}
+      let ptContractsHTML = '';
+      if (ptContracts.length === 0) {
+        ptContractsHTML = `<div style="text-align:center;padding:20px;background:var(--bg-surface-low, #f8fafc);border-radius:12px;border:1px dashed var(--outline-variant, #cbd5e1);font-size:12px;color:var(--text-on-surface-variant, #cbd5e1);margin-bottom:16px;">Hội viên chưa đăng ký gói PT nào.</div>`;
+      } else {
+        const renderPtActionBtns = (c, dark = false) => {
+          const baseBtn = dark
+            ? 'background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);color:#fff;'
+            : 'background:var(--bg-surface-container,#f1f5f9);border:1px solid var(--outline-variant,#e2e8f0);color:var(--text-on-surface-variant,#475569);';
+          const dangerBtn = dark
+            ? 'background:rgba(220,38,38,0.25);border:1px solid rgba(255,100,100,0.3);color:#fca5a5;'
+            : 'background:#fef2f2;border:1px solid #fecaca;color:#dc2626;';
+          const blueBtn = dark
+            ? 'background:rgba(99,179,237,0.2);border:1px solid rgba(147,210,255,0.3);color:#bfdbfe;'
+            : 'background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;';
+          const printBtn = dark
+            ? 'background:rgba(29,147,54,0.25);border:1px solid rgba(100,255,100,0.3);color:#a7f3d0;'
+            : 'background:#e6f4ea;border:1px solid #b7e1cd;color:#137333;';
+            
+          const btn = (cls, icon, label, style, dataAttrs) => 
+            `<button class="${cls}" ${dataAttrs} style="display:inline-flex;align-items:center;gap:3px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;${style}">
+              <span class="material-symbols-outlined" style="font-size:13px;">${icon}</span>${label}
+            </button>`;
+
+          return `<div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;">
+            ${btn('btn-print-pt-reg', 'print', 'In hóa đơn', printBtn, `data-contract-id="${c.id}"`)}
+            ${btn('btn-edit-pt-reg', 'edit', 'Sửa', baseBtn, `data-contract-id="${c.id}"`)}
+            ${btn('btn-switch-pt-reg', 'swap_horiz', 'Đổi gói', blueBtn, `data-contract-id="${c.id}"`)}
+            ${window.GymApp.auth.user?.vai_tro === 'admin' ? btn('btn-cancel-pt-contract', 'cancel', 'Hủy gói', dangerBtn, `data-contract-id="${c.id}" data-pt-name="${c.ten_pt || ''}" data-member-name="${m.ho_ten || ''}"`) : ''}
+          </div>`;
+        };
+
+        ptContractsHTML = `
+          <div style="margin-bottom:16px;">
+            ${ptContracts.map(c => {
+              const buoiConLai = (c.buoi_dang_ky || 0) - (c.buoi_da_tap || 0);
+              const conHan = !c.den_ngay || new Date(c.den_ngay) >= today;
+              const statusLabel = (!conHan) ? 'Hết hạn' : (buoiConLai <= 0 ? 'Hết buổi' : 'Đang tập');
+              
+              if (statusLabel === 'Đang tập') {
+                return `
+                  <div style="background:linear-gradient(160deg,#2d6a4f 0%,#40916c 55%,#52b788 100%);border-radius:12px;padding:14px 16px;color:#fff;position:relative;overflow:hidden;margin-bottom:8px;">
+                    <div style="position:absolute;right:-12px;top:-12px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.07);pointer-events:none;"></div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;position:relative;z-index:1;">
+                      <div style="min-width:0;">
+                        <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;opacity:0.75;margin-bottom:4px;">Đang tập (${buoiConLai}/${c.buoi_dang_ky} buổi)</div>
+                        <div style="font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.ten_pt || '—'}</div>
+                        <div style="font-size:11px;opacity:0.85;margin-top:3px;">${c.chuyen_mon || 'Huấn luyện viên'} · Hạn: ${c.den_ngay ? window.GymApp.formatDate(c.den_ngay) : 'Không giới hạn'}</div>
                       </div>
+                      <span class="material-symbols-outlined" style="font-size:32px;opacity:0.7;flex-shrink:0;">sports_gymnastics</span>
                     </div>
-                  </div>
-                </div>
-                <div style="padding:12px 16px;background:var(--bg-surface-low, #f8fafc);border-top:1px solid var(--outline-variant, #e2e8f0);display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;">
-                   <button class="btn-edit-pt-reg px-standard py-compact rounded-lg font-bold text-body-sm text-on-surface-variant hover:opacity-90 transition-all flex items-center gap-xs" style="background:var(--bg-surface-container, #e2e8f0);border:1px solid var(--outline-variant, #cbd5e1);cursor:pointer;" data-contract-id="${c.id}">
-                     <span class="material-symbols-outlined text-sm">edit</span>Sửa
-                   </button>
-                   <button class="btn-switch-pt-reg px-standard py-compact rounded-lg font-bold text-body-sm text-blue hover:opacity-90 transition-all flex items-center gap-xs" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;cursor:pointer;" data-contract-id="${c.id}">
-                     <span class="material-symbols-outlined text-sm">swap_horiz</span>Đổi gói PT
-                   </button>
-                   ${window.GymApp.auth.user?.vai_tro === 'admin' ? `
-                   <button class="btn-cancel-pt-contract px-standard py-compact rounded-lg font-bold text-body-sm text-white hover:opacity-90 transition-all flex items-center gap-xs" style="background:#ba1a1a;border:none;cursor:pointer;" data-contract-id="${c.id}" data-pt-name="${c.ten_pt || ''}" data-member-name="${m.ho_ten || ''}">
-                     <span class="material-symbols-outlined text-sm">cancel</span>Hủy gói PT
-                   </button>
-                   ` : ''}
-                 </div>
-              </div>`;
-        }).join('');
+                    ${renderPtActionBtns(c, true)}
+                  </div>`;
+              } else {
+                const isExp = statusLabel === 'Hết hạn';
+                const borderColor = isExp ? '#fecaca' : '#fde68a';
+                const accentColor = isExp ? '#dc2626' : '#d97706';
+                return `
+                  <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--bg-surface-lowest, #fff);border:1px solid var(--outline-variant, ${borderColor});border-left:3px solid ${accentColor};border-radius:10px;margin-bottom:8px;">
+                    <span class="material-symbols-outlined" style="font-size:18px;color:${accentColor};margin-top:1px;flex-shrink:0;">${isExp ? 'event_busy' : 'history'}</span>
+                    <div style="flex:1;min-width:0;">
+                      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+                        <span style="font-size:13px;font-weight:800;color:var(--text-on-surface,#1a2018);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.ten_pt || '—'}</span>
+                        <span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:999px;background:${isExp ? '#fef2f2' : '#fffbeb'};color:${accentColor};">${statusLabel}</span>
+                      </div>
+                      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:3px;font-size:11px;color:var(--text-on-surface-variant,#64748b);">
+                        <span style="font-weight:600;">Còn ${buoiConLai}/${c.buoi_dang_ky} buổi</span>
+                        <span>Hạn: ${c.den_ngay ? window.GymApp.formatDate(c.den_ngay) : 'Không giới hạn'}</span>
+                      </div>
+                      ${c.chuyen_mon ? `<div style="margin-top:2px;font-size:11px;color:var(--text-on-surface-variant,#94a3b8);font-style:italic;">${c.chuyen_mon}</div>` : ''}
+                      ${renderPtActionBtns(c, false)}
+                    </div>
+                  </div>`;
+              }
+            }).join('')}
+          </div>
+        `;
+      }
 
       const scheduleRows = memberSchedules.length === 0
         ? `<div style="text-align:center;padding:24px;background:var(--bg-surface-low, #f8fafc);border-radius:12px;border:1px dashed var(--outline-variant, #cbd5e1);font-size:13px;color:var(--text-on-surface-variant, #cbd5e1);margin-bottom:16px;">Chưa có lịch tập nào được đặt</div>`
@@ -2186,6 +2208,28 @@ window.GymApp.pages['members-list'] = {
     }
     if (tab === 'package') {
       document.getElementById('btn-add-package')?.addEventListener('click', () => self._showAddPackageModal(m, refreshTab));
+      document.querySelectorAll('.btn-print-pkg').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const pkgId = btn.dataset.pkgId;
+          const allPkgs = [...(m.goi_tap_hien_tai || []), ...(pkgHistory || [])];
+          const pkg = allPkgs.find(p => String(p.id) === String(pkgId));
+          if (!pkg) return;
+          try {
+            const branchList = await fetch('assets/data/branches.json').then(r => r.json());
+            const userBranchName = window.GymApp.selectedBranch || m.chi_nhanh || '';
+            const branch = branchList.find(b => b.ten === userBranchName) || branchList[0] || { ten: 'Paradise GYM', dia_chi: 'Hệ thống phòng tập Paradise GYM' };
+            window.GymApp.printInvoice({
+              type: 'goi_tap',
+              member: m,
+              pkg: pkg,
+              branch: branch,
+              creator: window.GymApp.auth?.user?.ten_dang_nhap || 'Lễ tân'
+            });
+          } catch (e) {
+            window.GymApp.toast('Không thể tải thông tin chi nhánh để in!', 'error');
+          }
+        });
+      });
       document.querySelectorAll('.btn-edit-pkg').forEach(btn => {
         btn.addEventListener('click', () => {
           const pkgId = btn.dataset.pkgId;
@@ -2215,6 +2259,28 @@ window.GymApp.pages['members-list'] = {
       document.getElementById('btn-add-pt-reg')?.addEventListener('click', () => self._showAddPtRegistrationModal(m, refreshTab));
       document.getElementById('btn-add-schedule')?.addEventListener('click', () => self._showAddScheduleModal(m, refreshTab));
       const ptContracts = Array.isArray(m.pt_hien_tai) ? m.pt_hien_tai : [];
+      document.querySelectorAll('.btn-print-pt-reg').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const contractId = btn.dataset.contractId;
+          const contract = ptContracts.find(c => String(c.id) === String(contractId));
+          if (!contract) return;
+          try {
+            const branchList = await fetch('assets/data/branches.json').then(r => r.json());
+            const userBranchName = window.GymApp.selectedBranch || m.chi_nhanh || '';
+            const branch = branchList.find(b => b.ten === userBranchName) || branchList[0] || { ten: 'Paradise GYM', dia_chi: 'Hệ thống phòng tập Paradise GYM' };
+            window.GymApp.printInvoice({
+              type: 'goi_pt',
+              member: m,
+              pkg: contract,
+              ptName: contract.ten_pt || '—',
+              branch: branch,
+              creator: window.GymApp.auth?.user?.ten_dang_nhap || 'Lễ tân'
+            });
+          } catch (e) {
+            window.GymApp.toast('Không thể tải thông tin chi nhánh để in!', 'error');
+          }
+        });
+      });
       document.querySelectorAll('.btn-edit-pt-reg').forEach(btn => {
         btn.addEventListener('click', () => {
           const contractId = btn.dataset.contractId;

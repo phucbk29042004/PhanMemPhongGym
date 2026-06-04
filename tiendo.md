@@ -11,7 +11,11 @@
 **✅ Quản lý Đa Chi Nhánh, Import Hội viên Excel/ZIP, Tối ưu AI Chatbot & Sửa lỗi biểu đồ** — Tích hợp thành công modal chọn chi nhánh đăng nhập, đồng bộ bộ lọc, hoàn thiện import hội viên hàng loạt; nâng cao độ chính xác truy vấn SQL của AI Chatbot, kiểm soát chất lượng phản hồi, và sửa lỗi hiển thị biểu đồ phương thức thanh toán.
 =======
 ## 📌 Trạng thái hiện tại
+<<<<<<< HEAD
 **✅ Lọc PT theo chi nhánh khi đăng ký gói PT & Badge chi nhánh trên lịch tập** — Web & Mobile đã lọc HLV đúng chi nhánh trong modal đăng ký gói PT. Lịch đào tạo PT hiển thị badge chi nhánh khi xem tất cả chi nhánh.
+>>>>>>> main
+=======
+**✅ Đã tích hợp in hóa đơn & redesign Tab Lịch PT trên Web** — Tích hợp nút in hóa đơn A4 chuẩn font Times New Roman với đầy đủ logo và thông tin chi nhánh cho cả gói tập thường và gói PT. Thiết kế lại phần hiển thị gói PT trong tab đặt lịch PT thành bảng danh sách nhỏ gọn, tinh tế. Thư mục PDFDocument C# cũ đã được xóa dọn dẹp sạch sẽ.
 >>>>>>> main
 
 ---
@@ -193,6 +197,46 @@
   3. **Giải quyết xung đột Git**: Sửa đổi và loại bỏ các ký hiệu conflict (`<<<<<<< HEAD`, ``) lỡ bị commit trong file `members.controller.js` giúp khôi phục biên dịch thành công cho Backend.
 - **Kết quả**: Thành công — nodemon tự động khởi chạy lại ổn định, dữ liệu doanh thu hiển thị đúng.
 
+
+### [04/06/2026 13:54] — Tối ưu hóa layout và màu sắc các nút thao tác Lịch PT
+- **Loại**: Cải tiến UI (Frontend Web)
+- **File**: `FE/assets/js/pages/members-list.js`
+- **Mô tả**:
+  - **Sửa lỗi rớt dòng**: Khóa `flex-wrap: nowrap`, giảm `gap` xuống `4px` và `padding` xuống `3px 6px` (font-size `10.5px`), giúp cả 4 nút thao tác nằm thẳng hàng đẹp đẽ trên 1 hàng ngang trong cột Thao tác của bảng hợp đồng PT.
+  - **Phủ tông xanh dịu nhẹ**: Đồng bộ các nút "In hóa đơn", "Sửa", "Đổi gói" sử dụng cùng tông màu xanh lá thương hiệu nhạt đặc trưng của dự án (nền `#e6f4ea`, border `#b7e1cd`, color `#137333`) để giao diện dịu mát, không bị lòe loẹt nhiều màu sắc. Nút "Hủy gói" chuyển sang màu đỏ nhạt dịu nhẹ `#fdf2f2` và màu chữ `#b91c1c` để vừa giữ cảnh báo vừa dịu mắt.
+- **Kết quả**: Thành công.
+
+### [04/06/2026 13:52] — Đồng bộ nút hành động và phủ màu xanh thương hiệu bảng Lịch PT
+- **Loại**: Cải tiến UI (Frontend Web)
+- **File**: `FE/assets/js/pages/members-list.js`
+- **Mô tả**:
+  - **Đồng bộ nút**: Thay thế các nút dạng icon tròn thô sơ bằng dạng nút có chữ đầy đủ ("In hóa đơn", "Sửa", "Đổi gói", "Hủy gói") và có màu nền đặc trưng tương ứng như bên tab Gói tập.
+  - **Màu xanh thương hiệu**: Thay đổi đường viền container bảng thành màu xanh lục thương hiệu `#1D9336`, đổi nền header bảng thành màu xanh lục chữ trắng và thêm hiệu ứng hover dòng sang màu xanh lá nhạt dịu mát để bảng nổi bật, không bị nhạt nhòa.
+- **Kết quả**: Thành công.
+
+### [04/06/2026 14:00] — Đồng Bộ Giao Diện & Màu Sắc Các Gói Tập & PT
+- **Loại**: Cải tiến UI
+- **File**: `FE/assets/js/pages/members-list.js`
+- **Mô tả**: Thay thế bảng danh sách PT trong Modal hội viên thành thiết kế dạng thẻ (card) tương tự như tab Gói tập. Đồng bộ toàn bộ màu sắc nền (gradient xanh lục) cho thông tin gói đang sử dụng (của cả gói tập và gói PT) theo đúng màu nền của header modal. Cập nhật thiết kế các nút thao tác PT với màu xanh lá nhạt dịu nhẹ.
+- **Kết quả**: Hoàn tất, giao diện nay đã đồng nhất, hiển thị đẹp và hiện đại hơn.
+
+### [04/06/2026 13:40] — Thêm Tính Năng In Hóa Đơn Trực Tiếp Trên Web, Redesign Tab Lịch PT & Xóa Thư Mục C# Cũ
+- **Loại**: Chức năng mới & Cải tiến UI
+- **File**: `FE/assets/js/components/invoice-template.js`, `FE/index.html`, `FE/assets/js/pages/members-list.js`
+- **Mô tả**:
+  - **`invoice-template.js`**: Tạo file helper in hóa đơn `window.GymApp.printInvoice` bọc trong iframe ẩn, tự động render HTML hóa đơn khổ A4 font Times New Roman, căn lề chuẩn in ấn, hiển thị thông tin chi nhánh, thông tin hội viên, gói tập đăng ký và người lập biểu.
+  - **`index.html`**: Nhúng file script template hóa đơn mới.
+  - **`members-list.js`**:
+    - Tích hợp thêm các nút **"In hóa đơn"** tại thẻ thông tin Gói tập thường (tab Gói tập) và Gói PT (tab Đặt lịch PT). Khi click sẽ tự động lấy thông tin chi nhánh từ `branches.json` theo đúng chi nhánh đang quản lý và thực hiện in.
+    - Thiết kế lại tab "Đặt lịch PT" trong modal chi tiết hội viên: Chuyển đổi các card thông tin gói PT thô cứng ban đầu thành bảng danh sách (`<table>`) nhỏ gọn, thu nhỏ kích thước chữ và các badge trạng thái để tối ưu không gian hiển thị, tăng độ thẩm mỹ.
+  - **Xóa dọn dẹp**: Xóa hoàn toàn thư mục `PDFDocument` (code C# cũ) để tránh gây nhầm lẫn mã nguồn.
+- **Kết quả**: Thành công.
+
+### [04/06/2026 13:17] — Căn chỉnh Layout Badge Chi nhánh nằm ngang hàng trong Lịch Đào Tạo PT
+- **Loại**: Chỉnh sửa giao diện
+- **File**: `FE/assets/js/pages/pt-training.js`
+- **Mô tả**: Đưa badge chi nhánh lên cùng hàng với badge loại buổi (`loai_buoi` hoặc `type`) trong thẻ lịch tập, bọc chúng vào một flexbox container phụ trợ, giúp thẻ không bị kéo dài chiều dọc.
+- **Kết quả**: Thành công.
 
 ### [04/06/2026 13:08] — Lọc PT theo chi nhánh khi đăng ký gói PT & Badge chi nhánh lịch tập (Fullstack)
 - **Loại**: Sửa bug & Chức năng mới (Web + Mobile)
