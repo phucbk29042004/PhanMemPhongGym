@@ -42,12 +42,18 @@ export const getMembers = (req, res) => {
   const { search, status, chi_nhanh, page = 1, limit = 20 } = req.query;
   const offset = (parseInt(page) - 1) * parseInt(limit);
 
+  let filterBranch = chi_nhanh;
+  if (req.user.vai_tro !== 'admin' && req.user.vai_tro !== 'chu_phong_gym') {
+    const actor = db.prepare('SELECT chi_nhanh FROM ho_so WHERE tai_khoan_id = ? AND is_deleted = 0').get(req.user.id);
+    filterBranch = actor?.chi_nhanh || 'KHONG_CO_CHI_NHANH';
+  }
+
   let where = `WHERE h.loai_ho_so = 'hoi_vien' AND h.is_deleted = 0`;
   const params = [];
 
-  if (chi_nhanh) {
+  if (filterBranch) {
     where += ` AND h.chi_nhanh = ?`;
-    params.push(chi_nhanh);
+    params.push(filterBranch);
   }
 
   if (search) {
@@ -402,6 +408,32 @@ export const checkDuplicate = (req, res) => {
 export const getExpiringMembers = (req, res) => {
   autoUpdateExpiredStatuses(); // Cập nhật trạng thái hết hạn trước khi query
   const days = parseInt(req.query.days) || 30; // ← mặc định 30 ngày cho trang danh sách
+  const { chi_nhanh } = req.query;
+
+  let filterBranch = chi_nhanh;
+  if (req.user.vai_tro !== 'admin' && req.user.vai_tro !== 'chu_phong_gym') {
+    const actor = db.prepare('SELECT chi_nhanh FROM ho_so WHERE tai_khoan_id = ? AND is_deleted = 0').get(req.user.id);
+    filterBranch = actor?.chi_nhanh || 'KHONG_CO_CHI_NHANH';
+  }
+
+  let whereClause = `WHERE h.loai_ho_so = 'hoi_vien' AND h.is_deleted = 0`;
+  const params = [];
+
+  if (filterBranch) {
+    whereClause += ` AND h.chi_nhanh = ?`;
+    params.push(filterBranch);
+  }
+
+  whereClause += ` AND (
+    SELECT MAX(d_ngay) FROM (
+      SELECT den_ngay as d_ngay FROM dang_ky_goi_tap
+      WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+      UNION ALL
+      SELECT den_ngay as d_ngay FROM dang_ky_pt
+      WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+    )
+  ) BETWEEN date('now','localtime') AND date('now','localtime', '+' || ? || ' days')`;
+  params.push(days);
 
   const rows = db.prepare(`
     SELECT
@@ -420,19 +452,9 @@ export const getExpiringMembers = (req, res) => {
        ORDER BY dk.den_ngay DESC LIMIT 1) AS ten_goi_tap,
       EXISTS (SELECT 1 FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai IN ('cho_duyet', 'cho_kich_hoat')) AS co_yeu_cau_gia_han
     FROM ho_so h
-    WHERE h.loai_ho_so = 'hoi_vien'
-      AND h.is_deleted = 0
-      AND (
-        SELECT MAX(d_ngay) FROM (
-          SELECT den_ngay as d_ngay FROM dang_ky_goi_tap
-          WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
-          UNION ALL
-          SELECT den_ngay as d_ngay FROM dang_ky_pt
-          WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
-        )
-      ) BETWEEN date('now','localtime') AND date('now','localtime', '+' || ? || ' days')
+    ${whereClause}
     ORDER BY ngay_het_han ASC
-  `).all(days);
+  `).all(...params);
 
   return success(res, rows);
 };
@@ -441,6 +463,38 @@ export const getExpiringMembers = (req, res) => {
 // 🔧 ĐÃ SỬA: query trực tiếp để trả về đủ fields FE cần
 export const getExpiredMembers = (req, res) => {
   autoUpdateExpiredStatuses(); // Cập nhật trạng thái hết hạn trước khi query
+  const { chi_nhanh } = req.query;
+
+  let filterBranch = chi_nhanh;
+  if (req.user.vai_tro !== 'admin' && req.user.vai_tro !== 'chu_phong_gym') {
+    const actor = db.prepare('SELECT chi_nhanh FROM ho_so WHERE tai_khoan_id = ? AND is_deleted = 0').get(req.user.id);
+    filterBranch = actor?.chi_nhanh || 'KHONG_CO_CHI_NHANH';
+  }
+
+  let whereClause = `WHERE h.loai_ho_so = 'hoi_vien' AND h.is_deleted = 0`;
+  const params = [];
+
+  if (filterBranch) {
+    whereClause += ` AND h.chi_nhanh = ?`;
+    params.push(filterBranch);
+  }
+
+  whereClause += ` AND NOT EXISTS (
+      SELECT 1 FROM dang_ky_goi_tap dk
+      WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong'
+        AND dk.den_ngay >= date('now','localtime')
+    )
+    AND NOT EXISTS (
+      SELECT 1 FROM dang_ky_pt dp
+      WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong'
+        AND (dp.den_ngay IS NULL OR dp.den_ngay >= date('now','localtime'))
+        AND (dp.so_buoi_dang_ky IS NULL OR dp.so_buoi_dang_ky > dp.so_buoi_da_tap)
+    )
+    AND EXISTS (
+      SELECT 1 FROM dang_ky_goi_tap dk2
+      WHERE dk2.ho_so_id = h.id
+    )`;
+
   const rows = db.prepare(`
     SELECT
       h.id, h.ma_ho_so, h.ho_ten, h.so_dien_thoai, h.email, h.avatar_url, h.chi_nhanh,
@@ -458,25 +512,9 @@ export const getExpiredMembers = (req, res) => {
        ORDER BY dk.den_ngay DESC LIMIT 1) AS ten_goi_tap,
       EXISTS (SELECT 1 FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai IN ('cho_duyet', 'cho_kich_hoat')) AS co_yeu_cau_gia_han
     FROM ho_so h
-    WHERE h.loai_ho_so = 'hoi_vien'
-      AND h.is_deleted = 0
-      AND NOT EXISTS (
-        SELECT 1 FROM dang_ky_goi_tap dk
-        WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong'
-          AND dk.den_ngay >= date('now','localtime')
-      )
-      AND NOT EXISTS (
-        SELECT 1 FROM dang_ky_pt dp
-        WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong'
-          AND (dp.den_ngay IS NULL OR dp.den_ngay >= date('now','localtime'))
-          AND (dp.so_buoi_dang_ky IS NULL OR dp.so_buoi_dang_ky > dp.so_buoi_da_tap)
-      )
-      AND EXISTS (
-        SELECT 1 FROM dang_ky_goi_tap dk2
-        WHERE dk2.ho_so_id = h.id
-      )
+    ${whereClause}
     ORDER BY ngay_het_han DESC
-  `).all();
+  `).all(...params);
 
   return success(res, rows);
 };
@@ -1049,7 +1087,15 @@ export const checkPayosStatus = async (req, res) => {
 
 // ── GET /api/members/package-requests ─────────────────────
 export const getPackageRequests = (req, res) => {
-  const requests = db.prepare(`
+  const { chi_nhanh } = req.query;
+
+  let filterBranch = chi_nhanh;
+  if (req.user.vai_tro !== 'admin' && req.user.vai_tro !== 'chu_phong_gym') {
+    const actor = db.prepare('SELECT chi_nhanh FROM ho_so WHERE tai_khoan_id = ? AND is_deleted = 0').get(req.user.id);
+    filterBranch = actor?.chi_nhanh || 'KHONG_CO_CHI_NHANH';
+  }
+
+  let sql = `
     SELECT
       dk.id, dk.ho_so_id, dk.goi_tap_id as goi_tap_id, dk.tu_ngay, dk.den_ngay,
       dk.gia_thuc_te, dk.ghi_chu_gia, dk.trang_thai, dk.ngay_tao,
@@ -1061,8 +1107,17 @@ export const getPackageRequests = (req, res) => {
     WHERE dk.trang_thai = 'cho_duyet'
       AND dk.payos_status IS NULL
       AND dk.ngay_thanh_toan IS NULL
-    ORDER BY dk.ngay_tao DESC
-  `).all();
+  `;
+  const params = [];
+
+  if (filterBranch) {
+    sql += ` AND h.chi_nhanh = ?`;
+    params.push(filterBranch);
+  }
+
+  sql += ` ORDER BY dk.ngay_tao DESC`;
+
+  const requests = db.prepare(sql).all(...params);
 
   return success(res, requests);
 };
