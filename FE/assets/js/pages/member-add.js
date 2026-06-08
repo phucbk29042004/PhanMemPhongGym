@@ -570,9 +570,14 @@ window.GymApp.pages['member-add'] = {
       const ho_ten = document.getElementById('reg-ho-ten').value.trim();
       const loai_ho_so = typeSelect.value;
       const sdt = document.getElementById('reg-so-dien-thoai').value.trim();
+      const chi_nhanh = document.getElementById('reg-chi-nhanh')?.value?.trim();
 
       if (!ho_ten || !loai_ho_so || !sdt) {
         return window.GymApp.toast('Vui lòng điền đủ các trường bắt buộc (*)', 'error');
+      }
+
+      if (['hoi_vien', 'pt', 'nhan_vien'].includes(loai_ho_so) && !chi_nhanh) {
+        return window.GymApp.toast('Vui lòng chọn chi nhánh!', 'error');
       }
 
       // Validate format trước

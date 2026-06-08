@@ -9,8 +9,8 @@ import { uploadAvatar } from '../middlewares/upload.js';
 const router = Router();
 router.use(verifyToken);
 
-router.get('/', requireRole('admin', 'chu_phong_gym', 'quan_ly'), getStaff);
-router.get('/:id', requireRole('admin', 'chu_phong_gym', 'quan_ly'), getStaffById);
+router.get('/', requireRole('admin', 'chu_phong_gym', 'quan_ly', 'nhan_vien', 'le_tan'), getStaff);
+router.get('/:id', requireRole('admin', 'chu_phong_gym', 'quan_ly', 'nhan_vien', 'le_tan'), getStaffById);
 router.post('/', requireRole('admin', 'chu_phong_gym', 'quan_ly'), uploadAvatar, createStaff);
 router.put('/:id', requireRole('admin', 'chu_phong_gym', 'quan_ly'), uploadAvatar, updateStaff);
 router.delete('/:id', requireRole('admin', 'chu_phong_gym', 'quan_ly'), deleteStaff);
