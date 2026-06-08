@@ -54,40 +54,39 @@ window.GymApp.pages['member-add'] = {
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch flex-grow">
               
               <!-- CỘT TRÁI: Hồ sơ & Cá nhân (lg:col-span-7) -->
-              <div class="lg:col-span-7 flex flex-col justify-between h-full space-y-4">
-                <div class="space-y-4">
-                  <!-- Avatar + Mã số/Họ tên -->
-                  <div class="bg-gradient-to-br from-slate-50/55 to-slate-100/20 dark:from-[#232836]/40 dark:to-[#1a1d26]/10 rounded-2xl border border-outline-variant/15 p-4 flex flex-col sm:flex-row gap-6 items-center sm:items-start transition-all hover:border-outline-variant/25">
+              <div class="lg:col-span-7 flex flex-col h-full bg-slate-50/10 dark:bg-[#1c2028]/5 rounded-2xl border border-outline-variant/15 p-3.5 space-y-3.5 shadow-sm">
+                  <!-- Avatar + Mã số/Họ tên + Loại hồ sơ -->
+                  <div class="flex flex-col sm:flex-row gap-5 items-center sm:items-start pb-3 border-b border-outline-variant/10">
                     <div class="flex flex-col items-center gap-1 flex-shrink-0">
                       <div class="relative group">
-                        <div id="avatar-area-reg" class="w-20 h-20 bg-slate-200/30 dark:bg-slate-800/30 border-2 border-dashed border-outline-variant/50 rounded-xl flex items-center justify-center cursor-pointer overflow-hidden transition-all hover:border-brand-primary hover:bg-brand-primary/5 shadow-inner">
-                          <span class="material-symbols-outlined text-on-surface-variant/60 text-3xl group-hover:scale-110 transition-transform" id="avatar-placeholder-reg">person</span>
+                        <div id="avatar-area-reg" class="w-16 h-16 bg-slate-200/30 dark:bg-slate-800/30 border-2 border-dashed border-outline-variant/50 rounded-xl flex items-center justify-center cursor-pointer overflow-hidden transition-all hover:border-brand-primary hover:bg-brand-primary/5 shadow-inner">
+                          <span class="material-symbols-outlined text-on-surface-variant/60 text-2xl group-hover:scale-110 transition-transform" id="avatar-placeholder-reg">person</span>
                           <img id="avatar-preview-reg" class="w-full h-full object-cover absolute inset-0 hidden" alt="preview" />
                         </div>
-                        <button type="button" id="avatar-btn-reg" class="absolute -bottom-1 -right-1 w-7 h-7 bg-brand-primary text-white rounded-lg flex items-center justify-center shadow-lg z-10 hover:scale-110 active:scale-90 transition-all border-2 border-white dark:border-[#1a1c23]">
-                          <span class="material-symbols-outlined text-white text-[10px]">photo_camera</span>
+                        <button type="button" id="avatar-btn-reg" class="absolute -bottom-1 -right-1 w-6 h-6 bg-brand-primary text-white rounded-lg flex items-center justify-center shadow-lg z-10 hover:scale-110 active:scale-90 transition-all border-2 border-white dark:border-[#1a1c23]">
+                          <span class="material-symbols-outlined text-white text-[9px]">photo_camera</span>
                         </button>
                         <input type="file" id="avatar-input-reg" class="hidden" accept="image/jpeg,image/png,image/webp" />
                       </div>
-                      <span class="text-[9px] text-on-surface-variant/80 font-bold uppercase tracking-widest">Ảnh</span>
+                      <span class="text-[8px] text-on-surface-variant/80 font-bold uppercase tracking-widest">Ảnh</span>
                     </div>
                     
-                    <div class="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3 w-full">
+                    <div class="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2.5 w-full">
                       ${this._field('Mã số hồ sơ', 'reg-ma-ho-so', 'text', 'Hệ thống tự tạo...', true)}
                       ${this._field('Họ và tên *', 'reg-ho-ten', 'text', 'Họ tên đầy đủ')}
                       ${this._select('Loại hồ sơ *', 'reg-loai-ho-so', [
-      { v: 'hoi_vien', t: 'Hội viên' },
-      { v: 'pt', t: 'Huấn luyện viên' },
-      { v: 'nhan_vien', t: 'Nhân viên' }
-    ])}
+                        { v: 'hoi_vien', t: 'Hội viên' },
+                        { v: 'pt', t: 'Huấn luyện viên' },
+                        { v: 'nhan_vien', t: 'Nhân viên' }
+                      ])}
                     </div>
                   </div>
                   
                   <!-- Dynamic extra fields -->
-                  <div id="extra-fields" class="grid grid-cols-1 sm:grid-cols-2 gap-3 border border-dashed border-outline-variant/30 p-4 rounded-2xl bg-brand-primary/5 dark:bg-[#1a1d26]/20 transition-all hidden"></div>
+                  <div id="extra-fields" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 transition-all hidden pb-3 border-b border-outline-variant/10"></div>
                   
                   <!-- Cá nhân chi tiết & liên hệ -->
-                  <div class="bg-slate-50/10 dark:bg-[#1c2028]/5 rounded-2xl border border-outline-variant/15 p-4 space-y-3 shadow-sm">
+                  <div class="space-y-2.5">
                     <div class="flex items-center gap-compact border-b border-outline-variant/15 pb-1">
                       <span class="material-symbols-outlined text-brand-primary text-base">contact_page</span>
                       <h4 class="font-extrabold text-on-surface text-body-sm uppercase tracking-wider">Cá nhân & Liên hệ</h4>
@@ -96,24 +95,24 @@ window.GymApp.pages['member-add'] = {
                       ${this._field('Ngày sinh', 'reg-ngay-sinh', 'date')}
                       ${this._select('Giới tính', 'reg-gioi-tinh', [{ v: 'nam', t: 'Nam' }, { v: 'nu', t: 'Nữ' }, { v: 'khac', t: 'Khác' }])}
                       
-                      <div class="mb-1.5">
+                      <div class="mb-1">
                         <label class="block text-body-sm font-extrabold text-on-surface-variant/80 mb-0.5 uppercase tracking-wider text-[9.5px]">Số điện thoại <span class="text-red-500">*</span></label>
                         <input id="reg-so-dien-thoai" type="tel" placeholder="0912345678" maxlength="10"
-                          class="w-full bg-slate-50/50 dark:bg-slate-900/30 border border-outline-variant/40 text-on-surface px-3 py-1.5 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1a1c23] outline-none text-body-md font-semibold transition-all duration-200 shadow-sm focus:shadow-md focus:ring-2 focus:ring-brand-primary/10" />
+                          class="w-full bg-slate-50/50 dark:bg-slate-900/30 border border-outline-variant/40 text-on-surface px-3 py-1 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1a1c23] outline-none text-body-md font-semibold transition-all duration-200 shadow-sm focus:shadow-md focus:ring-2 focus:ring-brand-primary/10" />
                         <p id="err-sdt" class="hidden text-body-xs mt-xs font-semibold text-red-500"></p>
                       </div>
                       
-                      <div class="mb-1.5">
+                      <div class="mb-1">
                         <label class="block text-body-sm font-extrabold text-on-surface-variant/80 mb-0.5 uppercase tracking-wider text-[9.5px]">Email</label>
                         <input id="reg-email" type="email" placeholder="example@email.com"
-                          class="w-full bg-slate-50/50 dark:bg-slate-900/30 border border-outline-variant/40 text-on-surface px-3 py-1.5 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1a1c23] outline-none text-body-md font-semibold transition-all duration-200 shadow-sm focus:shadow-md focus:ring-2 focus:ring-brand-primary/10" />
+                          class="w-full bg-slate-50/50 dark:bg-slate-900/30 border border-outline-variant/40 text-on-surface px-3 py-1 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1a1c23] outline-none text-body-md font-semibold transition-all duration-200 shadow-sm focus:shadow-md focus:ring-2 focus:ring-brand-primary/10" />
                         <p id="err-email" class="hidden text-body-xs mt-xs font-semibold text-red-500"></p>
                       </div>
                       
-                      <div class="mb-1.5">
+                      <div class="mb-1">
                         <label class="block text-body-sm font-extrabold text-on-surface-variant/80 mb-0.5 uppercase tracking-wider text-[9.5px]">CCCD / CMND</label>
                         <input id="reg-cccd" type="text" placeholder="012345678901" maxlength="12"
-                          class="w-full bg-slate-50/50 dark:bg-slate-900/30 border border-outline-variant/40 text-on-surface px-3 py-1.5 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1a1c23] outline-none text-body-md font-semibold transition-all duration-200 shadow-sm focus:shadow-md focus:ring-2 focus:ring-brand-primary/10" />
+                          class="w-full bg-slate-50/50 dark:bg-slate-900/30 border border-outline-variant/40 text-on-surface px-3 py-1 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1a1c23] outline-none text-body-md font-semibold transition-all duration-200 shadow-sm focus:shadow-md focus:ring-2 focus:ring-brand-primary/10" />
                         <p id="err-cccd" class="hidden text-body-xs mt-xs font-semibold text-red-500"></p>
                       </div>
    
@@ -122,7 +121,6 @@ window.GymApp.pages['member-add'] = {
                       ${this._select('Chi nhánh', 'reg-chi-nhanh', [])}
                     </div>
                   </div>
-                </div>
               </div>
               
               <!-- CỘT PHẢI: Địa chỉ & Tài khoản (lg:col-span-5) -->
@@ -320,15 +318,15 @@ window.GymApp.pages['member-add'] = {
 
   _field: function (label, id, type, placeholder = '', readonly = false) {
     const formattedLabel = label.replace('*', ' <span style="color:#ba1a1a;margin-left:2px;font-weight:700;">*</span>');
-    const base = 'w-full border border-outline-variant/40 text-on-surface px-3 py-1.5 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1a1c23] outline-none text-body-md font-semibold transition-all duration-200 focus:ring-2 focus:ring-brand-primary/10';
+    const base = 'w-full border border-outline-variant/40 text-on-surface px-3 py-1 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1a1c23] outline-none text-body-md font-semibold transition-all duration-200 focus:ring-2 focus:ring-brand-primary/10';
     if (readonly) {
-      return `<div class="mb-1.5">
+      return `<div class="mb-1">
         <label class="block text-body-sm font-bold text-on-surface-variant/80 mb-0.5 uppercase tracking-wider text-[9.5px]">${formattedLabel}</label>
         <input id="${id}" type="${type}" placeholder="${placeholder}" readonly
           class="${base} bg-slate-200/50 dark:bg-slate-800/50 text-on-surface-variant cursor-not-allowed opacity-75 shadow-none border-dashed" />
       </div>`;
     }
-    return `<div class="mb-1.5">
+    return `<div class="mb-1">
       <label class="block text-body-sm font-bold text-on-surface-variant/80 mb-0.5 uppercase tracking-wider text-[9.5px]">${formattedLabel}</label>
       <input id="${id}" type="${type}" placeholder="${placeholder}"
         class="${base} bg-slate-50/50 dark:bg-slate-900/30 shadow-sm focus:shadow-md" />
@@ -337,9 +335,9 @@ window.GymApp.pages['member-add'] = {
 
   _select: function (label, id, options) {
     const formattedLabel = label.replace('*', ' <span style="color:#ba1a1a;margin-left:2px;font-weight:700;">*</span>');
-    return `<div class="mb-1.5">
+    return `<div class="mb-1">
       <label class="block text-body-sm font-bold text-on-surface-variant/80 mb-0.5 uppercase tracking-wider text-[9.5px]">${formattedLabel}</label>
-      <select id="${id}" class="w-full bg-slate-50/50 dark:bg-slate-900/30 border border-outline-variant/40 text-on-surface px-3 py-1.5 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1a1c23] outline-none text-body-md font-semibold transition-all cursor-pointer shadow-sm focus:shadow-md focus:ring-2 focus:ring-brand-primary/10">
+      <select id="${id}" class="w-full bg-slate-50/50 dark:bg-slate-900/30 border border-outline-variant/40 text-on-surface px-3 py-1 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1a1c23] outline-none text-body-md font-semibold transition-all cursor-pointer shadow-sm focus:shadow-md focus:ring-2 focus:ring-brand-primary/10">
         <option value="">— ${label.replace('*', '').trim()} —</option>
         ${options.map(o => `<option value="${o.v}">${o.t}</option>`).join('')}
       </select>
@@ -348,8 +346,8 @@ window.GymApp.pages['member-add'] = {
 
   _datalistInput: function (label, id, listId, placeholder = '') {
     const formattedLabel = label.replace('*', ' <span style="color:#ba1a1a;margin-left:2px;font-weight:700;">*</span>');
-    const base = 'w-full bg-slate-50/50 dark:bg-slate-900/30 border border-outline-variant/40 text-on-surface px-3 py-1.5 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1a1c23] outline-none text-body-md font-semibold transition-all duration-200 focus:ring-2 focus:ring-brand-primary/10 shadow-sm focus:shadow-md';
-    return `<div class="mb-1.5">
+    const base = 'w-full bg-slate-50/50 dark:bg-slate-900/30 border border-outline-variant/40 text-on-surface px-3 py-1 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1a1c23] outline-none text-body-md font-semibold transition-all duration-200 focus:ring-2 focus:ring-brand-primary/10 shadow-sm focus:shadow-md';
+    return `<div class="mb-1">
       <label class="block text-body-sm font-bold text-on-surface-variant/80 mb-0.5 uppercase tracking-wider text-[9.5px]">${formattedLabel}</label>
       <input id="${id}" type="text" list="${listId}" placeholder="${placeholder}"
         class="${base}" autocomplete="off" />
@@ -659,22 +657,19 @@ window.GymApp.pages['member-add'] = {
     box.classList.remove('hidden');
     if (role === 'pt') {
       box.innerHTML = `
-        ${this._field('Số CCCD *', 'pt-cccd', 'text', 'CCCD huấn luyện viên')}
         ${this._field('Bằng cấp / Chứng chỉ', 'pt-bang-cap', 'text', 'VD: NASM, Bằng thể thao...')}
-        <div class="mb-1.5">
+        <div class="mb-1">
           <label class="block text-body-sm font-bold text-on-surface-variant/80 mb-0.5 uppercase tracking-wider text-[9.5px]">Chuyên môn chính</label>
           <input id="pt-chuyen-mon" type="text" list="dl-chuyen-mon" placeholder="Chọn hoặc nhập..."
-            class="w-full bg-slate-50/50 dark:bg-slate-900/30 border border-outline-variant/40 text-on-surface px-3 py-1.5 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1a1c23] outline-none text-body-md font-semibold transition-all duration-200 focus:ring-2 focus:ring-brand-primary/10 shadow-sm" />
+            class="w-full bg-slate-50/50 dark:bg-slate-900/30 border border-outline-variant/40 text-on-surface px-3 py-1 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1a1c23] outline-none text-body-md font-semibold transition-all duration-200 focus:ring-2 focus:ring-brand-primary/10 shadow-sm" />
         </div>
-        ${this._field('Tỷ lệ chia sẻ doanh thu (%)', 'pt-commission', 'number', 'VD: 30')}
       `;
     } else if (role === 'nhan_vien') {
       box.innerHTML = `
-        ${this._field('Số CCCD *', 'nv-cccd', 'text', 'CCCD nhân viên')}
         ${this._select('Chức vụ *', 'nv-chuc-vu', [
-        { v: 'admin', t: 'Quản trị viên' },
-        { v: 'nhan_vien', t: 'Lễ tân / Nhân viên' }
-      ])}
+          { v: 'admin', t: 'Quản trị viên' },
+          { v: 'nhan_vien', t: 'Lễ tân / Nhân viên' }
+        ])}
         ${this._field('Mức lương cơ bản (đ)', 'nv-luong', 'text', 'VD: 5.000.000')}
       `;
     }
@@ -759,20 +754,17 @@ window.GymApp.pages['member-add'] = {
     // Role dynamic validation
     let extraData = {};
     if (loaiHoSo === 'pt') {
-      const ptCccd = document.getElementById('pt-cccd').value.trim();
       const ptBangCap = document.getElementById('pt-bang-cap').value.trim();
       const ptChuyenMon = document.getElementById('pt-chuyen-mon').value.trim();
-      const ptComm = document.getElementById('pt-commission').value.trim();
-      if (!ptCccd) {
+      if (!cccd) {
         window.GymApp.toast('Vui lòng nhập CCCD huấn luyện viên', 'error');
         return;
       }
-      extraData = { cccd: ptCccd, bang_cap: ptBangCap, chuyen_mon: ptChuyenMon, ty_le_chia_se: ptComm };
+      extraData = { cccd: cccd, bang_cap: ptBangCap, chuyen_mon: ptChuyenMon, ty_le_chia_se: 0 };
     } else if (loaiHoSo === 'nhan_vien') {
-      const nvCccd = document.getElementById('nv-cccd').value.trim();
       const nvChucVu = document.getElementById('nv-chuc-vu').value;
       const nvLuong = document.getElementById('nv-luong').value.trim();
-      if (!nvCccd) {
+      if (!cccd) {
         window.GymApp.toast('Vui lòng nhập CCCD nhân viên', 'error');
         return;
       }
@@ -780,7 +772,7 @@ window.GymApp.pages['member-add'] = {
         window.GymApp.toast('Vui lòng chọn chức vụ nhân viên', 'error');
         return;
       }
-      extraData = { cccd: nvCccd, chuc_vu: nvChucVu, luong_co_ban: nvLuong };
+      extraData = { cccd: cccd, chuc_vu: nvChucVu, luong_co_ban: nvLuong };
     }
 
     // Account creation

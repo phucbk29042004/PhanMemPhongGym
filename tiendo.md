@@ -1989,3 +1989,28 @@
   - **Web Frontend**: Sửa đổi expired.js để truyền tham số chi nhánh khi gọi API hội viên hết hạn/gia hạn từ Backend, thay vì tải hết dữ liệu rồi tự lọc ở client. Tăng hiệu năng và đảm bảo dữ liệu không bị rò rỉ.
 - **Kết quả**: Thành công
 >>>>>>> main
+
+### [08/06/2026 09:16] — Gộp khung thông tin và tối ưu ô nhập CCCD
+- **Loại**: Tối ưu UI & Sửa logic (Frontend)
+- **File**: FE/assets/js/pages/member-add.js\n- **Mô tả**: Gộp toàn bộ các phần ở cột trái thành một khung lớn đồng nhất để dễ thao tác, không sử dụng thanh cuộn hay khung viền nét đứt. Loại bỏ ô nhập CCCD trùng lặp đối với PT và Nhân viên, sử dụng chung ô CCCD ở phần Cá nhân & Liên hệ.
+- **Kết quả**: Thành công
+
+### [08/06/2026 09:22] — Xoá tỉ lệ chia sẻ doanh thu và tối ưu chiều cao form
+- **Loại**: Tối ưu UI & Sửa logic (Frontend)
+- **File**: FE/assets/js/pages/member-add.js\n- **Mô tả**: Loại bỏ hoàn toàn trường Tỷ lệ chia sẻ doanh thu của HLV. Đồng thời tối ưu chiều cao form bằng cách giảm margin-bottom và padding của các ô nhập liệu giúp hiển thị vừa vặn trong 1 màn hình.
+- **Kết quả**: Thành công
+
+### [08/06/2026 09:25] — Sửa lỗi vỡ layout cột phải ở trang thêm hội viên
+- **Loại**: Sửa bug UI (Frontend)
+- **File**: FE/assets/js/pages/member-add.js\n- **Mô tả**: Loại bỏ thẻ </div> dư thừa ở cuối cột bên trái để khôi phục cấu trúc Grid 12 cột, đưa cột Địa chỉ và Tài khoản (cột bên phải) trở về đúng vị trí song song ban đầu.
+- **Kết quả**: Thành công
+
+### [08/06/2026 09:27] — Sửa lỗi crash khi lưu hồ sơ PT
+- **Loại**: Sửa bug logic (Frontend)
+- **File**: FE/assets/js/pages/member-add.js\n- **Mô tả**: Loại bỏ dòng code đọc giá trị từ ô nhập pt-commission (đã xoá), gán mặc định ty_le_chia_se bằng 0 trong extraData để khắc phục hoàn toàn lỗi crash khi lưu hồ sơ PT.
+- **Kết quả**: Thành công
+
+### [08/06/2026 09:31] — Dọn dẹp conflict Git trong index.html và sửa lỗi menu
+- **Loại**: Sửa bug UI (Frontend)
+- **File**: FE/index.html\n- **Mô tả**: Dọn dẹp hoàn toàn các dấu conflict Git ở phần load script cuối file index.html, đảm bảo load đúng thứ tự các script html5-qrcode, invoice-template.js và app.js giúp menu sidebar hoạt động trở lại bình thường.
+- **Kết quả**: Thành công
