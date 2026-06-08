@@ -533,7 +533,7 @@
       nhom: 'Nhóm',
       hoi_vien: 'Hội viên',
       pt: 'Huấn luyện viên',
-      le_tan: 'Lễ tân',
+      le_tan: 'Nhân viên',
       nhan_vien: 'Nhân viên',
       admin: 'Quản trị viên',
       thuong: 'Thường',

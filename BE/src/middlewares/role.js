@@ -7,7 +7,7 @@ import { error } from '../utils/response.js';
 
 /**
  * Chỉ cho phép các vai trò nhất định truy cập
- * @param {...string} roles - Danh sách vai trò được phép: 'admin', 'le_tan', 'pt', 'hoi_vien'
+ * @param {...string} roles - Danh sách vai trò được phép: 'admin', 'nhan_vien', 'pt', 'hoi_vien'
  * @example router.get('/doanh-thu', verifyToken, requireRole('admin'), controller)
  */
 export const requireRole = (...roles) => {

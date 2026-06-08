@@ -7,6 +7,8 @@ import db from '../config/db.js';
 import { success, error } from '../utils/response.js';
 import { ghi_audit_log } from '../utils/audit.js';
 import { createNotification, createUserNotification } from '../utils/notifications.js';
+import { getActorBranch } from '../utils/branch.js';
+
 
 // Tự động cập nhật các gói tập/PT đã quá hạn sử dụng sang trạng thái tương ứng
 const autoUpdateExpiredStatuses = () => {
@@ -121,6 +123,12 @@ export const getRegistrationById = (req, res) => {
 
   if (!reg) return error(res, 'Không tìm thấy đăng ký PT.', 404);
 
+  const actorBranch = getActorBranch(req.user);
+  if (actorBranch && reg.chi_nhanh_dang_ky !== actorBranch) {
+    return error(res, 'Bạn không có quyền truy cập đăng ký PT thuộc chi nhánh khác.', 403);
+  }
+
+
   // Lấy danh sách buổi tập đã đặt
   reg.lich_tap = db.prepare(`
     SELECT lt.id, lt.ngay_tap, lt.gio_bat_dau, lt.gio_ket_thuc, lt.trang_thai, lt.ghi_chu
@@ -155,7 +163,14 @@ export const createRegistration = (req, res) => {
   // Kiểm tra hội viên tồn tại — lấy luôn chi_nhanh để lưu vào đơn
   const hv = db.prepare("SELECT id, chi_nhanh FROM ho_so WHERE id = ? AND loai_ho_so = 'hoi_vien' AND is_deleted = 0").get(hoi_vien_id);
   if (!hv) return error(res, 'Không tìm thấy hội viên.', 404);
+
+  const actorBranch = getActorBranch(req.user);
+  if (actorBranch && hv.chi_nhanh !== actorBranch) {
+    return error(res, 'Bạn không có quyền đăng ký PT cho hội viên thuộc chi nhánh khác.', 403);
+  }
+
   const chiNhanhDangKy = hv.chi_nhanh || null;
+
 
   // Kiểm tra PT tồn tại
   const pt = db.prepare("SELECT id FROM ho_so WHERE id = ? AND loai_ho_so = 'pt' AND is_deleted = 0").get(pt_id);
@@ -211,6 +226,12 @@ export const updateRegistration = (req, res) => {
   if (!old) return error(res, 'Không tìm thấy đăng ký PT.', 404);
   if (old.trang_thai === 'huy') return error(res, 'Không thể sửa đăng ký đã hủy.', 400);
 
+  const actorBranch = getActorBranch(req.user);
+  if (actorBranch && old.chi_nhanh_dang_ky !== actorBranch) {
+    return error(res, 'Bạn không có quyền chỉnh sửa đăng ký PT thuộc chi nhánh khác.', 403);
+  }
+
+
   const { pt_id, goi_pt_id, so_buoi_dang_ky, tu_ngay, den_ngay, gia_thuc_te, ghi_chu } = req.body;
 
   // Nếu đổi PT, kiểm tra PT mới tồn tại
@@ -257,6 +278,12 @@ export const cancelRegistration = (req, res) => {
 
   if (!reg) return error(res, 'Không tìm thấy đăng ký PT.', 404);
   if (reg.trang_thai === 'huy') return error(res, 'Đăng ký đã bị hủy rồi.', 400);
+
+  const actorBranch = getActorBranch(req.user);
+  if (actorBranch && reg.chi_nhanh_dang_ky !== actorBranch) {
+    return error(res, 'Bạn không có quyền hủy đăng ký PT thuộc chi nhánh khác.', 403);
+  }
+
 
   const lyDoText = ly_do_huy || ly_do || 'Hủy gói PT bởi Admin';
   const refundAmount = Number(so_tien_hoan);

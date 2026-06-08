@@ -11,6 +11,8 @@ import { createNotification, createUserNotification } from '../utils/notificatio
 import bcrypt from 'bcryptjs';
 import { createPaymentLink, getPaymentLinkInformation } from '../utils/payos.js';
 import xlsx from 'xlsx';
+import { getActorBranch } from '../utils/branch.js';
+
 
 // Tự động cập nhật các gói tập/PT đã quá hạn sử dụng sang trạng thái tương ứng
 const autoUpdateExpiredStatuses = () => {
@@ -165,6 +167,12 @@ export const getMemberById = (req, res) => {
 
   if (!member) return error(res, 'Không tìm thấy hội viên.', 404);
 
+  const actorBranch = getActorBranch(req.user);
+  if (actorBranch && member.chi_nhanh !== actorBranch) {
+    return error(res, 'Bạn không có quyền truy cập hội viên thuộc chi nhánh khác.', 403);
+  }
+
+
   // Parse JSON strings
   member.goi_tap_hien_tai = JSON.parse(member.goi_tap_hien_tai || '[]');
   // Sắp xếp gói tập hiện tại theo ngày kết thúc giảm dần (mới nhất lên đầu)
@@ -191,7 +199,21 @@ export const createMember = async (req, res) => {
   if (!ho_ten) return error(res, 'Họ tên là bắt buộc.', 400);
   const loai = loai_ho_so || 'hoi_vien';
 
+  const actorBranch = getActorBranch(req.user);
+  let finalBranch = chi_nhanh;
+  if (actorBranch) {
+    if (chi_nhanh && chi_nhanh !== actorBranch) {
+      return error(res, `Bạn chỉ có thể tạo hồ sơ thuộc chi nhánh của mình (${actorBranch}).`, 403);
+    }
+    finalBranch = actorBranch;
+  } else {
+    if (['hoi_vien', 'pt', 'nhan_vien'].includes(loai) && !chi_nhanh) {
+      return error(res, 'Chi nhánh là bắt buộc đối với loại hồ sơ này.', 400);
+    }
+  }
+
   let avatar_url = null;
+
   let cloudinary_public_id = null;
 
   if (req.file) {
@@ -208,7 +230,7 @@ export const createMember = async (req, res) => {
     }
   }
 
-  const prefixes = { 'hoi_vien': 'HV', 'pt': 'PT', 'nhan_vien': 'NV', 'le_tan': 'LT' };
+  const prefixes = { 'hoi_vien': 'HV', 'pt': 'PT', 'nhan_vien': 'NV' };
   const prefix = prefixes[loai] || 'HS';
 
   const lastHoSo = db.prepare(`
@@ -233,7 +255,7 @@ export const createMember = async (req, res) => {
   `).run(
     ma_ho_so, loai, ho_ten, gioi_tinh || null, ngay_sinh || null, so_dien_thoai || null, email || null,
     dia_chi_tam_tru || null, avatar_url, cloudinary_public_id, ghi_chu || null, req.user.id,
-    chi_nhanh || null, phong_tap || null, noi_sinh || null, cccd || null, que_quan || null,
+    finalBranch || null, phong_tap || null, noi_sinh || null, cccd || null, que_quan || null,
     tinh_thanh || null, quan_huyen || null, phuong_xa || null, chuyen_mon || null, chuc_vu || null, loai_hv || null,
     parseInt(kinh_nghiem) || 0
   );
@@ -261,40 +283,60 @@ export const updateMember = (req, res) => {
   const old = db.prepare('SELECT * FROM ho_so WHERE id = ? AND is_deleted = 0').get(id);
   if (!old) return error(res, 'Không tìm thấy hồ sơ.', 404);
 
+  const actorBranch = getActorBranch(req.user);
+  if (actorBranch && old.chi_nhanh !== actorBranch) {
+    return error(res, 'Bạn không có quyền chỉnh sửa hội viên thuộc chi nhánh khác.', 403);
+  }
+
+
   const {
     ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email, dia_chi_tam_tru, ghi_chu,
     chi_nhanh, phong_tap, noi_sinh, cccd, que_quan, tinh_thanh, quan_huyen, phuong_xa,
     chuyen_mon, chuc_vu, loai_hv, kinh_nghiem
   } = req.body;
 
-  db.prepare(`
-    UPDATE ho_so SET
-      ho_ten = COALESCE(?, ho_ten),
-      gioi_tinh = COALESCE(?, gioi_tinh),
-      ngay_sinh = COALESCE(?, ngay_sinh),
-      so_dien_thoai = COALESCE(?, so_dien_thoai),
-      email = COALESCE(?, email),
-      dia_chi_tam_tru = COALESCE(?, dia_chi_tam_tru),
-      ghi_chu = COALESCE(?, ghi_chu),
-      chi_nhanh = COALESCE(?, chi_nhanh),
-      phong_tap = COALESCE(?, phong_tap),
-      noi_sinh = COALESCE(?, noi_sinh),
-      cccd = COALESCE(?, cccd),
-      que_quan = COALESCE(?, que_quan),
-      tinh_thanh = COALESCE(?, tinh_thanh),
-      quan_huyen = COALESCE(?, quan_huyen),
-      phuong_xa = COALESCE(?, phuong_xa),
-      chuyen_mon = COALESCE(?, chuyen_mon),
-      chuc_vu = COALESCE(?, chuc_vu),
-      loai_hv = COALESCE(?, loai_hv),
-      kinh_nghiem = COALESCE(?, kinh_nghiem),
-      nguoi_cap_nhat_id = ?
-    WHERE id = ?
-  `).run(
-    ho_ten || null, gioi_tinh || null, ngay_sinh || null, so_dien_thoai || null, email || null, dia_chi_tam_tru || null, ghi_chu || null,
-    chi_nhanh || null, phong_tap || null, noi_sinh || null, cccd || null, que_quan || null, tinh_thanh || null, quan_huyen || null, phuong_xa || null,
-    chuyen_mon || null, chuc_vu || null, loai_hv || null, kinh_nghiem !== undefined ? parseInt(kinh_nghiem) || 0 : undefined, req.user.id, id
-  );
+  let finalBranch = chi_nhanh;
+  if (actorBranch) {
+    if (chi_nhanh && chi_nhanh !== actorBranch) {
+      return error(res, 'Bạn không có quyền chuyển hội viên sang chi nhánh khác.', 403);
+    }
+    finalBranch = actorBranch;
+  }
+
+
+  try {
+    db.prepare(`
+      UPDATE ho_so SET
+        ho_ten = COALESCE(?, ho_ten),
+        gioi_tinh = COALESCE(?, gioi_tinh),
+        ngay_sinh = COALESCE(?, ngay_sinh),
+        so_dien_thoai = COALESCE(?, so_dien_thoai),
+        email = COALESCE(?, email),
+        dia_chi_tam_tru = COALESCE(?, dia_chi_tam_tru),
+        ghi_chu = COALESCE(?, ghi_chu),
+        chi_nhanh = COALESCE(?, chi_nhanh),
+        phong_tap = COALESCE(?, phong_tap),
+        noi_sinh = COALESCE(?, noi_sinh),
+        cccd = COALESCE(?, cccd),
+        que_quan = COALESCE(?, que_quan),
+        tinh_thanh = COALESCE(?, tinh_thanh),
+        quan_huyen = COALESCE(?, quan_huyen),
+        phuong_xa = COALESCE(?, phuong_xa),
+        chuyen_mon = COALESCE(?, chuyen_mon),
+        chuc_vu = COALESCE(?, chuc_vu),
+        loai_hv = COALESCE(?, loai_hv),
+        kinh_nghiem = COALESCE(?, kinh_nghiem),
+        nguoi_cap_nhat_id = ?
+      WHERE id = ?
+    `).run(
+      ho_ten || null, gioi_tinh || null, ngay_sinh || null, so_dien_thoai || null, email || null, dia_chi_tam_tru || null, ghi_chu || null,
+      finalBranch || null, phong_tap || null, noi_sinh || null, cccd || null, que_quan || null, tinh_thanh || null, quan_huyen || null, phuong_xa || null,
+      chuyen_mon || null, chuc_vu || null, loai_hv || null, kinh_nghiem !== undefined ? parseInt(kinh_nghiem) || 0 : undefined, req.user.id, id
+    );
+  } catch (err) {
+    console.error('❌ Lỗi chi tiết tại updateMember:', err);
+    return error(res, `Lỗi cập nhật hồ sơ: ${err.message}`, 500);
+  }
 
   const updated = db.prepare('SELECT * FROM ho_so WHERE id = ?').get(id);
   ghi_audit_log(req, 'UPDATE', 'ho_so', parseInt(id), old, updated, 'Cập nhật thông tin hồ sơ');
@@ -307,6 +349,12 @@ export const updateAvatar = async (req, res) => {
   const { id } = req.params;
   const member = db.prepare('SELECT * FROM ho_so WHERE id = ? AND is_deleted = 0').get(id);
   if (!member) return error(res, 'Không tìm thấy hồ sơ.', 404);
+
+  const actorBranch = getActorBranch(req.user);
+  if (actorBranch && member.chi_nhanh !== actorBranch) {
+    return error(res, 'Bạn không có quyền cập nhật ảnh đại diện cho hội viên thuộc chi nhánh khác.', 403);
+  }
+
   if (!req.file) return error(res, 'Vui lòng chọn file ảnh.', 400);
 
   try {
@@ -522,6 +570,16 @@ export const getExpiredMembers = (req, res) => {
 // ── GET /api/members/:id/history ─────────────────────────
 export const getMemberHistory = (req, res) => {
   const { id } = req.params;
+
+  const actorBranch = getActorBranch(req.user);
+  if (actorBranch) {
+    const member = db.prepare('SELECT chi_nhanh FROM ho_so WHERE id = ? AND is_deleted = 0').get(id);
+    if (!member) return error(res, 'Không tìm thấy hội viên.', 404);
+    if (member.chi_nhanh !== actorBranch) {
+      return error(res, 'Bạn không có quyền truy cập lịch sử hội viên thuộc chi nhánh khác.', 403);
+    }
+  }
+
   const rows = db.prepare(`
     SELECT dk.*, gt.ten_goi, gt.so_thang, gt.so_ngay_them,
            thu.ho_ten AS ten_nguoi_thu
@@ -725,6 +783,12 @@ export const registerPackage = (req, res) => {
 
   const member = db.prepare('SELECT * FROM ho_so WHERE id = ? AND is_deleted = 0').get(id);
   if (!member) return error(res, 'Không tìm thấy hội viên.', 404);
+
+  const actorBranch = getActorBranch(req.user);
+  if (actorBranch && member.chi_nhanh !== actorBranch) {
+    return error(res, 'Bạn không có quyền đăng ký gói cho hội viên thuộc chi nhánh khác.', 403);
+  }
+
 
   const goiTap = db.prepare('SELECT * FROM goi_tap WHERE id = ? AND is_deleted = 0').get(goi_tap_id);
   if (!goiTap) return error(res, 'Gói tập không tồn tại.', 404);
@@ -1142,6 +1206,15 @@ export const approvePackageRequest = (req, res) => {
   `).get(id);
   if (!request) return error(res, 'Không tìm thấy yêu cầu.', 404);
 
+  const actorBranch = getActorBranch(req.user);
+  if (actorBranch) {
+    const member = db.prepare('SELECT chi_nhanh FROM ho_so WHERE id = ?').get(request.ho_so_id);
+    if (member && member.chi_nhanh !== actorBranch) {
+      return error(res, 'Bạn không có quyền duyệt yêu cầu của hội viên thuộc chi nhánh khác.', 403);
+    }
+  }
+
+
   // Nếu đã được kích hoạt tự động qua PayOS → trả success thay vì lỗi
   if (request.payos_status === 'PAID') {
     return success(res, { auto_activated: true }, 'Gói tập đã được xử lý tự động sau khi hội viên thanh toán thành công qua PayOS. Không cần duyệt thêm.');
@@ -1234,12 +1307,12 @@ export const createAccount = async (req, res) => {
     return error(res, 'Tên đăng nhập đã được sử dụng.', 409);
   }
 
-  const roleMap = { hoi_vien: 'hoi_vien', pt: 'pt', le_tan: 'le_tan', nhan_vien: 'le_tan' };
+  const roleMap = { hoi_vien: 'hoi_vien', pt: 'pt', nhan_vien: 'nhan_vien' };
   const maVaiTro = roleMap[hoSo.loai_ho_so] || 'hoi_vien';
   const vaiTro = db.prepare('SELECT id FROM vai_tro WHERE ma_vai_tro = ?').get(maVaiTro);
   if (!vaiTro) return error(res, 'Không xác định được vai trò.', 500);
 
-  const hash = await bcrypt.hash(mat_khau, 12);
+  const hash = bcrypt.hashSync(mat_khau, 12);
 
   const createTx = db.transaction(() => {
     const ins = db.prepare(`
@@ -1734,8 +1807,14 @@ export const editPackage = (req, res) => {
     }
   }
 
-  const hoSo = db.prepare('SELECT id, ho_ten FROM ho_so WHERE id = ? AND is_deleted = 0').get(id);
+  const hoSo = db.prepare('SELECT id, ho_ten, chi_nhanh FROM ho_so WHERE id = ? AND is_deleted = 0').get(id);
   if (!hoSo) return error(res, 'Không tìm thấy hồ sơ hội viên.', 404);
+
+  const actorBranch = getActorBranch(req.user);
+  if (actorBranch && hoSo.chi_nhanh !== actorBranch) {
+    return error(res, 'Bạn không có quyền chỉnh sửa gói tập của hội viên thuộc chi nhánh khác.', 403);
+  }
+
 
   const pkg = db.prepare(`
     SELECT dk.*, gt.ten_goi
@@ -1798,8 +1877,14 @@ export const switchPackage = (req, res) => {
     return error(res, 'Thiếu thông tin: pkg_id_cu, goi_tap_id_moi, tu_ngay.', 400);
   }
 
-  const hoSo = db.prepare('SELECT id, ho_ten FROM ho_so WHERE id = ? AND is_deleted = 0').get(id);
+  const hoSo = db.prepare('SELECT id, ho_ten, chi_nhanh FROM ho_so WHERE id = ? AND is_deleted = 0').get(id);
   if (!hoSo) return error(res, 'Không tìm thấy hồ sơ hội viên.', 404);
+
+  const actorBranch = getActorBranch(req.user);
+  if (actorBranch && hoSo.chi_nhanh !== actorBranch) {
+    return error(res, 'Bạn không có quyền đổi gói tập cho hội viên thuộc chi nhánh khác.', 403);
+  }
+
 
   const pkgCu = db.prepare(`
     SELECT dk.*, gt.ten_goi
@@ -1971,8 +2056,14 @@ export const requestPackagePause = (req, res) => {
 export const getInvoice = (req, res) => {
   const { id, pkgId } = req.params;
 
-  const hoSo = db.prepare('SELECT id, ma_ho_so, ho_ten, so_dien_thoai, email FROM ho_so WHERE id = ? AND is_deleted = 0').get(id);
+  const hoSo = db.prepare('SELECT id, ma_ho_so, ho_ten, so_dien_thoai, email, chi_nhanh FROM ho_so WHERE id = ? AND is_deleted = 0').get(id);
   if (!hoSo) return error(res, 'Không tìm thấy hồ sơ.', 404);
+
+  const actorBranch = getActorBranch(req.user);
+  if (actorBranch && hoSo.chi_nhanh !== actorBranch) {
+    return error(res, 'Bạn không có quyền xem biên lai của hội viên thuộc chi nhánh khác.', 403);
+  }
+
 
   const pkg = db.prepare(`
     SELECT dk.id, dk.tu_ngay, dk.den_ngay, dk.gia_thuc_te, dk.so_tien_da_thu, dk.phuong_thuc_tt,

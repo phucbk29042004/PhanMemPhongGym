@@ -6,6 +6,8 @@ import db from '../config/db.js';
 import { success, error } from '../utils/response.js';
 import { createNotification } from '../utils/notifications.js';
 import { ghi_audit_log } from '../utils/audit.js';
+import { getActorBranch } from '../utils/branch.js';
+
 
 // ── GET /api/checkins ─────────────────────────────────────
 // Lịch sử vào/ra (mặc định hôm nay hoặc tất cả nếu date === 'all')
@@ -81,16 +83,20 @@ export const createCheckin = (req, res) => {
   }
 
   // Xác định chi nhánh thực hiện check-in
+  const actorBranch = getActorBranch(req.user);
   let branch = chi_nhanh_thuc_hien;
-  if (!branch) {
-    const actor = db.prepare('SELECT chi_nhanh FROM ho_so WHERE tai_khoan_id = ?').get(req.user.id);
-    if (actor && actor.chi_nhanh) {
-      branch = actor.chi_nhanh;
-    } else if (ho_so_id) {
+  if (actorBranch) {
+    if (chi_nhanh_thuc_hien && chi_nhanh_thuc_hien !== actorBranch) {
+      return error(res, `Bạn chỉ có thể thực hiện check-in tại chi nhánh của mình (${actorBranch}).`, 403);
+    }
+    branch = actorBranch;
+  } else if (!branch) {
+    if (ho_so_id) {
       const member = db.prepare('SELECT chi_nhanh FROM ho_so WHERE id = ?').get(ho_so_id);
       branch = member ? member.chi_nhanh : null;
     }
   }
+
 
   const result = db.prepare(`
     INSERT INTO luot_vao_ra (ho_so_id, loai, phuong_thuc, ghi_chu, chi_nhanh_thuc_hien)

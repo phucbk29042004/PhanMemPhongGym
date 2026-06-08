@@ -849,8 +849,7 @@ window.GymApp.pages['staff'] = {
             <div class="flex flex-col gap-1.5">
               <label class="text-body-sm font-bold text-on-surface">Vai trò <span class="text-error">*</span></label>
               <select name="loai_ho_so" required class="w-full bg-surface-container-low/50 border border-outline-variant/50 text-on-surface px-3 py-2 rounded-xl focus:border-brand-primary outline-none text-body-sm font-bold transition-all">
-                <option value="le_tan" ${nv.loai_ho_so === 'le_tan' ? 'selected' : ''}>Lễ tân</option>
-                <option value="nhan_vien" ${nv.loai_ho_so === 'nhan_vien' ? 'selected' : ''}>Nhân viên</option>
+                <option value="nhan_vien" selected>Nhân viên</option>
               </select>
             </div>
 

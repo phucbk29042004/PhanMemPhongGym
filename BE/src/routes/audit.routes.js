@@ -5,7 +5,7 @@ import { requireRole } from '../middlewares/role.js';
 
 const router = Router();
 router.use(verifyToken);
-router.use(requireRole('admin', 'le_tan'));
+router.use(requireRole('admin', 'nhan_vien'));
 
 router.get('/',        getAuditLogs);    // GET /api/audit
 router.get('/actions', getAuditActions); // GET /api/audit/actions

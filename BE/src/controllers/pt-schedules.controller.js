@@ -6,6 +6,8 @@ import db from '../config/db.js';
 import { success, error } from '../utils/response.js';
 import { ghi_audit_log } from '../utils/audit.js';
 import { createNotification, createUserNotification } from '../utils/notifications.js';
+import { getActorBranch } from '../utils/branch.js';
+
 
 const safeJson = (value, fallback = []) => {
   if (!value) return fallback;
@@ -113,6 +115,12 @@ export const createSchedule = (req, res) => {
 
   if (!dkpt) return error(res, 'Đăng ký PT không tồn tại hoặc đã kết thúc.', 404);
 
+  const actorBranch = getActorBranch(req.user);
+  if (actorBranch && dkpt.chi_nhanh_dang_ky !== actorBranch) {
+    return error(res, 'Bạn không có quyền xếp lịch cho hội viên thuộc chi nhánh khác.', 403);
+  }
+
+
   // PT chỉ đặt lịch cho học viên của mình
   if (req.user.vai_tro === 'pt') {
     const hoSoPt = db.prepare('SELECT id FROM ho_so WHERE tai_khoan_id = ?').get(req.user.id);
@@ -188,6 +196,12 @@ export const confirmSchedule = (req, res) => {
   const { id } = req.params;
   const schedule = db.prepare('SELECT * FROM lich_tap WHERE id = ?').get(id);
   if (!schedule) return error(res, 'Không tìm thấy lịch tập.', 404);
+
+  const actorBranch = getActorBranch(req.user);
+  if (actorBranch && schedule.chi_nhanh_tap !== actorBranch) {
+    return error(res, 'Bạn không có quyền xác nhận buổi tập thuộc chi nhánh khác.', 403);
+  }
+
   if (schedule.trang_thai !== 'cho_tap') return error(res, `Buổi tập đang ở trạng thái: ${schedule.trang_thai}. Chỉ xác nhận được buổi "cho_tap".`, 400);
 
   const vai_tro = req.user.vai_tro;
@@ -348,6 +362,12 @@ export const cancelSchedule = (req, res) => {
   const { ly_do } = req.body;
   const schedule = db.prepare('SELECT * FROM lich_tap WHERE id = ?').get(id);
   if (!schedule) return error(res, 'Không tìm thấy lịch tập.', 404);
+
+  const actorBranch = getActorBranch(req.user);
+  if (actorBranch && schedule.chi_nhanh_tap !== actorBranch) {
+    return error(res, 'Bạn không có quyền hủy buổi tập thuộc chi nhánh khác.', 403);
+  }
+
   if (schedule.trang_thai === 'da_tap') return error(res, 'Không thể hủy buổi đã tập.', 400);
   if (schedule.trang_thai === 'da_huy') return error(res, 'Buổi tập đã bị hủy rồi.', 400);
 
@@ -410,6 +430,12 @@ export const revertSchedule = (req, res) => {
 
   const schedule = db.prepare('SELECT * FROM lich_tap WHERE id = ?').get(id);
   if (!schedule) return error(res, 'Không tìm thấy lịch tập.', 404);
+
+  const actorBranch = getActorBranch(req.user);
+  if (actorBranch && schedule.chi_nhanh_tap !== actorBranch) {
+    return error(res, 'Bạn không có quyền hoàn tác buổi tập thuộc chi nhánh khác.', 403);
+  }
+
   if (schedule.trang_thai !== 'da_tap') return error(res, 'Chỉ hoàn tác được buổi ở trạng thái "da_tap".', 400);
 
   // Chỉ cho hoàn tác buổi do cron tự xác nhận (confirmed_by_id NULL + ghi_chu = 'auto_cron')
@@ -477,6 +503,12 @@ export const updateSchedule = (req, res) => {
   const { ngay_tap, gio_bat_dau, gio_ket_thuc, ghi_chu } = req.body;
   const schedule = db.prepare('SELECT * FROM lich_tap WHERE id = ?').get(id);
   if (!schedule) return error(res, 'Không tìm thấy lịch tập.', 404);
+
+  const actorBranch = getActorBranch(req.user);
+  if (actorBranch && schedule.chi_nhanh_tap !== actorBranch) {
+    return error(res, 'Bạn không có quyền sửa lịch tập thuộc chi nhánh khác.', 403);
+  }
+
   if (schedule.trang_thai !== 'cho_tap') return error(res, 'Chỉ có thể sửa lịch đang ở trạng thái "cho_tap".', 400);
 
   // Chặn dời lịch sang ngày trong quá khứ
@@ -566,7 +598,7 @@ export const updateNote = (req, res) => {
 
   const isOwner = u.vai_tro === 'hoi_vien' && hoSoId === schedule.hoi_vien_id;
   const isPT    = u.vai_tro === 'pt'        && hoSoId === schedule.pt_id;
-  const isStaff = u.vai_tro === 'admin'     || u.vai_tro === 'le_tan';
+  const isStaff = u.vai_tro === 'admin'     || u.vai_tro === 'nhan_vien';
   if (!isOwner && !isPT && !isStaff) return error(res, 'Không có quyền cập nhật ghi chú.', 403);
 
   db.prepare(`UPDATE lich_tap SET ghi_chu = ? WHERE id = ?`).run(ghi_chu || null, id);

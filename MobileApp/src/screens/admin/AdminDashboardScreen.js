@@ -357,7 +357,7 @@ export default function AdminDashboardScreen({ navigation }) {
       {/* ── Header ── */}
       <View style={[styles.header, { backgroundColor: colors.primaryDark, paddingTop: Math.max(insets.top, 16) + 8 }]}>
         <View>
-          <Text style={styles.headerSub}>{greeting}, {user?.ho_ten || (user?.role === 'le_tan' ? 'Lễ tân' : 'Admin')}</Text>
+          <Text style={styles.headerSub}>{greeting}, {user?.ho_ten || (user?.role === 'nhan_vien' ? 'Nhân viên' : 'Admin')}</Text>
           <Text style={styles.headerTitle}>Paradise GYM</Text>
         </View>
         <View style={styles.headerActions}>

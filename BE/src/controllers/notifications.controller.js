@@ -8,7 +8,7 @@ import { success, error } from '../utils/response.js';
 // Lấy điều kiện filter thông báo theo vai trò người dùng
 function buildRoleFilter(vaiTro) {
   if (vaiTro === 'admin') return `(danh_cho = 'admin' OR danh_cho = 'ca_hai')`;
-  if (vaiTro === 'le_tan') return `(danh_cho = 'le_tan' OR danh_cho = 'ca_hai')`;
+  if (vaiTro === 'nhan_vien') return `(danh_cho = 'nhan_vien' OR danh_cho = 'ca_hai')`;
   return `danh_cho = 'ca_hai'`; // fallback
 }
 

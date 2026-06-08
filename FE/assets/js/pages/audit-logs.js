@@ -1,6 +1,6 @@
 window.GymApp.pages['audit-logs'] = {
   // Trạng thái bộ lọc và phân trang
-  currentFilterRole: 'all', // 'all', 'admin', 'le_tan', 'pt', 'hoi_vien'
+  currentFilterRole: 'all', // 'all', 'admin', 'nhan_vien', 'pt', 'hoi_vien'
   currentAction: '',
   searchKeyword: '',
   fromDate: '',
@@ -18,7 +18,7 @@ window.GymApp.pages['audit-logs'] = {
   stats: {
     total: 0,
     admin: 0,
-    le_tan: 0,
+    nhan_vien: 0,
     pt: 0,
     hoi_vien: 0
   },
@@ -86,7 +86,7 @@ window.GymApp.pages['audit-logs'] = {
   // Bản đồ nhãn vai trò và class styling
   roleLabels: {
     admin: { label: 'Quản trị viên', class: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' },
-    le_tan: { label: 'Lễ tân', class: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' },
+    nhan_vien: { label: 'Nhân viên', class: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' },
     pt: { label: 'HLV / PT', class: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' },
     hoi_vien: { label: 'Hội viên', class: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' }
   },
@@ -124,7 +124,7 @@ window.GymApp.pages['audit-logs'] = {
               <select id="audit-filter-role" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-2.5 py-2 rounded-xl text-body-md outline-none focus:border-brand-primary transition-all">
                 <option value="all" ${self.currentFilterRole === 'all' ? 'selected' : ''}>Xem tất cả vai trò</option>
                 <option value="admin" ${self.currentFilterRole === 'admin' ? 'selected' : ''}>Quản trị viên</option>
-                <option value="le_tan" ${self.currentFilterRole === 'le_tan' ? 'selected' : ''}>Lễ tân</option>
+                <option value="nhan_vien" ${self.currentFilterRole === 'nhan_vien' ? 'selected' : ''}>Nhân viên</option>
                 <option value="pt" ${self.currentFilterRole === 'pt' ? 'selected' : ''}>Huấn luyện viên</option>
                 <option value="hoi_vien" ${self.currentFilterRole === 'hoi_vien' ? 'selected' : ''}>Hội viên</option>
               </select>
@@ -538,17 +538,17 @@ window.GymApp.pages['audit-logs'] = {
     const self = this;
     const branchQ = window.GymApp.selectedBranch ? `&chi_nhanh=${encodeURIComponent(window.GymApp.selectedBranch)}` : '';
     try {
-      const [allRes, adminRes, letanRes, ptRes, hvRes] = await Promise.all([
+      const [allRes, adminRes, nhanvienRes, ptRes, hvRes] = await Promise.all([
         window.GymApp.api.get(`/audit?limit=1${branchQ}`),
         window.GymApp.api.get(`/audit?vai_tro=admin&limit=1${branchQ}`),
-        window.GymApp.api.get(`/audit?vai_tro=le_tan&limit=1${branchQ}`),
+        window.GymApp.api.get(`/audit?vai_tro=nhan_vien&limit=1${branchQ}`),
         window.GymApp.api.get(`/audit?vai_tro=pt&limit=1${branchQ}`),
         window.GymApp.api.get(`/audit?vai_tro=hoi_vien&limit=1${branchQ}`)
       ]);
 
       self.stats.total = allRes?.data?.pagination?.total ?? 0;
       self.stats.admin = adminRes?.data?.pagination?.total ?? 0;
-      self.stats.le_tan = letanRes?.data?.pagination?.total ?? 0;
+      self.stats.nhan_vien = nhanvienRes?.data?.pagination?.total ?? 0;
       self.stats.pt = ptRes?.data?.pagination?.total ?? 0;
       self.stats.hoi_vien = hvRes?.data?.pagination?.total ?? 0;
     } catch (err) {

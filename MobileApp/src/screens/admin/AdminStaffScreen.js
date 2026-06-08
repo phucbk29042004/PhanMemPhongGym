@@ -34,9 +34,9 @@ const av = StyleSheet.create({
 // ── Staff Card ──────────────────────────────────────────
 function StaffCard({ item, colors, onToggleLock, onDelete }) {
   const isLocked = item.tk_trang_thai === 'khoa';
-  const roleLabel = item.loai_ho_so === 'le_tan' ? 'Lễ tân' : 'Nhân viên';
-  const roleColor = item.loai_ho_so === 'le_tan' ? '#4f46e5' : '#0d9488';
-  const roleBg = item.loai_ho_so === 'le_tan' ? '#e0e7ff' : '#ccfbf1';
+  const roleLabel = 'Nhân viên';
+  const roleColor = '#0d9488';
+  const roleBg = '#ccfbf1';
 
   return (
     <View style={[card.wrap, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -239,7 +239,7 @@ export default function AdminStaffScreen({ navigation }) {
           <TouchableOpacity 
             style={[styles.addBtn, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
             onPress={() => {
-              navigation.navigate('AdminAddEditMember', { defaultRole: 'le_tan' });
+              navigation.navigate('AdminAddEditMember', { defaultRole: 'nhan_vien' });
             }}
           >
             <Plus color="#ffffff" size={20} />
