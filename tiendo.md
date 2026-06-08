@@ -1977,4 +1977,15 @@
 - **File**: `MobileApp/src/screens/pt/PTScheduleScreen.js`, `BE/src/controllers/auth.controller.js`
 - **M� t?**: �?i `item.chi_nhanh` th�nh `item.chi_nhanh_tap` ? ph?n hi?n th? l?ch d?y c� nh�n PT. Th�m tru?ng `chi_nhanh` v�o API getMe c?a BE d? c�c file s? d?ng profile c� th�ng tin chi nh�nh.
 - **K?t qu?**: Th�nh c�ng
+<<<<<<< HEAD
+>>>>>>> main
+=======
+
+### [08/06/2026 08:55] — Khắc phục triệt để lỗ hổng phân quyền chi nhánh & Tối ưu hóa Web FE
+- **Loại**: Sửa lỗi bảo mật & Tối ưu hóa (Fullstack)
+- **File**: BE/src/controllers/members.controller.js, BE/src/controllers/revenue.controller.js, BE/src/controllers/checkins.controller.js, FE/assets/js/pages/expired.js
+- **Mô tả**:
+  - **Backend**: Thêm logic ép buộc lọc theo chi nhánh của tài khoản đăng nhập (nếu không phải là admin/chu_phong_gym) trong tất cả các controller của Hội viên, Doanh thu, Dashboard, Checkin. Chặn hoàn toàn khả năng can thiệp/sửa đổi tham số query chi nhánh từ client-side.
+  - **Web Frontend**: Sửa đổi expired.js để truyền tham số chi nhánh khi gọi API hội viên hết hạn/gia hạn từ Backend, thay vì tải hết dữ liệu rồi tự lọc ở client. Tăng hiệu năng và đảm bảo dữ liệu không bị rò rỉ.
+- **Kết quả**: Thành công
 >>>>>>> main

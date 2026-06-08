@@ -10,7 +10,11 @@ import { ghi_audit_log } from '../utils/audit.js';
 // ── GET /api/checkins ─────────────────────────────────────
 // Lịch sử vào/ra (mặc định hôm nay hoặc tất cả nếu date === 'all')
 export const getCheckins = (req, res) => {
-  const { date, ho_so_id, loai, chi_nhanh, limit = 50 } = req.query;
+  let { date, ho_so_id, loai, chi_nhanh, limit = 50 } = req.query;
+  if (req.user.vai_tro !== 'admin' && req.user.vai_tro !== 'chu_phong_gym') {
+    const actor = db.prepare('SELECT chi_nhanh FROM ho_so WHERE tai_khoan_id = ? AND is_deleted = 0').get(req.user.id);
+    chi_nhanh = actor?.chi_nhanh || 'KHONG_CO_CHI_NHANH';
+  }
   const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
 
   let where = `WHERE 1=1`;
@@ -131,7 +135,11 @@ export const createCheckin = (req, res) => {
 // ── GET /api/checkins/stats ───────────────────────────────
 // Thống kê mật độ khách theo khung giờ hôm nay (dùng vẽ biểu đồ)
 export const getCheckinStats = (req, res) => {
-  const { date, chi_nhanh } = req.query;
+  let { date, chi_nhanh } = req.query;
+  if (req.user.vai_tro !== 'admin' && req.user.vai_tro !== 'chu_phong_gym') {
+    const actor = db.prepare('SELECT chi_nhanh FROM ho_so WHERE tai_khoan_id = ? AND is_deleted = 0').get(req.user.id);
+    chi_nhanh = actor?.chi_nhanh || 'KHONG_CO_CHI_NHANH';
+  }
   const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
   const targetDate = date || today;
 

@@ -12,7 +12,11 @@ import { success } from '../utils/response.js';
 // ── GET /api/revenue ──────────────────────────────────────
 // Doanh thu 30 ngày + tổng hợp
 export const getRevenue = (req, res) => {
-  const { days = 30, chi_nhanh } = req.query;
+  let { days = 30, chi_nhanh } = req.query;
+  if (req.user.vai_tro !== 'admin' && req.user.vai_tro !== 'chu_phong_gym') {
+    const actor = db.prepare('SELECT chi_nhanh FROM ho_so WHERE tai_khoan_id = ? AND is_deleted = 0').get(req.user.id);
+    chi_nhanh = actor?.chi_nhanh || 'KHONG_CO_CHI_NHANH';
+  }
   const daysInt = parseInt(days);
   const currentMonthStart = db.prepare(`SELECT date('now','localtime','start of month') AS d`).get().d;
   const nextMonthStart = db.prepare(`SELECT date('now','localtime','start of month','+1 month') AS d`).get().d;
@@ -296,7 +300,11 @@ export const getRevenue = (req, res) => {
 // Doanh thu hôm nay chi tiết
 // FIX: lấy giao dịch theo COALESCE(ngay_thanh_toan, ngay_tao) để khớp với bảng doanh_thu
 export const getRevenueToday = (req, res) => {
-  const { chi_nhanh } = req.query;
+  let { chi_nhanh } = req.query;
+  if (req.user.vai_tro !== 'admin' && req.user.vai_tro !== 'chu_phong_gym') {
+    const actor = db.prepare('SELECT chi_nhanh FROM ho_so WHERE tai_khoan_id = ? AND is_deleted = 0').get(req.user.id);
+    chi_nhanh = actor?.chi_nhanh || 'KHONG_CO_CHI_NHANH';
+  }
   const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
   const yesterday = db.prepare(`SELECT date('now','localtime','-1 days') as d`).get().d;
   const lastMonthSameDay = db.prepare(`SELECT date('now','localtime','-1 month') as d`).get().d;
@@ -397,7 +405,11 @@ export const getRevenueToday = (req, res) => {
 // Doanh thu hôm qua chi tiết
 // FIX: lọc giao dịch theo COALESCE(ngay_thanh_toan, ngay_tao)
 export const getRevenueYesterday = (req, res) => {
-  const { chi_nhanh } = req.query;
+  let { chi_nhanh } = req.query;
+  if (req.user.vai_tro !== 'admin' && req.user.vai_tro !== 'chu_phong_gym') {
+    const actor = db.prepare('SELECT chi_nhanh FROM ho_so WHERE tai_khoan_id = ? AND is_deleted = 0').get(req.user.id);
+    chi_nhanh = actor?.chi_nhanh || 'KHONG_CO_CHI_NHANH';
+  }
   const yesterday = db.prepare(`SELECT date('now','localtime','-1 days') as d`).get().d;
   const twoDaysAgo = db.prepare(`SELECT date('now','localtime','-2 days') as d`).get().d;
   const lastMonthSameDay = db.prepare(`SELECT date('now','localtime','-1 days','-1 month') as d`).get().d;
@@ -498,7 +510,11 @@ export const getRevenueYesterday = (req, res) => {
 // ── GET /api/revenue/dashboard ────────────────────────────
 // Tổng quan dashboard (số liệu tổng hợp nhanh)
 export const getDashboard = (req, res) => {
-  const { chi_nhanh } = req.query;
+  let { chi_nhanh } = req.query;
+  if (req.user.vai_tro !== 'admin' && req.user.vai_tro !== 'chu_phong_gym') {
+    const actor = db.prepare('SELECT chi_nhanh FROM ho_so WHERE tai_khoan_id = ? AND is_deleted = 0').get(req.user.id);
+    chi_nhanh = actor?.chi_nhanh || 'KHONG_CO_CHI_NHANH';
+  }
   const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
 
   let memberFilter = ' WHERE is_deleted = 0';
@@ -669,7 +685,11 @@ export const getDashboard = (req, res) => {
 // ── GET /api/revenue/compare-months ──────────────────────
 // So sánh doanh thu giữa 2 tháng tự chọn (month1 và month2 có dạng YYYY-MM)
 export const getCompareMonths = (req, res) => {
-  const { month1, month2, chi_nhanh } = req.query;
+  let { month1, month2, chi_nhanh } = req.query;
+  if (req.user.vai_tro !== 'admin' && req.user.vai_tro !== 'chu_phong_gym') {
+    const actor = db.prepare('SELECT chi_nhanh FROM ho_so WHERE tai_khoan_id = ? AND is_deleted = 0').get(req.user.id);
+    chi_nhanh = actor?.chi_nhanh || 'KHONG_CO_CHI_NHANH';
+  }
   if (!month1 || !month2) {
     return res.status(400).json({ success: false, message: 'Thiếu tham số month1 hoặc month2' });
   }

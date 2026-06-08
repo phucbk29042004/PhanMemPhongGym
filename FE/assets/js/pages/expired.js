@@ -86,10 +86,14 @@ window.GymApp.pages['expired'] = {
     if (btn) btn.classList.add('pointer-events-none', 'opacity-50');
 
     try {
+      const branch = window.GymApp.selectedBranch || '';
+      const branchQ = branch ? `?chi_nhanh=${encodeURIComponent(branch)}` : '';
+      const expiringQ = branch ? `&chi_nhanh=${encodeURIComponent(branch)}` : '';
+
       const [expiredRes, expiringRes, requestsRes] = await Promise.all([
-        window.GymApp.api.get('/members/expired'),
-        window.GymApp.api.get('/members/expiring?days=7'),
-        window.GymApp.api.get('/members/package-requests'),
+        window.GymApp.api.get(`/members/expired${branchQ}`),
+        window.GymApp.api.get(`/members/expiring?days=7${expiringQ}`),
+        window.GymApp.api.get(`/members/package-requests${branchQ}`),
       ]);
 
       const now = new Date();
@@ -148,16 +152,13 @@ window.GymApp.pages['expired'] = {
   _refreshView: function () {
     const self = this;
     const query = (this._searchQuery || '').toLowerCase().trim();
-    const branch = window.GymApp.selectedBranch || '';
 
     const filterFn = m => {
       const matchQ = !query ||
         (m.ho_ten && m.ho_ten.toLowerCase().includes(query)) ||
         (m.ma_ho_so && m.ma_ho_so.toLowerCase().includes(query)) ||
         (m.so_dien_thoai && m.so_dien_thoai.includes(query));
-      const mBranch = m.chi_nhanh || m.chi_nhanh_mua;
-      const matchBranch = !branch || mBranch === branch;
-      return matchQ && matchBranch;
+      return matchQ;
     };
 
     if (this._tab === 'expired') {
