@@ -883,7 +883,6 @@ window.GymApp.pages['member-add'] = {
             }
           }
         } else {
-<<<<<<< HEAD
           // Handle server validations inline
           if (res.message && res.message.includes('Số điện thoại')) {
             if (errSdt) {
@@ -911,48 +910,6 @@ window.GymApp.pages['member-add'] = {
         window.GymApp.toast(err.message || 'Lỗi kết nối máy chủ', 'error');
       })
       .finally(() => {
-=======
-          if (loai_ho_so === 'hoi_vien') {
-            window.GymApp.toast('Đã tạo hồ sơ thành công! Tiếp tục đăng ký gói tập.', 'success');
-          } else {
-            window.GymApp.toast('Đã tạo hồ sơ thành công!', 'success');
-          }
-        }
-
-        await window.GymApp.fetchInitialData();
-
-        if (loai_ho_so === 'hoi_vien') {
-          // Chuyển sang tab gói tập
-          const tabPkg = document.getElementById('tab-package');
-          if (tabPkg) tabPkg.click();
-        } else {
-          // PT hoặc Nhân viên: Tự động chuyển hướng về danh sách
-          window.GymApp.navigate('members-list');
-        }
-
-        // Clear form thông tin hồ sơ
-        const hoTenInput = document.getElementById('reg-ho-ten');
-        if (hoTenInput) hoTenInput.value = '';
-        const sdtInput = document.getElementById('reg-so-dien-thoai');
-        if (sdtInput) sdtInput.value = '';
-        const emailInput = document.getElementById('reg-email');
-        if (emailInput) emailInput.value = '';
-        const cccdInput = document.getElementById('reg-cccd');
-        if (cccdInput) cccdInput.value = '';
-
-        if (avatarPreview) avatarPreview.classList.add('hidden');
-        if (avatarPlaceholder) avatarPlaceholder.classList.remove('hidden');
-        self._avatarFile = null;
-
-        const chkAccount = document.getElementById('chk-create-account');
-        const accountFields = document.getElementById('account-fields');
-        if (chkAccount) chkAccount.checked = false;
-        if (accountFields) accountFields.classList.add('hidden');
-      } catch (e) {
-        console.error('Save member error:', e);
-        window.GymApp.toast('Lỗi kết nối máy chủ', 'error');
-      } finally {
->>>>>>> main
         btn.disabled = false;
         btn.innerHTML = '<span class="material-symbols-outlined text-sm font-extrabold">save</span> Lưu hồ sơ';
       });

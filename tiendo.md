@@ -2052,3 +2052,9 @@
   - Sửa lỗi không hiển thị chi nhánh của nhân viên trên bảng bằng cách thêm trường `h.chi_nhanh` vào câu SELECT của hàm `getStaff` ở backend.
 - **Kết quả**: Thành công.
 >>>>>>> main
+
+### [08/06/2026 11:12] — Sửa lỗi git conflict trong member-add.js
+- **Loại**: Sửa bug
+- **File**: FE/assets/js/pages/member-add.js
+- **Mô tả**: File có git conflict marker <<<<<< HEAD ... >>>>>>> main chưa được giải quyết từ lần merge trước, khiến JavaScript bị lỗi syntax → page member-add không load → nút Thêm hội viên bấm không có phản ứng. Đã giữ lại phiên bản HEAD (xử lý lỗi inline theo từng trường CCCD/SĐT/Email).
+- **Kết quả**: Thành công, syntax check passed
