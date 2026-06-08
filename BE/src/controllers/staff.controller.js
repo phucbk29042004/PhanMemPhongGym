@@ -29,7 +29,8 @@ export const getStaff = (req, res) => {
   }
 
   if (loai && ['le_tan', 'nhan_vien'].includes(loai)) {
-    where += ' AND h.loai_ho_so = ?'; params.push(loai);
+    where += ' AND h.loai_ho_so = ?';
+    params.push(loai);
   }
   if (search) {
     where += ` AND (h.ho_ten LIKE ? OR h.ma_ho_so LIKE ? OR h.so_dien_thoai LIKE ?)`;
@@ -40,7 +41,7 @@ export const getStaff = (req, res) => {
   const rows = db.prepare(`
     SELECT
       h.id, h.ma_ho_so, h.loai_ho_so, h.ho_ten, h.gioi_tinh, h.ngay_sinh,
-      h.so_dien_thoai, h.email, h.avatar_url, h.chuc_vu, h.ngay_tao,
+      h.so_dien_thoai, h.email, h.avatar_url, h.chuc_vu, h.chi_nhanh, h.ngay_tao,
       tk.ten_dang_nhap, tk.trang_thai AS tk_trang_thai
     FROM ho_so h
     LEFT JOIN tai_khoan tk ON tk.id = h.tai_khoan_id
@@ -66,11 +67,9 @@ export const getStaff = (req, res) => {
 export const getStaffById = (req, res) => {
   const { id } = req.params;
   const staff = db.prepare(`
-    SELECT h.*, tk.ten_dang_nhap, tk.trang_thai AS tk_trang_thai,
-           vt.ten_vai_tro, vt.quyen_json
+    SELECT h.*, tk.ten_dang_nhap, tk.trang_thai AS tk_trang_thai
     FROM ho_so h
     LEFT JOIN tai_khoan tk ON tk.id = h.tai_khoan_id
-    LEFT JOIN vai_tro vt ON vt.id = tk.vai_tro_id
     WHERE h.id = ? AND h.loai_ho_so IN ('le_tan', 'nhan_vien') AND h.is_deleted = 0
   `).get(id);
 
@@ -80,12 +79,10 @@ export const getStaffById = (req, res) => {
 };
 
 // ── POST /api/staff ───────────────────────────────────────
-// Tạo hồ sơ nhân viên (tùy chọn tạo tài khoản luôn)
 export const createStaff = async (req, res) => {
   const {
     ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email, dia_chi_tam_tru,
     loai_ho_so = 'le_tan', chuc_vu, chi_nhanh, ghi_chu,
-    // Thông tin tài khoản (tuỳ chọn)
     ten_dang_nhap, mat_khau,
   } = req.body;
 
@@ -93,6 +90,9 @@ export const createStaff = async (req, res) => {
   if (!['le_tan', 'nhan_vien'].includes(loai_ho_so)) {
     return error(res, 'loai_ho_so phải là le_tan hoặc nhan_vien.', 400);
   }
+
+  // Normalize gioi_tinh về chữ thường để khớp CHECK constraint DB
+  const gioi_tinh_normalized = gioi_tinh ? gioi_tinh.toLowerCase() : null;
 
   let avatar_url = null;
   let cloudinary_public_id = null;
@@ -122,7 +122,9 @@ export const createStaff = async (req, res) => {
     const exists = db.prepare('SELECT id FROM tai_khoan WHERE ten_dang_nhap = ?').get(ten_dang_nhap);
     if (exists) return error(res, 'Tên đăng nhập đã tồn tại.', 409);
 
-    const vaiTro = db.prepare("SELECT id FROM vai_tro WHERE ma_vai_tro = ?").get(loai_ho_so === 'le_tan' ? 'le_tan' : 'nhan_vien');
+    const vaiTro = db.prepare("SELECT id FROM vai_tro WHERE ma_vai_tro = ?").get(
+      loai_ho_so === 'le_tan' ? 'le_tan' : 'nhan_vien'
+    );
     const hash = await bcrypt.hash(mat_khau, 12);
     const tkResult = db.prepare(`
       INSERT INTO tai_khoan (ten_dang_nhap, mat_khau_hash, vai_tro_id) VALUES (?, ?, ?)
@@ -138,7 +140,9 @@ export const createStaff = async (req, res) => {
     )
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
-    ma_ho_so, loai_ho_so, ho_ten, gioi_tinh || null, ngay_sinh || null,
+    ma_ho_so, loai_ho_so, ho_ten,
+    gioi_tinh_normalized,          // ← đã normalize
+    ngay_sinh || null,
     so_dien_thoai || null, email || null, dia_chi_tam_tru || null,
     avatar_url, cloudinary_public_id, chuc_vu || null, chi_nhanh || null,
     ghi_chu || null, tai_khoan_id, req.user.id,
@@ -153,34 +157,82 @@ export const createStaff = async (req, res) => {
 };
 
 // ── PUT /api/staff/:id ────────────────────────────────────
-export const updateStaff = (req, res) => {
+export const updateStaff = async (req, res) => {
   const { id } = req.params;
-  const old = db.prepare("SELECT * FROM ho_so WHERE id = ? AND loai_ho_so IN ('le_tan','nhan_vien') AND is_deleted = 0").get(id);
+  const old = db.prepare(
+    "SELECT * FROM ho_so WHERE id = ? AND loai_ho_so IN ('le_tan','nhan_vien') AND is_deleted = 0"
+  ).get(id);
   if (!old) return error(res, 'Không tìm thấy nhân viên.', 404);
 
   const {
     ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email,
-    dia_chi_tam_tru, chuc_vu, chi_nhanh, ghi_chu,
+    dia_chi_tam_tru, chuc_vu, chi_nhanh, ghi_chu, trang_thai,
   } = req.body;
 
-  db.prepare(`
-    UPDATE ho_so SET
-      ho_ten         = COALESCE(?, ho_ten),
-      gioi_tinh      = COALESCE(?, gioi_tinh),
-      ngay_sinh      = COALESCE(?, ngay_sinh),
-      so_dien_thoai  = COALESCE(?, so_dien_thoai),
-      email          = COALESCE(?, email),
-      dia_chi_tam_tru= COALESCE(?, dia_chi_tam_tru),
-      chuc_vu        = COALESCE(?, chuc_vu),
-      chi_nhanh      = COALESCE(?, chi_nhanh),
-      ghi_chu        = COALESCE(?, ghi_chu),
-      nguoi_cap_nhat_id = ?
-    WHERE id = ?
-  `).run(
-    ho_ten || null, gioi_tinh || null, ngay_sinh || null, so_dien_thoai || null,
-    email || null, dia_chi_tam_tru || null, chuc_vu || null, chi_nhanh || null,
-    ghi_chu || null, req.user.id, id,
-  );
+  // Normalize gioi_tinh về chữ thường để khớp CHECK constraint DB
+  const gioi_tinh_normalized = gioi_tinh ? gioi_tinh.toLowerCase() : null;
+
+  // Upload ảnh mới nếu có file đính kèm
+  let avatar_url = old.avatar_url;
+  let cloudinary_public_id = old.cloudinary_public_id;
+
+  if (req.file) {
+    try {
+      // Xóa ảnh cũ trên Cloudinary nếu có
+      if (old.cloudinary_public_id) {
+        await deleteImage(old.cloudinary_public_id);
+      }
+      const result = await uploadImage(req.file.buffer, 'paradise-gym/staff');
+      avatar_url = result.url;
+      cloudinary_public_id = result.publicId;
+    } catch (err) {
+      return error(res, `Lỗi upload ảnh: ${err.message}`, 500);
+    }
+  }
+
+  const tx = db.transaction(() => {
+    db.prepare(`
+      UPDATE ho_so SET
+        ho_ten               = COALESCE(?, ho_ten),
+        gioi_tinh            = COALESCE(?, gioi_tinh),
+        ngay_sinh            = COALESCE(?, ngay_sinh),
+        so_dien_thoai        = COALESCE(?, so_dien_thoai),
+        email                = COALESCE(?, email),
+        dia_chi_tam_tru      = COALESCE(?, dia_chi_tam_tru),
+        chuc_vu              = COALESCE(?, chuc_vu),
+        chi_nhanh            = COALESCE(?, chi_nhanh),
+        ghi_chu              = COALESCE(?, ghi_chu),
+        avatar_url           = ?,
+        cloudinary_public_id = ?,
+        nguoi_cap_nhat_id    = ?
+      WHERE id = ?
+    `).run(
+      ho_ten || null,
+      gioi_tinh_normalized,        // ← đã normalize
+      ngay_sinh || null,
+      so_dien_thoai || null,
+      email || null,
+      dia_chi_tam_tru || null,
+      chuc_vu || null,
+      chi_nhanh || null,
+      ghi_chu || null,
+      avatar_url,
+      cloudinary_public_id,
+      req.user.id,
+      id,
+    );
+
+    if (trang_thai && old.tai_khoan_id) {
+      const tk_status = (
+        trang_thai === 'hoat_dong' ||
+        trang_thai === 'active' ||
+        trang_thai === 'kich_hoat'
+      ) ? 'hoat_dong' : 'khoa';
+      db.prepare(`UPDATE tai_khoan SET trang_thai = ? WHERE id = ?`).run(tk_status, old.tai_khoan_id);
+    }
+  });
+
+  tx();
 
   const updated = db.prepare('SELECT * FROM ho_so WHERE id = ?').get(id);
   ghi_audit_log(req, 'UPDATE', 'ho_so', parseInt(id), old, updated, 'Cập nhật thông tin nhân viên');
@@ -189,21 +241,22 @@ export const updateStaff = (req, res) => {
 };
 
 // ── DELETE /api/staff/:id ─────────────────────────────────
-// Soft Delete
 export const deleteStaff = (req, res) => {
   const { id } = req.params;
   const { ly_do } = req.body;
 
-  const staff = db.prepare("SELECT * FROM ho_so WHERE id = ? AND loai_ho_so IN ('le_tan','nhan_vien') AND is_deleted = 0").get(id);
+  const staff = db.prepare(
+    "SELECT * FROM ho_so WHERE id = ? AND loai_ho_so IN ('le_tan','nhan_vien') AND is_deleted = 0"
+  ).get(id);
   if (!staff) return error(res, 'Không tìm thấy nhân viên.', 404);
 
   const tx = db.transaction(() => {
     db.prepare(`
       UPDATE ho_so SET
-        is_deleted = 1,
-        ngay_xoa = datetime('now','localtime'),
+        is_deleted   = 1,
+        ngay_xoa     = datetime('now','localtime'),
         nguoi_xoa_id = ?,
-        ly_do_xoa = ?
+        ly_do_xoa    = ?
       WHERE id = ?
     `).run(req.user.id, ly_do || 'Không có lý do', id);
 

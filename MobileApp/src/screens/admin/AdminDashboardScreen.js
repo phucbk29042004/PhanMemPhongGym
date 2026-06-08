@@ -549,10 +549,14 @@ export default function AdminDashboardScreen({ navigation }) {
                     <Text style={[styles.statVal, { color: colors.primary }]}>{dash.tong_pt ?? '—'}</Text>
                     <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Huấn luyện viên</Text>
                   </View>
-                  <View style={[styles.statBox, { backgroundColor: isDark ? '#1a3040' : '#e3f2fd' }]}>
+                  <TouchableOpacity 
+                    style={[styles.statBox, { backgroundColor: isDark ? '#1a3040' : '#e3f2fd' }]}
+                    onPress={() => navigation.navigate('AdminStaff')}
+                    activeOpacity={0.7}
+                  >
                     <Text style={[styles.statVal, { color: isDark ? '#60a5fa' : '#1565c0' }]}>{dash.tong_nhan_vien ?? '—'}</Text>
                     <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Nhân viên</Text>
-                  </View>
+                  </TouchableOpacity>
                   <View style={[styles.statBox, { backgroundColor: isDark ? '#2e1c4a' : '#f3e8ff' }]}>
                     <Text style={[styles.statVal, { color: '#c084fc' }]}>{dash.tong_goi_tap ?? '—'}</Text>
                     <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Gói đang BH</Text>

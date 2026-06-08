@@ -664,14 +664,23 @@ window.GymApp.pages['member-add'] = {
             }
           }
         } else {
-          window.GymApp.toast('Đã tạo hồ sơ thành công! Tiếp tục đăng ký gói tập.', 'success');
+          if (loai_ho_so === 'hoi_vien') {
+            window.GymApp.toast('Đã tạo hồ sơ thành công! Tiếp tục đăng ký gói tập.', 'success');
+          } else {
+            window.GymApp.toast('Đã tạo hồ sơ thành công!', 'success');
+          }
         }
 
         await window.GymApp.fetchInitialData();
 
-        // Chuyển sang tab gói tập
-        const tabPkg = document.getElementById('tab-package');
-        if (tabPkg) tabPkg.click();
+        if (loai_ho_so === 'hoi_vien') {
+          // Chuyển sang tab gói tập
+          const tabPkg = document.getElementById('tab-package');
+          if (tabPkg) tabPkg.click();
+        } else {
+          // PT hoặc Nhân viên: Tự động chuyển hướng về danh sách
+          window.GymApp.navigate('members-list');
+        }
 
         // Clear form thông tin hồ sơ
         const hoTenInput = document.getElementById('reg-ho-ten');

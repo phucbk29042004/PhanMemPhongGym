@@ -11,6 +11,7 @@ import AdminMembersScreen from '../screens/admin/AdminMembersScreen';
 import AdminPTScreen from '../screens/admin/AdminPTScreen';
 import AdminPackagesScreen from '../screens/admin/AdminPackagesScreen';
 import AdminProfileScreen from '../screens/admin/AdminProfileScreen';
+import AdminStaffScreen from '../screens/admin/AdminStaffScreen';
 
 // Màn hình stack phụ (không có tab bar)
 import AdminPackageRequestsScreen from '../screens/admin/AdminPackageRequestsScreen';
@@ -124,6 +125,7 @@ export default function AdminNavigator() {
       <Stack.Screen name="AdminRevenue" component={AdminRevenueScreen} />
       <Stack.Screen name="AdminRegisterPTSchedule" component={AdminRegisterPTScheduleScreen} />
       <Stack.Screen name="AdminExpiredMembers" component={AdminExpiredMembersScreen} />
+      <Stack.Screen name="AdminStaff" component={AdminStaffScreen} />
       <Stack.Screen name="GymRules" component={GymRulesScreen} />
     </Stack.Navigator>
   );

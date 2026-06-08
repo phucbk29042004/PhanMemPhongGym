@@ -117,7 +117,7 @@ export default function AdminAddEditMemberScreen({ route, navigation }) {
 
   // ── Form: Thông tin cơ bản ──────────────────────────────────────────
   const [hoTen, setHoTen] = useState('');
-  const [loaiHoSo, setLoaiHoSo] = useState('hoi_vien');
+  const [loaiHoSo, setLoaiHoSo] = useState(route.params?.defaultRole || 'hoi_vien');
   const [soDienThoai, setSoDienThoai] = useState('');
   const [email, setEmail] = useState('');
   const [cccd, setCccd] = useState('');
