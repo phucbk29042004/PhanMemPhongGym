@@ -11,13 +11,8 @@ import { createNotification, createUserNotification } from '../utils/notificatio
 import bcrypt from 'bcryptjs';
 import { createPaymentLink, getPaymentLinkInformation } from '../utils/payos.js';
 import xlsx from 'xlsx';
-<<<<<<< HEAD
-import path from 'path';
-import fs from 'fs';
-=======
 import { getActorBranch } from '../utils/branch.js';
 
->>>>>>> main
 
 // Tự động cập nhật các gói tập/PT đã quá hạn sử dụng sang trạng thái tương ứng
 const autoUpdateExpiredStatuses = () => {
@@ -204,38 +199,6 @@ export const createMember = async (req, res) => {
   if (!ho_ten) return error(res, 'Họ tên là bắt buộc.', 400);
   const loai = loai_ho_so || 'hoi_vien';
 
-<<<<<<< HEAD
-  // Kiểm tra trùng lặp Số điện thoại (chỉ kiểm tra nếu có nhập)
-  if (so_dien_thoai && so_dien_thoai.trim()) {
-    const existingPhone = db.prepare(`
-      SELECT id, ho_ten FROM ho_so 
-      WHERE so_dien_thoai = ? AND is_deleted = 0
-    `).get(so_dien_thoai.trim());
-    if (existingPhone) {
-      return error(res, `Số điện thoại này đã được sử dụng bởi hội viên ${existingPhone.ho_ten}.`, 409);
-    }
-  }
-
-  // Kiểm tra trùng lặp CCCD (chỉ kiểm tra nếu có nhập)
-  if (cccd && cccd.trim()) {
-    const existingCccd = db.prepare(`
-      SELECT id, ho_ten FROM ho_so 
-      WHERE cccd = ? AND is_deleted = 0
-    `).get(cccd.trim());
-    if (existingCccd) {
-      return error(res, `Số CCCD này đã được sử dụng bởi hội viên ${existingCccd.ho_ten}.`, 409);
-    }
-  }
-
-  // Kiểm tra trùng lặp Email (chỉ kiểm tra nếu có nhập)
-  if (email && email.trim()) {
-    const existingEmail = db.prepare(`
-      SELECT id, ho_ten FROM ho_so 
-      WHERE email = ? AND is_deleted = 0
-    `).get(email.trim());
-    if (existingEmail) {
-      return error(res, `Email này đã được sử dụng bởi hội viên ${existingEmail.ho_ten}.`, 409);
-=======
   const actorBranch = getActorBranch(req.user);
   let finalBranch = chi_nhanh;
   if (actorBranch) {
@@ -246,7 +209,6 @@ export const createMember = async (req, res) => {
   } else {
     if (['hoi_vien', 'pt', 'nhan_vien'].includes(loai) && !chi_nhanh) {
       return error(res, 'Chi nhánh là bắt buộc đối với loại hồ sơ này.', 400);
->>>>>>> main
     }
   }
 
@@ -333,69 +295,6 @@ export const updateMember = (req, res) => {
     chuyen_mon, chuc_vu, loai_hv, kinh_nghiem
   } = req.body;
 
-<<<<<<< HEAD
-  // Kiểm tra trùng lặp Số điện thoại khi cập nhật (loại trừ chính nó)
-  if (so_dien_thoai && so_dien_thoai.trim()) {
-    const existingPhone = db.prepare(`
-      SELECT id, ho_ten FROM ho_so 
-      WHERE so_dien_thoai = ? AND id != ? AND is_deleted = 0
-    `).get(so_dien_thoai.trim(), id);
-    if (existingPhone) {
-      return error(res, `Số điện thoại này đã được sử dụng bởi hội viên ${existingPhone.ho_ten}.`, 409);
-    }
-  }
-
-  // Kiểm tra trùng lặp CCCD khi cập nhật (loại trừ chính nó)
-  if (cccd && cccd.trim()) {
-    const existingCccd = db.prepare(`
-      SELECT id, ho_ten FROM ho_so 
-      WHERE cccd = ? AND id != ? AND is_deleted = 0
-    `).get(cccd.trim(), id);
-    if (existingCccd) {
-      return error(res, `Số CCCD này đã được sử dụng bởi hội viên ${existingCccd.ho_ten}.`, 409);
-    }
-  }
-
-  // Kiểm tra trùng lặp Email khi cập nhật (loại trừ chính nó)
-  if (email && email.trim()) {
-    const existingEmail = db.prepare(`
-      SELECT id, ho_ten FROM ho_so 
-      WHERE email = ? AND id != ? AND is_deleted = 0
-    `).get(email.trim(), id);
-    if (existingEmail) {
-      return error(res, `Email này đã được sử dụng bởi hội viên ${existingEmail.ho_ten}.`, 409);
-    }
-  }
-
-  db.prepare(`
-    UPDATE ho_so SET
-      ho_ten = COALESCE(?, ho_ten),
-      gioi_tinh = COALESCE(?, gioi_tinh),
-      ngay_sinh = COALESCE(?, ngay_sinh),
-      so_dien_thoai = COALESCE(?, so_dien_thoai),
-      email = COALESCE(?, email),
-      dia_chi_tam_tru = COALESCE(?, dia_chi_tam_tru),
-      ghi_chu = COALESCE(?, ghi_chu),
-      chi_nhanh = COALESCE(?, chi_nhanh),
-      phong_tap = COALESCE(?, phong_tap),
-      noi_sinh = COALESCE(?, noi_sinh),
-      cccd = COALESCE(?, cccd),
-      que_quan = COALESCE(?, que_quan),
-      tinh_thanh = COALESCE(?, tinh_thanh),
-      quan_huyen = COALESCE(?, quan_huyen),
-      phuong_xa = COALESCE(?, phuong_xa),
-      chuyen_mon = COALESCE(?, chuyen_mon),
-      chuc_vu = COALESCE(?, chuc_vu),
-      loai_hv = COALESCE(?, loai_hv),
-      kinh_nghiem = COALESCE(?, kinh_nghiem),
-      nguoi_cap_nhat_id = ?
-    WHERE id = ?
-  `).run(
-    ho_ten || null, gioi_tinh || null, ngay_sinh || null, so_dien_thoai || null, email || null, dia_chi_tam_tru || null, ghi_chu || null,
-    chi_nhanh || null, phong_tap || null, noi_sinh || null, cccd || null, que_quan || null, tinh_thanh || null, quan_huyen || null, phuong_xa || null,
-    chuyen_mon || null, chuc_vu || null, loai_hv || null, kinh_nghiem !== undefined ? parseInt(kinh_nghiem) || 0 : undefined, req.user.id, id
-  );
-=======
   let finalBranch = chi_nhanh;
   if (actorBranch) {
     if (chi_nhanh && chi_nhanh !== actorBranch) {
@@ -438,7 +337,6 @@ export const updateMember = (req, res) => {
     console.error('❌ Lỗi chi tiết tại updateMember:', err);
     return error(res, `Lỗi cập nhật hồ sơ: ${err.message}`, 500);
   }
->>>>>>> main
 
   const updated = db.prepare('SELECT * FROM ho_so WHERE id = ?').get(id);
   ghi_audit_log(req, 'UPDATE', 'ho_so', parseInt(id), old, updated, 'Cập nhật thông tin hồ sơ');
@@ -554,6 +452,7 @@ export const checkDuplicate = (req, res) => {
 
 // ── GET /api/members/expiring ─────────────────────────────
 // 🔧 ĐÃ SỬA: dùng query trực tiếp thay vì view để hỗ trợ days động
+// và trả về đủ fields mà FE cần (ten_goi_tap, ngay_het_han, so_dien_thoai)
 export const getExpiringMembers = (req, res) => {
   autoUpdateExpiredStatuses(); // Cập nhật trạng thái hết hạn trước khi query
   const days = parseInt(req.query.days) || 30; // ← mặc định 30 ngày cho trang danh sách
@@ -590,14 +489,14 @@ export const getExpiringMembers = (req, res) => {
       'sap_het_han' AS trang_thai,
       (SELECT MAX(d_ngay) FROM (
          SELECT den_ngay as d_ngay FROM dang_ky_goi_tap
-         WHERE ho_so_id = h.id AND trang_thai IN ('dang_hoat_dong', 'het_han')
+         WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
          UNION ALL
          SELECT den_ngay as d_ngay FROM dang_ky_pt
-         WHERE hoi_vien_id = h.id AND trang_thai IN ('dang_hoat_dong', 'het_han', 'hoan_thanh')
+         WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
       )) AS ngay_het_han,
       (SELECT gt.ten_goi FROM dang_ky_goi_tap dk
        JOIN goi_tap gt ON gt.id = dk.goi_tap_id
-       WHERE dk.ho_so_id = h.id AND dk.trang_thai IN ('dang_hoat_dong', 'het_han')
+       WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong'
        ORDER BY dk.den_ngay DESC LIMIT 1) AS ten_goi_tap,
       EXISTS (SELECT 1 FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai IN ('cho_duyet', 'cho_kich_hoat')) AS co_yeu_cau_gia_han
     FROM ho_so h
@@ -608,6 +507,8 @@ export const getExpiringMembers = (req, res) => {
   return success(res, rows);
 };
 
+// ── GET /api/members/expired ──────────────────────────────
+// 🔧 ĐÃ SỬA: query trực tiếp để trả về đủ fields FE cần
 export const getExpiredMembers = (req, res) => {
   autoUpdateExpiredStatuses(); // Cập nhật trạng thái hết hạn trước khi query
   const { chi_nhanh } = req.query;
@@ -648,14 +549,14 @@ export const getExpiredMembers = (req, res) => {
       'het_han' AS trang_thai,
       (SELECT MAX(d_ngay) FROM (
          SELECT den_ngay as d_ngay FROM dang_ky_goi_tap
-         WHERE ho_so_id = h.id AND trang_thai IN ('dang_hoat_dong', 'het_han')
+         WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
          UNION ALL
          SELECT den_ngay as d_ngay FROM dang_ky_pt
-         WHERE hoi_vien_id = h.id AND trang_thai IN ('dang_hoat_dong', 'het_han', 'hoan_thanh')
+         WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
       )) AS ngay_het_han,
       (SELECT gt.ten_goi FROM dang_ky_goi_tap dk
        JOIN goi_tap gt ON gt.id = dk.goi_tap_id
-       WHERE dk.ho_so_id = h.id AND dk.trang_thai IN ('dang_hoat_dong', 'het_han')
+       WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong'
        ORDER BY dk.den_ngay DESC LIMIT 1) AS ten_goi_tap,
       EXISTS (SELECT 1 FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai IN ('cho_duyet', 'cho_kich_hoat')) AS co_yeu_cau_gia_han
     FROM ho_so h
@@ -785,11 +686,7 @@ export const getMyProfile = (req, res) => {
 
   if (hoSo.loai_ho_so === 'hoi_vien') {
     hoSo.goi_tap = db.prepare(`
-      SELECT dk.id, dk.tu_ngay, dk.den_ngay, dk.gia_thuc_te, dk.so_tien_da_thu,
-             CASE
-               WHEN dk.trang_thai = 'dang_hoat_dong' AND dk.den_ngay < date('now', 'localtime') THEN 'het_han'
-               ELSE dk.trang_thai
-             END AS trang_thai,
+      SELECT dk.id, dk.tu_ngay, dk.den_ngay, dk.gia_thuc_te, dk.so_tien_da_thu, dk.trang_thai,
              dk.phuong_thuc_tt, dk.payos_status, dk.payos_order_code,
              gt.ten_goi, gt.so_thang
       FROM dang_ky_goi_tap dk
@@ -2081,7 +1978,7 @@ export const lookupMember = (req, res) => {
   const s = `%${q.trim()}%`;
   const rows = db.prepare(`
     SELECT
-      h.id, h.ma_ho_so, h.ho_ten, h.so_dien_thoai, h.email, h.gioi_tinh, h.avatar_url,
+      h.id, h.ma_ho_so, h.ho_ten, h.so_dien_thoai, h.email, h.gioi_tinh, h.anh_dai_dien,
       (SELECT gt.ten_goi FROM dang_ky_goi_tap dk JOIN goi_tap gt ON gt.id = dk.goi_tap_id
        WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong'
        ORDER BY dk.den_ngay DESC LIMIT 1) AS ten_goi_tap,
@@ -2194,70 +2091,18 @@ export const getInvoice = (req, res) => {
 // ── POST /api/members/import ─────────────────────────────
 // Import hội viên từ file Excel
 export const importMembers = async (req, res) => {
-  const excelFile = req.files && req.files['file'] ? req.files['file'][0] : null;
-  const zipFile = req.files && req.files['zip'] ? req.files['zip'][0] : null;
-
-  if (!excelFile) {
+  if (!req.file) {
     return error(res, 'Vui lòng chọn file Excel để nhập.', 400);
   }
 
   try {
-    const logDiag = (msg) => {
-      console.log(msg);
-    };
-
-    logDiag(`Excel File Name: ${excelFile.originalname}, Size: ${excelFile.size} bytes`);
-    logDiag(`ZIP File Present: ${!!zipFile}`);
-    if (zipFile) {
-      logDiag(`ZIP File Name: ${zipFile.originalname}, Size: ${zipFile.size} bytes`);
-    }
-
-    const workbook = xlsx.read(excelFile.buffer, { type: 'buffer' });
+    const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
     const firstSheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[firstSheetName];
     const rawData = xlsx.utils.sheet_to_json(worksheet);
 
-    logDiag(`Raw Excel Data length: ${rawData.length}`);
-    if (rawData.length > 0) {
-      logDiag(`First Excel Row Keys: ${JSON.stringify(Object.keys(rawData[0]))}`);
-      logDiag(`First Excel Row Values: ${JSON.stringify(rawData[0])}`);
-    }
-
     if (rawData.length === 0) {
       return error(res, 'File Excel không có dữ liệu.', 400);
-    }
-
-    // Đọc danh sách file trong file ZIP (nếu có)
-    const zipImagesMap = new Map();
-    if (zipFile) {
-      try {
-        const AdmZip = (await import('adm-zip')).default;
-        const zip = new AdmZip(zipFile.buffer);
-        const zipEntries = zip.getEntries();
-        const allowedImgExts = ['.jpg', '.jpeg', '.png', '.webp'];
-        
-        logDiag(`Total ZIP Entries found: ${zipEntries.length}`);
-        for (const entry of zipEntries) {
-          if (entry.isDirectory) {
-            logDiag(`Directory entry inside ZIP: ${entry.entryName}`);
-            continue;
-          }
-          const ext = path.extname(entry.entryName).toLowerCase();
-          if (allowedImgExts.includes(ext)) {
-            const baseName = entry.entryName.split('/').pop().normalize('NFC');
-            // Chuẩn hóa key về chữ thường để so khớp không phân biệt hoa thường
-            zipImagesMap.set(baseName.toLowerCase(), entry);
-            logDiag(`Mapped ZIP image key: "${baseName.toLowerCase()}" (Entry path: "${entry.entryName}")`);
-          } else {
-            logDiag(`Skipped ZIP entry (ext not allowed): "${entry.entryName}"`);
-          }
-        }
-        logDiag(`📁 Giải nén ZIP thành công, tìm thấy ${zipImagesMap.size} ảnh hợp lệ.`);
-      } catch (zipErr) {
-        logDiag(`Lỗi giải nén ZIP: ${zipErr.message}`);
-        console.error('Lỗi giải nén ZIP:', zipErr);
-        return error(res, `Lỗi đọc file ZIP: ${zipErr.message}`, 400);
-      }
     }
 
     const vaiTroHoiVien = db.prepare("SELECT id FROM vai_tro WHERE ma_vai_tro = 'hoi_vien'").get();
@@ -2268,7 +2113,6 @@ export const importMembers = async (req, res) => {
       let successCount = 0;
       let failCount = 0;
       const errors = [];
-      const createdMembers = [];
 
       // Lấy mã số hội viên lớn nhất hiện tại làm mốc tăng dần
       const lastHoSo = db.prepare(`
@@ -2296,29 +2140,17 @@ export const importMembers = async (req, res) => {
         VALUES (?, ?, ?, ?)
       `);
 
-      const getRowValue = (rowObj, possibleKeys) => {
-        const normPossible = possibleKeys.map(k => k.trim().toLowerCase().normalize('NFC'));
-        for (const k of Object.keys(rowObj)) {
-          const normKey = k.trim().toLowerCase().normalize('NFC');
-          if (normPossible.includes(normKey)) {
-            return rowObj[k];
-          }
-        }
-        return '';
-      };
-
       for (let i = 0; i < membersData.length; i++) {
         const row = membersData[i];
         const index = i + 2; // Dòng thứ i trong Excel (dòng 1 là tiêu đề cột)
 
-        const ho_ten = (getRowValue(row, ['Họ và tên', 'Ho va ten', 'ho_ten', 'Full Name'])).toString().trim();
-        let so_dien_thoai = (getRowValue(row, ['Số điện thoại', 'So dien thoai', 'so_dien_thoai', 'Phone'])).toString().trim();
-        let gioi_tinh = (getRowValue(row, ['Giới tính', 'Gioi tinh', 'gioi_tinh', 'Gender'])).toString().trim();
-        let ngay_sinh = getRowValue(row, ['Ngày sinh', 'Ngay sinh', 'ngay_sinh', 'Birthdate']) || null;
-        const email = (getRowValue(row, ['Email', 'email'])).toString().trim() || null;
-        const dia_chi = (getRowValue(row, ['Địa chỉ', 'Dia chi', 'address', 'dia_chi'])).toString().trim() || null;
-        const ghi_chu = (getRowValue(row, ['Ghi chú', 'Ghi chu', 'note', 'ghi_chu'])).toString().trim() || null;
-        const ten_file_anh = (getRowValue(row, ['Tên file ảnh', 'Ten file anh', 'ten_file_anh', 'Ảnh đại diện', 'Anh dai dien'])).toString().trim() || null;
+        const ho_ten = (row['Họ và tên'] || row['Ho va ten'] || row['ho_ten'] || row['Full Name'] || '').toString().trim();
+        let so_dien_thoai = (row['Số điện thoại'] || row['So dien thoai'] || row['so_dien_thoai'] || row['Phone'] || '').toString().trim();
+        let gioi_tinh = (row['Giới tính'] || row['Gioi tinh'] || row['gioi_tinh'] || row['Gender'] || '').toString().trim();
+        let ngay_sinh = row['Ngày sinh'] || row['Ngay sinh'] || row['ngay_sinh'] || row['Birthdate'] || null;
+        const email = (row['Email'] || row['email'] || '').toString().trim() || null;
+        const dia_chi = (row['Địa chỉ'] || row['Dia chi'] || row['address'] || '').toString().trim() || null;
+        const ghi_chu = (row['Ghi chú'] || row['Ghi chu'] || row['note'] || '').toString().trim() || null;
 
         // Validation
         if (!ho_ten) {
@@ -2370,12 +2202,14 @@ export const importMembers = async (req, res) => {
         // Chuẩn hóa ngày sinh
         if (ngay_sinh) {
           if (typeof ngay_sinh === 'number') {
+            // Trường hợp ngày Excel lưu dạng Serial Number
             const dateObj = new Date((ngay_sinh - 25569) * 86400 * 1000);
             ngay_sinh = dateObj.toISOString().split('T')[0];
           } else {
             let dateStr = ngay_sinh.toString().trim();
             const parts = dateStr.split('/');
             if (parts.length === 3) {
+              // DD/MM/YYYY
               ngay_sinh = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
             } else {
               const parsedDate = new Date(dateStr);
@@ -2400,142 +2234,23 @@ export const importMembers = async (req, res) => {
         const ma_ho_so = `HV${String(baseNum).padStart(3, '0')}`;
 
         // Lưu hồ sơ
-        const resHoSo = stmtInsertHoSo.run(
+        stmtInsertHoSo.run(
           ma_ho_so, ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email,
           dia_chi, ghi_chu, creatorId, tai_khoan_id
         );
 
-        createdMembers.push({
-          id: resHoSo.lastInsertRowid,
-          ma_ho_so,
-          ho_ten,
-          so_dien_thoai,
-          ten_file_anh
-        });
-
         successCount++;
       }
 
-      return { successCount, failCount, errors, createdMembers };
+      return { successCount, failCount, errors };
     });
 
     const result = importTx(rawData, req.user.id);
-
-    // Xử lý upload ảnh bất đồng bộ lên Cloudinary sau khi transaction thành công
+    
     // Ghi audit log
     ghi_audit_log(req, 'CREATE', 'ho_so', null, null, { successCount: result.successCount }, `Import ${result.successCount} hội viên từ file Excel`);
 
-    // Phản hồi thành công ngay lập tức cho Frontend
-    success(res, {
-      successCount: result.successCount,
-      failCount: result.failCount,
-      errors: result.errors
-    }, `Import thành công ${result.successCount} hội viên, thất bại ${result.failCount} dòng.`);
-
-    // Chạy ngầm tác vụ xử lý file ZIP và upload ảnh lên Cloudinary bất đồng bộ
-    logDiag(`Checking if ZIP matching should run in background: zipFile=${!!zipFile}, zipImagesMap.size=${zipImagesMap.size}, createdMembers.length=${result.createdMembers.length}`);
-    if (zipFile && zipImagesMap.size > 0 && result.createdMembers.length > 0) {
-      setImmediate(async () => {
-        console.log(`[Background Task] 🚀 Bắt đầu upload ngầm ${result.createdMembers.length} ảnh lên Cloudinary...`);
-        let processed = 0;
-        
-        for (const m of result.createdMembers) {
-          let entry = null;
-          const stripExts = (filename) => {
-            let name = filename;
-            let ext = path.extname(name);
-            while (ext) {
-              name = name.slice(0, -ext.length);
-              ext = path.extname(name);
-            }
-            return name;
-          };
-
-          // 1. Dò theo "Tên file ảnh" từ Excel nếu có khai báo
-          if (m.ten_file_anh) {
-            const cleanName = m.ten_file_anh.trim().toLowerCase().normalize('NFC');
-            entry = zipImagesMap.get(cleanName);
-            
-            if (!entry) {
-              const excelCoreName = stripExts(cleanName);
-              for (const [key, val] of zipImagesMap.entries()) {
-                if (excelCoreName === stripExts(key)) {
-                  entry = val;
-                  break;
-                }
-              }
-            }
-          }
-
-          // 2. Dò theo Số điện thoại (Ví dụ: "0912345678.jpg" -> khớp với "0912345678")
-          if (!entry && m.so_dien_thoai) {
-            const phoneCore = m.so_dien_thoai.trim();
-            for (const [key, val] of zipImagesMap.entries()) {
-              if (phoneCore === stripExts(key)) {
-                entry = val;
-                break;
-              }
-            }
-          }
-
-          // 3. Dò theo Họ và tên (Ví dụ: "Nguyễn Văn A" -> khớp "nguyen_van_a.jpg" hoặc "nguyenvana.png")
-          if (!entry && m.ho_ten) {
-            const cleanName = m.ho_ten.trim().toLowerCase().normalize('NFC');
-            const cleanNameNoSpaces = cleanName.replace(/\s+/g, '');
-            const cleanNameUnderscore = cleanName.replace(/\s+/g, '_');
-            const cleanNameDash = cleanName.replace(/\s+/g, '-');
-            
-            const removeDiacritics = (str) => {
-              return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
-            };
-            const rawNoDiacritics = removeDiacritics(cleanName);
-            const noDiacriticsNoSpaces = rawNoDiacritics.replace(/\s+/g, '');
-            const noDiacriticsUnderscore = rawNoDiacritics.replace(/\s+/g, '_');
-            const noDiacriticsDash = rawNoDiacritics.replace(/\s+/g, '-');
-
-            const possibleCoreNames = [
-              cleanName, cleanNameNoSpaces, cleanNameUnderscore, cleanNameDash,
-              rawNoDiacritics, noDiacriticsNoSpaces, noDiacriticsUnderscore, noDiacriticsDash
-            ];
-
-            for (const [key, val] of zipImagesMap.entries()) {
-              const zipCoreName = stripExts(key);
-              if (possibleCoreNames.includes(zipCoreName)) {
-                entry = val;
-                break;
-              }
-            }
-          }
-          
-          if (entry) {
-            try {
-              const imgBuffer = entry.getData();
-              
-              // Upload lên Cloudinary
-              const uploadRes = await uploadImage(imgBuffer, 'paradise-gym/profiles', m.ma_ho_so);
-              
-              // Cập nhật Database SQLite
-              db.prepare(`
-                UPDATE ho_so 
-                SET avatar_url = ?, cloudinary_public_id = ? 
-                WHERE id = ?
-              `).run(uploadRes.url, uploadRes.publicId, m.id);
-              
-              console.log(`[Background Task]  ✅ Đã tải lên và gán ảnh "${entry.entryName}" cho hội viên ${m.ma_ho_so}`);
-            } catch (uploadErr) {
-              console.error(`[Background Task]  ❌ Lỗi upload ảnh cho ${m.ma_ho_so}:`, uploadErr.message);
-            }
-          }
-          
-          processed++;
-          if (processed % 10 === 0 || processed === result.createdMembers.length) {
-            console.log(`[Background Task] Tiến độ: ${processed}/${result.createdMembers.length} ảnh đã xử lý.`);
-          }
-        }
-        
-        console.log(`[Background Task] 🎉 Đã hoàn thành xử lý và upload ảnh chạy ngầm.`);
-      });
-    }
+    return success(res, result, `Import thành công ${result.successCount} hội viên, thất bại ${result.failCount} dòng.`);
   } catch (err) {
     console.error('Import Excel error:', err);
     return error(res, `Lỗi xử lý file Excel: ${err.message}`, 500);
