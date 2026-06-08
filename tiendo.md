@@ -2058,3 +2058,9 @@
 - **File**: FE/assets/js/pages/member-add.js
 - **Mô tả**: File có git conflict marker <<<<<< HEAD ... >>>>>>> main chưa được giải quyết từ lần merge trước, khiến JavaScript bị lỗi syntax → page member-add không load → nút Thêm hội viên bấm không có phản ứng. Đã giữ lại phiên bản HEAD (xử lý lỗi inline theo từng trường CCCD/SĐT/Email).
 - **Kết quả**: Thành công, syntax check passed
+
+### [08/06/2026 13:40] — Sửa lỗi git conflict member-add.js (lần 2)
+- **Loại**: Sửa bug
+- **File**: FE/assets/js/pages/member-add.js
+- **Mô tả**: Sau git merge main xuất hiện conflict mới. Đã dùng git checkout origin/main để lấy phiên bản main sạch (async/await mới) thay cho cách merge thủ công bị lỗi cấu trúc.
+- **Kết quả**: Thành công, syntax check passed
