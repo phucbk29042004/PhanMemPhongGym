@@ -38,12 +38,18 @@ export const getRegistrations = (req, res) => {
   const { hoi_vien_id, pt_id, trang_thai, chi_nhanh, page = 1, limit = 20 } = req.query;
   const offset = (parseInt(page) - 1) * parseInt(limit);
 
+  let filterBranch = chi_nhanh;
+  if (req.user.vai_tro !== 'admin' && req.user.vai_tro !== 'chu_phong_gym') {
+    const actor = db.prepare('SELECT chi_nhanh FROM ho_so WHERE tai_khoan_id = ? AND is_deleted = 0').get(req.user.id);
+    filterBranch = actor?.chi_nhanh || 'KHONG_CO_CHI_NHANH';
+  }
+
   let where = 'WHERE 1=1';
   const params = [];
 
-  if (chi_nhanh) {
+  if (filterBranch) {
     where += ' AND dp.chi_nhanh_dang_ky = ?';
-    params.push(chi_nhanh);
+    params.push(filterBranch);
   }
 
   // PT chỉ xem đăng ký của mình

@@ -1988,6 +1988,7 @@
   - **Backend**: Thêm logic ép buộc lọc theo chi nhánh của tài khoản đăng nhập (nếu không phải là admin/chu_phong_gym) trong tất cả các controller của Hội viên, Doanh thu, Dashboard, Checkin. Chặn hoàn toàn khả năng can thiệp/sửa đổi tham số query chi nhánh từ client-side.
   - **Web Frontend**: Sửa đổi expired.js để truyền tham số chi nhánh khi gọi API hội viên hết hạn/gia hạn từ Backend, thay vì tải hết dữ liệu rồi tự lọc ở client. Tăng hiệu năng và đảm bảo dữ liệu không bị rò rỉ.
 - **Kết quả**: Thành công
+<<<<<<< HEAD
 >>>>>>> main
 
 ### [08/06/2026 09:16] — Gộp khung thông tin và tối ưu ô nhập CCCD
@@ -2014,3 +2015,40 @@
 - **Loại**: Sửa bug UI (Frontend)
 - **File**: FE/index.html\n- **Mô tả**: Dọn dẹp hoàn toàn các dấu conflict Git ở phần load script cuối file index.html, đảm bảo load đúng thứ tự các script html5-qrcode, invoice-template.js và app.js giúp menu sidebar hoạt động trở lại bình thường.
 - **Kết quả**: Thành công
+=======
+
+### [08/06/2026 09:13] — Mở rộng rà soát và khắc phục triệt để rò rỉ dữ liệu chi nhánh
+- **Loại**: Sửa lỗi bảo mật (Backend)
+- **File**: BE/src/controllers/pt-registrations.controller.js, BE/src/controllers/pt-schedules.controller.js, BE/src/controllers/trainers.controller.js, BE/src/controllers/staff.controller.js
+- **Mô tả**:
+  - Khắc phục lỗ hổng rò rỉ dữ liệu chi nhánh chéo cho các module: Đăng ký PT (getRegistrations), Lịch dạy/lịch tập PT (getSchedules), Danh sách huấn luyện viên (getTrainers), và Danh sách nhân viên/lễ tân (getStaff).
+  - Áp dụng cơ chế tự động ghi đè bộ lọc chi nhánh của Backend đối với các tài khoản nhân viên cơ sở để đảm bảo ranh giới dữ liệu an toàn tuyệt đối.
+- **Kết quả**: Thành công
+
+### [08/06/2026 09:28] — Sửa luồng tạo hồ sơ trên Web (Hội viên vs PT/Nhân viên)
+- **Loại**: Sửa bug (Web Frontend)
+- **File**: FE/assets/js/pages/member-add.js
+- **Mô tả**: Sửa lỗi tự động chuyển hướng sang tab Đăng ký gói tập sau khi tạo mới hồ sơ là Huấn luyện viên (PT) hoặc Nhân viên. Hiện tại, chỉ loại hồ sơ "Hội viên" mới chuyển sang tab này, các loại khác sẽ hiện thông báo thành công và chuyển hướng về trang danh sách (members-list). Đã kiểm tra Mobile App và xác nhận Mobile không bị lỗi này do luồng xử lý riêng biệt.
+- **Kết quả**: Thành công
+
+
+### [08/06/2026 09:56] — Thiết kế lại Header và Modal chỉnh sửa nhân viên trên Web
+- **Loại**: Chỉnh sửa & Cải tiến UI/UX
+- **File**: `FE/assets/js/pages/staff.js`
+- **Mô tả**: 
+  - Tách Header (Tiêu đề và nút ''Thêm nhân viên'', ''Tải lại'') khỏi Filter Bar để tránh đè layout, sửa lỗi thẻ div đóng thừa.
+  - Viết lại hàm `_showEditStaffModal` để hiển thị Modal chỉnh sửa thông tin nhân viên tại chỗ kèm tải ảnh đại diện và lưu trực tiếp qua API `PUT /staff/:id` thay vì điều hướng qua trang thêm.
+  - Sửa khớp ID của sự kiện click nút Tải lại từ `staff-staff-reload` thành `btn-staff-reload`.
+- **Kết quả**: Thành công, giao diện hiển thị gọn gàng, luồng chỉnh sửa tại chỗ hoạt động mượt mà.
+
+### [08/06/2026 10:06] — Căn giữa icon thao tác, bỏ required email và sửa hiển thị chi nhánh nhân viên
+- **Loại**: Cải tiến UI & Sửa lỗi dữ liệu (Fullstack)
+- **File**: 
+  - `FE/assets/js/pages/staff.js`
+  - `BE/src/controllers/staff.controller.js`
+- **Mô tả**: 
+  - Căn giữa các icon trong cột thao tác trên bảng nhân viên Web Frontend.
+  - Bỏ thuộc tính `required` và dấu bắt buộc ở input email trong Modal chỉnh sửa nhân viên.
+  - Sửa lỗi không hiển thị chi nhánh của nhân viên trên bảng bằng cách thêm trường `h.chi_nhanh` vào câu SELECT của hàm `getStaff` ở backend.
+- **Kết quả**: Thành công.
+>>>>>>> main

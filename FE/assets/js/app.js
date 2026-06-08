@@ -6,8 +6,9 @@
     'pt-register': 'Đăng ký lịch tập PT', 'packages': 'Danh sách gói tập',
     'birthday': 'Sinh nhật hội viên', 'gym-rules': 'Nội quy phòng tập',
     'revenue': 'Doanh thu', 'audit-logs': 'Nhật ký kiểm tra',
+    'staff': 'Danh sách nhân viên',
   };
-  const SUB_PAGES = ['members-list', 'member-add', 'checkin', 'expired', 'pt-training', 'pt-register', 'packages', 'birthday', 'revenue'];
+  const SUB_PAGES = ['members-list', 'member-add', 'checkin', 'expired', 'pt-training', 'pt-register', 'packages', 'birthday', 'revenue', 'staff'];
 
   // ===== NAVIGATE =====
   window.GymApp.navigate = function (pageName) {

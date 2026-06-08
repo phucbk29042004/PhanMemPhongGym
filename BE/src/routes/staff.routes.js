@@ -1,8 +1,3 @@
-/**
- * Routes cho Nhân Viên (Staff)
- * Base: /api/staff
- */
-
 import { Router } from 'express';
 import {
   getStaff, getStaffById, createStaff, updateStaff, deleteStaff,
@@ -14,10 +9,10 @@ import { uploadAvatar } from '../middlewares/upload.js';
 const router = Router();
 router.use(verifyToken);
 
-router.get('/',    requireRole('admin'), getStaff);
-router.get('/:id', requireRole('admin'), getStaffById);
-router.post('/',   requireRole('admin'), uploadAvatar, createStaff);
-router.put('/:id', requireRole('admin'), updateStaff);
-router.delete('/:id', requireRole('admin'), deleteStaff);
+router.get('/', requireRole('admin', 'chu_phong_gym', 'quan_ly'), getStaff);
+router.get('/:id', requireRole('admin', 'chu_phong_gym', 'quan_ly'), getStaffById);
+router.post('/', requireRole('admin', 'chu_phong_gym', 'quan_ly'), uploadAvatar, createStaff);
+router.put('/:id', requireRole('admin', 'chu_phong_gym', 'quan_ly'), uploadAvatar, updateStaff);
+router.delete('/:id', requireRole('admin', 'chu_phong_gym', 'quan_ly'), deleteStaff);
 
 export default router;
