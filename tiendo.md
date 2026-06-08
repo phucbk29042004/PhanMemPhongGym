@@ -1672,3 +1672,11 @@
   - **Backend**: Thêm logic ép buộc lọc theo chi nhánh của tài khoản đăng nhập (nếu không phải là admin/chu_phong_gym) trong tất cả các controller của Hội viên, Doanh thu, Dashboard, Checkin. Chặn hoàn toàn khả năng can thiệp/sửa đổi tham số query chi nhánh từ client-side.
   - **Web Frontend**: Sửa đổi expired.js để truyền tham số chi nhánh khi gọi API hội viên hết hạn/gia hạn từ Backend, thay vì tải hết dữ liệu rồi tự lọc ở client. Tăng hiệu năng và đảm bảo dữ liệu không bị rò rỉ.
 - **Kết quả**: Thành công
+
+### [08/06/2026 09:13] — Mở rộng rà soát và khắc phục triệt để rò rỉ dữ liệu chi nhánh
+- **Loại**: Sửa lỗi bảo mật (Backend)
+- **File**: BE/src/controllers/pt-registrations.controller.js, BE/src/controllers/pt-schedules.controller.js, BE/src/controllers/trainers.controller.js, BE/src/controllers/staff.controller.js
+- **Mô tả**:
+  - Khắc phục lỗ hổng rò rỉ dữ liệu chi nhánh chéo cho các module: Đăng ký PT (getRegistrations), Lịch dạy/lịch tập PT (getSchedules), Danh sách huấn luyện viên (getTrainers), và Danh sách nhân viên/lễ tân (getStaff).
+  - Áp dụng cơ chế tự động ghi đè bộ lọc chi nhánh của Backend đối với các tài khoản nhân viên cơ sở để đảm bảo ranh giới dữ liệu an toàn tuyệt đối.
+- **Kết quả**: Thành công

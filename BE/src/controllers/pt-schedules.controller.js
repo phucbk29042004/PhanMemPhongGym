@@ -22,12 +22,18 @@ const toJson = (value) => {
 export const getSchedules = (req, res) => {
   const { date, pt_id, hoi_vien_id, trang_thai, chi_nhanh } = req.query;
 
+  let filterBranch = chi_nhanh;
+  if (req.user.vai_tro !== 'admin' && req.user.vai_tro !== 'chu_phong_gym') {
+    const actor = db.prepare('SELECT chi_nhanh FROM ho_so WHERE tai_khoan_id = ? AND is_deleted = 0').get(req.user.id);
+    filterBranch = actor?.chi_nhanh || 'KHONG_CO_CHI_NHANH';
+  }
+
   let where = 'WHERE 1=1';
   const params = [];
 
-  if (chi_nhanh) {
+  if (filterBranch) {
     where += ' AND lt.chi_nhanh_tap = ?';
-    params.push(chi_nhanh);
+    params.push(filterBranch);
   }
 
   // Nếu là PT: chỉ xem lịch của mình

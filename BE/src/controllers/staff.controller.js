@@ -11,11 +11,22 @@ import bcrypt from 'bcryptjs';
 
 // ── GET /api/staff ────────────────────────────────────────
 export const getStaff = (req, res) => {
-  const { search, loai, page = 1, limit = 20 } = req.query;
+  const { search, loai, chi_nhanh, page = 1, limit = 20 } = req.query;
   const offset = (parseInt(page) - 1) * parseInt(limit);
+
+  let filterBranch = chi_nhanh;
+  if (req.user.vai_tro !== 'admin' && req.user.vai_tro !== 'chu_phong_gym') {
+    const actor = db.prepare('SELECT chi_nhanh FROM ho_so WHERE tai_khoan_id = ? AND is_deleted = 0').get(req.user.id);
+    filterBranch = actor?.chi_nhanh || 'KHONG_CO_CHI_NHANH';
+  }
 
   let where = `WHERE h.loai_ho_so IN ('le_tan', 'nhan_vien') AND h.is_deleted = 0`;
   const params = [];
+
+  if (filterBranch) {
+    where += ' AND h.chi_nhanh = ?';
+    params.push(filterBranch);
+  }
 
   if (loai && ['le_tan', 'nhan_vien'].includes(loai)) {
     where += ' AND h.loai_ho_so = ?'; params.push(loai);
