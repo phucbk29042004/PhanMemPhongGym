@@ -11,10 +11,10 @@ import { uploadAvatar } from '../middlewares/upload.js';
 const router = Router();
 router.use(verifyToken);
 
-router.get('/',            requireRole('admin', 'le_tan'), getTrainers);
-router.get('/:id',         requireRole('admin', 'le_tan'), getTrainerById);
-router.get('/:id/members',   requireRole('admin', 'le_tan'), getTrainerMembers);
-router.get('/:id/schedules', requireRole('admin', 'le_tan', 'pt'), getTrainerSchedules);
+router.get('/',            requireRole('admin', 'nhan_vien'), getTrainers);
+router.get('/:id',         requireRole('admin', 'nhan_vien'), getTrainerById);
+router.get('/:id/members',   requireRole('admin', 'nhan_vien'), getTrainerMembers);
+router.get('/:id/schedules', requireRole('admin', 'nhan_vien', 'pt'), getTrainerSchedules);
 router.post('/',           requireRole('admin'), uploadAvatar, createTrainer);
 router.put('/:id',         requireRole('admin'), updateTrainer);
 router.put('/:id/avatar',  requireRole('admin'), uploadAvatar, updateTrainerAvatar);

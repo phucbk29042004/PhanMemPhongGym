@@ -14,7 +14,7 @@ router.use(verifyToken);
 // Hội viên và PT lấy QR của mình
 router.get('/my-qr', requireRole('hoi_vien', 'pt'), getMyQr);
 
-// Lễ tân / admin quét QR
-router.post('/scan', requireRole('admin', 'le_tan'), scanQr);
+// Nhân viên / admin quét QR
+router.post('/scan', requireRole('admin', 'nhan_vien'), scanQr);
 
 export default router;

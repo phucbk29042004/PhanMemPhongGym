@@ -98,12 +98,12 @@ export default function AIAssistantBubble() {
           headerSubtitle: 'Dành riêng cho HLV',
         };
       case 'admin':
-      case 'le_tan':
+      case 'nhan_vien':
         return {
-          welcome: `Xin chào ${role === 'le_tan' ? 'Lễ tân' : 'Quản trị viên'} ${user?.name || ''}! Mình là Trợ lý Vận hành Paradise AI. Mình có thể giúp gì về nghiệp vụ duyệt gói tập, check-in hoặc thống kê doanh thu phòng gym hôm nay?`,
+          welcome: `Xin chào ${role === 'nhan_vien' ? 'Nhân viên' : 'Quản trị viên'} ${user?.name || ''}! Mình là Trợ lý Vận hành Paradise AI. Mình có thể giúp gì về nghiệp vụ duyệt gói tập, check-in hoặc thống kê doanh thu phòng gym hôm nay?`,
           placeholder: 'Hỏi về nghiệp vụ, check-in, doanh thu...',
           headerTitle: 'Trợ lý Vận hành AI',
-          headerSubtitle: 'Dành cho Quản lý & Lễ tân',
+          headerSubtitle: 'Dành cho Quản lý & Nhân viên',
         };
       case 'hoi_vien':
       default:

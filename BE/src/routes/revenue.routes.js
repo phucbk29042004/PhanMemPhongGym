@@ -4,7 +4,7 @@ import { verifyToken } from '../middlewares/auth.js';
 import { requireRole } from '../middlewares/role.js';
 
 const router = Router();
-router.use(verifyToken, requireRole('admin', 'le_tan'));
+router.use(verifyToken, requireRole('admin', 'nhan_vien'));
 
 router.get('/dashboard', getDashboard);   // GET /api/revenue/dashboard
 router.get('/today',     getRevenueToday); // GET /api/revenue/today

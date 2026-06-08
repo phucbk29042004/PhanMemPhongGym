@@ -31,7 +31,7 @@ export default function RootNavigator() {
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {token == null ? (
           <Stack.Screen name="Login" component={LoginScreen} />
-        ) : (role === 'admin' || role === 'le_tan') ? (
+        ) : (role === 'admin' || role === 'nhan_vien') ? (
           <Stack.Screen name="AdminApp" component={AdminNavigator} />
         ) : role === 'pt' ? (
           <Stack.Screen name="PTApp" component={PTNavigator} />

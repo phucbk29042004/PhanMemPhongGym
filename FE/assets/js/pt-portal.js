@@ -16,7 +16,7 @@
     } catch (_) { window.location.href = 'login.html'; return; }
 
     // Nếu không phải PT thì redirect về đúng portal
-    if (user.vai_tro === 'admin' || user.vai_tro === 'le_tan') {
+    if (user.vai_tro === 'admin' || user.vai_tro === 'nhan_vien') {
       window.location.href = 'index.html'; return;
     }
     if (user.vai_tro === 'hoi_vien') {

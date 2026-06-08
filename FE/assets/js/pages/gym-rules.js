@@ -28,7 +28,7 @@ window.GymApp.pages['gym-rules'] = {
       nhan_vien: { label: 'Nhân viên', class: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' }
     };
 
-    const isStaff = window.GymApp.auth.user?.vai_tro === 'admin' || window.GymApp.auth.user?.vai_tro === 'le_tan';
+    const isStaff = window.GymApp.auth.user?.vai_tro === 'admin' || window.GymApp.auth.user?.vai_tro === 'nhan_vien';
 
     return `
       <div class="flex flex-col gap-lg animate-fadeIn">
@@ -231,9 +231,9 @@ window.GymApp.pages['gym-rules'] = {
         `;
       }
 
-      // Nếu là admin hoặc le_tan (nhân viên), dùng /config/rules/all để xem tất cả kể cả quy tắc chưa kích hoạt.
+      // Nếu là admin hoặc nhan_vien, dùng /config/rules/all để xem tất cả kể cả quy tắc chưa kích hoạt.
       // Ngược lại (ví dụ PT), chỉ xem các quy tắc đang hoạt động qua /config/rules.
-      const isStaff = window.GymApp.auth.user?.vai_tro === 'admin' || window.GymApp.auth.user?.vai_tro === 'le_tan';
+      const isStaff = window.GymApp.auth.user?.vai_tro === 'admin' || window.GymApp.auth.user?.vai_tro === 'nhan_vien';
       const endpoint = isStaff ? '/config/rules/all' : '/config/rules';
       
       const res = await window.GymApp.api.get(endpoint);

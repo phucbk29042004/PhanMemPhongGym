@@ -16,11 +16,13 @@ const insertNotification = db.prepare(`
  * @param {string} noi_dung   - Nội dung chi tiết
  * @param {number|null} doi_tuong_id - ID đối tượng liên quan (ho_so_id, lich_tap_id, ...)
  * @param {string|null} doi_tuong   - Loại đối tượng ('ho_so', 'lich_tap', 'dang_ky_pt')
- * @param {string} danh_cho   - 'admin' | 'le_tan' | 'ca_hai'
+ * @param {string} danh_cho   - 'admin' | 'nhan_vien' | 'ca_hai'
  */
 export function createNotification(loai, tieu_de, noi_dung, doi_tuong_id = null, doi_tuong = null, danh_cho = 'ca_hai') {
   try {
-    insertNotification.run(loai, tieu_de, noi_dung, doi_tuong_id, doi_tuong, danh_cho);
+    let final_danh_cho = danh_cho;
+    if (final_danh_cho === 'le_tan') final_danh_cho = 'nhan_vien';
+    insertNotification.run(loai, tieu_de, noi_dung, doi_tuong_id, doi_tuong, final_danh_cho);
   } catch (err) {
     console.error(`[NOTIFICATION] Lỗi tạo thông báo loại "${loai}":`, err.message);
   }

@@ -51,6 +51,75 @@ try { db.exec(`ALTER TABLE ho_so ADD COLUMN can_nang_kg REAL;`); } catch (_) { }
 try { db.exec(`ALTER TABLE dang_ky_pt ADD COLUMN ngay_tao DATETIME DEFAULT (datetime('now','localtime'));`); } catch (_) { }
 try { db.exec(`ALTER TABLE dang_ky_goi_tap ADD COLUMN so_tien_da_thu REAL DEFAULT 0;`); } catch (_) { }
 
+// ── Migration: Chuyển đổi le_tan thành nhan_vien ───────────
+try {
+  db.transaction(() => {
+    const leTanRole = db.prepare('SELECT id FROM vai_tro WHERE ma_vai_tro = "le_tan"').get();
+    const nhanVienRole = db.prepare('SELECT id FROM vai_tro WHERE ma_vai_tro = "nhan_vien"').get();
+
+    if (leTanRole) {
+      if (!nhanVienRole) {
+        db.prepare(`
+          UPDATE vai_tro 
+          SET ma_vai_tro = "nhan_vien", 
+              ten_hien_thi = "Nhân viên", 
+              mo_ta = "Nhân viên phòng tập, tiếp nhận và đăng ký cho hội viên" 
+          WHERE ma_vai_tro = "le_tan"
+        `).run();
+        console.log('[DB Migration] Đã đổi tên vai trò le_tan thành nhan_vien.');
+      } else {
+        db.prepare('UPDATE tai_khoan SET vai_tro_id = ? WHERE vai_tro_id = ?').run(nhanVienRole.id, leTanRole.id);
+        db.prepare('DELETE FROM vai_tro WHERE id = ?').run(leTanRole.id);
+        console.log('[DB Migration] Đã gộp vai trò le_tan vào nhan_vien.');
+      }
+    }
+
+    db.prepare('UPDATE ho_so SET loai_ho_so = "nhan_vien" WHERE loai_ho_so = "le_tan"').run();
+    
+    // Kiểm tra xem bảng thong_bao có chứa check constraint le_tan không
+    const checkThongBao = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='thong_bao'").get();
+    if (checkThongBao && checkThongBao.sql && checkThongBao.sql.includes('le_tan')) {
+      db.exec(`ALTER TABLE thong_bao RENAME TO thong_bao_old_migration;`);
+      db.exec(`
+        CREATE TABLE thong_bao (
+          id            INTEGER PRIMARY KEY AUTOINCREMENT,
+          loai          TEXT NOT NULL CHECK (loai IN (
+                            'sap_het_han_goi_tap', 'het_han_goi_tap',
+                            'check_in', 'chua_check_in_truoc_buoi_pt',
+                            'cron_tu_xac_nhan', 'sap_het_buoi_pt',
+                            'ho_so_moi', 'gia_han_goi_tap',
+                            'dang_ky_goi_pt_moi', 'huy_buoi_tap',
+                            'hoan_tac_buoi_tap', 'tai_khoan_bi_khoa',
+                            'tai_khoan_moi', 'tom_tat_buoi_sang',
+                            'het_han_goi_pt_thang', 'cap_nhat_buoi_tap'
+                        )),
+          tieu_de       TEXT NOT NULL,
+          noi_dung      TEXT NOT NULL,
+          doi_tuong_id  INTEGER,
+          doi_tuong     TEXT,
+          danh_cho      TEXT NOT NULL CHECK (danh_cho IN ('admin','nhan_vien','ca_hai')),
+          da_doc        INTEGER NOT NULL DEFAULT 0 CHECK (da_doc IN (0,1)),
+          doc_boi_id    INTEGER REFERENCES tai_khoan(id),
+          ngay_doc      DATETIME,
+          ngay_tao      DATETIME NOT NULL DEFAULT (datetime('now','localtime'))
+        );
+      `);
+      db.exec(`
+        INSERT INTO thong_bao (id, loai, tieu_de, noi_dung, doi_tuong_id, doi_tuong, danh_cho, da_doc, doc_boi_id, ngay_doc, ngay_tao)
+        SELECT id, loai, tieu_de, noi_dung, doi_tuong_id, doi_tuong, 
+               CASE WHEN danh_cho = "le_tan" THEN "nhan_vien" ELSE danh_cho END,
+               da_doc, doc_boi_id, ngay_doc, ngay_tao
+        FROM thong_bao_old_migration;
+      `);
+      db.exec(`DROP TABLE thong_bao_old_migration;`);
+      console.log('[DB Migration] Đã tái tạo bảng thong_bao với check constraint nhan_vien.');
+    }
+  })();
+} catch (e) {
+  console.error('[DB Migration] Lỗi chuyển vai trò le_tan sang nhan_vien:', e.message);
+}
+
+
 // ── Migration tự động khi khởi động ───────────────────────
 try {
   db.exec(`ALTER TABLE lich_tap ADD COLUMN da_checkin INTEGER NOT NULL DEFAULT 0 CHECK (da_checkin IN (0,1));`);
@@ -126,7 +195,7 @@ if (!migrated) {
         noi_dung      TEXT NOT NULL,
         doi_tuong_id  INTEGER,
         doi_tuong     TEXT,
-        danh_cho      TEXT NOT NULL CHECK (danh_cho IN ('admin','le_tan','ca_hai')),
+        danh_cho      TEXT NOT NULL CHECK (danh_cho IN ('admin','nhan_vien','ca_hai')),
         da_doc        INTEGER NOT NULL DEFAULT 0 CHECK (da_doc IN (0,1)),
         doc_boi_id    INTEGER REFERENCES tai_khoan(id),
         ngay_doc      DATETIME,
@@ -233,7 +302,7 @@ if (!migratedV4) {
         noi_dung      TEXT NOT NULL,
         doi_tuong_id  INTEGER,
         doi_tuong     TEXT,
-        danh_cho      TEXT NOT NULL CHECK (danh_cho IN ('admin','le_tan','ca_hai')),
+        danh_cho      TEXT NOT NULL CHECK (danh_cho IN ('admin','nhan_vien','ca_hai')),
         da_doc        INTEGER NOT NULL DEFAULT 0 CHECK (da_doc IN (0,1)),
         doc_boi_id    INTEGER REFERENCES tai_khoan(id),
         ngay_doc      DATETIME,

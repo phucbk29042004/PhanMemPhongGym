@@ -9,6 +9,8 @@ import db from '../config/db.js';
 import { success, error } from '../utils/response.js';
 import { ghi_audit_log } from '../utils/audit.js';
 import { createNotification } from '../utils/notifications.js';
+import { getActorBranch } from '../utils/branch.js';
+
 
 // ── GET /api/checkin/my-qr ────────────────────────────────
 // Chỉ hội viên hoặc PT đã đăng nhập mới gọi được (verifyToken đã chạy)
@@ -138,16 +140,18 @@ export const scanQr = (req, res) => {
   }
 
   // Xác định chi nhánh thực hiện check-in
+  const actorBranch = getActorBranch(req.user);
   let branch = chi_nhanh;
-  if (!branch) {
-    const actor = db.prepare('SELECT chi_nhanh FROM ho_so WHERE tai_khoan_id = ?').get(req.user.id);
-    if (actor && actor.chi_nhanh) {
-      branch = actor.chi_nhanh;
-    } else {
-      const member = db.prepare('SELECT chi_nhanh FROM ho_so WHERE id = ?').get(ho_so_id);
-      branch = member ? member.chi_nhanh : null;
+  if (actorBranch) {
+    if (chi_nhanh && chi_nhanh !== actorBranch) {
+      return error(res, `Bạn chỉ có thể quét QR check-in tại chi nhánh của mình (${actorBranch}).`, 403);
     }
+    branch = actorBranch;
+  } else if (!branch) {
+    const member = db.prepare('SELECT chi_nhanh FROM ho_so WHERE id = ?').get(ho_so_id);
+    branch = member ? member.chi_nhanh : null;
   }
+
 
   // Ghi nhận check-in / check-out
   const result = db.prepare(`
