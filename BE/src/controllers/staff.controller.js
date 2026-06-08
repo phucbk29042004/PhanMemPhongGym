@@ -11,7 +11,7 @@ import bcrypt from 'bcryptjs';
 
 // ── GET /api/staff ────────────────────────────────────────
 export const getStaff = (req, res) => {
-  const { search, loai, chi_nhanh, page = 1, limit = 20 } = req.query;
+  const { search, loai, chi_nhanh, gioi_tinh, trang_thai, page = 1, limit = 20 } = req.query;
   const offset = (parseInt(page) - 1) * parseInt(limit);
 
   let filterBranch = chi_nhanh;
@@ -32,6 +32,17 @@ export const getStaff = (req, res) => {
     where += ' AND h.loai_ho_so = ?';
     params.push(loai);
   }
+  if (gioi_tinh) {
+    where += ' AND h.gioi_tinh = ?';
+    params.push(gioi_tinh);
+  }
+  if (trang_thai) {
+    if (trang_thai === 'khoa') {
+      where += " AND tk.trang_thai = 'khoa'";
+    } else if (trang_thai === 'hoat_dong') {
+      where += " AND (tk.trang_thai IS NULL OR tk.trang_thai = 'hoat_dong')";
+    }
+  }
   if (search) {
     where += ` AND (h.ho_ten LIKE ? OR h.ma_ho_so LIKE ? OR h.so_dien_thoai LIKE ?)`;
     const s = `%${search}%`;
@@ -50,7 +61,7 @@ export const getStaff = (req, res) => {
     LIMIT ? OFFSET ?
   `).all(...params, parseInt(limit), offset);
 
-  const total = db.prepare(`SELECT COUNT(*) AS cnt FROM ho_so h ${where}`).get(...params).cnt;
+  const total = db.prepare(`SELECT COUNT(*) AS cnt FROM ho_so h LEFT JOIN tai_khoan tk ON tk.id = h.tai_khoan_id ${where}`).get(...params).cnt;
 
   return success(res, {
     data: rows,
@@ -167,6 +178,7 @@ export const updateStaff = async (req, res) => {
   const {
     ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email,
     dia_chi_tam_tru, chuc_vu, chi_nhanh, ghi_chu, trang_thai,
+    ten_dang_nhap, mat_khau,
   } = req.body;
 
   // Normalize gioi_tinh về chữ thường để khớp CHECK constraint DB
@@ -190,6 +202,29 @@ export const updateStaff = async (req, res) => {
     }
   }
 
+  // Xử lý tạo hoặc đổi tài khoản/mật khẩu
+  let updated_tai_khoan_id = old.tai_khoan_id;
+  try {
+    if (ten_dang_nhap && mat_khau && !old.tai_khoan_id) {
+      const exists = db.prepare('SELECT id FROM tai_khoan WHERE ten_dang_nhap = ?').get(ten_dang_nhap);
+      if (exists) return error(res, 'Tên đăng nhập đã tồn tại.', 409);
+
+      const vaiTro = db.prepare("SELECT id FROM vai_tro WHERE ma_vai_tro = ?").get(
+        old.loai_ho_so === 'le_tan' ? 'le_tan' : 'nhan_vien'
+      );
+      const hash = await bcrypt.hash(mat_khau, 12);
+      const tkResult = db.prepare(`
+        INSERT INTO tai_khoan (ten_dang_nhap, mat_khau_hash, vai_tro_id) VALUES (?, ?, ?)
+      `).run(ten_dang_nhap, hash, vaiTro?.id || null);
+      updated_tai_khoan_id = tkResult.lastInsertRowid;
+    } else if (mat_khau && old.tai_khoan_id) {
+      const hash = await bcrypt.hash(mat_khau, 12);
+      db.prepare(`UPDATE tai_khoan SET mat_khau_hash = ? WHERE id = ?`).run(hash, old.tai_khoan_id);
+    }
+  } catch (err) {
+    return error(res, `Lỗi xử lý tài khoản: ${err.message}`, 500);
+  }
+
   const tx = db.transaction(() => {
     db.prepare(`
       UPDATE ho_so SET
@@ -204,6 +239,7 @@ export const updateStaff = async (req, res) => {
         ghi_chu              = COALESCE(?, ghi_chu),
         avatar_url           = ?,
         cloudinary_public_id = ?,
+        tai_khoan_id         = COALESCE(?, tai_khoan_id),
         nguoi_cap_nhat_id    = ?
       WHERE id = ?
     `).run(
@@ -218,17 +254,18 @@ export const updateStaff = async (req, res) => {
       ghi_chu || null,
       avatar_url,
       cloudinary_public_id,
+      updated_tai_khoan_id,
       req.user.id,
       id,
     );
 
-    if (trang_thai && old.tai_khoan_id) {
+    if (trang_thai && updated_tai_khoan_id) {
       const tk_status = (
         trang_thai === 'hoat_dong' ||
         trang_thai === 'active' ||
         trang_thai === 'kich_hoat'
       ) ? 'hoat_dong' : 'khoa';
-      db.prepare(`UPDATE tai_khoan SET trang_thai = ? WHERE id = ?`).run(tk_status, old.tai_khoan_id);
+      db.prepare(`UPDATE tai_khoan SET trang_thai = ? WHERE id = ?`).run(tk_status, updated_tai_khoan_id);
     }
   });
 

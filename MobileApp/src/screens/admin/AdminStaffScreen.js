@@ -96,10 +96,17 @@ const card = StyleSheet.create({
   }
 });
 
-const FILTERS = [
-  { key: 'all', label: 'Tất cả' },
-  { key: 'le_tan', label: 'Lễ tân' },
-  { key: 'nhan_vien', label: 'Nhân viên' },
+const GENDER_FILTERS = [
+  { key: 'all', label: 'Tất cả giới tính' },
+  { key: 'Nam', label: 'Nam' },
+  { key: 'Nu', label: 'Nữ' },
+  { key: 'Khac', label: 'Khác' },
+];
+
+const STATUS_FILTERS = [
+  { key: 'all', label: 'Tất cả trạng thái' },
+  { key: 'hoat_dong', label: 'Hoạt động' },
+  { key: 'khoa', label: 'Bị khóa' },
 ];
 
 export default function AdminStaffScreen({ navigation }) {
@@ -109,11 +116,14 @@ export default function AdminStaffScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const [staffList, setStaffList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState('all');
+  const [genderFilter, setGenderFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(1);
-  const itemsPerPage = 10;
+  const LIMIT = 20;
 
   const fetchBranches = useCallback(async () => {
     try {
@@ -126,36 +136,64 @@ export default function AdminStaffScreen({ navigation }) {
     }
   }, []);
 
-  const fetchStaff = useCallback(async () => {
+  const fetchStaff = useCallback(async (pageNum = 1, isRefresh = false) => {
+    if (pageNum === 1) {
+      if (isRefresh) setRefreshing(true);
+      else setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
+
     try {
-      const q = selectedBranch ? `&chi_nhanh=${encodeURIComponent(selectedBranch)}` : '';
-      const res = await api.get(`/staff?limit=200${q}`);
+      let url = `/staff?page=${pageNum}&limit=${LIMIT}`;
+      if (selectedBranch) url += `&chi_nhanh=${encodeURIComponent(selectedBranch)}`;
+      if (genderFilter !== 'all') url += `&gioi_tinh=${genderFilter}`;
+      if (statusFilter !== 'all') url += `&trang_thai=${statusFilter}`;
+      if (search.trim()) url += `&search=${encodeURIComponent(search.trim())}`;
+
+      const res = await api.get(url);
       if (res.data?.success) {
         const payload = res.data.data;
-        setStaffList(Array.isArray(payload) ? payload : (payload?.data || payload?.staff || []));
+        const newItems = Array.isArray(payload) ? payload : (payload?.data || []);
+        const pagination = res.data.data?.pagination || payload?.pagination;
+        const totalPages = pagination?.totalPages || 1;
+
+        setStaffList(prev => pageNum === 1 ? newItems : [...prev, ...newItems]);
+        setHasMore(pageNum < totalPages);
+        setPage(pageNum);
       }
     } catch (err) {
       console.error('[AdminStaff] fetch error:', err?.message);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
       setRefreshing(false);
     }
-  }, [selectedBranch]);
+  }, [selectedBranch, genderFilter, statusFilter, search]);
 
   useFocusEffect(useCallback(() => {
     fetchBranches();
-    fetchStaff();
+    fetchStaff(1);
   }, [fetchBranches, fetchStaff]));
 
   const onRefresh = () => {
-    setRefreshing(true);
+    setHasMore(true);
     fetchBranches();
-    fetchStaff();
+    fetchStaff(1, true);
   };
 
+  // Reset toàn bộ khi search, filter, hoặc chi nhánh thay đổi
   useEffect(() => {
-    setPage(1);
-  }, [search, filter]);
+    setStaffList([]);
+    setHasMore(true);
+    fetchStaff(1);
+  }, [search, genderFilter, statusFilter, selectedBranch]);
+
+  const handleLoadMore = () => {
+    if (!loadingMore && hasMore) {
+      fetchStaff(page + 1);
+    }
+  };
 
   const handleToggleLock = (staff) => {
     const isLocked = staff.tk_trang_thai === 'khoa';
@@ -187,19 +225,6 @@ export default function AdminStaffScreen({ navigation }) {
     );
   };
 
-  const filtered = staffList.filter(s => {
-    const q = search.toLowerCase().trim();
-    if (q && !s.ho_ten?.toLowerCase().includes(q) && !s.so_dien_thoai?.includes(q) && !s.ma_ho_so?.toLowerCase().includes(q)) return false;
-
-    if (filter === 'all') return true;
-    if (filter === 'le_tan') return s.loai_ho_so === 'le_tan';
-    if (filter === 'nhan_vien') return s.loai_ho_so === 'nhan_vien';
-    return true;
-  });
-
-  const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
-  const paginatedData = filtered.slice((page - 1) * itemsPerPage, page * itemsPerPage);
-
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={colors.statusBar} backgroundColor={colors.statusBarBg} />
@@ -208,13 +233,12 @@ export default function AdminStaffScreen({ navigation }) {
       <View style={[styles.header, { backgroundColor: colors.primaryDark, paddingTop: insets.top + 16 }]}>
         <View>
           <Text style={styles.headerTitle}>Nhân viên</Text>
-          <Text style={styles.headerSub}>{staffList.length} tổng · {filtered.length} hiển thị</Text>
+          <Text style={styles.headerSub}>{staffList.length} nhân viên</Text>
         </View>
         <View style={styles.headerActions}>
           <TouchableOpacity 
             style={[styles.addBtn, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
             onPress={() => {
-              // Điều hướng sang thêm mới hội viên nhưng chỉ định vai trò mặc định
               navigation.navigate('AdminAddEditMember', { defaultRole: 'le_tan' });
             }}
           >
@@ -282,18 +306,34 @@ export default function AdminStaffScreen({ navigation }) {
 
       {/* Filter chips */}
       <View style={styles.filterRow}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {FILTERS.map(f => (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 4, alignItems: 'center' }}>
+          {/* Gender Filters */}
+          {GENDER_FILTERS.map(f => (
             <TouchableOpacity
-              key={f.key}
+              key={'gender-' + f.key}
               style={[
                 styles.chip, 
-                { backgroundColor: filter === f.key ? colors.primary : colors.surface, borderColor: filter === f.key ? colors.primary : colors.border }
+                { backgroundColor: genderFilter === f.key ? colors.primary : colors.surface, borderColor: genderFilter === f.key ? colors.primary : colors.border }
               ]}
-              onPress={() => setFilter(f.key)}
+              onPress={() => setGenderFilter(f.key)}
               activeOpacity={0.7}
             >
-              <Text style={{ fontSize: 12, fontWeight: '600', color: filter === f.key ? '#ffffff' : colors.textSecondary }}>{f.label}</Text>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: genderFilter === f.key ? '#ffffff' : colors.textSecondary }}>{f.label}</Text>
+            </TouchableOpacity>
+          ))}
+          <View style={{ width: 1, height: 16, backgroundColor: colors.border, marginHorizontal: 8 }} />
+          {/* Status Filters */}
+          {STATUS_FILTERS.map(f => (
+            <TouchableOpacity
+              key={'status-' + f.key}
+              style={[
+                styles.chip, 
+                { backgroundColor: statusFilter === f.key ? colors.primary : colors.surface, borderColor: statusFilter === f.key ? colors.primary : colors.border }
+              ]}
+              onPress={() => setStatusFilter(f.key)}
+              activeOpacity={0.7}
+            >
+              <Text style={{ fontSize: 12, fontWeight: '600', color: statusFilter === f.key ? '#ffffff' : colors.textSecondary }}>{f.label}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -305,50 +345,39 @@ export default function AdminStaffScreen({ navigation }) {
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
-        <View style={{ flex: 1 }}>
-          <FlatList
-            data={paginatedData}
-            keyExtractor={item => String(item.id)}
-            renderItem={({ item }) => (
-              <StaffCard 
-                item={item} 
-                colors={colors}
-                onToggleLock={handleToggleLock}
-              />
-            )}
-            contentContainerStyle={styles.listContent}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
-            ListEmptyComponent={
-              <View style={styles.emptyBox}>
-                <User color={colors.textMuted} size={48} strokeWidth={1} />
-                <Text style={[styles.emptyText, { color: colors.textMuted }]}>Không tìm thấy nhân viên</Text>
-              </View>
-            }
-            showsVerticalScrollIndicator={false}
-          />
-          {/* Pagination Controls */}
-          {totalPages > 1 && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface }}>
-              <TouchableOpacity
-                disabled={page === 1}
-                onPress={() => setPage(p => Math.max(1, p - 1))}
-                style={{ paddingHorizontal: 16, paddingVertical: 8, opacity: page === 1 ? 0.4 : 1 }}
-              >
-                <Text style={{ color: colors.primary, fontWeight: '700' }}>Trước</Text>
-              </TouchableOpacity>
-              <Text style={{ color: colors.text, marginHorizontal: 16, fontWeight: '600' }}>
-                Trang {page} / {totalPages}
-              </Text>
-              <TouchableOpacity
-                disabled={page === totalPages}
-                onPress={() => setPage(p => Math.min(totalPages, p + 1))}
-                style={{ paddingHorizontal: 16, paddingVertical: 8, opacity: page === totalPages ? 0.4 : 1 }}
-              >
-                <Text style={{ color: colors.primary, fontWeight: '700' }}>Sau</Text>
-              </TouchableOpacity>
-            </View>
+        <FlatList
+          data={staffList}
+          keyExtractor={item => String(item.id)}
+          renderItem={({ item }) => (
+            <StaffCard
+              item={item}
+              colors={colors}
+              onToggleLock={handleToggleLock}
+            />
           )}
-        </View>
+          contentContainerStyle={styles.listContent}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
+          ListEmptyComponent={
+            <View style={styles.emptyBox}>
+              <User color={colors.textMuted} size={48} strokeWidth={1} />
+              <Text style={[styles.emptyText, { color: colors.textMuted }]}>Không tìm thấy nhân viên</Text>
+            </View>
+          }
+          ListFooterComponent={
+            loadingMore ? (
+              <View style={{ paddingVertical: 16, alignItems: 'center' }}>
+                <ActivityIndicator size="small" color={colors.primary} />
+              </View>
+            ) : null
+          }
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.3}
+          showsVerticalScrollIndicator={false}
+          removeClippedSubviews={true}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+        />
       )}
     </View>
   );

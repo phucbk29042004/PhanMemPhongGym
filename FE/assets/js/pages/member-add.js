@@ -840,6 +840,7 @@ window.GymApp.pages['member-add'] = {
           self._currentMemberId = res.data.id;
           self._currentMemberName = res.data.ho_ten;
 
+<<<<<<< HEAD
           if (accountData) {
             // Gọi API kích hoạt tài khoản đăng nhập
             window.GymApp.fetchAPI('/api/members/' + res.data.id + '/create-account', {
@@ -873,6 +874,208 @@ window.GymApp.pages['member-add'] = {
                 window.GymApp.navigate('members-list');
               }
             });
+=======
+    const today = new Date().toISOString().split('T')[0];
+    if (pkgFrom) pkgFrom.value = today;
+    if (document.getElementById('pkg-pay-date')) document.getElementById('pkg-pay-date').value = today;
+
+    // 4. Loại hồ sơ & Trường đặc thù
+    typeSelect?.addEventListener('change', () => {
+      const type = typeSelect.value;
+      extraFields.classList.remove('hidden');
+      if (type === 'pt') {
+        // Chuyên môn PT: input + datalist
+        extraFields.innerHTML = `
+            <div>
+            <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">Chuyên môn PT <span style="color:#ba1a1a;">*</span></label>
+            <input id="reg-chuyen-mon" type="text" list="dl-chuyen-mon" placeholder="VD: Gym, Yoga, Boxing..."
+              class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-3 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all" />
+          </div>
+          <div>
+            <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">Kinh nghiệm (năm)</label>
+            <input id="reg-kinh-nghiem" type="number" min="0" max="50" placeholder="VD: 3"
+              class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-3 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all" />
+          </div>`;
+      } else if (type === 'nhan_vien') {
+            extraFields.innerHTML = `
+          <div>
+            <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">Chức vụ <span style="color:#ba1a1a;">*</span></label>
+            <input id="reg-chuc-vu" type="text" placeholder="VD: Lễ tân, Quản lý..."
+              class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-3 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all" />
+          </div>`;
+      } else if (type === 'hoi_vien') {
+        extraFields.innerHTML = `
+          <div>
+            <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">Hạng hội viên</label>
+            <select id="reg-loai-hv" class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-3 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all cursor-pointer">
+              <option value="Normal">Thường</option>
+              <option value="VIP">VIP</option>
+              <option value="Student">Sinh viên</option>
+            </select>
+          </div>`;
+      } else {
+        extraFields.classList.add('hidden');
+      }
+      const prefixes = { 'hoi_vien': 'HV', 'pt': 'PT', 'nhan_vien': 'NV' };
+      const prefix = prefixes[type] || 'HS';
+      document.getElementById('reg-ma-ho-so').value = `${prefix}-${String(Date.now()).slice(-4)}`;
+    });
+
+    // 5. Avatar Upload — lưu file vào _avatarFile để gửi cùng FormData
+    self._avatarFile = null;
+    const avatarInput = document.getElementById('avatar-input-reg');
+    const avatarPreview = document.getElementById('avatar-preview-reg');
+    const avatarPlaceholder = document.getElementById('avatar-placeholder-reg');
+    const avatarBtn = document.getElementById('avatar-btn-reg');
+    const avatarArea = document.getElementById('avatar-area-reg');
+
+    const openFilePicker = () => avatarInput.click();
+    avatarBtn?.addEventListener('click', openFilePicker);
+    avatarArea?.addEventListener('click', openFilePicker);
+
+    avatarInput?.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        window.GymApp.toast('Ảnh quá lớn — tối đa 5MB', 'error');
+        avatarInput.value = '';
+        return;
+      }
+      self._avatarFile = file;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        avatarPreview.src = ev.target.result;
+        avatarPreview.classList.remove('hidden');
+        avatarPlaceholder.classList.add('hidden');
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // 5b. Toggle form tạo tài khoản + tự fill SĐT
+    const chkAccount = document.getElementById('chk-create-account');
+    const accountFields = document.getElementById('account-fields');
+    chkAccount?.addEventListener('change', () => {
+      if (chkAccount.checked) {
+        accountFields.classList.remove('hidden');
+        const sdt = document.getElementById('reg-so-dien-thoai').value.trim();
+        if (sdt) document.getElementById('reg-ten-dang-nhap').value = sdt;
+      } else {
+        accountFields.classList.add('hidden');
+      }
+    });
+    document.getElementById('reg-so-dien-thoai')?.addEventListener('blur', () => {
+      if (!chkAccount?.checked) return;
+      const sdt = document.getElementById('reg-so-dien-thoai').value.trim();
+      const usernameInput = document.getElementById('reg-ten-dang-nhap');
+      if (sdt && usernameInput) usernameInput.value = sdt;
+    });
+
+    // Xóa lỗi khi người dùng bắt đầu nhập lại
+    document.getElementById('reg-so-dien-thoai')?.addEventListener('input', () => self._setFieldError('err-sdt', ''));
+    document.getElementById('reg-email')?.addEventListener('input', () => self._setFieldError('err-email', ''));
+    document.getElementById('reg-cccd')?.addEventListener('input', () => self._setFieldError('err-cccd', ''));
+
+    // 6. Lưu hồ sơ — gửi FormData để upload ảnh cùng lúc
+    document.getElementById('btn-save-member')?.addEventListener('click', async () => {
+      const btn = document.getElementById('btn-save-member');
+      const tinhThanh = document.getElementById('reg-tinh-thanh');
+      const quanHuyen = document.getElementById('reg-quan-huyen');
+      const phuongXa = document.getElementById('reg-phuong-xa');
+
+      const ho_ten = document.getElementById('reg-ho-ten').value.trim();
+      const loai_ho_so = typeSelect.value;
+      const sdt = document.getElementById('reg-so-dien-thoai').value.trim();
+      const chi_nhanh = document.getElementById('reg-chi-nhanh')?.value?.trim();
+
+      if (!ho_ten || !loai_ho_so || !sdt) {
+        return window.GymApp.toast('Vui lòng điền đủ các trường bắt buộc (*)', 'error');
+      }
+
+      if (['hoi_vien', 'pt', 'nhan_vien'].includes(loai_ho_so) && !chi_nhanh) {
+        return window.GymApp.toast('Vui lòng chọn chi nhánh!', 'error');
+      }
+
+      // Validate format trước
+      if (!self._validateFormat()) return;
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="animate-spin material-symbols-outlined text-sm">sync</span> Đang kiểm tra...';
+
+      // Validate trùng với DB
+      const noDuplicate = await self._validateDuplicate();
+      if (!noDuplicate) {
+        btn.disabled = false;
+        btn.innerHTML = '<span class="material-symbols-outlined text-sm">save</span> Lưu hồ sơ';
+        return;
+      }
+
+      btn.innerHTML = '<span class="animate-spin material-symbols-outlined text-sm">sync</span> Đang lưu...';
+
+      try {
+        // Dùng FormData để gửi ảnh cùng với dữ liệu hồ sơ
+        const fd = new FormData();
+        fd.append('ho_ten', ho_ten);
+        fd.append('loai_ho_so', loai_ho_so);
+        fd.append('so_dien_thoai', sdt);
+
+        const fields = {
+          ngay_sinh: 'reg-ngay-sinh', gioi_tinh: 'reg-gioi-tinh',
+          email: 'reg-email', cccd: 'reg-cccd', noi_sinh: 'reg-noi-sinh',
+          que_quan: 'reg-que-quan', chi_nhanh: 'reg-chi-nhanh',
+          dia_chi_tam_tru: 'reg-dia-chi',
+          chuyen_mon: 'reg-chuyen-mon', chuc_vu: 'reg-chuc-vu',
+          loai_hv: 'reg-loai-hv',
+          kinh_nghiem: 'reg-kinh-nghiem',
+        };
+        for (const [key, id] of Object.entries(fields)) {
+          const val = document.getElementById(id)?.value?.trim();
+          if (val) fd.append(key, val);
+        }
+
+        // Địa chỉ: lấy text của option được chọn
+        if (tinhThanh.selectedIndex > 0) fd.append('tinh_thanh', tinhThanh.options[tinhThanh.selectedIndex].text);
+        if (quanHuyen.selectedIndex > 0) fd.append('quan_huyen', quanHuyen.options[quanHuyen.selectedIndex].text);
+        const pxVal = phuongXa.value?.trim();
+        if (pxVal) fd.append('phuong_xa', pxVal);
+
+        // Đính kèm ảnh nếu có
+        if (self._avatarFile) fd.append('avatar', self._avatarFile);
+
+        // Gửi FormData — KHÔNG set Content-Type (browser tự set multipart/form-data)
+        const token = localStorage.getItem('gym-token');
+        const fetchRes = await fetch('http://localhost:3000/api/members', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: fd,
+        });
+        const res = await fetchRes.json();
+        if (!res.success) {
+          window.GymApp.toast(res.message || 'Lỗi khi lưu hồ sơ', 'error');
+          return;
+        }
+
+        const newId = res.data?.id;
+        self._currentMemberId = newId;
+        self._currentMemberName = ho_ten;
+
+        // Hiển thị thông tin hội viên ở tab gói tập
+        const infoBox = document.getElementById('selected-member-info');
+        const nameDisplay = document.getElementById('selected-member-name-display');
+        const avatarText = document.getElementById('selected-member-avatar-text');
+        if (infoBox && nameDisplay) {
+          infoBox.classList.remove('hidden');
+          nameDisplay.textContent = ho_ten;
+          avatarText.textContent = ho_ten.charAt(0).toUpperCase();
+        }
+
+        // Tạo tài khoản nếu checkbox được tick
+        const wantAccount = document.getElementById('chk-create-account')?.checked;
+        if (wantAccount && newId) {
+          const username = document.getElementById('reg-ten-dang-nhap')?.value.trim();
+          const password = document.getElementById('reg-mat-khau')?.value;
+          if (!username || !password) {
+            window.GymApp.toast('Hồ sơ đã lưu nhưng thiếu tên đăng nhập/mật khẩu — chưa tạo tài khoản.', 'info');
+>>>>>>> main
           } else {
             // Nếu không chọn kích hoạt tài khoản thì chuyển tiếp luôn
             if (loaiHoSo === 'hoi_vien') {

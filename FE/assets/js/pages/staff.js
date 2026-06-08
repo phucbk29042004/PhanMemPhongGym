@@ -4,9 +4,13 @@ window.GymApp.pages['staff'] = {
   _total: 0,
   _totalPages: 1,
   _search: '',
-  _loai: '',
   _chi_nhanh: '',
+  _gioi_tinh: '',
+  _trang_thai: '',
   _staffFiltered: [],
+  _hasMore: true,
+  _isLoading: false,
+  _observer: null,
 
   // Helper: tạo avatar fallback bằng chữ cái đầu (không dùng file local)
   _avatarHtml: function (avatarUrl, hoTen, size) {
@@ -33,8 +37,7 @@ window.GymApp.pages['staff'] = {
     return `
       <div class="flex flex-col gap-standard animate-in fade-in duration-500">
         <!-- Top Header -->
-        <div class="flex flex-wrap items-center justify-between gap-standard">
-          <h1 class="text-title-lg font-bold text-on-surface">Quản lý Nhân viên & Lễ tân</h1>
+        <div class="flex flex-wrap items-center justify-end gap-standard">
           <div class="flex items-center gap-compact">
             <button id="btn-add-staff" class="flex items-center justify-center gap-xs px-4 py-atom rounded-xl bg-brand-primary text-white hover:bg-brand-primary/90 hover:shadow-lg transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer group">
               <span class="material-symbols-outlined text-base transition-transform group-hover:scale-110">person_add</span>
@@ -57,11 +60,22 @@ window.GymApp.pages['staff'] = {
 
           <!-- Filter Actions -->
           <div class="flex flex-wrap items-center gap-compact">
+            <!-- Filter Giới tính -->
+            <div class="relative w-[140px]">
+              <select id="staff-gender-filter" class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-3 py-2 rounded-xl focus:border-brand-primary outline-none text-body-sm font-bold transition-all">
+                <option value="">Tất cả giới tính</option>
+                <option value="Nam" ${self._gioi_tinh === 'Nam' ? 'selected' : ''}>Nam</option>
+                <option value="Nu" ${self._gioi_tinh === 'Nu' ? 'selected' : ''}>Nữ</option>
+                <option value="Khac" ${self._gioi_tinh === 'Khac' ? 'selected' : ''}>Khác</option>
+              </select>
+            </div>
+
+            <!-- Filter Trạng thái tài khoản -->
             <div class="relative w-[160px]">
-              <select id="staff-role-filter" class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-3 py-2.5 rounded-xl focus:border-brand-primary outline-none text-body-sm font-bold transition-all">
-                <option value="">Tất cả vai trò</option>
-                <option value="le_tan" ${self._loai === 'le_tan' ? 'selected' : ''}>Lễ tân</option>
-                <option value="nhan_vien" ${self._loai === 'nhan_vien' ? 'selected' : ''}>Nhân viên</option>
+              <select id="staff-status-filter" class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-3 py-2 rounded-xl focus:border-brand-primary outline-none text-body-sm font-bold transition-all">
+                <option value="">Tất cả trạng thái</option>
+                <option value="hoat_dong" ${self._trang_thai === 'hoat_dong' ? 'selected' : ''}>Hoạt động</option>
+                <option value="khoa" ${self._trang_thai === 'khoa' ? 'selected' : ''}>Bị khóa</option>
               </select>
             </div>
 
@@ -93,15 +107,18 @@ window.GymApp.pages['staff'] = {
       clearTimeout(searchTimeout);
       searchTimeout = setTimeout(() => {
         self._search = this.value.trim();
-        self._page = 1;
-        self._loadData();
+        self._resetAndReload();
       }, 400);
     });
 
-    document.getElementById('staff-role-filter')?.addEventListener('change', function () {
-      self._loai = this.value;
-      self._page = 1;
-      self._loadData();
+    document.getElementById('staff-gender-filter')?.addEventListener('change', function () {
+      self._gioi_tinh = this.value;
+      self._resetAndReload();
+    });
+
+    document.getElementById('staff-status-filter')?.addEventListener('change', function () {
+      self._trang_thai = this.value;
+      self._resetAndReload();
     });
 
     const branchFilter = document.getElementById('staff-branch-filter');
@@ -109,13 +126,12 @@ window.GymApp.pages['staff'] = {
       self._fillBranchOptions(branchFilter);
       branchFilter.addEventListener('change', function () {
         self._chi_nhanh = this.value;
-        self._page = 1;
-        self._loadData();
+        self._resetAndReload();
       });
     }
 
     document.getElementById('btn-staff-reload')?.addEventListener('click', () => {
-      self._loadData();
+      self._resetAndReload();
     });
 
     document.getElementById('btn-add-staff')?.addEventListener('click', () => {
@@ -129,6 +145,23 @@ window.GymApp.pages['staff'] = {
       }, 100);
     });
 
+    self._loadData();
+  },
+
+  // Reset toàn bộ state khi search/filter thay đổi rồi tải lại từ đầu
+  _resetAndReload: function () {
+    const self = this;
+    self._page = 1;
+    self._hasMore = true;
+    self._isLoading = false;
+    self._staffFiltered = [];
+    // Xóa sạch tbody và card list trước khi vẽ lại
+    const tbody = document.querySelector('#staff-scroll-container tbody');
+    if (tbody) tbody.innerHTML = '';
+    const mobileList = document.getElementById('staff-scroll-mobile-container');
+    if (mobileList) mobileList.innerHTML = '';
+    // Hủy observer cũ để thiết lập lại sau khi render
+    if (self._observer) { self._observer.disconnect(); self._observer = null; }
     self._loadData();
   },
 
@@ -148,31 +181,206 @@ window.GymApp.pages['staff'] = {
 
   _loadData: async function () {
     const self = this;
+    // Chặn tải trùng lặp và tải khi đã hết data
+    if (self._isLoading || !self._hasMore) return;
+    self._isLoading = true;
+    self._showSpinner(true);
+
     let url = `/staff?page=${self._page}&limit=${self._limit}`;
     if (self._search) url += `&search=${encodeURIComponent(self._search)}`;
-    if (self._loai) url += `&loai=${self._loai}`;
     if (self._chi_nhanh) url += `&chi_nhanh=${encodeURIComponent(self._chi_nhanh)}`;
+    if (self._gioi_tinh) url += `&gioi_tinh=${self._gioi_tinh}`;
+    if (self._trang_thai) url += `&trang_thai=${self._trang_thai}`;
 
     try {
       const res = await window.GymApp.api.get(url);
       if (!res.success) throw new Error(res.message);
 
-      self._staffFiltered = res.data.data || [];
+      const newItems = res.data.data || [];
       self._total = res.data.pagination?.total || 0;
       self._totalPages = res.data.pagination?.totalPages || 1;
+      self._hasMore = self._page < self._totalPages;
 
-      const container = document.getElementById('staff-table-container');
-      if (container) {
-        container.innerHTML = self._renderStaffTable();
-        self._bindRowEvents();
+      if (self._page === 1) {
+        // Tải lần đầu: vẽ toàn bộ khung bảng
+        self._staffFiltered = newItems;
+        const container = document.getElementById('staff-table-container');
+        if (container) {
+          container.innerHTML = self._renderStaffTable();
+          self._bindRowEvents();
+          self._initObserver();
+        }
+      } else {
+        // Tải thêm: chỉ append rows mới vào cuối bảng/card-list hiện có
+        self._staffFiltered = self._staffFiltered.concat(newItems);
+        self._appendRows(newItems);
+      }
+
+      // Nếu đã hết data → ẩn spinner vĩnh viễn và ngắt observer
+      if (!self._hasMore) {
+        self._showSpinner(false);
+        if (self._observer) { self._observer.disconnect(); self._observer = null; }
       }
     } catch (e) {
       console.error('Fetch staff error:', e);
-      const container = document.getElementById('staff-table-container');
-      if (container) {
-        container.innerHTML = `<div class="p-loose text-center text-error font-bold">Lỗi khi tải dữ liệu nhân viên.</div>`;
+      if (self._page === 1) {
+        const container = document.getElementById('staff-table-container');
+        if (container) {
+          container.innerHTML = `<div class="p-loose text-center text-error font-bold">Lỗi khi tải dữ liệu nhân viên.</div>`;
+        }
       }
+    } finally {
+      self._isLoading = false;
+      if (self._hasMore) self._showSpinner(false);
     }
+  },
+
+  // Khởi tạo IntersectionObserver đúng root = scroll container
+  _initObserver: function () {
+    const self = this;
+    if (self._observer) self._observer.disconnect();
+
+    const desktopContainer = document.getElementById('staff-scroll-container');
+    const mobileContainer = document.getElementById('staff-scroll-mobile-container');
+
+    const createObserver = (root) => {
+      if (!root) return null;
+      const sentinel = root.querySelector('.staff-sentinel');
+      if (!sentinel) return null;
+      const obs = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && !self._isLoading && self._hasMore) {
+          self._page++;
+          self._loadData();
+        }
+      }, { root, rootMargin: '80px', threshold: 0 });
+      obs.observe(sentinel);
+      return obs;
+    };
+
+    // Quan sát cả 2 container (desktop + mobile web)
+    const obs1 = createObserver(desktopContainer);
+    const obs2 = createObserver(mobileContainer);
+    // Lưu observer đầu tiên khả dụng để có thể disconnect khi cần
+    self._observer = obs1 || obs2;
+  },
+
+  // Hiện/ẩn spinner tải thêm
+  _showSpinner: function (show) {
+    document.querySelectorAll('.staff-load-spinner').forEach(el => {
+      el.style.display = show ? 'flex' : 'none';
+    });
+  },
+
+  // Append thêm rows mới vào DOM mà không vẽ lại toàn bộ bảng
+  _appendRows: function (newItems) {
+    const self = this;
+    // Desktop: append vào <tbody>
+    const tbody = document.querySelector('#staff-scroll-container tbody');
+    if (tbody) {
+      const fragment = document.createDocumentFragment();
+      newItems.forEach(nv => {
+        const tr = document.createElement('tr');
+        tr.className = 'staff-row transition-colors hover:bg-brand-primary/5 dark:hover:bg-brand-primary/10 border-b border-outline-variant/30 cursor-pointer bg-white dark:bg-[#1e1e1e] odd:bg-[#fafafa] odd:dark:bg-[#15171e]';
+        tr.dataset.id = nv.id;
+        tr.innerHTML = self._buildRowHtml(nv);
+        fragment.appendChild(tr);
+      });
+      tbody.appendChild(fragment);
+    }
+    // Mobile: append vào card list
+    const mobileList = document.getElementById('staff-scroll-mobile-container');
+    if (mobileList) {
+      // Chèn trước sentinel để sentinel luôn ở cuối cùng
+      const sentinel = mobileList.querySelector('.staff-sentinel');
+      const fragment = document.createDocumentFragment();
+      newItems.forEach(nv => {
+        const div = document.createElement('div');
+        div.innerHTML = self._buildCardHtml(nv);
+        fragment.appendChild(div.firstElementChild);
+      });
+      if (sentinel) mobileList.insertBefore(fragment, sentinel);
+      else mobileList.appendChild(fragment);
+    }
+    self._bindRowEvents();
+  },
+
+  // Tách logic build HTML của một row bảng desktop ra riêng để _appendRows dùng lại
+  _buildRowHtml: function (nv) {
+    const self = this;
+    const roleLabel = nv.loai_ho_so === 'le_tan' ? 'Lễ tân' : 'Nhân viên';
+    const roleClass = nv.loai_ho_so === 'le_tan'
+      ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20'
+      : 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20';
+    const isLocked = nv.tk_trang_thai === 'khoa';
+    const lockIcon = isLocked ? 'lock' : 'lock_open';
+    const lockTitle = isLocked ? 'Mở khóa tài khoản' : 'Khóa tài khoản';
+    const statusBadge = isLocked
+      ? `<span style="padding:2px 8px;border-radius:999px;font-size:9.6px;font-weight:700;background:#ffdad6;color:#ba1a1a;">Bị khóa</span>`
+      : `<span style="padding:2px 8px;border-radius:999px;font-size:9.6px;font-weight:700;background:#e7f5e9;color:#1D9336;">Hoạt động</span>`;
+    return `
+      <td class="border-r border-outline-variant/30 sticky-col-left" style="padding:8px 14px;white-space:nowrap;text-align:left;">
+        <div style="display:flex;align-items:center;justify-content:left;gap:12px;margin:0 auto;max-width:240px;">
+          <div style="width:38px;height:38px;border-radius:50%;overflow:hidden;flex-shrink:0;border:2px solid #e2e8f0;box-shadow:0 2px 4px rgba(0,0,0,0.05);">
+            ${self._avatarHtml(nv.avatar_url, nv.ho_ten, 'sm')}
+          </div>
+          <div style="min-width:0;text-align:left;">
+            <div style="font-size:15px;font-weight:700;color:var(--text-on-surface);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;">${nv.ho_ten || '—'}</div>
+          </div>
+        </div>
+      </td>
+      <td class="border-r border-outline-variant/30 text-center font-bold text-on-surface-variant text-body-sm" style="padding:8px 14px;">${nv.ma_ho_so || '—'}</td>
+      <td class="border-r border-outline-variant/30 text-center" style="padding:8px 14px;">
+        <span class="text-[9px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${roleClass}">${roleLabel}</span>
+      </td>
+      <td class="border-r border-outline-variant/30 text-center text-body-sm font-medium text-on-surface-variant" style="padding:8px 14px;">
+        <div>${nv.so_dien_thoai || '—'}</div>
+        <div class="text-[11px] opacity-80">${nv.email || ''}</div>
+      </td>
+      <td class="border-r border-outline-variant/30 text-center" style="padding:8px 14px;">${statusBadge}</td>
+      <td class="border-r border-outline-variant/30 text-center font-bold text-on-surface-variant text-body-sm" style="padding:8px 14px;">${nv.chi_nhanh || '—'}</td>
+      <td class="sticky-col-right text-center" style="padding:8px 14px;white-space:nowrap;">
+        <div style="display:inline-flex;gap:4px;align-items:center;justify-content:center;width:100%;">
+          <button class="staff-view-btn w-[30px] h-[30px] rounded-lg flex items-center justify-center transition-all bg-[#f0fdf4] dark:bg-[#0b2010] text-[#1D9336] dark:text-[#4cce5f] hover:bg-[#1D9336] dark:hover:bg-[#4cce5f] hover:text-white dark:hover:text-[#111318]" data-id="${nv.id}" title="Xem chi tiết"><span class="material-symbols-outlined" style="font-size:15px;">visibility</span></button>
+          <button class="staff-edit-btn w-[30px] h-[30px] rounded-lg flex items-center justify-center transition-all bg-[#eff6ff] dark:bg-[#0b1a30] text-[#3b82f6] dark:text-[#60a5fa] hover:bg-[#3b82f6] dark:hover:bg-[#60a5fa] hover:text-white dark:hover:text-[#111318]" data-id="${nv.id}" title="Chỉnh sửa"><span class="material-symbols-outlined" style="font-size:15px;">edit</span></button>
+          ${nv.ten_dang_nhap ? `<button class="staff-lock-btn w-[30px] h-[30px] rounded-lg flex items-center justify-center transition-all bg-[#ffdad6] dark:bg-[#3d080c] text-[#ba1a1a] dark:text-[#ff8a93] hover:bg-[#ba1a1a] dark:hover:bg-[#ff8a93] hover:text-white dark:hover:text-[#111318]" data-id="${nv.id}" data-locked="${isLocked}" title="${lockTitle}"><span class="material-symbols-outlined" style="font-size:15px;">${lockIcon}</span></button>` : ''}
+          <button class="staff-delete-btn w-[30px] h-[30px] rounded-lg flex items-center justify-center transition-all bg-[#fff1f2] dark:bg-[#2e0b10] text-[#f43f5e] dark:text-[#f87171] hover:bg-[#f43f5e] dark:hover:bg-[#f87171] hover:text-white dark:hover:text-[#111318]" data-id="${nv.id}" data-name="${nv.ho_ten}" title="Xóa"><span class="material-symbols-outlined" style="font-size:15px;">delete</span></button>
+        </div>
+      </td>`;
+  },
+
+  // Tách logic build HTML card mobile ra riêng để _appendRows dùng lại
+  _buildCardHtml: function (nv) {
+    const self = this;
+    const isLocked = nv.tk_trang_thai === 'khoa';
+    const roleLabel = nv.loai_ho_so === 'le_tan' ? 'Lễ tân' : 'Nhân viên';
+    const roleClass = nv.loai_ho_so === 'le_tan'
+      ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20'
+      : 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20';
+    const statusBadge = isLocked
+      ? `<span style="padding:2px 8px;border-radius:999px;font-size:9.6px;font-weight:700;background:#ffdad6;color:#ba1a1a;">Bị khóa</span>`
+      : `<span style="padding:2px 8px;border-radius:999px;font-size:9.6px;font-weight:700;background:#e7f5e9;color:#1D9336;">Hoạt động</span>`;
+    return `
+      <div class="staff-row" data-id="${nv.id}" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--outline-variant,#e2e8f0);cursor:pointer;transition:background 0.12s;background:var(--bg-surface-lowest,#fff);" onmouseover="this.style.background='rgba(29,147,54,0.04)'" onmouseout="this.style.background='var(--bg-surface-lowest,#fff)'">
+        <div style="flex-shrink:0;">
+          <div style="width:38px;height:38px;border-radius:50%;overflow:hidden;border:2px solid #e2e8f0;">${self._avatarHtml(nv.avatar_url, nv.ho_ten, 'sm')}</div>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:14px;font-weight:700;color:var(--text-on-surface);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${nv.ho_ten || '—'}</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:2px;flex-wrap:wrap;">
+            <span style="font-size:11px;font-weight:600;color:var(--text-on-surface-variant);">${nv.ma_ho_so || '—'}</span>
+            ${nv.so_dien_thoai ? `<span style="font-size:11px;color:var(--text-on-surface-variant);">· ${nv.so_dien_thoai}</span>` : ''}
+            ${nv.chi_nhanh ? `<span style="font-size:11px;color:#1D9336;font-weight:600;">· ${nv.chi_nhanh}</span>` : ''}
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;margin-top:3px;flex-wrap:wrap;">
+            ${statusBadge}
+            <span class="text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full border ${roleClass}">${roleLabel}</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:4px;align-items:center;flex-shrink:0;">
+          <button class="staff-view-btn" data-id="${nv.id}" title="Xem" style="width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#f0fdf4;color:#1D9336;border:none;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='#1D9336';this.style.color='#fff'" onmouseout="this.style.background='#f0fdf4';this.style.color='#1D9336'"><span class="material-symbols-outlined" style="font-size:15px;">visibility</span></button>
+          <button class="staff-edit-btn" data-id="${nv.id}" title="Sửa" style="width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#eff6ff;color:#3b82f6;border:none;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='#3b82f6';this.style.color='#fff'" onmouseout="this.style.background='#eff6ff';this.style.color='#3b82f6'"><span class="material-symbols-outlined" style="font-size:15px;">edit</span></button>
+        </div>
+      </div>`;
   },
 
   _renderStaffTable: function () {
@@ -309,10 +517,12 @@ window.GymApp.pages['staff'] = {
       `;
     }).join('');
 
-    const paginationHtml = window.GymApp.renderPagination(self._page, self._total, self._limit, (p) => {
-      self._page = p;
-      self._loadData();
-    });
+    // Spinner tải thêm — dùng chung HTML cho cả desktop và mobile
+    const spinnerHtml = `
+      <div class="staff-load-spinner" style="display:none;justify-content:center;align-items:center;padding:14px 0;gap:8px;">
+        <span class="animate-spin rounded-full border-2 border-brand-primary border-t-transparent" style="width:18px;height:18px;display:inline-block;"></span>
+        <span style="font-size:12px;color:var(--text-on-surface-variant);font-weight:600;">Đang tải thêm...</span>
+      </div>`;
 
     return `
       <style>
@@ -359,16 +569,17 @@ window.GymApp.pages['staff'] = {
             </thead>
             <tbody>${rowsHtml}</tbody>
           </table>
+          <!-- Sentinel + Spinner cho desktop -->
+          <div class="staff-sentinel" style="height:2px;opacity:0;pointer-events:none;"></div>
+          ${spinnerHtml}
         </div>
 
         <!-- CARD LIST mobile -->
         <div id="staff-scroll-mobile-container" class="staff-table-mobile" style="max-height:500px;overflow-y:auto;">
           ${cardRowsHtml}
-        </div>
-
-        <!-- Pagination -->
-        <div class="bg-surface-container-low border-t border-outline-variant">
-          ${paginationHtml}
+          <!-- Sentinel + Spinner cho mobile web -->
+          <div class="staff-sentinel" style="height:2px;opacity:0;pointer-events:none;"></div>
+          ${spinnerHtml}
         </div>
       </div>
     `;
@@ -530,7 +741,8 @@ window.GymApp.pages['staff'] = {
             ${infoRow('call', 'Số điện thoại', nv.so_dien_thoai || '—')}
             ${infoRow('mail', 'Email', nv.email || '—')}
             <div class="col-span-1 sm:col-span-2">${infoRow('location_on', 'Địa chỉ tạm trú', nv.dia_chi_tam_tru || '—')}</div>
-          </div>
+          <div class="col-span-1 sm:col-span-2">${infoRow('account_circle', 'Tên đăng nhập', nv.ten_dang_nhap || 'Chưa tạo tài khoản')}
+            </div>
         </div>
       </div>
     `;
@@ -655,6 +867,24 @@ window.GymApp.pages['staff'] = {
               <input type="text" name="dia_chi_tam_tru" value="${nv.dia_chi_tam_tru || ''}" class="w-full bg-surface-container-low/50 border border-outline-variant/50 text-on-surface px-3 py-2 rounded-xl focus:border-brand-primary outline-none text-body-sm font-medium transition-all" />
             </div>
 
+            <!-- Thông tin tài khoản -->
+            <div class="col-span-1 sm:col-span-2 border border-outline-variant/40 p-3 rounded-xl bg-surface-container-low/30 flex flex-col gap-3">
+              <div class="font-bold text-body-sm text-brand-primary flex items-center gap-xs">
+                <span class="material-symbols-outlined text-base">manage_accounts</span>
+                Tài khoản đăng nhập
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="flex flex-col gap-1.5">
+                  <label class="text-body-sm font-bold text-on-surface">Tên đăng nhập</label>
+                  <input type="text" name="ten_dang_nhap" value="${nv.ten_dang_nhap || ''}" ${nv.ten_dang_nhap ? 'readonly class="w-full bg-surface-container text-on-surface-variant cursor-not-allowed opacity-75 px-3 py-2 rounded-xl border border-outline-variant/50 outline-none text-body-sm font-medium"' : 'class="w-full bg-surface-container-low/50 border border-outline-variant/50 text-on-surface px-3 py-2 rounded-xl focus:border-brand-primary outline-none text-body-sm font-medium transition-all"'} placeholder="Tên đăng nhập" />
+                </div>
+                <div class="flex flex-col gap-1.5">
+                  <label class="text-body-sm font-bold text-on-surface">${nv.ten_dang_nhap ? 'Đổi mật khẩu mới' : 'Mật khẩu'}</label>
+                  <input type="password" name="mat_khau" class="w-full bg-surface-container-low/50 border border-outline-variant/50 text-on-surface px-3 py-2 rounded-xl focus:border-brand-primary outline-none text-body-sm font-medium transition-all" placeholder="${nv.ten_dang_nhap ? 'Để trống nếu không muốn đổi' : 'Ít nhất 6 ký tự'}" />
+                </div>
+              </div>
+            </div>
+
             <div class="flex flex-col gap-1.5 col-span-1 sm:col-span-2">
               <label class="text-body-sm font-bold text-on-surface">Ghi chú</label>
               <textarea name="ghi_chu" rows="2" class="w-full bg-surface-container-low/50 border border-outline-variant/50 text-on-surface px-3 py-2 rounded-xl focus:border-brand-primary outline-none text-body-sm font-medium transition-all">${nv.ghi_chu || ''}</textarea>
@@ -724,7 +954,6 @@ window.GymApp.pages['staff'] = {
     document.addEventListener('keydown', escH);
 
     // Form submit
-    // Form submit
     const form = overlay.querySelector('#staff-form');
     form?.addEventListener('submit', async function (e) {
       e.preventDefault();
@@ -749,6 +978,8 @@ window.GymApp.pages['staff'] = {
         fd.append('trang_thai', data.trang_thai);
         fd.append('dia_chi_tam_tru', data.dia_chi_tam_tru || '');
         fd.append('ghi_chu', data.ghi_chu || '');
+        if (data.ten_dang_nhap) fd.append('ten_dang_nhap', data.ten_dang_nhap);
+        if (data.mat_khau) fd.append('mat_khau', data.mat_khau);
 
         // Đính kèm file ảnh mới nếu user có chọn
         if (avatarFileObj) {
