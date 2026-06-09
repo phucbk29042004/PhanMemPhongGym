@@ -19,9 +19,73 @@ const toJson = (value) => {
   return JSON.stringify(value);
 };
 
+export const autoCancelExpiredSchedules = () => {
+  const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
+  const nowTimeStr = new Date().toLocaleTimeString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour12: false }).substring(0, 5);
+
+  // Tìm các lịch tập quá hạn đang ở trạng thái 'cho_tap' hoặc 'pending'
+  const expired = db.prepare(`
+    SELECT lt.id, lt.pt_id, lt.hoi_vien_id, lt.ngay_tap, lt.gio_bat_dau, lt.gio_ket_thuc,
+           hv.ho_ten AS ho_ten_hoi_vien, pt.ho_ten AS ho_ten_pt
+    FROM lich_tap lt
+    JOIN ho_so hv ON hv.id = lt.hoi_vien_id
+    JOIN ho_so pt ON pt.id = lt.pt_id
+    WHERE lt.trang_thai IN ('cho_tap', 'pending')
+      AND (lt.ngay_tap < ? OR (lt.ngay_tap = ? AND lt.gio_ket_thuc <= ?))
+  `).all(todayStr, todayStr, nowTimeStr);
+
+  if (expired.length === 0) return;
+
+  const updateOne = db.prepare(`
+    UPDATE lich_tap
+    SET trang_thai = 'da_huy', ly_do_huy = 'Hệ thống tự động hủy do quá hạn khung giờ đặt lịch', nguoi_huy_id = NULL
+    WHERE id = ?
+  `);
+
+  const cancelAll = db.transaction((rows) => {
+    for (const row of rows) {
+      updateOne.run(row.id);
+      
+      // Tạo thông báo cho admin
+      createNotification(
+        'huy_buoi_tap',
+        'Buổi tập tự động hủy',
+        `Buổi ${row.gio_bat_dau} ngày ${row.ngay_tap} của ${row.ho_ten_hoi_vien} với HLV ${row.ho_ten_pt} đã tự động hủy do quá hạn`,
+        row.id,
+        'lich_tap',
+        'ca_hai'
+      );
+
+      // Tạo thông báo cá nhân cho Hội viên và PT
+      createUserNotification(
+        row.hoi_vien_id,
+        'Buổi tập bị hủy tự động ❌',
+        `Buổi tập lúc ${row.gio_bat_dau} ngày ${row.ngay_tap} với HLV ${row.ho_ten_pt} đã bị hệ thống tự động hủy do quá hạn khung giờ.`,
+        'nhac_nho_gia_han'
+      );
+      createUserNotification(
+        row.pt_id,
+        'Buổi dạy bị hủy tự động ❌',
+        `Buổi dạy lúc ${row.gio_bat_dau} ngày ${row.ngay_tap} với học viên ${row.ho_ten_hoi_vien} đã bị hệ thống tự động hủy do quá hạn khung giờ.`,
+        'nhac_nho_gia_han'
+      );
+    }
+  });
+
+  try {
+    cancelAll(expired);
+    console.log(`[AUTO-CANCEL] Đã tự động hủy ${expired.length} buổi tập PT quá hạn.`);
+  } catch (err) {
+    console.error('[AUTO-CANCEL] Lỗi khi tự động hủy lịch tập:', err.message);
+  }
+};
+
 // ── GET /api/pt/schedules ─────────────────────────────────
 // Xem lịch tập toàn phòng (admin) hoặc lịch cá nhân (PT/hội viên)
 export const getSchedules = (req, res) => {
+  // Tự động quét và hủy lịch quá hạn trước khi trả về danh sách
+  autoCancelExpiredSchedules();
+
   const { date, pt_id, hoi_vien_id, trang_thai, chi_nhanh } = req.query;
 
   let filterBranch = chi_nhanh;

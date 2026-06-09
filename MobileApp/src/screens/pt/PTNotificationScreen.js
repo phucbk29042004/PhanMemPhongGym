@@ -168,45 +168,48 @@ const pulseStyles = StyleSheet.create({
   },
 });
 
+const getNotifStyle = (loai, isDark) => {
+  const l = (loai || '').toLowerCase();
+  if (l.includes('danger') || l.includes('error') || l.includes('het_han') || l.includes('huy')) {
+    return { bg: isDark ? '#2d1818' : '#fff0f0', border: isDark ? '#4c1c1c' : '#fca5a5', text: isDark ? '#fecaca' : '#7f1d1d' };
+  }
+  if (l.includes('warning') || l.includes('sap_het')) {
+    return { bg: isDark ? '#2d2218' : '#fffbeb', border: isDark ? '#4c321c' : '#fcd34d', text: isDark ? '#fef3c7' : '#78350f' };
+  }
+  if (l.includes('success') || l.includes('check_in') || l.includes('hoan_thanh')) {
+    return { bg: isDark ? '#182d1f' : '#f0fdf4', border: isDark ? '#1c4c2d' : '#86efac', text: isDark ? '#d1fae5' : '#14532d' };
+  }
+  return { bg: isDark ? '#182235' : '#eff6ff', border: isDark ? '#1c355e' : '#93c5fd', text: isDark ? '#dbeafe' : '#1e3a5f' };
+};
+
 // ── Component: Card thông báo ──────────────────────────────
 function NotificationCard({ item }) {
   const { colors } = useTheme();
-  const cfg = LEVEL_CONFIG[item.muc_do] || LEVEL_CONFIG.info;
-  const { Icon } = cfg;
+  const s = getNotifStyle(item.loai || item.muc_do, colors.isDark);
 
   return (
     <View style={[
       notifStyles.card,
       {
-        backgroundColor: colors.isDark ? colors.surfaceVariant : cfg.bg,
-        borderLeftColor: cfg.border,
-        borderColor: colors.border,
-        borderWidth: colors.isDark ? 1 : 0,
-        borderLeftWidth: 3
+        backgroundColor: s.bg,
+        borderColor: s.border,
+        borderWidth: 1,
       }
     ]}>
-      <View style={[notifStyles.iconBox, { backgroundColor: colors.isDark ? 'rgba(255,255,255,0.08)' : cfg.iconBg }]}>
-        <Icon color={cfg.iconColor} size={20} strokeWidth={2.5} />
-      </View>
       <View style={notifStyles.content}>
         <View style={notifStyles.titleRow}>
           <View style={notifStyles.titleContainer}>
             {item.is_custom && item.da_doc === 0 && <PulsingDot />}
-            <Text style={[notifStyles.title, { color: colors.isDark ? colors.text : cfg.textColor }]} numberOfLines={2}>
+            <Text style={[notifStyles.title, { color: s.text }]} numberOfLines={2}>
               {item.tieu_de}
             </Text>
           </View>
-          {cfg.badge && (
-            <View style={[notifStyles.badge, { backgroundColor: cfg.badgeBg }]}>
-              <Text style={notifStyles.badgeText}>{cfg.badge}</Text>
-            </View>
-          )}
         </View>
-        <Text style={[notifStyles.body, { color: colors.isDark ? colors.textMuted : cfg.textColor, marginBottom: item.ngay_tao ? 6 : 0 }]} numberOfLines={4}>
+        <Text style={[notifStyles.body, { color: s.text, opacity: 0.85, marginBottom: item.ngay_tao ? 6 : 0 }]} numberOfLines={4}>
           {item.noi_dung}
         </Text>
         {item.ngay_tao && (
-          <Text style={[notifStyles.timeText, { color: colors.isDark ? colors.textMuted : cfg.textColor, opacity: 0.6 }]}>
+          <Text style={[notifStyles.timeText, { color: s.text, opacity: 0.6 }]}>
             {formatTimeAgo(item.ngay_tao)}
           </Text>
         )}
@@ -217,17 +220,14 @@ function NotificationCard({ item }) {
 
 const notifStyles = StyleSheet.create({
   card: {
-    flexDirection: 'row', gap: 12, padding: 14,
-    borderRadius: 14, borderLeftWidth: 3, marginBottom: 10,
-  },
-  iconBox: {
-    width: 40, height: 40, borderRadius: 12,
-    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 8,
   },
   content: { flex: 1 },
   titleRow: {
     flexDirection: 'row', alignItems: 'flex-start',
-    justifyContent: 'space-between', gap: 8, marginBottom: 5,
+    justifyContent: 'space-between', gap: 8, marginBottom: 4,
   },
   titleContainer: {
     flexDirection: 'row',
@@ -236,9 +236,7 @@ const notifStyles = StyleSheet.create({
     gap: 6,
   },
   title: { fontSize: 13, fontWeight: '700', flex: 1, lineHeight: 18 },
-  badge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8, flexShrink: 0 },
-  badgeText: { fontSize: 9, fontWeight: '800', color: '#fff', letterSpacing: 0.5 },
-  body: { fontSize: 12, lineHeight: 18, opacity: 0.85 },
+  body: { fontSize: 12, lineHeight: 18 },
   timeText: { fontSize: 10, fontWeight: '600' },
 });
 

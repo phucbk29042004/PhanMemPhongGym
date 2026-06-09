@@ -405,17 +405,25 @@ window.GymApp.pages['expired'] = {
 
     document.getElementById('btn-refresh-expired')?.addEventListener('click', () => self._loadData());
 
-    window.GymApp._pgHandler = function (pg) {
-      if (self._tab === 'expired') {
-        self._expiredPage = pg;
-      } else if (self._tab === 'expiring') {
-        self._expiringPage = pg;
-      } else {
-        self._requestsPage = pg;
-      }
-      self._refreshView();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
+    // Event Delegation: bắt click nút phân trang [data-pg] trên từng container bảng
+    ['expired-table-container', 'expiring-table-container', 'requests-table-container'].forEach(containerId => {
+      document.getElementById(containerId)?.addEventListener('click', function (e) {
+        const pgBtn = e.target.closest('[data-pg]');
+        if (!pgBtn || pgBtn.disabled) return;
+        const pg = parseInt(pgBtn.getAttribute('data-pg'));
+        if (!pg || isNaN(pg)) return;
+
+        if (self._tab === 'expired') {
+          self._expiredPage = pg;
+        } else if (self._tab === 'expiring') {
+          self._expiringPage = pg;
+        } else {
+          self._requestsPage = pg;
+        }
+        self._refreshView();
+        document.getElementById('panel-' + self._tab)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
 
     document.getElementById('tab-expired-list')?.addEventListener('click', () => {
       self._tab = 'expired';
