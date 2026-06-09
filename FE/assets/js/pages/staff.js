@@ -145,6 +145,88 @@ window.GymApp.pages['staff'] = {
       }, 100);
     });
 
+    // Event Delegation: lắng nghe mọi click trên container cha thay vì từng phần tử
+    // Giải quyết: click chập chờn & khựng khi dữ liệu được append (infinite scroll)
+    const container = document.getElementById('staff-table-container');
+    if (container) {
+      container.addEventListener('click', async function (e) {
+        // Nút Xem chi tiết
+        const viewBtn = e.target.closest('.staff-view-btn');
+        if (viewBtn) {
+          e.stopPropagation();
+          self._showStaffModal(viewBtn.dataset.id);
+          return;
+        }
+
+        // Nút Chỉnh sửa
+        const editBtn = e.target.closest('.staff-edit-btn');
+        if (editBtn) {
+          e.stopPropagation();
+          self._showEditStaffModal(editBtn.dataset.id);
+          return;
+        }
+
+        // Nút Khóa/Mở khóa tài khoản
+        const lockBtn = e.target.closest('.staff-lock-btn');
+        if (lockBtn) {
+          e.stopPropagation();
+          const id = lockBtn.dataset.id;
+          const isLocked = lockBtn.dataset.locked === 'true';
+          const actionText = isLocked ? 'mở khóa' : 'khóa';
+          const confirmed = await window.GymApp.confirm(
+            `Bạn có chắc muốn ${actionText} tài khoản của nhân viên này không?`,
+            'Thay đổi trạng thái tài khoản'
+          );
+          if (!confirmed) return;
+          try {
+            const res = await window.GymApp.api.put(`/staff/${id}`, {
+              trang_thai: isLocked ? 'hoat_dong' : 'khoa'
+            });
+            if (res.success) {
+              window.GymApp.toast(`Đã ${actionText} tài khoản thành công!`, 'success');
+              self._resetAndReload();
+            } else {
+              window.GymApp.toast(res.message || 'Lỗi thao tác', 'error');
+            }
+          } catch (err) {
+            window.GymApp.toast('Lỗi kết nối máy chủ', 'error');
+          }
+          return;
+        }
+
+        // Nút Xóa hồ sơ
+        const deleteBtn = e.target.closest('.staff-delete-btn');
+        if (deleteBtn) {
+          e.stopPropagation();
+          const id = deleteBtn.dataset.id;
+          const name = deleteBtn.dataset.name;
+          const confirmed = await window.GymApp.confirm(
+            `Bạn có chắc muốn xóa hồ sơ nhân viên "${name}" không? Thao tác này sẽ khóa tài khoản đi kèm nếu có.`,
+            'Xóa hồ sơ nhân viên'
+          );
+          if (!confirmed) return;
+          try {
+            const res = await window.GymApp.api.delete(`/staff/${id}`);
+            if (res.success) {
+              window.GymApp.toast('Xóa hồ sơ nhân viên thành công!', 'success');
+              self._resetAndReload();
+            } else {
+              window.GymApp.toast(res.message || 'Lỗi khi xóa', 'error');
+            }
+          } catch (err) {
+            window.GymApp.toast('Lỗi kết nối máy chủ', 'error');
+          }
+          return;
+        }
+
+        // Click vào hàng (không phải button): xem chi tiết
+        const row = e.target.closest('.staff-row');
+        if (row && !e.target.closest('button')) {
+          self._showStaffModal(row.dataset.id);
+        }
+      });
+    }
+
     self._loadData();
   },
 
@@ -207,7 +289,6 @@ window.GymApp.pages['staff'] = {
         const container = document.getElementById('staff-table-container');
         if (container) {
           container.innerHTML = self._renderStaffTable();
-          self._bindRowEvents();
           self._initObserver();
         }
       } else {
@@ -301,7 +382,7 @@ window.GymApp.pages['staff'] = {
       if (sentinel) mobileList.insertBefore(fragment, sentinel);
       else mobileList.appendChild(fragment);
     }
-    self._bindRowEvents();
+    // Không cần gọi _bindRowEvents() nữa vì đã dùng Event Delegation trên container cha
   },
 
   // Tách logic build HTML của một row bảng desktop ra riêng để _appendRows dùng lại
@@ -585,93 +666,8 @@ window.GymApp.pages['staff'] = {
     `;
   },
 
-  _bindRowEvents: function () {
-    const self = this;
-
-    document.querySelectorAll('.staff-row').forEach(row => {
-      row.addEventListener('click', (e) => {
-        if (e.target.closest('button')) return;
-        self._showStaffModal(row.dataset.id);
-      });
-    });
-
-    document.querySelectorAll('.staff-view-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        self._showStaffModal(btn.dataset.id);
-      });
-    });
-
-    document.querySelectorAll('#staff-pagination-container [data-pg]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        self._page = parseInt(btn.dataset.pg);
-        self._loadData();
-      });
-    });
-
-    document.querySelectorAll('.staff-edit-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        self._showEditStaffModal(btn.dataset.id);
-      });
-    });
-
-    document.querySelectorAll('.staff-lock-btn').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const id = btn.dataset.id;
-        const isLocked = btn.dataset.locked === 'true';
-        const actionText = isLocked ? 'mở khóa' : 'khóa';
-
-        const confirmed = await window.GymApp.confirm(
-          `Bạn có chắc muốn ${actionText} tài khoản của nhân viên này không?`,
-          'Thay đổi trạng thái tài khoản'
-        );
-        if (!confirmed) return;
-
-        try {
-          const res = await window.GymApp.api.put(`/staff/${id}`, {
-            trang_thai: isLocked ? 'hoat_dong' : 'khoa'
-          });
-          if (res.success) {
-            window.GymApp.toast(`Đã ${actionText} tài khoản thành công!`, 'success');
-            self._loadData();
-          } else {
-            window.GymApp.toast(res.message || 'Lỗi thao tác', 'error');
-          }
-        } catch (err) {
-          window.GymApp.toast('Lỗi kết nối máy chủ', 'error');
-        }
-      });
-    });
-
-    document.querySelectorAll('.staff-delete-btn').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const id = btn.dataset.id;
-        const name = btn.dataset.name;
-
-        const confirmed = await window.GymApp.confirm(
-          `Bạn có chắc muốn xóa hồ sơ nhân viên "${name}" không? Thao tác này sẽ khóa tài khoản đi kèm nếu có.`,
-          'Xóa hồ sơ nhân viên'
-        );
-        if (!confirmed) return;
-
-        try {
-          const res = await window.GymApp.api.delete(`/staff/${id}`);
-          if (res.success) {
-            window.GymApp.toast('Xóa hồ sơ nhân viên thành công!', 'success');
-            self._loadData();
-          } else {
-            window.GymApp.toast(res.message || 'Lỗi khi xóa', 'error');
-          }
-        } catch (err) {
-          window.GymApp.toast('Lỗi kết nối máy chủ', 'error');
-        }
-      });
-    });
-  },
+  // Hàm _bindRowEvents() đã được thay thế bằng Event Delegation trong init().
+  // Xem phần container.addEventListener('click', ...) trong hàm init() ở trên.
 
   _showStaffModal: async function (id) {
     const self = this;

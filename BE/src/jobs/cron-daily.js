@@ -7,6 +7,7 @@
 import cron from 'node-cron';
 import db from '../config/db.js';
 import { createNotification, createUserNotification } from '../utils/notifications.js';
+import { autoCancelExpiredSchedules } from '../controllers/pt-schedules.controller.js';
 
 // ── Cron 08:00 sáng mỗi ngày ─────────────────────────────
 function runDailyJob() {
@@ -259,6 +260,9 @@ function runDailyJob() {
 
 // ── Cron mỗi 5 phút: kiểm tra buổi PT sắp tới chưa check-in ──
 function checkPtCheckinWarning() {
+  // Tự động quét và hủy lịch PT quá hạn mỗi 5 phút
+  autoCancelExpiredSchedules();
+
   const today = new Date().toLocaleDateString('sv-SE');
   const now = new Date();
   // Tìm buổi tập bắt đầu trong 25–35 phút tới (khoảng ±5 phút quanh mốc 30 phút)

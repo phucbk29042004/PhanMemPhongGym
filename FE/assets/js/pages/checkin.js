@@ -231,7 +231,7 @@ window.GymApp.pages['checkin'] = {
   },
 
   _renderDetailTable: function () {
-    const checkins = window.GymApp.data.checkins || [];
+    const checkins = (window.GymApp.data.checkins || []).filter(c => c.loai === 'vao');
     const start = (this._page - 1) * this._perPage;
     const paginated = checkins.slice(start, start + this._perPage);
 
