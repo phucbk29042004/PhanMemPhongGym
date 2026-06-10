@@ -14,6 +14,16 @@
 
 ## 📋 Danh Sách Thay Đổi
 
+### [10/06/2026 09:20] — Giải quyết xung đột git pull và cấu hình bỏ qua file tạm SQLite
+- **Loại**: Cấu hình & Sửa lỗi
+- **File**: `BE/.gitignore`
+- **Mô tả**:
+  - Thực hiện khôi phục trạng thái ban đầu của các file tạm SQLite (`BE/database/paradise_gym.db-shm` và `BE/database/paradise_gym.db-wal`) để giải quyết xung đột khi `git pull`.
+  - Cập nhật file `BE/.gitignore` chuyển `database/paradise_gym.db` thành `database/paradise_gym.db*` nhằm bỏ qua tất cả các file tạm SQLite khác để tránh lỗi xung đột trong tương lai.
+  - Chạy `git pull` thành công đồng bộ dự án với phiên bản mới nhất từ remote repository.
+- **Kết quả**: Thành công.
+
+
 ### [04/06/2026 13:54] — Tối ưu hóa layout và màu sắc các nút thao tác Lịch PT
 - **Loại**: Cải tiến UI (Frontend Web)
 - **File**: `FE/assets/js/pages/members-list.js`
@@ -1659,11 +1669,11 @@
 - **Mô tả**: Lắng nghe các sự kiện tắt ứng dụng (`SIGINT`, `SIGTERM`) và đặc biệt là sự kiện restart của nodemon (`SIGUSR2`) để tự động đóng kết nối database bằng `db.close()`, ngăn chặn hỏng cấu trúc file WAL/SHM khi lưu code.
 - **Kết quả**: ✅ Tránh triệt để lỗi cơ sở dữ liệu khi phát triển và cập nhật code.
 
-### [04/06/2026 16:35] - S?a l?i hi?n th? sai chi nh�nh PT
+### [04/06/2026 16:35] - S?a l?i hi?n th? sai chi nhnh PT
 - **Lo?i**: S?a bug
 - **File**: `MobileApp/src/screens/pt/PTScheduleScreen.js`, `BE/src/controllers/auth.controller.js`
-- **M� t?**: �?i `item.chi_nhanh` th�nh `item.chi_nhanh_tap` ? ph?n hi?n th? l?ch d?y c� nh�n PT. Th�m tru?ng `chi_nhanh` v�o API getMe c?a BE d? c�c file s? d?ng profile c� th�ng tin chi nh�nh.
-- **K?t qu?**: Th�nh c�ng
+- **M t?**: ?i `item.chi_nhanh` thnh `item.chi_nhanh_tap` ? ph?n hi?n th? l?ch d?y c nhn PT. Thm tru?ng `chi_nhanh` vo API getMe c?a BE d? cc file s? d?ng profile c thng tin chi nhnh.
+- **K?t qu?**: Thnh cng
 
 ### [08/06/2026 08:55] — Khắc phục triệt để lỗ hổng phân quyền chi nhánh & Tối ưu hóa Web FE
 - **Loại**: Sửa lỗi bảo mật & Tối ưu hóa (Fullstack)
