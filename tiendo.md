@@ -8,9 +8,26 @@
 ---
 
 ## 📌 Trạng thái hiện tại
-**✅ Sửa 4 nhóm lỗi Mobile** — Ẩn filter chi nhánh Dashboard với nhân viên, StaffCard có thể nhấn vào xem/sửa, phân trang vuốt ngang (SwipePager), thêm upload ảnh cho HV và PT.
+**✅ Bổ sung chú thích các trang FE** — Thêm mới guideHtml cho trang quản lý nhân viên và cập nhật mô tả Nhập/Xuất Excel cho trang danh sách hội viên.
 
 ---
+
+### [10/06/2026 16:10] — Bổ sung và cập nhật chú thích hướng dẫn sử dụng (guideHtml) trên Web Frontend
+- **Loại**: Cải tiến tài liệu & Hướng dẫn sử dụng
+- **File**: `FE/assets/js/pages/staff.js`, `FE/assets/js/pages/members-list.js`
+- **Mô tả**:
+  1. **staff.js**: Thêm thuộc tính `guideHtml` mô tả các chức năng quản lý nhân sự, phân quyền tài khoản (khóa/mở khóa), cập nhật avatar và bộ lọc tìm kiếm.
+  2. **members-list.js**: Cập nhật `guideHtml` để bổ sung hướng dẫn cho tính năng Nhập dữ liệu từ Excel kết hợp tải file ảnh ZIP, và Xuất danh sách Excel.
+- **Kết quả**: Thành công.
+
+### [10/06/2026 15:55] — Sửa đổi giao diện và luồng nghiệp vụ Web FE (scrollbar nhân viên, chuyển hướng tạo nhân viên, luồng thêm PT)
+- **Loại**: Sửa bug + Cải tiến luồng
+- **File**: `FE/assets/js/pages/staff.js`, `FE/assets/js/pages/member-add.js`, `FE/assets/js/pages/members-list.js`
+- **Mô tả**:
+  1. **staff.js**: Bổ sung gradient cho scrollbar-track và corner transparent trong stylesheet để loại bỏ đường viền trắng bên phải cột Thao tác, đồng bộ với thiết kế danh sách hội viên.
+  2. **member-add.js**: Sửa giá trị điều hướng từ `staff-list` (không tồn tại) thành `staff` khi thêm nhân viên thành công, đảm bảo hệ thống tự chuyển hướng về danh sách nhân viên.
+  3. **members-list.js**: Đổi luồng nút "Thêm HLV" từ mở modal riêng sang chuyển sang trang thêm hội viên mới `member-add` và chọn sẵn vai trò HLV (`pt`). Đồng thời xóa bỏ hàm `_showAddPtModal` cũ.
+- **Kết quả**: Thành công.
 
 ### [10/06/2026 15:20] — Sửa lỗi ẩn bộ lọc chi nhánh cho nhân viên trên Mobile App
 - **Loại**: Sửa bug (Fullstack)

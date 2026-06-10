@@ -702,7 +702,7 @@ window.GymApp.pages['member-add'] = {
           } else if (loai_ho_so === 'pt') {
             window.GymApp.navigate('members-list');  // về tab PT trong danh sách
           } else if (loai_ho_so === 'nhan_vien') {
-            window.GymApp.navigate('staff-list');    // về danh sách nhân viên
+            window.GymApp.navigate('staff');    // về danh sách nhân viên
           }
         }
 
@@ -714,7 +714,7 @@ window.GymApp.pages['member-add'] = {
         } else if (loai_ho_so === 'pt') {
           window.GymApp.navigate('members-list');
         } else if (loai_ho_so === 'nhan_vien') {
-          window.GymApp.navigate('staff-list');
+          window.GymApp.navigate('staff');
         }
 
         // Clear form thông tin hồ sơ
