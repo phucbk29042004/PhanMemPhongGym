@@ -60,6 +60,8 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
   const [editType, setEditType] = useState('gym'); // 'gym' | 'pt'
   const [editTuNgay, setEditTuNgay] = useState('');
   const [editDenNgay, setEditDenNgay] = useState('');
+  const [editOrigTuNgay, setEditOrigTuNgay] = useState(''); // tu_ngay gốc khi mở modal
+  const [editOrigDenNgay, setEditOrigDenNgay] = useState(''); // den_ngay gốc khi mở modal
   const [editGiaThucTe, setEditGiaThucTe] = useState('');
   const [editSoBuoi, setEditSoBuoi] = useState(''); // PT only
   const [savingEdit, setSavingEdit] = useState(false);
@@ -68,8 +70,12 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
     const activePkg = member?.goi_tap_hien_tai[0];
     if (!activePkg) return;
     setEditType('gym');
-    setEditTuNgay(activePkg.tu_ngay ? activePkg.tu_ngay.split('T')[0] : '');
-    setEditDenNgay(activePkg.den_ngay ? activePkg.den_ngay.split('T')[0] : '');
+    const tu = activePkg.tu_ngay ? activePkg.tu_ngay.split('T')[0] : '';
+    const den = activePkg.den_ngay ? activePkg.den_ngay.split('T')[0] : '';
+    setEditTuNgay(tu);
+    setEditDenNgay(den);
+    setEditOrigTuNgay(tu);
+    setEditOrigDenNgay(den);
     setEditGiaThucTe(formatPrice(activePkg.gia_thuc_te));
     setEditModalVisible(true);
   };
@@ -78,12 +84,32 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
     const activePT = member?.pt_hien_tai[0];
     if (!activePT) return;
     setEditType('pt');
-    setEditTuNgay(activePT.tu_ngay ? activePT.tu_ngay.split('T')[0] : '');
-    setEditDenNgay(activePT.den_ngay ? activePT.den_ngay.split('T')[0] : '');
+    const tu = activePT.tu_ngay ? activePT.tu_ngay.split('T')[0] : '';
+    const den = activePT.den_ngay ? activePT.den_ngay.split('T')[0] : '';
+    setEditTuNgay(tu);
+    setEditDenNgay(den);
+    setEditOrigTuNgay(tu);
+    setEditOrigDenNgay(den);
     setEditGiaThucTe(formatPrice(activePT.gia_thuc_te));
     setEditSoBuoi(String(activePT.buoi_dang_ky || 0));
     setEditModalVisible(true);
   };
+
+  // Tự động tính lại den_ngay khi tu_ngay thay đổi (giữ nguyên khoảng thời gian gốc)
+  useEffect(() => {
+    if (!editTuNgay || !editOrigTuNgay || !editOrigDenNgay) return;
+    if (editTuNgay === editOrigTuNgay) return; // không đổi thì không tính lại
+    const origStart = new Date(editOrigTuNgay);
+    const origEnd = new Date(editOrigDenNgay);
+    const diffMs = origEnd - origStart;
+    if (diffMs <= 0) return;
+    const newStart = new Date(editTuNgay);
+    const newEnd = new Date(newStart.getTime() + diffMs);
+    const yyyy = newEnd.getFullYear();
+    const mm = String(newEnd.getMonth() + 1).padStart(2, '0');
+    const dd = String(newEnd.getDate()).padStart(2, '0');
+    setEditDenNgay(`${yyyy}-${mm}-${dd}`);
+  }, [editTuNgay]);
 
   const handleSaveEdit = async () => {
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;

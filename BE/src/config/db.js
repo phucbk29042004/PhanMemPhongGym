@@ -50,6 +50,7 @@ try { db.exec(`ALTER TABLE ho_so ADD COLUMN chieu_cao_cm REAL;`); } catch (_) { 
 try { db.exec(`ALTER TABLE ho_so ADD COLUMN can_nang_kg REAL;`); } catch (_) { }
 try { db.exec(`ALTER TABLE dang_ky_pt ADD COLUMN ngay_tao DATETIME DEFAULT (datetime('now','localtime'));`); } catch (_) { }
 try { db.exec(`ALTER TABLE dang_ky_goi_tap ADD COLUMN so_tien_da_thu REAL DEFAULT 0;`); } catch (_) { }
+try { db.exec(`ALTER TABLE ho_so ADD COLUMN trang_thai_lam_viec TEXT NOT NULL DEFAULT 'hoat_dong' CHECK (trang_thai_lam_viec IN ('hoat_dong','tam_nghi'));`); } catch (_) { }
 
 // ── Migration: Chuyển đổi le_tan thành nhan_vien ───────────
 try {

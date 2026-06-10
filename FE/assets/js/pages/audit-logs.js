@@ -44,6 +44,7 @@ window.GymApp.pages['audit-logs'] = {
 
   // Bản đồ dịch hành động sang Tiếng Việt
   actionTranslations: {
+    // Hành động viết hoa (từ BE chuẩn)
     'CREATE': 'Thêm mới',
     'UPDATE': 'Cập nhật',
     'DELETE': 'Xóa',
@@ -51,19 +52,26 @@ window.GymApp.pages['audit-logs'] = {
     'LOGOUT': 'Đăng xuất',
     'CHECKIN': 'Điểm danh',
     'NOTIFY': 'Gửi thông báo',
-    'CONFIG': 'Cấu hình'
+    'CONFIG': 'Cấu hình',
+    // Hành động snake_case tiếng Việt (từ config/nội quy)
+    'cap_nhat_cau_hinh': 'Cập nhật cấu hình',
+    'tao_noi_quy': 'Tạo nội quy',
+    'cap_nhat_noi_quy': 'Cập nhật nội quy',
+    'xoa_noi_quy': 'Xóa nội quy',
   },
 
   translateAction: function (act) {
     if (!act) return '—';
     if (this.actionTranslations[act]) return this.actionTranslations[act];
-    let translated = act;
-    Object.keys(this.actionTranslations).forEach(key => {
-      if (translated.includes(key)) {
-        translated = translated.replace(key, this.actionTranslations[key]);
+    // Thử tìm partial match với key viết hoa (VD: 'CREATE_MEMBER' → 'Thêm mới')
+    const upperKeys = ['CREATE', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT', 'CHECKIN', 'NOTIFY', 'CONFIG'];
+    for (const key of upperKeys) {
+      if (act.startsWith(key + '_') || act === key) {
+        return this.actionTranslations[key];
       }
-    });
-    return translated;
+    }
+    // Fallback: thay _ thành dấu cách, viết hoa chữ đầu
+    return act.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   },
 
   // Nhãn hành động

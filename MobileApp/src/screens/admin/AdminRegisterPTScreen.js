@@ -198,6 +198,11 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
       Alert.alert('Lỗi', 'Ngày bắt đầu phải đúng định dạng DD/MM/YYYY (VD: 25/05/2026).');
       return;
     }
+    const todayYMD = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
+    if (!(activePT && registrationType === 'noi_tiep') && ymdStart < todayYMD) {
+      Alert.alert('Lỗi', 'Ngày bắt đầu không được là ngày trong quá khứ.');
+      return;
+    }
     let ymdEnd = null;
     if (endDate.trim()) {
       ymdEnd = convertDMYToYMD(endDate);
