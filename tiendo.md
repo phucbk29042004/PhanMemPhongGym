@@ -1780,3 +1780,9 @@
   - **Backend**: Loại bỏ điều kiện `AND h.loai_ho_so = 'hoi_vien'` trong hàm `getMemberById` để cho phép truy vấn thông tin chi tiết của hồ sơ Nhân viên (`nhan_vien`) và Huấn luyện viên (`pt`), giải quyết triệt để lỗi `Request failed with status code 404` khi mở trang chi tiết hoặc trang chỉnh sửa trên di động.
   - **Mobile App**: Bao bọc phần hiển thị **Gói tập Gym** và **Hợp đồng PT** bằng điều kiện `{member?.loai_ho_so === 'hoi_vien' && (...)}` để ẩn các phần này và ngăn việc hiển thị nút đăng ký/gia hạn gói tập cho Nhân viên/PT. Cập nhật tiêu đề và nhãn phụ hiển thị đúng vai trò của hồ sơ (Huấn luyện viên/Nhân viên) thay vì mặc định hiển thị "Hội viên" hay "Standard".
 - **Kết quả**: Thành công.
+
+### [10/06/2026 16:32] — Cập nhật cấu hình IP kết nối API của Mobile App
+- **Loại**: Cấu hình
+- **File**: `MobileApp/src/services/api.js`
+- **Mô tả**: Cập nhật giá trị `API_URL` từ IP `192.168.11.126` sang `192.168.11.125` để đồng bộ đúng với địa chỉ IP Wifi hiện tại của máy tính đang chạy backend local, giúp Mobile App kết nối chính xác và lấy dữ liệu của nhánh làm việc cục bộ.
+- **Kết quả**: Thành công.
