@@ -8,9 +8,18 @@
 ---
 
 ## 📌 Trạng thái hiện tại
-**✅ Cải thiện ngữ cảnh AI Chatbot** — Chặn việc tự động lồng ghép số liệu phòng tập vào các câu trả lời tư vấn kiến thức chung.
+**✅ Sửa lỗi hiển thị RedBox trên Mobile** — Chuyển đổi console.error ở catch block của các màn hình Admin Mobile thành console.log để hiển thị đúng Alert thân thiện cho người dùng.
 
 ---
+
+### [10/06/2026 16:55] — Khắc phục màn hình lỗi đỏ (RedBox) và chuẩn hóa thông báo Alert trên Mobile App
+- **Loại**: Sửa bug (Mobile UI/UX)
+- **File**: `MobileApp/src/screens/admin/AdminRegisterPTScheduleScreen.js`, `MobileApp/src/screens/admin/AdminRegisterPTScreen.js`, `MobileApp/src/screens/admin/AdminRegisterPackageScreen.js`, `MobileApp/src/screens/admin/AdminAddEditPTScreen.js`, `MobileApp/src/screens/admin/AdminAddEditPackageScreen.js`, `MobileApp/src/screens/admin/AdminPackageRequestsScreen.js`, `MobileApp/src/screens/admin/AdminExpiredMembersScreen.js`
+- **Mô tả**:
+  - Phát hiện lệnh `console.error` trong các block catch lỗi gọi API gây kích hoạt màn hình báo lỗi đỏ (RedBox/LogBox) thô của React Native/Expo, che khuất giao diện và gây hiểu lầm là lỗi ứng dụng cho người test.
+  - Chuyển toàn bộ `console.error` lỗi API thành `console.log` để ghi nhận dưới nền âm thầm.
+  - Chuẩn hóa các hộp thoại `Alert.alert('Lỗi', ...)` để lấy thông báo chuẩn xác từ backend qua `err?.response?.data?.message || err?.message || 'Có lỗi xảy ra.'` đảm bảo thông báo hiện lên đẹp đẽ, chuyên nghiệp.
+- **Kết quả**: Thành công.
 
 ### [10/06/2026 16:40] — Cải thiện ngữ cảnh phản hồi của AI Chatbot, chặn lồng ghép số liệu phòng gym khi tư vấn chung
 - **Loại**: Sửa bug / Cải tiến AI Chatbot

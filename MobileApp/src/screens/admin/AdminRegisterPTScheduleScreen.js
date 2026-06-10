@@ -379,8 +379,8 @@ export default function AdminRegisterPTScheduleScreen({ route, navigation }) {
         Alert.alert('Lỗi', res.data?.message || 'Đặt lịch tập thất bại.');
       }
     } catch (err) {
-      console.error('[RegisterPTSchedule] error:', err?.response?.data || err?.message);
-      Alert.alert('Lỗi', err?.response?.data?.message || 'Có lỗi xảy ra.');
+      console.log('[RegisterPTSchedule] error:', err?.response?.data || err?.message);
+      Alert.alert('Lỗi', err?.response?.data?.message || err?.message || 'Có lỗi xảy ra.');
     } finally {
       setSubmitting(false);
     }

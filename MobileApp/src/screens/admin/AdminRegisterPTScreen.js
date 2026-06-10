@@ -269,8 +269,8 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
           Alert.alert('Lỗi', res.data?.message || 'Đăng ký PT thất bại.');
         }
       } catch (err) {
-        console.error('[RegisterPT] error:', err?.response?.data || err?.message);
-        Alert.alert('Lỗi', err?.response?.data?.message || 'Có lỗi xảy ra.');
+        console.log('[RegisterPT] error:', err?.response?.data || err?.message);
+        Alert.alert('Lỗi', err?.response?.data?.message || err?.message || 'Có lỗi xảy ra.');
       } finally {
         setSubmitting(false);
       }
