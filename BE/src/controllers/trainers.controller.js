@@ -37,6 +37,7 @@ export const getTrainers = (req, res) => {
       h.so_dien_thoai, h.email, h.avatar_url, h.ghi_chu, h.ngay_tao,
       h.chi_nhanh, h.phong_tap, h.chuyen_mon, h.kinh_nghiem, h.tinh_thanh, h.quan_huyen,
       h.tai_khoan_id,
+      COALESCE(h.trang_thai_lam_viec, 'hoat_dong') AS trang_thai_lam_viec,
       COALESCE(tk.trang_thai, 'hoat_dong') AS trang_thai,
       -- Số học viên đang tập
       (SELECT COUNT(DISTINCT dp.hoi_vien_id) FROM dang_ky_pt dp WHERE dp.pt_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS so_hoc_vien,
@@ -61,6 +62,7 @@ export const getTrainerById = (req, res) => {
   const { id } = req.params;
   const trainer = db.prepare(`
     SELECT h.*,
+           COALESCE(h.trang_thai_lam_viec, 'hoat_dong') AS trang_thai_lam_viec,
            COALESCE(tk.trang_thai, 'hoat_dong') AS trang_thai,
            ROUND((SELECT AVG(so_sao) FROM danh_gia_pt dg WHERE dg.pt_id = h.id), 1) AS rating,
            ROUND((SELECT AVG(so_sao) FROM danh_gia_pt dg WHERE dg.pt_id = h.id), 1) AS danh_gia,
@@ -141,24 +143,24 @@ export const updateTrainer = (req, res) => {
   const { ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email, chuyen_mon, kinh_nghiem, chi_nhanh, trang_thai, ghi_chu } = req.body;
   
   const tx = db.transaction(() => {
+    const lam_viec = trang_thai ? ((trang_thai === 'hoat_dong' || trang_thai === 'active' || trang_thai === 'kich_hoat') ? 'hoat_dong' : 'tam_nghi') : null;
     db.prepare(`
       UPDATE ho_so SET
         ho_ten = COALESCE(?, ho_ten), gioi_tinh = COALESCE(?, gioi_tinh),
         ngay_sinh = COALESCE(?, ngay_sinh), so_dien_thoai = COALESCE(?, so_dien_thoai),
         email = COALESCE(?, email), chuyen_mon = COALESCE(?, chuyen_mon),
         kinh_nghiem = COALESCE(?, kinh_nghiem), chi_nhanh = COALESCE(?, chi_nhanh),
-        ghi_chu = COALESCE(?, ghi_chu), nguoi_cap_nhat_id = ?
+        ghi_chu = COALESCE(?, ghi_chu), nguoi_cap_nhat_id = ?,
+        trang_thai_lam_viec = COALESCE(?, trang_thai_lam_viec)
       WHERE id = ?
     `).run(
       ho_ten || null, gioi_tinh || null, ngay_sinh || null, so_dien_thoai || null, email || null,
       chuyen_mon || null, kinh_nghiem !== undefined ? parseInt(kinh_nghiem) || 0 : undefined,
-      chi_nhanh || null, ghi_chu || null, req.user.id, id
+      chi_nhanh || null, ghi_chu || null, req.user.id, lam_viec, id
     );
 
-    if (trang_thai && old.tai_khoan_id) {
-      const tk_status = (trang_thai === 'hoat_dong' || trang_thai === 'active' || trang_thai === 'kich_hoat') ? 'hoat_dong' : 'khoa';
-      db.prepare(`UPDATE tai_khoan SET trang_thai = ? WHERE id = ?`).run(tk_status, old.tai_khoan_id);
-    }
+    // Đồng bộ tài khoản: tạm nghỉ không khóa tài khoản, chỉ cập nhật trạng thái làm việc
+    // (tai_khoan.trang_thai vẫn giữ nguyên 'hoat_dong' để PT vẫn đăng nhập được)
   });
 
   tx();

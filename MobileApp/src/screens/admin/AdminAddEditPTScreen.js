@@ -8,6 +8,7 @@ import { ChevronDown, Shield, X, Save, User, Phone, Mail, Award, Dumbbell } from
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import DatePickerField from '../../components/DatePickerField';
+import { useAuthStore } from '../../store/useAuthStore';
 
 // ── Helpers ──────────────────────────────────────────────────────────
 function RequiredStar() {
@@ -62,6 +63,7 @@ export default function AdminAddEditPTScreen({ route, navigation }) {
   const isEdit = ptId != null;
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const { selectedBranch } = useAuthStore();
 
   // Loading states
   const [loading, setLoading] = useState(false);
@@ -75,7 +77,7 @@ export default function AdminAddEditPTScreen({ route, navigation }) {
   const [ngaySinh, setNgaySinh] = useState(''); // YYYY-MM-DD
   const [chuyenMon, setChuyenMon] = useState('Fitness');
   const [kinhNghiem, setKinhNghiem] = useState('1');
-  const [chiNhanh, setChiNhanh] = useState('');
+  const [chiNhanh, setChiNhanh] = useState(isEdit ? '' : (selectedBranch || ''));
   const [ghiChu, setGhiChu] = useState('');
 
   // Branches list

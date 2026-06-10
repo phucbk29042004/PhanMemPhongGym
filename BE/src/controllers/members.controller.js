@@ -1828,6 +1828,13 @@ export const editPackage = (req, res) => {
   if (!pkg) return error(res, 'Không tìm thấy đăng ký gói tập.', 404);
   if (pkg.trang_thai === 'huy') return error(res, 'Không thể chỉnh sửa gói tập đã hủy.', 400);
 
+  if (tu_ngay) {
+    const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
+    if (tu_ngay < todayStr) {
+      return error(res, 'Ngày bắt đầu không được là ngày trong quá khứ.', 400);
+    }
+  }
+
   if (tu_ngay && den_ngay && new Date(den_ngay) <= new Date(tu_ngay)) {
     return error(res, 'Ngày kết thúc phải sau ngày bắt đầu.', 400);
   }

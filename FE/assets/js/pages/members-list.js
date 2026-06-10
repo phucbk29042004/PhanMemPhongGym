@@ -606,7 +606,7 @@ window.GymApp.pages['members-list'] = {
     let rowsHtml = paginated.map(pt => {
       const rating = pt.danh_gia || pt.rating || 0;
       const ratingDisplay = rating ? rating.toFixed(1) : '—';
-      const isActive = pt.trang_thai === 'hoat_dong' || pt.trang_thai === 'active' || pt.trang_thai === 'kich_hoat';
+      const isActive = (pt.trang_thai_lam_viec || pt.trang_thai) === 'hoat_dong';
 
       const ratingStars = Array.from({ length: 5 }, (_, i) =>
         `<span class="material-symbols-outlined text-xs" style="color:${i < Math.round(rating) ? '#fbbf24' : 'rgba(0,0,0,0.15)'};font-variation-settings:'FILL' 1;">star</span>`
@@ -694,7 +694,7 @@ window.GymApp.pages['members-list'] = {
     const cardRowsHtml = paginated.map(pt => {
       const rating = pt.danh_gia || pt.rating || 0;
       const ratingDisplay = rating ? rating.toFixed(1) : '—';
-      const isActive = pt.trang_thai === 'hoat_dong' || pt.trang_thai === 'active' || pt.trang_thai === 'kich_hoat';
+      const isActive = (pt.trang_thai_lam_viec || pt.trang_thai) === 'hoat_dong';
       return `
         <div class="member-row" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--outline-variant,#e2e8f0);cursor:pointer;transition:background 0.12s;background:var(--bg-surface-lowest,#fff);" onmouseover="this.style.background='rgba(29,147,54,0.04)'" onmouseout="this.style.background='var(--bg-surface-lowest,#fff)'">
           <div style="flex-shrink:0;">
@@ -855,7 +855,7 @@ window.GymApp.pages['members-list'] = {
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);backdrop-filter:blur(6px);padding:16px;';
 
     const rating = pt.danh_gia || pt.rating || 0;
-    const isActive = pt.trang_thai === 'hoat_dong' || pt.trang_thai === 'active';
+    const isActive = (pt.trang_thai_lam_viec || pt.trang_thai) === 'hoat_dong';
     const statusText = isActive ? '● Đang làm việc' : '○ Tạm nghỉ';
     const stars = Array.from({ length: 5 }, (_, i) =>
       `<span class="material-symbols-outlined" style="font-size:16px;color:${i < Math.round(rating) ? '#fbbf24' : 'rgba(255,255,255,0.3)'};font-variation-settings:'FILL' 1;">star</span>`
@@ -1339,7 +1339,7 @@ window.GymApp.pages['members-list'] = {
             ${field('fitness_center', 'Chuyên môn', 'chuyen_mon', 'text', pt.chuyen_mon || pt.specialty, false)}
             ${field('work_history', 'Kinh nghiệm (năm)', 'kinh_nghiem', 'number', pt.kinh_nghiem || 0, false)}
             ${selectField('store', 'Chi nhánh', 'chi_nhanh', branchOptions, pt.chi_nhanh, false)}
-            ${selectField('toggle_on', 'Trạng thái', 'trang_thai', [{ v: 'hoat_dong', l: 'Đang làm việc' }, { v: 'tam_nghi', l: 'Tạm nghỉ' }], pt.trang_thai === 'active' ? 'hoat_dong' : pt.trang_thai === 'inactive' ? 'tam_nghi' : pt.trang_thai, false)}
+            ${selectField('toggle_on', 'Trạng thái', 'trang_thai', [{ v: 'hoat_dong', l: 'Đang làm việc' }, { v: 'tam_nghi', l: 'Tạm nghỉ' }], pt.trang_thai_lam_viec || 'hoat_dong', false)}
             ${textareaField('description', 'Ghi chú', 'ghi_chu', pt.ghi_chu, true)}
           </div>
         </div>
@@ -2809,6 +2809,21 @@ window.GymApp.pages['members-list'] = {
     overlay.querySelector('#edit-pkg-close').addEventListener('click', close);
     overlay.querySelector('#edit-pkg-close2').addEventListener('click', close);
     overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+    // Auto-tính lại den_ngay khi tu_ngay thay đổi (giữ nguyên khoảng thời gian gốc)
+    const origTuNgay = d0(pkg.tu_ngay);
+    const origDenNgay = d0(pkg.den_ngay);
+    overlay.querySelector('#edit-pkg-from').addEventListener('change', function () {
+      if (!origTuNgay || !origDenNgay || !this.value) return;
+      const diffMs = new Date(origDenNgay) - new Date(origTuNgay);
+      if (diffMs <= 0) return;
+      const newEnd = new Date(new Date(this.value).getTime() + diffMs);
+      const yyyy = newEnd.getFullYear();
+      const mm = String(newEnd.getMonth() + 1).padStart(2, '0');
+      const dd = String(newEnd.getDate()).padStart(2, '0');
+      overlay.querySelector('#edit-pkg-to').value = `${yyyy}-${mm}-${dd}`;
+    });
+
     const _parseVND = s => parseInt((s || '').replace(/\./g, '').replace(/,/g, '')) || 0;
     const _fmtVND = n => n > 0 ? new Intl.NumberFormat('vi-VN').format(n) : '';
     const editPriceEl = overlay.querySelector('#edit-pkg-price');
@@ -3130,20 +3145,24 @@ window.GymApp.pages['members-list'] = {
       if (pts.length === 0) {
         ptregListEl.innerHTML = '<p class="text-center py-4 text-on-surface-variant text-body-sm font-semibold">Không có PT nào</p>';
       } else {
-        ptregListEl.innerHTML = pts.map(pt => `
-          <div class="pt-modal-card flex flex-col items-center gap-1.5 p-3 rounded-xl cursor-pointer hover:shadow-md transition-all duration-200 border-2 border-outline-variant/40 hover:border-brand-primary/60 hover:-translate-y-0.5 bg-surface-container-lowest"
-               data-pt-id="${pt.id}" data-pt-name="${pt.ho_ten || pt.name}" data-pt-specialty="${pt.chuyen_mon || ''}" data-avatar-url="${pt.avatar_url || ''}">
+        ptregListEl.innerHTML = pts.map(pt => {
+          const ptWorking = (pt.trang_thai_lam_viec || pt.trang_thai) === 'hoat_dong';
+          return `
+          <div class="pt-modal-card flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all duration-200 ${ptWorking ? 'cursor-pointer hover:shadow-md hover:border-brand-primary/60 hover:-translate-y-0.5 bg-surface-container-lowest border-outline-variant/40' : 'cursor-not-allowed opacity-50 bg-surface-container border-outline-variant/20'}"
+               data-pt-id="${pt.id}" data-pt-name="${pt.ho_ten || pt.name}" data-pt-specialty="${pt.chuyen_mon || ''}" data-avatar-url="${pt.avatar_url || ''}" data-disabled="${ptWorking ? '' : '1'}">
             ${window.GymApp.avatarImg(pt.avatar_url, pt.ho_ten || pt.name, 'md')}
             <div class="text-center min-w-0 w-full">
               <p class="font-bold text-on-surface text-body-sm truncate">${pt.ho_ten || pt.name}</p>
               <p class="text-on-surface-variant text-[11px] font-semibold truncate">${pt.chuyen_mon || 'Huấn luyện viên'}</p>
               <p class="text-[10px] text-outline font-semibold mt-0.5">${pt.ma_ho_so || 'PT'} · ${pt.so_hoc_vien || 0} HV</p>
+              ${!ptWorking ? '<p class="text-[10px] font-bold text-[#94a3b8] mt-0.5">⏸ Đang tạm nghỉ</p>' : ''}
             </div>
           </div>
-        `).join('');
+        `}).join('');
 
         ptregListEl.querySelectorAll('.pt-modal-card').forEach(card => {
           card.addEventListener('click', () => {
+            if (card.dataset.disabled) return;
             const ptId = card.dataset.ptId;
             const ptName = card.dataset.ptName;
             const avatarUrl = card.dataset.avatarUrl || '';
@@ -3262,6 +3281,8 @@ window.GymApp.pages['members-list'] = {
       const sessions = document.getElementById('ptreg-sessions').value;
       const note = document.getElementById('ptreg-note').value.trim();
       if (!ptId || !goiId || price <= 0 || !from) { window.GymApp.toast('Vui lòng điền đầy đủ: PT, gói PT, giá và từ ngày (*)', 'error'); return; }
+      const _todayForReg = new Date().toLocaleDateString('sv-SE');
+      if (from < _todayForReg) { window.GymApp.toast('Ngày bắt đầu chỉ được chọn từ hôm nay trở đi', 'error'); return; }
 
       const ptStackCheckboxEl = document.getElementById('ptreg-stack-mode');
       if (activePtReg && ptStackCheckboxEl && !ptStackCheckboxEl.checked) {
@@ -3382,20 +3403,24 @@ window.GymApp.pages['members-list'] = {
       if (pts.length === 0) {
         pteditListEl.innerHTML = '<p class="text-center py-4 text-on-surface-variant text-body-sm font-semibold">Không có PT nào</p>';
       } else {
-        pteditListEl.innerHTML = pts.map(pt => `
-          <div class="pt-modal-card flex flex-col items-center gap-1.5 p-3 rounded-xl cursor-pointer hover:shadow-md transition-all duration-200 border-2 border-outline-variant/40 hover:border-brand-primary/60 hover:-translate-y-0.5 bg-surface-container-lowest"
-               data-pt-id="${pt.id}" data-pt-name="${pt.ho_ten || pt.name}" data-pt-specialty="${pt.chuyen_mon || ''}" data-avatar-url="${pt.avatar_url || ''}">
+        pteditListEl.innerHTML = pts.map(pt => {
+          const ptWorking = (pt.trang_thai_lam_viec || pt.trang_thai) === 'hoat_dong';
+          return `
+          <div class="pt-modal-card flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all duration-200 ${ptWorking ? 'cursor-pointer hover:shadow-md hover:border-brand-primary/60 hover:-translate-y-0.5 bg-surface-container-lowest border-outline-variant/40' : 'cursor-not-allowed opacity-50 bg-surface-container border-outline-variant/20'}"
+               data-pt-id="${pt.id}" data-pt-name="${pt.ho_ten || pt.name}" data-pt-specialty="${pt.chuyen_mon || ''}" data-avatar-url="${pt.avatar_url || ''}" data-disabled="${ptWorking ? '' : '1'}">
             ${window.GymApp.avatarImg(pt.avatar_url, pt.ho_ten || pt.name, 'md')}
             <div class="text-center min-w-0 w-full">
               <p class="font-bold text-on-surface text-body-sm truncate">${pt.ho_ten || pt.name}</p>
               <p class="text-on-surface-variant text-[11px] font-semibold truncate">${pt.chuyen_mon || 'Huấn luyện viên'}</p>
               <p class="text-[10px] text-outline font-semibold mt-0.5">${pt.ma_ho_so || 'PT'} · ${pt.so_hoc_vien || 0} HV</p>
+              ${!ptWorking ? '<p class="text-[10px] font-bold text-[#94a3b8] mt-0.5">⏸ Đang tạm nghỉ</p>' : ''}
             </div>
           </div>
-        `).join('');
+        `}).join('');
 
         pteditListEl.querySelectorAll('.pt-modal-card').forEach(card => {
           card.addEventListener('click', () => {
+            if (card.dataset.disabled) return;
             const ptId = card.dataset.ptId;
             const ptName = card.dataset.ptName;
             const avatarUrl = card.dataset.avatarUrl || '';

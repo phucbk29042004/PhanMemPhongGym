@@ -413,7 +413,12 @@ window.GymApp.pages['pt-training'] = {
       } catch (err) {
         console.error('Failed to fetch pt schedules', err);
       }
+      // Người dùng đã navigate sang trang khác trong khi fetch — dừng lại
+      return;
     }
+
+    // Guard: nếu trang đã bị navigate đi, không bind events
+    if (window.GymApp.currentPage !== 'pt-training') return;
 
     // Đăng ký callback phân trang
     window.GymApp._pgHandler = (page) => {

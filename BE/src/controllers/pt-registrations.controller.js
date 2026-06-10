@@ -238,6 +238,14 @@ export const updateRegistration = (req, res) => {
 
   const { pt_id, goi_pt_id, so_buoi_dang_ky, tu_ngay, den_ngay, gia_thuc_te, ghi_chu } = req.body;
 
+  // Chặn ngày bắt đầu trong quá khứ
+  if (tu_ngay) {
+    const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
+    if (tu_ngay < todayStr) {
+      return error(res, 'Ngày bắt đầu không được là ngày trong quá khứ.', 400);
+    }
+  }
+
   // Nếu đổi PT, kiểm tra PT mới tồn tại
   if (pt_id && pt_id !== old.pt_id) {
     const pt = db.prepare("SELECT id FROM ho_so WHERE id = ? AND loai_ho_so = 'pt' AND is_deleted = 0").get(pt_id);
