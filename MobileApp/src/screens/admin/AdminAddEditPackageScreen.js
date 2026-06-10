@@ -180,8 +180,8 @@ export default function AdminAddEditPackageScreen({ route, navigation }) {
         { text: 'OK', onPress: () => navigation.goBack() }
       ]);
     } catch (err) {
-      console.error('[AddEditPackage] save error:', err?.response?.data || err?.message);
-      Alert.alert('Lỗi', err?.response?.data?.message || 'Có lỗi xảy ra.');
+      console.log('[AddEditPackage] save error:', err?.response?.data || err?.message);
+      Alert.alert('Lỗi', err?.response?.data?.message || err?.message || 'Có lỗi xảy ra.');
     } finally {
       setSaving(false);
     }

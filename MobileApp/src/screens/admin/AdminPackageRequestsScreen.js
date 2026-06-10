@@ -116,8 +116,8 @@ export default function AdminPackageRequestsScreen({ navigation }) {
         Alert.alert('Lỗi', res.data?.message || 'Không thể xử lý yêu cầu.');
       }
     } catch (err) {
-      console.error('[AdminPackageRequests] action error:', err?.response?.data || err?.message);
-      Alert.alert('Lỗi', err?.response?.data?.message || 'Có lỗi xảy ra khi gọi API.');
+      console.log('[AdminPackageRequests] action error:', err?.response?.data || err?.message);
+      Alert.alert('Lỗi', err?.response?.data?.message || err?.message || 'Có lỗi xảy ra khi gọi API.');
     } finally {
       setActionLoading(false);
     }

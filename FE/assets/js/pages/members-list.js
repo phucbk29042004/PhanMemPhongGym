@@ -1427,183 +1427,6 @@ window.GymApp.pages['members-list'] = {
     });
   },
 
-  _showAddPtModal: function () {
-    const self = this;
-    document.getElementById('gym-pt-add-modal')?.remove();
-    const overlay = document.createElement('div');
-    overlay.id = 'gym-pt-add-modal';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);backdrop-filter:blur(6px);padding:16px;';
-
-    const branchOptions = [
-      { v: 'Chi nhánh Gò Vấp', l: 'Chi nhánh Gò Vấp' },
-      { v: 'Chi nhánh Bình Thạnh', l: 'Chi nhánh Bình Thạnh' },
-      { v: 'Chi nhánh Tân Bình', l: 'Chi nhánh Tân Bình' },
-      { v: 'Chi nhánh Phú Nhuận', l: 'Chi nhánh Phú Nhuận' },
-      { v: 'Chi nhánh Quận 1', l: 'Chi nhánh Quận 1' },
-      { v: 'Chi nhánh Quận 3', l: 'Chi nhánh Quận 3' },
-      { v: 'Chi nhánh Quận 5', l: 'Chi nhánh Quận 5' },
-      { v: 'Chi nhánh Quận 7', l: 'Chi nhánh Quận 7' },
-      { v: 'Chi nhánh Quận 10', l: 'Chi nhánh Quận 10' },
-      { v: 'Chi nhánh Bình Tân', l: 'Chi nhánh Bình Tân' },
-      { v: 'Chi nhánh Thủ Đức', l: 'Chi nhánh Thủ Đức' },
-      { v: 'Chi nhánh Nhà Bè', l: 'Chi nhánh Nhà Bè' }
-    ];
-
-    const field = (icon, label, fid, type, required = false, isFull = false) => `
-      <div class="${isFull ? 'col-span-full' : ''}">
-        <label class="text-on-surface-variant text-body-sm uppercase font-bold tracking-wider block mb-1 opacity-80">${label}${required ? ' <span style="color:#ba1a1a;margin-left:2px;font-weight:700;">*</span>' : ''}</label>
-        <div class="relative group">
-          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors text-[18px]">${icon}</span>
-          <input id="pta-${fid}" type="${type}" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-4 py-2.5 rounded-xl focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none text-body-md font-medium transition-all" />
-        </div>
-      </div>
-    `;
-
-    const selectField = (icon, label, fid, options, isFull = false) => `
-      <div class="${isFull ? 'col-span-full' : ''}">
-        <label class="text-on-surface-variant text-body-sm uppercase font-bold tracking-wider block mb-1 opacity-80">${label}</label>
-        <div class="relative group">
-          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors text-[18px] z-10">${icon}</span>
-          <select id="pta-${fid}" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-10 py-2.5 rounded-xl focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none text-body-md font-medium transition-all cursor-pointer relative z-0" style="appearance:none !important;-webkit-appearance:none !important;-moz-appearance:none !important;background-image:none !important;">
-            ${options.map(o => `<option value="${o.v}">${o.l}</option>`).join('')}
-          </select>
-          <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none z-10">expand_more</span>
-        </div>
-      </div>
-    `;
-
-    const textareaField = (icon, label, fid, isFull = false) => `
-      <div class="${isFull ? 'col-span-full' : ''}">
-        <label class="text-on-surface-variant text-body-sm uppercase font-bold tracking-wider block mb-1 opacity-80">${label}</label>
-        <div class="relative group">
-          <span class="material-symbols-outlined absolute left-3 top-3 text-outline group-focus-within:text-brand-primary transition-colors text-[18px]">${icon}</span>
-          <textarea id="pta-${fid}" rows="2" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-4 py-2.5 rounded-xl focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none text-body-md font-medium transition-all resize-none" placeholder="${label}..."></textarea>
-        </div>
-      </div>
-    `;
-
-    overlay.innerHTML = `
-      <div style="border-radius:24px;width:100%;max-width:560px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.2);background:var(--bg-surface-lowest);">
-        <div style="padding:24px 24px 16px;flex-shrink:0;position:relative;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--outline-variant);border-top-left-radius:24px;border-top-right-radius:24px;">
-          <div>
-            <h3 style="font-size:20px;font-weight:800;color:var(--text-on-surface);margin:0 0 4px;">Thêm mới HLV</h3>
-            <p style="font-size:13px;color:var(--text-on-surface-variant);margin:0;opacity:0.8;">Nhập thông tin cho huấn luyện viên mới</p>
-          </div>
-          <button id="close-pt-add-modal" style="background:var(--bg-surface-variant);border:none;cursor:pointer;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;" class="hover:bg-outline-variant/30 transition-all">
-            <span class="material-symbols-outlined" style="color:var(--text-on-surface);font-size:20px;">close</span>
-          </button>
-        </div>
-        <div class="bg-surface-container-lowest overflow-y-auto flex-1 p-loose" style="display:flex;flex-direction:column;gap:20px;">
-          <!-- Avatar Preview Centered -->
-          <div style="display:flex;justify-content:center;margin-bottom:8px;">
-            <div id="pta-avatar-container" class="relative group cursor-pointer" title="Nhấn để chọn ảnh đại diện">
-              <div style="width:90px;height:90px;border-radius:50%;border:4px solid var(--brand-primary-container);overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.1);display:flex;align-items:center;justify-content:center;background:var(--bg-surface-variant);" id="pta-avatar-preview">
-                <span class="material-symbols-outlined text-[36px] text-outline">add_a_photo</span>
-              </div>
-              <div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <span class="material-symbols-outlined text-white text-[22px]">photo_camera</span>
-              </div>
-              <input type="file" id="pta-avatar-input" accept="image/*" style="display:none;" />
-            </div>
-          </div>
-          
-          <div class="grid grid-cols-2 gap-x-standard gap-y-4">
-            ${field('person', 'Họ và tên', 'ho_ten', 'text', true, true)}
-            ${selectField('wc', 'Giới tính', 'gioi_tinh', [{ v: 'nam', l: 'Nam' }, { v: 'nu', l: 'Nữ' }, { v: 'khac', l: 'Khác' }], false)}
-            ${field('cake', 'Ngày sinh', 'ngay_sinh', 'date', false)}
-            ${field('call', 'Số điện thoại', 'so_dien_thoai', 'tel', false)}
-            ${field('mail', 'Email', 'email', 'email', false)}
-            ${field('fitness_center', 'Chuyên môn', 'chuyen_mon', 'text', false)}
-            ${field('work_history', 'Kinh nghiệm (năm)', 'kinh_nghiem', 'number', false)}
-            ${selectField('store', 'Chi nhánh', 'chi_nhanh', branchOptions, false)}
-            ${textareaField('description', 'Ghi chú', 'ghi_chu', true)}
-          </div>
-        </div>
-        <div class="bg-surface-container-lowest px-loose py-standard border-t border-outline-variant flex gap-standard justify-end flex-shrink-0" style="border-bottom-left-radius:24px;border-bottom-right-radius:24px;">
-          <button id="cancel-pt-add" class="px-loose py-2.5 rounded-xl border-2 border-outline-variant text-on-surface-variant font-bold hover:bg-surface-container transition-all active:scale-95">Hủy</button>
-          <button id="save-pt-add" class="px-loose py-2.5 rounded-xl font-bold text-white hover:opacity-90 transition-all flex items-center gap-xs active:scale-95 shadow-md hover:shadow-lg" style="background:#1D9336;">
-            <span class="material-symbols-outlined text-sm">person_add</span> Thêm mới HLV
-          </button>
-        </div>
-      </div>
-    `;
-
-    document.body.appendChild(overlay);
-    const close = () => overlay.remove();
-    let ptAvatarFile = null;
-
-    document.getElementById('pta-avatar-container').addEventListener('click', () => {
-      document.getElementById('pta-avatar-input').click();
-    });
-
-    document.getElementById('pta-avatar-input').addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      if (file.size > 5 * 1024 * 1024) {
-        window.GymApp.toast('Ảnh vượt quá 5MB!', 'error');
-        return;
-      }
-      ptAvatarFile = file;
-      const reader = new FileReader();
-      reader.onload = (re) => {
-        document.getElementById('pta-avatar-preview').innerHTML = `<img src="${re.target.result}" style="width:100%;height:100%;object-fit:cover;" />`;
-      };
-      reader.readAsDataURL(file);
-    });
-
-    document.getElementById('close-pt-add-modal').addEventListener('click', close);
-    document.getElementById('cancel-pt-add').addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
-
-    document.getElementById('save-pt-add').addEventListener('click', async () => {
-      const btn = document.getElementById('save-pt-add');
-      const ho_ten = document.getElementById('pta-ho_ten').value.trim();
-      if (!ho_ten) { window.GymApp.toast('Họ tên không được để trống!', 'error'); return; }
-
-      btn.disabled = true;
-      btn.innerHTML = '<span class="animate-spin material-symbols-outlined text-sm">sync</span> Đang lưu...';
-      try {
-        const fd = new FormData();
-        fd.append('ho_ten', ho_ten);
-        fd.append('gioi_tinh', document.getElementById('pta-gioi_tinh').value);
-        fd.append('ngay_sinh', document.getElementById('pta-ngay_sinh').value || '');
-        fd.append('so_dien_thoai', document.getElementById('pta-so_dien_thoai').value.trim());
-        fd.append('email', document.getElementById('pta-email').value.trim());
-        fd.append('chuyen_mon', document.getElementById('pta-chuyen_mon').value.trim());
-        fd.append('kinh_nghiem', parseInt(document.getElementById('pta-kinh_nghiem').value) || 0);
-        fd.append('chi_nhanh', document.getElementById('pta-chi_nhanh').value);
-        fd.append('ghi_chu', document.getElementById('pta-ghi_chu').value.trim());
-        if (ptAvatarFile) {
-          fd.append('avatar', ptAvatarFile);
-        }
-
-        const token = localStorage.getItem('gym-token');
-        const fetchRes = await fetch('http://localhost:3000/api/trainers', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` },
-          body: fd,
-        });
-        const res = await fetchRes.json();
-        if (!res.success) {
-          throw new Error(res.message || 'Lỗi khi thêm mới HLV');
-        }
-
-        window.GymApp.toast('Đã thêm mới HLV thành công!', 'success');
-
-        if (window.GymApp.fetchInitialData) {
-          await window.GymApp.fetchInitialData();
-        }
-        self._applyPtFilter();
-
-        close();
-      } catch (err) {
-        window.GymApp.toast(err.message || 'Lỗi khi thêm mới HLV', 'error');
-        btn.disabled = false;
-        btn.innerHTML = '<span class="material-symbols-outlined text-sm align-middle">person_add</span> Thêm mới HLV';
-      }
-    });
-  },
-
   _showMemberModal: async function (id) {
     const self = this;
     let m = null;
@@ -5494,7 +5317,16 @@ window.GymApp.pages['members-list'] = {
       if (ok) window.GymApp.toast('Đã tải xuống file Excel PT!', 'success');
     });
 
-    document.getElementById('btn-add-pt-header')?.addEventListener('click', () => self._showAddPtModal());
+    document.getElementById('btn-add-pt-header')?.addEventListener('click', () => {
+      window.GymApp.navigate('member-add');
+      setTimeout(() => {
+        const typeSelect = document.getElementById('reg-loai-ho-so');
+        if (typeSelect) {
+          typeSelect.value = 'pt';
+          typeSelect.dispatchEvent(new Event('change'));
+        }
+      }, 100);
+    });
 
     self._updatePtSortUI();
     self._updateMemberSortUI();
@@ -5511,6 +5343,8 @@ window.GymApp.pages['members-list'] = {
         <h4 class="font-bold text-on-surface mb-1">Quản lý Hội viên:</h4>
         <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
           <li><strong>Tìm kiếm & Lọc:</strong> Tìm hội viên theo tên, SĐT hoặc mã số. Lọc theo trạng thái gói (Còn hạn, Hết hạn...), giới tính, hoặc xem ai đã check-in hôm nay.</li>
+          <li><strong>Nhập Excel & Tải ảnh (.zip):</strong> Bấm nút <strong>Nhập Excel</strong> để tải lên danh sách hội viên hàng loạt từ tệp Excel mẫu (hệ thống tự động sinh và cho tải template có dữ liệu mẫu). Bạn cũng có thể tải lên tệp zip chứa các hình ảnh avatar đặt tên theo Số điện thoại của hội viên để tự động khớp ảnh đại diện.</li>
+          <li><strong>Xuất Excel:</strong> Tải xuống toàn bộ danh sách hội viên hoặc danh sách đã lọc tìm kiếm dưới dạng file CSV/Excel bằng nút <strong>Xuất Excel</strong>.</li>
           <li><strong>Xem chi tiết:</strong> Click vào nút Xem (mắt xanh) để xem thông tin cá nhân, lịch sử tập luyện, các gói tập đã mua và lịch đăng ký PT của hội viên.</li>
           <li><strong>Thao tác nhanh:</strong> Lập phiếu gia hạn gói, đổi gói, hủy gói tập hoặc gán PT trực tiếp trong màn hình chi tiết hội viên.</li>
         </ul>
@@ -5520,7 +5354,7 @@ window.GymApp.pages['members-list'] = {
         <h4 class="font-bold text-on-surface mb-1">Quản lý Huấn luyện viên (PT):</h4>
         <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
           <li>Chuyển sang tab <strong>Huấn luyện viên</strong> để quản lý danh sách PT.</li>
-          <li>Xem thông tin chuyên môn, số lượng hội viên đang phụ trách và tổng số buổi dạy thực tế của từng PT.</li>
+          <li>Xem thông tin chuyên môn, chi nhánh, số lượng hội viên đang phụ trách và tổng số buổi dạy thực tế của từng PT. Hỗ trợ <strong>Xuất Excel</strong> danh sách PT.</li>
           <li>Thêm mới HLV bằng nút <strong>Thêm HLV</strong> ở góc trên bên phải khi đang chọn tab HLV.</li>
         </ul>
       </div>

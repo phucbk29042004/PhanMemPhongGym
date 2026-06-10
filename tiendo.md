@@ -8,9 +8,44 @@
 ---
 
 ## 📌 Trạng thái hiện tại
-**✅ Sửa 4 nhóm lỗi Mobile** — Ẩn filter chi nhánh Dashboard với nhân viên, StaffCard có thể nhấn vào xem/sửa, phân trang vuốt ngang (SwipePager), thêm upload ảnh cho HV và PT.
+**✅ Sửa lỗi hiển thị RedBox trên Mobile** — Chuyển đổi console.error ở catch block của các màn hình Admin Mobile thành console.log để hiển thị đúng Alert thân thiện cho người dùng.
 
 ---
+
+### [10/06/2026 16:55] — Khắc phục màn hình lỗi đỏ (RedBox) và chuẩn hóa thông báo Alert trên Mobile App
+- **Loại**: Sửa bug (Mobile UI/UX)
+- **File**: `MobileApp/src/screens/admin/AdminRegisterPTScheduleScreen.js`, `MobileApp/src/screens/admin/AdminRegisterPTScreen.js`, `MobileApp/src/screens/admin/AdminRegisterPackageScreen.js`, `MobileApp/src/screens/admin/AdminAddEditPTScreen.js`, `MobileApp/src/screens/admin/AdminAddEditPackageScreen.js`, `MobileApp/src/screens/admin/AdminPackageRequestsScreen.js`, `MobileApp/src/screens/admin/AdminExpiredMembersScreen.js`
+- **Mô tả**:
+  - Phát hiện lệnh `console.error` trong các block catch lỗi gọi API gây kích hoạt màn hình báo lỗi đỏ (RedBox/LogBox) thô của React Native/Expo, che khuất giao diện và gây hiểu lầm là lỗi ứng dụng cho người test.
+  - Chuyển toàn bộ `console.error` lỗi API thành `console.log` để ghi nhận dưới nền âm thầm.
+  - Chuẩn hóa các hộp thoại `Alert.alert('Lỗi', ...)` để lấy thông báo chuẩn xác từ backend qua `err?.response?.data?.message || err?.message || 'Có lỗi xảy ra.'` đảm bảo thông báo hiện lên đẹp đẽ, chuyên nghiệp.
+- **Kết quả**: Thành công.
+
+### [10/06/2026 16:40] — Cải thiện ngữ cảnh phản hồi của AI Chatbot, chặn lồng ghép số liệu phòng gym khi tư vấn chung
+- **Loại**: Sửa bug / Cải tiến AI Chatbot
+- **File**: `BE/src/controllers/assistant.controller.js`
+- **Mô tả**:
+  - Cập nhật quy tắc `accuracyRules` định nghĩa cho Trợ lý AI (Parry).
+  - Bổ sung ràng buộc nghiêm ngặt: Chỉ sử dụng dữ liệu thống kê hoạt động phòng tập (lượt check-in, số hội viên, doanh thu...) hoặc hồ sơ cá nhân khi người dùng hỏi trực tiếp các câu hỏi liên quan đến báo cáo, thống kê, hoặc thông tin cá nhân.
+  - Tuyệt đối không tự ý chèn các số liệu này vào câu trả lời đối với các câu hỏi chia sẻ kiến thức chung (sức khỏe, mệt mỏi, tập luyện, dinh dưỡng, lối sống), giúp câu trả lời tập trung vào đúng trọng tâm và không bị lan man.
+- **Kết quả**: Thành công.
+
+### [10/06/2026 16:10] — Bổ sung và cập nhật chú thích hướng dẫn sử dụng (guideHtml) trên Web Frontend
+- **Loại**: Cải tiến tài liệu & Hướng dẫn sử dụng
+- **File**: `FE/assets/js/pages/staff.js`, `FE/assets/js/pages/members-list.js`
+- **Mô tả**:
+  1. **staff.js**: Thêm thuộc tính `guideHtml` mô tả các chức năng quản lý nhân sự, phân quyền tài khoản (khóa/mở khóa), cập nhật avatar và bộ lọc tìm kiếm.
+  2. **members-list.js**: Cập nhật `guideHtml` để bổ sung hướng dẫn cho tính năng Nhập dữ liệu từ Excel kết hợp tải file ảnh ZIP, và Xuất danh sách Excel.
+- **Kết quả**: Thành công.
+
+### [10/06/2026 15:55] — Sửa đổi giao diện và luồng nghiệp vụ Web FE (scrollbar nhân viên, chuyển hướng tạo nhân viên, luồng thêm PT)
+- **Loại**: Sửa bug + Cải tiến luồng
+- **File**: `FE/assets/js/pages/staff.js`, `FE/assets/js/pages/member-add.js`, `FE/assets/js/pages/members-list.js`
+- **Mô tả**:
+  1. **staff.js**: Bổ sung gradient cho scrollbar-track và corner transparent trong stylesheet để loại bỏ đường viền trắng bên phải cột Thao tác, đồng bộ với thiết kế danh sách hội viên.
+  2. **member-add.js**: Sửa giá trị điều hướng từ `staff-list` (không tồn tại) thành `staff` khi thêm nhân viên thành công, đảm bảo hệ thống tự chuyển hướng về danh sách nhân viên.
+  3. **members-list.js**: Đổi luồng nút "Thêm HLV" từ mở modal riêng sang chuyển sang trang thêm hội viên mới `member-add` và chọn sẵn vai trò HLV (`pt`). Đồng thời xóa bỏ hàm `_showAddPtModal` cũ.
+- **Kết quả**: Thành công.
 
 ### [10/06/2026 15:20] — Sửa lỗi ẩn bộ lọc chi nhánh cho nhân viên trên Mobile App
 - **Loại**: Sửa bug (Fullstack)

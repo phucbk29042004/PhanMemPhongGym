@@ -611,12 +611,19 @@ window.GymApp.pages['staff'] = {
         .staff-table-mobile  { display: none; }
 
         #staff-scroll-container::-webkit-scrollbar { width:8px;height:8px; }
+        #staff-scroll-container::-webkit-scrollbar-track {
+          background: linear-gradient(to bottom, #1D9336 40px, transparent 40px) !important;
+        }
         #staff-scroll-container::-webkit-scrollbar-thumb { background:rgba(0,0,0,0.15);border-radius:4px; }
         .dark #staff-scroll-container::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.15); }
+        #staff-scroll-container::-webkit-scrollbar-corner {
+          background: transparent !important;
+        }
 
         .sticky-col-left  { position:sticky!important;left:0;z-index:2;box-shadow:2px 0 5px -2px rgba(0,0,0,0.1);transition:background-color 0.15s ease-in-out; }
         .sticky-col-right { position:sticky!important;right:0;z-index:2;box-shadow:-2px 0 5px -2px rgba(0,0,0,0.1);transition:background-color 0.15s ease-in-out; }
-        th.sticky-col-left, th.sticky-col-right { z-index:12!important;background:#1D9336!important; }
+        th.sticky-col-left, th.sticky-col-right { z-index:12!important;background:#1D9336!important; border-radius: 0 !important; }
+        #staff-scroll-container th { border-radius: 0 !important; }
 
         tr.staff-row td.sticky-col-left, tr.staff-row td.sticky-col-right { background:#fff!important; }
         tr.staff-row:nth-child(odd) td.sticky-col-left, tr.staff-row:nth-child(odd) td.sticky-col-right { background:#fafafa!important; }
@@ -1002,5 +1009,24 @@ window.GymApp.pages['staff'] = {
         loadingOverlay.remove();
       }
     });
-  }
+  },
+
+  guideHtml: `
+    <div class="space-y-4 text-xs">
+      <div class="flex items-start gap-2 bg-brand-primary/5 p-3 rounded-xl border border-brand-primary/10">
+        <span class="material-symbols-outlined text-brand-primary text-base flex-shrink-0 mt-0.5">info</span>
+        <p class="text-on-surface-variant leading-relaxed">Trang <strong>Quản lý Nhân viên</strong> giúp quản lý hồ sơ nhân sự, phân quyền tài khoản và theo dõi trạng thái hoạt động của nhân viên các chi nhánh.</p>
+      </div>
+
+      <div>
+        <h4 class="font-bold text-on-surface mb-1">Các chức năng chính:</h4>
+        <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
+          <li><strong>Thêm nhân viên:</strong> Cho phép tạo mới hồ sơ nhân viên (nhân viên, lễ tân...) với đầy đủ thông tin cá nhân và tài khoản đăng nhập.</li>
+          <li><strong>Tìm kiếm & Lọc:</strong> Hỗ trợ tìm kiếm nhanh theo tên, số điện thoại hoặc mã nhân viên. Lọc theo giới tính, trạng thái tài khoản (Hoạt động/Bị khóa) hoặc lọc theo chi nhánh làm việc (đối với Admin cấp cao).</li>
+          <li><strong>Cập nhật thông tin & Avatar:</strong> Chỉnh sửa hồ sơ cá nhân, đổi mật khẩu tài khoản và tải lên ảnh đại diện của nhân viên.</li>
+          <li><strong>Khóa/Mở khóa tài khoản:</strong> Quản trị viên có thể khóa tài khoản của nhân viên để ngăn truy cập vào hệ thống hoặc mở khóa khi cần thiết.</li>
+        </ul>
+      </div>
+    </div>
+  `
 };
