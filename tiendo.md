@@ -8,9 +8,18 @@
 ---
 
 ## 📌 Trạng thái hiện tại
-**✅ Bổ sung chú thích các trang FE** — Thêm mới guideHtml cho trang quản lý nhân viên và cập nhật mô tả Nhập/Xuất Excel cho trang danh sách hội viên.
+**✅ Cải thiện ngữ cảnh AI Chatbot** — Chặn việc tự động lồng ghép số liệu phòng tập vào các câu trả lời tư vấn kiến thức chung.
 
 ---
+
+### [10/06/2026 16:40] — Cải thiện ngữ cảnh phản hồi của AI Chatbot, chặn lồng ghép số liệu phòng gym khi tư vấn chung
+- **Loại**: Sửa bug / Cải tiến AI Chatbot
+- **File**: `BE/src/controllers/assistant.controller.js`
+- **Mô tả**:
+  - Cập nhật quy tắc `accuracyRules` định nghĩa cho Trợ lý AI (Parry).
+  - Bổ sung ràng buộc nghiêm ngặt: Chỉ sử dụng dữ liệu thống kê hoạt động phòng tập (lượt check-in, số hội viên, doanh thu...) hoặc hồ sơ cá nhân khi người dùng hỏi trực tiếp các câu hỏi liên quan đến báo cáo, thống kê, hoặc thông tin cá nhân.
+  - Tuyệt đối không tự ý chèn các số liệu này vào câu trả lời đối với các câu hỏi chia sẻ kiến thức chung (sức khỏe, mệt mỏi, tập luyện, dinh dưỡng, lối sống), giúp câu trả lời tập trung vào đúng trọng tâm và không bị lan man.
+- **Kết quả**: Thành công.
 
 ### [10/06/2026 16:10] — Bổ sung và cập nhật chú thích hướng dẫn sử dụng (guideHtml) trên Web Frontend
 - **Loại**: Cải tiến tài liệu & Hướng dẫn sử dụng

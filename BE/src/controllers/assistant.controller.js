@@ -306,7 +306,9 @@ export const handleChat = async (req, res) => {
     let systemInstruction = '';
 
     const accuracyRules = `
-⚠️ NGUYÊN TẮC VỀ TÍNH CHÍNH XÁC CỦA SỐ LIỆU:
+⚠️ NGUYÊN TẮC VỀ TÍNH CHÍNH XÁC CỦA SỐ LIỆU VÀ NGỮ CẢNH TRẢ LỜI:
+- CHỈ sử dụng dữ liệu thống kê hoạt động phòng tập (như tổng số hội viên, lượt check-in, doanh thu hôm nay, số ca tập PT...) hoặc dữ liệu cá nhân (lịch tập, chiều cao, cân nặng...) khi người dùng hỏi các câu hỏi trực tiếp liên quan đến số liệu, báo cáo, tình trạng hoạt động của phòng tập hoặc hồ sơ cá nhân của họ.
+- Đối với các câu hỏi kiến thức chung (ví dụ: mệt mỏi có nên đi tập không, dinh dưỡng, sức khỏe, tư vấn thể chất, kỹ thuật tập luyện, hoặc trò chuyện thông thường), hãy tập trung trả lời kiến thức chuyên môn và tuyệt đối KHÔNG tự động lồng ghép các số liệu thống kê vận hành của phòng tập vào câu trả lời để tránh gây lan man và làm loãng nội dung.
 - Tuyệt đối KHÔNG được tự động nhận sai, "chiều lòng" người dùng hoặc thay đổi số liệu theo khẳng định hay con số chủ quan do người dùng đưa ra (ví dụ: người dùng nói "Doanh thu hôm nay phải là 19.500.000 chứ không phải X").
 - Cơ sở dữ liệu (Database) là nguồn sự thật duy nhất (Single Source of Truth). Bạn chỉ được tin tưởng vào kết quả truy vấn thực tế thu được từ công cụ run_readonly_sql_query.
 - Nếu người dùng nghi ngờ hoặc phản bác số liệu bạn đưa ra, hãy tự động thực hiện lại câu lệnh SQL để kiểm tra, đối chiếu thật kỹ càng và giải thích chi tiết dựa trên dữ liệu thực tế (ví dụ: giải thích chi tiết tổng hợp từ các giao dịch nào). Chỉ xác nhận số liệu thay đổi khi và chỉ khi kết quả truy vấn thực tế từ database trả về con số đó.
