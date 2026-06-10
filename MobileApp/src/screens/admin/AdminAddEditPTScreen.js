@@ -266,8 +266,8 @@ export default function AdminAddEditPTScreen({ route, navigation }) {
         { text: 'OK', onPress: () => navigation.goBack() }
       ]);
     } catch (err) {
-      console.error('[AddEditPT] save error:', err?.response?.data || err?.message);
-      Alert.alert('Lỗi', err?.response?.data?.message || 'Đã có lỗi xảy ra.');
+      console.log('[AddEditPT] save error:', err?.response?.data || err?.message);
+      Alert.alert('Lỗi', err?.response?.data?.message || err?.message || 'Đã có lỗi xảy ra.');
     } finally {
       setSaving(false);
     }

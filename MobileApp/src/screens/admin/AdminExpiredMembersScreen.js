@@ -106,8 +106,8 @@ export default function AdminExpiredMembersScreen({ navigation, route }) {
         Alert.alert('Lỗi', res.data?.message || 'Không thể gửi thông báo.');
       }
     } catch (err) {
-      console.error('[ExpiredMembers] notify error:', err?.message);
-      Alert.alert('Lỗi', err.response?.data?.message || 'Có lỗi khi gửi thông báo.');
+      console.log('[ExpiredMembers] notify error:', err?.message);
+      Alert.alert('Lỗi', err.response?.data?.message || err?.message || 'Có lỗi khi gửi thông báo.');
     } finally {
       setSendingNotifId(null);
     }

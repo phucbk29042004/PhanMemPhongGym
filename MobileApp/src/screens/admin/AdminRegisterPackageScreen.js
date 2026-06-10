@@ -285,8 +285,8 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
         }
       }
     } catch (err) {
-      console.error('[RegisterPackage] error:', err?.response?.data || err?.message);
-      Alert.alert('Lỗi', err?.response?.data?.message || 'Có lỗi xảy ra.');
+      console.log('[RegisterPackage] error:', err?.response?.data || err?.message);
+      Alert.alert('Lỗi', err?.response?.data?.message || err?.message || 'Có lỗi xảy ra.');
     } finally {
       setSubmitting(false);
     }
