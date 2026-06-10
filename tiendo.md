@@ -21,6 +21,90 @@
 ---
 
 ## 📋 Danh Sách Thay Đổi
+
+### [10/06/2026 10:45] — Tối ưu hóa so khớp ảnh và sửa lỗi reload văng ra tab tổng quan khi import
+- **Loại**: Sửa bug / Cải tiến
+- **File**: `BE/src/controllers/members.controller.js`, `BE/nodemon.json`
+- **Mô tả**:
+  - Khắc phục lỗi so khớp ảnh đại diện bị thất bại khi tên file ảnh trong Excel không điền đuôi mở rộng (ví dụ "thl") còn trong tệp tin ZIP lại có đuôi (ví dụ "thl.jpg.jpg"). Triển khai cơ chế so khớp thông minh bằng cách chuẩn hóa cắt bỏ đuôi mở rộng của cả Excel và ZIP để đối chiếu.
+  - Tạo file cấu hình `BE/nodemon.json` để ngăn chặn nodemon tự động restart máy chủ khi tệp tin SQLite database (`BE/database/paradise_gym.db`) hoặc tệp log thay đổi, khắc phục triệt để lỗi trình duyệt tự động reload và văng về trang "Tổng quan" khi người dùng thực hiện thao tác lưu/thêm dữ liệu.
+- **Kết quả**: Thành công, import khớp ảnh thông minh hoạt động mượt mà và không còn bị tự động reload trang.
+
+### [10/06/2026 10:25] — Cập nhật tính năng Import Excel/ZIP ảnh đại diện và tìm kiếm linh hoạt (không phân biệt dấu cách, gạch ngang, gạch dưới)
+- **Loại**: Tính năng mới & Sửa bug
+- **File**: `BE/src/controllers/members.controller.js`, `FE/assets/js/pages/members-list.js`
+- **Mô tả**:
+  - **Backend**: Nâng cấp hàm `importMembers` giải nén tệp tin ZIP chứa ảnh đại diện, đối chiếu cột "Tên file ảnh" trong file Excel để tìm ảnh tương ứng, upload lên Cloudinary và lưu `avatar_url` cùng `cloudinary_public_id` vào cơ sở dữ liệu.
+  - **Backend**: Cập nhật hàm `getMembers` hỗ trợ tìm kiếm linh hoạt không phân biệt chữ hoa thường, dấu cách, dấu gạch ngang `-`, gạch dưới `_` bằng cách sử dụng hàm `REPLACE` trong SQLite và chuẩn hóa đầu vào.
+  - **Frontend**: Cập nhật các hàm `_applyMemberFilterLocal` và `_applyPtFilter` của trang `members-list` tự động chuẩn hóa từ khóa và dữ liệu cột (bỏ khoảng trắng, `-`, `_`) giúp bộ lọc local của hội viên và PT tìm kiếm linh hoạt tương tự.
+- **Kết quả**: Thành công.
+
+### [10/06/2026 10:02] — Sửa lỗi không cập nhật ảnh đại diện (avatar) ngay lập tức sau khi tạo mới hồ sơ thành công
+- **Loại**: Sửa bug
+- **File**: `FE/assets/js/pages/member-add.js`
+- **Mô tả**:
+  - Khắc phục lỗi Frontend sau khi tạo mới hồ sơ thành công, chỉ gọi `fetchInitialData()` nhưng chưa kích hoạt render cập nhật lại bảng danh sách hội viên, khiến ảnh đại diện không hiển thị/cập nhật ngay lập tức.
+  - Thêm logic kích hoạt hàm `_refreshMembersFromApi()` của trang `members-list` ngay sau khi lưu thành công để cập nhật lại dữ liệu mới nhất kèm ảnh đại diện lên UI.
+- **Kết quả**: Thành công, ảnh đại diện cập nhật tức thì sau khi lưu hồ sơ.
+
+### [10/06/2026 09:52] — Sửa lỗi API nhập hội viên (import) từ file Excel trả về lỗi 400
+- **Loại**: Sửa bug
+- **File**: `BE/src/controllers/members.controller.js`
+- **Mô tả**:
+  - Khắc phục lỗi API \`/api/members/import\` trả về lỗi Bad Request \`400\` do đọc dữ liệu tệp tin Excel từ \`req.file\` trong khi middleware tải lên đã được chuyển sang chế độ \`multer.fields\` (khiến file được lưu trữ trong \`req.files\`).
+  - Sửa đổi hàm \`importMembers\` để đọc tệp tin Excel từ \`req.files['file'][0]\` hoặc tự động fallback về \`req.file\` giúp tương thích ngược.
+- **Kết quả**: Thành công, tính năng nhập hội viên từ Excel hoạt động trơn tru không lỗi.
+
+
+### [10/06/2026 09:45] — Đồng bộ tên cột cccd trong SQL Schema và sửa lỗi sập ứng dụng sau đăng nhập
+- **Loại**: Sửa bug / Cấu hình
+- **File**: `paradise_gym_v2.sql`, `BE/init-db.js`
+- **Mô tả**:
+  - Khắc phục lỗi ứng dụng bị sập và tự động "kick" người dùng ra ngay sau khi đăng nhập thành công do gọi API \`/api/auth/me\` nhưng cơ sở dữ liệu bị thiếu cột \`cccd\` trong bảng \`ho_so\` (trong SQL schema để tên là \`cmnd_cccd\` trong khi backend controllers gọi \`cccd\`).
+  - Đổi tên cột \`cmnd_cccd\` thành \`cccd\` trực tiếp trong file SQL schema mẫu [paradise_gym_v2.sql](file:///c:/PhanMemPhongGym/paradise_gym_v2.sql) để thống nhất cấu trúc.
+  - Đồng bộ lại toàn bộ các cột nâng cấp của bảng \`dang_ky_goi_tap\` và \`dang_ky_pt\` vào file SQL schema mẫu. Việc này giúp các trigger không bị lỗi biên dịch khi chạy lệnh \`ALTER TABLE\` và giải quyết dứt điểm các lỗi trigger "mồ côi" tham chiếu bảng cũ đã xóa.
+  - Giải phóng tiến trình Node đang bị treo khóa tệp tin DB, thực hiện xóa database lỗi và chạy lại \`node init-db.js\` thành công.
+- **Kết quả**: Thành công, toàn bộ tiến trình đăng nhập và truy cập trang dashboard quản trị viên diễn ra trơn tru, không còn lỗi sập hay xung đột trigger.
+
+
+### [10/06/2026 09:43] — Mở khóa tài khoản admin và sửa lỗi phân tách SQL trên Windows
+- **Loại**: Sửa bug / Cấu hình
+- **File**: `BE/init-db.js`
+- **Mô tả**:
+  - Phát hiện lỗi không thể đăng nhập tài khoản admin ở local do tệp \`init-db.js\` sử dụng phân tách dòng dạng Unix \`\n\` khiến quá trình chia tách schema và seed của tệp SQL không khớp trên Windows (\`\r\n\`), từ đó nạp sai mật khẩu mẫu thô.
+  - Cập nhật biểu thức chính quy (Regex) hỗ trợ cả \`\r?\n\` cho hàm split trong \`BE/init-db.js\`.
+  - Thực hiện cập nhật mật khẩu chuẩn bcrypt \`123456\` và mở khóa (\`trang_thai = 'hoat_dong'\`) cho tất cả tài khoản trong cơ sở dữ liệu.
+- **Kết quả**: Thành công, tài khoản admin đã có thể đăng nhập bình thường với mật khẩu \`123456\`.
+
+
+### [10/06/2026 09:36] — Đồng bộ init-db.js và nạp đầy đủ cấu trúc cờ migration
+- **Loại**: Sửa lỗi & Cấu hình
+- **File**: `BE/init-db.js`
+- **Mô tả**:
+  - Khắc phục lỗi schema SQLite bị hỏng (SQLITE_CORRUPT) do tệp SQL khởi tạo (\`paradise_gym_v2.sql\`) bị thiếu cấu trúc các cột (như \`so_tien_hoan\`) mà trigger trong cùng tệp đó lại tham chiếu tới.
+  - Bổ sung cấu trúc đầy đủ các cột và các bảng mở rộng trực tiếp trong tệp \`BE/init-db.js\` ngay sau khi chạy tệp SQL schema mẫu.
+  - Nạp đầy đủ các cờ migration cũ vào bảng \`cau_hinh\` tại bước khởi tạo để ngăn chặn \`db.js\` chạy đè các nâng cấp cấu trúc cũ bị lỗi thứ tự.
+- **Kết quả**: Thành công, server backend và nodemon khởi chạy bình thường không còn bị crash.
+
+
+### [10/06/2026 09:33] — Khởi tạo lại database local sạch từ schema SQL
+- **Loại**: Cấu hình & Bảo trì
+- **File**: `BE/database/paradise_gym.db`
+- **Mô tả**:
+  - Do file database chính bị lỗi hỏng schema (SQLITE_CORRUPT) từ việc áp dụng log của file `-wal` chứa ký tự xung đột git cũ, tiến hành xóa file `paradise_gym.db` bị hỏng.
+  - Chạy script `node init-db.js` thành công để tạo mới cơ sở dữ liệu sạch và nạp lại dữ liệu mẫu (seed data) ban đầu cho môi trường phát triển local.
+- **Kết quả**: Thành công.
+
+
+### [10/06/2026 09:27] — Loại bỏ hoàn toàn các file tạm SQLite khỏi Git tracking
+- **Loại**: Cấu hình & Sửa lỗi
+- **File**: `BE/database/paradise_gym.db-shm`, `BE/database/paradise_gym.db-wal`
+- **Mô tả**:
+  - Gỡ bỏ hoàn toàn việc theo dõi (untrack) của Git đối với hai file tạm SQLite (`BE/database/paradise_gym.db-shm` và `BE/database/paradise_gym.db-wal`) bằng `git rm --cached`.
+  - Thực hiện commit thay đổi này lên nhánh `minh1` để tránh bị xung đột Git ở các lần merge tiếp theo.
+  - Xóa các file tạm vật lý bị lỗi xung đột trên local để SQLite tự động tạo lại các file tạm sạch, khắc phục lỗi nodemon bị crash.
+- **Kết quả**: Thành công.
+
 ### [03/06/2026 14:27] — Hoàn tất Git merge nhánh main vào minh1
 - **Loại**: Gộp nhánh & Giải quyết xung đột (Git Merge)
 - **File**: `tiendo.md`, `BE/database/paradise_gym.db-wal`, `BE/database/paradise_gym.db-shm`
@@ -1459,7 +1543,7 @@
   - `FE/assets/js/pages/member-add.js` — Viết lại hoàn toàn: (1) Validation format inline (SĐT 10 số 03-09, Email có @, CCCD 9/12 số); (2) Validation trùng SĐT/CCCD với API trước khi lưu; (3) Upload ảnh bằng FormData gửi cùng hồ sơ, lưu lên Cloudinary qua BE; (4) Input chuyên môn PT dùng datalist 15 gợi ý; (5) Quê quán dùng datalist 63 tỉnh/thành; (6) Ngày sinh có min/max hợp lý (10–100 tuổi); (7) Gói tập tự tính ngày kết thúc từ so_thang; (8) Thêm field kinh nghiệm (năm) cho PT
   - `BE/src/controllers/members.controller.js` — Thêm hàm `checkDuplicate`: kiểm tra SĐT/CCCD/email đã tồn tại chưa
   - `BE/src/routes/members.routes.js` — Thêm route `GET /api/members/check-duplicate`
-- **Mô tả**: Form thêm mới hồ sơ trước đây không có validation, ảnh chỉ preview nhưng không lưu. Đã fix toàn diện: validation real-time, check trùng với DB, upload ảnh Cloudinary ngay lúc t�### 02/06/2026 08:50 — Cấu trúc lại giao diện tab Đăng ký gói dịch vụ
+- **Mô tả**: Form thêm mới hồ sơ trước đây không có validation, ảnh chỉ preview nhưng không lưu. Đã fix toàn diện: validation real-time, check trùng với DB, upload ảnh Cloudinary ngay lúc t### 02/06/2026 08:50 — Cấu trúc lại giao diện tab Đăng ký gói dịch vụ
 - **Loại**: Chỉnh sửa giao diện Web (Frontend)
 - **File**: `FE/assets/js/pages/member-add.js`
 - **Mô tả**:
@@ -1986,8 +2070,8 @@
 - **Lo?i**: S?a bug
 - **File**: `MobileApp/src/screens/pt/PTScheduleScreen.js`, `BE/src/controllers/auth.controller.js`
 <<<<<<< HEAD
-- **M� t?**: �?i `item.chi_nhanh` th�nh `item.chi_nhanh_tap` ? ph?n hi?n th? l?ch d?y c� nh�n PT. Th�m tru?ng `chi_nhanh` v�o API getMe c?a BE d? c�c file s? d?ng profile c� th�ng tin chi nh�nh.
-- **K?t qu?**: Th�nh c�ng
+- **M t?**: ?i `item.chi_nhanh` thnh `item.chi_nhanh_tap` ? ph?n hi?n th? l?ch d?y c nhn PT. Thm tru?ng `chi_nhanh` vo API getMe c?a BE d? cc file s? d?ng profile c thng tin chi nhnh.
+- **K?t qu?**: Thnh cng
 <<<<<<< HEAD
 >>>>>>> main
 =======

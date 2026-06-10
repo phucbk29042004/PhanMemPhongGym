@@ -12,6 +12,7 @@ import bcrypt from 'bcryptjs';
 import { createPaymentLink, getPaymentLinkInformation } from '../utils/payos.js';
 import xlsx from 'xlsx';
 import { getActorBranch } from '../utils/branch.js';
+import AdmZip from 'adm-zip';
 
 
 // Tự động cập nhật các gói tập/PT đã quá hạn sử dụng sang trạng thái tương ứng
@@ -59,8 +60,14 @@ export const getMembers = (req, res) => {
   }
 
   if (search) {
-    where += ` AND (h.ho_ten LIKE ? OR h.ma_ho_so LIKE ? OR h.so_dien_thoai LIKE ?)`;
-    const s = `%${search}%`;
+    const cleanSearch = search.trim().toLowerCase().replace(/[-_\s]/g, '');
+    const s = `%${cleanSearch}%`;
+
+    where += ` AND (
+      LOWER(REPLACE(REPLACE(REPLACE(h.ho_ten, '-', ''), '_', ''), ' ', '')) LIKE ? OR
+      LOWER(REPLACE(REPLACE(REPLACE(h.ma_ho_so, '-', ''), '_', ''), ' ', '')) LIKE ? OR
+      LOWER(REPLACE(REPLACE(REPLACE(h.so_dien_thoai, '-', ''), '_', ''), ' ', '')) LIKE ?
+    )`;
     params.push(s, s, s);
   }
 
@@ -2101,19 +2108,112 @@ export const getInvoice = (req, res) => {
 // ── POST /api/members/import ─────────────────────────────
 // Import hội viên từ file Excel
 export const importMembers = async (req, res) => {
-  if (!req.file) {
+  const excelFile = req.file || (req.files && req.files['file'] && req.files['file'][0]);
+  const zipFile = req.files && req.files['zip'] && req.files['zip'][0];
+  
+  // Ghi nhận log khởi đầu
+  const logMessages = [];
+  logMessages.push(`[${new Date().toISOString()}] --- KHỞI ĐẦU IMPORT ---`);
+  logMessages.push(`Có file Excel: ${!!excelFile}`);
+  logMessages.push(`Có file ZIP: ${!!zipFile}`);
+  logMessages.push(`Cloudinary Ready: ${isCloudinaryReady}`);
+
+  if (!excelFile) {
+    import('fs').then(fs => fs.appendFileSync('../import_debug.log', logMessages.join('\n') + '\n\n'));
     return error(res, 'Vui lòng chọn file Excel để nhập.', 400);
   }
 
   try {
-    const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+    const workbook = xlsx.read(excelFile.buffer, { type: 'buffer' });
     const firstSheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[firstSheetName];
     const rawData = xlsx.utils.sheet_to_json(worksheet);
 
+    logMessages.push(`Số dòng đọc từ Excel: ${rawData.length}`);
+
     if (rawData.length === 0) {
+      import('fs').then(fs => fs.appendFileSync('../import_debug.log', logMessages.join('\n') + '\n\n'));
       return error(res, 'File Excel không có dữ liệu.', 400);
     }
+
+    // 1. Giải nén ZIP và upload ảnh lên Cloudinary trước khi chạy transaction DB
+    const uploadedAvatars = {}; // map: so_dien_thoai -> { url, publicId }
+    if (zipFile && isCloudinaryReady) {
+      try {
+        const zip = new AdmZip(zipFile.buffer);
+        const zipEntries = zip.getEntries();
+        const zipMap = {};
+        const zipMapWithoutExt = {}; // map: ten_file_khong_duoi -> entry
+        
+        zipEntries.forEach(entry => {
+          if (!entry.isDirectory) {
+            const entryName = entry.entryName;
+            const basename = entryName.substring(Math.max(entryName.lastIndexOf('/'), entryName.lastIndexOf('\\')) + 1)
+                                      .toLowerCase().trim();
+            zipMap[basename] = entry;
+            
+            // Cắt đuôi mở rộng từ dấu chấm đầu tiên để dự phòng đối chiếu không đuôi
+            const firstDotZip = basename.indexOf('.');
+            const zipNameWithoutExt = firstDotZip !== -1 ? basename.substring(0, firstDotZip) : basename;
+            if (zipNameWithoutExt) {
+              zipMapWithoutExt[zipNameWithoutExt] = entry;
+            }
+          }
+        });
+
+        logMessages.push(`Danh sách file trong ZIP (${Object.keys(zipMap).length} file): ${JSON.stringify(Object.keys(zipMap))}`);
+
+        // Upload ảnh cho các dòng tương ứng trong Excel
+        for (const row of rawData) {
+          let so_dien_thoai = (row['Số điện thoại'] || row['So dien thoai'] || row['so_dien_thoai'] || row['Phone'] || '').toString().trim();
+          const anh_file = (row['Tên file ảnh'] || row['Ten file ảnh'] || row['Ten file anh'] || row['ten_file_anh'] || row['Avatar File'] || '').toString().trim().toLowerCase();
+
+          logMessages.push(`Dòng Excel - SĐT: "${so_dien_thoai}", File ảnh yêu cầu: "${anh_file}"`);
+
+          if (so_dien_thoai && anh_file) {
+            // Cắt đuôi mở rộng của anh_file trong Excel để đối chiếu dự phòng
+            const firstDotExcel = anh_file.indexOf('.');
+            const excelNameWithoutExt = firstDotExcel !== -1 ? anh_file.substring(0, firstDotExcel) : anh_file;
+
+            // Tìm file khớp: khớp chính xác tuyệt đối trước, nếu không được thì khớp theo tên không đuôi
+            let matchedEntry = zipMap[anh_file];
+            let matchType = 'chính xác';
+            
+            if (!matchedEntry && zipMapWithoutExt[excelNameWithoutExt]) {
+              matchedEntry = zipMapWithoutExt[excelNameWithoutExt];
+              matchType = 'thông minh (bỏ qua phần mở rộng)';
+            }
+
+            const hasMatch = !!matchedEntry;
+            logMessages.push(`  -> Trạng thái tìm thấy trong ZIP: ${hasMatch} (kiểu khớp: ${matchType})`);
+            
+            if (hasMatch) {
+              try {
+                const imgBuffer = matchedEntry.getData();
+                logMessages.push(`  -> Bắt đầu upload lên Cloudinary cho SĐT ${so_dien_thoai}...`);
+                const uploadResult = await uploadImage(imgBuffer, 'paradise-gym/profiles');
+                logMessages.push(`  -> Upload THÀNH CÔNG: URL=${uploadResult.url}, PublicId=${uploadResult.publicId}`);
+                uploadedAvatars[so_dien_thoai] = {
+                  url: uploadResult.url,
+                  publicId: uploadResult.publicId
+                };
+              } catch (uploadErr) {
+                logMessages.push(`  -> Upload THẤT BẠI: ${uploadErr.message}`);
+                console.error(`Lỗi upload ảnh cho SĐT ${so_dien_thoai} (${anh_file}):`, uploadErr);
+              }
+            }
+          }
+        }
+      } catch (zipErr) {
+        logMessages.push(`Lỗi xử lý file ZIP: ${zipErr.message}`);
+        console.error('Lỗi xử lý file ZIP ảnh đại diện:', zipErr);
+      }
+    } else {
+      logMessages.push(`Bỏ qua bước xử lý ZIP (zipFile=${!!zipFile}, isCloudinaryReady=${isCloudinaryReady})`);
+    }
+
+    // Ghi log ra file
+    import('fs').then(fs => fs.appendFileSync('../import_debug.log', logMessages.join('\n') + '\n\n'));
 
     const vaiTroHoiVien = db.prepare("SELECT id FROM vai_tro WHERE ma_vai_tro = 'hoi_vien'").get();
     const defaultPasswordHash = await bcrypt.hash('123456', 12);
@@ -2141,8 +2241,8 @@ export const importMembers = async (req, res) => {
       const stmtInsertHoSo = db.prepare(`
         INSERT INTO ho_so (
           ma_ho_so, loai_ho_so, ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email,
-          dia_chi_tam_tru, ghi_chu, nguoi_tao_id, tai_khoan_id
-        ) VALUES (?, 'hoi_vien', ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          dia_chi_tam_tru, avatar_url, cloudinary_public_id, ghi_chu, nguoi_tao_id, tai_khoan_id
+        ) VALUES (?, 'hoi_vien', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
       const stmtInsertTaiKhoan = db.prepare(`
@@ -2243,10 +2343,15 @@ export const importMembers = async (req, res) => {
         baseNum++;
         const ma_ho_so = `HV${String(baseNum).padStart(3, '0')}`;
 
+        // Lấy ảnh đã upload trước đó nếu có
+        const avatarInfo = uploadedAvatars[so_dien_thoai] || null;
+        const avatar_url = avatarInfo ? avatarInfo.url : null;
+        const cloudinary_public_id = avatarInfo ? avatarInfo.publicId : null;
+
         // Lưu hồ sơ
         stmtInsertHoSo.run(
           ma_ho_so, ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email,
-          dia_chi, ghi_chu, creatorId, tai_khoan_id
+          dia_chi, avatar_url, cloudinary_public_id, ghi_chu, creatorId, tai_khoan_id
         );
 
         successCount++;

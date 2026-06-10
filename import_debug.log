@@ -1,0 +1,60 @@
+[2026-06-10T03:47:26.270Z] --- KHỞI ĐẦU IMPORT ---
+Có file Excel: true
+Có file ZIP: true
+Cloudinary Ready: true
+Số dòng đọc từ Excel: 2
+Danh sách file trong ZIP (2 file): ["cr7.jpg.webp","thl.jpg.jpg"]
+Dòng Excel - SĐT: "0912345678", File ảnh yêu cầu: "thl"
+  -> Trạng thái tìm thấy trong ZIP: true (kiểu khớp: thông minh (bỏ qua phần mở rộng))
+  -> Bắt đầu upload lên Cloudinary cho SĐT 0912345678...
+  -> Upload THÀNH CÔNG: URL=https://res.cloudinary.com/drtdfg3f2/image/upload/v1781063251/paradise-gym/profiles/gpw7sjl1kau6o0arwlro.jpg, PublicId=paradise-gym/profiles/gpw7sjl1kau6o0arwlro
+Dòng Excel - SĐT: "0987654320", File ảnh yêu cầu: "cr7"
+  -> Trạng thái tìm thấy trong ZIP: true (kiểu khớp: thông minh (bỏ qua phần mở rộng))
+  -> Bắt đầu upload lên Cloudinary cho SĐT 0987654320...
+  -> Upload THÀNH CÔNG: URL=https://res.cloudinary.com/drtdfg3f2/image/upload/v1781063252/paradise-gym/profiles/roofz1polagaz0seidkr.jpg, PublicId=paradise-gym/profiles/roofz1polagaz0seidkr
+
+[2026-06-10T03:50:15.672Z] --- KHỞI ĐẦU IMPORT ---
+Có file Excel: true
+Có file ZIP: true
+Cloudinary Ready: true
+Số dòng đọc từ Excel: 2
+Danh sách file trong ZIP (2 file): ["cr7.jpg.webp","thl.jpg.jpg"]
+Dòng Excel - SĐT: "0912345678", File ảnh yêu cầu: "thl"
+  -> Trạng thái tìm thấy trong ZIP: true (kiểu khớp: thông minh (bỏ qua phần mở rộng))
+  -> Bắt đầu upload lên Cloudinary cho SĐT 0912345678...
+  -> Upload THÀNH CÔNG: URL=https://res.cloudinary.com/drtdfg3f2/image/upload/v1781063420/paradise-gym/profiles/qwkgs0k7ea2j2vo5ggzr.jpg, PublicId=paradise-gym/profiles/qwkgs0k7ea2j2vo5ggzr
+Dòng Excel - SĐT: "0987654320", File ảnh yêu cầu: "cr7"
+  -> Trạng thái tìm thấy trong ZIP: true (kiểu khớp: thông minh (bỏ qua phần mở rộng))
+  -> Bắt đầu upload lên Cloudinary cho SĐT 0987654320...
+  -> Upload THÀNH CÔNG: URL=https://res.cloudinary.com/drtdfg3f2/image/upload/v1781063421/paradise-gym/profiles/x8cdj25bltvlod6cyfbm.jpg, PublicId=paradise-gym/profiles/x8cdj25bltvlod6cyfbm
+
+[2026-06-10T03:51:02.283Z] --- KHỞI ĐẦU IMPORT ---
+Có file Excel: true
+Có file ZIP: true
+Cloudinary Ready: true
+Số dòng đọc từ Excel: 2
+Danh sách file trong ZIP (2 file): ["cr7.jpg.webp","thl.jpg.jpg"]
+Dòng Excel - SĐT: "0912345678", File ảnh yêu cầu: "thl"
+  -> Trạng thái tìm thấy trong ZIP: true (kiểu khớp: thông minh (bỏ qua phần mở rộng))
+  -> Bắt đầu upload lên Cloudinary cho SĐT 0912345678...
+  -> Upload THÀNH CÔNG: URL=https://res.cloudinary.com/drtdfg3f2/image/upload/v1781063467/paradise-gym/profiles/ntvc0udm4qwa6urif0rl.jpg, PublicId=paradise-gym/profiles/ntvc0udm4qwa6urif0rl
+Dòng Excel - SĐT: "0987654320", File ảnh yêu cầu: "cr7"
+  -> Trạng thái tìm thấy trong ZIP: true (kiểu khớp: thông minh (bỏ qua phần mở rộng))
+  -> Bắt đầu upload lên Cloudinary cho SĐT 0987654320...
+  -> Upload THÀNH CÔNG: URL=https://res.cloudinary.com/drtdfg3f2/image/upload/v1781063468/paradise-gym/profiles/mbjozmbmtxt0bnwjbor1.jpg, PublicId=paradise-gym/profiles/mbjozmbmtxt0bnwjbor1
+
+[2026-06-10T03:52:13.344Z] --- KHỞI ĐẦU IMPORT ---
+Có file Excel: true
+Có file ZIP: true
+Cloudinary Ready: true
+Số dòng đọc từ Excel: 2
+Danh sách file trong ZIP (2 file): ["cr7.jpg.webp","thl.jpg.jpg"]
+Dòng Excel - SĐT: "0912345678", File ảnh yêu cầu: "thl"
+  -> Trạng thái tìm thấy trong ZIP: true (kiểu khớp: thông minh (bỏ qua phần mở rộng))
+  -> Bắt đầu upload lên Cloudinary cho SĐT 0912345678...
+  -> Upload THÀNH CÔNG: URL=https://res.cloudinary.com/drtdfg3f2/image/upload/v1781063538/paradise-gym/profiles/rvvjlz7tkj9jlbo8phng.jpg, PublicId=paradise-gym/profiles/rvvjlz7tkj9jlbo8phng
+Dòng Excel - SĐT: "0987654320", File ảnh yêu cầu: "cr7"
+  -> Trạng thái tìm thấy trong ZIP: true (kiểu khớp: thông minh (bỏ qua phần mở rộng))
+  -> Bắt đầu upload lên Cloudinary cho SĐT 0987654320...
+  -> Upload THÀNH CÔNG: URL=https://res.cloudinary.com/drtdfg3f2/image/upload/v1781063539/paradise-gym/profiles/cz2zv5etqrge3wrgsnyy.jpg, PublicId=paradise-gym/profiles/cz2zv5etqrge3wrgsnyy
+

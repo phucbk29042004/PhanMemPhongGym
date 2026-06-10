@@ -38,12 +38,102 @@ try {
 
   // Tách phần schema (CREATE TABLE, INDEX, VIEW, TRIGGER) ra khỏi phần SEED DATA
   // để chúng ta có thể tạo password hash thật bằng bcrypt
-  const schemaParts = sqlContent.split('-- ============================================================\n-- DỮ LIỆU MẪU (SEED)');
+  const schemaParts = sqlContent.split(/-- ============================================================\r?\n-- DỮ LIỆU MẪU \(SEED\)/);
   const schemaSql = schemaParts[0];
 
   // Thực thi schema
   db.exec(schemaSql);
-  console.log('Đã tạo xong bảng, view, trigger, index');
+  console.log('Đã tạo xong bảng, view, trigger, index từ file SQL');
+
+
+  // Tạo các bảng bổ sung chỉ có trong migration của db.js
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS cau_hinh (
+      khoa         TEXT PRIMARY KEY,
+      gia_tri      TEXT NOT NULL,
+      mo_ta        TEXT,
+      ngay_cap_nhat DATETIME DEFAULT (datetime('now','localtime'))
+    );
+
+    CREATE TABLE IF NOT EXISTS thong_bao (
+      id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      loai          TEXT NOT NULL CHECK (loai IN (
+                        'sap_het_han_goi_tap', 'het_han_goi_tap',
+                        'check_in', 'chua_check_in_truoc_buoi_pt',
+                        'cron_tu_xac_nhan', 'sap_het_buoi_pt',
+                        'ho_so_moi', 'gia_han_goi_tap',
+                        'dang_ky_goi_pt_moi', 'huy_buoi_tap',
+                        'hoan_tac_buoi_tap', 'tai_khoan_bi_khoa',
+                        'tai_khoan_moi', 'tom_tat_buoi_sang',
+                        'het_han_goi_pt_thang', 'cap_nhat_buoi_tap'
+                    )),
+      tieu_de       TEXT NOT NULL,
+      noi_dung      TEXT NOT NULL,
+      doi_tuong_id  INTEGER,
+      doi_tuong     TEXT,
+      danh_cho      TEXT NOT NULL CHECK (danh_cho IN ('admin','nhan_vien','ca_hai')),
+      da_doc        INTEGER NOT NULL DEFAULT 0 CHECK (da_doc IN (0,1)),
+      doc_boi_id    INTEGER REFERENCES tai_khoan(id),
+      ngay_doc      DATETIME,
+      ngay_tao      DATETIME NOT NULL DEFAULT (datetime('now','localtime'))
+    );
+
+    CREATE TABLE IF NOT EXISTS thong_bao_user (
+      id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      ho_so_id      INTEGER REFERENCES ho_so(id),
+      loai          TEXT DEFAULT 'thong_bao_chung',
+      tieu_de       TEXT NOT NULL,
+      noi_dung      TEXT NOT NULL,
+      da_doc        INTEGER NOT NULL DEFAULT 0 CHECK (da_doc IN (0,1)),
+      ngay_tao      DATETIME NOT NULL DEFAULT (datetime('now','localtime'))
+    );
+
+    CREATE TABLE IF NOT EXISTS noi_quy (
+      id           INTEGER PRIMARY KEY AUTOINCREMENT,
+      tieu_de      TEXT NOT NULL,
+      noi_dung     TEXT NOT NULL,
+      thu_tu       INTEGER NOT NULL DEFAULT 0,
+      ap_dung_cho  TEXT NOT NULL DEFAULT 'tat_ca' CHECK (ap_dung_cho IN ('tat_ca','hoi_vien','pt','nhan_vien')),
+      is_active    INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0,1)),
+      nguoi_tao_id INTEGER REFERENCES tai_khoan(id),
+      ngay_cap_nhat DATETIME DEFAULT (datetime('now','localtime'))
+    );
+
+    CREATE TABLE IF NOT EXISTS pt_toi_nhat_ky (
+      id              INTEGER PRIMARY KEY AUTOINCREMENT,
+      hoi_vien_id     INTEGER NOT NULL REFERENCES ho_so(id),
+      pt_id           INTEGER NOT NULL REFERENCES ho_so(id),
+      nguoi_gui_id    INTEGER NOT NULL REFERENCES ho_so(id),
+      vai_tro_gui     TEXT NOT NULL CHECK (vai_tro_gui IN ('hoi_vien','pt')),
+      loai_nhat_ky    TEXT NOT NULL DEFAULT 'cap_nhat'
+                      CHECK (loai_nhat_ky IN ('hoi_vien_cap_nhat','pt_dan_do','cap_nhat')),
+      cam_nhan_tap    TEXT,
+      khau_phan_an    TEXT,
+      so_phut_tap     INTEGER,
+      noi_dung_tap    TEXT,
+      loi_dan         TEXT,
+      ghi_chu         TEXT,
+      da_chinh_sua    INTEGER NOT NULL DEFAULT 0 CHECK (da_chinh_sua IN (0,1)),
+      ngay_tao        DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
+      ngay_cap_nhat   DATETIME NOT NULL DEFAULT (datetime('now','localtime'))
+    );
+
+    CREATE TABLE IF NOT EXISTS yeu_cau_goi_tap (
+      id           INTEGER PRIMARY KEY AUTOINCREMENT,
+      ho_so_id     INTEGER NOT NULL REFERENCES ho_so(id),
+      dang_ky_id   INTEGER REFERENCES dang_ky_goi_tap(id),
+      loai_yeu_cau TEXT NOT NULL DEFAULT 'gia_han'
+                   CHECK (loai_yeu_cau IN ('gia_han','tam_dung','huy')),
+      ly_do        TEXT,
+      trang_thai   TEXT NOT NULL DEFAULT 'cho_duyet'
+                   CHECK (trang_thai IN ('cho_duyet','da_duyet','tu_choi')),
+      nguoi_duyet_id INTEGER REFERENCES tai_khoan(id),
+      ghi_chu_duyet  TEXT,
+      ngay_tao     DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
+      ngay_duyet   DATETIME
+    );
+  `);
+  console.log('Đã tạo xong các bảng mở rộng');
 
   // Tạo bcrypt hash thật cho mật khẩu "123456"
   const password = '123456';
@@ -167,6 +257,29 @@ try {
     (2, 'letan01', 'le_tan', 'CREATE', 'ho_so',   5, '{"ho_ten":"Võ Văn Minh","loai":"hoi_vien"}', '192.168.1.10', 'Tạo hồ sơ ban đầu');
   `);
   console.log('✅   Đã tạo audit log mẫu');
+
+  // Khởi tạo các cờ migration để tránh db.js chạy lại các migration cũ
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS cau_hinh (
+      khoa         TEXT PRIMARY KEY,
+      gia_tri      TEXT NOT NULL,
+      mo_ta        TEXT,
+      ngay_cap_nhat DATETIME DEFAULT (datetime('now','localtime'))
+    );
+
+    INSERT OR IGNORE INTO cau_hinh (khoa, gia_tri, mo_ta) VALUES
+    ('db_migration_thongbao_v2', '1', 'Migration bảng thong_bao lên 15 loại'),
+    ('db_migration_view_member_status_v3', '1', 'Cập nhật View trạng thái hội viên bao gồm cả PT'),
+    ('db_migration_thongbao_v4', '1', 'Mở rộng bảng thong_bao lên 16 loại: thêm cap_nhat_buoi_tap'),
+    ('db_migration_thongbao_user_v5', '1', 'Tạo bảng thong_bao_user cho hội viên/PT'),
+    ('db_migration_package_reg_v6', '1', 'Nâng cấp bảng dang_ky_goi_tap cho App request'),
+    ('db_migration_triggers_revenue_v10', '1', 'Sửa 4 triggers doanh thu: hỗ trợ duyệt từ App và trừ khi hủy gói'),
+    ('db_migration_payos_v11', '1', 'Thêm cột PayOS order code, status và chi nhánh mua vào dang_ky_goi_tap'),
+    ('db_migration_triggers_revenue_v12', '1', 'Cập nhật lại trigger doanh thu gói tập để trừ theo so_tien_hoan thực tế'),
+    ('db_migration_triggers_revenue_v14', '1', 'Tạo trigger tự động cập nhật doanh thu khi thay đổi gia_thuc_te'),
+    ('db_migration_triggers_revenue_v16', '1', 'Sửa trigger price_update: thêm INSERT OR IGNORE để đảm bảo row doanh_thu tồn tại trước khi UPDATE');
+  `);
+  console.log('✅ Đã nạp cấu hình cờ migration');
 
   console.log('\n🎉 Database đã được khởi tạo thành công tại:', DB_PATH);
   console.log('📋 Tài khoản mặc định:');

@@ -680,6 +680,10 @@ window.GymApp.pages['member-add'] = {
         }
 
         await window.GymApp.fetchInitialData();
+        // Force refresh members-list page if it is initialized
+        if (window.GymApp.pages['members-list'] && window.GymApp.pages['members-list']._refreshMembersFromApi) {
+          window.GymApp.pages['members-list']._refreshMembersFromApi();
+        }
 
         if (loai_ho_so === 'hoi_vien') {
           // Chuyển sang tab gói tập

@@ -240,7 +240,11 @@ window.GymApp.pages['members-list'] = {
     const members = Array.isArray(window.GymApp.data.members) ? window.GymApp.data.members : [];
 
     let filtered = members.filter(m => {
-      const matchQ = !q || (m.ho_ten || '').toLowerCase().includes(q) || (m.ma_ho_so || '').toLowerCase().includes(q) || (m.so_dien_thoai || '').includes(q);
+      const cleanQ = q.trim().replace(/[-_\s]/g, '');
+      const matchQ = !cleanQ ||
+        (m.ho_ten || '').toLowerCase().replace(/[-_\s]/g, '').includes(cleanQ) ||
+        (m.ma_ho_so || '').toLowerCase().replace(/[-_\s]/g, '').includes(cleanQ) ||
+        (m.so_dien_thoai || '').toLowerCase().replace(/[-_\s]/g, '').includes(cleanQ);
       const matchStatus = !status || m.trang_thai === status;
       const matchPkg = !pkg || m.ten_goi_tap === pkg;
       let mGender = m.gioi_tinh;
@@ -4312,13 +4316,14 @@ window.GymApp.pages['members-list'] = {
 
   _applyPtFilter: function () {
     const q = document.getElementById('pt-search')?.value.toLowerCase() || '';
+    const cleanQ = q.trim().replace(/[-_\s]/g, '');
     const { specialty, status } = this._ptFilterState;
     const branch = window.GymApp.selectedBranch || '';
     this._ptFiltered = this._sortPtList((window.GymApp.data.pts || []).filter(pt => {
-      const name = (pt.ho_ten || '').toLowerCase();
+      const name = (pt.ho_ten || '').toLowerCase().replace(/[-_\s]/g, '');
       // FIX: Dùng chuyen_mon (field DB) thay vì specialty
-      const spec = (pt.chuyen_mon || pt.specialty || '').toLowerCase();
-      const matchQ = !q || name.includes(q) || spec.includes(q);
+      const spec = (pt.chuyen_mon || pt.specialty || '').toLowerCase().replace(/[-_\s]/g, '');
+      const matchQ = !cleanQ || name.includes(cleanQ) || spec.includes(cleanQ);
       // FIX: So sánh đúng với giá trị DB hoat_dong / tam_nghi
       const ptStatus = pt.trang_thai || pt.status || '';
       const matchS = !status || ptStatus === status;

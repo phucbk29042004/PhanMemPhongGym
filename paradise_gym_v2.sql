@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS ho_so (
     -- Các trường nhạy cảm — PHẢI encrypt AES-256 ở tầng app trước khi lưu
     so_dien_thoai   TEXT,   -- [ENCRYPTED]
     email           TEXT,   -- [ENCRYPTED]
-    cmnd_cccd       TEXT,   -- [ENCRYPTED]
+    cccd            TEXT,   -- [ENCRYPTED]
     dia_chi_tam_tru TEXT,   -- [ENCRYPTED]
     -- Ảnh Cloudinary
     avatar_url           TEXT,   -- URL công khai từ Cloudinary
@@ -155,21 +155,27 @@ CREATE TABLE IF NOT EXISTS dang_ky_goi_tap (
     goi_tap_id      INTEGER NOT NULL REFERENCES goi_tap(id),
     tu_ngay         DATE    NOT NULL,
     den_ngay        DATE    NOT NULL,
-    gia_thuc_te     REAL    NOT NULL CHECK (gia_thuc_te >= 0),
-    ghi_chu_gia     TEXT,   -- Ghi rõ lý do nếu giá khác giá gốc (VD: khuyến mãi)
+    gia_thuc_te     DECIMAL(15,2) NOT NULL,
+    ghi_chu_gia     TEXT,
     trang_thai      TEXT    NOT NULL DEFAULT 'dang_hoat_dong'
-                            CHECK (trang_thai IN ('dang_hoat_dong','het_han','huy','tam_dung')),
-    -- Thông tin thanh toán (nghiệp vụ quan trọng)
-    phuong_thuc_tt  TEXT    NOT NULL
-                            CHECK (phuong_thuc_tt IN ('tien_mat','chuyen_khoan','the','momo','zalopay','khac')),
-    nguoi_thu_id    INTEGER REFERENCES ho_so(id),     -- Lễ tân / Admin thu tiền
-    ma_giao_dich    TEXT,   -- Mã GD chuyển khoản nếu có
+                            CHECK (trang_thai IN ('cho_duyet','cho_kich_hoat','dang_hoat_dong','het_han','huy','tam_dung')),
+    phuong_thuc_tt  TEXT    CHECK (phuong_thuc_tt IN ('tien_mat','chuyen_khoan','the','momo','zalopay','khac')),
+    nguoi_thu_id    INTEGER REFERENCES ho_so(id),
+    ma_giao_dich    TEXT,
     ghi_chu_tt      TEXT,
-    ngay_thanh_toan DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
-    -- Audit
+    ngay_thanh_toan DATETIME,
+    so_tien_da_thu  REAL DEFAULT 0,
     nguoi_tao_id    INTEGER REFERENCES tai_khoan(id),
+    nguoi_cap_nhat_id INTEGER REFERENCES tai_khoan(id),
     ngay_tao        DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
     ngay_cap_nhat   DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
+    ly_do_huy       TEXT,
+    so_tien_hoan    REAL DEFAULT 0,
+    ngay_huy        DATETIME,
+    payos_order_code INTEGER,
+    payos_status    TEXT DEFAULT 'PENDING',
+    chi_nhanh_mua   TEXT,
+    chi_nhanh_dang_ky TEXT,
     CHECK (den_ngay > tu_ngay)
 );
 
@@ -181,26 +187,28 @@ CREATE TABLE IF NOT EXISTS dang_ky_pt (
     hoi_vien_id     INTEGER NOT NULL REFERENCES ho_so(id),
     pt_id           INTEGER NOT NULL REFERENCES ho_so(id),
     goi_pt_id       INTEGER NOT NULL REFERENCES goi_pt(id),
-    so_buoi_dang_ky INTEGER,           -- NULL nếu gói theo tháng
+    so_buoi_dang_ky INTEGER,
     so_buoi_da_tap  INTEGER NOT NULL DEFAULT 0,
     tu_ngay         DATE    NOT NULL,
-    den_ngay        DATE,              -- NULL nếu gói theo buổi
+    den_ngay        DATE,
     gia_thuc_te     REAL    NOT NULL CHECK (gia_thuc_te >= 0),
     ghi_chu_gia     TEXT,
     trang_thai      TEXT    NOT NULL DEFAULT 'dang_hoat_dong'
-                            CHECK (trang_thai IN ('dang_hoat_dong','hoan_thanh','huy','tam_dung')),
-    -- Thanh toán
+                            CHECK (trang_thai IN ('cho_duyet','cho_kich_hoat','dang_hoat_dong','hoan_thanh','huy','tam_dung')),
     phuong_thuc_tt  TEXT    NOT NULL
                             CHECK (phuong_thuc_tt IN ('tien_mat','chuyen_khoan','the','momo','zalopay','khac')),
     nguoi_thu_id    INTEGER REFERENCES ho_so(id),
     ma_giao_dich    TEXT,
     ghi_chu_tt      TEXT,
-    ngay_thanh_toan DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
-    -- Audit
+    ngay_thanh_toan DATETIME,
     nguoi_tao_id    INTEGER REFERENCES tai_khoan(id),
+    nguoi_cap_nhat_id INTEGER REFERENCES tai_khoan(id),
     ngay_tao        DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
     ngay_cap_nhat   DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
-    CHECK (hoi_vien_id != pt_id)   -- Không thể tự đăng ký PT cho chính mình
+    so_tien_hoan    REAL DEFAULT 0,
+    ly_do_huy       TEXT,
+    chi_nhanh_dang_ky TEXT,
+    CHECK (hoi_vien_id != pt_id)
 );
 
 -- ============================================================
