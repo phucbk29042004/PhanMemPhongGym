@@ -23,23 +23,23 @@ function FieldLabel({ label, required = false, colors }) {
   );
 }
 
-function SelectField({ label, required = false, value, options, onSelect, colors }) {
+function SelectField({ label, required = false, value, options, onSelect, colors, disabled = false }) {
   const [open, setOpen] = useState(false);
   const selected = options.find(o => o.v === value);
   return (
     <View style={{ marginBottom: 12 }}>
       <FieldLabel label={label} required={required} colors={colors} />
       <TouchableOpacity
-        style={[styles.input, { backgroundColor: colors.surfaceVariant, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14 }]}
-        onPress={() => setOpen(!open)}
-        activeOpacity={0.8}
+        style={[styles.input, { backgroundColor: disabled ? colors.border : colors.surfaceVariant, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, opacity: disabled ? 0.7 : 1 }]}
+        onPress={() => { if (!disabled) setOpen(!open); }}
+        activeOpacity={disabled ? 1 : 0.8}
       >
         <Text style={{ color: selected ? colors.text : colors.textMuted, fontSize: 14, fontWeight: '600', flex: 1 }}>
           {selected ? selected.t : `— ${label.replace('*', '').trim()} —`}
         </Text>
-        <ChevronDown color={colors.textMuted} size={16} />
+        {!disabled && <ChevronDown color={colors.textMuted} size={16} />}
       </TouchableOpacity>
-      {open && (
+      {open && !disabled && (
         <View style={{ borderWidth: 1, borderRadius: 12, marginTop: 4, overflow: 'hidden', zIndex: 100, backgroundColor: colors.surface, borderColor: colors.border }}>
           {options.map((o) => (
             <TouchableOpacity
@@ -63,7 +63,8 @@ export default function AdminAddEditPTScreen({ route, navigation }) {
   const isEdit = ptId != null;
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const { selectedBranch } = useAuthStore();
+  const { user, selectedBranch } = useAuthStore();
+  const isStaffWithBranch = !isEdit && user?.chi_nhanh && user?.vai_tro !== 'admin' && user?.vai_tro !== 'chu_phong_gym';
 
   // Loading states
   const [loading, setLoading] = useState(false);
@@ -338,6 +339,7 @@ export default function AdminAddEditPTScreen({ route, navigation }) {
               options={branches.map(b => ({ v: b.ten || b.id, t: b.ten || b.id }))}
               onSelect={setChiNhanh}
               colors={colors}
+              disabled={isStaffWithBranch}
             />
           </View>
 

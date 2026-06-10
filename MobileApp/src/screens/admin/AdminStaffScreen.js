@@ -111,7 +111,8 @@ const STATUS_FILTERS = [
 
 export default function AdminStaffScreen({ navigation }) {
   const { colors } = useTheme();
-  const { selectedBranch, setSelectedBranch } = useAuthStore();
+  const { user, selectedBranch, setSelectedBranch } = useAuthStore();
+  const isStaffWithBranch = user?.chi_nhanh && user?.vai_tro !== 'admin' && user?.vai_tro !== 'chu_phong_gym';
   const [branches, setBranches] = useState([]);
   const insets = useSafeAreaInsets();
   const [staffList, setStaffList] = useState([]);
@@ -250,39 +251,41 @@ export default function AdminStaffScreen({ navigation }) {
         </View>
       </View>
 
-      {/* ── Bộ lọc chi nhánh (ScrollView ngang) ── */}
-      <View style={{ backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: 8 }}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
-          <TouchableOpacity
-            style={[
-              { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16 },
-              { backgroundColor: selectedBranch === '' ? colors.primary : colors.surfaceVariant }
-            ]}
-            onPress={() => setSelectedBranch('')}
-          >
-            <Text style={{ fontSize: 12, fontWeight: '700', color: selectedBranch === '' ? '#fff' : colors.textSecondary }}>
-              Tất cả chi nhánh
-            </Text>
-          </TouchableOpacity>
-          {branches.map((b) => {
-            const isSelected = selectedBranch === b.ten;
-            return (
-              <TouchableOpacity
-                key={b.id || b.ten}
-                style={[
-                  { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16 },
-                  { backgroundColor: isSelected ? colors.primary : colors.surfaceVariant }
-                ]}
-                onPress={() => setSelectedBranch(b.ten)}
-              >
-                <Text style={{ fontSize: 12, fontWeight: '700', color: isSelected ? '#fff' : colors.textSecondary }}>
-                  {b.ten}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
+      {/* ── Bộ lọc chi nhánh (ẩn với nhân viên có chi nhánh cố định) ── */}
+      {!isStaffWithBranch && (
+        <View style={{ backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: 8 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
+            <TouchableOpacity
+              style={[
+                { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16 },
+                { backgroundColor: selectedBranch === '' ? colors.primary : colors.surfaceVariant }
+              ]}
+              onPress={() => setSelectedBranch('')}
+            >
+              <Text style={{ fontSize: 12, fontWeight: '700', color: selectedBranch === '' ? '#fff' : colors.textSecondary }}>
+                Tất cả chi nhánh
+              </Text>
+            </TouchableOpacity>
+            {branches.map((b) => {
+              const isSelected = selectedBranch === b.ten;
+              return (
+                <TouchableOpacity
+                  key={b.id || b.ten}
+                  style={[
+                    { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16 },
+                    { backgroundColor: isSelected ? colors.primary : colors.surfaceVariant }
+                  ]}
+                  onPress={() => setSelectedBranch(b.ten)}
+                >
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: isSelected ? '#fff' : colors.textSecondary }}>
+                    {b.ten}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
 
       {/* Search */}
       <View style={styles.searchWrap}>

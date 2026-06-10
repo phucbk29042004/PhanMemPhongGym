@@ -9,6 +9,28 @@ import { createNotification, createUserNotification } from '../utils/notificatio
 import { getActorBranch } from '../utils/branch.js';
 
 
+const getTodayStrHoChiMinh = () => {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+  const parts = formatter.format(new Date()).split('/');
+  return `${parts[2]}-${parts[0]}-${parts[1]}`;
+};
+
+const getNowTimeStrHoChiMinh = () => {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
+  return formatter.format(new Date());
+};
+
+
 const safeJson = (value, fallback = []) => {
   if (!value) return fallback;
   try { return JSON.parse(value); } catch (_) { return fallback; }
@@ -20,8 +42,8 @@ const toJson = (value) => {
 };
 
 export const autoCancelExpiredSchedules = () => {
-  const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
-  const nowTimeStr = new Date().toLocaleTimeString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour12: false }).substring(0, 5);
+  const todayStr = getTodayStrHoChiMinh();
+  const nowTimeStr = getNowTimeStrHoChiMinh();
 
   // Tìm các lịch tập quá hạn đang ở trạng thái 'cho_tap' hoặc 'pending'
   const expired = db.prepare(`
@@ -163,7 +185,7 @@ export const createSchedule = (req, res) => {
   }
 
   // Chặn đặt lịch trong quá khứ
-  const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
+  const todayStr = getTodayStrHoChiMinh();
   if (ngay_tap < todayStr) {
     return error(res, 'Không thể đặt lịch tập ở ngày trong quá khứ.', 400);
   }
@@ -178,6 +200,11 @@ export const createSchedule = (req, res) => {
   `).get(dang_ky_pt_id);
 
   if (!dkpt) return error(res, 'Đăng ký PT không tồn tại hoặc đã kết thúc.', 404);
+
+  // Chặn đặt lịch trước ngày bắt đầu hiệu lực của gói PT
+  if (dkpt.tu_ngay && ngay_tap < dkpt.tu_ngay) {
+    return error(res, `Gói PT chưa có hiệu lực. Chỉ được đặt lịch từ ngày ${dkpt.tu_ngay} trở đi.`, 400);
+  }
 
   const actorBranch = getActorBranch(req.user);
   if (actorBranch && dkpt.chi_nhanh_dang_ky !== actorBranch) {
@@ -577,7 +604,7 @@ export const updateSchedule = (req, res) => {
 
   // Chặn dời lịch sang ngày trong quá khứ
   if (ngay_tap) {
-    const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
+    const todayStr = getTodayStrHoChiMinh();
     if (ngay_tap < todayStr) {
       return error(res, 'Không thể dời lịch tập sang ngày trong quá khứ.', 400);
     }

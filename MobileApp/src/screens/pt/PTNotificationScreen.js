@@ -168,15 +168,30 @@ const pulseStyles = StyleSheet.create({
   },
 });
 
-const getNotifStyle = (loai, isDark) => {
+const getNotifStyle = (loai, tieuDe, noiDung, isDark) => {
   const l = (loai || '').toLowerCase();
-  if (l.includes('danger') || l.includes('error') || l.includes('het_han') || l.includes('huy')) {
+  const t = (tieuDe || '').toLowerCase();
+  const n = (noiDung || '').toLowerCase();
+  
+  if (
+    l.includes('danger') || l.includes('error') || l.includes('het_han') || l.includes('huy') ||
+    t.includes('hết hạn') || t.includes('hủy') || t.includes('bị khóa') ||
+    n.includes('hết hạn') || n.includes('hủy bỏ') || n.includes('bị khóa')
+  ) {
     return { bg: isDark ? '#2d1818' : '#fff0f0', border: isDark ? '#4c1c1c' : '#fca5a5', text: isDark ? '#fecaca' : '#7f1d1d' };
   }
-  if (l.includes('warning') || l.includes('sap_het')) {
+  if (
+    l.includes('warning') || l.includes('sap_het') ||
+    t.includes('sắp hết') || t.includes('cảnh báo') || t.includes('tạm dừng') ||
+    n.includes('sắp hết') || n.includes('cảnh báo') || n.includes('tạm dừng')
+  ) {
     return { bg: isDark ? '#2d2218' : '#fffbeb', border: isDark ? '#4c321c' : '#fcd34d', text: isDark ? '#fef3c7' : '#78350f' };
   }
-  if (l.includes('success') || l.includes('check_in') || l.includes('hoan_thanh')) {
+  if (
+    l.includes('success') || l.includes('check_in') || l.includes('hoan_thanh') ||
+    t.includes('thành công') || t.includes('đăng ký') || t.includes('nhận') || t.includes('hoàn thành') ||
+    n.includes('thành công') || n.includes('đăng ký') || n.includes('đã nhận') || n.includes('hoàn thành')
+  ) {
     return { bg: isDark ? '#182d1f' : '#f0fdf4', border: isDark ? '#1c4c2d' : '#86efac', text: isDark ? '#d1fae5' : '#14532d' };
   }
   return { bg: isDark ? '#182235' : '#eff6ff', border: isDark ? '#1c355e' : '#93c5fd', text: isDark ? '#dbeafe' : '#1e3a5f' };
@@ -185,7 +200,7 @@ const getNotifStyle = (loai, isDark) => {
 // ── Component: Card thông báo ──────────────────────────────
 function NotificationCard({ item }) {
   const { colors } = useTheme();
-  const s = getNotifStyle(item.loai || item.muc_do, colors.isDark);
+  const s = getNotifStyle(item.muc_do || item.loai, item.tieu_de, item.noi_dung, colors.isDark);
 
   return (
     <View style={[

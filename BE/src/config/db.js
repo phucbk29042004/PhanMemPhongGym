@@ -55,17 +55,17 @@ try { db.exec(`ALTER TABLE ho_so ADD COLUMN trang_thai_lam_viec TEXT NOT NULL DE
 // ── Migration: Chuyển đổi le_tan thành nhan_vien ───────────
 try {
   db.transaction(() => {
-    const leTanRole = db.prepare('SELECT id FROM vai_tro WHERE ma_vai_tro = "le_tan"').get();
-    const nhanVienRole = db.prepare('SELECT id FROM vai_tro WHERE ma_vai_tro = "nhan_vien"').get();
+    const leTanRole = db.prepare("SELECT id FROM vai_tro WHERE ma_vai_tro = 'le_tan'").get();
+    const nhanVienRole = db.prepare("SELECT id FROM vai_tro WHERE ma_vai_tro = 'nhan_vien'").get();
 
     if (leTanRole) {
       if (!nhanVienRole) {
         db.prepare(`
           UPDATE vai_tro 
-          SET ma_vai_tro = "nhan_vien", 
-              ten_hien_thi = "Nhân viên", 
-              mo_ta = "Nhân viên phòng tập, tiếp nhận và đăng ký cho hội viên" 
-          WHERE ma_vai_tro = "le_tan"
+          SET ma_vai_tro = 'nhan_vien', 
+              ten_hien_thi = 'Nhân viên', 
+              mo_ta = 'Nhân viên phòng tập, tiếp nhận và đăng ký cho hội viên' 
+          WHERE ma_vai_tro = 'le_tan'
         `).run();
         console.log('[DB Migration] Đã đổi tên vai trò le_tan thành nhan_vien.');
       } else {
@@ -75,7 +75,7 @@ try {
       }
     }
 
-    db.prepare('UPDATE ho_so SET loai_ho_so = "nhan_vien" WHERE loai_ho_so = "le_tan"').run();
+    db.prepare("UPDATE ho_so SET loai_ho_so = 'nhan_vien' WHERE loai_ho_so = 'le_tan'").run();
     
     // Kiểm tra xem bảng thong_bao có chứa check constraint le_tan không
     const checkThongBao = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='thong_bao'").get();
@@ -108,7 +108,7 @@ try {
       db.exec(`
         INSERT INTO thong_bao (id, loai, tieu_de, noi_dung, doi_tuong_id, doi_tuong, danh_cho, da_doc, doc_boi_id, ngay_doc, ngay_tao)
         SELECT id, loai, tieu_de, noi_dung, doi_tuong_id, doi_tuong, 
-               CASE WHEN danh_cho = "le_tan" THEN "nhan_vien" ELSE danh_cho END,
+               CASE WHEN danh_cho = 'le_tan' THEN 'nhan_vien' ELSE danh_cho END,
                da_doc, doc_boi_id, ngay_doc, ngay_tao
         FROM thong_bao_old_migration;
       `);

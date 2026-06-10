@@ -210,6 +210,12 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
       return;
     }
 
+    const todayYMD = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
+    if (ymdStart < todayYMD) {
+      Alert.alert('Lỗi', 'Ngày bắt đầu không được là ngày trong quá khứ.');
+      return;
+    }
+
     const price = parseInputMoney(actualPrice);
     if (price < 0) {
       Alert.alert('Lỗi', 'Giá thực tế không hợp lệ.');

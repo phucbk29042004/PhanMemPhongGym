@@ -439,9 +439,23 @@ export const deleteMember = (req, res) => {
 // ── GET /api/members/check-duplicate ─────────────────────
 export const checkDuplicate = (req, res) => {
   const { field, value, exclude_id } = req.query;
-  const allowed = ['so_dien_thoai', 'cccd', 'email'];
+  const allowed = ['so_dien_thoai', 'cccd', 'email', 'ten_dang_nhap'];
   if (!field || !allowed.includes(field)) return error(res, 'field không hợp lệ', 400);
   if (!value || !value.trim()) return success(res, { exists: false });
+
+  if (field === 'ten_dang_nhap') {
+    let query = `SELECT id FROM tai_khoan WHERE ten_dang_nhap = ?`;
+    const params = [value.trim()];
+    if (exclude_id) {
+      const hoSo = db.prepare('SELECT tai_khoan_id FROM ho_so WHERE id = ?').get(exclude_id);
+      if (hoSo && hoSo.tai_khoan_id) {
+        query += ' AND id != ?';
+        params.push(hoSo.tai_khoan_id);
+      }
+    }
+    const row = db.prepare(query).get(...params);
+    return success(res, { exists: !!row });
+  }
 
   let query = `SELECT id FROM ho_so WHERE ${field} = ? AND is_deleted = 0`;
   const params = [value.trim()];
@@ -1886,6 +1900,11 @@ export const switchPackage = (req, res) => {
 
   if (!pkg_id_cu || !goi_tap_id_moi || !tu_ngay) {
     return error(res, 'Thiếu thông tin: pkg_id_cu, goi_tap_id_moi, tu_ngay.', 400);
+  }
+
+  const todayForSwitch = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
+  if (tu_ngay < todayForSwitch) {
+    return error(res, 'Ngày bắt đầu gói mới không được là ngày trong quá khứ.', 400);
   }
 
   const hoSo = db.prepare('SELECT id, ho_ten, chi_nhanh FROM ho_so WHERE id = ? AND is_deleted = 0').get(id);

@@ -286,10 +286,12 @@ window.GymApp.pages['member-add'] = {
     return !hasError;
   },
 
-  // Kiểm tra trùng SĐT/CCCD với API, trả về true nếu hợp lệ (không trùng)
+  // Kiểm tra trùng SĐT/CCCD/Username với API, trả về true nếu hợp lệ (không trùng)
   _validateDuplicate: async function () {
     const sdt = document.getElementById('reg-so-dien-thoai').value.trim();
     const cccd = document.getElementById('reg-cccd').value.trim();
+    const chkAccount = document.getElementById('chk-create-account');
+    const usernameInput = document.getElementById('reg-ten-dang-nhap');
     let hasError = false;
 
     if (sdt) {
@@ -309,6 +311,21 @@ window.GymApp.pages['member-add'] = {
           hasError = true;
         }
       } catch (_) { }
+    }
+    if (chkAccount && chkAccount.checked && usernameInput) {
+      const username = usernameInput.value.trim();
+      if (username) {
+        try {
+          const r = await window.GymApp.api.get(`/members/check-duplicate?field=ten_dang_nhap&value=${encodeURIComponent(username)}`);
+          if (r.data?.exists) {
+            window.GymApp.toast('Tên đăng nhập này đã được sử dụng!', 'error');
+            usernameInput.classList.add('border-error');
+            hasError = true;
+          } else {
+            usernameInput.classList.remove('border-error');
+          }
+        } catch (_) { }
+      }
     }
     return !hasError;
   },
@@ -339,6 +356,13 @@ window.GymApp.pages['member-add'] = {
         // Mặc định chọn chi nhánh đang đứng (nếu có)
         if (window.GymApp.selectedBranch) {
           branchSelect.value = window.GymApp.selectedBranch;
+        }
+
+        // Nhân viên có chi nhánh cố định: khóa dropdown, không cho chọn chi nhánh khác
+        const currentUser = window.GymApp.auth.user;
+        if (currentUser && currentUser.chi_nhanh) {
+          branchSelect.value = currentUser.chi_nhanh;
+          branchSelect.disabled = true;
         }
       }
 
@@ -559,6 +583,9 @@ window.GymApp.pages['member-add'] = {
     document.getElementById('reg-so-dien-thoai')?.addEventListener('input', () => self._setFieldError('err-sdt', ''));
     document.getElementById('reg-email')?.addEventListener('input', () => self._setFieldError('err-email', ''));
     document.getElementById('reg-cccd')?.addEventListener('input', () => self._setFieldError('err-cccd', ''));
+    document.getElementById('reg-ten-dang-nhap')?.addEventListener('input', function() {
+      this.classList.remove('border-error');
+    });
 
     // 6. Lưu hồ sơ — gửi FormData để upload ảnh cùng lúc
     document.getElementById('btn-save-member')?.addEventListener('click', async () => {
@@ -682,12 +709,12 @@ window.GymApp.pages['member-add'] = {
         await window.GymApp.fetchInitialData();
 
         if (loai_ho_so === 'hoi_vien') {
-          // Chuyển sang tab gói tập
           const tabPkg = document.getElementById('tab-package');
           if (tabPkg) tabPkg.click();
-        } else {
-          // PT hoặc Nhân viên: Tự động chuyển hướng về danh sách
+        } else if (loai_ho_so === 'pt') {
           window.GymApp.navigate('members-list');
+        } else if (loai_ho_so === 'nhan_vien') {
+          window.GymApp.navigate('staff-list');
         }
 
         // Clear form thông tin hồ sơ
