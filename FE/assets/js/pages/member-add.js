@@ -335,7 +335,7 @@ window.GymApp.pages['member-add'] = {
       if (branchSelect) {
         branchSelect.innerHTML = '<option value="">— Chi nhánh —</option>' +
           branches.map(b => `<option value="${b.ten}">${b.ten}</option>`).join('');
-        
+
         // Mặc định chọn chi nhánh đang đứng (nếu có)
         if (window.GymApp.selectedBranch) {
           branchSelect.value = window.GymApp.selectedBranch;
@@ -482,7 +482,7 @@ window.GymApp.pages['member-add'] = {
               class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-4 py-3 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none text-body-md font-semibold transition-all" />
           </div>`;
       } else if (type === 'nhan_vien') {
-            extraFields.innerHTML = `
+        extraFields.innerHTML = `
           <div>
             <label class="block text-body-sm font-bold text-on-surface-variant mb-1.5">Chức vụ <span style="color:#ba1a1a;">*</span></label>
             <input id="reg-chuc-vu" type="text" placeholder="VD: Lễ tân, Quản lý..."
@@ -670,9 +670,12 @@ window.GymApp.pages['member-add'] = {
           }
         } else {
           if (loai_ho_so === 'hoi_vien') {
-            window.GymApp.toast('Đã tạo hồ sơ thành công! Tiếp tục đăng ký gói tập.', 'success');
-          } else {
-            window.GymApp.toast('Đã tạo hồ sơ thành công!', 'success');
+            const tabPkg = document.getElementById('tab-package');
+            if (tabPkg) tabPkg.click();
+          } else if (loai_ho_so === 'pt') {
+            window.GymApp.navigate('members-list');  // về tab PT trong danh sách
+          } else if (loai_ho_so === 'nhan_vien') {
+            window.GymApp.navigate('staff-list');    // về danh sách nhân viên
           }
         }
 

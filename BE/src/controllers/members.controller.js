@@ -794,6 +794,9 @@ export const registerPackage = (req, res) => {
   if (!goiTap) return error(res, 'Gói tập không tồn tại.', 404);
 
   const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
+  if (tu_ngay < todayStr) {
+    return error(res, 'Ngày bắt đầu không được là ngày trong quá khứ.', 400);
+  }
 
   // Tự động hủy toàn bộ các yêu cầu gia hạn đang ở trạng thái 'cho_duyet' của hội viên này
   db.prepare(`
@@ -812,13 +815,13 @@ export const registerPackage = (req, res) => {
   let finalTuNgay = tu_ngay;
   if (activePackage && activePackage.den_ngay >= todayStr) {
     const nextDayResult = db.prepare("SELECT date(?, '+1 day') AS next_day").get(activePackage.den_ngay);
-    if (nextDayResult && nextDayResult.next_day) {
+    if (nextDayResult?.next_day) {
       finalTuNgay = nextDayResult.next_day;
     }
   } else {
-    // Nếu không có gói đang hoạt động hoặc gói đã hết hạn, ngày bắt đầu không được nhỏ hơn hôm nay
+    // THAY: override thầm lặng → báo lỗi rõ ràng
     if (finalTuNgay < todayStr) {
-      finalTuNgay = todayStr;
+      return error(res, 'Ngày bắt đầu không được là ngày trong quá khứ.', 400);
     }
   }
 
@@ -2118,7 +2121,7 @@ export const importMembers = async (req, res) => {
       const lastHoSo = db.prepare(`
         SELECT ma_ho_so FROM ho_so WHERE loai_ho_so = 'hoi_vien' ORDER BY id DESC LIMIT 1
       `).get();
-      
+
       let baseNum = 0;
       if (lastHoSo && lastHoSo.ma_ho_so) {
         const match = lastHoSo.ma_ho_so.match(/\d+/);
@@ -2246,7 +2249,7 @@ export const importMembers = async (req, res) => {
     });
 
     const result = importTx(rawData, req.user.id);
-    
+
     // Ghi audit log
     ghi_audit_log(req, 'CREATE', 'ho_so', null, null, { successCount: result.successCount }, `Import ${result.successCount} hội viên từ file Excel`);
 

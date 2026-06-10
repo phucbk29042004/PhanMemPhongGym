@@ -63,7 +63,7 @@ export const getRegistrations = (req, res) => {
   }
 
   if (hoi_vien_id) { where += ' AND dp.hoi_vien_id = ?'; params.push(hoi_vien_id); }
-  if (trang_thai)  { where += ' AND dp.trang_thai = ?'; params.push(trang_thai); }
+  if (trang_thai) { where += ' AND dp.trang_thai = ?'; params.push(trang_thai); }
 
   const rows = db.prepare(`
     SELECT
@@ -155,7 +155,8 @@ export const createRegistration = (req, res) => {
     return error(res, 'Thiếu: hoi_vien_id, pt_id, goi_pt_id, tu_ngay, gia_thuc_te', 400);
   }
 
-  const validTT = ['tien_mat','chuyen_khoan'];
+
+  const validTT = ['tien_mat', 'chuyen_khoan'];
   if (!validTT.includes(phuong_thuc_tt)) {
     return error(res, `phuong_thuc_tt phải là: ${validTT.join(', ')}`, 400);
   }
@@ -184,6 +185,9 @@ export const createRegistration = (req, res) => {
   const soBuoi = so_buoi_dang_ky ? parseInt(so_buoi_dang_ky) : (goiPt.so_buoi || null);
 
   const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
+  if (tu_ngay && tu_ngay < todayStr) {
+    return error(res, 'Ngày bắt đầu không được là ngày trong quá khứ.', 400);
+  }
   const finalStatus = tu_ngay > todayStr ? 'cho_kich_hoat' : 'dang_hoat_dong';
 
   const result = db.prepare(`

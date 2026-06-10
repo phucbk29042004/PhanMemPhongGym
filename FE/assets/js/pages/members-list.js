@@ -2072,8 +2072,8 @@ window.GymApp.pages['members-list'] = {
           const printBtn = dark
             ? 'background:rgba(29,147,54,0.25);border:1px solid rgba(100,255,100,0.3);color:#a7f3d0;'
             : 'background:#e6f4ea;border:1px solid #b7e1cd;color:#137333;';
-            
-          const btn = (cls, icon, label, style, dataAttrs) => 
+
+          const btn = (cls, icon, label, style, dataAttrs) =>
             `<button class="${cls}" ${dataAttrs} style="display:inline-flex;align-items:center;gap:3px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;${style}">
               <span class="material-symbols-outlined" style="font-size:13px;">${icon}</span>${label}
             </button>`;
@@ -2089,12 +2089,12 @@ window.GymApp.pages['members-list'] = {
         ptContractsHTML = `
           <div style="margin-bottom:16px;">
             ${ptContracts.map(c => {
-              const buoiConLai = (c.buoi_dang_ky || 0) - (c.buoi_da_tap || 0);
-              const conHan = !c.den_ngay || new Date(c.den_ngay) >= today;
-              const statusLabel = (!conHan) ? 'Hết hạn' : (buoiConLai <= 0 ? 'Hết buổi' : 'Đang tập');
-              
-              if (statusLabel === 'Đang tập') {
-                return `
+          const buoiConLai = (c.buoi_dang_ky || 0) - (c.buoi_da_tap || 0);
+          const conHan = !c.den_ngay || new Date(c.den_ngay) >= today;
+          const statusLabel = (!conHan) ? 'Hết hạn' : (buoiConLai <= 0 ? 'Hết buổi' : 'Đang tập');
+
+          if (statusLabel === 'Đang tập') {
+            return `
                   <div style="background:linear-gradient(160deg,#2d6a4f 0%,#40916c 55%,#52b788 100%);border-radius:12px;padding:14px 16px;color:#fff;position:relative;overflow:hidden;margin-bottom:8px;">
                     <div style="position:absolute;right:-12px;top:-12px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.07);pointer-events:none;"></div>
                     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;position:relative;z-index:1;">
@@ -2107,11 +2107,11 @@ window.GymApp.pages['members-list'] = {
                     </div>
                     ${renderPtActionBtns(c, true)}
                   </div>`;
-              } else {
-                const isExp = statusLabel === 'Hết hạn';
-                const borderColor = isExp ? '#fecaca' : '#fde68a';
-                const accentColor = isExp ? '#dc2626' : '#d97706';
-                return `
+          } else {
+            const isExp = statusLabel === 'Hết hạn';
+            const borderColor = isExp ? '#fecaca' : '#fde68a';
+            const accentColor = isExp ? '#dc2626' : '#d97706';
+            return `
                   <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--bg-surface-lowest, #fff);border:1px solid var(--outline-variant, ${borderColor});border-left:3px solid ${accentColor};border-radius:10px;margin-bottom:8px;">
                     <span class="material-symbols-outlined" style="font-size:18px;color:${accentColor};margin-top:1px;flex-shrink:0;">${isExp ? 'event_busy' : 'history'}</span>
                     <div style="flex:1;min-width:0;">
@@ -2127,8 +2127,8 @@ window.GymApp.pages['members-list'] = {
                       ${renderPtActionBtns(c, false)}
                     </div>
                   </div>`;
-              }
-            }).join('')}
+          }
+        }).join('')}
           </div>
         `;
       }
@@ -2357,7 +2357,7 @@ window.GymApp.pages['members-list'] = {
             <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Mã giảm giá</label><input id="pkg-discount-code" type="text" placeholder="Nhập mã (nếu có)..." ${inputCls} /></div>
             <div>
               <label class="block text-body-sm font-bold text-on-surface mb-xs">Từ ngày ${REQ}</label>
-              <input id="pkg-from" type="date" value="${defaultFromDate}" ${inputCls} />
+              <input id="pkg-from" type="date" value="${defaultFromDate}" min="${new Date().toISOString().split('T')[0]}" ${inputCls} />
               ${activePkg ? `
                 <div style="margin-top: 6px; display: flex; align-items: center; gap: 6px;">
                   <input type="checkbox" id="pkg-stack-mode" checked style="cursor: pointer; width: 14px; height: 14px;" />
@@ -2478,6 +2478,14 @@ window.GymApp.pages['members-list'] = {
       const name = document.getElementById('pkg-name').value;
       const price = parseVND(document.getElementById('pkg-price').value);
       const from = document.getElementById('pkg-from').value;
+      const today = new Date().toISOString().split('T')[0];
+
+      // Thêm đoạn này:
+      if (from < today) {
+        window.GymApp.toast('Ngày bắt đầu không được là ngày trong quá khứ', 'error');
+        document.getElementById('pkg-from').style.borderColor = '#ba1a1a';
+        return;
+      }
       const to = document.getElementById('pkg-to').value;
       const paymentDate = document.getElementById('pkg-payment-date').value;
       const regStatus = document.getElementById('pkg-reg-status').value;
@@ -2894,7 +2902,7 @@ window.GymApp.pages['members-list'] = {
           </div>
           <div>
             <label class="block text-body-sm font-bold text-on-surface mb-xs">Ngày bắt đầu <span style="color:#ba1a1a;">*</span></label>
-            <input id="switch-pkg-from" type="date" value="${new Date().toISOString().substring(0, 10)}" ${iCls} />
+            <input id="switch-pkg-from" type="date" value="${new Date().toISOString().substring(0, 10)}" min="${new Date().toISOString().split('T')[0]}" ${iCls} />
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-standard">
             <div>
@@ -3087,7 +3095,7 @@ window.GymApp.pages['members-list'] = {
             <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Phương thức TT ${REQ}</label><select id="ptreg-payment" ${inputCls}><option value="tien_mat">Tiền mặt</option><option value="chuyen_khoan">Chuyển khoản</option></select></div>
             <div>
               <label class="block text-body-sm font-bold text-on-surface mb-xs">Từ ngày ${REQ}</label>
-              <input id="ptreg-from" type="date" value="${defaultFromDate}" ${inputCls} />
+              <input id="ptreg-from" type="date" value="${defaultFromDate}" min="${new Date().toISOString().split('T')[0]}" ${inputCls} />
               ${activePtReg ? `
                 <div style="margin-top: 6px; display: flex; align-items: center; gap: 6px;">
                   <input type="checkbox" id="ptreg-stack-mode" checked style="cursor: pointer; width: 14px; height: 14px;" />
