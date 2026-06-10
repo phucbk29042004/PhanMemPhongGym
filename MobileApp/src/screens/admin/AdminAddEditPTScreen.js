@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView,
+  ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, ScrollView,
   StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronDown, Shield, X, Save, User, Phone, Mail, Award, Dumbbell } from 'lucide-react-native';
+import { ChevronDown, Shield, X, Save, User, Phone, Mail, Award, Dumbbell, Camera } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import DatePickerField from '../../components/DatePickerField';
@@ -89,6 +90,27 @@ export default function AdminAddEditPTScreen({ route, navigation }) {
     { id: 'quan-1', ten: 'Chi nhánh Quận 1' },
   ]);
 
+  // Ảnh đại diện
+  const [avatarUri, setAvatarUri] = useState(null);
+  const [existingAvatar, setExistingAvatar] = useState(null);
+
+  const handlePickAvatar = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Cần quyền truy cập', 'Vui lòng cấp quyền truy cập thư viện ảnh để thay đổi ảnh đại diện.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+    if (!result.canceled && result.assets?.[0]) {
+      setAvatarUri(result.assets[0].uri);
+    }
+  };
+
   // Account creation states (only when adding new or no account exists yet)
   const [taiKhoanId, setTaiKhoanId] = useState(null);
   const [createAcc, setCreateAcc] = useState(false);
@@ -127,6 +149,7 @@ export default function AdminAddEditPTScreen({ route, navigation }) {
             setChiNhanh(data.chi_nhanh || '');
             setGhiChu(data.ghi_chu || '');
             setTaiKhoanId(data.tai_khoan_id || null);
+            setExistingAvatar(data.anh_dai_dien || null);
           }
         } catch (err) {
           console.error('[AddEditPT] fetch error:', err?.message);
@@ -224,6 +247,21 @@ export default function AdminAddEditPTScreen({ route, navigation }) {
         }
       }
 
+      // Upload ảnh PT nếu người dùng đã chọn
+      if (avatarUri && ptSavedId) {
+        try {
+          const formData = new FormData();
+          const filename = avatarUri.split('/').pop();
+          const ext = filename.split('.').pop()?.toLowerCase() || 'jpg';
+          formData.append('anh', { uri: avatarUri, name: filename, type: `image/${ext === 'jpg' ? 'jpeg' : ext}` });
+          await api.put(`/trainers/${ptSavedId}/avatar`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+        } catch (imgErr) {
+          Alert.alert('Cảnh báo', 'Lưu hồ sơ thành công nhưng không thể cập nhật ảnh đại diện.');
+        }
+      }
+
       Alert.alert('Thành công', isEdit ? 'Đã cập nhật hồ sơ PT.' : 'Đã thêm PT mới thành công.', [
         { text: 'OK', onPress: () => navigation.goBack() }
       ]);
@@ -263,6 +301,27 @@ export default function AdminAddEditPTScreen({ route, navigation }) {
         style={{ flex: 1 }}
       >
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+
+          {/* Ảnh đại diện */}
+          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Ảnh đại diện</Text>
+          <View style={[styles.formCard, { backgroundColor: colors.surface, borderColor: colors.border, alignItems: 'center', paddingVertical: 16 }]}>
+            <TouchableOpacity onPress={handlePickAvatar} activeOpacity={0.8}>
+              {avatarUri || existingAvatar ? (
+                <Image
+                  source={{ uri: avatarUri || existingAvatar }}
+                  style={{ width: 90, height: 90, borderRadius: 45, borderWidth: 2, borderColor: colors.primary }}
+                />
+              ) : (
+                <View style={{ width: 90, height: 90, borderRadius: 45, backgroundColor: colors.surfaceVariant, borderWidth: 2, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }}>
+                  <User color={colors.textMuted} size={36} strokeWidth={1.5} />
+                </View>
+              )}
+              <View style={{ position: 'absolute', bottom: 0, right: 0, width: 28, height: 28, borderRadius: 14, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
+                <Camera color="#fff" size={14} strokeWidth={2.5} />
+              </View>
+            </TouchableOpacity>
+            <Text style={{ marginTop: 8, fontSize: 12, color: colors.textMuted }}>Nhấn để thay đổi ảnh</Text>
+          </View>
 
           {/* Section 1: Thông tin cơ bản */}
           <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Thông tin cá nhân</Text>

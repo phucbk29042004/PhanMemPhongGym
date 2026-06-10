@@ -8,11 +8,27 @@
 ---
 
 ## 📌 Trạng thái hiện tại
-**✅ Tái cấu trúc navigation Mobile Admin + Nhân viên** — Tab PT thay bằng tab Nhân viên, PT được gộp vào tab Hội viên dưới dạng sub-tab HLV/PT. Admin và nhân viên dùng chung `AdminNavigator`.
+**✅ Sửa 4 nhóm lỗi Mobile** — Ẩn filter chi nhánh Dashboard với nhân viên, StaffCard có thể nhấn vào xem/sửa, phân trang vuốt ngang (SwipePager), thêm upload ảnh cho HV và PT.
 
 ---
 
-## 📋 Danh Sách Thay Đổi
+### [10/06/2026 15:20] — Sửa lỗi ẩn bộ lọc chi nhánh cho nhân viên trên Mobile App
+- **Loại**: Sửa bug (Fullstack)
+- **File**: `BE/src/controllers/auth.controller.js`
+- **Mô tả**:
+  - Bổ sung trường `chi_nhanh` trong truy vấn `findAccount` và payload phản hồi của API đăng nhập `/api/auth/login`.
+  - Khắc phục triệt để lỗi khi nhân viên đăng nhập lần đầu tiên trên Mobile App, do thiếu `chi_nhanh` trong session user dẫn đến bộ lọc chi nhánh vẫn bị hiển thị trên các màn hình Dashboard, Members, Staff.
+- **Kết quả**: Thành công.
+
+### [10/06/2026] — Sửa 4 nhóm lỗi Mobile (filter chi nhánh, StaffCard, pagination, upload ảnh)
+- **Loại**: Sửa bug + tính năng
+- **File**: `AdminDashboardScreen.js`, `AdminStaffScreen.js`, `AdminMembersScreen.js`, `AdminAddEditMemberScreen.js`, `AdminAddEditPTScreen.js`, `components/SwipePager.js` (mới)
+- **Mô tả**:
+  1. **Dashboard — nhân viên**: Thêm `isStaffWithBranch`, bọc `branchTrigger` với `{!isStaffWithBranch && ...}` — ẩn bộ lọc chi nhánh với nhân viên chi nhánh cố định.
+  2. **StaffCard**: Đổi `View` → `TouchableOpacity`, thêm nút Sửa (Edit2), truyền `onEdit` → `AdminAddEditMember` và `onPress` → `AdminMemberDetail`. Card bây giờ nhấn vào xem chi tiết được.
+  3. **Phân trang vuốt**: Tạo component `SwipePager` — hiển thị 10 item/trang, vuốt ngang để chuyển trang, có dot indicator + nút mũi tên. Áp dụng cho `AdminMembersScreen` (HV + PT) và `AdminStaffScreen`. Bỏ nút Trước/Sau dạng text cũ. Staff đổi từ infinite scroll sang fetch-all (limit=200) + SwipePager.
+  4. **Upload ảnh HV + PT**: Thêm `expo-image-picker` vào `AdminAddEditMemberScreen` và `AdminAddEditPTScreen`. UI avatar tròn với icon Camera, load ảnh hiện tại khi edit, upload sau khi save qua `PUT /api/members/:id/avatar` và `PUT /api/trainers/:id/avatar`.
+- **Kết quả**: Thành công.
 
 ### [10/06/2026] — Tái cấu trúc navigation Mobile Admin + Nhân viên
 - **Loại**: Tính năng mới (navigation restructure)
@@ -1753,4 +1769,14 @@
   - **Mobile App**: Thêm import `useEffect` bị thiếu tại `AdminMemberDetailScreen.js` để khắc phục lỗi văng ứng dụng `ReferenceError: Property 'useEffect' doesn't exist`.
   - **Dời lịch tập**: Viết lại cơ chế xác định ngày và giờ hiện tại theo múi giờ Việt Nam (`Asia/Ho_Chi_Minh`) chuẩn hóa định dạng `YYYY-MM-DD` và `HH:MM` độc lập với môi trường/ICU của hệ thống, giúp sửa triệt để lỗi chặn dời lịch sang ngày trong quá khứ do locale bị fallback.
   - **Tạo tài khoản & Trùng tên đăng nhập**: Thêm hỗ trợ kiểm tra trùng lặp `ten_dang_nhap` ở API `/check-duplicate` phía Backend và tích hợp kiểm tra trước khi lưu hồ sơ ở Frontend `member-add.js` để ngăn chặn rác hồ sơ khi tạo tài khoản bị trùng lặp.
+- **Kết quả**: Thành công.
+
+### [10/06/2026 15:11] — Hỗ trợ xem chi tiết hồ sơ PT/Nhân viên và ẩn phần đăng ký gói tập của họ
+- **Loại**: Sửa bug & Nghiệp vụ (Fullstack)
+- **File**: 
+  - `BE/src/controllers/members.controller.js`
+  - `MobileApp/src/screens/admin/AdminMemberDetailScreen.js`
+- **Mô tả**: 
+  - **Backend**: Loại bỏ điều kiện `AND h.loai_ho_so = 'hoi_vien'` trong hàm `getMemberById` để cho phép truy vấn thông tin chi tiết của hồ sơ Nhân viên (`nhan_vien`) và Huấn luyện viên (`pt`), giải quyết triệt để lỗi `Request failed with status code 404` khi mở trang chi tiết hoặc trang chỉnh sửa trên di động.
+  - **Mobile App**: Bao bọc phần hiển thị **Gói tập Gym** và **Hợp đồng PT** bằng điều kiện `{member?.loai_ho_so === 'hoi_vien' && (...)}` để ẩn các phần này và ngăn việc hiển thị nút đăng ký/gia hạn gói tập cho Nhân viên/PT. Cập nhật tiêu đề và nhãn phụ hiển thị đúng vai trò của hồ sơ (Huấn luyện viên/Nhân viên) thay vì mặc định hiển thị "Hội viên" hay "Standard".
 - **Kết quả**: Thành công.

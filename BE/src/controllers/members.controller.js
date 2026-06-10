@@ -163,7 +163,7 @@ export const getMemberById = (req, res) => {
       ((SELECT loai FROM luot_vao_ra WHERE ho_so_id = h.id AND date(thoi_diem) = date('now','localtime') ORDER BY id DESC LIMIT 1) = 'vao') AS da_check_in_hom_nay
     FROM ho_so h
     LEFT JOIN tai_khoan tk ON tk.id = h.tai_khoan_id
-    WHERE h.id = ? AND h.loai_ho_so = 'hoi_vien' AND h.is_deleted = 0
+    WHERE h.id = ? AND h.is_deleted = 0
   `).get(id);
 
   if (!member) return error(res, 'Không tìm thấy hội viên.', 404);

@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
+  ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform,
   ScrollView, StatusBar, StyleSheet, Text, TextInput,
   TouchableOpacity, View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ChevronDown, X, Save, User, Phone, Mail, MapPin,
-  Building2, Shield, CreditCard, Briefcase
+  Building2, Shield, CreditCard, Briefcase, Camera,
 } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import DatePickerField from '../../components/DatePickerField';
@@ -141,6 +142,27 @@ export default function AdminAddEditMemberScreen({ route, navigation }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('123456');
 
+  // ── Ảnh đại diện ─────────────────────────────────────────────────────
+  const [avatarUri, setAvatarUri] = useState(null); // URI local sau khi chọn
+  const [existingAvatar, setExistingAvatar] = useState(null); // URL từ server
+
+  const handlePickAvatar = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Cần quyền truy cập', 'Vui lòng cấp quyền truy cập thư viện ảnh để thay đổi ảnh đại diện.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+    if (!result.canceled && result.assets?.[0]) {
+      setAvatarUri(result.assets[0].uri);
+    }
+  };
+
   // ── Chi nhánh list ───────────────────────────────────────────────────
   const DEFAULT_BRANCHES = [
     { id: 'go-vap', ten: 'Chi nhánh Gò Vấp' },
@@ -183,6 +205,7 @@ export default function AdminAddEditMemberScreen({ route, navigation }) {
             setChuyenMon(d.chuyen_mon || '');
             setKinhNghiem(d.kinh_nghiem ? String(d.kinh_nghiem) : '');
             setChucVu(d.chuc_vu || '');
+            setExistingAvatar(d.anh_dai_dien || null);
           }
         }
       } catch (err) {
@@ -288,6 +311,21 @@ export default function AdminAddEditMemberScreen({ route, navigation }) {
         }
       }
 
+      // Upload ảnh nếu người dùng đã chọn
+      if (avatarUri && memberSavedId) {
+        try {
+          const formData = new FormData();
+          const filename = avatarUri.split('/').pop();
+          const ext = filename.split('.').pop()?.toLowerCase() || 'jpg';
+          formData.append('anh', { uri: avatarUri, name: filename, type: `image/${ext === 'jpg' ? 'jpeg' : ext}` });
+          await api.put(`/members/${memberSavedId}/avatar`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+        } catch (imgErr) {
+          Alert.alert('Cảnh báo', 'Lưu hồ sơ thành công nhưng không thể cập nhật ảnh đại diện.');
+        }
+      }
+
       Alert.alert('Thành công', isEdit ? 'Đã cập nhật hồ sơ.' : 'Đã thêm hồ sơ mới.', [
         { text: 'OK', onPress: () => navigation.goBack() }
       ]);
@@ -347,6 +385,27 @@ export default function AdminAddEditMemberScreen({ route, navigation }) {
               onSelect={setLoaiHoSo}
               colors={colors}
             />
+          </View>
+
+          {/* ── Ảnh đại diện ── */}
+          <SectionHeader title="Ảnh đại diện" colors={colors} />
+          <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, alignItems: 'center', paddingVertical: 16 }]}>
+            <TouchableOpacity onPress={handlePickAvatar} activeOpacity={0.8}>
+              {avatarUri || existingAvatar ? (
+                <Image
+                  source={{ uri: avatarUri || existingAvatar }}
+                  style={{ width: 90, height: 90, borderRadius: 45, borderWidth: 2, borderColor: colors.primary }}
+                />
+              ) : (
+                <View style={{ width: 90, height: 90, borderRadius: 45, backgroundColor: colors.surfaceVariant, borderWidth: 2, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }}>
+                  <User color={colors.textMuted} size={36} strokeWidth={1.5} />
+                </View>
+              )}
+              <View style={{ position: 'absolute', bottom: 0, right: 0, width: 28, height: 28, borderRadius: 14, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
+                <Camera color="#fff" size={14} strokeWidth={2.5} />
+              </View>
+            </TouchableOpacity>
+            <Text style={{ marginTop: 8, fontSize: 12, color: colors.textMuted }}>Nhấn để thay đổi ảnh</Text>
           </View>
 
           {/* ── Thông tin cơ bản ── */}

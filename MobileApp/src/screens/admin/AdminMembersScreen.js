@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuthStore } from '../../store/useAuthStore';
+import SwipePager from '../../components/SwipePager';
 
 function formatDate(val) {
   if (!val) return '—';
@@ -398,11 +399,11 @@ export default function AdminMembersScreen({ navigation, route }) {
     fetchTodaySchedules();
   };
 
-  // ── HV pagination ─────────────────────────────────────────
-  const [page, setPage] = useState(1);
+  // ── HV pagination (0-based cho SwipePager) ───────────────
+  const [page, setPage] = useState(0);
   const itemsPerPage = 10;
 
-  useEffect(() => { setPage(1); }, [search, filter]);
+  useEffect(() => { setPage(0); }, [search, filter]);
 
   const filtered = members.filter(m => {
     const q = search.toLowerCase().trim();
@@ -415,20 +416,15 @@ export default function AdminMembersScreen({ navigation, route }) {
     return true;
   });
 
-  const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
-  const paginatedData = filtered.slice((page - 1) * itemsPerPage, page * itemsPerPage);
-
-  // ── PT pagination ─────────────────────────────────────────
-  const [ptPage, setPtPage] = useState(1);
-  useEffect(() => { setPtPage(1); }, [ptSearch]);
+  // ── PT pagination (0-based cho SwipePager) ───────────────
+  const [ptPage, setPtPage] = useState(0);
+  useEffect(() => { setPtPage(0); }, [ptSearch]);
 
   const filteredTrainers = trainers.filter(pt => {
     const q = ptSearch.toLowerCase().trim();
     if (!q) return true;
     return pt.ho_ten?.toLowerCase().includes(q) || pt.chuyen_mon?.toLowerCase().includes(q) || pt.ma_ho_so?.toLowerCase().includes(q);
   });
-  const ptTotalPages = Math.ceil(filteredTrainers.length / itemsPerPage) || 1;
-  const paginatedPT = filteredTrainers.slice((ptPage - 1) * itemsPerPage, ptPage * itemsPerPage);
 
   const totalToday = trainers.reduce((sum, pt) => sum + (pt.lich_hom_nay?.length || 0), 0);
   const doneToday = trainers.reduce((sum, pt) => sum + (pt.lich_hom_nay?.filter(s => s.trang_thai === 'da_tap').length || 0), 0);
@@ -578,39 +574,29 @@ export default function AdminMembersScreen({ navigation, route }) {
               <ActivityIndicator size="large" color={colors.primary} />
             </View>
           ) : (
-            <View style={{ flex: 1 }}>
-              <FlatList
-                data={paginatedData}
-                keyExtractor={item => String(item.id)}
-                renderItem={({ item }) => (
-                  <MemberCard
-                    item={item}
-                    colors={colors}
-                    onPress={() => navigation.navigate('AdminMemberDetail', { memberId: item.id })}
-                  />
-                )}
-                contentContainerStyle={styles.listContent}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
-                ListEmptyComponent={
-                  <View style={styles.emptyBox}>
-                    <User color={colors.textMuted} size={48} strokeWidth={1} />
-                    <Text style={[styles.emptyText, { color: colors.textMuted }]}>Không tìm thấy hội viên</Text>
-                  </View>
-                }
-                showsVerticalScrollIndicator={false}
-              />
-              {totalPages > 1 && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface }}>
-                  <TouchableOpacity disabled={page === 1} onPress={() => setPage(p => Math.max(1, p - 1))} style={{ paddingHorizontal: 16, paddingVertical: 8, opacity: page === 1 ? 0.4 : 1 }}>
-                    <Text style={{ color: colors.primary, fontWeight: '700' }}>Trước</Text>
-                  </TouchableOpacity>
-                  <Text style={{ color: colors.text, marginHorizontal: 16, fontWeight: '600' }}>Trang {page} / {totalPages}</Text>
-                  <TouchableOpacity disabled={page === totalPages} onPress={() => setPage(p => Math.min(totalPages, p + 1))} style={{ paddingHorizontal: 16, paddingVertical: 8, opacity: page === totalPages ? 0.4 : 1 }}>
-                    <Text style={{ color: colors.primary, fontWeight: '700' }}>Sau</Text>
-                  </TouchableOpacity>
-                </View>
+            <SwipePager
+              data={filtered}
+              pageSize={itemsPerPage}
+              page={page}
+              onPageChange={setPage}
+              keyExtractor={item => String(item.id)}
+              renderItem={({ item }) => (
+                <MemberCard
+                  item={item}
+                  colors={colors}
+                  onPress={() => navigation.navigate('AdminMemberDetail', { memberId: item.id })}
+                />
               )}
-            </View>
+              contentContainerStyle={styles.listContent}
+              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
+              ListEmptyComponent={
+                <View style={styles.emptyBox}>
+                  <User color={colors.textMuted} size={48} strokeWidth={1} />
+                  <Text style={[styles.emptyText, { color: colors.textMuted }]}>Không tìm thấy hội viên</Text>
+                </View>
+              }
+              colors={colors}
+            />
           )}
         </>
       )}
@@ -659,43 +645,33 @@ export default function AdminMembersScreen({ navigation, route }) {
               {ptLoading ? (
                 <View style={styles.loadingBox}><ActivityIndicator size="large" color={colors.primary} /></View>
               ) : (
-                <View style={{ flex: 1 }}>
-                  <FlatList
-                    data={paginatedPT}
-                    keyExtractor={item => String(item.id)}
-                    renderItem={({ item }) => (
-                      <PTCard
-                        item={item}
-                        expanded={ptExpandedId === item.id}
-                        onPress={() => setPtExpandedId(ptExpandedId === item.id ? null : item.id)}
-                        onEdit={(pt) => navigation.navigate('AdminAddEditPT', { ptId: pt.id })}
-                        onDelete={handleDeletePT}
-                        colors={colors}
-                        isAdmin={isAdmin}
-                      />
-                    )}
-                    contentContainerStyle={styles.listContent}
-                    refreshControl={<RefreshControl refreshing={ptRefreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
-                    ListEmptyComponent={
-                      <View style={styles.emptyBox}>
-                        <Dumbbell color={colors.textMuted} size={48} strokeWidth={1} />
-                        <Text style={[styles.emptyText, { color: colors.textMuted }]}>Không tìm thấy PT</Text>
-                      </View>
-                    }
-                    showsVerticalScrollIndicator={false}
-                  />
-                  {ptTotalPages > 1 && (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface }}>
-                      <TouchableOpacity disabled={ptPage === 1} onPress={() => setPtPage(p => Math.max(1, p - 1))} style={{ paddingHorizontal: 16, paddingVertical: 8, opacity: ptPage === 1 ? 0.4 : 1 }}>
-                        <Text style={{ color: colors.primary, fontWeight: '700' }}>Trước</Text>
-                      </TouchableOpacity>
-                      <Text style={{ color: colors.text, marginHorizontal: 16, fontWeight: '600' }}>Trang {ptPage} / {ptTotalPages}</Text>
-                      <TouchableOpacity disabled={ptPage === ptTotalPages} onPress={() => setPtPage(p => Math.min(ptTotalPages, p + 1))} style={{ paddingHorizontal: 16, paddingVertical: 8, opacity: ptPage === ptTotalPages ? 0.4 : 1 }}>
-                        <Text style={{ color: colors.primary, fontWeight: '700' }}>Sau</Text>
-                      </TouchableOpacity>
-                    </View>
+                <SwipePager
+                  data={filteredTrainers}
+                  pageSize={itemsPerPage}
+                  page={ptPage}
+                  onPageChange={setPtPage}
+                  keyExtractor={item => String(item.id)}
+                  renderItem={({ item }) => (
+                    <PTCard
+                      item={item}
+                      expanded={ptExpandedId === item.id}
+                      onPress={() => setPtExpandedId(ptExpandedId === item.id ? null : item.id)}
+                      onEdit={(pt) => navigation.navigate('AdminAddEditPT', { ptId: pt.id })}
+                      onDelete={handleDeletePT}
+                      colors={colors}
+                      isAdmin={isAdmin}
+                    />
                   )}
-                </View>
+                  contentContainerStyle={styles.listContent}
+                  refreshControl={<RefreshControl refreshing={ptRefreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
+                  ListEmptyComponent={
+                    <View style={styles.emptyBox}>
+                      <Dumbbell color={colors.textMuted} size={48} strokeWidth={1} />
+                      <Text style={[styles.emptyText, { color: colors.textMuted }]}>Không tìm thấy PT</Text>
+                    </View>
+                  }
+                  colors={colors}
+                />
               )}
             </>
           ) : (

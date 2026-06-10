@@ -183,6 +183,7 @@ const revRow = StyleSheet.create({
 // ── Màn hình chính ────────────────────────────────────────
 export default function AdminDashboardScreen({ navigation }) {
   const { user, selectedBranch, setSelectedBranch } = useAuthStore();
+  const isStaffWithBranch = user?.chi_nhanh && user?.vai_tro !== 'admin' && user?.vai_tro !== 'chu_phong_gym';
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const [dash, setDash] = useState(null);
@@ -381,8 +382,8 @@ export default function AdminDashboardScreen({ navigation }) {
         </View>
       </View>
 
-      {/* ── Bộ lọc chi nhánh — Nút mở Modal ── */}
-      <TouchableOpacity
+      {/* ── Bộ lọc chi nhánh — Nút mở Modal (ẩn với nhân viên chi nhánh cố định) ── */}
+      {!isStaffWithBranch && <TouchableOpacity
         style={[
           styles.branchTrigger,
           { backgroundColor: colors.surface, borderBottomColor: colors.border }
@@ -395,7 +396,7 @@ export default function AdminDashboardScreen({ navigation }) {
           {selectedBranch || 'Tất cả chi nhánh'}
         </Text>
         <ChevronDown color={colors.textSecondary} size={16} strokeWidth={2} />
-      </TouchableOpacity>
+      </TouchableOpacity>}
 
       <ScrollView
         showsVerticalScrollIndicator={false}
