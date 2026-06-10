@@ -12,6 +12,7 @@ import bcrypt from 'bcryptjs';
 import { createPaymentLink, getPaymentLinkInformation } from '../utils/payos.js';
 import xlsx from 'xlsx';
 import { getActorBranch } from '../utils/branch.js';
+import AdmZip from 'adm-zip';
 
 
 // Tự động cập nhật các gói tập/PT đã quá hạn sử dụng sang trạng thái tương ứng
@@ -162,7 +163,7 @@ export const getMemberById = (req, res) => {
       ((SELECT loai FROM luot_vao_ra WHERE ho_so_id = h.id AND date(thoi_diem) = date('now','localtime') ORDER BY id DESC LIMIT 1) = 'vao') AS da_check_in_hom_nay
     FROM ho_so h
     LEFT JOIN tai_khoan tk ON tk.id = h.tai_khoan_id
-    WHERE h.id = ? AND h.loai_ho_so = 'hoi_vien' AND h.is_deleted = 0
+    WHERE h.id = ? AND h.is_deleted = 0
   `).get(id);
 
   if (!member) return error(res, 'Không tìm thấy hội viên.', 404);
@@ -438,9 +439,23 @@ export const deleteMember = (req, res) => {
 // ── GET /api/members/check-duplicate ─────────────────────
 export const checkDuplicate = (req, res) => {
   const { field, value, exclude_id } = req.query;
-  const allowed = ['so_dien_thoai', 'cccd', 'email'];
+  const allowed = ['so_dien_thoai', 'cccd', 'email', 'ten_dang_nhap'];
   if (!field || !allowed.includes(field)) return error(res, 'field không hợp lệ', 400);
   if (!value || !value.trim()) return success(res, { exists: false });
+
+  if (field === 'ten_dang_nhap') {
+    let query = `SELECT id FROM tai_khoan WHERE ten_dang_nhap = ?`;
+    const params = [value.trim()];
+    if (exclude_id) {
+      const hoSo = db.prepare('SELECT tai_khoan_id FROM ho_so WHERE id = ?').get(exclude_id);
+      if (hoSo && hoSo.tai_khoan_id) {
+        query += ' AND id != ?';
+        params.push(hoSo.tai_khoan_id);
+      }
+    }
+    const row = db.prepare(query).get(...params);
+    return success(res, { exists: !!row });
+  }
 
   let query = `SELECT id FROM ho_so WHERE ${field} = ? AND is_deleted = 0`;
   const params = [value.trim()];
@@ -1887,6 +1902,11 @@ export const switchPackage = (req, res) => {
     return error(res, 'Thiếu thông tin: pkg_id_cu, goi_tap_id_moi, tu_ngay.', 400);
   }
 
+  const todayForSwitch = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
+  if (tu_ngay < todayForSwitch) {
+    return error(res, 'Ngày bắt đầu gói mới không được là ngày trong quá khứ.', 400);
+  }
+
   const hoSo = db.prepare('SELECT id, ho_ten, chi_nhanh FROM ho_so WHERE id = ? AND is_deleted = 0').get(id);
   if (!hoSo) return error(res, 'Không tìm thấy hồ sơ hội viên.', 404);
 
@@ -2115,6 +2135,35 @@ export const importMembers = async (req, res) => {
       return error(res, 'File Excel không có dữ liệu.', 400);
     }
 
+    // Tải file ZIP ảnh đại diện nếu có
+    let zip = null;
+    if (req.zipFile) {
+      zip = new AdmZip(req.zipFile.buffer);
+    }
+
+    // 1. Upload ảnh đại diện khớp từ file ZIP lên Cloudinary trước khi chạy DB Transaction
+    if (zip && isCloudinaryReady) {
+      for (const row of rawData) {
+        const imageFileName = (row['Tên file ảnh'] || row['Ten file anh'] || row['ten_file_anh'] || row['Avatar File'] || '').toString().trim();
+        if (imageFileName) {
+          const entry = zip.getEntries().find(e => {
+            const entryBaseName = e.entryName.split('/').pop().split('\\').pop();
+            return entryBaseName.toLowerCase() === imageFileName.toLowerCase() && !e.isDirectory;
+          });
+          if (entry) {
+            try {
+              const fileBuffer = zip.readFile(entry);
+              const result = await uploadImage(fileBuffer, 'paradise-gym/profiles');
+              row.avatar_url = result.url;
+              row.cloudinary_public_id = result.publicId;
+            } catch (imgErr) {
+              console.error(`Lỗi upload ảnh ${imageFileName} lên Cloudinary:`, imgErr);
+            }
+          }
+        }
+      }
+    }
+
     const vaiTroHoiVien = db.prepare("SELECT id FROM vai_tro WHERE ma_vai_tro = 'hoi_vien'").get();
     const defaultPasswordHash = await bcrypt.hash('123456', 12);
 
@@ -2141,8 +2190,8 @@ export const importMembers = async (req, res) => {
       const stmtInsertHoSo = db.prepare(`
         INSERT INTO ho_so (
           ma_ho_so, loai_ho_so, ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email,
-          dia_chi_tam_tru, ghi_chu, nguoi_tao_id, tai_khoan_id
-        ) VALUES (?, 'hoi_vien', ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          dia_chi_tam_tru, ghi_chu, nguoi_tao_id, tai_khoan_id, avatar_url, cloudinary_public_id
+        ) VALUES (?, 'hoi_vien', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
       const stmtInsertTaiKhoan = db.prepare(`
@@ -2161,6 +2210,8 @@ export const importMembers = async (req, res) => {
         const email = (row['Email'] || row['email'] || '').toString().trim() || null;
         const dia_chi = (row['Địa chỉ'] || row['Dia chi'] || row['address'] || '').toString().trim() || null;
         const ghi_chu = (row['Ghi chú'] || row['Ghi chu'] || row['note'] || '').toString().trim() || null;
+        const avatar_url = row.avatar_url || null;
+        const cloudinary_public_id = row.cloudinary_public_id || null;
 
         // Validation
         if (!ho_ten) {
@@ -2246,7 +2297,7 @@ export const importMembers = async (req, res) => {
         // Lưu hồ sơ
         stmtInsertHoSo.run(
           ma_ho_so, ho_ten, gioi_tinh, ngay_sinh, so_dien_thoai, email,
-          dia_chi, ghi_chu, creatorId, tai_khoan_id
+          dia_chi, ghi_chu, creatorId, tai_khoan_id, avatar_url, cloudinary_public_id
         );
 
         successCount++;

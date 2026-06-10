@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import {
   ActivityIndicator, Alert, RefreshControl, ScrollView,
   StatusBar, StyleSheet, Text, TouchableOpacity, View,
@@ -423,7 +423,9 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
           <X color={colors.text} size={22} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Chi tiết Hội viên</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>
+          {member?.loai_ho_so === 'pt' ? 'Chi tiết Huấn luyện viên' : member?.loai_ho_so === 'nhan_vien' ? 'Chi tiết Nhân viên' : 'Chi tiết Hội viên'}
+        </Text>
         <TouchableOpacity onPress={() => navigation.navigate('AdminAddEditMember', { memberId })} style={styles.headerBtn}>
           <Edit3 color={colors.primary} size={20} />
         </TouchableOpacity>
@@ -439,7 +441,7 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
           <ProfileAvatar uri={member?.avatar_url} name={member?.ho_ten} size={64} />
           <Text style={[styles.name, { color: colors.text }]}>{member?.ho_ten}</Text>
           <Text style={[styles.sub, { color: colors.textSecondary }]}>
-            {member?.ma_ho_so} • {member?.loai_hv === 'vip' ? 'Thành viên VIP' : member?.loai_hv === 'premium' ? 'Premium' : 'Standard'}
+            {member?.ma_ho_so} • {member?.loai_ho_so === 'pt' ? 'Huấn luyện viên' : member?.loai_ho_so === 'nhan_vien' ? 'Nhân viên' : (member?.loai_hv === 'vip' ? 'Thành viên VIP' : member?.loai_hv === 'premium' ? 'Premium' : 'Standard')}
           </Text>
 
           <View style={[styles.contactInfo, { backgroundColor: colors.surfaceVariant }]}>
@@ -476,202 +478,206 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
           )}
         </View>
 
-        {/* Gói Gym hiện tại */}
-        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Gói tập Gym</Text>
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          {activePkg ? (
-            <View>
-              <View style={styles.cardHeader}>
-                <Award color={colors.primary} size={20} />
-                <Text style={[styles.cardTitle, { color: colors.text }]}>{activePkg.ten_goi}</Text>
-                <View style={[styles.badge, { backgroundColor: colors.primaryLight }]}>
-                  <Text style={[styles.badgeText, { color: colors.primary }]}>Đang hoạt động</Text>
-                </View>
-              </View>
-              <View style={styles.cardInfo}>
-                <Text style={[styles.cardText, { color: colors.textSecondary }]}>
-                  Thời hạn: {formatDate(activePkg.tu_ngay)} - {formatDate(activePkg.den_ngay)}
-                </Text>
-                <Text style={[styles.cardText, { color: colors.textSecondary }]}>
-                  Đã thanh toán: <Text style={{ fontWeight: '700', color: colors.text }}>{formatPrice(activePkg.gia_thuc_te)}</Text>
-                </Text>
-              </View>
-            </View>
-          ) : (
-            <View style={styles.emptyCard}>
-              <Text style={[styles.emptyCardText, { color: colors.textMuted }]}>Chưa đăng ký gói Gym</Text>
-            </View>
-          )}
-
-          {/* Nút Yêu cầu gia hạn khi hết hạn / sắp hết hạn */}
-          {(member?.trang_thai === 'het_han' || member?.trang_thai === 'sap_het_han') && (
-            <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: colors.warningLight, marginTop: 10, flexDirection: 'row', gap: 6 }]}
-              onPress={handleNotifyRenew}
-            >
-              <Bell color={colors.warning} size={14} />
-              <Text style={[styles.actionBtnText, { color: colors.warning }]}>Yêu cầu gia hạn</Text>
-            </TouchableOpacity>
-          )}
-
-          <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: colors.primaryLight, marginTop: activePkg ? 10 : 0 }]}
-            onPress={() => navigation.navigate('AdminRegisterPackage', { member, activePkg: activePkgForSwitch })}
-          >
-            <Text style={[styles.actionBtnText, { color: colors.primary }]}>
-              {activePkgForSwitch ? 'Gia hạn / Đổi gói Gym' : 'Đăng ký gói Gym mới'}
-            </Text>
-          </TouchableOpacity>
-          {activePkg && (
-            <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: colors.surfaceVariant, marginTop: 10 }]}
-              onPress={handleEditPackageClick}
-            >
-              <Text style={[styles.actionBtnText, { color: colors.text }]}>Chỉnh sửa thông tin gói Gym hiện tại</Text>
-            </TouchableOpacity>
-          )}
-          {activePkg && role === 'admin' && (
-            <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: colors.dangerLight, marginTop: 10 }]}
-              onPress={handleCancelPackage}
-              disabled={cancelingPackage}
-            >
-              <Text style={[styles.actionBtnText, { color: colors.danger }]}>Hủy gói hiện tại</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Hợp đồng PT hiện tại */}
-        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Hợp đồng PT</Text>
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          {activePT ? (
-            <View>
-              <View style={styles.cardHeader}>
-                <Dumbbell color={colors.primary} size={20} />
-                <Text style={[styles.cardTitle, { color: colors.text }]}>{activePT.ten_goi_pt || 'Đăng ký PT'}</Text>
-                <View style={[styles.badge, { backgroundColor: activePT.trang_thai === 'cho_kich_hoat' ? (colors.warningLight || '#fef3c7') : colors.primaryLight }]}>
-                  <Text style={[styles.badgeText, { color: activePT.trang_thai === 'cho_kich_hoat' ? (colors.warning || '#d97706') : colors.primary }]}>
-                    {activePT.trang_thai === 'cho_kich_hoat' ? 'Chờ kích hoạt' : 'Đang hoạt động'}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.cardInfo}>
-                <Text style={[styles.cardText, { color: colors.textSecondary }]}>
-                  HLV gán: <Text style={{ fontWeight: '700', color: colors.text }}>{activePT.ten_pt}</Text>
-                </Text>
-                <Text style={[styles.cardText, { color: colors.textSecondary }]}>
-                  Số buổi tập: {activePT.buoi_da_tap}/{activePT.buoi_dang_ky} buổi (còn {activePT.buoi_dang_ky - activePT.buoi_da_tap} buổi)
-                </Text>
-                <Text style={[styles.cardText, { color: colors.textSecondary }]}>
-                  Thời hạn: {formatDate(activePT.tu_ngay)} - {formatDate(activePT.den_ngay)}
-                </Text>
-              </View>
-            </View>
-          ) : (
-            <View style={styles.emptyCard}>
-              <Text style={[styles.emptyCardText, { color: colors.textMuted }]}>Chưa đăng ký HLV cá nhân (PT)</Text>
-            </View>
-          )}
-          <TouchableOpacity 
-            style={[styles.actionBtn, { backgroundColor: colors.primaryLight, marginTop: activePT ? 12 : 0 }]}
-            onPress={() => navigation.navigate('AdminRegisterPT', { member, activePT: activePTForSwitch })}
-          >
-            <Text style={[styles.actionBtnText, { color: colors.primary }]}>
-              {activePTForSwitch ? 'Gia hạn / Đổi gói PT' : 'Đăng ký gói tập với HLV (PT)'}
-            </Text>
-          </TouchableOpacity>
-          {activePT && (
-            <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: colors.surfaceVariant, marginTop: 10 }]}
-              onPress={handleEditPTClick}
-            >
-              <Text style={[styles.actionBtnText, { color: colors.text }]}>Chỉnh sửa thông tin gói PT</Text>
-            </TouchableOpacity>
-          )}
-          {activePT && (
-            <TouchableOpacity 
-              style={[styles.actionBtn, { backgroundColor: colors.primary, marginTop: 10 }]}
-              onPress={() => navigation.navigate('AdminRegisterPTSchedule', { member, activePT })}
-            >
-              <Text style={[styles.actionBtnText, { color: '#fff' }]}>
-                Đặt lịch tập PT mới
-              </Text>
-            </TouchableOpacity>
-          )}
-          {activePT && role === 'admin' && (
-            <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: colors.dangerLight, marginTop: 10 }]}
-              onPress={handleCancelPT}
-              disabled={cancelingPT}
-            >
-              <Text style={[styles.actionBtnText, { color: colors.danger }]}>Hủy gói PT</Text>
-            </TouchableOpacity>
-          )}
-          {ptSchedules.length === 0 ? (
-            <View style={styles.emptySection}>
-              <Text style={[styles.emptyCardText, { color: colors.textMuted }]}>Chưa có lịch tập PT nào được xếp</Text>
-            </View>
-          ) : (
-            ptSchedules.map((item, idx) => {
-              const statusMap = {
-                cho_tap: 'Chờ tập',
-                da_tap: 'Đã hoàn thành',
-                da_huy: 'Đã hủy',
-              };
-              const label = statusMap[item.trang_thai] || item.trang_thai;
-              return (
-                <View 
-                  key={item.id} 
-                  style={[
-                    styles.historyRow, 
-                    { borderBottomColor: colors.borderLight }, 
-                    idx === ptSchedules.length - 1 && { borderBottomWidth: 0 }
-                  ]}
-                >
-                  <View style={styles.historyInfo}>
-                    <Text style={[styles.historyName, { color: colors.text }]}>
-                      HLV: {item.ten_pt} • {item.gio_bat_dau} - {item.gio_ket_thuc}
-                    </Text>
-                    <Text style={[styles.historyDates, { color: colors.textSecondary }]}>
-                      Ngày tập: {formatDate(item.ngay_tap)}
-                    </Text>
-                    {item.ghi_chu ? (
-                      <Text style={{ fontSize: 11, color: colors.textMuted, fontStyle: 'italic' }}>
-                        Ghi chú: {item.ghi_chu}
-                      </Text>
-                    ) : null}
-                    {item.ly_do_huy ? (
-                      <Text style={{ fontSize: 11, color: colors.danger, fontStyle: 'italic' }}>
-                        Lý do hủy: {item.ly_do_huy}
-                      </Text>
-                    ) : null}
+        {member?.loai_ho_so === 'hoi_vien' && (
+          <>
+            {/* Gói Gym hiện tại */}
+            <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Gói tập Gym</Text>
+            <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              {activePkg ? (
+                <View>
+                  <View style={styles.cardHeader}>
+                    <Award color={colors.primary} size={20} />
+                    <Text style={[styles.cardTitle, { color: colors.text }]}>{activePkg.ten_goi}</Text>
+                    <View style={[styles.badge, { backgroundColor: colors.primaryLight }]}>
+                      <Text style={[styles.badgeText, { color: colors.primary }]}>Đang hoạt động</Text>
+                    </View>
                   </View>
-                  <View style={{ gap: 6, alignItems: 'flex-end' }}>
-                    <View style={[
-                      styles.historyBadge, 
-                      { backgroundColor: item.trang_thai === 'da_tap' ? colors.primaryLight : item.trang_thai === 'da_huy' ? colors.dangerLight : colors.warningLight }
-                    ]}>
-                      <Text style={[
-                        styles.historyBadgeText, 
-                        { color: item.trang_thai === 'da_tap' ? colors.primary : item.trang_thai === 'da_huy' ? colors.danger : colors.warning }
-                      ]}>
-                        {label}
+                  <View style={styles.cardInfo}>
+                    <Text style={[styles.cardText, { color: colors.textSecondary }]}>
+                      Thời hạn: {formatDate(activePkg.tu_ngay)} - {formatDate(activePkg.den_ngay)}
+                    </Text>
+                    <Text style={[styles.cardText, { color: colors.textSecondary }]}>
+                      Đã thanh toán: <Text style={{ fontWeight: '700', color: colors.text }}>{formatPrice(activePkg.gia_thuc_te)}</Text>
+                    </Text>
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.emptyCard}>
+                  <Text style={[styles.emptyCardText, { color: colors.textMuted }]}>Chưa đăng ký gói Gym</Text>
+                </View>
+              )}
+
+              {/* Nút Yêu cầu gia hạn khi hết hạn / sắp hết hạn */}
+              {(member?.trang_thai === 'het_han' || member?.trang_thai === 'sap_het_han') && (
+                <TouchableOpacity
+                  style={[styles.actionBtn, { backgroundColor: colors.warningLight, marginTop: 10, flexDirection: 'row', gap: 6 }]}
+                  onPress={handleNotifyRenew}
+                >
+                  <Bell color={colors.warning} size={14} />
+                  <Text style={[styles.actionBtnText, { color: colors.warning }]}>Yêu cầu gia hạn</Text>
+                </TouchableOpacity>
+              )}
+
+              <TouchableOpacity
+                style={[styles.actionBtn, { backgroundColor: colors.primaryLight, marginTop: activePkg ? 10 : 0 }]}
+                onPress={() => navigation.navigate('AdminRegisterPackage', { member, activePkg: activePkgForSwitch })}
+              >
+                <Text style={[styles.actionBtnText, { color: colors.primary }]}>
+                  {activePkgForSwitch ? 'Gia hạn / Đổi gói Gym' : 'Đăng ký gói Gym mới'}
+                </Text>
+              </TouchableOpacity>
+              {activePkg && (
+                <TouchableOpacity
+                  style={[styles.actionBtn, { backgroundColor: colors.surfaceVariant, marginTop: 10 }]}
+                  onPress={handleEditPackageClick}
+                >
+                  <Text style={[styles.actionBtnText, { color: colors.text }]}>Chỉnh sửa thông tin gói Gym hiện tại</Text>
+                </TouchableOpacity>
+              )}
+              {activePkg && role === 'admin' && (
+                <TouchableOpacity
+                  style={[styles.actionBtn, { backgroundColor: colors.dangerLight, marginTop: 10 }]}
+                  onPress={handleCancelPackage}
+                  disabled={cancelingPackage}
+                >
+                  <Text style={[styles.actionBtnText, { color: colors.danger }]}>Hủy gói hiện tại</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Hợp đồng PT hiện tại */}
+            <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Hợp đồng PT</Text>
+            <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              {activePT ? (
+                <View>
+                  <View style={styles.cardHeader}>
+                    <Dumbbell color={colors.primary} size={20} />
+                    <Text style={[styles.cardTitle, { color: colors.text }]}>{activePT.ten_goi_pt || 'Đăng ký PT'}</Text>
+                    <View style={[styles.badge, { backgroundColor: activePT.trang_thai === 'cho_kich_hoat' ? (colors.warningLight || '#fef3c7') : colors.primaryLight }]}>
+                      <Text style={[styles.badgeText, { color: activePT.trang_thai === 'cho_kich_hoat' ? (colors.warning || '#d97706') : colors.primary }]}>
+                        {activePT.trang_thai === 'cho_kich_hoat' ? 'Chờ kích hoạt' : 'Đang hoạt động'}
                       </Text>
                     </View>
-                    {item.trang_thai === 'cho_tap' && (
-                      <TouchableOpacity 
-                        onPress={() => handleCancelSchedule(item.id)}
-                        style={{ padding: 4 }}
-                      >
-                        <Text style={{ fontSize: 11, color: colors.danger, fontWeight: '700' }}>Hủy lịch</Text>
-                      </TouchableOpacity>
-                    )}
+                  </View>
+                  <View style={styles.cardInfo}>
+                    <Text style={[styles.cardText, { color: colors.textSecondary }]}>
+                      HLV gán: <Text style={{ fontWeight: '700', color: colors.text }}>{activePT.ten_pt}</Text>
+                    </Text>
+                    <Text style={[styles.cardText, { color: colors.textSecondary }]}>
+                      Số buổi tập: {activePT.buoi_da_tap}/{activePT.buoi_dang_ky} buổi (còn {activePT.buoi_dang_ky - activePT.buoi_da_tap} buổi)
+                    </Text>
+                    <Text style={[styles.cardText, { color: colors.textSecondary }]}>
+                      Thời hạn: {formatDate(activePT.tu_ngay)} - {formatDate(activePT.den_ngay)}
+                    </Text>
                   </View>
                 </View>
-              );
-            })
-          )}
-        </View>
+              ) : (
+                <View style={styles.emptyCard}>
+                  <Text style={[styles.emptyCardText, { color: colors.textMuted }]}>Chưa đăng ký HLV cá nhân (PT)</Text>
+                </View>
+              )}
+              <TouchableOpacity 
+                style={[styles.actionBtn, { backgroundColor: colors.primaryLight, marginTop: activePT ? 12 : 0 }]}
+                onPress={() => navigation.navigate('AdminRegisterPT', { member, activePT: activePTForSwitch })}
+              >
+                <Text style={[styles.actionBtnText, { color: colors.primary }]}>
+                  {activePTForSwitch ? 'Gia hạn / Đổi gói PT' : 'Đăng ký gói tập với HLV (PT)'}
+                </Text>
+              </TouchableOpacity>
+              {activePT && (
+                <TouchableOpacity
+                  style={[styles.actionBtn, { backgroundColor: colors.surfaceVariant, marginTop: 10 }]}
+                  onPress={handleEditPTClick}
+                >
+                  <Text style={[styles.actionBtnText, { color: colors.text }]}>Chỉnh sửa thông tin gói PT</Text>
+                </TouchableOpacity>
+              )}
+              {activePT && (
+                <TouchableOpacity 
+                  style={[styles.actionBtn, { backgroundColor: colors.primary, marginTop: 10 }]}
+                  onPress={() => navigation.navigate('AdminRegisterPTSchedule', { member, activePT })}
+                >
+                  <Text style={[styles.actionBtnText, { color: '#fff' }]}>
+                    Đặt lịch tập PT mới
+                  </Text>
+                </TouchableOpacity>
+              )}
+              {activePT && role === 'admin' && (
+                <TouchableOpacity
+                  style={[styles.actionBtn, { backgroundColor: colors.dangerLight, marginTop: 10 }]}
+                  onPress={handleCancelPT}
+                  disabled={cancelingPT}
+                >
+                  <Text style={[styles.actionBtnText, { color: colors.danger }]}>Hủy gói PT</Text>
+                </TouchableOpacity>
+              )}
+              {ptSchedules.length === 0 ? (
+                <View style={styles.emptySection}>
+                  <Text style={[styles.emptyCardText, { color: colors.textMuted }]}>Chưa có lịch tập PT nào được xếp</Text>
+                </View>
+              ) : (
+                ptSchedules.map((item, idx) => {
+                  const statusMap = {
+                    cho_tap: 'Chờ tập',
+                    da_tap: 'Đã hoàn thành',
+                    da_huy: 'Đã hủy',
+                  };
+                  const label = statusMap[item.trang_thai] || item.trang_thai;
+                  return (
+                    <View 
+                      key={item.id} 
+                      style={[
+                        styles.historyRow, 
+                        { borderBottomColor: colors.borderLight }, 
+                        idx === ptSchedules.length - 1 && { borderBottomWidth: 0 }
+                      ]}
+                    >
+                      <View style={styles.historyInfo}>
+                        <Text style={[styles.historyName, { color: colors.text }]}>
+                          HLV: {item.ten_pt} • {item.gio_bat_dau} - {item.gio_ket_thuc}
+                        </Text>
+                        <Text style={[styles.historyDates, { color: colors.textSecondary }]}>
+                          Ngày tập: {formatDate(item.ngay_tap)}
+                        </Text>
+                        {item.ghi_chu ? (
+                          <Text style={{ fontSize: 11, color: colors.textMuted, fontStyle: 'italic' }}>
+                            Ghi chú: {item.ghi_chu}
+                          </Text>
+                        ) : null}
+                        {item.ly_do_huy ? (
+                          <Text style={{ fontSize: 11, color: colors.danger, fontStyle: 'italic' }}>
+                            Lý do hủy: {item.ly_do_huy}
+                          </Text>
+                        ) : null}
+                      </View>
+                      <View style={{ gap: 6, alignItems: 'flex-end' }}>
+                        <View style={[
+                          styles.historyBadge, 
+                          { backgroundColor: item.trang_thai === 'da_tap' ? colors.primaryLight : item.trang_thai === 'da_huy' ? colors.dangerLight : colors.warningLight }
+                        ]}>
+                          <Text style={[
+                            styles.historyBadgeText, 
+                            { color: item.trang_thai === 'da_tap' ? colors.primary : item.trang_thai === 'da_huy' ? colors.danger : colors.warning }
+                          ]}>
+                            {label}
+                          </Text>
+                        </View>
+                        {item.trang_thai === 'cho_tap' && (
+                          <TouchableOpacity 
+                            onPress={() => handleCancelSchedule(item.id)}
+                            style={{ padding: 4 }}
+                          >
+                            <Text style={{ fontSize: 11, color: colors.danger, fontWeight: '700' }}>Hủy lịch</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </View>
+                  );
+                })
+              )}
+            </View>
+          </>
+        )}
 
         {/* Lịch sử check-in */}
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Lịch sử Check-in (10 lượt gần nhất)</Text>

@@ -3,9 +3,8 @@ import { View, Text, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import {
-  Package, Users, User, LayoutDashboard, GraduationCap,
+  Package, Users, User, LayoutDashboard, UserCog,
 } from 'lucide-react-native';
-
 import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
 import AdminMembersScreen from '../screens/admin/AdminMembersScreen';
 import AdminPTScreen from '../screens/admin/AdminPTScreen';
@@ -79,14 +78,13 @@ function AdminTabs() {
         }}
       />
       <Tab.Screen
-        name="AdminPT"
-        component={AdminPTScreen}
+        name="AdminStaffTab"
+        component={AdminStaffScreen}
         options={{
-          tabBarLabel: ({ color, focused }) => <TabLabel label="PT" color={color} focused={focused} />,
-          tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={GraduationCap} color={color} focused={focused} colors={colors} />,
+          tabBarLabel: ({ color, focused }) => <TabLabel label="Nhân viên" color={color} focused={focused} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon IconComponent={UserCog} color={color} focused={focused} colors={colors} />,
         }}
       />
-
       <Tab.Screen
         name="AdminPackages"
         component={AdminPackagesScreen}
@@ -125,6 +123,7 @@ export default function AdminNavigator() {
       <Stack.Screen name="AdminRevenue" component={AdminRevenueScreen} />
       <Stack.Screen name="AdminRegisterPTSchedule" component={AdminRegisterPTScheduleScreen} />
       <Stack.Screen name="AdminExpiredMembers" component={AdminExpiredMembersScreen} />
+      <Stack.Screen name="AdminPT" component={AdminPTScreen} />
       <Stack.Screen name="AdminStaff" component={AdminStaffScreen} />
       <Stack.Screen name="GymRules" component={GymRulesScreen} />
     </Stack.Navigator>

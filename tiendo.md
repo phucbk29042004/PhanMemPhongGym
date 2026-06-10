@@ -8,11 +8,51 @@
 ---
 
 ## 📌 Trạng thái hiện tại
-**✅ Đã tích hợp in hóa đơn & redesign Tab Lịch PT trên Web** — Tích hợp nút in hóa đơn A4 chuẩn font Times New Roman với đầy đủ logo và thông tin chi nhánh cho cả gói tập thường và gói PT. Thiết kế lại phần hiển thị gói PT trong tab đặt lịch PT thành bảng danh sách nhỏ gọn, tinh tế. Thư mục PDFDocument C# cũ đã được xóa dọn dẹp sạch sẽ.
+**✅ Sửa 4 nhóm lỗi Mobile** — Ẩn filter chi nhánh Dashboard với nhân viên, StaffCard có thể nhấn vào xem/sửa, phân trang vuốt ngang (SwipePager), thêm upload ảnh cho HV và PT.
 
 ---
 
-## 📋 Danh Sách Thay Đổi
+### [10/06/2026 15:20] — Sửa lỗi ẩn bộ lọc chi nhánh cho nhân viên trên Mobile App
+- **Loại**: Sửa bug (Fullstack)
+- **File**: `BE/src/controllers/auth.controller.js`
+- **Mô tả**:
+  - Bổ sung trường `chi_nhanh` trong truy vấn `findAccount` và payload phản hồi của API đăng nhập `/api/auth/login`.
+  - Khắc phục triệt để lỗi khi nhân viên đăng nhập lần đầu tiên trên Mobile App, do thiếu `chi_nhanh` trong session user dẫn đến bộ lọc chi nhánh vẫn bị hiển thị trên các màn hình Dashboard, Members, Staff.
+- **Kết quả**: Thành công.
+
+### [10/06/2026] — Sửa 4 nhóm lỗi Mobile (filter chi nhánh, StaffCard, pagination, upload ảnh)
+- **Loại**: Sửa bug + tính năng
+- **File**: `AdminDashboardScreen.js`, `AdminStaffScreen.js`, `AdminMembersScreen.js`, `AdminAddEditMemberScreen.js`, `AdminAddEditPTScreen.js`, `components/SwipePager.js` (mới)
+- **Mô tả**:
+  1. **Dashboard — nhân viên**: Thêm `isStaffWithBranch`, bọc `branchTrigger` với `{!isStaffWithBranch && ...}` — ẩn bộ lọc chi nhánh với nhân viên chi nhánh cố định.
+  2. **StaffCard**: Đổi `View` → `TouchableOpacity`, thêm nút Sửa (Edit2), truyền `onEdit` → `AdminAddEditMember` và `onPress` → `AdminMemberDetail`. Card bây giờ nhấn vào xem chi tiết được.
+  3. **Phân trang vuốt**: Tạo component `SwipePager` — hiển thị 10 item/trang, vuốt ngang để chuyển trang, có dot indicator + nút mũi tên. Áp dụng cho `AdminMembersScreen` (HV + PT) và `AdminStaffScreen`. Bỏ nút Trước/Sau dạng text cũ. Staff đổi từ infinite scroll sang fetch-all (limit=200) + SwipePager.
+  4. **Upload ảnh HV + PT**: Thêm `expo-image-picker` vào `AdminAddEditMemberScreen` và `AdminAddEditPTScreen`. UI avatar tròn với icon Camera, load ảnh hiện tại khi edit, upload sau khi save qua `PUT /api/members/:id/avatar` và `PUT /api/trainers/:id/avatar`.
+- **Kết quả**: Thành công.
+
+### [10/06/2026] — Tái cấu trúc navigation Mobile Admin + Nhân viên
+- **Loại**: Tính năng mới (navigation restructure)
+- **File**: `MobileApp/src/navigation/AdminNavigator.js`, `MobileApp/src/screens/admin/AdminMembersScreen.js`
+- **Mô tả**:
+  1. **AdminNavigator.js**: Xóa tab `AdminPT` khỏi bottom bar, thêm tab `AdminStaffTab` (`AdminStaffScreen`) thay thế. Đưa `AdminPTScreen` vào stack navigator (vẫn truy cập được từ Dashboard và điều hướng khác). Đổi icon tab từ `GraduationCap` → `UserCog`. Cả `admin` và `nhan_vien` đều dùng chung `AdminNavigator`.
+  2. **AdminMembersScreen.js**: Thêm 2 sub-tab ngang "Hội viên" / "HLV / PT" ngay dưới header. Sub-tab HLV/PT nhúng toàn bộ logic của `AdminPTScreen` (danh sách PT + lịch tập), gồm `PTCard`, `ScheduleBadge`, phân trang, refresh, tìm kiếm, xóa PT (chỉ admin). Hỗ trợ `route.params.mainTab` để điều hướng trực tiếp vào sub-tab cụ thể.
+- **Kết quả**: Thành công.
+
+### [10/06/2026] — Sửa 8 lỗi đa nền tảng (Web + Mobile + BE)
+- **Loại**: Sửa bug
+- **File**: `BE/src/controllers/pt-schedules.controller.js`, `BE/src/controllers/members.controller.js`, `FE/assets/js/pages/member-add.js`, `FE/assets/js/pages/members-list.js`, `MobileApp/src/screens/admin/AdminMembersScreen.js`, `MobileApp/src/screens/admin/AdminPTScreen.js`, `MobileApp/src/screens/admin/AdminStaffScreen.js`, `MobileApp/src/screens/admin/AdminAddEditPTScreen.js`, `MobileApp/src/screens/admin/AdminRegisterPackageScreen.js`
+- **Mô tả**:
+  1. **BE — pt-schedules**: Thêm check `ngay_tap >= dkpt.tu_ngay` — không cho đặt lịch trước ngày hiệu lực của gói PT.
+  2. **BE — switchPackage**: Thêm check `tu_ngay >= today` — không cho đổi gói về ngày quá khứ (Web + Mobile đều hưởng lợi).
+  3. **Web — member-add.js navigate**: Xóa `navigate('members-list')` tổng quát ở cuối hàm save, giữ nguyên logic nhánh riêng biệt cho từng loại hồ sơ (PT → members-list, nhân viên → staff-list).
+  4. **Web — member-add.js dropdown**: Disable `select#reg-chi-nhanh` và set giá trị cố định nếu `user.chi_nhanh` tồn tại (nhân viên chi nhánh không chọn được chi nhánh khác).
+  5. **Web — members-list.js gói nối tiếp**: Thêm 4 nút In hóa đơn/Sửa/Đổi gói/Hủy gói vào block render `pendingPkgs` (gói chờ kích hoạt).
+  6. **Mobile — AdminMembersScreen/AdminPTScreen/AdminStaffScreen**: Ẩn toàn bộ bộ lọc chi nhánh (ScrollView) khi user là nhân viên có chi nhánh cố định (`isStaffWithBranch`).
+  7. **Mobile — AdminAddEditPTScreen**: Thêm prop `disabled` vào `SelectField`, truyền `disabled={isStaffWithBranch}` vào field chi nhánh — nhân viên không thể chọn chi nhánh khác khi tạo HLV.
+  8. **Mobile — AdminRegisterPackageScreen**: Thêm validate `ymdStart < todayYMD` trước khi gọi API — hiện `Alert.alert` thay vì lỗi raw JSON.
+- **Kết quả**: Thành công.
+
+
 
 ### [10/06/2026 09:20] — Giải quyết xung đột git pull và cấu hình bỏ qua file tạm SQLite
 - **Loại**: Cấu hình & Sửa lỗi
@@ -1716,4 +1756,27 @@
   - Căn giữa các icon trong cột thao tác trên bảng nhân viên Web Frontend.
   - Bỏ thuộc tính `required` và dấu bắt buộc ở input email trong Modal chỉnh sửa nhân viên.
   - Sửa lỗi không hiển thị chi nhánh của nhân viên trên bảng bằng cách thêm trường `h.chi_nhanh` vào câu SELECT của hàm `getStaff` ở backend.
+- **Kết quả**: Thành công.
+
+### [10/06/2026 12:00] — Sửa lỗi dời lịch tập quá khứ, trùng tên đăng nhập và import useEffect
+- **Loại**: Sửa bug (Fullstack)
+- **File**: 
+  - `MobileApp/src/screens/admin/AdminMemberDetailScreen.js`
+  - `BE/src/controllers/pt-schedules.controller.js`
+  - `BE/src/controllers/members.controller.js`
+  - `FE/assets/js/pages/member-add.js`
+- **Mô tả**: 
+  - **Mobile App**: Thêm import `useEffect` bị thiếu tại `AdminMemberDetailScreen.js` để khắc phục lỗi văng ứng dụng `ReferenceError: Property 'useEffect' doesn't exist`.
+  - **Dời lịch tập**: Viết lại cơ chế xác định ngày và giờ hiện tại theo múi giờ Việt Nam (`Asia/Ho_Chi_Minh`) chuẩn hóa định dạng `YYYY-MM-DD` và `HH:MM` độc lập với môi trường/ICU của hệ thống, giúp sửa triệt để lỗi chặn dời lịch sang ngày trong quá khứ do locale bị fallback.
+  - **Tạo tài khoản & Trùng tên đăng nhập**: Thêm hỗ trợ kiểm tra trùng lặp `ten_dang_nhap` ở API `/check-duplicate` phía Backend và tích hợp kiểm tra trước khi lưu hồ sơ ở Frontend `member-add.js` để ngăn chặn rác hồ sơ khi tạo tài khoản bị trùng lặp.
+- **Kết quả**: Thành công.
+
+### [10/06/2026 15:11] — Hỗ trợ xem chi tiết hồ sơ PT/Nhân viên và ẩn phần đăng ký gói tập của họ
+- **Loại**: Sửa bug & Nghiệp vụ (Fullstack)
+- **File**: 
+  - `BE/src/controllers/members.controller.js`
+  - `MobileApp/src/screens/admin/AdminMemberDetailScreen.js`
+- **Mô tả**: 
+  - **Backend**: Loại bỏ điều kiện `AND h.loai_ho_so = 'hoi_vien'` trong hàm `getMemberById` để cho phép truy vấn thông tin chi tiết của hồ sơ Nhân viên (`nhan_vien`) và Huấn luyện viên (`pt`), giải quyết triệt để lỗi `Request failed with status code 404` khi mở trang chi tiết hoặc trang chỉnh sửa trên di động.
+  - **Mobile App**: Bao bọc phần hiển thị **Gói tập Gym** và **Hợp đồng PT** bằng điều kiện `{member?.loai_ho_so === 'hoi_vien' && (...)}` để ẩn các phần này và ngăn việc hiển thị nút đăng ký/gia hạn gói tập cho Nhân viên/PT. Cập nhật tiêu đề và nhãn phụ hiển thị đúng vai trò của hồ sơ (Huấn luyện viên/Nhân viên) thay vì mặc định hiển thị "Hội viên" hay "Standard".
 - **Kết quả**: Thành công.

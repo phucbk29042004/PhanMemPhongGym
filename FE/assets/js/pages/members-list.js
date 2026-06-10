@@ -2026,14 +2026,32 @@ window.GymApp.pages['members-list'] = {
         const isDuyet = g.trang_thai === 'cho_kich_hoat';
         const labelTop = isDuyet ? 'Đã duyệt — Chờ kích hoạt nối tiếp' : 'Gói nối tiếp — Chờ kích hoạt';
         const icon = isDuyet ? 'event_available' : 'schedule';
+        const printPending = 'background:#e6f4ea;border:1px solid #b7e1cd;color:#137333;';
+        const basePending = 'background:#fff8e1;border:1px solid #fde68a;color:#92400e;';
+        const bluePending = 'background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;';
+        const dangerPending = 'background:#fef2f2;border:1px solid #fecaca;color:#dc2626;';
+        const pendingBtn = (cls, icon2, label, style) =>
+          `<button class="${cls}" data-pkg-id="${g.id}" data-member-id="${m.id}"
+            style="display:inline-flex;align-items:center;gap:3px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;${style}">
+            <span class="material-symbols-outlined" style="font-size:13px;">${icon2}</span>${label}
+          </button>`;
         return `
-          <div style="border:2px dashed #d97706;border-radius:12px;padding:12px 16px;margin-bottom:16px;background:#fffbeb;display:flex;align-items:flex-start;gap:10px;">
-            <span class="material-symbols-outlined" style="font-size:20px;color:#d97706;margin-top:2px;flex-shrink:0;">${icon}</span>
-            <div>
-              <div style="font-size:9px;font-weight:800;text-transform:uppercase;color:#d97706;margin-bottom:4px;">${labelTop}</div>
-              <div style="font-size:15px;font-weight:800;color:#92400e;">${g.ten_goi || '—'}</div>
-              <div style="font-size:11px;color:#a16207;margin-top:3px;">
-                Bắt đầu: ${window.GymApp.formatDate(g.tu_ngay)} — Kết thúc: ${window.GymApp.formatDate(g.den_ngay)}
+          <div style="border:2px dashed #d97706;border-radius:12px;padding:12px 16px;margin-bottom:16px;background:#fffbeb;">
+            <div style="display:flex;align-items:flex-start;gap:10px;">
+              <span class="material-symbols-outlined" style="font-size:20px;color:#d97706;margin-top:2px;flex-shrink:0;">${icon}</span>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:9px;font-weight:800;text-transform:uppercase;color:#d97706;margin-bottom:4px;">${labelTop}</div>
+                <div style="font-size:15px;font-weight:800;color:#92400e;">${g.ten_goi || '—'}</div>
+                <div style="font-size:11px;color:#a16207;margin-top:3px;">
+                  Bắt đầu: ${window.GymApp.formatDate(g.tu_ngay)} — Kết thúc: ${window.GymApp.formatDate(g.den_ngay)}
+                  · <span style="font-weight:700;">${window.GymApp.formatCurrency(g.gia_thuc_te || 0)}</span>
+                </div>
+                <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;">
+                  ${pendingBtn('btn-print-pkg', 'print', 'In hóa đơn', printPending)}
+                  ${pendingBtn('btn-edit-pkg', 'edit', 'Sửa', basePending)}
+                  ${pendingBtn('btn-switch-pkg', 'swap_horiz', 'Đổi gói', bluePending)}
+                  ${window.GymApp.auth.user?.vai_tro === 'admin' ? pendingBtn('btn-cancel-pkg', 'cancel', 'Hủy gói', dangerPending) : ''}
+                </div>
               </div>
             </div>
           </div>`;

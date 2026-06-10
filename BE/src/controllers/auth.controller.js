@@ -14,7 +14,7 @@ const findAccount = db.prepare(`
   SELECT t.id, t.ten_dang_nhap, t.mat_khau_hash, t.trang_thai,
          t.so_lan_dang_nhap_sai, t.vai_tro_id,
          v.ma_vai_tro AS vai_tro, v.ten_hien_thi AS ten_vai_tro, v.quyen_json,
-         h.id AS ho_so_id, h.ho_ten, h.avatar_url, h.loai_ho_so
+         h.id AS ho_so_id, h.ho_ten, h.avatar_url, h.loai_ho_so, h.chi_nhanh
   FROM tai_khoan t
   JOIN vai_tro v ON v.id = t.vai_tro_id
   LEFT JOIN ho_so h ON h.tai_khoan_id = t.id AND h.is_deleted = 0
@@ -89,6 +89,7 @@ export const login = (req, res) => {
       ho_ten: account.ho_ten,
       avatar_url: account.avatar_url,
       loai_ho_so: account.loai_ho_so,
+      chi_nhanh: account.chi_nhanh,
       quyen: JSON.parse(account.quyen_json || '{}'),
     },
   }, 'Đăng nhập thành công');
