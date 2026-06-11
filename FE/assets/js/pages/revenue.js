@@ -98,7 +98,7 @@ window.GymApp.pages['revenue'] = {
             <h3 id="rev-table-title" class="font-bold text-on-surface text-body-lg">Giao dịch hôm nay</h3>
             <span id="rev-today-count" class="ml-auto bg-brand-primary text-white px-2.5 py-0.5 rounded-full text-body-sm font-bold">0</span>
           </div>
-          <div id="rev-today-table" class="overflow-x-auto">
+          <div id="rev-today-table" class="overflow-x-auto" style="max-height: 400px; overflow-y: auto; position: relative;">
             <table class="w-full text-body-sm text-left">
               <thead>
                 <tr class="border-b border-outline-variant/50 bg-surface-container-low/10">
@@ -1208,13 +1208,12 @@ window.GymApp.pages['revenue'] = {
       return;
     }
 
-    // FIX: Thêm pagination khi > 10 records
-    const perPage = 10;
+    // Infinite Scroll: hiển thị từ 0 tới page * perPage
+    const perPage = 20;
     const totalPages = Math.ceil(list.length / perPage);
     this._transactionPage = this._transactionPage || 1;
     this._transactionPage = Math.max(1, Math.min(this._transactionPage, totalPages));
-    const start = (this._transactionPage - 1) * perPage;
-    const paginated = list.slice(start, start + perPage);
+    const paginated = list.slice(0, this._transactionPage * perPage);
 
     const rowsHtml = paginated.map(t => {
       const time = t.thoi_gian ? new Date(t.thoi_gian).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '—';
@@ -1300,49 +1299,7 @@ window.GymApp.pages['revenue'] = {
       `;
     }).join('');
 
-    // Thêm pagination controls nếu > 10 records
-    let paginationHtml = '';
-    if (totalPages > 1) {
-      paginationHtml = `
-        <tr class="bg-surface-container-low/20">
-          <td colspan="${totalCols}" class="px-standard py-3">
-            <div class="flex items-center justify-between">
-              <span class="text-on-surface-variant text-body-sm font-bold">Trang ${this._transactionPage}/${totalPages} • ${list.length} giao dịch</span>
-              <div class="flex gap-1">
-                <button class="rev-table-prev w-7 h-7 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-brand-primary/5 hover:text-brand-primary transition-all active:scale-95" ${this._transactionPage === 1 ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : 'style="cursor:pointer;"'}>
-                  <span class="material-symbols-outlined text-[18px]">chevron_left</span>
-                </button>
-                <button class="rev-table-next w-7 h-7 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-brand-primary/5 hover:text-brand-primary transition-all active:scale-95" ${this._transactionPage === totalPages ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : 'style="cursor:pointer;"'}>
-                  <span class="material-symbols-outlined text-[18px]">chevron_right</span>
-                </button>
-              </div>
-            </div>
-          </td>
-        </tr>
-      `;
-    }
-
-    tbody.innerHTML = rowsHtml + paginationHtml;
-
-    // Gắn event listeners cho nút pagination
-    const prevBtn = tbody.querySelector('.rev-table-prev');
-    const nextBtn = tbody.querySelector('.rev-table-next');
-    if (prevBtn) {
-      prevBtn.addEventListener('click', () => {
-        if (this._transactionPage > 1) {
-          this._transactionPage--;
-          this._renderTodayTable(transactions);
-        }
-      });
-    }
-    if (nextBtn) {
-      nextBtn.addEventListener('click', () => {
-        if (this._transactionPage < totalPages) {
-          this._transactionPage++;
-          this._renderTodayTable(transactions);
-        }
-      });
-    }
+    tbody.innerHTML = rowsHtml;
   },
 
   _updateRangeButtons: function () {
@@ -1373,6 +1330,7 @@ window.GymApp.pages['revenue'] = {
 
   _fetchAndRender: async function () {
     try {
+      this._transactionPage = 1;
       this._selectedBranch = window.GymApp.selectedBranch || '';
       let revData = {};
       let dayData = {};
@@ -1452,6 +1410,7 @@ window.GymApp.pages['revenue'] = {
   init: async function () {
     const self = this;
     this._packagePage = 1;
+    this._transactionPage = 1;
     this._packageStats = [];
     this._days = 'today';
     this._chartType = 'default';
@@ -1499,6 +1458,25 @@ window.GymApp.pages['revenue'] = {
     }
 
     await this._fetchAndRender();
+
+    // Infinite Scroll cho bảng giao dịch
+    const txContainer = document.getElementById('rev-today-table');
+    if (txContainer) {
+      txContainer.addEventListener('scroll', function () {
+        if (txContainer.scrollTop + txContainer.clientHeight >= txContainer.scrollHeight - 20) {
+          const list = self._transactionsData || [];
+          const perPage = 20;
+          const totalPages = Math.ceil(list.length / perPage);
+          if (self._transactionPage < totalPages) {
+            self._transactionPage++;
+            const scrollPos = txContainer.scrollTop;
+            self._renderTodayTable(list);
+            const newContainer = document.getElementById('rev-today-table');
+            if (newContainer) newContainer.scrollTop = scrollPos;
+          }
+        }
+      });
+    }
 
 
     // Lắng nghe đổi loại biểu đồ

@@ -142,6 +142,8 @@
 
     // Chat History Management
     let chatHistory = [];
+    let savedLeft = '';
+    let savedTop = '';
 
     const loadHistory = () => {
       const stored = localStorage.getItem('gym-chat-history');
@@ -169,6 +171,16 @@
 
     // Toggle Chat Window & Hide/Show Toggle Button
     const openChat = () => {
+      // Lưu lại vị trí kéo thả hiện tại trước khi reset style
+      savedLeft = container.style.left;
+      savedTop = container.style.top;
+
+      // Xóa các thuộc tính inline style để container sử dụng các class CSS mặc định (bottom-6 right-6)
+      container.style.left = '';
+      container.style.top = '';
+      container.style.bottom = '';
+      container.style.right = '';
+
       // Ẩn nút toggle tròn
       chatToggle.classList.add('hidden');
       
@@ -192,6 +204,14 @@
         chatWindow.classList.add('hidden');
         // Hiện lại nút toggle tròn sau khi đóng xong
         chatToggle.classList.remove('hidden');
+
+        // Khôi phục lại vị trí kéo thả trước đó
+        if (savedLeft && savedTop) {
+          container.style.bottom = 'auto';
+          container.style.right = 'auto';
+          container.style.left = savedLeft;
+          container.style.top = savedTop;
+        }
       }, 250);
     };
 

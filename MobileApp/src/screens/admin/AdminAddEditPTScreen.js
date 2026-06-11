@@ -172,9 +172,9 @@ export default function AdminAddEditPTScreen({ route, navigation }) {
       return;
     }
 
-    const phoneRegex = /^(03|04|05|07|08|09)\d{8}$/;
+    const phoneRegex = /^(03|05|07|08|09)\d{8}$/;
     if (!phoneRegex.test(soDienThoai.trim())) {
-      Alert.alert('Lỗi', 'Số điện thoại không hợp lệ (phải gồm 10 chữ số và bắt đầu bằng 03, 04, 05, 07, 08 hoặc 09).');
+      Alert.alert('Lỗi', 'Số điện thoại không hợp lệ (phải gồm 10 chữ số và bắt đầu bằng 03, 05, 07, 08 hoặc 09).');
       return;
     }
 

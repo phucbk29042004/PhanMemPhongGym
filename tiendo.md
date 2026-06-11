@@ -8,9 +8,33 @@
 ---
 
 ## 📌 Trạng thái hiện tại
-**✅ Đồng bộ giao diện gói PT nối tiếp** — Tách biệt và hiển thị các gói PT đăng ký nối tiếp (chờ kích hoạt) trong khung viền đứt nét màu vàng, tương tự như gói tập Gym.
+**✅ Đồng bộ kiểm tra SĐT di động Việt Nam sang Mobile App** — Hoàn tất việc giới hạn dải số điện thoại di động Việt Nam (03, 05, 07, 08, 09) và độ dài 10 chữ số cho các màn hình Admin và Chỉnh sửa thông tin trên Mobile App.
 
 ---
+
+### [11/06/2026 08:58] — Đồng bộ kiểm tra SĐT di động Việt Nam sang Mobile App
+- **Loại**: Cải tiến nghiệp vụ & Đồng bộ (Mobile App)
+- **File**: `MobileApp/src/screens/admin/AdminAddEditMemberScreen.js`, `MobileApp/src/screens/admin/AdminAddEditPTScreen.js`, `MobileApp/src/components/EditProfileModal.js`
+- **Mô tả**:
+  - Đồng bộ quy tắc kiểm tra số điện thoại di động sang Mobile App, chỉ cho phép các số điện thoại bắt đầu bằng `03, 05, 07, 08, 09` và có đúng 10 chữ số.
+  - Áp dụng vào form thêm/sửa Hội viên, form thêm/sửa HLV (PT), và popup cập nhật thông tin cá nhân của người dùng trên ứng dụng Mobile.
+- **Kết quả**: Thành công.
+
+### [11/06/2026 08:57] — Infinite Scroll bảng Giao dịch & Validate SĐT di động Việt Nam
+- **Loại**: Cải tiến UI & Sửa lỗi nghiệp vụ (Frontend)
+- **File**: `FE/assets/js/pages/revenue.js`, `FE/assets/js/pages/member-add.js`
+- **Mô tả**:
+  - **`revenue.js`**: Chuyển đổi bảng giao dịch hôm nay sang dạng cuộn vô hạn (infinite scroll) local. Thiết lập chiều cao tối đa cho container bảng `rev-today-table` là `400px` và lắng nghe sự kiện `scroll` để hiển thị lũy tiến (thêm 20 dòng mỗi lần lướt đến cuối).
+  - **`member-add.js`**: Cập nhật biểu thức chính quy (Regex) kiểm tra số điện thoại di động sang `/^(03|05|07|08|09)\d{8}$/` để chỉ chấp nhận các đầu số nhà mạng di động Việt Nam hiện hành và buộc độ dài đúng 10 chữ số.
+- **Kết quả**: Thành công.
+
+### [11/06/2026 08:54] — Sửa lỗi vị trí Chat Box và thêm phân trang danh sách Giao dịch hôm nay
+- **Loại**: Sửa bug & Chức năng mới (Web Frontend)
+- **File**: `FE/assets/js/components/ai-assistant.js`, `FE/assets/js/pages/revenue.js`
+- **Mô tả**:
+  - **`ai-assistant.js`**: Thêm biến `savedLeft` và `savedTop` trong closure. Khi mở chat (`openChat`), lưu lại tọa độ kéo thả của icon chat và xóa inline styles của container để khung chat hiển thị chính xác ở vị trí cố định góc dưới bên phải mặc định. Khi đóng chat (`closeChat`), khôi phục lại vị trí của icon dựa vào tọa độ đã lưu.
+  - **`revenue.js`**: Khởi tạo biến lưu trữ trang hiện tại `this._transactionPage = 1` tại hàm `init` và tự động reset về `1` mỗi khi gọi `_fetchAndRender` để thay đổi bộ lọc. Đảm bảo các nút điều hướng chuyển trang (Trang trước/Trang sau) hoạt động chuẩn xác và hiển thị mượt mà.
+- **Kết quả**: Thành công.
 
 ### [11/06/2026 08:35] — Đồng bộ hiển thị gói PT đăng ký nối tiếp giống gói Gym
 - **Loại**: Chỉnh sửa giao diện & Nghiệp vụ (Web Frontend)
