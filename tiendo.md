@@ -8,9 +8,21 @@
 ---
 
 ## 📌 Trạng thái hiện tại
-**✅ Sửa lỗi phân quyền nhân viên** — Chặn tài khoản nhân viên thực hiện thao tác xóa nhân viên trên cả Web và Mobile App.
+**✅ Đồng bộ giao diện avatar preview thành hình tròn hoàn hảo** — Bo tròn các ảnh avatar preview (Admin Profile, HLV/PT, Hội viên, Nhân viên) khi xem và khi chọn ảnh mới để đảm bảo tính thẩm mỹ, đồng bộ.
 
 ---
+
+### [11/06/2026 13:30] — Đồng bộ giao diện avatar preview thành hình tròn hoàn hảo
+- **Loại**: Chỉnh sửa giao diện UI/UX (Frontend Web)
+- **File**: `FE/index.html`, `FE/assets/js/app.js`, `FE/assets/js/pages/members-list.js`, `FE/assets/js/pages/staff.js`
+- **Mô tả**:
+  - **Nguyên nhân lỗi**: Cấu hình Tailwind CSS của dự án trong `index.html` định nghĩa `"full": "0.75rem"`, dẫn đến việc các phần tử dùng class `rounded-full` chỉ được bo góc vuông nhẹ (12px) thay vì là hình tròn. Điều này làm cho khung chứa ngoài màu trắng của các avatar preview (như Admin Profile, Header Avatar) bị hiển thị thành hình vuông bo góc.
+  - **Khắc phục**:
+    - **`index.html`**: Thay thế class `rounded-full` bằng inline style `style="border-radius: 50% !important;"` cho container preview avatar Admin Profile (`#admin-profile-avatar-preview`) và container avatar trên Header (`#header-avatar-container`).
+    - **`app.js`**: Bổ sung style `border-radius: 50%` và `object-fit: cover` cho thẻ `img` hiển thị ảnh đại diện cũ và ảnh mới chọn qua `FileReader`.
+    - **`members-list.js`**: Cập nhật ảnh đại diện tĩnh và sự kiện chọn ảnh mới của HLV/PT (`pte-avatar-preview`) và Hội viên (`me-avatar-preview`) để thẻ `img` luôn hiển thị hình tròn bao phủ đầy đủ.
+    - **`staff.js`**: Gán trực tiếp style `border-radius: 50%` cho thẻ preview `#staff-avatar-preview` lúc khởi tạo và cập nhật động qua JS khi người dùng thay đổi ảnh mới.
+- **Kết quả**: Thành công.
 
 ### [11/06/2026 10:56] — Khắc phục lỗi phân quyền nhân viên (Web & Mobile)
 - **Loại**: Chỉnh sửa / Phân quyền UX

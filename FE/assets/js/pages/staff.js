@@ -805,7 +805,7 @@ window.GymApp.pages['staff'] = {
                 <!-- Ảnh Cloudinary nếu có -->
                 <img id="staff-avatar-preview"
                     src="${nv.avatar_url || ''}"
-                    style="width:100%;height:100%;object-fit:cover;${nv.avatar_url ? '' : 'display:none;'}"
+                    style="width:100%;height:100%;object-fit:cover;border-radius:50%;${nv.avatar_url ? '' : 'display:none;'}"
                     onerror="this.style.display='none';if(this.nextElementSibling)this.nextElementSibling.style.display='flex';" />
                 <div id="staff-avatar-placeholder"
                     style="width:100%;height:100%;display:${nv.avatar_url ? 'none' : 'flex'};align-items:center;justify-content:center;background:#e8f5e9;font-size:22px;font-weight:800;color:#1D9336;">
@@ -950,6 +950,8 @@ window.GymApp.pages['staff'] = {
         if (imgPreview) {
           imgPreview.src = e.target.result;
           imgPreview.style.display = 'block';
+          imgPreview.style.borderRadius = '50%';
+          imgPreview.style.objectFit = 'cover';
         }
         if (placeholder) placeholder.style.display = 'none';
       };

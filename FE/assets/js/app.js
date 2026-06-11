@@ -1038,9 +1038,9 @@
         document.getElementById('profile-so-dien-thoai').value = u.so_dien_thoai || '';
         document.getElementById('profile-email').value = u.email || '';
         if (u.avatar_url && window.GymApp.avatarImg) {
-          document.getElementById('admin-profile-avatar-preview').innerHTML = window.GymApp.avatarImg(u.avatar_url, u.ho_ten, 'lg', 'width:100%;height:100%;');
+          document.getElementById('admin-profile-avatar-preview').innerHTML = window.GymApp.avatarImg(u.avatar_url, u.ho_ten, 'lg', 'width:100%;height:100%;object-fit:cover;border-radius:50%;');
         } else {
-          document.getElementById('admin-profile-avatar-preview').innerHTML = window.GymApp.avatarInitials(u.ho_ten || u.ten_dang_nhap, 'lg', 'width:100%;height:100%;font-size:32px;');
+          document.getElementById('admin-profile-avatar-preview').innerHTML = window.GymApp.avatarInitials(u.ho_ten || u.ten_dang_nhap, 'lg', 'width:100%;height:100%;font-size:32px;border-radius:50%;');
         }
       }
       _adminAvatarFile = null;
@@ -1057,7 +1057,7 @@
       _adminAvatarFile = file;
       const reader = new FileReader();
       reader.onload = (e) => {
-        document.getElementById('admin-profile-avatar-preview').innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;" />`;
+        document.getElementById('admin-profile-avatar-preview').innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
       };
       reader.readAsDataURL(file);
     });

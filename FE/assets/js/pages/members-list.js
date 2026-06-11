@@ -1323,7 +1323,7 @@ window.GymApp.pages['members-list'] = {
           <div style="display:flex;justify-content:center;margin-bottom:8px;">
             <div id="pte-avatar-container" class="relative group cursor-pointer" title="Nhấn để đổi ảnh đại diện">
               <div style="width:90px;height:90px;border-radius:50%;border:4px solid var(--brand-primary-container);overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.1);" id="pte-avatar-preview">
-                ${window.GymApp.avatarImg(pt.avatar_url, pt.ho_ten, 'lg', 'width:100%;height:100%;')}
+                ${window.GymApp.avatarImg(pt.avatar_url, pt.ho_ten, 'lg', 'width:100%;height:100%;object-fit:cover;border-radius:50%;')}
               </div>
               <div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <span class="material-symbols-outlined text-white text-[22px]">photo_camera</span>
@@ -1370,7 +1370,7 @@ window.GymApp.pages['members-list'] = {
       ptAvatarFile = file;
       const reader = new FileReader();
       reader.onload = (re) => {
-        document.getElementById('pte-avatar-preview').innerHTML = `<img src="${re.target.result}" style="width:100%;height:100%;object-fit:cover;" />`;
+        document.getElementById('pte-avatar-preview').innerHTML = `<img src="${re.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
       };
       reader.readAsDataURL(file);
     });
@@ -4513,7 +4513,7 @@ window.GymApp.pages['members-list'] = {
           <div style="display:flex;justify-content:center;margin-bottom:8px;">
             <div id="me-avatar-container" class="relative group cursor-pointer" title="Nhấn để đổi ảnh đại diện">
               <div style="width:90px;height:90px;border-radius:50%;border:4px solid var(--brand-primary-container);overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.1);" id="me-avatar-preview">
-                ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'lg', 'width:100%;height:100%;')}
+                ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'lg', 'width:100%;height:100%;object-fit:cover;border-radius:50%;')}
               </div>
               <div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <span class="material-symbols-outlined text-white text-[22px]">photo_camera</span>
@@ -4574,7 +4574,7 @@ window.GymApp.pages['members-list'] = {
       memberAvatarFile = file;
       const reader = new FileReader();
       reader.onload = (re) => {
-        document.getElementById('me-avatar-preview').innerHTML = `<img src="${re.target.result}" style="width:100%;height:100%;object-fit:cover;" />`;
+        document.getElementById('me-avatar-preview').innerHTML = `<img src="${re.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
       };
       reader.readAsDataURL(file);
     });
