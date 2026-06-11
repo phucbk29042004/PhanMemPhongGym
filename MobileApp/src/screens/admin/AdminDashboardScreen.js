@@ -709,9 +709,15 @@ export default function AdminDashboardScreen({ navigation }) {
                           </View>
                         </View>
                         <View style={modalStyles.rowHeader}>
-                          <Text style={[modalStyles.rowText, { color: colors.textSecondary, flex: 1 }]} numberOfLines={1}>
-                            {item.chi_nhanh_goc || 'Chưa rõ CN'} • {item.phuong_thuc === 'thu_cong' ? 'Thủ công' : item.phuong_thuc === 'qr_code' ? 'QR Code' : 'Thẻ từ'}
-                          </Text>
+                          {item.chi_nhanh_thuc_hien && item.chi_nhanh_goc && item.chi_nhanh_thuc_hien !== item.chi_nhanh_goc ? (
+                            <Text style={[modalStyles.rowText, { color: '#ef4444', fontWeight: 'bold', flex: 1 }]} numberOfLines={1}>
+                              {item.chi_nhanh_thuc_hien} • {item.phuong_thuc === 'thu_cong' ? 'Thủ công' : item.phuong_thuc === 'qr_code' ? 'QR Code' : 'Thẻ từ'}
+                            </Text>
+                          ) : (
+                            <Text style={[modalStyles.rowText, { color: colors.textSecondary, flex: 1 }]} numberOfLines={1}>
+                              {item.chi_nhanh_goc || 'Chưa rõ CN'} • {item.phuong_thuc === 'thu_cong' ? 'Thủ công' : item.phuong_thuc === 'qr_code' ? 'QR Code' : 'Thẻ từ'}
+                            </Text>
+                          )}
                           <Text style={[modalStyles.rowText, { color: colors.textMuted }]}>{item.gio_hien_thi || '—'}</Text>
                         </View>
                       </View>

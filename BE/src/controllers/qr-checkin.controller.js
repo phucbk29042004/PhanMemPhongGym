@@ -83,21 +83,27 @@ export const scanQr = (req, res) => {
 
   // Kiểm tra hồ sơ còn tồn tại
   const hoSo = db.prepare(`
-    SELECT h.id, h.ho_ten, h.ma_ho_so, h.avatar_url, h.loai_ho_so,
-           (
-             SELECT MAX(d_ngay) FROM (
-               SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong' AND tu_ngay <= ?
-               UNION ALL
-               SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong' AND tu_ngay <= ?
-             )
-           ) AS ngay_ket_thuc
+    SELECT h.id, h.ho_ten, h.ma_ho_so, h.avatar_url, h.loai_ho_so
     FROM ho_so h
     WHERE h.id = ? AND h.loai_ho_so IN ('hoi_vien', 'pt') AND h.is_deleted = 0
-  `).get(today, today, ho_so_id);
+  `).get(ho_so_id);
 
   if (!hoSo) return error(res, 'Hồ sơ không tồn tại hoặc đã bị xóa.', 404);
 
   const isPt = hoSo.loai_ho_so === 'pt';
+
+  // Xác định chi nhánh thực hiện check-in trước
+  const actorBranch = getActorBranch(req.user);
+  let branch = chi_nhanh;
+  if (actorBranch) {
+    if (chi_nhanh && chi_nhanh !== actorBranch) {
+      return error(res, `Bạn chỉ có thể quét QR check-in tại chi nhánh của mình (${actorBranch}).`, 403);
+    }
+    branch = actorBranch;
+  } else if (!branch) {
+    const member = db.prepare('SELECT chi_nhanh FROM ho_so WHERE id = ?').get(ho_so_id);
+    branch = member ? member.chi_nhanh : null;
+  }
 
   let loaiCheckin = 'vao';
   let labelAction = 'Check-in vào ca';
@@ -115,12 +121,47 @@ export const scanQr = (req, res) => {
       labelAction = 'Check-out tan ca';
     }
   } else {
-    // Với Hội viên: Kiểm tra gói tập hoặc gói PT còn hạn
-    if (!hoSo.ngay_ket_thuc) {
-      return error(res, `Hội viên ${hoSo.ho_ten} không có gói tập hoặc gói PT đang hoạt động.`, 403);
-    }
-    if (hoSo.ngay_ket_thuc < today) {
-      return error(res, `Gói dịch vụ của ${hoSo.ho_ten} đã hết hạn (${hoSo.ngay_ket_thuc}).`, 403);
+    // Với Hội viên: Kiểm tra gói Gym và gói PT hoạt động
+    // 1. Kiểm tra gói Gym hoạt động
+    const activeGym = db.prepare(`
+      SELECT den_ngay FROM dang_ky_goi_tap 
+      WHERE ho_so_id = ? AND trang_thai = 'dang_hoat_dong' AND tu_ngay <= ?
+      ORDER BY den_ngay DESC LIMIT 1
+    `).get(ho_so_id, today);
+
+    let hasGym = activeGym && activeGym.den_ngay >= today;
+
+    if (!hasGym) {
+      // 2. Không có gói Gym hoạt động, kiểm tra gói PT hoạt động
+      const activePt = db.prepare(`
+        SELECT dp.den_ngay, h_pt.chi_nhanh AS chi_nhanh_pt 
+        FROM dang_ky_pt dp
+        JOIN ho_so h_pt ON h_pt.id = dp.pt_id
+        WHERE dp.hoi_vien_id = ? AND dp.trang_thai = 'dang_hoat_dong' AND dp.tu_ngay <= ?
+        ORDER BY dp.den_ngay DESC LIMIT 1
+      `).get(ho_so_id, today);
+
+      const hasPt = activePt && activePt.den_ngay >= today;
+
+      if (!hasPt) {
+        return error(res, `Hội viên ${hoSo.ho_ten} không có gói tập hoặc gói PT đang hoạt động.`, 403);
+      }
+
+      // Hội viên chỉ có gói PT hoạt động:
+      // So khớp chi nhánh check-in hiện tại với chi nhánh của PT
+      const chiNhanhPt = activePt.chi_nhanh_pt;
+      if (branch && chiNhanhPt && branch !== chiNhanhPt) {
+        // Khác chi nhánh: Phải có lịch tập đặt trước hôm nay tại chi nhánh hiện tại
+        const todaySchedule = db.prepare(`
+          SELECT id FROM lich_tap 
+          WHERE hoi_vien_id = ? AND ngay_tap = ? AND chi_nhanh_tap = ? AND trang_thai = 'cho_tap'
+          LIMIT 1
+        `).get(ho_so_id, today, branch);
+
+        if (!todaySchedule) {
+          return error(res, `Hội viên chỉ có gói PT tại "${chiNhanhPt}" và không có lịch tập đặt trước tại "${branch}" hôm nay.`, 403);
+        }
+      }
     }
 
     // Kiểm tra trạng thái vào/ra gần nhất hôm nay (hỗ trợ ra vào nhiều lần)
@@ -139,32 +180,18 @@ export const scanQr = (req, res) => {
     }
   }
 
-  // Xác định chi nhánh thực hiện check-in
-  const actorBranch = getActorBranch(req.user);
-  let branch = chi_nhanh;
-  if (actorBranch) {
-    if (chi_nhanh && chi_nhanh !== actorBranch) {
-      return error(res, `Bạn chỉ có thể quét QR check-in tại chi nhánh của mình (${actorBranch}).`, 403);
-    }
-    branch = actorBranch;
-  } else if (!branch) {
-    const member = db.prepare('SELECT chi_nhanh FROM ho_so WHERE id = ?').get(ho_so_id);
-    branch = member ? member.chi_nhanh : null;
-  }
-
-
   // Ghi nhận check-in / check-out
   const result = db.prepare(`
     INSERT INTO luot_vao_ra (ho_so_id, loai, phuong_thuc, ghi_chu, chi_nhanh_thuc_hien)
     VALUES (?, ?, 'qr_code', ?, ?)
   `).run(ho_so_id, loaiCheckin, chi_nhanh ? `Chi nhánh: ${chi_nhanh} (${labelAction})` : labelAction, branch);
 
-  // Cập nhật da_checkin = 1 cho các buổi tập PT của hội viên này hôm nay
+  // Cập nhật da_checkin = 1 cho các buổi tập PT của hội viên này hôm nay tại chi nhánh này nếu vào
   if (loaiCheckin === 'vao' && !isPt) {
     db.prepare(`
       UPDATE lich_tap SET da_checkin = 1
-      WHERE hoi_vien_id = ? AND ngay_tap = ? AND trang_thai = 'cho_tap'
-    `).run(ho_so_id, today);
+      WHERE hoi_vien_id = ? AND ngay_tap = ? AND chi_nhanh_tap = ? AND trang_thai = 'cho_tap'
+    `).run(ho_so_id, today, branch);
   }
 
   ghi_audit_log(req, 'CREATE', 'luot_vao_ra', result.lastInsertRowid, null,

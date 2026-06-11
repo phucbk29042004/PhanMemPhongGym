@@ -1745,4 +1745,14 @@ try {
   console.error('[DB] ❌ Lỗi khi chuẩn hóa phương thức thanh toán cũ:', e.message);
 }
 
+// Tự động sửa lỗi so_tien_da_thu của các gói tập đã thanh toán thành công nhưng bị bằng 0 hoặc null
+try {
+  const fixRes = db.prepare("UPDATE dang_ky_goi_tap SET so_tien_da_thu = gia_thuc_te WHERE (so_tien_da_thu = 0 OR so_tien_da_thu IS NULL) AND trang_thai IN ('dang_hoat_dong', 'het_han', 'cho_kich_hoat')").run();
+  if (fixRes.changes > 0) {
+    console.log(`[DB] ✅ Đã tự động cập nhật so_tien_da_thu bằng gia_thuc_te cho ${fixRes.changes} bản ghi dang_ky_goi_tap.`);
+  }
+} catch (e) {
+  console.error('[DB] ❌ Lỗi khi tự động sửa so_tien_da_thu cho dang_ky_goi_tap:', e.message);
+}
+
 export default db;

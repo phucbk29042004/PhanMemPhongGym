@@ -198,6 +198,10 @@ window.GymApp.pages['staff'] = {
         const deleteBtn = e.target.closest('.staff-delete-btn');
         if (deleteBtn) {
           e.stopPropagation();
+          if (!['admin', 'chu_phong_gym'].includes(window.GymApp.auth.user?.vai_tro)) {
+            window.GymApp.toast('Bạn không có quyền thực hiện thao tác này!', 'error');
+            return;
+          }
           const id = deleteBtn.dataset.id;
           const name = deleteBtn.dataset.name;
           const confirmed = await window.GymApp.confirm(
@@ -424,7 +428,9 @@ window.GymApp.pages['staff'] = {
           <button class="staff-view-btn w-[30px] h-[30px] rounded-lg flex items-center justify-center transition-all bg-[#f0fdf4] dark:bg-[#0b2010] text-[#1D9336] dark:text-[#4cce5f] hover:bg-[#1D9336] dark:hover:bg-[#4cce5f] hover:text-white dark:hover:text-[#111318]" data-id="${nv.id}" title="Xem chi tiết"><span class="material-symbols-outlined" style="font-size:15px;">visibility</span></button>
           <button class="staff-edit-btn w-[30px] h-[30px] rounded-lg flex items-center justify-center transition-all bg-[#eff6ff] dark:bg-[#0b1a30] text-[#3b82f6] dark:text-[#60a5fa] hover:bg-[#3b82f6] dark:hover:bg-[#60a5fa] hover:text-white dark:hover:text-[#111318]" data-id="${nv.id}" title="Chỉnh sửa"><span class="material-symbols-outlined" style="font-size:15px;">edit</span></button>
           ${nv.ten_dang_nhap ? `<button class="staff-lock-btn w-[30px] h-[30px] rounded-lg flex items-center justify-center transition-all bg-[#ffdad6] dark:bg-[#3d080c] text-[#ba1a1a] dark:text-[#ff8a93] hover:bg-[#ba1a1a] dark:hover:bg-[#ff8a93] hover:text-white dark:hover:text-[#111318]" data-id="${nv.id}" data-locked="${isLocked}" title="${lockTitle}"><span class="material-symbols-outlined" style="font-size:15px;">${lockIcon}</span></button>` : ''}
+          ${['admin', 'chu_phong_gym'].includes(window.GymApp.auth.user?.vai_tro) ? `
           <button class="staff-delete-btn w-[30px] h-[30px] rounded-lg flex items-center justify-center transition-all bg-[#fff1f2] dark:bg-[#2e0b10] text-[#f43f5e] dark:text-[#f87171] hover:bg-[#f43f5e] dark:hover:bg-[#f87171] hover:text-white dark:hover:text-[#111318]" data-id="${nv.id}" data-name="${nv.ho_ten}" title="Xóa"><span class="material-symbols-outlined" style="font-size:15px;">delete</span></button>
+          ` : ''}
         </div>
       </td>`;
   },
@@ -539,9 +545,11 @@ window.GymApp.pages['staff'] = {
                     <span class="material-symbols-outlined" style="font-size:15px;">${lockIcon}</span>
                   </button>
                 ` : ''}
+                ${['admin', 'chu_phong_gym'].includes(window.GymApp.auth.user?.vai_tro) ? `
                 <button class="staff-delete-btn w-[30px] h-[30px] rounded-lg flex items-center justify-center transition-all bg-[#fff1f2] dark:bg-[#2e0b10] text-[#f43f5e] dark:text-[#f87171] hover:bg-[#f43f5e] dark:hover:bg-[#f87171] hover:text-white dark:hover:text-[#111318]" data-id="${nv.id}" data-name="${nv.ho_ten}" title="Xóa">
                   <span class="material-symbols-outlined" style="font-size:15px;">delete</span>
                 </button>
+                ` : ''}
               </div>
             </td>
           </tr>

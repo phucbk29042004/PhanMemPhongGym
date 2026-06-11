@@ -36,12 +36,18 @@ window.GymApp.pages['birthday'] = {
     if (branch) {
       membersList = membersList.filter(m => m.chi_nhanh === branch);
     }
-    return membersList.filter(m => {
-      const bDay = m.ngay_sinh || m.dob;
-      if (!bDay) return false;
-      const parts = bDay.split('-');
-      return `${parts[1]}-${parts[2]}` === todayMD;
-    });
+    return membersList
+      .filter(m => {
+        const bDay = m.ngay_sinh || m.dob;
+        if (!bDay || typeof bDay !== 'string') return false;
+        const parts = bDay.split('-');
+        return parts.length >= 3 && `${parts[1]}-${parts[2]}` === todayMD;
+      })
+      .map(m => {
+        const bDay = m.ngay_sinh || m.dob;
+        const [year, mth, day] = bDay.split('-').map(Number);
+        return { ...m, birthDay: day, birthMonth: mth };
+      });
   },
 
   render: function () {

@@ -1118,7 +1118,8 @@ export const checkPayosStatus = async (req, res) => {
             trang_thai = ?,
             ngay_thanh_toan = datetime('now', 'localtime'),
             phuong_thuc_tt = 'chuyen_khoan',
-            ghi_chu_tt = 'Thanh toán tự động qua PayOS'
+            ghi_chu_tt = 'Thanh toán tự động qua PayOS',
+            so_tien_da_thu = gia_thuc_te
         WHERE id = ?
       `).run(finalStatus, request.id);
 
@@ -1265,13 +1266,14 @@ export const approvePackageRequest = (req, res) => {
     UPDATE dang_ky_goi_tap SET
       trang_thai = ?,
       gia_thuc_te = COALESCE(?, gia_thuc_te),
+      so_tien_da_thu = COALESCE(?, gia_thuc_te),
       phuong_thuc_tt = ?,
       nguoi_thu_id = ?,
       ghi_chu_tt = ?,
       nguoi_cap_nhat_id = ?,
       ngay_thanh_toan = datetime('now', 'localtime')
     WHERE id = ?
-  `).run(finalStatus, gia_thuc_te, phuong_thuc_tt || 'tien_mat', req.user.id, ghi_chu_tt || 'Duyệt thủ công', req.user.id, id);
+  `).run(finalStatus, gia_thuc_te, gia_thuc_te, phuong_thuc_tt || 'tien_mat', req.user.id, ghi_chu_tt || 'Duyệt thủ công', req.user.id, id);
 
   // Tự động hủy các yêu cầu gia hạn khác đang chờ duyệt của hội viên này
   db.prepare(`
@@ -1860,6 +1862,7 @@ export const editPackage = (req, res) => {
     SET tu_ngay = COALESCE(?, tu_ngay),
         den_ngay = COALESCE(?, den_ngay),
         gia_thuc_te = COALESCE(?, gia_thuc_te),
+        so_tien_da_thu = COALESCE(?, so_tien_da_thu),
         phuong_thuc_tt = COALESCE(?, phuong_thuc_tt),
         ghi_chu_tt = COALESCE(?, ghi_chu_tt),
         ghi_chu_gia = COALESCE(?, ghi_chu_gia),
@@ -1867,7 +1870,7 @@ export const editPackage = (req, res) => {
         ngay_cap_nhat = datetime('now','localtime'),
         ngay_thanh_toan = COALESCE(?, ngay_thanh_toan)
     WHERE id = ?
-  `).run(tu_ngay || null, den_ngay || null, gia_thuc_te || null, phuong_thuc_tt || null,
+  `).run(tu_ngay || null, den_ngay || null, gia_thuc_te || null, gia_thuc_te || null, phuong_thuc_tt || null,
     ghi_chu_tt || null, ghi_chu_gia || null, req.user.id, tu_ngay || null, pkgId);
 
   ghi_audit_log(req, 'UPDATE', 'dang_ky_goi_tap', pkgId, oldData,

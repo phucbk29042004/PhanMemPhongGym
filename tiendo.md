@@ -8,9 +8,54 @@
 ---
 
 ## 📌 Trạng thái hiện tại
-**✅ Triển khai check-in chéo chi nhánh và đồng bộ giao diện hiển thị chi nhánh gốc** — Cải tiến logic check-in gói PT/Gym chéo chi nhánh tại Backend; Đồng bộ hiển thị Chi nhánh gốc và Loại hồ sơ thay cho Mã hồ sơ trên cả Web Frontend và Mobile App.
+**✅ Sửa lỗi phân quyền nhân viên** — Chặn tài khoản nhân viên thực hiện thao tác xóa nhân viên trên cả Web và Mobile App.
 
 ---
+
+### [11/06/2026 10:56] — Khắc phục lỗi phân quyền nhân viên (Web & Mobile)
+- **Loại**: Chỉnh sửa / Phân quyền UX
+- **File**: `FE/assets/js/pages/staff.js`, `MobileApp/src/screens/admin/AdminStaffScreen.js`
+- **Mô tả**:
+  - Chặn không cho tài khoản role nhân viên (`nhan_vien`) thực hiện thao tác xóa nhân viên.
+  - **Web Frontend (`staff.js`)**: Ẩn nút "Xóa" nhân viên trong bảng danh sách và card list nếu vai trò không phải `admin`/`chu_phong_gym`. Chặn logic sự kiện click xóa ở frontend, thông báo lỗi nếu không đủ quyền.
+  - **Mobile App (`AdminStaffScreen.js`)**: Ẩn nút Thêm nhân viên ở header và ẩn toàn bộ vùng nút hành động (Sửa, Khóa/Mở khóa) trên thẻ nhân viên đối với tài khoản nhân viên.
+- **Kết quả**: Thành công.
+
+### [11/06/2026 10:38] — Khắc phục lỗi hiển thị sinh nhật hôm nay (Web Frontend)
+- **Loại**: Sửa lỗi UI/UX (Frontend)
+- **File**: `FE/assets/js/pages/birthday.js`
+- **Mô tả**:
+  - **Nguyên nhân**: Hàm `_getTodayBirthdays` lọc danh sách hội viên sinh nhật hôm nay trực tiếp từ mảng thô mà không thực hiện phân tách và gán hai thuộc tính `birthDay` và `birthMonth` cho đối tượng hội viên giống như hàm `_getBirthdayGroups`. Điều này khiến `renderAvatar` truy cập vào các giá trị không tồn tại và in ra `undefined/undefined` trên thanh hiển thị hôm nay.
+  - **Khắc phục**: Thêm bước `.map()` trích xuất `birthDay` và `birthMonth` từ chuỗi ngày sinh trong hàm `_getTodayBirthdays`.
+- **Kết quả**: Thành công.
+
+### [11/06/2026 10:25] — Khắc phục lỗi Doanh thu chi nhánh bằng 0 (PayOS & Duyệt thủ công)
+- **Loại**: Sửa lỗi logic & Đồng bộ dữ liệu (Backend, Web & Mobile)
+- **File**: `BE/src/controllers/members.controller.js`, `BE/src/config/db.js`
+- **Mô tả**:
+  - **Nguyên nhân**: Khi hội viên thanh toán qua PayOS hoặc được lễ tân duyệt yêu cầu gia hạn tại quầy, hệ thống cập nhật trạng thái gói tập thành công nhưng lại để trống (bằng 0 hoặc null) cột thực thu `so_tien_da_thu`. Trong khi đó, các bộ lọc chi nhánh thống kê doanh thu dựa vào cột này để tính toán, dẫn đến doanh thu chi nhánh bị hiển thị bằng 0 dù giao dịch vẫn hiện đầy đủ.
+  - **Khắc phục**: 
+    - Cập nhật hàm `checkPayosStatus` và `approvePackageRequest` trong `members.controller.js` để tự động gán `so_tien_da_thu = gia_thuc_te` khi thanh toán thành công.
+    - Bổ sung script chạy một lần khi khởi động hệ thống trong `db.js` để tự động chuẩn hóa và khôi phục các dữ liệu cũ bị lỗi `so_tien_da_thu = 0`.
+    - Đồng bộ hiển thị chính xác lên toàn bộ các trang thống kê ở Web Dashboard và Mobile App.
+- **Kết quả**: Thành công.
+
+### [11/06/2026 09:58] — Cập nhật hiển thị tên chi nhánh thực tế khi check-in chéo & Đồng bộ QR Check-in
+- **Loại**: Cải tiến UI/UX & Đồng bộ Backend & Sửa lỗi SQL (Web, Mobile & Backend)
+- **File**: `FE/assets/js/pages/checkin.js`, `MobileApp/src/screens/admin/AdminDashboardScreen.js`, `BE/src/controllers/qr-checkin.controller.js`, `BE/src/controllers/checkins.controller.js`
+- **Mô tả**:
+  - **`checkin.js` & `AdminDashboardScreen.js`**: Thay thế dòng chữ tĩnh màu đỏ `"Chi nhánh khác đã check in"` bằng tên chi nhánh thực hiện check-in thực tế (`chi_nhanh_thuc_hien`) được tô màu đỏ nổi bật.
+  - **`qr-checkin.controller.js` & `checkins.controller.js`**: Đồng bộ hoàn toàn logic kiểm tra phân quyền tập chéo chi nhánh (cho phép hội viên có gói Gym tập chéo thoải mái, còn hội viên chỉ có gói PT chỉ được tập chéo nếu có lịch hẹn hôm nay tại chi nhánh quét QR) và ghi nhận đúng `chi_nhanh_thuc_hien` khi quét mã QR check-in.
+  - **Sửa lỗi SQL**: Đổi tên cột so khớp chi nhánh trong bảng `lich_tap` từ `chi_nhanh` thành `chi_nhanh_tap` để sửa lỗi `no such column: chi_nhanh`.
+- **Kết quả**: Thành công.
+
+### [11/06/2026 09:54] — Hiển thị cảnh báo check-in chéo chi nhánh
+- **Loại**: Cải tiến UI & Sửa lỗi logic hiển thị (Web & Mobile)
+- **File**: `FE/assets/js/pages/checkin.js`, `MobileApp/src/screens/admin/AdminDashboardScreen.js`
+- **Mô tả**:
+  - So khớp `chi_nhanh_thuc_hien` (nơi thực hiện quét) và `chi_nhanh_goc` (nơi đăng ký ban đầu) của hội viên.
+  - Nếu hai giá trị này khác nhau (hội viên tập chéo chi nhánh), hệ thống hiển thị dòng chữ màu đỏ **"Chi nhánh khác đã check in"** thay vì hiển thị tên chi nhánh gốc. Quy tắc này được đồng bộ trên cả giao diện Web Check-in và Modal Check-in Dashboard trên Mobile.
+- **Kết quả**: Thành công.
 
 ### [11/06/2026 09:37] — Triển khai check-in chéo chi nhánh & Đồng bộ hiển thị Chi nhánh gốc
 - **Loại**: Chức năng mới & Đồng bộ giao diện (Fullstack Web & Mobile)

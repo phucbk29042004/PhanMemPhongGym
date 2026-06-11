@@ -111,7 +111,7 @@ export const createCheckin = (req, res) => {
           // Khác chi nhánh: Phải có lịch tập đặt trước hôm nay tại chi nhánh hiện tại
           const todaySchedule = db.prepare(`
             SELECT id FROM lich_tap 
-            WHERE hoi_vien_id = ? AND ngay_tap = ? AND chi_nhanh = ? AND trang_thai = 'cho_tap'
+            WHERE hoi_vien_id = ? AND ngay_tap = ? AND chi_nhanh_tap = ? AND trang_thai = 'cho_tap'
             LIMIT 1
           `).get(ho_so_id, today, branch);
 
@@ -133,7 +133,7 @@ export const createCheckin = (req, res) => {
     const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
     db.prepare(`
       UPDATE lich_tap SET da_checkin = 1
-      WHERE hoi_vien_id = ? AND ngay_tap = ? AND chi_nhanh = ? AND trang_thai = 'cho_tap'
+      WHERE hoi_vien_id = ? AND ngay_tap = ? AND chi_nhanh_tap = ? AND trang_thai = 'cho_tap'
     `).run(ho_so_id, today, branch);
   }
 

@@ -33,7 +33,7 @@ const av = StyleSheet.create({
 });
 
 // ── Staff Card ──────────────────────────────────────────
-function StaffCard({ item, colors, onToggleLock, onEdit, onPress }) {
+function StaffCard({ item, colors, onToggleLock, onEdit, onPress, showActions }) {
   const isLocked = item.tk_trang_thai === 'khoa';
   const roleColor = '#0d9488';
   const roleBg = '#ccfbf1';
@@ -59,25 +59,27 @@ function StaffCard({ item, colors, onToggleLock, onEdit, onPress }) {
           {item.email || 'Không có email'}
         </Text>
       </View>
-      <View style={card.actions}>
-        <TouchableOpacity
-          style={[card.actionBtn, { backgroundColor: colors.primaryLight }]}
-          onPress={onEdit}
-        >
-          <Edit2 color={colors.primary} size={15} strokeWidth={2.5} />
-        </TouchableOpacity>
-        {item.ten_dang_nhap ? (
+      {showActions && (
+        <View style={card.actions}>
           <TouchableOpacity
-            style={[card.actionBtn, { backgroundColor: isLocked ? colors.dangerLight : colors.borderLight }]}
-            onPress={() => onToggleLock(item)}
+            style={[card.actionBtn, { backgroundColor: colors.primaryLight }]}
+            onPress={onEdit}
           >
-            {isLocked
-              ? <Lock color={colors.danger} size={15} strokeWidth={2.5} />
-              : <Unlock color={colors.textSecondary} size={15} strokeWidth={2.5} />
-            }
+            <Edit2 color={colors.primary} size={15} strokeWidth={2.5} />
           </TouchableOpacity>
-        ) : null}
-      </View>
+          {item.ten_dang_nhap ? (
+            <TouchableOpacity
+              style={[card.actionBtn, { backgroundColor: isLocked ? colors.dangerLight : colors.borderLight }]}
+              onPress={() => onToggleLock(item)}
+            >
+              {isLocked
+                ? <Lock color={colors.danger} size={15} strokeWidth={2.5} />
+                : <Unlock color={colors.textSecondary} size={15} strokeWidth={2.5} />
+              }
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      )}
     </TouchableOpacity>
   );
 }
@@ -220,14 +222,16 @@ export default function AdminStaffScreen({ navigation }) {
           <Text style={styles.headerSub}>{filteredStaff.length} / {staffList.length} nhân viên</Text>
         </View>
         <View style={styles.headerActions}>
-          <TouchableOpacity 
-            style={[styles.addBtn, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
-            onPress={() => {
-              navigation.navigate('AdminAddEditMember', { defaultRole: 'nhan_vien' });
-            }}
-          >
-            <Plus color="#ffffff" size={20} />
-          </TouchableOpacity>
+          {(user?.vai_tro === 'admin' || user?.vai_tro === 'chu_phong_gym' || user?.vai_tro === 'quan_ly') && (
+            <TouchableOpacity 
+              style={[styles.addBtn, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
+              onPress={() => {
+                navigation.navigate('AdminAddEditMember', { defaultRole: 'nhan_vien' });
+              }}
+            >
+              <Plus color="#ffffff" size={20} />
+            </TouchableOpacity>
+          )}
           <View style={styles.headerBadge}>
             <Shield color="#ffffff" size={18} strokeWidth={2} />
           </View>
@@ -344,6 +348,7 @@ export default function AdminStaffScreen({ navigation }) {
               onToggleLock={handleToggleLock}
               onEdit={() => navigation.navigate('AdminAddEditMember', { memberId: item.id })}
               onPress={() => navigation.navigate('AdminMemberDetail', { memberId: item.id })}
+              showActions={user?.vai_tro === 'admin' || user?.vai_tro === 'chu_phong_gym' || user?.vai_tro === 'quan_ly'}
             />
           )}
           contentContainerStyle={styles.listContent}
