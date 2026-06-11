@@ -2141,24 +2141,59 @@ export const importMembers = async (req, res) => {
       zip = new AdmZip(req.zipFile.buffer);
     }
 
+    // Hàm helper loại bỏ sạch các đuôi định dạng ảnh để tránh lỗi lặp đuôi (ví dụ: .jpg.jpg)
+    const cleanImageName = (name) => {
+      if (!name) return '';
+      let base = name.split('/').pop().split('\\').pop().toLowerCase().trim();
+      while (true) {
+        const lastDot = base.lastIndexOf('.');
+        if (lastDot === -1) break;
+        const ext = base.substring(lastDot);
+        if (['.jpg', '.jpeg', '.png', '.webp'].includes(ext)) {
+          base = base.substring(0, lastDot);
+        } else {
+          break;
+        }
+      }
+      return base;
+    };
+
     // 1. Upload ảnh đại diện khớp từ file ZIP lên Cloudinary trước khi chạy DB Transaction
     if (zip && isCloudinaryReady) {
       for (const row of rawData) {
         const imageFileName = (row['Tên file ảnh'] || row['Ten file anh'] || row['ten_file_anh'] || row['Avatar File'] || '').toString().trim();
-        if (imageFileName) {
-          const entry = zip.getEntries().find(e => {
-            const entryBaseName = e.entryName.split('/').pop().split('\\').pop();
-            return entryBaseName.toLowerCase() === imageFileName.toLowerCase() && !e.isDirectory;
+        const soDienThoai = (row['Số điện thoại'] || row['So dien thoai'] || row['so_dien_thoai'] || row['Phone'] || '').toString().trim();
+        
+        const cleanedExcelName = cleanImageName(imageFileName);
+        const cleanedPhone = cleanImageName(soDienThoai);
+
+        let entry = null;
+        if (cleanedExcelName) {
+          // Khớp theo tên file ảnh khai báo trong Excel
+          entry = zip.getEntries().find(e => {
+            if (e.isDirectory) return false;
+            const entryCleaned = cleanImageName(e.entryName);
+            return entryCleaned === cleanedExcelName;
           });
-          if (entry) {
-            try {
-              const fileBuffer = zip.readFile(entry);
-              const result = await uploadImage(fileBuffer, 'paradise-gym/profiles');
-              row.avatar_url = result.url;
-              row.cloudinary_public_id = result.publicId;
-            } catch (imgErr) {
-              console.error(`Lỗi upload ảnh ${imageFileName} lên Cloudinary:`, imgErr);
-            }
+        }
+        
+        // Nếu không có tên file hoặc không khớp được, tự động khớp theo số điện thoại
+        if (!entry && cleanedPhone) {
+          entry = zip.getEntries().find(e => {
+            if (e.isDirectory) return false;
+            const entryCleaned = cleanImageName(e.entryName);
+            return entryCleaned === cleanedPhone;
+          });
+        }
+
+        if (entry) {
+          try {
+            const fileBuffer = zip.readFile(entry);
+            const result = await uploadImage(fileBuffer, 'paradise-gym/profiles');
+            row.avatar_url = result.url;
+            row.cloudinary_public_id = result.publicId;
+          } catch (imgErr) {
+            console.error(`Lỗi upload ảnh của hội viên ${row['Họ và tên'] || soDienThoai} lên Cloudinary:`, imgErr);
           }
         }
       }

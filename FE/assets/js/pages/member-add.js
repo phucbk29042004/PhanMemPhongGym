@@ -347,6 +347,9 @@ window.GymApp.pages['member-add'] = {
       self._provinces = pRes; self._districts = dRes; self._wards = wRes;
       self._hcmcWards = hcmcRes;
 
+      // Check if user has navigated away during the async load
+      if (window.GymApp.currentPage !== 'member-add') return;
+
       const branches = (branchesRes && branchesRes.success) ? (branchesRes.data || []) : [];
       const branchSelect = document.getElementById('reg-chi-nhanh');
       if (branchSelect) {

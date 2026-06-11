@@ -8,9 +8,15 @@
 ---
 
 ## 📌 Trạng thái hiện tại
-**✅ Sửa lỗi hiển thị RedBox trên Mobile** — Chuyển đổi console.error ở catch block của các màn hình Admin Mobile thành console.log để hiển thị đúng Alert thân thiện cho người dùng.
+**✅ Sửa lỗi race condition tải địa chính trên Web** — Khắc phục lỗi crash Javascript khi chuyển trang nhanh trong lúc tải dữ liệu địa phương ở trang thêm hội viên.
 
 ---
+
+### [11/06/2026 08:50] — Sửa lỗi race condition gây TypeError khi tải địa chỉ trên trang thêm hội viên
+- **Loại**: Sửa bug (Frontend Web)
+- **File**: `FE/assets/js/pages/member-add.js`
+- **Mô tả**: Khắc phục lỗi crash Javascript khi người dùng chuyển trang nhanh trong lúc trang `member-add` đang gọi `Promise.all` tải dữ liệu địa chính từ các file JSON. Bổ sung kiểm tra `window.GymApp.currentPage !== 'member-add'` ngay sau khi hoàn thành `await Promise.all(...)` để thoát hàm sớm nếu người dùng đã rời trang.
+- **Kết quả**: Thành công.
 
 ### [10/06/2026 16:55] — Khắc phục màn hình lỗi đỏ (RedBox) và chuẩn hóa thông báo Alert trên Mobile App
 - **Loại**: Sửa bug (Mobile UI/UX)
@@ -1820,4 +1826,13 @@
 - **Loại**: Cấu hình
 - **File**: `MobileApp/src/services/api.js`
 - **Mô tả**: Cập nhật giá trị `API_URL` từ IP `192.168.11.126` sang `192.168.11.125` để đồng bộ đúng với địa chỉ IP Wifi hiện tại của máy tính đang chạy backend local, giúp Mobile App kết nối chính xác và lấy dữ liệu của nhánh làm việc cục bộ.
+- **Kết quả**: Thành công.
+
+### [10/06/2026 17:03] — Cải tiến khớp ảnh đại diện từ file ZIP khi import Excel
+- **Loại**: Cải tiến tính năng / Sửa bug (Backend)
+- **File**: `BE/src/controllers/members.controller.js`
+- **Mô tả**: 
+  - Bổ sung cơ chế tự động khớp ảnh từ file ZIP theo **Số điện thoại** của hội viên (ví dụ: `0912345678.jpg`) trong hàm `importMembers` khi cột `Tên file ảnh` trong file Excel bị để trống hoặc không khớp.
+  - Tích hợp hàm `cleanImageName` tự động loại bỏ tất cả các đuôi định dạng ảnh bị lồng nhau/trùng lặp (như `.jpg.jpg` do ẩn đuôi file trên Windows) để so khớp chính xác tên file thực tế.
+  - Đồng bộ đúng hành vi theo đúng hướng dẫn trên giao diện Web Frontend của tính năng nhập Excel.
 - **Kết quả**: Thành công.
