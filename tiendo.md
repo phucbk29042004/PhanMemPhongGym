@@ -8,9 +8,20 @@
 ---
 
 ## 📌 Trạng thái hiện tại
-**✅ Sửa lỗi hiển thị RedBox trên Mobile** — Chuyển đổi console.error ở catch block của các màn hình Admin Mobile thành console.log để hiển thị đúng Alert thân thiện cho người dùng.
+**✅ Đồng bộ giao diện gói PT nối tiếp** — Tách biệt và hiển thị các gói PT đăng ký nối tiếp (chờ kích hoạt) trong khung viền đứt nét màu vàng, tương tự như gói tập Gym.
 
 ---
+
+### [11/06/2026 08:35] — Đồng bộ hiển thị gói PT đăng ký nối tiếp giống gói Gym
+- **Loại**: Chỉnh sửa giao diện & Nghiệp vụ (Web Frontend)
+- **File**: `FE/assets/js/pages/members-list.js`
+- **Mô tả**:
+  - Tách các hợp đồng PT (`pt_hien_tai`) chờ kích hoạt (`cho_kich_hoat` hoặc ngày bắt đầu trong tương lai) thành danh sách `pendingPtContracts`.
+  - Thiết kế hiển thị danh sách này trong một khung viền đứt nét màu vàng (`border: 2px dashed #d97706; background:#fffbeb;`), tương tự giao diện của các gói tập Gym khi đăng ký nối tiếp.
+  - Đồng bộ các nút thao tác nhanh (In hóa đơn, Sửa, Đổi gói, Hủy) tương ứng với hợp đồng PT đang chờ kích hoạt.
+  - *Sửa lỗi (Bugfix)*: Khai báo thiếu biến `self` dẫn đến lỗi `self._parseLocalDate is not a function` khi render danh sách hợp đồng PT.
+  - *Cải tiến vị trí hiển thị*: Điều chỉnh thứ tự hiển thị của gói PT nối tiếp nằm phía dưới gói PT đang sử dụng và phía trên lịch sử gói tập (giống hệt bố cục bên gói tập Gym).
+- **Kết quả**: Thành công.
 
 ### [10/06/2026 16:55] — Khắc phục màn hình lỗi đỏ (RedBox) và chuẩn hóa thông báo Alert trên Mobile App
 - **Loại**: Sửa bug (Mobile UI/UX)

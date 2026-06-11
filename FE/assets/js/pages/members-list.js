@@ -1888,6 +1888,7 @@ window.GymApp.pages['members-list'] = {
     }
 
     if (tab === 'schedule') {
+      const self = this;
       const ptContracts = Array.isArray(m.pt_hien_tai) ? m.pt_hien_tai : [];
       const today = new Date(); today.setHours(0, 0, 0, 0);
       const canSchedule = ptContracts.some(c => {
@@ -1896,82 +1897,161 @@ window.GymApp.pages['members-list'] = {
         return buoiConLai > 0 && conHan;
       });
 
-      let ptContractsHTML = '';
-      if (ptContracts.length === 0) {
-        ptContractsHTML = `<div style="text-align:center;padding:20px;background:var(--bg-surface-low, #f8fafc);border-radius:12px;border:1px dashed var(--outline-variant, #cbd5e1);font-size:12px;color:var(--text-on-surface-variant, #cbd5e1);margin-bottom:16px;">Hội viên chưa đăng ký gói PT nào.</div>`;
-      } else {
-        const renderPtActionBtns = (c, dark = false) => {
-          const baseBtn = dark
-            ? 'background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);color:#fff;'
-            : 'background:var(--bg-surface-container,#f1f5f9);border:1px solid var(--outline-variant,#e2e8f0);color:var(--text-on-surface-variant,#475569);';
-          const dangerBtn = dark
-            ? 'background:rgba(220,38,38,0.25);border:1px solid rgba(255,100,100,0.3);color:#fca5a5;'
-            : 'background:#fef2f2;border:1px solid #fecaca;color:#dc2626;';
-          const blueBtn = dark
-            ? 'background:rgba(99,179,237,0.2);border:1px solid rgba(147,210,255,0.3);color:#bfdbfe;'
-            : 'background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;';
-          const printBtn = dark
-            ? 'background:rgba(29,147,54,0.25);border:1px solid rgba(100,255,100,0.3);color:#a7f3d0;'
-            : 'background:#e6f4ea;border:1px solid #b7e1cd;color:#137333;';
+      const pendingPtContracts = Array.isArray(m.pt_hien_tai)
+        ? m.pt_hien_tai.filter(c => {
+          if (c.trang_thai === 'cho_kich_hoat') return true;
+          if (c.trang_thai === 'dang_hoat_dong' && c.tu_ngay) {
+            const tuNgayVal = self._parseLocalDate(c.tu_ngay);
+            return tuNgayVal && tuNgayVal > today;
+          }
+          return false;
+        })
+        : [];
 
-          const btn = (cls, icon, label, style, dataAttrs) =>
-            `<button class="${cls}" ${dataAttrs} style="display:inline-flex;align-items:center;gap:3px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;${style}">
-              <span class="material-symbols-outlined" style="font-size:13px;">${icon}</span>${label}
+      const activePtContracts = ptContracts.filter(c => !pendingPtContracts.some(p => p.id === c.id));
+
+      const renderPtActionBtns = (c, dark = false) => {
+        const baseBtn = dark
+          ? 'background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);color:#fff;'
+          : 'background:var(--bg-surface-container,#f1f5f9);border:1px solid var(--outline-variant,#e2e8f0);color:var(--text-on-surface-variant,#475569);';
+        const dangerBtn = dark
+          ? 'background:rgba(220,38,38,0.25);border:1px solid rgba(255,100,100,0.3);color:#fca5a5;'
+          : 'background:#fef2f2;border:1px solid #fecaca;color:#dc2626;';
+        const blueBtn = dark
+          ? 'background:rgba(99,179,237,0.2);border:1px solid rgba(147,210,255,0.3);color:#bfdbfe;'
+          : 'background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;';
+        const printBtn = dark
+          ? 'background:rgba(29,147,54,0.25);border:1px solid rgba(100,255,100,0.3);color:#a7f3d0;'
+          : 'background:#e6f4ea;border:1px solid #b7e1cd;color:#137333;';
+
+        const btn = (cls, icon, label, style, dataAttrs) =>
+          `<button class="${cls}" ${dataAttrs} style="display:inline-flex;align-items:center;gap:3px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;${style}">
+            <span class="material-symbols-outlined" style="font-size:13px;">${icon}</span>${label}
+          </button>`;
+
+        return `<div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;">
+          ${btn('btn-print-pt-reg', 'print', 'In hóa đơn', printBtn, `data-contract-id="${c.id}"`)}
+          ${btn('btn-edit-pt-reg', 'edit', 'Sửa', baseBtn, `data-contract-id="${c.id}"`)}
+          ${btn('btn-switch-pt-reg', 'swap_horiz', 'Đổi gói', blueBtn, `data-contract-id="${c.id}"`)}
+          ${window.GymApp.auth.user?.vai_tro === 'admin' ? btn('btn-cancel-pt-contract', 'cancel', 'Hủy gói', dangerBtn, `data-contract-id="${c.id}" data-pt-name="${c.ten_pt || ''}" data-member-name="${m.ho_ten || ''}"`) : ''}
+        </div>`;
+      };
+
+      let pendingPtContractsHTML = '';
+      if (pendingPtContracts.length > 0) {
+        pendingPtContractsHTML = pendingPtContracts.map(c => {
+          const isDuyet = c.trang_thai === 'cho_kich_hoat';
+          const labelTop = isDuyet ? 'Đã duyệt — Chờ kích hoạt nối tiếp' : 'Gói PT nối tiếp — Chờ kích hoạt';
+          const icon = isDuyet ? 'event_available' : 'schedule';
+          
+          const printPending = 'background:#e6f4ea;border:1px solid #b7e1cd;color:#137333;';
+          const basePending = 'background:#fff8e1;border:1px solid #fde68a;color:#92400e;';
+          const bluePending = 'background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;';
+          const dangerPending = 'background:#fef2f2;border:1px solid #fecaca;color:#dc2626;';
+          
+          const pendingBtn = (cls, icon2, label, style) =>
+            `<button class="${cls}" data-contract-id="${c.id}" data-member-id="${m.id}" data-pt-name="${c.ten_pt || ''}" data-member-name="${m.ho_ten || ''}"
+              style="display:inline-flex;align-items:center;gap:3px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;${style}">
+              <span class="material-symbols-outlined" style="font-size:13px;">${icon2}</span>${label}
             </button>`;
 
-          return `<div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;">
-            ${btn('btn-print-pt-reg', 'print', 'In hóa đơn', printBtn, `data-contract-id="${c.id}"`)}
-            ${btn('btn-edit-pt-reg', 'edit', 'Sửa', baseBtn, `data-contract-id="${c.id}"`)}
-            ${btn('btn-switch-pt-reg', 'swap_horiz', 'Đổi gói', blueBtn, `data-contract-id="${c.id}"`)}
-            ${window.GymApp.auth.user?.vai_tro === 'admin' ? btn('btn-cancel-pt-contract', 'cancel', 'Hủy gói', dangerBtn, `data-contract-id="${c.id}" data-pt-name="${c.ten_pt || ''}" data-member-name="${m.ho_ten || ''}"`) : ''}
+          return `
+            <div style="border:2px dashed #d97706;border-radius:12px;padding:12px 16px;margin-bottom:16px;background:#fffbeb;">
+              <div style="display:flex;align-items:flex-start;gap:10px;">
+                <span class="material-symbols-outlined" style="font-size:20px;color:#d97706;margin-top:2px;flex-shrink:0;">${icon}</span>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:9px;font-weight:800;text-transform:uppercase;color:#d97706;margin-bottom:4px;">${labelTop}</div>
+                  <div style="font-size:15px;font-weight:800;color:#92400e;">PT: ${c.ten_pt || '—'}</div>
+                  <div style="font-size:11px;color:#a16207;margin-top:3px;">
+                    Bắt đầu: ${window.GymApp.formatDate(c.tu_ngay)} — Hạn: ${c.den_ngay ? window.GymApp.formatDate(c.den_ngay) : 'Không giới hạn'}
+                    · Số buổi: <span style="font-weight:700;">${c.so_buoi_dang_ky || c.buoi_dang_ky || 0}</span>
+                    · <span style="font-weight:700;">${window.GymApp.formatCurrency(c.gia_thuc_te || 0)}</span>
+                  </div>
+                  <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;">
+                    ${pendingBtn('btn-print-pt-reg', 'print', 'In hóa đơn', printPending)}
+                    ${pendingBtn('btn-edit-pt-reg', 'edit', 'Sửa', basePending)}
+                    ${pendingBtn('btn-switch-pt-reg', 'swap_horiz', 'Đổi gói', bluePending)}
+                    ${window.GymApp.auth.user?.vai_tro === 'admin' ? pendingBtn('btn-cancel-pt-contract', 'cancel', 'Hủy gói', dangerPending) : ''}
+                  </div>
+                </div>
+              </div>
+            </div>`;
+        }).join('');
+      }
+
+      const currentPtContracts = activePtContracts.filter(c => {
+        const buoiConLai = (c.buoi_dang_ky || 0) - (c.buoi_da_tap || 0);
+        const conHan = !c.den_ngay || new Date(c.den_ngay) >= today;
+        return buoiConLai > 0 && conHan;
+      });
+
+      const historyPtContracts = activePtContracts.filter(c => {
+        const buoiConLai = (c.buoi_dang_ky || 0) - (c.buoi_da_tap || 0);
+        const conHan = !c.den_ngay || new Date(c.den_ngay) >= today;
+        return !(buoiConLai > 0 && conHan);
+      });
+
+      let currentPtContractsHTML = '';
+      if (currentPtContracts.length === 0 && pendingPtContracts.length === 0 && historyPtContracts.length === 0) {
+        currentPtContractsHTML = `<div style="text-align:center;padding:20px;background:var(--bg-surface-low, #f8fafc);border-radius:12px;border:1px dashed var(--outline-variant, #cbd5e1);font-size:12px;color:var(--text-on-surface-variant, #cbd5e1);margin-bottom:16px;">Hội viên chưa đăng ký gói PT nào.</div>`;
+      } else if (currentPtContracts.length === 0) {
+        currentPtContractsHTML = `
+          <div style="padding:16px;background:var(--bg-surface-low,#f8fafc);border:1px dashed var(--outline-variant,#cbd5e1);border-radius:12px;text-align:center;margin-bottom:16px;">
+            <span class="material-symbols-outlined text-on-surface-variant" style="font-size:28px;opacity:0.4;">sports_gymnastics</span>
+            <p style="font-size:13px;font-weight:700;color:var(--text-on-surface-variant);margin:4px 0 0;">Chưa có gói PT đang hoạt động</p>
           </div>`;
-        };
-
-        ptContractsHTML = `
+      } else {
+        currentPtContractsHTML = `
           <div style="margin-bottom:16px;">
-            ${ptContracts.map(c => {
-          const buoiConLai = (c.buoi_dang_ky || 0) - (c.buoi_da_tap || 0);
-          const conHan = !c.den_ngay || new Date(c.den_ngay) >= today;
-          const statusLabel = (!conHan) ? 'Hết hạn' : (buoiConLai <= 0 ? 'Hết buổi' : 'Đang tập');
+            ${currentPtContracts.map(c => {
+              const buoiConLai = (c.buoi_dang_ky || 0) - (c.buoi_da_tap || 0);
+              return `
+                <div style="background:linear-gradient(160deg,#2d6a4f 0%,#40916c 55%,#52b788 100%);border-radius:12px;padding:14px 16px;color:#fff;position:relative;overflow:hidden;margin-bottom:8px;">
+                  <div style="position:absolute;right:-12px;top:-12px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.07);pointer-events:none;"></div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;position:relative;z-index:1;">
+                    <div style="min-width:0;">
+                      <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;opacity:0.75;margin-bottom:4px;">Đang tập (${buoiConLai}/${c.buoi_dang_ky} buổi)</div>
+                      <div style="font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.ten_pt || '—'}</div>
+                      <div style="font-size:11px;opacity:0.85;margin-top:3px;">${c.chuyen_mon || 'Huấn luyện viên'} · Hạn: ${c.den_ngay ? window.GymApp.formatDate(c.den_ngay) : 'Không giới hạn'}</div>
+                    </div>
+                    <span class="material-symbols-outlined" style="font-size:32px;opacity:0.7;flex-shrink:0;">sports_gymnastics</span>
+                  </div>
+                  ${renderPtActionBtns(c, true)}
+                </div>`;
+            }).join('')}
+          </div>`;
+      }
 
-          if (statusLabel === 'Đang tập') {
-            return `
-                  <div style="background:linear-gradient(160deg,#2d6a4f 0%,#40916c 55%,#52b788 100%);border-radius:12px;padding:14px 16px;color:#fff;position:relative;overflow:hidden;margin-bottom:8px;">
-                    <div style="position:absolute;right:-12px;top:-12px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.07);pointer-events:none;"></div>
-                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;position:relative;z-index:1;">
-                      <div style="min-width:0;">
-                        <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;opacity:0.75;margin-bottom:4px;">Đang tập (${buoiConLai}/${c.buoi_dang_ky} buổi)</div>
-                        <div style="font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.ten_pt || '—'}</div>
-                        <div style="font-size:11px;opacity:0.85;margin-top:3px;">${c.chuyen_mon || 'Huấn luyện viên'} · Hạn: ${c.den_ngay ? window.GymApp.formatDate(c.den_ngay) : 'Không giới hạn'}</div>
-                      </div>
-                      <span class="material-symbols-outlined" style="font-size:32px;opacity:0.7;flex-shrink:0;">sports_gymnastics</span>
+      let historyPtContractsHTML = '';
+      if (historyPtContracts.length > 0) {
+        historyPtContractsHTML = `
+          <div style="margin-top:16px;">
+            <p style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-on-surface-variant);margin:0 0 8px;">Lịch sử & Gói PT khác</p>
+            ${historyPtContracts.map(c => {
+              const buoiConLai = (c.buoi_dang_ky || 0) - (c.buoi_da_tap || 0);
+              const conHan = !c.den_ngay || new Date(c.den_ngay) >= today;
+              const statusLabel = (!conHan) ? 'Hết hạn' : 'Hết buổi';
+              const isExp = statusLabel === 'Hết hạn';
+              const borderColor = isExp ? '#fecaca' : '#fde68a';
+              const accentColor = isExp ? '#dc2626' : '#d97706';
+              return `
+                <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--bg-surface-lowest, #fff);border:1px solid var(--outline-variant, ${borderColor});border-left:3px solid ${accentColor};border-radius:10px;margin-bottom:8px;">
+                  <span class="material-symbols-outlined" style="font-size:18px;color:${accentColor};margin-top:1px;flex-shrink:0;">${isExp ? 'event_busy' : 'history'}</span>
+                  <div style="flex:1;min-width:0;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+                      <span style="font-size:13px;font-weight:800;color:var(--text-on-surface,#1a2018);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.ten_pt || '—'}</span>
+                      <span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:999px;background:${isExp ? '#fef2f2' : '#fffbeb'};color:${accentColor};">${statusLabel}</span>
                     </div>
-                    ${renderPtActionBtns(c, true)}
-                  </div>`;
-          } else {
-            const isExp = statusLabel === 'Hết hạn';
-            const borderColor = isExp ? '#fecaca' : '#fde68a';
-            const accentColor = isExp ? '#dc2626' : '#d97706';
-            return `
-                  <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--bg-surface-lowest, #fff);border:1px solid var(--outline-variant, ${borderColor});border-left:3px solid ${accentColor};border-radius:10px;margin-bottom:8px;">
-                    <span class="material-symbols-outlined" style="font-size:18px;color:${accentColor};margin-top:1px;flex-shrink:0;">${isExp ? 'event_busy' : 'history'}</span>
-                    <div style="flex:1;min-width:0;">
-                      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-                        <span style="font-size:13px;font-weight:800;color:var(--text-on-surface,#1a2018);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.ten_pt || '—'}</span>
-                        <span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:999px;background:${isExp ? '#fef2f2' : '#fffbeb'};color:${accentColor};">${statusLabel}</span>
-                      </div>
-                      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:3px;font-size:11px;color:var(--text-on-surface-variant,#64748b);">
-                        <span style="font-weight:600;">Còn ${buoiConLai}/${c.buoi_dang_ky} buổi</span>
-                        <span>Hạn: ${c.den_ngay ? window.GymApp.formatDate(c.den_ngay) : 'Không giới hạn'}</span>
-                      </div>
-                      ${c.chuyen_mon ? `<div style="margin-top:2px;font-size:11px;color:var(--text-on-surface-variant,#94a3b8);font-style:italic;">${c.chuyen_mon}</div>` : ''}
-                      ${renderPtActionBtns(c, false)}
+                    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:3px;font-size:11px;color:var(--text-on-surface-variant,#64748b);">
+                      <span style="font-weight:600;">Còn ${buoiConLai}/${c.buoi_dang_ky} buổi</span>
+                      <span>Hạn: ${c.den_ngay ? window.GymApp.formatDate(c.den_ngay) : 'Không giới hạn'}</span>
                     </div>
-                  </div>`;
-          }
-        }).join('')}
-          </div>
-        `;
+                    ${c.chuyen_mon ? `<div style="margin-top:2px;font-size:11px;color:var(--text-on-surface-variant,#94a3b8);font-style:italic;">${c.chuyen_mon}</div>` : ''}
+                    ${renderPtActionBtns(c, false)}
+                  </div>
+                </div>`;
+            }).join('')}
+          </div>`;
       }
 
       const scheduleRows = memberSchedules.length === 0
@@ -2007,7 +2087,9 @@ window.GymApp.pages['members-list'] = {
             <span class="material-symbols-outlined" style="font-size:18px;">add_circle</span>Đăng ký PT
           </button>
         </div>
-        ${ptContractsHTML}
+        ${currentPtContractsHTML}
+        ${pendingPtContractsHTML}
+        ${historyPtContractsHTML}
         <div style="margin-top:32px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
           <h4 style="font-size:16px;font-weight:800;color:var(--text-on-surface);">Lịch Tập Gần Đây</h4>
           <button id="btn-add-schedule" ${!canSchedule ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : 'style="cursor:pointer;"'} class="flex items-center gap-xs px-standard py-compact rounded-lg font-bold text-body-sm bg-surface-container hover:bg-surface-container-high transition-all border border-outline-variant text-on-surface">
