@@ -8,9 +8,20 @@
 ---
 
 ## 📌 Trạng thái hiện tại
-**✅ Đồng bộ kiểm tra SĐT di động Việt Nam sang Mobile App** — Hoàn tất việc giới hạn dải số điện thoại di động Việt Nam (03, 05, 07, 08, 09) và độ dài 10 chữ số cho các màn hình Admin và Chỉnh sửa thông tin trên Mobile App.
+**✅ Triển khai check-in chéo chi nhánh và đồng bộ giao diện hiển thị chi nhánh gốc** — Cải tiến logic check-in gói PT/Gym chéo chi nhánh tại Backend; Đồng bộ hiển thị Chi nhánh gốc và Loại hồ sơ thay cho Mã hồ sơ trên cả Web Frontend và Mobile App.
 
 ---
+
+### [11/06/2026 09:37] — Triển khai check-in chéo chi nhánh & Đồng bộ hiển thị Chi nhánh gốc
+- **Loại**: Chức năng mới & Đồng bộ giao diện (Fullstack Web & Mobile)
+- **File**: `BE/src/controllers/checkins.controller.js`, `FE/assets/js/pages/checkin.js`, `MobileApp/src/screens/admin/AdminDashboardScreen.js`
+- **Mô tả**:
+  - **`checkins.controller.js`**:
+    - Select thêm trường `chi_nhanh_goc` của hội viên trong API `getCheckins`.
+    - Tái cấu trúc logic kiểm tra gói khi check-in (`createCheckin`): Nếu hội viên có gói Gym hoạt động, cho phép check-in mọi chi nhánh. Nếu chỉ có gói PT hoạt động, so khớp chi nhánh check-in với chi nhánh của PT; nếu khác chi nhánh, chỉ cho phép check-in khi có lịch tập PT đã được lên lịch hôm nay tại chi nhánh hiện tại.
+  - **`checkin.js` (Web)**: Loại bỏ hiển thị mã hồ sơ, thay thế bằng hiển thị Chi nhánh gốc (`c.chi_nhanh_goc`) và Loại hồ sơ (HV/HLV/NV) tại khu vực thẻ check-in và bảng chi tiết.
+  - **`AdminDashboardScreen.js` (Mobile)**: Đồng bộ thiết kế danh sách check-in trong modal dashboard, bổ sung Badge loại hồ sơ (HV/HLV/NV) bên cạnh tên hội viên và hiển thị Chi nhánh gốc kèm phương thức check-in ở dòng dưới.
+- **Kết quả**: Thành công.
 
 ### [11/06/2026 08:58] — Đồng bộ kiểm tra SĐT di động Việt Nam sang Mobile App
 - **Loại**: Cải tiến nghiệp vụ & Đồng bộ (Mobile App)
