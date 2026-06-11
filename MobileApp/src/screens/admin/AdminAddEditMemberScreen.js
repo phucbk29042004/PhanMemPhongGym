@@ -229,8 +229,8 @@ export default function AdminAddEditMemberScreen({ route, navigation }) {
     if (!soDienThoai.trim()) {
       setErrSdt('Số điện thoại là bắt buộc');
       ok = false;
-    } else if (!/^(0[3-9]\d{8})$/.test(soDienThoai.trim())) {
-      setErrSdt('Số điện thoại phải có 10 chữ số, bắt đầu 03-09');
+    } else if (!/^(03|05|07|08|09)\d{8}$/.test(soDienThoai.trim())) {
+      setErrSdt('Số điện thoại phải bắt đầu bằng 03, 05, 07, 08, 09 và gồm 10 chữ số');
       ok = false;
     }
     if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {

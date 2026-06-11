@@ -271,8 +271,8 @@ window.GymApp.pages['member-add'] = {
     // Reset tất cả lỗi trước
     ['err-sdt', 'err-email', 'err-cccd'].forEach(id => this._setFieldError(id, ''));
 
-    if (sdt && !/^(0[3-9]\d{8})$/.test(sdt)) {
-      this._setFieldError('err-sdt', 'Số điện thoại phải có 10 chữ số, bắt đầu bằng 03-09');
+    if (sdt && !/^(03|05|07|08|09)\d{8}$/.test(sdt)) {
+      this._setFieldError('err-sdt', 'Số điện thoại phải bắt đầu bằng 03, 05, 07, 08, 09 và gồm 10 chữ số');
       hasError = true;
     }
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {

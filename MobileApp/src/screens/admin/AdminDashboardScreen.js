@@ -675,30 +675,48 @@ export default function AdminDashboardScreen({ navigation }) {
                   data={todayCheckins.slice((checkinPage - 1) * PAGE_SIZE, checkinPage * PAGE_SIZE)}
                   keyExtractor={(item, idx) => String(idx)}
                   contentContainerStyle={modalStyles.list}
-                  renderItem={({ item }) => (
-                    <View style={modalStyles.row}>
-                      <View style={modalStyles.rowHeader}>
-                        <Text style={[modalStyles.rowTitle, { color: colors.text }]}>{item.ho_ten}</Text>
-                        <View style={[
-                          modalStyles.badge, 
-                          { backgroundColor: item.loai === 'vao' ? colors.primaryLight : colors.dangerLight }
-                        ]}>
-                          <Text style={[
-                            modalStyles.badgeText, 
-                            { color: item.loai === 'vao' ? colors.primary : colors.danger }
+                  renderItem={({ item }) => {
+                    const roleLabel = item.loai_ho_so === 'pt' ? 'HLV' : item.loai_ho_so === 'hoi_vien' ? 'HV' : 'NV';
+                    const roleBg = item.loai_ho_so === 'pt' 
+                      ? colors.primaryLight 
+                      : item.loai_ho_so === 'hoi_vien' 
+                        ? 'rgba(59, 130, 246, 0.1)' 
+                        : 'rgba(107, 114, 128, 0.1)';
+                    const roleTextColor = item.loai_ho_so === 'pt' 
+                      ? colors.primary 
+                      : item.loai_ho_so === 'hoi_vien' 
+                        ? '#3b82f6' 
+                        : '#6b7280';
+                    return (
+                      <View style={modalStyles.row}>
+                        <View style={modalStyles.rowHeader}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                            <Text style={[modalStyles.rowTitle, { color: colors.text }]} numberOfLines={1}>{item.ho_ten}</Text>
+                            <View style={{ paddingHorizontal: 5, paddingVertical: 1.5, borderRadius: 4, backgroundColor: roleBg }}>
+                              <Text style={{ fontSize: 9, fontWeight: '800', color: roleTextColor }}>{roleLabel}</Text>
+                            </View>
+                          </View>
+                          <View style={[
+                            modalStyles.badge, 
+                            { backgroundColor: item.loai === 'vao' ? colors.primaryLight : colors.dangerLight }
                           ]}>
-                            {item.loai === 'vao' ? 'VÀO' : 'RA'}
+                            <Text style={[
+                              modalStyles.badgeText, 
+                              { color: item.loai === 'vao' ? colors.primary : colors.danger }
+                            ]}>
+                              {item.loai === 'vao' ? 'VÀO' : 'RA'}
+                            </Text>
+                          </View>
+                        </View>
+                        <View style={modalStyles.rowHeader}>
+                          <Text style={[modalStyles.rowText, { color: colors.textSecondary, flex: 1 }]} numberOfLines={1}>
+                            {item.chi_nhanh_goc || 'Chưa rõ CN'} • {item.phuong_thuc === 'thu_cong' ? 'Thủ công' : item.phuong_thuc === 'qr_code' ? 'QR Code' : 'Thẻ từ'}
                           </Text>
+                          <Text style={[modalStyles.rowText, { color: colors.textMuted }]}>{item.gio_hien_thi || '—'}</Text>
                         </View>
                       </View>
-                      <View style={modalStyles.rowHeader}>
-                        <Text style={[modalStyles.rowText, { color: colors.textSecondary }]}>
-                          Phương thức: {item.phuong_thuc === 'thu_cong' ? 'Thủ công' : item.phuong_thuc === 'qr_code' ? 'QR Code' : 'Thẻ từ'}
-                        </Text>
-                        <Text style={[modalStyles.rowText, { color: colors.textMuted }]}>{item.gio_hien_thi || '—'}</Text>
-                      </View>
-                    </View>
-                  )}
+                    );
+                  }}
                 />
                 <Pagination 
                   currentPage={checkinPage} 

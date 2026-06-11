@@ -8,6 +8,7 @@
 ---
 
 ## 📌 Trạng thái hiện tại
+<<<<<<< HEAD
 **✅ Sửa lỗi race condition tải địa chính trên Web** — Khắc phục lỗi crash Javascript khi chuyển trang nhanh trong lúc tải dữ liệu địa phương ở trang thêm hội viên.
 
 ---
@@ -16,6 +17,56 @@
 - **Loại**: Sửa bug (Frontend Web)
 - **File**: `FE/assets/js/pages/member-add.js`
 - **Mô tả**: Khắc phục lỗi crash Javascript khi người dùng chuyển trang nhanh trong lúc trang `member-add` đang gọi `Promise.all` tải dữ liệu địa chính từ các file JSON. Bổ sung kiểm tra `window.GymApp.currentPage !== 'member-add'` ngay sau khi hoàn thành `await Promise.all(...)` để thoát hàm sớm nếu người dùng đã rời trang.
+=======
+**✅ Triển khai check-in chéo chi nhánh và đồng bộ giao diện hiển thị chi nhánh gốc** — Cải tiến logic check-in gói PT/Gym chéo chi nhánh tại Backend; Đồng bộ hiển thị Chi nhánh gốc và Loại hồ sơ thay cho Mã hồ sơ trên cả Web Frontend và Mobile App.
+
+---
+
+### [11/06/2026 09:37] — Triển khai check-in chéo chi nhánh & Đồng bộ hiển thị Chi nhánh gốc
+- **Loại**: Chức năng mới & Đồng bộ giao diện (Fullstack Web & Mobile)
+- **File**: `BE/src/controllers/checkins.controller.js`, `FE/assets/js/pages/checkin.js`, `MobileApp/src/screens/admin/AdminDashboardScreen.js`
+- **Mô tả**:
+  - **`checkins.controller.js`**:
+    - Select thêm trường `chi_nhanh_goc` của hội viên trong API `getCheckins`.
+    - Tái cấu trúc logic kiểm tra gói khi check-in (`createCheckin`): Nếu hội viên có gói Gym hoạt động, cho phép check-in mọi chi nhánh. Nếu chỉ có gói PT hoạt động, so khớp chi nhánh check-in với chi nhánh của PT; nếu khác chi nhánh, chỉ cho phép check-in khi có lịch tập PT đã được lên lịch hôm nay tại chi nhánh hiện tại.
+  - **`checkin.js` (Web)**: Loại bỏ hiển thị mã hồ sơ, thay thế bằng hiển thị Chi nhánh gốc (`c.chi_nhanh_goc`) và Loại hồ sơ (HV/HLV/NV) tại khu vực thẻ check-in và bảng chi tiết.
+  - **`AdminDashboardScreen.js` (Mobile)**: Đồng bộ thiết kế danh sách check-in trong modal dashboard, bổ sung Badge loại hồ sơ (HV/HLV/NV) bên cạnh tên hội viên và hiển thị Chi nhánh gốc kèm phương thức check-in ở dòng dưới.
+- **Kết quả**: Thành công.
+
+### [11/06/2026 08:58] — Đồng bộ kiểm tra SĐT di động Việt Nam sang Mobile App
+- **Loại**: Cải tiến nghiệp vụ & Đồng bộ (Mobile App)
+- **File**: `MobileApp/src/screens/admin/AdminAddEditMemberScreen.js`, `MobileApp/src/screens/admin/AdminAddEditPTScreen.js`, `MobileApp/src/components/EditProfileModal.js`
+- **Mô tả**:
+  - Đồng bộ quy tắc kiểm tra số điện thoại di động sang Mobile App, chỉ cho phép các số điện thoại bắt đầu bằng `03, 05, 07, 08, 09` và có đúng 10 chữ số.
+  - Áp dụng vào form thêm/sửa Hội viên, form thêm/sửa HLV (PT), và popup cập nhật thông tin cá nhân của người dùng trên ứng dụng Mobile.
+- **Kết quả**: Thành công.
+
+### [11/06/2026 08:57] — Infinite Scroll bảng Giao dịch & Validate SĐT di động Việt Nam
+- **Loại**: Cải tiến UI & Sửa lỗi nghiệp vụ (Frontend)
+- **File**: `FE/assets/js/pages/revenue.js`, `FE/assets/js/pages/member-add.js`
+- **Mô tả**:
+  - **`revenue.js`**: Chuyển đổi bảng giao dịch hôm nay sang dạng cuộn vô hạn (infinite scroll) local. Thiết lập chiều cao tối đa cho container bảng `rev-today-table` là `400px` và lắng nghe sự kiện `scroll` để hiển thị lũy tiến (thêm 20 dòng mỗi lần lướt đến cuối).
+  - **`member-add.js`**: Cập nhật biểu thức chính quy (Regex) kiểm tra số điện thoại di động sang `/^(03|05|07|08|09)\d{8}$/` để chỉ chấp nhận các đầu số nhà mạng di động Việt Nam hiện hành và buộc độ dài đúng 10 chữ số.
+- **Kết quả**: Thành công.
+
+### [11/06/2026 08:54] — Sửa lỗi vị trí Chat Box và thêm phân trang danh sách Giao dịch hôm nay
+- **Loại**: Sửa bug & Chức năng mới (Web Frontend)
+- **File**: `FE/assets/js/components/ai-assistant.js`, `FE/assets/js/pages/revenue.js`
+- **Mô tả**:
+  - **`ai-assistant.js`**: Thêm biến `savedLeft` và `savedTop` trong closure. Khi mở chat (`openChat`), lưu lại tọa độ kéo thả của icon chat và xóa inline styles của container để khung chat hiển thị chính xác ở vị trí cố định góc dưới bên phải mặc định. Khi đóng chat (`closeChat`), khôi phục lại vị trí của icon dựa vào tọa độ đã lưu.
+  - **`revenue.js`**: Khởi tạo biến lưu trữ trang hiện tại `this._transactionPage = 1` tại hàm `init` và tự động reset về `1` mỗi khi gọi `_fetchAndRender` để thay đổi bộ lọc. Đảm bảo các nút điều hướng chuyển trang (Trang trước/Trang sau) hoạt động chuẩn xác và hiển thị mượt mà.
+- **Kết quả**: Thành công.
+
+### [11/06/2026 08:35] — Đồng bộ hiển thị gói PT đăng ký nối tiếp giống gói Gym
+- **Loại**: Chỉnh sửa giao diện & Nghiệp vụ (Web Frontend)
+- **File**: `FE/assets/js/pages/members-list.js`
+- **Mô tả**:
+  - Tách các hợp đồng PT (`pt_hien_tai`) chờ kích hoạt (`cho_kich_hoat` hoặc ngày bắt đầu trong tương lai) thành danh sách `pendingPtContracts`.
+  - Thiết kế hiển thị danh sách này trong một khung viền đứt nét màu vàng (`border: 2px dashed #d97706; background:#fffbeb;`), tương tự giao diện của các gói tập Gym khi đăng ký nối tiếp.
+  - Đồng bộ các nút thao tác nhanh (In hóa đơn, Sửa, Đổi gói, Hủy) tương ứng với hợp đồng PT đang chờ kích hoạt.
+  - *Sửa lỗi (Bugfix)*: Khai báo thiếu biến `self` dẫn đến lỗi `self._parseLocalDate is not a function` khi render danh sách hợp đồng PT.
+  - *Cải tiến vị trí hiển thị*: Điều chỉnh thứ tự hiển thị của gói PT nối tiếp nằm phía dưới gói PT đang sử dụng và phía trên lịch sử gói tập (giống hệt bố cục bên gói tập Gym).
+>>>>>>> main
 - **Kết quả**: Thành công.
 
 ### [10/06/2026 16:55] — Khắc phục màn hình lỗi đỏ (RedBox) và chuẩn hóa thông báo Alert trên Mobile App

@@ -35,7 +35,7 @@ export const getCheckins = (req, res) => {
   const rows = db.prepare(`
     SELECT
       lv.id, lv.thoi_diem, lv.loai, lv.phuong_thuc, lv.ghi_chu, lv.chi_nhanh_thuc_hien,
-      h.id AS ho_so_id, h.ma_ho_so, h.ho_ten, h.avatar_url, h.loai_ho_so,
+      h.id AS ho_so_id, h.ma_ho_so, h.ho_ten, h.avatar_url, h.loai_ho_so, h.chi_nhanh AS chi_nhanh_goc,
       strftime('%H:%M', lv.thoi_diem) AS gio_hien_thi
     FROM luot_vao_ra lv
     LEFT JOIN ho_so h ON h.id = lv.ho_so_id
@@ -55,33 +55,6 @@ export const createCheckin = (req, res) => {
     return error(res, 'loai phải là "vao" hoặc "ra".', 400);
   }
 
-  // Kiểm tra hồ sơ nếu có
-  if (ho_so_id) {
-    const profile = db.prepare('SELECT id, ho_ten, loai_ho_so FROM ho_so WHERE id = ? AND is_deleted = 0').get(ho_so_id);
-    if (!profile) return error(res, 'Hồ sơ không tồn tại.', 404);
-
-    // Chỉ check hạn đối với hội viên (bỏ qua PT và Nhân viên/Lễ tân)
-    if (profile.loai_ho_so === 'hoi_vien') {
-      const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
-      const activeCheck = db.prepare(`
-        SELECT (
-          SELECT MAX(d_ngay) FROM (
-            SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = ? AND trang_thai = 'dang_hoat_dong' AND tu_ngay <= ?
-            UNION ALL
-            SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = ? AND trang_thai = 'dang_hoat_dong' AND tu_ngay <= ?
-          )
-        ) AS ngay_ket_thuc
-      `).get(ho_so_id, today, ho_so_id, today);
-
-      if (!activeCheck || !activeCheck.ngay_ket_thuc) {
-        return error(res, `Hội viên ${profile.ho_ten} không có gói tập hoặc gói PT đang hoạt động.`, 403);
-      }
-      if (activeCheck.ngay_ket_thuc < today) {
-        return error(res, `Gói dịch vụ của ${profile.ho_ten} đã hết hạn (${activeCheck.ngay_ket_thuc}).`, 403);
-      }
-    }
-  }
-
   // Xác định chi nhánh thực hiện check-in
   const actorBranch = getActorBranch(req.user);
   let branch = chi_nhanh_thuc_hien;
@@ -97,23 +70,75 @@ export const createCheckin = (req, res) => {
     }
   }
 
+  // Kiểm tra hồ sơ nếu có
+  if (ho_so_id) {
+    const profile = db.prepare('SELECT id, ho_ten, loai_ho_so FROM ho_so WHERE id = ? AND is_deleted = 0').get(ho_so_id);
+    if (!profile) return error(res, 'Hồ sơ không tồn tại.', 404);
+
+    // Chỉ check hạn đối với hội viên (bỏ qua PT và Nhân viên/Lễ tân)
+    if (profile.loai_ho_so === 'hoi_vien') {
+      const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
+
+      // 1. Kiểm tra gói Gym hoạt động
+      const activeGym = db.prepare(`
+        SELECT den_ngay FROM dang_ky_goi_tap 
+        WHERE ho_so_id = ? AND trang_thai = 'dang_hoat_dong' AND tu_ngay <= ?
+        ORDER BY den_ngay DESC LIMIT 1
+      `).get(ho_so_id, today);
+
+      let hasGym = activeGym && activeGym.den_ngay >= today;
+
+      if (!hasGym) {
+        // 2. Không có gói Gym hoạt động, kiểm tra gói PT hoạt động
+        const activePt = db.prepare(`
+          SELECT dp.den_ngay, h_pt.chi_nhanh AS chi_nhanh_pt 
+          FROM dang_ky_pt dp
+          JOIN ho_so h_pt ON h_pt.id = dp.pt_id
+          WHERE dp.hoi_vien_id = ? AND dp.trang_thai = 'dang_hoat_dong' AND dp.tu_ngay <= ?
+          ORDER BY dp.den_ngay DESC LIMIT 1
+        `).get(ho_so_id, today);
+
+        const hasPt = activePt && activePt.den_ngay >= today;
+
+        if (!hasPt) {
+          return error(res, `Hội viên ${profile.ho_ten} không có gói tập hoặc gói PT đang hoạt động.`, 403);
+        }
+
+        // Hội viên chỉ có gói PT hoạt động:
+        // So khớp chi nhánh check-in hiện tại với chi nhánh của PT
+        const chiNhanhPt = activePt.chi_nhanh_pt;
+        if (branch && chiNhanhPt && branch !== chiNhanhPt) {
+          // Khác chi nhánh: Phải có lịch tập đặt trước hôm nay tại chi nhánh hiện tại
+          const todaySchedule = db.prepare(`
+            SELECT id FROM lich_tap 
+            WHERE hoi_vien_id = ? AND ngay_tap = ? AND chi_nhanh = ? AND trang_thai = 'cho_tap'
+            LIMIT 1
+          `).get(ho_so_id, today, branch);
+
+          if (!todaySchedule) {
+            return error(res, `Hội viên chỉ có gói PT tại "${chiNhanhPt}" và không có lịch tập đặt trước tại "${branch}" hôm nay.`, 403);
+          }
+        }
+      }
+    }
+  }
 
   const result = db.prepare(`
     INSERT INTO luot_vao_ra (ho_so_id, loai, phuong_thuc, ghi_chu, chi_nhanh_thuc_hien)
     VALUES (?, ?, ?, ?, ?)
   `).run(ho_so_id || null, loai, phuong_thuc, ghi_chu || null, branch || null);
 
-  // Cập nhật da_checkin = 1 cho các buổi tập PT của hội viên này hôm nay nếu vào
+  // Cập nhật da_checkin = 1 cho các buổi tập PT của hội viên này hôm nay tại chi nhánh này nếu vào
   if (loai === 'vao' && ho_so_id) {
     const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
     db.prepare(`
       UPDATE lich_tap SET da_checkin = 1
-      WHERE hoi_vien_id = ? AND ngay_tap = ? AND trang_thai = 'cho_tap'
-    `).run(ho_so_id, today);
+      WHERE hoi_vien_id = ? AND ngay_tap = ? AND chi_nhanh = ? AND trang_thai = 'cho_tap'
+    `).run(ho_so_id, today, branch);
   }
 
   const newRow = db.prepare(`
-    SELECT lv.*, h.ho_ten, h.ma_ho_so, h.avatar_url FROM luot_vao_ra lv
+    SELECT lv.*, h.ho_ten, h.ma_ho_so, h.avatar_url, h.chi_nhanh AS chi_nhanh_goc, h.loai_ho_so FROM luot_vao_ra lv
     LEFT JOIN ho_so h ON h.id = lv.ho_so_id
     WHERE lv.id = ?
   `).get(result.lastInsertRowid);
