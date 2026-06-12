@@ -171,12 +171,28 @@ window.GymApp.pages['revenue'] = {
     const previousTotal = monthSummary.previous_total || 0;
     const currentTotal = monthSummary.current_total || 0;
 
-    const totalTrendHtml = this._formatTrend(currentTotal, previousTotal);
-    const dayTrendHtml = this._formatTrend(dayData?.tong_tien || 0, dayData?.hom_qua || 0);
-
     const isToday = this._days === 'today';
     const isYesterday = this._days === 'yesterday';
     const isSingleDay = isToday || isYesterday;
+
+    let totalTrendHtml = '';
+    const dayTrendHtml = this._formatTrend(dayData?.tong_tien || 0, dayData?.hom_qua || 0);
+
+    if (isSingleDay) {
+      totalTrendHtml = dayTrendHtml;
+    } else if (this._days === 7 || this._days === 30) {
+      const dailyList = this._dailyData || [];
+      if (dailyList.length >= 2) {
+        const half = Math.ceil(dailyList.length / 2);
+        const prevPeriod = dailyList.slice(0, half);
+        const currPeriod = dailyList.slice(half);
+        const prevSum = prevPeriod.reduce((acc, d) => acc + (d.tong_tien || 0), 0);
+        const currSum = currPeriod.reduce((acc, d) => acc + (d.tong_tien || 0), 0);
+        totalTrendHtml = this._formatTrend(currSum, prevSum);
+      }
+    } else {
+      totalTrendHtml = this._formatTrend(currentTotal, previousTotal);
+    }
 
     let cards = [];
     if (this._days === 'compare') {
@@ -232,14 +248,12 @@ window.GymApp.pages['revenue'] = {
       cards = [
         {
           label: 'Tổng doanh thu',
-          // FIX: dùng dayData.tong_tien (từ bảng doanh_thu qua API today/yesterday)
-          // thay vì summary.tong_doanh_thu (API /revenue?days=1 tính lại từ giao dịch)
           value: this._formatMoney(dayData?.tong_tien),
           icon: 'payments',
           iconBg: 'icon-bg-green',
           color: 'text-brand-primary',
           trendHtml: totalTrendHtml,
-          sub: `Tháng trước: ${this._formatMoney(previousTotal)}`,
+          sub: `Hôm trước: ${this._formatMoney(dayData?.hom_qua)}`,
         },
         {
           label: isYesterday ? 'Doanh thu hôm qua' : 'Doanh thu hôm nay',
@@ -254,7 +268,6 @@ window.GymApp.pages['revenue'] = {
         },
         {
           label: 'Gói tập',
-          // FIX: đọc tien_goi_tap từ dayData (bảng doanh_thu) thay vì summary
           value: this._formatMoney(dayData?.tien_goi_tap),
           icon: 'card_membership',
           iconBg: 'icon-bg-orange',
@@ -264,7 +277,6 @@ window.GymApp.pages['revenue'] = {
         },
         {
           label: 'Gói PT',
-          // FIX: đọc tien_goi_pt từ dayData (bảng doanh_thu) thay vì summary
           value: this._formatMoney(dayData?.tien_goi_pt),
           icon: 'sports_gymnastics',
           iconBg: 'icon-bg-blue',
@@ -274,6 +286,16 @@ window.GymApp.pages['revenue'] = {
         },
       ];
     } else {
+      let subLabel = `Tháng trước: ${this._formatMoney(previousTotal)}`;
+      if (this._days === 7 || this._days === 30) {
+        const dailyList = this._dailyData || [];
+        if (dailyList.length >= 2) {
+          const half = Math.ceil(dailyList.length / 2);
+          const prevPeriod = dailyList.slice(0, half);
+          const prevSum = prevPeriod.reduce((acc, d) => acc + (d.tong_tien || 0), 0);
+          subLabel = `${this._days} ngày trước đó: ${this._formatMoney(prevSum)}`;
+        }
+      }
       cards = [
         {
           label: `Doanh thu ${this._days} ngày`,
@@ -282,7 +304,7 @@ window.GymApp.pages['revenue'] = {
           iconBg: 'icon-bg-green',
           color: 'text-brand-primary',
           trendHtml: totalTrendHtml,
-          sub: `Tháng trước: ${this._formatMoney(previousTotal)}`,
+          sub: subLabel,
         },
         {
           label: 'Trung bình ngày',

@@ -44,26 +44,31 @@ window.GymApp.printInvoice = function (data) {
       <style>
         @page {
           size: A4;
-          margin: 15mm 15mm 15mm 15mm;
+          margin: 12mm;
         }
         body {
           font-family: "Times New Roman", Times, serif;
           font-size: 13px;
-          line-height: 1.5;
+          line-height: 1.4;
           color: #000;
           margin: 0;
           padding: 0;
         }
-        .header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
+        table.outer-container {
+          width: 100%;
+          border-collapse: collapse;
+          border: none;
+        }
+        .header-table {
+          width: 100%;
+          border-collapse: collapse;
           border-bottom: 1px solid #000;
           padding-bottom: 8px;
-          margin-bottom: 20px;
+          margin-bottom: 15px;
         }
-        .branch-info {
-          width: 55%;
+        .header-table td {
+          border: none;
+          vertical-align: top;
         }
         .branch-name {
           font-weight: bold;
@@ -74,50 +79,47 @@ window.GymApp.printInvoice = function (data) {
           font-size: 11px;
           margin-top: 2px;
         }
-        .invoice-title-container {
-          width: 45%;
-          text-align: right;
-        }
         .invoice-title {
           font-size: 16px;
           font-weight: bold;
           text-transform: uppercase;
           margin: 0;
+          text-align: right;
         }
-        .invoice-date {
+        .invoice-code-date {
           font-size: 11px;
           font-style: italic;
-          margin-top: 4px;
-        }
-        .content {
-          margin-bottom: 30px;
+          margin-top: 3px;
+          text-align: right;
         }
         .section-title {
           font-weight: bold;
           text-transform: uppercase;
           font-size: 12px;
           margin-top: 15px;
-          margin-bottom: 8px;
+          margin-bottom: 6px;
           border-bottom: 1px dashed #000;
           padding-bottom: 2px;
         }
-        .grid-info {
-          display: grid;
-          grid-template-columns: 140px 1fr;
-          row-gap: 6px;
-          margin-bottom: 15px;
+        .table-info {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 10px;
+        }
+        .table-info td {
+          border: none;
+          padding: 4px 0;
+          vertical-align: top;
         }
         .info-label {
           font-weight: bold;
-        }
-        .info-value {
-          word-break: break-word;
+          width: 140px;
         }
         .table-invoice {
           width: 100%;
           border-collapse: collapse;
-          margin-top: 15px;
-          margin-bottom: 15px;
+          margin-top: 10px;
+          margin-bottom: 10px;
         }
         .table-invoice th, .table-invoice td {
           border: 1px solid #000;
@@ -135,10 +137,14 @@ window.GymApp.printInvoice = function (data) {
         .text-center {
           text-align: center !important;
         }
-        .footer-sig {
-          margin-top: 40px;
-          display: flex;
-          justify-content: flex-end;
+        .footer-sig-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 25px;
+        }
+        .footer-sig-table td {
+          border: none;
+          vertical-align: top;
         }
         .sig-container {
           text-align: center;
@@ -147,12 +153,12 @@ window.GymApp.printInvoice = function (data) {
         .sig-date {
           font-style: italic;
           font-size: 12px;
-          margin-bottom: 8px;
+          margin-bottom: 6px;
         }
         .sig-title {
           font-weight: bold;
           text-transform: uppercase;
-          margin-bottom: 60px;
+          margin-bottom: 55px;
         }
         .sig-name {
           font-weight: bold;
@@ -160,75 +166,105 @@ window.GymApp.printInvoice = function (data) {
       </style>
     </head>
     <body>
-      <div class="header">
-        <div class="branch-info">
-          <div class="branch-name">${data.branch.ten || 'Paradise GYM'}</div>
-          <div class="branch-detail">Địa chỉ: ${data.branch.dia_chi || 'Hệ thống phòng tập Paradise GYM'}</div>
-          <div class="branch-detail">Điện thoại: 1900 9999</div>
-        </div>
-        <div class="invoice-title-container">
-          <h1 class="invoice-title">${title}</h1>
-          <div class="invoice-date">Mã GD: ${data.pkg.id || 'N/A'}</div>
-          <div class="invoice-date">Thời gian in: ${fmtDate(today)}</div>
-        </div>
-      </div>
+      <table class="outer-container">
+        <tr>
+          <td>
+            <!-- Header Table -->
+            <table class="header-table">
+              <tr>
+                <td style="width: 55%;">
+                  <div class="branch-name">${data.branch.ten || 'Paradise GYM'}</div>
+                  <div class="branch-detail">Địa chỉ: ${data.branch.dia_chi || 'Hệ thống phòng tập Paradise GYM'}</div>
+                  <div class="branch-detail">Điện thoại: 1900 9999</div>
+                </td>
+                <td style="width: 45%;">
+                  <h1 class="invoice-title">${title}</h1>
+                  <div class="invoice-code-date">Mã GD: ${data.pkg.id || 'N/A'}</div>
+                  <div class="invoice-code-date">Thời gian in: ${fmtDate(today)}</div>
+                </td>
+              </tr>
+            </table>
 
-      <div class="content">
-        <div class="section-title">Thông tin khách hàng</div>
-        <div class="grid-info">
-          <div class="info-label">Hội viên:</div>
-          <div class="info-value">${data.member.ho_ten || data.member.name}</div>
-          <div class="info-label">Mã số hồ sơ:</div>
-          <div class="info-value">${data.member.ma_ho_so || '—'}</div>
-          <div class="info-label">Số điện thoại:</div>
-          <div class="info-value">${data.member.so_dien_thoai || '—'}</div>
-        </div>
+            <!-- Section 1: Thông tin khách hàng -->
+            <div class="section-title">Thông tin khách hàng</div>
+            <table class="table-info">
+              <tr>
+                <td class="info-label">Hội viên:</td>
+                <td>${data.member.ho_ten || data.member.name}</td>
+              </tr>
+              <tr>
+                <td class="info-label">Mã số hồ sơ:</td>
+                <td>${data.member.ma_ho_so || '—'}</td>
+              </tr>
+              <tr>
+                <td class="info-label">Số điện thoại:</td>
+                <td>${data.member.so_dien_thoai || '—'}</td>
+              </tr>
+            </table>
 
-        <div class="section-title">Chi tiết dịch vụ đăng ký</div>
-        <table class="table-invoice">
-          <thead>
-            <tr>
-              <th>Tên dịch vụ / Gói đăng ký</th>
-              <th style="width: 100px;">Thời lượng / Buổi</th>
-              <th style="width: 120px;">Hiệu lực từ ngày</th>
-              <th style="width: 120px;">Hiệu lực đến ngày</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>
-                <b>${data.pkg.ten_goi || data.pkg.name || 'Gói dịch vụ'}</b>
-                ${data.type === 'goi_pt' && data.ptName ? `<br><span style="font-size: 11px; font-style: italic;">Huấn luyện viên: ${data.ptName}</span>` : ''}
-              </td>
-              <td class="text-center">${data.type === 'goi_pt' ? `${data.pkg.so_buoi_dang_ky || data.pkg.sessions || '—'} buổi` : 'Gói tập'}</td>
-              <td class="text-center">${fmtDate(data.pkg.tu_ngay || data.pkg.from)}</td>
-              <td class="text-center">${fmtDate(data.pkg.den_ngay || data.pkg.to)}</td>
-            </tr>
-          </tbody>
-        </table>
+            <!-- Section 2: Chi tiết dịch vụ đăng ký -->
+            <div class="section-title">Chi tiết dịch vụ đăng ký</div>
+            <table class="table-invoice">
+              <thead>
+                <tr>
+                  <th>Tên dịch vụ / Gói đăng ký</th>
+                  <th style="width: 100px;">Thời lượng / Buổi</th>
+                  <th style="width: 120px;">Hiệu lực từ ngày</th>
+                  <th style="width: 120px;">Hiệu lực đến ngày</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <b>${data.pkg.ten_goi || data.pkg.name || 'Gói dịch vụ'}</b>
+                    ${data.type === 'goi_pt' && data.ptName ? `<br><span style="font-size: 11px; font-style: italic;">Huấn luyện viên: ${data.ptName}</span>` : ''}
+                  </td>
+                  <td class="text-center">${data.type === 'goi_pt' ? `${data.pkg.so_buoi_dang_ky || data.pkg.sessions || '—'} buổi` : 'Gói tập'}</td>
+                  <td class="text-center">${fmtDate(data.pkg.tu_ngay || data.pkg.from)}</td>
+                  <td class="text-center">${fmtDate(data.pkg.den_ngay || data.pkg.to)}</td>
+                </tr>
+              </tbody>
+            </table>
 
-        <div class="section-title">Thông tin thanh toán</div>
-        <div class="grid-info">
-          <div class="info-label">Tổng chi phí:</div>
-          <div class="info-value"><b>${window.GymApp.formatCurrency(price)}</b></div>
-          <div class="info-label">Đã thanh toán:</div>
-          <div class="info-value">${window.GymApp.formatCurrency(needPay)}</div>
-          <div class="info-label">Phương thức:</div>
-          <div class="info-value">${paymentMethodLabel(data.pkg.phuong_thuc_tt || data.pkg.paymentMethod)}</div>
-          ${data.pkg.ghi_chu_tt ? `
-            <div class="info-label">Ghi chú:</div>
-            <div class="info-value" style="font-style: italic;">"${data.pkg.ghi_chu_tt}"</div>
-          ` : ''}
-        </div>
-      </div>
+            <!-- Section 3: Thông tin thanh toán -->
+            <div class="section-title">Thông tin thanh toán</div>
+            <table class="table-info">
+              <tr>
+                <td class="info-label">Tổng chi phí:</td>
+                <td><b>${window.GymApp.formatCurrency(price)}</b></td>
+              </tr>
+              <tr>
+                <td class="info-label">Đã thanh toán:</td>
+                <td>${window.GymApp.formatCurrency(needPay)}</td>
+              </tr>
+              <tr>
+                <td class="info-label">Phương thức:</td>
+                <td>${paymentMethodLabel(data.pkg.phuong_thuc_tt || data.pkg.paymentMethod)}</td>
+              </tr>
+              ${data.pkg.ghi_chu_tt ? `
+              <tr>
+                <td class="info-label">Ghi chú:</td>
+                <td style="font-style: italic;">"${data.pkg.ghi_chu_tt}"</td>
+              </tr>
+              ` : ''}
+            </table>
 
-      <div class="footer-sig">
-        <div class="sig-container">
-          <div class="sig-date">Ngày ${dayStr} tháng ${monthStr} năm ${yearStr}</div>
-          <div class="sig-title">Người lập bảng</div>
-          <div class="sig-name">${data.creator || 'Nhân viên hệ thống'}</div>
-        </div>
-      </div>
+            <!-- Footer Signature Table -->
+            <table class="footer-sig-table">
+              <tr>
+                <td style="width: 60%;"></td>
+                <td style="width: 40%; text-align: center;">
+                  <div class="sig-container" style="display: inline-block;">
+                    <div class="sig-date">Ngày ${dayStr} tháng ${monthStr} năm ${yearStr}</div>
+                    <div class="sig-title">Người lập bảng</div>
+                    <div class="sig-name">${data.creator || 'Nhân viên hệ thống'}</div>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
     </body>
     </html>
   `;

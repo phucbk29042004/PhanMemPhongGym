@@ -5,7 +5,7 @@ import {
   TouchableOpacity, View, Platform, ScrollView, Alert,
 } from 'react-native';
 import {
-  AlertCircle, CheckCircle2, Lock, Unlock, Search, User, Shield, X, Plus, Edit2,
+  AlertCircle, CheckCircle2, Lock, Unlock, Search, User, Shield, X, Plus, Edit2, Trash2,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -33,7 +33,7 @@ const av = StyleSheet.create({
 });
 
 // ── Staff Card ──────────────────────────────────────────
-function StaffCard({ item, colors, onToggleLock, onEdit, onPress, showActions }) {
+function StaffCard({ item, colors, onToggleLock, onEdit, onDelete, onPress, showActions }) {
   const isLocked = item.tk_trang_thai === 'khoa';
   const roleColor = '#0d9488';
   const roleBg = '#ccfbf1';
@@ -78,6 +78,12 @@ function StaffCard({ item, colors, onToggleLock, onEdit, onPress, showActions })
               }
             </TouchableOpacity>
           ) : null}
+          <TouchableOpacity
+            style={[card.actionBtn, { backgroundColor: colors.dangerLight }]}
+            onPress={onDelete}
+          >
+            <Trash2 color={colors.danger} size={15} strokeWidth={2.5} />
+          </TouchableOpacity>
         </View>
       )}
     </TouchableOpacity>
@@ -203,6 +209,33 @@ export default function AdminStaffScreen({ navigation }) {
     );
   };
 
+  const handleDeleteStaff = (staff) => {
+    Alert.alert(
+      'Xóa hồ sơ nhân viên',
+      `Bạn có chắc chắn muốn xóa hồ sơ nhân viên "${staff.ho_ten}" không? Thao tác này sẽ khóa tài khoản đi kèm nếu có.`,
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Xóa',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const res = await api.delete(`/staff/${staff.id}`);
+              if (res.data?.success) {
+                Alert.alert('Thành công', 'Đã xóa hồ sơ nhân viên thành công.');
+                fetchStaff();
+              } else {
+                Alert.alert('Thất bại', res.data?.message || 'Có lỗi xảy ra.');
+              }
+            } catch (err) {
+              Alert.alert('Lỗi', 'Không thể kết nối đến máy chủ.');
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const filteredStaff = staffList.filter(s => {
     const q = search.toLowerCase().trim();
     if (q && !s.ho_ten?.toLowerCase().includes(q) && !s.so_dien_thoai?.includes(q) && !s.ma_ho_so?.toLowerCase().includes(q)) return false;
@@ -222,7 +255,7 @@ export default function AdminStaffScreen({ navigation }) {
           <Text style={styles.headerSub}>{filteredStaff.length} / {staffList.length} nhân viên</Text>
         </View>
         <View style={styles.headerActions}>
-          {(user?.vai_tro === 'admin' || user?.vai_tro === 'chu_phong_gym' || user?.vai_tro === 'quan_ly') && (
+          {(user?.vai_tro === 'admin' || user?.vai_tro === 'chu_phong_gym') && (
             <TouchableOpacity 
               style={[styles.addBtn, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
               onPress={() => {
@@ -347,8 +380,9 @@ export default function AdminStaffScreen({ navigation }) {
               colors={colors}
               onToggleLock={handleToggleLock}
               onEdit={() => navigation.navigate('AdminAddEditMember', { memberId: item.id })}
+              onDelete={() => handleDeleteStaff(item)}
               onPress={() => navigation.navigate('AdminMemberDetail', { memberId: item.id })}
-              showActions={user?.vai_tro === 'admin' || user?.vai_tro === 'chu_phong_gym' || user?.vai_tro === 'quan_ly'}
+              showActions={user?.vai_tro === 'admin' || user?.vai_tro === 'chu_phong_gym'}
             />
           )}
           contentContainerStyle={styles.listContent}

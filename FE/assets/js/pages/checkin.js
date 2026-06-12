@@ -4,7 +4,7 @@ window.GymApp.pages['checkin'] = {
   _autoRefreshTimer: null,
   _stats: null,
 
-  _getGroupedVisits: function(checkins) {
+  _getGroupedVisits: function (checkins) {
     const grouped = new Map(); // ho_so_id -> { vaoRecord, raRecord }
 
     // 1. Tìm vaoRecord mới nhất cho mỗi hội viên
@@ -65,7 +65,7 @@ window.GymApp.pages['checkin'] = {
     const prevVal = parseFloat(previous);
     const currVal = parseFloat(current);
     if (isNaN(prevVal) || isNaN(currVal)) return '';
-    
+
     let pct = 0;
     if (prevVal === 0) {
       if (currVal > 0) pct = 100;
@@ -195,13 +195,13 @@ window.GymApp.pages['checkin'] = {
               </div>
             </div>
             <div id="checkin-cards-grid" class="grid grid-cols-2 md:grid-cols-3 gap-standard max-h-80 overflow-y-auto pr-xs">
-              ${(function() {
-                const grouped = window.GymApp.pages['checkin']._getGroupedVisits(checkins);
-                if (grouped.length === 0) return `<div class="col-span-3 flex flex-col items-center justify-center py-standard text-center">
+              ${(function () {
+        const grouped = window.GymApp.pages['checkin']._getGroupedVisits(checkins);
+        if (grouped.length === 0) return `<div class="col-span-3 flex flex-col items-center justify-center py-standard text-center">
                      <span class="material-symbols-outlined text-4xl text-outline">person_off</span>
                      <p class="text-on-surface-variant text-body-sm mt-standard">Chưa có check-in hôm nay</p>
                    </div>`;
-                return grouped.map(c => `
+        return grouped.map(c => `
                     <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl border-2 border-outline-variant/50 p-standard shadow-sm flex flex-col items-center gap-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300">
                       ${window.GymApp.avatarImg(c.avatar_url, c.ho_ten, 'lg')}
                       <div class="text-center">
@@ -211,28 +211,28 @@ window.GymApp.pages['checkin'] = {
                           ${c.loai_ho_so === 'hoi_vien' ? '<span class="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500 text-[10px] font-bold">HV</span>' : ''}
                           ${c.loai_ho_so === 'le_tan' || c.loai_ho_so === 'nhan_vien' ? '<span class="px-1.5 py-0.5 rounded bg-gray-500/10 text-gray-500 text-[10px] font-bold">NV</span>' : ''}
                           <span class="text-on-surface-variant text-[11px] font-medium opacity-80">
-                            ${(c.chi_nhanh_thuc_hien && c.chi_nhanh_goc && c.chi_nhanh_thuc_hien !== c.chi_nhanh_goc) 
-                              ? `<span class="text-red-500 font-bold">${c.chi_nhanh_goc}</span>` 
-                              : (c.chi_nhanh_goc || '—')}
+                            ${(c.chi_nhanh_thuc_hien && c.chi_nhanh_goc && c.chi_nhanh_thuc_hien !== c.chi_nhanh_goc)
+            ? `<span class="text-red-500 font-bold">${c.chi_nhanh_goc}</span>`
+            : (c.chi_nhanh_goc || '—')}
                           </span>
                         </p>
                       </div>
-                      ${c.raRecord 
-                        ? `<div class="flex items-center gap-xs bg-surface-container rounded-full px-compact py-xs border border-outline-variant w-full justify-center">
+                      ${c.raRecord
+            ? `<div class="flex items-center gap-xs bg-surface-container rounded-full px-compact py-xs border border-outline-variant w-full justify-center">
                              <span class="material-symbols-outlined text-on-surface-variant" style="font-size:12px">logout</span>
                              <span class="text-on-surface-variant text-body-sm font-bold">Đã ra: ${c.raRecord.gio_hien_thi || c.raRecord.thoi_diem.substring(11, 16)}</span>
                            </div>`
-                        : `<div class="flex items-center gap-xs bg-brand-primary/10 rounded-full px-compact py-xs mb-1 w-full justify-center">
+            : `<div class="flex items-center gap-xs bg-brand-primary/10 rounded-full px-compact py-xs mb-1 w-full justify-center">
                              <span class="material-symbols-outlined text-brand-primary" style="font-size:12px">login</span>
                              <span class="text-brand-primary text-body-sm font-bold">Vào: ${c.gio_hien_thi || c.thoi_diem.substring(11, 16)}</span>
                            </div>
                            <button class="btn-checkout flex items-center justify-center gap-xs bg-surface-container-high hover:bg-[#fee2e2] text-on-surface hover:text-[#dc2626] rounded-lg px-standard py-xs transition-colors border border-outline-variant w-full font-bold text-body-sm" data-id="${c.ho_so_id}">
                              <span class="material-symbols-outlined" style="font-size:16px">logout</span> Check-out
                            </button>`
-                      }
+          }
                     </div>
                   `).join('');
-              })()}
+      })()}
             </div>
           </div>
         </div>
@@ -264,7 +264,6 @@ window.GymApp.pages['checkin'] = {
     const rows = paginated.map((c, idx) => {
       const globalIdx = start + idx;
       const isFirstVao = c.loai === 'vao' && c.ho_so_id && checkins.findIndex(x => x.ho_so_id === c.ho_so_id) === globalIdx;
-      // Kiểm tra xem hội viên đã có bản ra sau lần vào này chưa
       const hasCheckedOut = c.ho_so_id && allCheckins.some(x =>
         x.ho_so_id === c.ho_so_id && x.loai === 'ra' && x.thoi_diem > c.thoi_diem
       );
@@ -281,9 +280,11 @@ window.GymApp.pages['checkin'] = {
                 ${c.loai_ho_so === 'hoi_vien' ? '<span class="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500 text-[10px] font-bold">HV</span>' : ''}
                 ${c.loai_ho_so === 'le_tan' || c.loai_ho_so === 'nhan_vien' ? '<span class="px-1.5 py-0.5 rounded bg-gray-500/10 text-gray-500 text-[10px] font-bold">NV</span>' : ''}
                 <span class="text-on-surface-variant text-[11px] font-medium opacity-80">
-                  ${(c.chi_nhanh_thuc_hien && c.chi_nhanh_goc && c.chi_nhanh_thuc_hien !== c.chi_nhanh_goc) 
-                    ? `<span class="text-red-500 font-bold">${c.chi_nhanh_goc}</span>` 
-                    : (c.chi_nhanh_goc || '—')}
+                  ${(c.chi_nhanh_thuc_hien && c.chi_nhanh_goc && c.chi_nhanh_thuc_hien !== c.chi_nhanh_goc)
+          ? (!window.GymApp.selectedBranch
+            ? `<span class="text-red-500 font-bold">${c.chi_nhanh_goc} → ${c.chi_nhanh_thuc_hien}</span>`
+            : `<span class="text-red-500 font-bold">${c.chi_nhanh_goc}</span>`)
+          : (c.chi_nhanh_goc || '—')}
                 </span>
               </p>
             </div>
@@ -297,18 +298,20 @@ window.GymApp.pages['checkin'] = {
         </td>
         <td class="px-standard">
           <span class="font-bold text-on-surface text-body-sm">
-            ${(c.chi_nhanh_thuc_hien && c.chi_nhanh_goc && c.chi_nhanh_thuc_hien !== c.chi_nhanh_goc) 
-              ? `<span class="text-red-500 font-bold">${c.chi_nhanh_goc}</span>` 
-              : (c.chi_nhanh_goc || '—')}
+            ${(c.chi_nhanh_thuc_hien && c.chi_nhanh_goc && c.chi_nhanh_thuc_hien !== c.chi_nhanh_goc)
+          ? (!window.GymApp.selectedBranch
+            ? `<span class="text-red-500 font-bold">${c.chi_nhanh_goc} → ${c.chi_nhanh_thuc_hien}</span>`
+            : `<span class="text-red-500 font-bold">${c.chi_nhanh_goc}</span>`)
+          : (c.chi_nhanh_goc || '—')}
           </span>
         </td>
         <td class="px-standard">${window.GymApp.statusBadge(c.loai === 'vao' ? 'active' : 'inactive')}</td>
         <td class="px-standard">
           ${showCheckout
-            ? `<button class="btn-checkout text-[#dc2626] hover:bg-[#fee2e2] px-compact py-3xs rounded-md transition-colors text-body-sm font-bold flex items-center gap-xs" data-id="${c.ho_so_id}">
+          ? `<button class="btn-checkout text-[#dc2626] hover:bg-[#fee2e2] px-compact py-3xs rounded-md transition-colors text-body-sm font-bold flex items-center gap-xs" data-id="${c.ho_so_id}">
                  <span class="material-symbols-outlined" style="font-size:14px">logout</span> Check-out
                </button>`
-            : ''}
+          : ''}
         </td>
       </tr>
       `;
@@ -323,7 +326,7 @@ window.GymApp.pages['checkin'] = {
               <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Giờ</th>
               <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Chi nhánh thực hiện</th>
               <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Trạng thái</th>
-              <th class="px-standard font-bold text-body-sm text-on-surface-wider">Thao tác</th>
+              <th class="px-standard font-bold text-body-sm text-on-surface-wider">THAO TÁC</th>
             </tr>
           </thead>
           <tbody>${rows || `<tr><td colspan="5" class="px-standard py-standard text-center text-on-surface-variant">Chưa có dữ liệu</td></tr>`}</tbody>
@@ -337,7 +340,7 @@ window.GymApp.pages['checkin'] = {
     try {
       const branch = window.GymApp.selectedBranch || '';
       const q = branch ? `?chi_nhanh=${encodeURIComponent(branch)}` : '';
-      
+
       const [checkinsRes, statsRes] = await Promise.all([
         window.GymApp.api.get(`/checkins${q}`),
         window.GymApp.api.get(`/checkins/stats${q}`)
@@ -349,7 +352,7 @@ window.GymApp.pages['checkin'] = {
       if (statsRes && statsRes.success) {
         this._stats = statsRes.data;
       }
-      
+
       if (window.GymApp.currentPage === 'checkin') {
         const contentArea = document.getElementById('content-area');
         if (contentArea) {
@@ -428,7 +431,7 @@ window.GymApp.pages['checkin'] = {
     const handleCheckout = async function (e) {
       const btn = e.target.closest('.btn-checkout');
       if (!btn) return;
-      
+
       const ho_so_id = btn.getAttribute('data-id');
       if (!ho_so_id) return;
 
@@ -436,13 +439,13 @@ window.GymApp.pages['checkin'] = {
       if (!confirmOk) return;
 
       try {
-        const res = await window.GymApp.api.post(`/checkins`, { 
-          ho_so_id, 
-          loai: 'ra', 
+        const res = await window.GymApp.api.post(`/checkins`, {
+          ho_so_id,
+          loai: 'ra',
           phuong_thuc: 'thu_cong',
           chi_nhanh_thuc_hien: window.GymApp.selectedBranch || ''
         });
-        
+
         if (res && res.success) {
           window.GymApp.toast('Check-out thành công!', 'success');
           await self._fetchAndRefresh();
@@ -466,9 +469,9 @@ window.GymApp.pages['checkin'] = {
       const icon = btn.querySelector('.material-symbols-outlined');
       if (icon) icon.classList.add('animate-spin');
       btn.classList.add('opacity-50', 'pointer-events-none');
-      
+
       await self._fetchAndRefresh();
-      
+
       if (icon) icon.classList.remove('animate-spin');
       btn.classList.remove('opacity-50', 'pointer-events-none');
       window.GymApp.toast('Đã cập nhật dữ liệu check-in!', 'success');
@@ -477,12 +480,12 @@ window.GymApp.pages['checkin'] = {
     self._handleReloadListener = handleReload;
 
     // Pagination buttons event listener
-    const handlePagination = function(e) {
+    const handlePagination = function (e) {
       const btn = e.target.closest('[data-pg]');
       if (!btn) return;
       const container = btn.closest('#checkin-table-container');
       if (!container) return;
-      
+
       const p = parseInt(btn.getAttribute('data-pg'));
       if (p && p !== self._page) {
         self._page = p;

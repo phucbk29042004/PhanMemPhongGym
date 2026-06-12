@@ -422,8 +422,27 @@ export default function AdminRevenueScreen({ navigation }) {
       total = data.summary?.tong_doanh_thu || 0;
       gymRev = data.summary?.tong_goi_tap || 0;
       ptRev = data.summary?.tong_goi_pt || 0;
-      subVal = formatPrice(data.summary?.trung_binh_ngay || 0);
-      subLabel = 'trung bình mỗi ngày';
+
+      // Tính trend động cho 7 ngày / 30 ngày qua bằng cách so sánh 2 nửa dailyData
+      const dailyList = data.daily || [];
+      if (dailyList.length >= 2) {
+        const half = Math.ceil(dailyList.length / 2);
+        const prevPeriod = dailyList.slice(0, half);
+        const currPeriod = dailyList.slice(half);
+        const prevSum = prevPeriod.reduce((acc, d) => acc + (d.tong_tien || 0), 0);
+        const currSum = currPeriod.reduce((acc, d) => acc + (d.tong_tien || 0), 0);
+        
+        const diff = currSum - prevSum;
+        isUp = diff >= 0;
+        hasTrend = true;
+        subVal = formatPrice(Math.abs(diff));
+        subLabel = isUp 
+          ? `tăng so với ${filter} ngày trước (${formatPrice(prevSum)})` 
+          : `giảm so với ${filter} ngày trước (${formatPrice(prevSum)})`;
+      } else {
+        subVal = formatPrice(data.summary?.trung_binh_ngay || 0);
+        subLabel = 'trung bình mỗi ngày';
+      }
     }
 
     const TrendIcon = hasTrend ? (isUp ? TrendingUp : TrendingDown) : TrendingUp;

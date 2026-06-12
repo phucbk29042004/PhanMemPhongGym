@@ -8,9 +8,28 @@
 ---
 
 ## 📌 Trạng thái hiện tại
-**✅ Sửa lỗi check-in chéo, check-out và vô hiệu hóa giờ quá khứ đặt lịch PT** — Truyền chi nhánh thực hiện khi scan QR và checkout; sửa logic gom nhóm lượt vao/ra tránh lỗi hiển thị nhầm "Đã ra"; làm mờ và vô hiệu hóa các mốc giờ đã qua trong ngày và toàn bộ giờ khi chọn ngày quá khứ khi đặt lịch PT.
+**✅ Đồng bộ chức năng Xóa nhân viên và phân quyền trên Mobile App** — Thêm nút Xóa nhân viên có Alert xác nhận và đồng bộ phân quyền thao tác nhân viên (chỉ dành cho `admin` và `chu_phong_gym`) trên Mobile App.
 
 ---
+
+### [12/06/2026 14:15] — Đồng bộ chức năng Xóa nhân viên và phân quyền trên Mobile App
+- **Loại**: Chỉnh sửa / Phân quyền UI & Bổ sung chức năng (Mobile App)
+- **File**: `MobileApp/src/screens/admin/AdminStaffScreen.js`
+- **Mô tả**:
+  1. **[Xóa nhân viên]**: Bổ sung icon `Trash2` từ `lucide-react-native` và thêm nút Xóa vào giao diện thẻ nhân viên (`StaffCard`). Viết hàm `handleDeleteStaff` hiển thị Alert xác nhận có lựa chọn Hủy/Xóa; nếu đồng ý sẽ gọi API DELETE `/api/staff/:id` và reload danh sách.
+  2. **[Đồng bộ phân quyền]**: Loại bỏ vai trò `quan_ly` khỏi điều kiện kiểm tra hiển thị nút thêm và hành động sửa/khóa/xóa nhân viên trên giao diện Mobile, chỉ cho phép `admin` và `chu_phong_gym` thao tác để đồng nhất hoàn toàn với kiểm tra ở Backend API và Web Admin.
+- **Kết quả**: Thành công.
+
+### [12/06/2026 13:42] — Sửa lỗi tính tăng trưởng doanh thu động, thiết kế lại PDF hóa đơn và tối ưu check-in chéo
+- **Loại**: Sửa lỗi & Tối ưu UI/UX (Fullstack Web & Mobile)
+- **File**: `FE/assets/js/components/invoice-template.js`, `FE/assets/js/pages/revenue.js`, `MobileApp/src/screens/admin/AdminRevenueScreen.js`, `FE/assets/js/pages/checkin.js`, `MobileApp/src/screens/admin/AdminDashboardScreen.js`
+- **Mô tả**:
+  1. **[Tăng trưởng doanh thu động]**: 
+     - Web (`revenue.js`): Thay thế trend cố định tháng trước/tháng này bằng cách tính động: Hôm nay/Hôm qua so với ngày trước, 7/30 ngày so sánh tổng doanh thu nửa sau kỳ lọc với nửa đầu kỳ lọc (ví dụ: 7 ngày qua vs 7 ngày trước đó).
+     - Mobile (`AdminRevenueScreen.js`): Tích hợp logic tương tự chia mảng `daily` thành 2 kỳ để tính toán trend chênh lệch tăng/giảm thực tế, cập nhật động icon `TrendingUp`/`TrendingDown` và màu sắc phù hợp.
+  2. **[Thiết kế PDF hóa đơn]**: Viết lại template in (`invoice-template.js`) sử dụng bảng `table` lồng nhau không viền thay vì flexbox/grid CSS giúp bản in luôn khớp khít trang A4, không bị tràn hay vỡ khung.
+  3. **[Check-in chéo]**: Trên cả Web (`checkin.js`) và Mobile (`AdminDashboardScreen.js`), khi lễ tân/admin xem danh sách ở chế độ xem tất cả chi nhánh và có tập chéo, thông tin địa điểm hiển thị rõ ràng dạng: `Chi nhánh gốc → Chi nhánh thực hiện` (tô chữ màu đỏ).
+- **Kết quả**: Thành công.
 
 ### [12/06/2026 09:48] — Làm mờ toàn bộ mốc giờ khi chọn ngày đặt lịch PT ở quá khứ
 - **Loại**: Sửa lỗi & Nghiệp vụ (Frontend Web)
