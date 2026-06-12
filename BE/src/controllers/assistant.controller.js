@@ -1,5 +1,11 @@
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import db from '../config/db.js';
 import { success, error } from '../utils/response.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // ── SCHEMA MÔ TẢ CHO AI ────────────────────────────────────────────────────
 const DB_SCHEMA_DESCRIPTION = `
@@ -17,9 +23,9 @@ Cơ sở dữ liệu SQLite của hệ thống phòng tập Paradise GYM.
 - Bảng goi_pt: cột giá là "gia", loại là "loai_goi" ('theo_buoi'|'theo_thang'), số buổi là "so_buoi", số tháng là "so_thang"
 
 CÁC BẢNG CHÍNH:
-- vai_tro(id, ma_vai_tro['admin'|'le_tan'|'pt'|'hoi_vien'], ten_hien_thi)
+- vai_tro(id, ma_vai_tro['admin'|'nhan_vien'|'pt'|'hoi_vien'], ten_hien_thi)
 - tai_khoan(id, ten_dang_nhap, mat_khau_hash, vai_tro_id[FK→vai_tro.id], trang_thai['hoat_dong'|'khoa'|'cho_xac_nhan'], ngay_tao)
-- ho_so(id, tai_khoan_id, ma_ho_so, loai_ho_so['hoi_vien'|'pt'|'nhan_vien'|'le_tan'], ho_ten, gioi_tinh['nam'|'nu'|'khac'], ngay_sinh, so_dien_thoai, email, avatar_url, chieu_cao_cm, can_nang_kg, is_deleted[0|1], ngay_tao)
+- ho_so(id, tai_khoan_id, ma_ho_so, loai_ho_so['hoi_vien'|'pt'|'nhan_vien'], ho_ten, gioi_tinh['nam'|'nu'|'khac'], ngay_sinh, so_dien_thoai, email, avatar_url, chieu_cao_cm, can_nang_kg, is_deleted[0|1], ngay_tao)
 - goi_tap(id, ten_goi, so_thang, so_ngay_them, gia, mo_ta, is_deleted[0|1], ngay_tao)
 - goi_pt(id, ten_goi, loai_goi['theo_buoi'|'theo_thang'], so_buoi, so_thang, gia, mo_ta, is_deleted[0|1], ngay_tao)
 - dang_ky_goi_tap(id, ho_so_id[FK→ho_so.id], goi_tap_id[FK→goi_tap.id], tu_ngay, den_ngay, gia_thuc_te, trang_thai['dang_hoat_dong'|'het_han'|'huy'|'tam_dung'|'cho_duyet'], phuong_thuc_tt, nguoi_thu_id, ngay_tao)
@@ -27,8 +33,8 @@ CÁC BẢNG CHÍNH:
 - lich_tap(id, dang_ky_pt_id[FK→dang_ky_pt.id], hoi_vien_id[FK→ho_so.id], pt_id[FK→ho_so.id], ngay_tap[DATE], gio_bat_dau, gio_ket_thuc, loai_buoi['ca_nhan'|'nhom'], trang_thai['cho_tap'|'da_tap'|'da_huy'|'vang'], ngay_tao)
 - luot_vao_ra(id, ho_so_id[FK→ho_so.id], thoi_diem[DATETIME], loai['vao'|'ra'], phuong_thuc['the_tu'|'qr_code'|'thu_cong'|'khuon_mat'])
 - doanh_thu(id, ngay[DATE UNIQUE], tong_tien, tong_don, tien_goi_tap, tien_goi_pt, ngay_cap_nhat)
-- danh_gia_pt(id, lich_tap_id, pt_id, hoi_vien_id, so_sao[1-5], noi_dung, ngay_tao)
-- thong_bao(id, loai, tieu_de, noi_dung, danh_cho['admin'|'le_tan'|'ca_hai'], da_doc[0|1], ngay_tao)
+- danh_gia_pt(id, lich_tap_id, pt_id, hoi_vien_id, so_sao[1-5], tieu_chi_json, tag_json, noi_dung, ngay_tao)
+- thong_bao(id, loai, tieu_de, noi_dung, danh_cho['admin'|'nhan_vien'|'ca_hai'], da_doc[0|1], ngay_tao)
 - yeu_cau_goi_tap(id, ho_so_id[FK→ho_so.id], dang_ky_id[FK→dang_ky_goi_tap.id], loai_yeu_cau['gia_han'|'tam_dung'|'huy'], trang_thai['cho_duyet'|'da_duyet'|'tu_choi'], ngay_tao)
 - noi_quy(id, tieu_de, noi_dung, thu_tu, ap_dung_cho['tat_ca'|'hoi_vien'|'pt'|'nhan_vien'], is_active[0|1])
 - cau_hinh(khoa, gia_tri, mo_ta)
@@ -65,9 +71,8 @@ CÁC CỘT LỌC CHI NHÁNH:
 - dang_ky_pt.chi_nhanh_dang_ky TEXT — chi nhánh đăng ký PT
 - lich_tap.chi_nhanh_tap TEXT — chi nhánh diễn ra buổi tập
 
-Khi lọc theo chi nhánh, dùng điều kiện WHERE tương ứng (ví dụ: AND h.chi_nhanh = 'Chi nhánh A').
+Khi lọc theo chi nhánh, dùng điều kiện WHERE tương ứng (ví dụ: AND h.chi_nhanh = 'Chi nhánh Gò Vấp').
 `;
-
 
 // ── ĐỊNH NGHĨA TOOL CHO GROQ FUNCTION CALLING ─────────────────────────────
 const TOOLS_DEFINITION = [
@@ -119,7 +124,7 @@ function executeSafeSQL(sql, roleName) {
   }
 
   // 3. Kiểm tra bảng nhạy cảm theo role
-  const isAdminOrReceptionist = ['nhan_vien', 'le_tan'].includes(roleName);
+  const isAdminOrReceptionist = ['nhan_vien'].includes(roleName);
   if (!isAdminOrReceptionist) {
     for (const table of SENSITIVE_TABLES) {
       if (new RegExp(`\\b${table}\\b`, 'i').test(trimmedSQL)) {
@@ -290,6 +295,21 @@ export const handleChat = async (req, res) => {
       return error(res, 'Chưa cấu hình API Key cho Trợ lý AI.', 500);
     }
 
+    // Đọc danh sách chi nhánh hoạt động thực tế từ file JSON dùng chung để truyền vào ngữ cảnh AI
+    let branchesList = [];
+    try {
+      const BRANCHES_PATH = path.resolve(__dirname, '../../../FE/assets/data/branches.json');
+      const raw = fs.readFileSync(BRANCHES_PATH, 'utf-8');
+      branchesList = JSON.parse(raw).map(b => b.ten);
+    } catch (err) {
+      // Fallback nếu không đọc được file
+      branchesList = [
+        "Chi nhánh Gò Vấp", "Chi nhánh Bình Thạnh", "Chi nhánh Tân Bình", "Chi nhánh Phú Nhuận",
+        "Chi nhánh Quận 1", "Chi nhánh Quận 3", "Chi nhánh Quận 5", "Chi nhánh Quận 7",
+        "Chi nhánh Quận 10", "Chi nhánh Bình Tân", "Chi nhánh Thủ Đức", "Chi nhánh Nhà Bè"
+      ];
+    }
+
     // Lấy thông tin hồ sơ người dùng
     const userProfile = db.prepare(`
       SELECT id, ho_ten, loai_ho_so, gioi_tinh, chieu_cao_cm, can_nang_kg, kinh_nghiem
@@ -307,6 +327,7 @@ export const handleChat = async (req, res) => {
 
     const accuracyRules = `
 ⚠️ NGUYÊN TẮC VỀ TÍNH CHÍNH XÁC CỦA SỐ LIỆU VÀ NGỮ CẢNH TRẢ LỜI:
+- Hệ thống phòng tập Paradise GYM hiện tại chỉ hoạt động tại TP.HCM với các chi nhánh chuẩn sau: ${branchesList.join(', ')}. Tuyệt đối KHÔNG tự bịa đặt, tưởng tượng hoặc trả về các chi nhánh giả định ở các tỉnh thành khác (như Hà Nội, Đà Nẵng, Hải Phòng...). Nếu truy vấn trống hoặc không có dữ liệu, hãy thông báo trung thực là chưa ghi nhận dữ liệu trong hệ thống.
 - CHỈ sử dụng dữ liệu thống kê hoạt động phòng tập (như tổng số hội viên, lượt check-in, doanh thu hôm nay, số ca tập PT...) hoặc dữ liệu cá nhân (lịch tập, chiều cao, cân nặng...) khi người dùng hỏi các câu hỏi trực tiếp liên quan đến số liệu, báo cáo, tình trạng hoạt động của phòng tập hoặc hồ sơ cá nhân của họ.
 - Đối với các câu hỏi kiến thức chung (ví dụ: mệt mỏi có nên đi tập không, dinh dưỡng, sức khỏe, tư vấn thể chất, kỹ thuật tập luyện, hoặc trò chuyện thông thường), hãy tập trung trả lời kiến thức chuyên môn và tuyệt đối KHÔNG tự động lồng ghép các số liệu thống kê vận hành của phòng tập vào câu trả lời để tránh gây lan man và làm loãng nội dung.
 - Tuyệt đối KHÔNG được tự động nhận sai, "chiều lòng" người dùng hoặc thay đổi số liệu theo khẳng định hay con số chủ quan do người dùng đưa ra (ví dụ: người dùng nói "Doanh thu hôm nay phải là 19.500.000 chứ không phải X").
@@ -316,8 +337,7 @@ export const handleChat = async (req, res) => {
 
     userContext += `Tên người dùng: ${userProfile.ho_ten}. `;
     userContext += `Vai trò: ${roleName === 'hoi_vien' ? 'Hội viên' :
-      roleName === 'pt' ? 'Huấn luyện viên (PT)' :
-        roleName === 'le_tan' ? 'Lễ tân' : 'Quản trị viên (Admin)'
+      roleName === 'pt' ? 'Huấn luyện viên (PT)' : 'Nhân viên'
       }. `;
 
     // ── NGHIỆP VỤ 1: HỘI VIÊN ─────────────────────────────────────────────
@@ -420,7 +440,7 @@ Cách bạn trò chuyện:
 - Câu hỏi về quá khứ hoặc thống kê ("tháng này dạy bao nhiêu buổi?", "học viên nào còn ít buổi nhất?"...): dùng công cụ tra cứu DB để có số liệu chính xác.
 - Luôn dùng tiếng Việt, xưng "mình" hoặc "Parry", gọi PT là "thầy/cô" hoặc "bạn" tùy văn cảnh. Trò chuyện tự nhiên, thân thiện.` + accuracyRules;
 
-      // ── NGHIỆP VỤ 3: ADMIN / LỄ TÂN ──────────────────────────────────────
+      // ── NGHIỆP VỤ 3: ADMIN / LỄ TÂN (NHÂN VIÊN) ───────────────────────────────
     } else {
       const branchLabel = branchFilter ? `Chi nhánh "${branchFilter}"` : 'Toàn hệ thống';
 
@@ -490,7 +510,13 @@ Thống kê phòng tập hôm nay:
 - Yêu cầu chờ duyệt: ${pendingApprovals} đăng ký mới, ${pendingRequests} yêu cầu tạm dừng/gia hạn.`;
 
       const branchSQLNote = branchFilter
-        ? `\n\n⚠️ QUAN TRỌNG: Người dùng đang ở chi nhánh "${branchFilter}". Khi dùng công cụ run_readonly_sql_query, PHẢI luôn thêm điều kiện lọc chi nhánh phù hợp vào câu SQL:\n- Bảng ho_so (alias h): AND h.chi_nhanh = '${branchFilter}'\n- Bảng luot_vao_ra (alias lv): AND lv.chi_nhanh_thuc_hien = '${branchFilter}'\n- Bảng dang_ky_goi_tap (alias dk): PHẢI JOIN ho_so h ON h.id = dk.ho_so_id rồi AND h.chi_nhanh = '${branchFilter}' (KHÔNG dùng dk.chi_nhanh_dang_ky vì không đáng tin cậy). Dùng dk.so_tien_da_thu cho doanh thu thực thu.\n- Bảng dang_ky_pt (alias dp): AND dp.chi_nhanh_dang_ky = '${branchFilter}'\n- Bảng lich_tap (alias lt): AND lt.chi_nhanh_tap = '${branchFilter}'\nKhông được trả về dữ liệu của chi nhánh khác.`
+        ? `\n\n⚠️ QUAN TRỌNG: Người dùng đang ở chi nhánh "${branchFilter}". Khi dùng công cụ run_readonly_sql_query, PHẢI luôn thêm điều kiện lọc chi nhánh phù hợp vào câu SQL:
+- Bảng ho_so (alias h): AND h.chi_nhanh = '${branchFilter}'
+- Bảng luot_vao_ra (alias lv): AND lv.chi_nhanh_thuc_hien = '${branchFilter}'
+- Bảng dang_ky_goi_tap (alias dk): PHẢI JOIN ho_so h ON h.id = dk.ho_so_id rồi AND h.chi_nhanh = '${branchFilter}' (KHÔNG dùng dk.chi_nhanh_dang_ky vì không đáng tin cậy). Dùng dk.so_tien_da_thu cho doanh thu thực thu.
+- Bảng dang_ky_pt (alias dp): AND dp.chi_nhanh_dang_ky = '${branchFilter}'
+- Bảng lich_tap (alias lt): AND lt.chi_nhanh_tap = '${branchFilter}'
+Không được trả về dữ liệu của chi nhánh khác.`
         : '';
 
       systemInstruction = `Bạn tên là Parry — trợ lý AI quản lý thông minh của phòng tập Paradise GYM (${new Date().toLocaleDateString('vi-VN')}). Bạn như một người trợ lý đắc lực, nắm rõ mọi số liệu vận hành và luôn sẵn sàng báo cáo nhanh, phân tích kịp thời để giúp việc quản lý nhẹ nhàng hơn.
@@ -508,13 +534,11 @@ Cách bạn làm việc:
     }
 
     // ── DANH SÁCH MODEL DỰ PHÒNG (ưu tiên model hỗ trợ tool calling) ──────
-    // Groq models hỗ trợ tool calling tốt nhất hiện tại:
     const modelsWithTools = [
       'llama-3.3-70b-versatile',
       'llama-3.1-8b-instant',
       'llama3-8b-8192'
     ];
-    // Model fallback không dùng tool (nếu tất cả tool model thất bại)
     const modelsFallback = [
       'llama-3.1-8b-instant'
     ];
@@ -526,12 +550,10 @@ Cách bạn làm việc:
     // ── VÒNG LẶP THỬ CÁC MODEL CÓ HỖ TRỢ TOOL ────────────────────────────
     for (const model of modelsWithTools) {
       try {
-        // Khởi tạo conversation messages
         const conversationMessages = [
           { role: 'user', content: message }
         ];
 
-        // Bước 1: Gửi tin nhắn ban đầu với tools
         let data = await callGroqWithTools(apiKey, systemInstruction, conversationMessages, model, true);
         const firstChoice = data.choices?.[0];
 
@@ -542,14 +564,10 @@ Cách bạn làm việc:
 
         const assistantMsg = firstChoice.message;
 
-        // Bước 2: Nếu AI muốn gọi tool → thực thi và phản hồi
         if (firstChoice.finish_reason === 'tool_calls' && assistantMsg.tool_calls?.length > 0) {
           console.log(`[AI Tool] Model ${model} yêu cầu ${assistantMsg.tool_calls.length} tool call(s)`);
-
-          // Thêm phản hồi assistant vào conversation
           conversationMessages.push(assistantMsg);
 
-          // Thực thi từng tool call
           for (const toolCall of assistantMsg.tool_calls) {
             let toolResult;
             try {
@@ -572,7 +590,6 @@ Cách bạn làm việc:
               });
             }
 
-            // Thêm kết quả tool vào conversation
             conversationMessages.push({
               role: 'tool',
               tool_call_id: toolCall.id,
@@ -580,7 +597,6 @@ Cách bạn làm việc:
             });
           }
 
-          // Bước 3: Gửi lại conversation với kết quả tool để AI tổng hợp trả lời
           data = await callGroqWithTools(apiKey, systemInstruction, conversationMessages, model, false);
           const secondChoice = data.choices?.[0];
 
@@ -591,7 +607,6 @@ Cách bạn làm việc:
             break;
           }
         } else if (assistantMsg?.content) {
-          // AI trả lời trực tiếp không cần tool
           reply = assistantMsg.content;
           successCall = true;
           console.log(`[AI Assistant] Model ${model} trả lời trực tiếp thành công`);
@@ -605,12 +620,13 @@ Cách bạn làm việc:
       }
     }
 
-    // ── FALLBACK TIER 2: Groq không có tool (mixtral) ─────────────────────
+    // ── FALLBACK TIER 2: Groq không có tool ─────────────────────
     if (!successCall) {
       console.warn('[AI Assistant] Tất cả Groq tool models thất bại, thử Groq fallback...');
+      const fallbackInstruction = systemInstruction + '\n\n⚠️ LƯU Ý QUAN TRỌNG: Hiện tại công cụ run_readonly_sql_query đang tạm thời BỊ TẮT (offline). Bạn KHÔNG THỂ thực hiện truy vấn cơ sở dữ liệu hay chạy bất kỳ câu lệnh SQL nào. Hãy sử dụng thông tin tĩnh sẵn có hoặc trả lời lịch sự là hệ thống thống kê đang bận, tuyệt đối không được tự bịa ra quá trình truy vấn giả lập hay tự bịa ra kết quả bảng số liệu.';
       for (const model of modelsFallback) {
         try {
-          const data = await callGroqWithTools(apiKey, systemInstruction, [
+          const data = await callGroqWithTools(apiKey, fallbackInstruction, [
             { role: 'user', content: message }
           ], model, false);
 
@@ -636,12 +652,9 @@ Cách bạn làm việc:
         try {
           const conversationMessages = [{ role: 'user', content: message }];
 
-          // Bước 1: Gửi lên Gemini với tool calling
           let geminiData = await callGeminiWithTools(geminiKey, systemInstruction, conversationMessages, true);
           const candidate = geminiData.candidates?.[0];
           const parts = candidate?.content?.parts || [];
-
-          // Kiểm tra xem Gemini có muốn gọi tool không
           const functionCallPart = parts.find(p => p.functionCall);
 
           if (functionCallPart) {
@@ -659,8 +672,6 @@ Cách bạn làm việc:
               toolResult = { success: false, error: toolErr.message };
             }
 
-            // Bước 2: Gửi kết quả tool về Gemini để tổng hợp
-            // Thêm model turn (functionCall) và user turn (functionResponse)
             const messagesWithTool = [
               { role: 'user', content: message },
               {
@@ -686,7 +697,6 @@ Cách bạn làm việc:
               console.log(`[AI Assistant] Gemini trả lời sau tool call thành công`);
             }
           } else {
-            // Gemini trả lời trực tiếp không cần tool
             const textPart = parts.find(p => p.text);
             if (textPart?.text) {
               reply = textPart.text;

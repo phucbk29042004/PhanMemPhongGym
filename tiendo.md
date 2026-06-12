@@ -8,9 +8,51 @@
 ---
 
 ## 📌 Trạng thái hiện tại
-**✅ Đồng bộ giao diện avatar preview thành hình tròn hoàn hảo** — Bo tròn các ảnh avatar preview (Admin Profile, HLV/PT, Hội viên, Nhân viên) khi xem và khi chọn ảnh mới để đảm bảo tính thẩm mỹ, đồng bộ.
+**✅ Sửa lỗi check-in chéo, check-out và vô hiệu hóa giờ quá khứ đặt lịch PT** — Truyền chi nhánh thực hiện khi scan QR và checkout; sửa logic gom nhóm lượt vao/ra tránh lỗi hiển thị nhầm "Đã ra"; làm mờ và vô hiệu hóa các mốc giờ đã qua trong ngày và toàn bộ giờ khi chọn ngày quá khứ khi đặt lịch PT.
 
 ---
+
+### [12/06/2026 09:48] — Làm mờ toàn bộ mốc giờ khi chọn ngày đặt lịch PT ở quá khứ
+- **Loại**: Sửa lỗi & Nghiệp vụ (Frontend Web)
+- **File**: `FE/assets/js/pages/members-list.js`
+- **Mô tả**: Bổ sung kiểm tra điều kiện ngày quá khứ trong hàm `updateAvailableTimeSlots()`. Nếu `selectedDate < todayStr`, biến `isPast` được gán thành `true` cho tất cả các mốc giờ bắt đầu, tự động làm mờ và chặn không cho chọn bất kỳ khung giờ nào của ngày đã qua.
+- **Kết quả**: Thành công.
+
+### [12/06/2026 09:46] — Làm mờ và vô hiệu hóa các mốc giờ trong quá khứ khi đặt lịch tập PT
+- **Loại**: Chỉnh sửa giao diện UI/UX & Nghiệp vụ (Frontend Web)
+- **File**: `FE/assets/js/pages/members-list.js`
+- **Mô tả**:
+  * Phát triển hàm `updateAvailableTimeSlots()` trong modal đặt lịch PT của hội viên.
+  * Nếu chọn ngày hôm nay, tự động kiểm tra giờ hệ thống để gán `disabled = true` và đổi style màu xám (background `#f1f1f1`, color `#c0c0c0`, cursor `not-allowed`) cho các mốc giờ đã qua trong ngày.
+  * Lắng nghe sự kiện `change` của trường chọn ngày `#sch-date` để tự động bật/tắt lại các mốc giờ khi người dùng chọn sang ngày tương lai.
+- **Kết quả**: Thành công.
+
+### [12/06/2026 09:40] — Sửa lỗi check-in chéo chi nhánh và ghép cặp check-out
+- **Loại**: Sửa bug (Fullstack Web & Mobile)
+- **File**: `FE/assets/js/app.js`, `FE/assets/js/pages/checkin.js`, `MobileApp/src/screens/admin/AdminDashboardScreen.js`
+- **Mô tả**:
+  1. **[Scan QR & Checkout thủ công]**: Truyền thêm `chi_nhanh` và `chi_nhanh_thuc_hien` tương ứng với chi nhánh đang hoạt động (`window.GymApp.selectedBranch`) để backend ghi nhận đúng địa điểm tập chéo của hội viên.
+  2. **[Logic gom nhóm check-in]**: Sửa hàm `_getGroupedVisits` trong `checkin.js` để chỉ ghép lượt `vao` mới nhất với lượt `ra` diễn ra SAU nó, khắc phục triệt để lỗi chưa bấm check-out nhưng vẫn hiện "Đã ra" từ lượt check-out cũ.
+  3. **[Đồng bộ hiển thị tập chéo]**: Sửa giao diện hiển thị trên cả Web (card check-in, bảng chi tiết) và Mobile (modal check-in) để hiển thị chi nhánh gốc của hội viên với màu đỏ nổi bật thay vì hiển thị chi nhánh thực hiện khi tập chéo.
+- **Kết quả**: Thành công.
+
+### [12/06/2026 09:08] — Sửa 3 lỗi nghiệp vụ (Check-in, Gói tập, Gói PT)
+- **Loại**: Sửa bug (Fullstack)
+- **File**: `BE/src/controllers/members.controller.js`, `BE/src/controllers/pt-registrations.controller.js`, `FE/assets/js/pages/checkin.js`
+- **Mô tả**:
+  1. **[Bug #1 - BE] Ngày thanh toán cho phép ngày quá khứ khi đăng ký gói tập**: Thêm validate `ngay_thanh_toan < todayStr` trong hàm `registerPackage`. Trả về lỗi 400 nếu ngày thanh toán nhỏ hơn hôm nay.
+  2. **[Bug #2 - FE] Check-in hôm nay hiển thị sai và nút Check-out không ẩn**: Viết lại `_getGroupedVisits` dùng `Map` thay vì `Set` — nhóm đầy đủ bản `vao`/`ra` theo `ho_so_id` trước khi render, đảm bảo hội viên đã check-out sẽ hiển thị đúng `raRecord` và không còn nút Check-out. Sửa `_renderDetailTable` thêm `hasCheckedOut` để ẩn nút check-out khi đã có bản `ra`.
+  3. **[Bug #3 - BE] Gói PT sửa tu_ngay về hôm nay nhưng vẫn là chờ kích hoạt**: Thêm logic tái tính `trang_thai` trong `updateRegistration` — so sánh `tu_ngay` cuối cùng với `todayStr` để xác định `dang_hoat_dong` hay `cho_kich_hoat`, cập nhật cùng lúc với các trường khác.
+- **Kết quả**: Thành công.
+
+### [11/06/2026 22:30] — Khắc phục lỗi xuất Excel, sửa lỗi AI Chatbot Parry và cập nhật slide thuyết trình
+- **Loại**: Sửa lỗi & Bổ sung chức năng (Fullstack)
+- **File**: `BE/src/controllers/export.controller.js`, `FE/assets/js/pages/members-list.js`, `FE/assets/js/pages/revenue.js`, `FE/assets/js/pages/pt-training.js`, `BE/src/controllers/assistant.controller.js`, `slide_thuyet_trinh.md`
+- **Mô tả**:
+  - **Khắc phục lỗi xuất Excel**: Chuyển đổi định dạng xuất báo cáo (Hội viên, PT, Doanh thu, Lịch PT) sang file `.xlsx` thực tế dùng SheetJS, hỗ trợ tự động bật bộ lọc AutoFilter cho dòng tiêu đề, tự căn chỉnh độ rộng cột và lọc theo chi nhánh đang hoạt động.
+  - **Sửa lỗi AI Chatbot**: Đồng bộ vai trò `le_tan` thành `nhan_vien` trong hướng dẫn schema cho AI, đọc danh sách 12 chi nhánh từ `branches.json`, sửa mô tả bảng đánh giá PT và cấm AI bịa đặt dữ liệu chi nhánh khi offline.
+  - **Slide thuyết trình**: Chuẩn bị nội dung Slide 2 về mục tiêu cho phòng gym vừa và nhỏ; làm rõ phần hiệu quả đạt được (vận hành, tài chính, trải nghiệm) và định hướng tương lai (IoT, AI, Franchise) ở slide cuối.
+- **Kết quả**: Thành công.
 
 ### [11/06/2026 13:30] — Đồng bộ giao diện avatar preview thành hình tròn hoàn hảo
 - **Loại**: Chỉnh sửa giao diện UI/UX (Frontend Web)
@@ -1918,3 +1960,18 @@
   - **Backend**: Loại bỏ điều kiện `AND h.loai_ho_so = 'hoi_vien'` trong hàm `getMemberById` để cho phép truy vấn thông tin chi tiết của hồ sơ Nhân viên (`nhan_vien`) và Huấn luyện viên (`pt`), giải quyết triệt để lỗi `Request failed with status code 404` khi mở trang chi tiết hoặc trang chỉnh sửa trên di động.
   - **Mobile App**: Bao bọc phần hiển thị **Gói tập Gym** và **Hợp đồng PT** bằng điều kiện `{member?.loai_ho_so === 'hoi_vien' && (...)}` để ẩn các phần này và ngăn việc hiển thị nút đăng ký/gia hạn gói tập cho Nhân viên/PT. Cập nhật tiêu đề và nhãn phụ hiển thị đúng vai trò của hồ sơ (Huấn luyện viên/Nhân viên) thay vì mặc định hiển thị "Hội viên" hay "Standard".
 - **Kết quả**: Thành công.
+
+### [11/06/2026 21:15] — Khắc phục lỗi xuất Excel không theo chi nhánh, không đúng đuôi XLSX và không filter được
+- **Loại**: Sửa bug nghiêm trọng & Cải tiến tính năng (Fullstack)
+- **File**:
+  - `BE/src/controllers/export.controller.js`
+  - `FE/assets/js/pages/members-list.js`
+  - `FE/assets/js/pages/revenue.js`
+  - `FE/assets/js/pages/pt-training.js`
+- **Mô tả**:
+  - **Chuyển đổi CSV sang XLSX**: Thay thế cơ chế tự nối chuỗi CSV cũ bằng việc sử dụng thư viện `xlsx` (SheetJS) có sẵn ở Backend để trả về tệp Excel nhị phân `.xlsx` thực tế, giúp loại bỏ các lỗi vỡ font tiếng Việt hay lỗi định dạng chuỗi số điện thoại.
+  - **Tính năng AutoFilter & Tự căn cột**: Tích hợp cấu hình `!autofilter` giúp Excel tự động bật bộ lọc (Filter) cho tất cả các cột dữ liệu khi mở file. Đồng thời tự động tính toán độ rộng tối ưu cho từng cột dựa theo chiều dài nội dung.
+  - **Lọc theo Chi nhánh**:
+    - **Frontend**: Truyền thêm giá trị `chi_nhanh` (lấy từ `window.GymApp.selectedBranch`) vào query string của API xuất và đổi đuôi tệp tải xuống thành `.xlsx`.
+    - **Backend**: Nhận tham số `chi_nhanh` và áp dụng điều kiện `WHERE` vào SQL query. Riêng với thống kê Doanh thu chi nhánh, hệ thống tự động tính toán thực tế từ các bảng giao dịch `dang_ky_goi_tap` và `dang_ky_pt` thay vì bảng tổng hợp `doanh_thu` chung.
+- **Kết quả**: Thành công. Dữ liệu tải về chuẩn xác, đẹp đẽ và có thể lọc dữ liệu dễ dàng.

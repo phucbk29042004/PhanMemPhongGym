@@ -3848,15 +3848,71 @@ window.GymApp.pages['members-list'] = {
     }
 
     let selectedTime = '';
+    const updateAvailableTimeSlots = () => {
+      const selectedDate = document.getElementById('sch-date')?.value;
+      if (!selectedDate) return;
+
+      const now = new Date();
+      const todayStr = now.toLocaleDateString('sv', { timeZone: 'Asia/Ho_Chi_Minh' }).split(' ')[0];
+      const isPastDay = selectedDate < todayStr;
+      const isToday = selectedDate === todayStr;
+
+      const currentHour = now.getHours();
+      const currentMin = now.getMinutes();
+
+      overlay.querySelectorAll('.time-slot-btn').forEach(btn => {
+        const timeVal = btn.dataset.time;
+        const [h, mn] = timeVal.split(':').map(Number);
+        const isPast = isPastDay || (isToday && (h < currentHour || (h === currentHour && mn <= currentMin)));
+
+        if (isPast) {
+          btn.disabled = true;
+          btn.style.background = '#f1f1f1';
+          btn.style.color = '#c0c0c0';
+          btn.style.cursor = 'not-allowed';
+          btn.style.transform = 'scale(1)';
+          if (selectedTime === timeVal) {
+            selectedTime = '';
+            const display = document.getElementById('sch-time-display');
+            if (display) {
+              display.textContent = 'Chưa chọn giờ';
+              display.style.color = '';
+              display.style.fontWeight = '';
+            }
+          }
+        } else {
+          btn.disabled = false;
+          btn.style.cursor = 'pointer';
+          if (timeVal === selectedTime) {
+            btn.style.background = '#1D9336';
+            btn.style.color = '#fff';
+          } else {
+            btn.style.background = '';
+            btn.style.color = '';
+          }
+        }
+      });
+    };
+
     overlay.querySelectorAll('.time-slot-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        overlay.querySelectorAll('.time-slot-btn').forEach(b => { b.style.transform = 'scale(1)'; b.style.background = ''; b.style.color = ''; });
-        btn.style.transform = 'scale(1.05)'; btn.style.background = '#1D9336'; btn.style.color = '#fff';
+        if (btn.disabled) return;
         selectedTime = btn.dataset.time;
+        overlay.querySelectorAll('.time-slot-btn').forEach(b => {
+          if (!b.disabled) {
+            b.style.transform = 'scale(1)';
+            b.style.background = b.dataset.time === selectedTime ? '#1D9336' : '';
+            b.style.color = b.dataset.time === selectedTime ? '#fff' : '';
+          }
+        });
+        btn.style.transform = 'scale(1.05)';
         const display = document.getElementById('sch-time-display');
         display.textContent = `Đã chọn: ${selectedTime}`; display.style.color = '#1D9336'; display.style.fontWeight = '700';
       });
     });
+
+    document.getElementById('sch-date')?.addEventListener('change', updateAvailableTimeSlots);
+    updateAvailableTimeSlots();
     const close = () => overlay.remove();
     document.getElementById('close-sub-modal').addEventListener('click', close);
     document.getElementById('sch-cancel-btn').addEventListener('click', close);
@@ -5388,14 +5444,16 @@ window.GymApp.pages['members-list'] = {
     document.getElementById('btn-export-members')?.addEventListener('click', async () => {
       window.GymApp.toast('Đang xuất danh sách hội viên...', 'info');
       const q = document.getElementById('member-search')?.value || '';
-      const ok = await window.GymApp.api.download('/export/members?loai_ho_so=hoi_vien&search=' + encodeURIComponent(q), 'danh-sach-hoi-vien.csv');
+      const branch = window.GymApp.selectedBranch || '';
+      const ok = await window.GymApp.api.download('/export/members?loai_ho_so=hoi_vien&search=' + encodeURIComponent(q) + '&chi_nhanh=' + encodeURIComponent(branch), 'danh-sach-hoi-vien.xlsx');
       if (ok) window.GymApp.toast('Đã tải xuống file Excel hội viên!', 'success');
     });
 
     document.getElementById('btn-export-pts')?.addEventListener('click', async () => {
       window.GymApp.toast('Đang xuất danh sách huấn luyện viên...', 'info');
       const q = document.getElementById('pt-search')?.value || '';
-      const ok = await window.GymApp.api.download('/export/members?loai_ho_so=pt&search=' + encodeURIComponent(q), 'danh-sach-pt.csv');
+      const branch = window.GymApp.selectedBranch || '';
+      const ok = await window.GymApp.api.download('/export/members?loai_ho_so=pt&search=' + encodeURIComponent(q) + '&chi_nhanh=' + encodeURIComponent(branch), 'danh-sach-pt.xlsx');
       if (ok) window.GymApp.toast('Đã tải xuống file Excel PT!', 'success');
     });
 

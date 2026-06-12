@@ -813,6 +813,11 @@ export const registerPackage = (req, res) => {
     return error(res, 'Ngày bắt đầu không được là ngày trong quá khứ.', 400);
   }
 
+  // Validate ngày thanh toán không được là ngày quá khứ
+  if (ngay_thanh_toan && ngay_thanh_toan < todayStr) {
+    return error(res, 'Ngày thanh toán không được là ngày trong quá khứ.', 400);
+  }
+
   // Tự động hủy toàn bộ các yêu cầu gia hạn đang ở trạng thái 'cho_duyet' của hội viên này
   db.prepare(`
     UPDATE dang_ky_goi_tap

@@ -375,6 +375,8 @@
     if (typeof AirDatepicker !== 'undefined') {
       const inputs = container.querySelectorAll('input[type="date"]:not([data-airpicker])');
       inputs.forEach(originalInput => {
+        // Bỏ qua nếu element chưa attached vào DOM (tránh lỗi AirDatepicker với opts undefined)
+        if (!originalInput.isConnected) return;
         originalInput.setAttribute('data-airpicker', 'true');
         const originalStyle = originalInput.style.cssText;
         originalInput.style.display = 'none';
@@ -989,20 +991,29 @@
     // Khởi tạo Flatpickr cho toàn trang và auto-init
     if (window.GymApp.initDatePickers) {
       window.GymApp.initDatePickers(document.body);
+      let _dpDebounceTimer = null;
       const observer = new MutationObserver((mutations) => {
-        mutations.forEach(mutation => {
-          if (mutation.addedNodes.length) {
-            mutation.addedNodes.forEach(node => {
-              if (node.nodeType === 1) { // ELEMENT_NODE
-                if (node.tagName === 'INPUT' && node.type === 'date') {
-                  window.GymApp.initDatePickers(node.parentElement);
-                } else if (node.querySelectorAll) {
-                  window.GymApp.initDatePickers(node);
+        // Debounce: chỉ xử lý sau 80ms kể từ lần cuối có thay đổi DOM
+        // Tránh vòng lặp: chính initDatePickers thêm visibleInput → trigger observer → gọi lại
+        clearTimeout(_dpDebounceTimer);
+        _dpDebounceTimer = setTimeout(() => {
+          mutations.forEach(mutation => {
+            if (mutation.addedNodes.length) {
+              mutation.addedNodes.forEach(node => {
+                if (node.nodeType === 1 && node.isConnected) { // Chỉ xử lý element đã attached vào DOM
+                  if (node.tagName === 'INPUT' && node.type === 'date' && !node.hasAttribute('data-airpicker')) {
+                    window.GymApp.initDatePickers(node.parentElement);
+                  } else if (node.querySelectorAll) {
+                    // Kiểm tra có chứa input date chưa init không trước khi gọi
+                    if (node.querySelector('input[type="date"]:not([data-airpicker])')) {
+                      window.GymApp.initDatePickers(node);
+                    }
+                  }
                 }
-              }
-            });
-          }
-        });
+              });
+            }
+          });
+        }, 80);
       });
       observer.observe(document.body, { childList: true, subtree: true });
     }
@@ -1245,7 +1256,10 @@
       _showLoading();
 
       try {
-        const res = await window.GymApp.api.post('/checkin/scan', { qr_token: qrToken });
+        const res = await window.GymApp.api.post('/checkin/scan', { 
+          qr_token: qrToken,
+          chi_nhanh: window.GymApp.selectedBranch || ''
+        });
         if (res?.success) {
           _showSuccess(res.data, res.message);
         } else {

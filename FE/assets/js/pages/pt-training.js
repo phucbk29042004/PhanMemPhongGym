@@ -535,9 +535,18 @@ window.GymApp.pages['pt-training'] = {
     document.getElementById('btn-export-schedules')?.addEventListener('click', async () => {
       window.GymApp.toast('Đang xuất lịch tập PT...', 'info');
       const ptId = self._filterPt;
-      let url = '/export/pt-schedules';
-      if (ptId) url += '?pt_id=' + ptId;
-      const ok = await window.GymApp.api.download(url, 'lich-pt.csv');
+      const fromDate = self._filterFrom;
+      const toDate = self._filterTo;
+      const branch = window.GymApp.selectedBranch || '';
+
+      const params = [];
+      if (ptId) params.push('pt_id=' + encodeURIComponent(ptId));
+      if (fromDate) params.push('tu_ngay=' + encodeURIComponent(fromDate));
+      if (toDate) params.push('den_ngay=' + encodeURIComponent(toDate));
+      if (branch) params.push('chi_nhanh=' + encodeURIComponent(branch));
+
+      const query = params.length ? '?' + params.join('&') : '';
+      const ok = await window.GymApp.api.download('/export/pt-schedules' + query, 'lich-pt.xlsx');
       if (ok) window.GymApp.toast('Đã tải xuống file Excel lịch tập PT!', 'success');
     });
 

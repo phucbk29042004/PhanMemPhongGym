@@ -252,6 +252,14 @@ export const updateRegistration = (req, res) => {
     if (!pt) return error(res, 'Không tìm thấy PT mới.', 404);
   }
 
+  const finalTuNgay = tu_ngay || old.tu_ngay;
+  const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
+  // Tái tính trang_thai dựa trên tu_ngay cuối cùng (chỉ áp dụng khi gói chưa bị hủy)
+  let newStatus = old.trang_thai;
+  if (old.trang_thai !== 'huy' && old.trang_thai !== 'hoan_thanh') {
+    newStatus = finalTuNgay > todayStr ? 'cho_kich_hoat' : 'dang_hoat_dong';
+  }
+
   db.prepare(`
     UPDATE dang_ky_pt SET
       pt_id          = COALESCE(?, pt_id),
@@ -261,12 +269,13 @@ export const updateRegistration = (req, res) => {
       den_ngay       = COALESCE(?, den_ngay),
       gia_thuc_te    = COALESCE(?, gia_thuc_te),
       ghi_chu_tt     = COALESCE(?, ghi_chu_tt),
-      ngay_thanh_toan= COALESCE(?, ngay_thanh_toan)
+      ngay_thanh_toan= COALESCE(?, ngay_thanh_toan),
+      trang_thai     = ?
     WHERE id = ?
   `).run(
     pt_id || null, goi_pt_id || null, so_buoi_dang_ky ? parseInt(so_buoi_dang_ky) : null,
     tu_ngay || null, den_ngay || null, gia_thuc_te !== undefined ? parseFloat(gia_thuc_te) : null,
-    ghi_chu || null, tu_ngay || null, id,
+    ghi_chu || null, tu_ngay || null, newStatus, id,
   );
 
   const updated = db.prepare('SELECT * FROM dang_ky_pt WHERE id = ?').get(id);

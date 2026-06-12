@@ -1524,7 +1524,8 @@ window.GymApp.pages['revenue'] = {
     document.getElementById('btn-export-revenue')?.addEventListener('click', async () => {
       window.GymApp.toast('Đang xuất báo cáo doanh thu...', 'info');
       const daysParam = (self._days === 'today' || self._days === 'yesterday') ? 1 : self._days;
-      const ok = await window.GymApp.api.download(`/export/revenue?days=${daysParam}`, `bao-cao-doanh-thu-${self._days}-ngay.csv`);
+      const branch = window.GymApp.selectedBranch || '';
+      const ok = await window.GymApp.api.download(`/export/revenue?days=${daysParam}&chi_nhanh=${encodeURIComponent(branch)}`, `bao-cao-doanh-thu-${self._days}-ngay.xlsx`);
       if (ok) window.GymApp.toast('Đã tải xuống file Excel doanh thu!', 'success');
     });
   },
