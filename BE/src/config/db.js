@@ -51,6 +51,9 @@ try { db.exec(`ALTER TABLE ho_so ADD COLUMN can_nang_kg REAL;`); } catch (_) { }
 try { db.exec(`ALTER TABLE dang_ky_pt ADD COLUMN ngay_tao DATETIME DEFAULT (datetime('now','localtime'));`); } catch (_) { }
 try { db.exec(`ALTER TABLE dang_ky_goi_tap ADD COLUMN so_tien_da_thu REAL DEFAULT 0;`); } catch (_) { }
 try { db.exec(`ALTER TABLE ho_so ADD COLUMN trang_thai_lam_viec TEXT NOT NULL DEFAULT 'hoat_dong' CHECK (trang_thai_lam_viec IN ('hoat_dong','tam_nghi'));`); } catch (_) { }
+try { db.exec(`ALTER TABLE dang_ky_pt ADD COLUMN payos_order_code INTEGER;`); } catch (_) { }
+try { db.exec(`ALTER TABLE dang_ky_pt ADD COLUMN payos_status TEXT DEFAULT 'PENDING';`); } catch (_) { }
+
 
 // ── Migration: Chuyển đổi le_tan thành nhan_vien ───────────
 try {
@@ -1754,5 +1757,43 @@ try {
 } catch (e) {
   console.error('[DB] ❌ Lỗi khi tự động sửa so_tien_da_thu cho dang_ky_goi_tap:', e.message);
 }
+
+// ── Migration v23: Thêm config keys toggle thông báo tự động ──────────────────
+db.prepare(`INSERT OR IGNORE INTO cau_hinh (khoa, gia_tri, mo_ta) VALUES (?, ?, ?)`).run(
+  'notif_sap_het_han', '1', 'Gửi thông báo sắp hết hạn gói tập (1=bật, 0=tắt)'
+);
+db.prepare(`INSERT OR IGNORE INTO cau_hinh (khoa, gia_tri, mo_ta) VALUES (?, ?, ?)`).run(
+  'notif_het_han', '1', 'Gửi thông báo hết hạn gói tập (1=bật, 0=tắt)'
+);
+db.prepare(`INSERT OR IGNORE INTO cau_hinh (khoa, gia_tri, mo_ta) VALUES (?, ?, ?)`).run(
+  'notif_sinh_nhat', '1', 'Gửi thông báo sinh nhật hội viên (1=bật, 0=tắt)'
+);
+db.prepare(`INSERT OR IGNORE INTO cau_hinh (khoa, gia_tri, mo_ta) VALUES (?, ?, ?)`).run(
+  'notif_sap_het_buoi_pt', '1', 'Gửi thông báo sắp hết buổi PT (1=bật, 0=tắt)'
+);
+db.prepare(`INSERT OR IGNORE INTO cau_hinh (khoa, gia_tri, mo_ta) VALUES (?, ?, ?)`).run(
+  'notif_tom_tat_buoi_sang', '1', 'Gửi tóm tắt buổi sáng hàng ngày cho admin (1=bật, 0=tắt)'
+);
+db.prepare(`INSERT OR IGNORE INTO cau_hinh (khoa, gia_tri, mo_ta) VALUES (?, ?, ?)`).run(
+  'notif_pt_chua_checkin', '1', 'Cảnh báo PT chưa check-in trước buổi tập (1=bật, 0=tắt)'
+);
+console.log('[DB] ✅ Migration v23: Config toggle thông báo tự động đã được khởi tạo.');
+
+// ── Migration v24: Tạo bảng khuyen_mai ────────────────────────────────────────
+db.exec(`
+  CREATE TABLE IF NOT EXISTS khuyen_mai (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    ten           TEXT NOT NULL,
+    loai          TEXT NOT NULL CHECK (loai IN ('phan_tram', 'so_tien')),
+    gia_tri       REAL NOT NULL CHECK (gia_tri > 0),
+    ngay_het_han  DATE,
+    mo_ta         TEXT,
+    is_active     INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0,1)),
+    nguoi_tao_id  INTEGER REFERENCES tai_khoan(id),
+    ngay_tao      DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
+    ngay_cap_nhat DATETIME NOT NULL DEFAULT (datetime('now','localtime'))
+  );
+`);
+console.log('[DB] ✅ Migration v24: Bảng khuyen_mai đã sẵn sàng.');
 
 export default db;

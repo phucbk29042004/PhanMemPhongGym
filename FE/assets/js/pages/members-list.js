@@ -948,7 +948,6 @@ window.GymApp.pages['members-list'] = {
 
     const close = () => overlay.remove();
     document.getElementById('close-pt-modal').addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
     const escH = e => { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', escH); } };
     document.addEventListener('keydown', escH);
   },
@@ -1377,7 +1376,6 @@ window.GymApp.pages['members-list'] = {
 
     document.getElementById('close-pt-edit-modal').addEventListener('click', close);
     document.getElementById('cancel-pt-edit').addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
 
     document.getElementById('save-pt-edit').addEventListener('click', async () => {
       const btn = document.getElementById('save-pt-edit');
@@ -1587,7 +1585,6 @@ window.GymApp.pages['members-list'] = {
 
     const close = () => overlay.remove();
     document.getElementById('close-member-modal').addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
     const escH = e => { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', escH); } };
     document.addEventListener('keydown', escH);
   },
@@ -2229,7 +2226,7 @@ window.GymApp.pages['members-list'] = {
   },
 
   // ===== MODAL THÊM GÓI TẬP — giữ nguyên =====
-  _showAddPackageModal: function (m, onSaved) {
+  _showAddPackageModal: async function (m, onSaved) {
     const self = this;
     document.getElementById('gym-sub-modal')?.remove();
     const pkgs = window.GymApp.data.packages || [];
@@ -2238,6 +2235,13 @@ window.GymApp.pages['members-list'] = {
       : [...new Set(window.GymApp.data.members.map(x => x.ten_goi_tap || x.package))].map(n => ({ name: n, price: 0 }));
     const REQ = `<span style="color:#ba1a1a;margin-left:2px;font-weight:700;">*</span>`;
     const inputCls = `class="bg-surface-container-lowest text-on-surface border border-outline-variant" style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;"`;
+
+    // Fetch khuyến mãi đang hoạt động
+    let activePromos = [];
+    try {
+      const promoRes = await window.GymApp.api.get('/promotions/active');
+      if (promoRes?.success) activePromos = promoRes.data || [];
+    } catch (e) { /* bỏ qua */ }
 
     // Tìm gói tập hiện tại đang hoạt động
     const activePkg = Array.isArray(m.goi_tap_hien_tai)
@@ -2262,49 +2266,95 @@ window.GymApp.pages['members-list'] = {
     overlay.id = 'gym-sub-modal';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);backdrop-filter:blur(6px);padding:16px;';
     overlay.innerHTML = `
-      <div class="modal-card" style="border-radius:18px;width:100%;max-width:660px;max-height:92vh;overflow-y:auto;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-        <div style="background:linear-gradient(135deg,#2d6a4f,#40916c);padding:16px 20px;position:sticky;top:0;z-index:1;border-radius:18px 18px 0 0;display:flex;align-items:center;justify-content:space-between;">
+      <div class="modal-card" style="border-radius:24px;width:100%;max-width:660px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:0 24px 70px rgba(0,0,0,0.25);background:#fff;font-family:'Inter', sans-serif;">
+        <!-- Header -->
+        <div style="background:linear-gradient(135deg,#1b4332,#2d6a4f);padding:20px 24px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.1);">
           <div>
-            <h3 style="font-size:15px;font-weight:800;color:#fff;margin:0 0 2px;">Thêm gói tập</h3>
-            <p style="font-size:11px;color:rgba(255,255,255,0.75);margin:0;">Hội viên: <strong style="color:#d8f3dc;">${m.ho_ten || m.name}</strong></p>
+            <h3 style="font-size:16px;font-weight:800;color:#fff;margin:0 0 4px;letter-spacing:-0.01em;">Đăng ký Gói Tập Mới</h3>
+            <p style="font-size:12px;color:rgba(255,255,255,0.85);margin:0;font-weight:500;">Hội viên: <strong style="color:#d8f3dc;font-weight:700;">${m.ho_ten || m.name}</strong></p>
           </div>
-          <button id="close-sub-modal" style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.25);cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.18)'"><span class="material-symbols-outlined" style="color:#fff;font-size:16px;">close</span></button>
+          <button id="close-sub-modal" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.2);cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">
+            <span class="material-symbols-outlined" style="color:#fff;font-size:18px;">close</span>
+          </button>
         </div>
-        <div class="p-loose bg-surface-container-lowest">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-standard">
+        
+        <!-- Form Content -->
+        <div class="p-loose flex-grow overflow-y-auto" style="padding:16px 20px;background:#fff;display:flex;flex-direction:column;gap:12px;">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
             <div class="col-span-1 sm:col-span-2">
-              <label class="block text-body-sm font-bold text-on-surface mb-xs">Tên gói tập ${REQ}</label>
-              <select id="pkg-name" ${inputCls}><option value="">— Chọn gói tập —</option>${pkgNames.map(p => `<option value="${p.name}" data-price="${p.price}">${p.name}${p.price ? ' — ' + window.GymApp.formatCurrency(p.price) : ''}</option>`).join('')}</select>
+              <label class="block text-body-sm font-bold text-on-surface mb-xs" style="font-size:13px;font-weight:700;color:#475569;margin-bottom:4px;">Tên gói tập ${REQ}</label>
+              <select id="pkg-name" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid #cbd5e1;outline:none;font-size:13px;box-sizing:border-box;font-weight:600;color:#1e293b;background-color:#fff;"><option value="">— Chọn gói tập —</option>${pkgNames.map(p => `<option value="${p.name}" data-price="${p.price}">${p.name}${p.price ? ' — ' + window.GymApp.formatCurrency(p.price) : ''}</option>`).join('')}</select>
             </div>
-            <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Giá gói tập (VNĐ) ${REQ}</label><input id="pkg-price" type="text" inputmode="numeric" placeholder="VD: 1.500.000" ${inputCls} /></div>
-            <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Mã giảm giá</label><input id="pkg-discount-code" type="text" placeholder="Nhập mã (nếu có)..." ${inputCls} /></div>
+            
             <div>
-              <label class="block text-body-sm font-bold text-on-surface mb-xs">Từ ngày ${REQ}</label>
-              <input id="pkg-from" type="date" value="${defaultFromDate}" min="${new Date().toISOString().split('T')[0]}" ${inputCls} />
+              <label class="block text-body-sm font-bold text-on-surface mb-xs" style="font-size:13px;font-weight:700;color:#475569;margin-bottom:4px;">Giá gốc gói tập (VNĐ)</label>
+              <input id="pkg-price-original" type="text" readonly class="bg-surface-container text-on-surface border border-outline-variant" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid #e2e8f0;outline:none;font-size:13px;box-sizing:border-box;cursor:not-allowed;background:#f8fafc;color:#64748b;font-weight:700;" placeholder="Chọn gói tập..." />
+            </div>
+            
+            <div>
+              <label class="block text-body-sm font-bold text-on-surface mb-xs" style="font-size:13px;font-weight:700;color:#475569;margin-bottom:4px;">Khuyến mãi</label>
+              <select id="pkg-promo-select" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid #cbd5e1;outline:none;font-size:13px;box-sizing:border-box;font-weight:600;color:#1e293b;background-color:#fff;">
+                <option value="">— Không áp dụng KM —</option>
+                ${activePromos.map(p => {
+                  return `<option value="${p.id}" data-loai="${p.loai}" data-gia-tri="${p.gia_tri}">${p.ten}</option>`;
+                }).join('')}
+              </select>
+              <div id="pkg-promo-badge" style="display:none;margin-top:6px;padding:4px 8px;border-radius:6px;background:#dcfce7;border:1px solid #86efac;font-size:11px;font-weight:700;color:#166534;display:inline-flex;align-items:center;gap:4px;"></div>
+            </div>
+
+            <div>
+              <label class="block text-body-sm font-bold text-on-surface mb-xs" style="font-size:13px;font-weight:700;color:#475569;margin-bottom:4px;">Từ ngày ${REQ}</label>
+              <input id="pkg-from" type="date" value="${defaultFromDate}" min="${new Date().toISOString().split('T')[0]}" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid #cbd5e1;outline:none;font-size:13px;box-sizing:border-box;font-weight:600;" />
               ${activePkg ? `
-                <div style="margin-top: 6px; display: flex; align-items: center; gap: 6px;">
-                  <input type="checkbox" id="pkg-stack-mode" checked style="cursor: pointer; width: 14px; height: 14px;" />
-                  <label for="pkg-stack-mode" style="font-size: 11px; font-weight: 700; color: #1D9336; cursor: pointer; user-select: none;">
+                <div style="margin-top: 6px; display: flex; align-items: center; gap: 8px; background:#f0fdf4; padding: 4px 8px; border-radius: 6px; border: 1px dashed #bbf7d0;">
+                  <input type="checkbox" id="pkg-stack-mode" checked style="cursor: pointer; width: 14px; height: 14px; accent-color: #1D9336;" />
+                  <label for="pkg-stack-mode" style="font-size: 11px; font-weight: 700; color: #166534; cursor: pointer; user-select: none;">
                     Nối tiếp sau gói hiện tại (${window.GymApp.formatDate(activePkg.den_ngay)})
                   </label>
                 </div>
               ` : ''}
             </div>
-            <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Đến ngày ${REQ}</label><input id="pkg-to" type="date" ${inputCls} /></div>
-            <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Trạng thái đăng ký ${REQ}</label><select id="pkg-reg-status" ${inputCls}><option value="paid">Đã thanh toán</option><option value="debt">Còn nợ</option><option value="free">Miễn phí</option></select></div>
-            <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Phương thức TT ${REQ}</label><select id="pkg-payment-method" ${inputCls}><option value="tien_mat">Tiền mặt</option><option value="chuyen_khoan">Chuyển khoản</option></select></div>
-            <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Ngày thanh toán</label><input id="pkg-payment-date" type="date" value="${new Date().toISOString().split('T')[0]}" ${inputCls} /></div>
-            <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Cần thanh toán (VNĐ)</label><input id="pkg-need-pay" type="text" readonly class="bg-surface-container text-on-surface border border-outline-variant" style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;cursor:not-allowed;" /></div>
-            <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Tiền khách đưa (VNĐ) ${REQ}</label><input id="pkg-paid" type="text" inputmode="numeric" placeholder="VD: 1.500.000" ${inputCls} /><p id="err-pkg-paid-modal" class="hidden" style="color:#ba1a1a;font-size:11px;margin-top:4px;font-weight:600;"></p></div>
-            <div class="col-span-1 sm:col-span-2"><label id="pkg-balance-label" class="block text-body-sm font-bold mb-xs" style="color:#93000a;">Khách nợ (VNĐ)</label><input id="pkg-debt" type="text" value="0" readonly style="width:100%;background:#ffdad6;border:1px solid #f2b8b5;color:#93000a;font-weight:700;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;cursor:not-allowed;" /></div>
-            <div class="col-span-1 sm:col-span-2"><label class="block text-body-sm font-bold text-on-surface mb-xs">Ghi chú</label><textarea id="pkg-note" rows="3" placeholder="Ghi chú thêm..." class="bg-surface-container-lowest text-on-surface border border-outline-variant" style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;resize:vertical;font-family:inherit;"></textarea></div>
-          </div>
-          <div class="flex gap-standard mt-standard">
-            <button id="pkg-cancel-btn" class="flex-1 py-compact rounded-xl border border-outline-variant text-on-surface-variant font-bold hover:bg-surface-container transition-colors text-body-md">Hủy</button>
-            <button id="pkg-save-btn" class="flex-1 py-compact rounded-xl font-bold text-white text-body-md transition-all hover:opacity-90" style="background:#1D9336;">Lưu gói tập</button>
+
+            <div>
+              <label class="block text-body-sm font-bold text-on-surface mb-xs" style="font-size:13px;font-weight:700;color:#475569;margin-bottom:4px;">Đến ngày ${REQ}</label>
+              <input id="pkg-to" type="date" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid #cbd5e1;outline:none;font-size:13px;box-sizing:border-box;font-weight:600;" />
+            </div>
+
+            <div>
+              <label class="block text-body-sm font-bold text-on-surface mb-xs" style="font-size:13px;font-weight:700;color:#475569;margin-bottom:4px;">Phương thức TT ${REQ}</label>
+              <select id="pkg-payment-method" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid #cbd5e1;outline:none;font-size:13px;box-sizing:border-box;font-weight:600;color:#1e293b;background-color:#fff;"><option value="tien_mat">Tiền mặt</option><option value="chuyen_khoan">Chuyển khoản</option></select>
+            </div>
+
+            <div>
+              <label class="block text-body-sm font-bold text-on-surface mb-xs" style="font-size:13px;font-weight:700;color:#475569;margin-bottom:4px;">Ngày thanh toán</label>
+              <input id="pkg-payment-date" type="date" value="${new Date().toISOString().split('T')[0]}" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid #cbd5e1;outline:none;font-size:13px;box-sizing:border-box;font-weight:600;" />
+            </div>
+
+            <div class="col-span-1 sm:col-span-2">
+              <label class="block text-body-sm font-bold text-on-surface mb-xs" style="font-size:13px;font-weight:700;color:#475569;margin-bottom:4px;">Giá thực thu (VNĐ) ${REQ}</label>
+              <input id="pkg-price" type="text" readonly class="bg-surface-container text-on-surface border border-outline-variant" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid #e2e8f0;outline:none;font-size:15px;box-sizing:border-box;cursor:not-allowed;background:#f0fdf4;color:#166534;font-weight:800;text-align:right;" placeholder="Chọn gói tập..." />
+            </div>
+
+            <!-- Thêm các field ẩn để logic cũ vẫn chạy mượt mà mà không hiển thị -->
+            <input type="hidden" id="pkg-reg-status" value="paid" />
+            <input type="hidden" id="pkg-need-pay" value="" />
+            <input type="hidden" id="pkg-paid" value="" />
+            <input type="hidden" id="pkg-debt" value="0" />
+
+            <div class="col-span-1 sm:col-span-2">
+              <label class="block text-body-sm font-bold text-on-surface mb-xs" style="font-size:13px;font-weight:700;color:#475569;margin-bottom:4px;">Ghi chú giao dịch</label>
+              <textarea id="pkg-note" rows="2" placeholder="Ghi chú chi tiết về giao dịch..." style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid #cbd5e1;outline:none;font-size:13px;box-sizing:border-box;resize:vertical;font-family:inherit;font-weight:500;color:#1e293b;"></textarea>
+            </div>
           </div>
         </div>
+
+        <!-- Footer -->
+        <div style="border-top:1px solid #e2e8f0;padding:16px 24px;background:#fff;display:flex;gap:12px;flex-shrink:0;">
+          <button id="pkg-cancel-btn" style="flex:1;padding:12px;border-radius:12px;border:1px solid #cbd5e1;background:#fff;color:#475569;font-weight:700;font-size:14px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">Hủy</button>
+          <button id="pkg-save-btn" style="flex:1;padding:12px;border-radius:12px;border:none;background:#1D9336;color:#fff;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 4px 12px rgba(29,147,54,0.2);transition:all 0.2s;" onmouseover="this.style.opacity='0.95';this.style.boxShadow='0 6px 16px rgba(29,147,54,0.3)'" onmouseout="this.style.opacity='1';this.style.boxShadow='0 4px 12px rgba(29,147,54,0.2)'">Lưu gói tập</button>
+        </div>
       </div>`;
+
     document.body.appendChild(overlay);
 
     const stackCheckbox = document.getElementById('pkg-stack-mode');
@@ -2323,12 +2373,14 @@ window.GymApp.pages['members-list'] = {
     const close = () => overlay.remove();
     document.getElementById('close-sub-modal').addEventListener('click', close);
     document.getElementById('pkg-cancel-btn').addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
     document.getElementById('pkg-name').addEventListener('change', function () {
       const name = this.value;
       const pkg = (window.GymApp.data.packages || []).find(p => (p.ten_goi || p.name) === name);
       if (!pkg) return;
-      if (pkg.gia > 0) { document.getElementById('pkg-price').value = fmtVND(pkg.gia); calcDebt(); }
+      if (pkg.gia > 0) {
+        document.getElementById('pkg-price-original').value = fmtVND(pkg.gia);
+        calcDiscount();
+      }
       const fromVal = document.getElementById('pkg-from').value;
       if (fromVal && (pkg.so_thang || pkg.so_ngay_them)) {
         const from = new Date(fromVal);
@@ -2349,14 +2401,47 @@ window.GymApp.pages['members-list'] = {
       const paymentDateEl = document.getElementById('pkg-payment-date');
       if (paymentDateEl) paymentDateEl.value = this.value;
     });
-    const fmtVND = n => n > 0 ? new Intl.NumberFormat('vi-VN').format(n) : '';
+    const fmtVND = n => n > 0 ? new Intl.NumberFormat('vi-VN').format(n) : '0';
     const parseVND = s => parseInt((s || '').replace(/\./g, '').replace(/,/g, '')) || 0;
 
+    function calcDiscount() {
+      const giaGoc = parseVND(document.getElementById('pkg-price-original').value);
+      const promoSel = document.getElementById('pkg-promo-select');
+      const selOpt = promoSel?.selectedOptions[0];
+      let giaSauKm = giaGoc;
+      const badge = document.getElementById('pkg-promo-badge');
+
+      if (selOpt && selOpt.value) {
+        const loai = selOpt.dataset.loai;
+        const giaTri = parseFloat(selOpt.dataset.giaTri) || 0;
+        if (loai === 'phan_tram') {
+          giaSauKm = Math.max(0, Math.round(giaGoc * (1 - giaTri / 100)));
+          if (badge) { badge.style.display = ''; badge.textContent = `Giảm ${giaTri}%: ${fmtVND(giaGoc)} → ${fmtVND(giaSauKm)}đ`; }
+        } else {
+          giaSauKm = Math.max(0, giaGoc - giaTri);
+          if (badge) { badge.style.display = ''; badge.textContent = `Giảm ${fmtVND(giaTri)}đ: ${fmtVND(giaGoc)} → ${fmtVND(giaSauKm)}đ`; }
+        }
+      } else {
+        if (badge) badge.style.display = 'none';
+      }
+
+      const pkgPriceEl = document.getElementById('pkg-price');
+      if (pkgPriceEl) {
+        if (document.getElementById('pkg-price-original').value) {
+          pkgPriceEl.value = fmtVND(giaSauKm);
+        } else {
+          pkgPriceEl.value = '';
+        }
+      }
+      const pkgPaidEl = document.getElementById('pkg-paid');
+      if (pkgPaidEl) {
+        pkgPaidEl.value = pkgPriceEl ? pkgPriceEl.value : '';
+      }
+      calcDebt();
+    }
+
     function calcDebt() {
-      const price = parseVND(document.getElementById('pkg-price').value);
-      const discountCode = document.getElementById('pkg-discount-code').value.trim().toUpperCase();
-      const discount = discountCode ? Math.round(price * 0.1) : 0;
-      const need = Math.max(0, price - discount);
+      const need = parseVND(document.getElementById('pkg-price').value);
       const paid = parseVND(document.getElementById('pkg-paid').value);
       const diff = paid - need;
       document.getElementById('pkg-need-pay').value = fmtVND(need);
@@ -2380,13 +2465,87 @@ window.GymApp.pages['members-list'] = {
       if (debtEl) debtEl.value = fmtVND(Math.abs(diff));
     }
 
-    const pkgPriceEl = document.getElementById('pkg-price');
+    let pkgPaymentPaid = false;
+
+    document.getElementById('pkg-payment-method')?.addEventListener('change', async function () {
+      const val = this.value;
+      if (val === 'chuyen_khoan') {
+        const name = document.getElementById('pkg-name').value;
+        const price = parseVND(document.getElementById('pkg-price').value);
+        const from = document.getElementById('pkg-from').value;
+        const to = document.getElementById('pkg-to').value;
+        const today = new Date().toISOString().split('T')[0];
+
+        if (!name || document.getElementById('pkg-price').value === '' || !from || !to) {
+          window.GymApp.toast('Vui lòng chọn gói tập và điền ngày bắt đầu trước', 'error');
+          this.value = 'tien_mat';
+          return;
+        }
+
+        if (from < today) {
+          window.GymApp.toast('Ngày bắt đầu không được là ngày trong quá khứ', 'error');
+          this.value = 'tien_mat';
+          return;
+        }
+
+        const saveBtn = document.getElementById('pkg-save-btn');
+        if (saveBtn) {
+          saveBtn.disabled = true;
+          saveBtn.style.opacity = '0.5';
+          saveBtn.textContent = 'Đang chờ thanh toán chuyển khoản...';
+        }
+
+        try {
+          const promoSelEl = document.getElementById('pkg-promo-select');
+          const khuyenMaiId = promoSelEl?.value ? Number(promoSelEl.value) : undefined;
+          const paymentDate = document.getElementById('pkg-payment-date').value;
+          const paidVal = document.getElementById('pkg-paid').value.trim();
+
+          const resData = await window.GymApp.api.post(`/members/${m.id}/package`, {
+            goi_tap_id: (window.GymApp.data.packages || []).find(p => (p.ten_goi || p.name) === name)?.id,
+            tu_ngay: from,
+            gia_thuc_te: price,
+            phuong_thuc_tt: 'chuyen_khoan',
+            ghi_chu_tt: document.getElementById('pkg-note').value.trim(),
+            ngay_thanh_toan: paymentDate,
+            so_tien_da_thu: parseVND(paidVal),
+            khuyen_mai_id: khuyenMaiId,
+          });
+
+          if (resData?.data?.orderCode) {
+            self._showPayosQrModal(resData.data, m, async () => {
+              pkgPaymentPaid = true;
+              const saveBtn2 = document.getElementById('pkg-save-btn');
+              if (saveBtn2) {
+                saveBtn2.disabled = false;
+                saveBtn2.style.opacity = '1';
+                saveBtn2.textContent = 'Lưu gói tập (Đã thanh toán)';
+              }
+            }, () => {
+              this.value = 'tien_mat';
+              const saveBtn2 = document.getElementById('pkg-save-btn');
+              if (saveBtn2) {
+                saveBtn2.disabled = false;
+                saveBtn2.style.opacity = '1';
+                saveBtn2.textContent = 'Lưu gói tập';
+              }
+            });
+          }
+        } catch (err) {
+          window.GymApp.toast(err.message || 'Lỗi khi kết nối cổng thanh toán', 'error');
+          this.value = 'tien_mat';
+          if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.style.opacity = '1';
+            saveBtn.textContent = 'Lưu gói tập';
+          }
+        }
+      }
+    });
+
+    document.getElementById('pkg-promo-select')?.addEventListener('change', calcDiscount);
+
     const pkgPaidEl = document.getElementById('pkg-paid');
-
-    pkgPriceEl.addEventListener('focus', function () { const v = parseVND(this.value); this.value = v > 0 ? String(v) : ''; });
-    pkgPriceEl.addEventListener('blur', function () { const v = parseVND(this.value); this.value = fmtVND(v); calcDebt(); });
-    pkgPriceEl.addEventListener('input', calcDebt);
-
     pkgPaidEl.addEventListener('focus', function () { const v = parseVND(this.value); this.value = v > 0 ? String(v) : ''; });
     pkgPaidEl.addEventListener('blur', function () { const v = parseVND(this.value); this.value = fmtVND(v); calcDebt(); });
     pkgPaidEl.addEventListener('input', function () {
@@ -2395,9 +2554,22 @@ window.GymApp.pages['members-list'] = {
       if (errEl) errEl.classList.add('hidden');
       this.style.borderColor = '';
     });
-
-    document.getElementById('pkg-discount-code').addEventListener('input', calcDebt);
     document.getElementById('pkg-save-btn').addEventListener('click', async () => {
+      const payMethod = document.getElementById('pkg-payment-method').value;
+      if (payMethod === 'chuyen_khoan') {
+        if (pkgPaymentPaid) {
+          window.GymApp.toast('Đăng ký gói tập thành công!', 'success');
+          if (window.GymApp.fetchInitialData) await window.GymApp.fetchInitialData();
+          self._applyMemberFilter();
+          close();
+          if (typeof onSaved === 'function') onSaved();
+          return;
+        } else {
+          window.GymApp.toast('Vui lòng hoàn tất thanh toán chuyển khoản trước khi lưu', 'error');
+          return;
+        }
+      }
+
       const name = document.getElementById('pkg-name').value;
       const price = parseVND(document.getElementById('pkg-price').value);
       const from = document.getElementById('pkg-from').value;
@@ -2423,7 +2595,7 @@ window.GymApp.pages['members-list'] = {
         el.style.borderColor = bad ? '#ba1a1a' : '';
       };
       hlField('pkg-name', !name);
-      hlField('pkg-price', !price);
+      hlField('pkg-price', document.getElementById('pkg-price').value === '');
       hlField('pkg-from', !from);
       hlField('pkg-to', !to);
       hlField('pkg-payment-date', !paymentDate);
@@ -2437,7 +2609,7 @@ window.GymApp.pages['members-list'] = {
         if (paidInput) paidInput.style.borderColor = '';
       }
 
-      if (!name || !price || !from || !to || !regStatus || paidMissing || !paymentDate) { window.GymApp.toast('Vui lòng điền đầy đủ các trường bắt buộc (*)', 'error'); return; }
+      if (!name || document.getElementById('pkg-price').value === '' || !from || !to || !regStatus || paidMissing || !paymentDate) { window.GymApp.toast('Vui lòng điền đầy đủ các trường bắt buộc (*)', 'error'); return; }
 
       if (to && paymentDate > to) {
         hlField('pkg-payment-date', true);
@@ -2447,9 +2619,7 @@ window.GymApp.pages['members-list'] = {
 
       // Validate: số tiền khách đưa phải đủ (trừ khi chọn "Còn nợ")
       {
-        const discountCode = document.getElementById('pkg-discount-code').value.trim();
-        const discount = discountCode ? Math.round(price * 0.1) : 0;
-        const needToPay = Math.max(0, price - discount);
+        const needToPay = price; // pkg-price đã là giá sau KM
         const paidAmt = parseVND(paidVal);
         if (regStatus !== 'debt' && paidAmt < needToPay) {
           const fmt = n => new Intl.NumberFormat('vi-VN').format(n);
@@ -2488,21 +2658,179 @@ window.GymApp.pages['members-list'] = {
       }
 
       try {
-        await window.GymApp.api.post(`/members/${m.id}/package`, {
+        const promoSelEl = document.getElementById('pkg-promo-select');
+        const khuyenMaiId = promoSelEl?.value ? Number(promoSelEl.value) : undefined;
+        const resData = await window.GymApp.api.post(`/members/${m.id}/package`, {
           goi_tap_id: pkg.id, tu_ngay: from, gia_thuc_te: price,
-          phuong_thuc_tt: document.getElementById('pkg-payment-method').value,
+          phuong_thuc_tt: payMethod,
           ghi_chu_tt: document.getElementById('pkg-note').value.trim(),
-          ma_giao_dich: document.getElementById('pkg-discount-code').value.trim(),
           ngay_thanh_toan: paymentDate,
-          so_tien_da_thu: parseVND(paidVal)
+          so_tien_da_thu: parseVND(paidVal),
+          khuyen_mai_id: khuyenMaiId,
         });
-        window.GymApp.toast('Đăng ký gói tập thành công!', 'success');
-        if (window.GymApp.fetchInitialData) await window.GymApp.fetchInitialData();
-        self._applyMemberFilter();
-        close();
-        if (typeof onSaved === 'function') onSaved();
+
+        if (payMethod === 'chuyen_khoan' && resData?.data?.orderCode) {
+          // Luồng PayOS: hiện QR modal và poll trạng thái
+          close();
+          self._showPayosQrModal(resData.data, m, async () => {
+            if (window.GymApp.fetchInitialData) await window.GymApp.fetchInitialData();
+            self._applyMemberFilter();
+            if (typeof onSaved === 'function') onSaved();
+          });
+        } else {
+          window.GymApp.toast('Đăng ký gói tập thành công!', 'success');
+          if (window.GymApp.fetchInitialData) await window.GymApp.fetchInitialData();
+          self._applyMemberFilter();
+          close();
+          if (typeof onSaved === 'function') onSaved();
+        }
       } catch (err) { window.GymApp.toast(err.message || 'Lỗi khi lưu gói tập', 'error'); }
     });
+  },
+
+  // ===== PAYOS QR MODAL (WEB ADMIN) =====
+  _showPayosQrModal: function (payosData, member, onSuccess, onCancel, type = 'package') {
+    const self = this;
+    const { orderCode, qrCodeUrl, payosUrl, amount, den_ngay } = payosData;
+    document.getElementById('gym-payos-modal')?.remove();
+    const overlay = document.createElement('div');
+    overlay.id = 'gym-payos-modal';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);padding:16px;';
+    overlay.innerHTML = `
+      <div style="background:#fff;border-radius:24px;width:100%;max-width:420px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,0.25);font-family:'Inter', sans-serif;">
+        <!-- Header -->
+        <div style="background:linear-gradient(135deg,#1D9336,#2e7d32);padding:20px 24px;display:flex;align-items:center;justify-content:space-between;color:#fff;">
+          <div>
+            <h3 style="font-size:16px;font-weight:800;margin:0 0 4px;letter-spacing:-0.01em;color:#fff;">Thanh toán chuyển khoản</h3>
+            <p style="font-size:12px;color:rgba(255,255,255,0.85);margin:0;font-weight:500;">Hội viên: <strong style="color:#fff;">${member.ho_ten || member.name}</strong></p>
+          </div>
+          <button id="payos-modal-close" style="background:rgba(255,255,255,0.2);border:none;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+            <span class="material-symbols-outlined" style="color:#fff;font-size:18px;">close</span>
+          </button>
+        </div>
+        <!-- Body -->
+        <div style="padding:24px;display:flex;flex-direction:column;align-items:center;gap:20px;background:#fafafa;">
+          <!-- Price Display -->
+          <div style="text-align:center;width:100%;background:#fff;padding:12px;border-radius:16px;border:1px solid #e2e8f0;box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
+            <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Số tiền cần thanh toán</div>
+            <div style="font-size:26px;font-weight:800;color:#1d9336;letter-spacing:-0.02em;">${Number(amount).toLocaleString('vi-VN')} đ</div>
+          </div>
+          
+          <!-- QR Frame -->
+          <div style="background:#fff;border:2px solid #e2e8f0;border-radius:20px;padding:12px;width:220px;height:220px;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 15px -3px rgba(0,0,0,0.05);position:relative;">
+            ${qrCodeUrl
+              ? `<img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrCodeUrl)}" alt="QR PayOS" style="width:196px;height:196px;border-radius:12px;" />`
+              : `<span class="material-symbols-outlined" style="font-size:80px;color:#cbd5e1;">qr_code_2</span>`
+            }
+          </div>
+          
+          <!-- Bank transfer info -->
+          <div style="background:#fff;border-radius:16px;padding:14px 18px;width:100%;box-sizing:border-box;font-size:13px;color:#1e293b;border:1px solid #e2e8f0;box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="color:#64748b;font-weight:500;">Mã đơn hàng</span>
+              <strong style="color:#0f172a;font-weight:700;">#${orderCode}</strong>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="color:#64748b;font-weight:500;">Nội dung CK</span>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <strong id="payos-memo-text" style="color:#0f172a;font-weight:700;">${orderCode}</strong>
+                <button id="btn-copy-memo" style="background:none;border:none;color:#1d9336;cursor:pointer;padding:2px;display:flex;align-items:center;" title="Sao chép nội dung">
+                  <span class="material-symbols-outlined" style="font-size:16px;">content_copy</span>
+                </button>
+              </div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="color:#64748b;font-weight:500;">Hạn sử dụng gói</span>
+              <strong style="color:#0f172a;font-weight:700;">${den_ngay ? den_ngay.substring(0,10) : '—'}</strong>
+            </div>
+          </div>
+
+          <!-- Spinner and Polling Status -->
+          <div id="payos-poll-status" style="display:flex;align-items:center;justify-content:center;gap:10px;font-size:14px;color:#1d9336;font-weight:700;width:100%;padding:4px 0;">
+            <span class="material-symbols-outlined" style="font-size:20px;animation:spin 1s linear infinite;color:#1d9336;">progress_activity</span>
+            Đang chờ thanh toán...
+          </div>
+          
+          <!-- Actions -->
+          <div style="display:flex;gap:10px;width:100%;margin-top:4px;">
+            <button id="payos-cancel-action" style="flex:1;padding:11px;border-radius:12px;background:#f1f5f9;border:1px solid #cbd5e1;color:#475569;font-weight:700;font-size:13px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+              Hủy & Quay lại
+            </button>
+            <a href="${payosUrl}" target="_blank" rel="noopener"
+               style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px;border-radius:12px;background:#1D9336;color:#fff;text-decoration:none;font-size:13px;font-weight:700;box-shadow:0 4px 6px -1px rgba(29,147,54,0.25);transition:all 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+              <span class="material-symbols-outlined" style="font-size:16px;">open_in_new</span>
+              Mở trang thanh toán
+            </a>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#btn-copy-memo').addEventListener('click', () => {
+      navigator.clipboard.writeText(String(orderCode));
+      window.GymApp.toast('Đã sao chép nội dung chuyển khoản', 'success');
+    });
+
+    let isPaid = false;
+
+    const close = async (isCancelByUser) => {
+      clearInterval(pollInterval);
+      if (isCancelByUser && !isPaid) {
+        try {
+          if (type === 'pt') {
+            await window.GymApp.api.delete(`/pt/registrations/payment/${orderCode}`);
+            window.GymApp.toast('Đã hủy bỏ giao dịch đăng ký gói PT.', 'info');
+          } else {
+            await window.GymApp.api.delete(`/members/${member.id}/package-payment/${orderCode}`);
+            window.GymApp.toast('Đã hủy bỏ giao dịch đăng ký gói tập.', 'info');
+          }
+          if (window.GymApp.fetchInitialData) await window.GymApp.fetchInitialData();
+          self._applyMemberFilter();
+          if (typeof onCancel === 'function') onCancel();
+        } catch (e) {
+          console.error('Lỗi khi hủy gói:', e);
+        }
+      }
+      overlay.remove();
+    };
+
+    overlay.querySelector('#payos-modal-close').addEventListener('click', () => close(true));
+    overlay.querySelector('#payos-cancel-action').addEventListener('click', () => close(true));
+
+    // Poll mỗi 3 giây
+    let pollInterval = setInterval(async () => {
+      try {
+        const statusRes = await window.GymApp.api.get(`/members/me/payos-status/${orderCode}`);
+        if (!statusRes?.data) return;
+        const st = statusRes.data.status;
+        const statusEl = document.getElementById('payos-poll-status');
+        if (st === 'PAID') {
+          isPaid = true;
+          clearInterval(pollInterval);
+          if (statusEl) {
+            statusEl.style.color = '#16a34a';
+            statusEl.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;">check_circle</span> Thanh toán thành công!';
+          }
+          // Đổi nút Hủy thành nút Đóng
+          const cancelBtn = overlay.querySelector('#payos-cancel-action');
+          if (cancelBtn) {
+            cancelBtn.textContent = 'Đóng';
+            cancelBtn.style.background = '#e2e8f0';
+          }
+          setTimeout(async () => {
+            close(false); // Đóng QR modal mà không hủy
+            window.GymApp.toast('Thanh toán PayOS thành công!', 'success');
+            if (typeof onSuccess === 'function') await onSuccess();
+          }, 1200);
+        } else if (st === 'CANCELLED') {
+          clearInterval(pollInterval);
+          if (statusEl) {
+            statusEl.style.color = '#dc2626';
+            statusEl.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;">cancel</span> Thanh toán đã bị hủy';
+          }
+        }
+      } catch (e) { /* bỏ qua lỗi mạng */ }
+    }, 3000);
   },
 
   // ===== MODAL HỦY GÓI TẬP =====
@@ -2545,7 +2873,6 @@ window.GymApp.pages['members-list'] = {
     const close = () => overlay.remove();
     overlay.querySelector('#cancel-pkg-close').addEventListener('click', close);
     overlay.querySelector('#cancel-pkg-close2').addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
     const _cParseVND = s => parseInt((s || '').replace(/\./g, '').replace(/,/g, '')) || 0;
     const _cFmtVND = n => n > 0 ? new Intl.NumberFormat('vi-VN').format(n) : '';
     const cancelRefundEl = overlay.querySelector('#cancel-pkg-refund');
@@ -2613,7 +2940,6 @@ window.GymApp.pages['members-list'] = {
     const close = () => overlay.remove();
     overlay.querySelector('#cancel-pt-close').addEventListener('click', close);
     overlay.querySelector('#cancel-pt-close2').addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
 
     const _cParseVND = s => parseInt((s || '').replace(/\./g, '').replace(/,/g, '')) || 0;
     const _cFmtVND = n => n > 0 ? new Intl.NumberFormat('vi-VN').format(n) : '';
@@ -2731,7 +3057,6 @@ window.GymApp.pages['members-list'] = {
     const close = () => overlay.remove();
     overlay.querySelector('#edit-pkg-close').addEventListener('click', close);
     overlay.querySelector('#edit-pkg-close2').addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
 
     // Auto-tính lại den_ngay khi tu_ngay thay đổi (giữ nguyên khoảng thời gian gốc)
     const origTuNgay = d0(pkg.tu_ngay);
@@ -2883,7 +3208,6 @@ window.GymApp.pages['members-list'] = {
     const close = () => overlay.remove();
     overlay.querySelector('#switch-pkg-close').addEventListener('click', close);
     overlay.querySelector('#switch-pkg-close2').addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
     const _pVND = s => parseInt((s || '').replace(/\./g, '').replace(/,/g, '')) || 0;
     const _fVND = n => n > 0 ? new Intl.NumberFormat('vi-VN').format(n) : '';
     const swPriceEl = overlay.querySelector('#switch-pkg-price');
@@ -3000,59 +3324,94 @@ window.GymApp.pages['members-list'] = {
     overlay.id = 'gym-sub-modal';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);backdrop-filter:blur(6px);padding:16px;';
     overlay.innerHTML = `
-      <div class="modal-card" style="border-radius:18px;width:100%;max-width:540px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-        <div style="background:linear-gradient(135deg,#2d6a4f,#40916c);padding:16px 20px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
+      <div class="modal-card" style="border-radius:24px;width:100%;max-width:560px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:0 24px 70px rgba(0,0,0,0.25);background:#fff;font-family:'Inter', sans-serif;">
+        <!-- Header -->
+        <div style="background:linear-gradient(135deg,#1b4332,#2d6a4f);padding:20px 24px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.1);">
           <div>
-            <h3 style="font-size:15px;font-weight:800;color:#fff;margin:0 0 2px;">Đăng ký gói PT</h3>
-            <p style="font-size:11px;color:rgba(255,255,255,0.75);margin:0;">Hội viên: <strong style="color:#d8f3dc;">${m.ho_ten}</strong></p>
+            <h3 style="font-size:16px;font-weight:800;color:#fff;margin:0 0 4px;letter-spacing:-0.01em;">Đăng ký Gói PT</h3>
+            <p style="font-size:12px;color:rgba(255,255,255,0.85);margin:0;font-weight:500;">Hội viên: <strong style="color:#d8f3dc;font-weight:700;">${m.ho_ten}</strong></p>
           </div>
-          <button id="close-sub-modal" style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.25);cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.18)'"><span class="material-symbols-outlined" style="color:#fff;font-size:16px;">close</span></button>
+          <button id="close-sub-modal" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.2);cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">
+            <span class="material-symbols-outlined" style="color:#fff;font-size:18px;">close</span>
+          </button>
         </div>
-        <div class="p-loose flex-grow overflow-y-auto bg-surface-container-lowest flex flex-col gap-standard">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-standard">
-            <div class="col-span-1 sm:col-span-2">
-              <label class="block text-body-sm font-bold text-on-surface mb-xs">Huấn luyện viên ${REQ}</label>
-              <input type="hidden" id="ptreg-pt" value="" />
-              <div id="ptreg-pt-selection-area" class="space-y-xs">
-                <div class="relative mb-compact group">
-                  <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[16px] group-focus-within:text-brand-primary transition-colors">search</span>
-                  <input id="ptreg-search-pt" type="text" placeholder="Tìm kiếm huấn luyện viên..." class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-9 pr-4 py-2 rounded-xl focus:border-brand-primary outline-none text-body-md font-semibold transition-all" />
-                </div>
-                <div id="ptreg-pt-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-xs border border-outline-variant rounded-xl p-3 bg-surface-container-low/10">
-                  <p class="text-center py-4 text-on-surface-variant text-body-sm font-semibold">Đang tải danh sách PT...</p>
-                </div>
+        
+        <!-- Form Content -->
+        <div class="p-loose flex-grow overflow-y-auto" style="padding:16px 20px;background:#fff;display:flex;flex-direction:column;gap:12px;">
+          <!-- Chọn Huấn Luyện Viên -->
+          <div>
+            <label class="block text-body-sm font-bold text-on-surface mb-xs" style="font-size:13px;font-weight:700;color:#475569;margin-bottom:4px;">Huấn luyện viên phụ trách ${REQ}</label>
+            <input type="hidden" id="ptreg-pt" value="" />
+            <div id="ptreg-pt-selection-area" style="display:flex;flex-direction:column;gap:8px;">
+              <div style="position:relative;" class="group">
+                <span class="material-symbols-outlined" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:16px;">search</span>
+                <input id="ptreg-search-pt" type="text" placeholder="Tìm kiếm huấn luyện viên..." style="width:100%;padding:8px 12px 8px 32px;border-radius:8px;border:1px solid #cbd5e1;outline:none;font-size:13px;box-sizing:border-box;font-weight:600;color:#1e293b;background-color:#fff;" />
               </div>
-              <div id="ptreg-selected-pt-display" class="hidden p-compact bg-brand-primary/10 rounded-xl border border-brand-primary/30 flex items-center gap-compact mt-xs">
-                <div id="ptreg-selected-pt-info" class="flex items-center gap-compact flex-1 text-body-sm"></div>
-                <button id="ptreg-clear-pt" type="button" class="material-symbols-outlined text-lg text-on-surface-variant hover:text-error transition-colors">close</button>
+              <div id="ptreg-pt-list" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(120px, 1fr));gap:8px;max-height:130px;overflow-y:auto;border:1px solid #f1f5f9;border-radius:8px;padding:6px;background:#f8fafc;">
+                <p style="grid-column: 1 / -1; text-align:center; padding:8px; color:#64748b; font-size:12px; font-weight:600;">Đang tải danh sách PT...</p>
               </div>
             </div>
-            <div class="col-span-1 sm:col-span-2"><label class="block text-body-sm font-bold text-on-surface mb-xs">Gói PT ${REQ}</label><select id="ptreg-goi" ${inputCls}><option value="">— Chọn gói PT —</option>${goiPtList.map(g => `<option value="${g.id}" data-price="${g.gia || 0}" data-buoi="${g.so_buoi || ''}" data-thang="${g.so_thang || 0}">${g.ten_goi} — ${window.GymApp.formatCurrency(g.gia || 0)}${g.so_buoi ? ' / ' + g.so_buoi + ' buổi' : ''}</option>`).join('')}</select></div>
-            <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Số buổi</label><input id="ptreg-sessions" type="number" min="1" placeholder="—" ${inputCls} /></div>
-            <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Giá thực tế (VNĐ) ${REQ}</label><input id="ptreg-price" type="text" inputmode="numeric" placeholder="Tự điền từ gói..." ${inputCls} /></div>
-            <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Phương thức TT ${REQ}</label><select id="ptreg-payment" ${inputCls}><option value="tien_mat">Tiền mặt</option><option value="chuyen_khoan">Chuyển khoản</option></select></div>
+            
+            <div id="ptreg-selected-pt-display" class="hidden" style="padding:8px 12px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;display:flex;align-items:center;justify-content:between;gap:10px;">
+              <div id="ptreg-selected-pt-info" style="display:flex;align-items:center;gap:8px;flex:1;font-size:13px;font-weight:700;color:#166534;"></div>
+              <button id="ptreg-clear-pt" type="button" class="material-symbols-outlined" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:16px;transition:all 0.2s;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'">close</button>
+            </div>
+          </div>
+
+          <!-- Thông tin gói PT -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
+            <div class="col-span-1 sm:col-span-2">
+              <label class="block text-body-sm font-bold text-on-surface mb-xs" style="font-size:13px;font-weight:700;color:#475569;margin-bottom:4px;">Gói PT ${REQ}</label>
+              <select id="ptreg-goi" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid #cbd5e1;outline:none;font-size:13px;box-sizing:border-box;font-weight:600;color:#1e293b;background-color:#fff;"><option value="">— Chọn gói PT —</option>${goiPtList.map(g => `<option value="${g.id}" data-price="${g.gia || 0}" data-buoi="${g.so_buoi || ''}" data-thang="${g.so_thang || 0}">${g.ten_goi} — ${window.GymApp.formatCurrency(g.gia || 0)}${g.so_buoi ? ' / ' + g.so_buoi + ' buổi' : ''}</option>`).join('')}</select>
+            </div>
+
             <div>
-              <label class="block text-body-sm font-bold text-on-surface mb-xs">Từ ngày ${REQ}</label>
-              <input id="ptreg-from" type="date" value="${defaultFromDate}" min="${new Date().toISOString().split('T')[0]}" ${inputCls} />
+              <label class="block text-body-sm font-bold text-on-surface mb-xs" style="font-size:13px;font-weight:700;color:#475569;margin-bottom:4px;">Số buổi đăng ký</label>
+              <input id="ptreg-sessions" type="number" min="1" placeholder="—" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid #cbd5e1;outline:none;font-size:13px;box-sizing:border-box;font-weight:600;" />
+            </div>
+
+            <div>
+              <label class="block text-body-sm font-bold text-on-surface mb-xs" style="font-size:13px;font-weight:700;color:#475569;margin-bottom:4px;">Giá thực tế (VNĐ) ${REQ}</label>
+              <input id="ptreg-price" type="text" inputmode="numeric" placeholder="Tự điền từ gói..." style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid #cbd5e1;outline:none;font-size:13px;box-sizing:border-box;font-weight:700;color:#1e293b;" />
+            </div>
+
+            <div>
+              <label class="block text-body-sm font-bold text-on-surface mb-xs" style="font-size:13px;font-weight:700;color:#475569;margin-bottom:4px;">Phương thức TT ${REQ}</label>
+              <select id="ptreg-payment" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid #cbd5e1;outline:none;font-size:13px;box-sizing:border-box;font-weight:600;color:#1e293b;background-color:#fff;"><option value="tien_mat">Tiền mặt</option><option value="chuyen_khoan">Chuyển khoản</option></select>
+            </div>
+
+            <div>
+              <label class="block text-body-sm font-bold text-on-surface mb-xs" style="font-size:13px;font-weight:700;color:#475569;margin-bottom:4px;">Từ ngày ${REQ}</label>
+              <input id="ptreg-from" type="date" value="${defaultFromDate}" min="${new Date().toISOString().split('T')[0]}" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid #cbd5e1;outline:none;font-size:13px;box-sizing:border-box;font-weight:600;" />
               ${activePtReg ? `
-                <div style="margin-top: 6px; display: flex; align-items: center; gap: 6px;">
-                  <input type="checkbox" id="ptreg-stack-mode" checked style="cursor: pointer; width: 14px; height: 14px;" />
-                  <label for="ptreg-stack-mode" style="font-size: 11px; font-weight: 700; color: #1D9336; cursor: pointer; user-select: none;">
+                <div style="margin-top: 6px; display: flex; align-items: center; gap: 8px; background:#f0fdf4; padding: 4px 8px; border-radius: 6px; border: 1px dashed #bbf7d0;">
+                  <input type="checkbox" id="ptreg-stack-mode" checked style="cursor: pointer; width: 14px; height: 14px; accent-color: #1D9336;" />
+                  <label for="ptreg-stack-mode" style="font-size: 11px; font-weight: 700; color: #166534; cursor: pointer; user-select: none;">
                     Nối tiếp sau gói hiện tại (${window.GymApp.formatDate(activePtReg.den_ngay)})
                   </label>
                 </div>
               ` : ''}
             </div>
-            <div><label class="block text-body-sm font-bold text-on-surface mb-xs">Đến ngày</label><input id="ptreg-to" type="date" ${inputCls} /></div>
-            <div class="col-span-1 sm:col-span-2"><label class="block text-body-sm font-bold text-on-surface mb-xs">Ghi chú</label><textarea id="ptreg-note" rows="2" placeholder="Ghi chú thêm..." class="bg-surface-container-lowest text-on-surface border border-outline-variant" style="width:100%;padding:8px 12px;border-radius:8px;outline:none;font-size:14px;box-sizing:border-box;resize:vertical;font-family:inherit;"></textarea></div>
+
+            <div class="col-span-1 sm:col-span-2">
+              <label class="block text-body-sm font-bold text-on-surface mb-xs" style="font-size:13px;font-weight:700;color:#475569;margin-bottom:4px;">Đến ngày</label>
+              <input id="ptreg-to" type="date" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid #cbd5e1;outline:none;font-size:13px;box-sizing:border-box;font-weight:600;background:#f8fafc;color:#64748b;" readonly />
+            </div>
+
+            <div class="col-span-1 sm:col-span-2">
+              <label class="block text-body-sm font-bold text-on-surface mb-xs" style="font-size:13px;font-weight:700;color:#475569;margin-bottom:4px;">Ghi chú</label>
+              <textarea id="ptreg-note" rows="2" placeholder="Ghi chú thêm..." style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid #cbd5e1;outline:none;font-size:13px;box-sizing:border-box;resize:vertical;font-family:inherit;font-weight:500;color:#1e293b;"></textarea>
+            </div>
           </div>
         </div>
-        <div class="border-t border-outline-variant px-loose py-standard bg-surface-container-lowest flex gap-standard flex-shrink-0">
-            <button id="ptreg-cancel-btn" class="flex-1 py-compact rounded-xl border border-outline-variant text-on-surface-variant font-bold hover:bg-surface-container transition-colors text-body-md">Hủy</button>
-            <button id="ptreg-save-btn" class="flex-1 py-compact rounded-xl font-bold text-white text-body-md transition-all hover:opacity-90" style="background:#1D9336;">Đăng ký gói PT</button>
-          </div>
 
-      </div>`;
+        <!-- Footer -->
+        <div style="border-top:1px solid #e2e8f0;padding:16px 24px;background:#fff;display:flex;gap:12px;flex-shrink:0;">
+          <button id="ptreg-cancel-btn" style="flex:1;padding:12px;border-radius:12px;border:1px solid #cbd5e1;background:#fff;color:#475569;font-weight:700;font-size:14px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">Hủy</button>
+          <button id="ptreg-save-btn" style="flex:1;padding:12px;border-radius:12px;border:none;background:#1D9336;color:#fff;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 4px 12px rgba(29,147,54,0.2);transition:all 0.2s;" onmouseover="this.style.opacity='0.95';this.style.boxShadow='0 6px 16px rgba(29,147,54,0.3)'" onmouseout="this.style.opacity='1';this.style.boxShadow='0 4px 12px rgba(29,147,54,0.2)'">Đăng ký gói PT</button>
+        </div>
+      </div>
+    `;
     document.body.appendChild(overlay);
     window.GymApp.initDatePickers(overlay);
 
@@ -3193,7 +3552,79 @@ window.GymApp.pages['members-list'] = {
     const close = () => overlay.remove();
     document.getElementById('close-sub-modal').addEventListener('click', close);
     document.getElementById('ptreg-cancel-btn').addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+    
+    let ptPaymentPaid = false;
+
+    document.getElementById('ptreg-payment')?.addEventListener('change', async function () {
+      const val = this.value;
+      if (val === 'chuyen_khoan') {
+        const ptId = document.getElementById('ptreg-pt').value;
+        const goiId = document.getElementById('ptreg-goi').value;
+        const price = _pVND(document.getElementById('ptreg-price').value);
+        const from = document.getElementById('ptreg-from').value;
+        const to = document.getElementById('ptreg-to').value;
+        const sessions = document.getElementById('ptreg-sessions').value;
+        const note = document.getElementById('ptreg-note').value.trim();
+        const _todayForReg = new Date().toLocaleDateString('sv-SE');
+
+        if (!ptId || !goiId || price <= 0 || !from) {
+          window.GymApp.toast('Vui lòng chọn PT, gói PT, giá và ngày bắt đầu trước', 'error');
+          this.value = 'tien_mat';
+          return;
+        }
+
+        if (from < _todayForReg) {
+          window.GymApp.toast('Ngày bắt đầu không được là ngày trong quá khứ', 'error');
+          this.value = 'tien_mat';
+          return;
+        }
+
+        const saveBtn = document.getElementById('ptreg-save-btn');
+        if (saveBtn) {
+          saveBtn.disabled = true;
+          saveBtn.style.opacity = '0.5';
+          saveBtn.textContent = 'Đang chờ thanh toán chuyển khoản...';
+        }
+
+        try {
+          const resData = await window.GymApp.api.post('/pt/registrations', {
+            hoi_vien_id: m.id, pt_id: ptId, goi_pt_id: goiId,
+            so_buoi_dang_ky: sessions ? parseInt(sessions) : undefined,
+            tu_ngay: from, den_ngay: to || undefined, gia_thuc_te: price,
+            phuong_thuc_tt: 'chuyen_khoan', ghi_chu_tt: note || undefined,
+          });
+
+          if (resData?.data?.orderCode) {
+            self._showPayosQrModal(resData.data, m, async () => {
+              ptPaymentPaid = true;
+              const saveBtn2 = document.getElementById('ptreg-save-btn');
+              if (saveBtn2) {
+                saveBtn2.disabled = false;
+                saveBtn2.style.opacity = '1';
+                saveBtn2.textContent = 'Lưu đăng ký PT (Đã thanh toán)';
+              }
+            }, () => {
+              this.value = 'tien_mat';
+              const saveBtn2 = document.getElementById('ptreg-save-btn');
+              if (saveBtn2) {
+                saveBtn2.disabled = false;
+                saveBtn2.style.opacity = '1';
+                saveBtn2.textContent = 'Đăng ký gói PT';
+              }
+            }, 'pt');
+          }
+        } catch (err) {
+          window.GymApp.toast(err.message || 'Lỗi khi kết nối cổng thanh toán', 'error');
+          this.value = 'tien_mat';
+          if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.style.opacity = '1';
+            saveBtn.textContent = 'Đăng ký gói PT';
+          }
+        }
+      }
+    });
+
     document.getElementById('ptreg-save-btn').addEventListener('click', async () => {
       const ptId = document.getElementById('ptreg-pt').value;
       const goiId = document.getElementById('ptreg-goi').value;
@@ -3203,6 +3634,21 @@ window.GymApp.pages['members-list'] = {
       const payment = document.getElementById('ptreg-payment').value;
       const sessions = document.getElementById('ptreg-sessions').value;
       const note = document.getElementById('ptreg-note').value.trim();
+
+      if (payment === 'chuyen_khoan') {
+        if (ptPaymentPaid) {
+          window.GymApp.toast('Đăng ký gói PT thành công!', 'success');
+          if (window.GymApp.fetchInitialData) await window.GymApp.fetchInitialData();
+          self._applyMemberFilter();
+          close();
+          if (typeof onSaved === 'function') await onSaved();
+          return;
+        } else {
+          window.GymApp.toast('Vui lòng hoàn tất thanh toán chuyển khoản trước khi lưu', 'error');
+          return;
+        }
+      }
+
       if (!ptId || !goiId || price <= 0 || !from) { window.GymApp.toast('Vui lòng điền đầy đủ: PT, gói PT, giá và từ ngày (*)', 'error'); return; }
       const _todayForReg = new Date().toLocaleDateString('sv-SE');
       if (from < _todayForReg) { window.GymApp.toast('Ngày bắt đầu chỉ được chọn từ hôm nay trở đi', 'error'); return; }
@@ -3436,7 +3882,6 @@ window.GymApp.pages['members-list'] = {
     const close = () => overlay.remove();
     document.getElementById('close-sub-modal').addEventListener('click', close);
     document.getElementById('ptedit-cancel-btn').addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
     document.getElementById('ptedit-save-btn').addEventListener('click', async () => {
       const ptId = document.getElementById('ptedit-pt').value;
       const goiId = document.getElementById('ptedit-goi').value;
@@ -3712,7 +4157,6 @@ window.GymApp.pages['members-list'] = {
     const close = () => overlay.remove();
     document.getElementById('close-sub-modal').addEventListener('click', close);
     document.getElementById('ptswitch-cancel-btn').addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
     document.getElementById('ptswitch-save-btn').addEventListener('click', async () => {
       const ptId = document.getElementById('ptswitch-pt').value;
       const goiId = document.getElementById('ptswitch-goi').value;
@@ -3916,7 +4360,6 @@ window.GymApp.pages['members-list'] = {
     const close = () => overlay.remove();
     document.getElementById('close-sub-modal').addEventListener('click', close);
     document.getElementById('sch-cancel-btn').addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
     document.getElementById('sch-save-btn').addEventListener('click', async () => {
       if (ptContracts.length === 0) { window.GymApp.toast('Hội viên chưa có gói PT. Vui lòng đăng ký gói PT trước!', 'error'); return; }
       const contractId = document.getElementById('sch-pt')?.value;
@@ -4008,8 +4451,6 @@ window.GymApp.pages['members-list'] = {
     document.body.appendChild(overlay);
     const close = () => overlay.remove();
     document.getElementById('close-pt-filter-modal')?.addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
-    document.addEventListener('keydown', function esc(e) { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc); } });
     document.getElementById('pt-filter-reset-btn')?.addEventListener('click', () => {
       overlay.querySelectorAll('input[type="radio"]').forEach(r => { r.checked = r.value === ''; });
     });
@@ -4062,8 +4503,6 @@ window.GymApp.pages['members-list'] = {
     document.body.appendChild(overlay);
     const close = () => overlay.remove();
     document.getElementById('close-pt-sort-modal')?.addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
-    document.addEventListener('keydown', function esc(e) { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc); } });
     document.getElementById('pt-sort-reset-btn')?.addEventListener('click', () => {
       const d = overlay.querySelector('input[name="pt-sort"][value=""]'); if (d) d.checked = true;
     });
@@ -4145,8 +4584,6 @@ window.GymApp.pages['members-list'] = {
     document.body.appendChild(overlay);
     const close = () => overlay.remove();
     document.getElementById('close-filter-modal')?.addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
-    document.addEventListener('keydown', function esc(e) { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc); } });
     document.getElementById('filter-reset-btn')?.addEventListener('click', () => {
       overlay.querySelectorAll('input[type="radio"]').forEach(r => { r.checked = r.value === ''; });
     });
@@ -4201,7 +4638,6 @@ window.GymApp.pages['members-list'] = {
     document.body.appendChild(overlay);
     const close = () => overlay.remove();
     document.getElementById('close-member-sort-modal')?.addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
     document.getElementById('member-sort-reset-btn')?.addEventListener('click', () => {
       const d = overlay.querySelector('input[name="member-sort"][value=""]'); if (d) d.checked = true;
     });
@@ -4487,7 +4923,6 @@ window.GymApp.pages['members-list'] = {
     document.body.appendChild(overlay);
     const close = () => overlay.remove();
     document.getElementById('cancel-del-pt').addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
     document.getElementById('confirm-del-pt').addEventListener('click', async () => {
       const btn = document.getElementById('confirm-del-pt');
       btn.disabled = true; btn.classList.add('opacity-50');
@@ -4560,7 +4995,7 @@ window.GymApp.pages['members-list'] = {
             <h3 style="font-size:20px;font-weight:800;color:var(--text-on-surface);margin:0 0 4px;">Chỉnh sửa hồ sơ</h3>
             <p style="font-size:13px;color:var(--text-on-surface-variant);margin:0;opacity:0.8;">Mã HV: ${m.ma_ho_so || '—'}</p>
           </div>
-          <button id="close-edit-member" style="background:var(--bg-surface-variant);border:none;cursor:pointer;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;" class="hover:bg-outline-variant/30 transition-all">
+          <button id="close-member-edit-modal" style="background:var(--bg-surface-variant);border:none;cursor:pointer;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;" class="hover:bg-outline-variant/30 transition-all">
             <span class="material-symbols-outlined" style="color:var(--text-on-surface);font-size:20px;">close</span>
           </button>
         </div>
@@ -4637,7 +5072,6 @@ window.GymApp.pages['members-list'] = {
 
     document.getElementById('close-edit-member').addEventListener('click', close);
     document.getElementById('cancel-edit-member').addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
 
     document.getElementById('save-edit-member').addEventListener('click', async () => {
       const hoTen = document.getElementById('em-ho_ten').value.trim();
@@ -4708,7 +5142,6 @@ window.GymApp.pages['members-list'] = {
     document.body.appendChild(overlay);
     const close = () => overlay.remove();
     document.getElementById('cancel-del-member').addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
     document.getElementById('confirm-del-member').addEventListener('click', async () => {
       const btn = document.getElementById('confirm-del-member');
       btn.disabled = true; btn.classList.add('opacity-50');
@@ -5109,7 +5542,6 @@ window.GymApp.pages['members-list'] = {
 
     closeBtn.addEventListener('click', close);
     cancelBtn.addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
   },
 
   _loadXlsxLibrary: function () {
@@ -5224,7 +5656,6 @@ window.GymApp.pages['members-list'] = {
     const close = () => overlay.remove();
     overlay.querySelector('#close-cancel-modal').addEventListener('click', close);
     overlay.querySelector('#btn-close-cancel-modal').addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
 
     // Auto-focus and select text for quick editing
     const reasonInput = overlay.querySelector('#cancel-pt-reason');

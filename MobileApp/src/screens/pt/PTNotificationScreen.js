@@ -12,6 +12,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../services/api';
 import { useNotificationStore } from '../../store/useNotificationStore';
 import { useTheme } from '../../context/ThemeContext';
+import { useSocket } from '../../utils/useSocket';
 
 // ── Màu sắc ────────────────────────────────────────────────
 const G = {
@@ -257,9 +258,14 @@ const notifStyles = StyleSheet.create({
 
 // ── Màn hình chính ─────────────────────────────────────────
 export default function PTNotificationScreen() {
-  const { notifications, loading, fetchNotifications, markAsRead, clearNotifications } = useNotificationStore();
+  const { notifications, loading, fetchNotifications, markAsRead, clearNotifications, addNotification } = useNotificationStore();
   const [refreshing, setRefreshing] = useState(false);
   const { colors } = useTheme();
+
+  // Realtime: nhận thông báo cá nhân mới qua Socket.IO
+  useSocket('notification:personal', useCallback((payload) => {
+    addNotification(payload);
+  }, [addNotification]));
 
   const syncNotifications = useCallback(async () => {
     try {
@@ -274,7 +280,8 @@ export default function PTNotificationScreen() {
   useFocusEffect(
     useCallback(() => {
       syncNotifications();
-      const intervalId = setInterval(fetchNotifications, 15000);
+      // Giảm polling xuống 30s vì đã có socket push realtime
+      const intervalId = setInterval(fetchNotifications, 30000);
       return () => {
         clearInterval(intervalId);
         // Đánh dấu đã đọc khi rời màn hình (blur)

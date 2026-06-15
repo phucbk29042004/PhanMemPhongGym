@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   getConfig, updateConfig, getConfigByKey,
   getRules, getAllRules, createRule, updateRule, deleteRule,
+  getNotifSettings, updateNotifSettings,
 } from '../controllers/config.controller.js';
 import { verifyToken } from '../middlewares/auth.js';
 import { requireRole } from '../middlewares/role.js';
@@ -19,6 +20,10 @@ router.get('/rules',     getRules);                           // tất cả user
 router.post('/rules',    requireRole('brand', 'admin', 'chu_phong_gym', 'quan_ly', 'nhan_vien'), createRule);
 router.put('/rules/:id', requireRole('brand', 'admin', 'chu_phong_gym', 'quan_ly', 'nhan_vien'), updateRule);
 router.delete('/rules/:id', requireRole('brand', 'admin', 'chu_phong_gym', 'quan_ly', 'nhan_vien'), deleteRule);
+
+// ── Cài đặt thông báo tự động ─────────────────────────────
+router.get('/notification-settings',  requireRole('admin'), getNotifSettings);
+router.put('/notification-settings',  requireRole('admin'), updateNotifSettings);
 
 // ── Lấy 1 cấu hình cụ thể (wildcard - phải đặt dưới cùng) ──
 router.get('/:khoa',    getConfigByKey);   // public — mobile dùng để lấy gio_dong_cua, v.v.

@@ -415,7 +415,6 @@ window.GymApp.pages['packages'] = {
     const close = () => overlay.remove();
     document.getElementById('close-pkg-modal').addEventListener('click', close);
     document.getElementById('cancel-pkg-modal').addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
 
     // Format currency input dynamically
     const priceInput = document.getElementById('pkg-gia');
@@ -588,7 +587,6 @@ window.GymApp.pages['packages'] = {
 
     const close = () => overlay.remove();
     document.getElementById('cancel-pkg-del').addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
 
     document.getElementById('confirm-pkg-del').addEventListener('click', async () => {
       const btn = document.getElementById('confirm-pkg-del');

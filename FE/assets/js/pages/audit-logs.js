@@ -566,7 +566,7 @@ window.GymApp.pages['audit-logs'] = {
 
   _refreshView: function () {
     const self = this;
-    const content = document.getElementById('content-area');
+    const content = document.getElementById('audit-modal-body-container');
     if (content) {
       content.innerHTML = self.render();
       self.init();
@@ -578,29 +578,17 @@ window.GymApp.pages['audit-logs'] = {
     }
   },
 
-  guideHtml: `
-    <div class="space-y-4 text-xs">
-      <div class="flex items-start gap-2 bg-brand-primary/5 p-3 rounded-xl border border-brand-primary/10">
-        <span class="material-symbols-outlined text-brand-primary text-base flex-shrink-0 mt-0.5">info</span>
-        <p class="text-on-surface-variant leading-relaxed">Trang <strong>Nhật ký kiểm tra</strong> cho phép kiểm soát viên hoặc quản trị viên kiểm tra tất cả dấu vết thao tác của người dùng trong hệ thống (Tạo, Sửa, Xóa, Đăng nhập, Check-in...).</p>
-      </div>
+  open: function () {
+    const modal = document.getElementById('modal-audit-logs');
+    if (modal) {
+      modal.style.display = 'flex';
+      this.currentPageNum = 1;
+      this._loadData();
+    }
+  },
 
-      <div>
-        <h4 class="font-bold text-on-surface mb-1">Phân luồng vai trò (Tabs):</h4>
-        <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
-          <li><strong>Xem tất cả:</strong> Lọc hiển thị toàn bộ lịch sử không phân biệt vai trò.</li>
-          <li><strong>Các tab vai trò cụ thể:</strong> Click vào các tab như **Quản trị viên**, **Lễ tân**, **Huấn luyện viên**, **Hội viên** để chỉ xem các hoạt động được thực hiện bởi người dùng có vai trò đó.</li>
-        </ul>
-      </div>
-
-      <div>
-        <h4 class="font-bold text-on-surface mb-1">Bộ lọc nâng cao:</h4>
-        <ul class="list-disc pl-5 space-y-1 text-on-surface-variant">
-          <li><strong>Từ khóa tìm kiếm:</strong> Nhập tài khoản, họ tên hoặc nội dung ghi chú để tìm nhanh log cụ thể.</li>
-          <li><strong>Loại hành động:</strong> Lọc theo các loại thao tác như LOGIN, CREATE_MEMBER, CHECKIN...</li>
-          <li><strong>Khoảng thời gian:</strong> Nhập ngày bắt đầu và ngày kết thúc để giới hạn thời điểm ghi nhận hoạt động.</li>
-        </ul>
-      </div>
-    </div>
-  `
+  close: function () {
+    const modal = document.getElementById('modal-audit-logs');
+    if (modal) modal.style.display = 'none';
+  }
 };

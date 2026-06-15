@@ -7,6 +7,8 @@
     'birthday': 'Sinh nhật hội viên', 'gym-rules': 'Nội quy phòng tập',
     'revenue': 'Doanh thu', 'audit-logs': 'Nhật ký kiểm tra',
     'staff': 'Danh sách nhân viên',
+    'notification-settings': 'Thông báo tự động',
+    'promotions': 'Khuyến mãi',
   };
   const SUB_PAGES = ['members-list', 'member-add', 'checkin', 'expired', 'pt-training', 'pt-register', 'packages', 'birthday', 'revenue', 'staff'];
 
@@ -250,7 +252,6 @@
 
     const close = () => overlay.remove();
     document.getElementById('close-modal').addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
     const escHandler = e => { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', escHandler); } };
     document.addEventListener('keydown', escHandler);
   };
@@ -715,13 +716,40 @@
       }
       if (dashboardRes?.success) window.GymApp.data.stats = dashboardRes.data;
 
-      // Cập nhật badge yêu cầu gia hạn
+      // Cập nhật badge yêu cầu gia hạn, hết hạn và sắp hết hạn
       try {
-        const pkgReqRes = await window.GymApp.api.get('/members/package-requests');
-        if (pkgReqRes?.success) {
-          const count = (pkgReqRes.data || []).length;
-          const badge = document.getElementById('pkg-req-badge');
-          if (badge) { badge.textContent = count > 9 ? '9+' : count; badge.style.display = count > 0 ? 'flex' : 'none'; }
+        const branch = window.GymApp.selectedBranch || '';
+        const branchQ = branch ? `?chi_nhanh=${encodeURIComponent(branch)}` : '';
+        const expiringQ = branch ? `&chi_nhanh=${encodeURIComponent(branch)}` : '';
+
+        const [expiredRes, expiringRes, requestsRes] = await Promise.all([
+          window.GymApp.api.get(`/members/expired${branchQ}`),
+          window.GymApp.api.get(`/members/expiring?days=7${expiringQ}`),
+          window.GymApp.api.get(`/members/package-requests${branchQ}`),
+        ]);
+
+        const expiredList = (expiredRes && expiredRes.success) ? (expiredRes.data || []) : [];
+        const expiringList = (expiringRes && expiringRes.success) ? (expiringRes.data || []) : [];
+        const requestsList = (requestsRes && requestsRes.success) ? (requestsRes.data || []) : [];
+
+        let defaultTab = 'expired';
+        let badgeCount = 0;
+        if (requestsList.length > 0) {
+          defaultTab = 'requests';
+          badgeCount = requestsList.length;
+        } else if (expiredList.length > 0) {
+          defaultTab = 'expired';
+          badgeCount = expiredList.length;
+        } else if (expiringList.length > 0) {
+          defaultTab = 'expiring';
+          badgeCount = expiringList.length;
+        }
+        sessionStorage.setItem('expired_default_tab', defaultTab);
+
+        const badge = document.getElementById('pkg-req-badge');
+        if (badge) {
+          badge.textContent = badgeCount > 9 ? '9+' : badgeCount;
+          badge.style.display = badgeCount > 0 ? 'flex' : 'none';
         }
       } catch (_) {}
 
@@ -938,11 +966,7 @@
       modal.style.display = 'none';
     });
 
-    modal.addEventListener('click', function (e) {
-      if (e.target === modal) {
-        modal.style.display = 'none';
-      }
-    });
+
   }
 
   document.addEventListener('DOMContentLoaded', async function () {
@@ -967,6 +991,41 @@
             await _showStartupBranchModal();
           } else {
             window.GymApp.selectedBranch = selectedBranch;
+          }
+        }
+
+        // Kết nối Socket.IO sau khi auth thành công
+        if (typeof io !== 'undefined') {
+          try {
+            const socketUrl = 'http://localhost:3000';
+            window.GymApp._socket = io(socketUrl, { transports: ['websocket', 'polling'] });
+            const sock = window.GymApp._socket;
+            sock.on('connect', () => {
+              console.log('🔌 Socket.IO connected:', sock.id);
+              // Đăng ký vào room theo vai trò
+              const u = window.GymApp.auth.user;
+              if (u) sock.emit('join', { userId: u.id, role: u.vai_tro });
+            });
+            // Lắng nghe thông báo mới từ server
+            sock.on('notification:new', (payload) => {
+              console.log('🔔 notification:new', payload);
+              // Tăng badge lên 1 (không cần gọi API)
+              const badge = document.getElementById('notif-badge');
+              if (badge) {
+                const cur = parseInt(badge.textContent) || 0;
+                const next = cur + 1;
+                badge.textContent = next > 99 ? '99+' : next;
+                badge.classList.remove('hidden');
+              }
+              // Toast nhẹ thông báo mới
+              window.GymApp.toast(
+                `🔔 ${payload.tieu_de}`,
+                'info'
+              );
+            });
+            sock.on('disconnect', () => console.log('🔌 Socket.IO disconnected'));
+          } catch (sockErr) {
+            console.warn('Socket.IO init error:', sockErr);
           }
         }
     } catch (e) {
@@ -1146,6 +1205,14 @@
       } catch (err) {
         window.GymApp.toast(err.message || 'Lỗi đổi mật khẩu', 'error');
       }
+    });
+
+    // Audit Logs Modal
+    document.getElementById('btn-admin-audit-logs')?.addEventListener('click', () => {
+      window.GymApp.pages['audit-logs']?.open();
+    });
+    document.getElementById('btn-close-audit-modal')?.addEventListener('click', () => {
+      window.GymApp.pages['audit-logs']?.close();
     });
 
     // 5. Click delegation (Cực kỳ quan trọng)
@@ -1345,10 +1412,7 @@
     document.addEventListener('DOMContentLoaded', function () {
       document.getElementById('btn-close-qr-modal')?.addEventListener('click', _closeQrModal);
 
-      // Click overlay để đóng
-      document.getElementById('modal-qr-scan')?.addEventListener('click', function (e) {
-        if (e.target === this) _closeQrModal();
-      });
+
 
       // Phím Escape
       document.addEventListener('keydown', function (e) {
@@ -1674,9 +1738,10 @@
         }
       });
 
-      // Polling mỗi 30 giây
+      // Lấy count khi load lần đầu
       _fetchUnreadCount();
-      _pollingTimer = setInterval(_fetchUnreadCount, 30000);
+      // Giữ polling 60s như fallback (đã có Socket.IO push realtime nên giảm tần suất)
+      _pollingTimer = setInterval(_fetchUnreadCount, 60000);
 
       // Gọi summary khi app load xong (sau khi auth xác nhận)
       setTimeout(_showLoginSummary, 1500);

@@ -327,7 +327,6 @@ window.GymApp.pages['gym-rules'] = {
     const close = () => overlay.remove();
     document.getElementById('close-rule-modal').addEventListener('click', close);
     document.getElementById('cancel-rule-modal').addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
 
     document.getElementById('save-rule-modal').addEventListener('click', async () => {
       const tieu_de = document.getElementById('rule-title').value.trim();
@@ -402,7 +401,6 @@ window.GymApp.pages['gym-rules'] = {
 
     const close = () => overlay.remove();
     document.getElementById('cancel-rule-del').addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
 
     document.getElementById('confirm-rule-del').addEventListener('click', async () => {
       const btn = document.getElementById('confirm-rule-del');

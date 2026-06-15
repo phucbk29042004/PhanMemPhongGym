@@ -13,7 +13,7 @@ import { getActorBranch } from '../utils/branch.js';
 
 // ── GET /api/staff ────────────────────────────────────────
 export const getStaff = (req, res) => {
-  const { search, loai, chi_nhanh, gioi_tinh, trang_thai, page = 1, limit = 20 } = req.query;
+  const { search, vai_tro, chi_nhanh, gioi_tinh, trang_thai, page = 1, limit = 20 } = req.query;
   const offset = (parseInt(page) - 1) * parseInt(limit);
 
   let filterBranch = chi_nhanh;
@@ -30,9 +30,9 @@ export const getStaff = (req, res) => {
     params.push(filterBranch);
   }
 
-  if (loai && loai === 'nhan_vien') {
-    where += ' AND h.loai_ho_so = ?';
-    params.push(loai);
+  if (vai_tro) {
+    where += ' AND vt.ma_vai_tro = ?';
+    params.push(vai_tro);
   }
   if (gioi_tinh) {
     where += ' AND h.gioi_tinh = ?';
@@ -55,15 +55,17 @@ export const getStaff = (req, res) => {
     SELECT
       h.id, h.ma_ho_so, h.loai_ho_so, h.ho_ten, h.gioi_tinh, h.ngay_sinh,
       h.so_dien_thoai, h.email, h.avatar_url, h.chuc_vu, h.chi_nhanh, h.ngay_tao,
-      tk.ten_dang_nhap, tk.trang_thai AS tk_trang_thai
+      tk.ten_dang_nhap, tk.trang_thai AS tk_trang_thai,
+      vt.ma_vai_tro, vt.ten_hien_thi AS ten_vai_tro
     FROM ho_so h
     LEFT JOIN tai_khoan tk ON tk.id = h.tai_khoan_id
+    LEFT JOIN vai_tro vt ON vt.id = tk.vai_tro_id
     ${where}
     ORDER BY h.ngay_tao DESC
     LIMIT ? OFFSET ?
   `).all(...params, parseInt(limit), offset);
 
-  const total = db.prepare(`SELECT COUNT(*) AS cnt FROM ho_so h LEFT JOIN tai_khoan tk ON tk.id = h.tai_khoan_id ${where}`).get(...params).cnt;
+  const total = db.prepare(`SELECT COUNT(*) AS cnt FROM ho_so h LEFT JOIN tai_khoan tk ON tk.id = h.tai_khoan_id LEFT JOIN vai_tro vt ON vt.id = tk.vai_tro_id ${where}`).get(...params).cnt;
 
   return success(res, {
     data: rows,
@@ -348,4 +350,98 @@ export const deleteStaff = (req, res) => {
 
   ghi_audit_log(req, 'DELETE', 'ho_so', parseInt(id), staff, null, ly_do || 'Xóa hồ sơ nhân viên');
   return success(res, null, 'Đã xóa nhân viên (Soft Delete)');
+};
+
+// ── GET /api/staff/accounts (Lấy danh sách tài khoản) ────────────────────────
+export const getAccounts = (req, res) => {
+  const { search, vai_tro, trang_thai } = req.query;
+  let where = 'WHERE tk.id IS NOT NULL';
+  const params = [];
+
+  if (vai_tro) {
+    where += ' AND vt.ma_vai_tro = ?';
+    params.push(vai_tro);
+  }
+  if (trang_thai) {
+    where += ' AND tk.trang_thai = ?';
+    params.push(trang_thai);
+  }
+  if (search) {
+    where += ' AND (tk.ten_dang_nhap LIKE ? OR hs.ho_ten LIKE ? OR hs.ma_ho_so LIKE ?)';
+    const s = `%${search}%`;
+    params.push(s, s, s);
+  }
+
+  const rows = db.prepare(`
+    SELECT 
+      tk.id, tk.ten_dang_nhap, tk.trang_thai, tk.ngay_tao,
+      vt.ma_vai_tro, vt.ten_hien_thi AS ten_vai_tro,
+      hs.ho_ten, hs.ma_ho_so, hs.loai_ho_so, hs.id AS ho_so_id
+    FROM tai_khoan tk
+    LEFT JOIN vai_tro vt ON vt.id = tk.vai_tro_id
+    LEFT JOIN ho_so hs ON hs.tai_khoan_id = tk.id AND hs.is_deleted = 0
+    ${where}
+    ORDER BY tk.ngay_tao DESC
+  `).all(...params);
+
+  return success(res, rows);
+};
+
+// ── PUT /api/staff/accounts/:id (Cập nhật tài khoản) ─────────────────────────
+export const updateAccount = (req, res) => {
+  const { id } = req.params;
+  const { ten_dang_nhap, mat_khau, vai_tro, trang_thai } = req.body;
+
+  const account = db.prepare('SELECT * FROM tai_khoan WHERE id = ?').get(id);
+  if (!account) return error(res, 'Không tìm thấy tài khoản.', 404);
+
+  let hash = account.mat_khau_hash;
+  if (mat_khau) {
+    hash = bcrypt.hashSync(mat_khau, 12);
+  }
+
+  let vai_tro_id = account.vai_tro_id;
+  if (vai_tro) {
+    const vt = db.prepare('SELECT id FROM vai_tro WHERE ma_vai_tro = ?').get(vai_tro);
+    if (vt) vai_tro_id = vt.id;
+  }
+
+  if (ten_dang_nhap && ten_dang_nhap !== account.ten_dang_nhap) {
+    const exists = db.prepare('SELECT id FROM tai_khoan WHERE ten_dang_nhap = ? AND id != ?').get(ten_dang_nhap, id);
+    if (exists) return error(res, 'Tên đăng nhập đã tồn tại.', 409);
+  }
+
+  db.prepare(`
+    UPDATE tai_khoan SET
+      ten_dang_nhap = COALESCE(?, ten_dang_nhap),
+      mat_khau_hash = ?,
+      vai_tro_id = ?,
+      trang_thai = COALESCE(?, trang_thai)
+    WHERE id = ?
+  `).run(ten_dang_nhap || null, hash, vai_tro_id, trang_thai || null, id);
+
+  ghi_audit_log(req, 'UPDATE', 'tai_khoan', parseInt(id), { ten_dang_nhap: account.ten_dang_nhap }, { ten_dang_nhap }, 'Cập nhật tài khoản hệ thống');
+  return success(res, null, 'Cập nhật tài khoản thành công');
+};
+
+// ── DELETE /api/staff/accounts/:id (Xóa tài khoản) ────────────────────────────
+export const deleteAccount = (req, res) => {
+  const { id } = req.params;
+  const account = db.prepare('SELECT * FROM tai_khoan WHERE id = ?').get(id);
+  if (!account) return error(res, 'Không tìm thấy tài khoản.', 404);
+
+  if (parseInt(id) === req.user.id) {
+    return error(res, 'Bạn không thể tự xóa tài khoản của chính mình!', 400);
+  }
+
+  const tx = db.transaction(() => {
+    // Gỡ bỏ liên kết khóa ngoại ở bảng ho_so trước
+    db.prepare('UPDATE ho_so SET tai_khoan_id = NULL WHERE tai_khoan_id = ?').run(id);
+    db.prepare('DELETE FROM tai_khoan WHERE id = ?').run(id);
+  });
+
+  tx();
+
+  ghi_audit_log(req, 'DELETE', 'tai_khoan', parseInt(id), account, null, 'Xóa tài khoản hệ thống');
+  return success(res, null, 'Xóa tài khoản thành công');
 };

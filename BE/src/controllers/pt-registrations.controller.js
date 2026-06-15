@@ -8,6 +8,8 @@ import { success, error } from '../utils/response.js';
 import { ghi_audit_log } from '../utils/audit.js';
 import { createNotification, createUserNotification } from '../utils/notifications.js';
 import { getActorBranch } from '../utils/branch.js';
+import { createPaymentLink } from '../utils/payos.js';
+
 
 
 // Tự động cập nhật các gói tập/PT đã quá hạn sử dụng sang trạng thái tương ứng
@@ -142,7 +144,7 @@ export const getRegistrationById = (req, res) => {
 
 // ── POST /api/pt/registrations ────────────────────────────
 // Đăng ký gói PT cho hội viên
-export const createRegistration = (req, res) => {
+export const createRegistration = async (req, res) => {
   autoUpdateExpiredStatuses();
   const {
     hoi_vien_id, pt_id, goi_pt_id,
@@ -189,6 +191,54 @@ export const createRegistration = (req, res) => {
     return error(res, 'Ngày bắt đầu không được là ngày trong quá khứ.', 400);
   }
   const finalStatus = tu_ngay > todayStr ? 'cho_kich_hoat' : 'dang_hoat_dong';
+  const hvInfo = db.prepare('SELECT ho_ten FROM ho_so WHERE id = ?').get(hoi_vien_id);
+  const ptInfo = db.prepare('SELECT ho_ten FROM ho_so WHERE id = ?').get(pt_id);
+
+  if (phuong_thuc_tt === 'chuyen_khoan') {
+    try {
+      const orderCode = Math.floor(Date.now() / 1000) * 100 + Math.floor(Math.random() * 100);
+      const returnUrl = `https://pay.waystation.vn/success?orderCode=${orderCode}`;
+      const cancelUrl = `https://pay.waystation.vn/cancel?orderCode=${orderCode}`;
+      const description = `Goi PT ${hvInfo?.ho_ten || 'Hoi vien'}`.substring(0, 25);
+      const paymentLink = await createPaymentLink(orderCode, gia_thuc_te, description, returnUrl, cancelUrl);
+
+      const result = db.prepare(`
+        INSERT INTO dang_ky_pt
+          (hoi_vien_id, pt_id, goi_pt_id, so_buoi_dang_ky, so_buoi_da_tap,
+           tu_ngay, den_ngay, gia_thuc_te, phuong_thuc_tt, ma_giao_dich, ghi_chu_tt, nguoi_tao_id, ngay_thanh_toan, trang_thai, chi_nhanh_dang_ky, payos_order_code, payos_status)
+        VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, null, 'cho_duyet', ?, ?, 'PENDING')
+      `).run(
+        hoi_vien_id, pt_id, goi_pt_id,
+        soBuoi, tu_ngay, den_ngay || null,
+        parseFloat(gia_thuc_te), phuong_thuc_tt,
+        ma_giao_dich || null, ghi_chu_tt || null, req.user.id, chiNhanhDangKy, orderCode
+      );
+
+      ghi_audit_log(req, 'CREATE', 'dang_ky_pt', result.lastInsertRowid, null,
+        { hoi_vien_id, pt_id, so_buoi_dang_ky }, 'Đăng ký gói PT chuyển khoản PayOS (admin)');
+
+      createNotification(
+        'dang_ky_goi_pt_moi',
+        'Đăng ký gói PT mới — Chờ PayOS',
+        `${hvInfo?.ho_ten || `HV-${hoi_vien_id}`} vừa đăng ký ${goiPt.ten_goi} với PT ${ptInfo?.ho_ten || `PT-${pt_id}`} qua chuyển khoản PayOS — chờ thanh toán`,
+        result.lastInsertRowid,
+        'dang_ky_pt',
+        'admin'
+      );
+
+      return success(res, {
+        id: result.lastInsertRowid,
+        orderCode,
+        payosUrl: paymentLink.checkoutUrl,
+        qrCodeUrl: paymentLink.qrCode,
+        amount: gia_thuc_te,
+        den_ngay: den_ngay || null,
+      }, 'Tạo link thanh toán PayOS thành công. Vui lòng quét QR để hoàn tất.', 201);
+    } catch (payosErr) {
+      console.error('[createPtRegistration] PayOS error:', payosErr);
+      return error(res, `Không thể tạo cổng thanh toán PayOS: ${payosErr.message}`, 500);
+    }
+  }
 
   const result = db.prepare(`
     INSERT INTO dang_ky_pt
@@ -202,13 +252,9 @@ export const createRegistration = (req, res) => {
     ma_giao_dich || null, ghi_chu_tt || null, req.user.id, tu_ngay, finalStatus, chiNhanhDangKy
   );
 
-
   ghi_audit_log(req, 'CREATE', 'dang_ky_pt', result.lastInsertRowid, null,
     { hoi_vien_id, pt_id, so_buoi_dang_ky }, 'Đăng ký gói PT');
 
-  // Sinh thông báo đăng ký gói PT mới cho admin
-  const hvInfo = db.prepare('SELECT ho_ten FROM ho_so WHERE id = ?').get(hoi_vien_id);
-  const ptInfo = db.prepare('SELECT ho_ten FROM ho_so WHERE id = ?').get(pt_id);
   createNotification(
     'dang_ky_goi_pt_moi',
     'Đăng ký gói PT mới',
@@ -351,4 +397,41 @@ export const cancelRegistration = (req, res) => {
     { trang_thai: 'huy', ly_do_huy: lyDoText, so_tien_hoan: refundAmount }, 'Hủy đăng ký PT');
   return success(res, null, 'Đã hủy đăng ký PT');
 };
+
+
+// ── DELETE /api/pt/registrations/payment/:orderCode ───
+export const cancelPendingPtPayment = (req, res) => {
+  const { orderCode } = req.params;
+
+  try {
+    const ptReg = db.prepare(`
+      SELECT * FROM dang_ky_pt
+      WHERE payos_order_code = ? AND trang_thai = 'cho_duyet'
+    `).get(orderCode);
+
+    if (!ptReg) {
+      return error(res, 'Không tìm thấy gói đăng ký PT chờ thanh toán phù hợp.', 404);
+    }
+
+    // Xóa hẳn bản ghi khỏi Database
+    db.prepare(`
+      DELETE FROM dang_ky_pt
+      WHERE id = ?
+    `).run(ptReg.id);
+
+    // Cũng xóa thông báo liên quan nếu có
+    db.prepare(`
+      DELETE FROM thong_bao
+      WHERE doi_tuong_id = ? AND doi_tuong = 'dang_ky_pt'
+    `).run(ptReg.id);
+
+    ghi_audit_log(req, 'DELETE', 'dang_ky_pt', ptReg.id, ptReg, null, 'Hủy bỏ giao dịch đăng ký gói PT (quét QR)');
+    
+    return success(res, null, 'Đã hủy bỏ giao dịch đăng ký gói PT thành công.');
+  } catch (err) {
+    console.error('Lỗi khi hủy gói PT:', err);
+    return error(res, 'Lỗi hệ thống khi hủy gói PT.', 500);
+  }
+};
+
 

@@ -123,6 +123,28 @@ window.GymApp.pages['expired'] = {
         badge.classList.toggle('hidden', self._requestsList.length === 0);
       }
 
+      // Xác định tab ưu tiên nhất có dữ liệu để chuyển đến và cập nhật badge
+      let defaultTab = 'expired';
+      let badgeCount = 0;
+      if (self._requestsList.length > 0) {
+        defaultTab = 'requests';
+        badgeCount = self._requestsList.length;
+      } else if (self._expiredList.length > 0) {
+        defaultTab = 'expired';
+        badgeCount = self._expiredList.length;
+      } else if (self._expiringList.length > 0) {
+        defaultTab = 'expiring';
+        badgeCount = self._expiringList.length;
+      }
+      sessionStorage.setItem('expired_default_tab', defaultTab);
+      
+      const pkgReqBadge = document.getElementById('pkg-req-badge');
+      if (pkgReqBadge) {
+        pkgReqBadge.textContent = badgeCount > 9 ? '9+' : badgeCount;
+        pkgReqBadge.style.display = badgeCount > 0 ? 'flex' : 'none';
+      }
+
+      self._updateTabStyles();
       self._refreshView();
 
       // Hide loading
@@ -391,9 +413,13 @@ window.GymApp.pages['expired'] = {
     this._expiredPage = 1;
     this._expiringPage = 1;
     this._requestsPage = 1;
+    this._tab = sessionStorage.getItem('expired_default_tab') || 'expired';
 
     // Load data after DOM is ready
-    setTimeout(() => self._loadData(), 50);
+    setTimeout(() => {
+      self._updateTabStyles();
+      self._loadData();
+    }, 50);
 
     document.getElementById('expired-search')?.addEventListener('input', (e) => {
       self._searchQuery = e.target.value;

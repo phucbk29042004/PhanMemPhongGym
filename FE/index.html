@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Paradise GYM - Quản lý</title>
-  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script src="./assets/js/tailwindcss.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
     rel="stylesheet" />
@@ -279,23 +279,21 @@
                 <span class="sidebar-label">Sinh nhật hội viên</span>
               </button>
 
-
-
+              <button
+                class="sub-nav-item flex items-center gap-compact w-full px-standard py-compact rounded-xl text-body-sm transition-all duration-150"
+                style="color:#166534"
+                onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}"
+                onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
+                data-page="promotions" title="Khuyến mãi">
+                <span class="material-symbols-outlined text-sm flex-shrink-0">local_offer</span>
+                <span class="sidebar-label">Khuyến mãi</span>
+              </button>
 
             </div>
           </div>
         </div>
 
-        <!-- Nhật ký kiểm tra -->
-        <button
-          class="nav-item flex items-center gap-standard w-full px-standard py-compact rounded-xl transition-all duration-150"
-          style="color:#166534"
-          onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}"
-          onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
-          data-page="audit-logs" title="Nhật ký kiểm tra">
-          <span class="material-symbols-outlined text-xl flex-shrink-0">history</span>
-          <span class="sidebar-label font-body-md text-body-md font-medium">Nhật ký kiểm tra</span>
-        </button>
+
 
         <!-- Nội quy phòng tập -->
         <button
@@ -306,6 +304,17 @@
           data-page="gym-rules" title="Nội quy phòng tập">
           <span class="material-symbols-outlined text-xl flex-shrink-0">gavel</span>
           <span class="sidebar-label font-body-md text-body-md font-medium">Nội quy phòng tập</span>
+        </button>
+
+        <!-- Thông báo tự động -->
+        <button
+          class="nav-item flex items-center gap-standard w-full px-standard py-compact rounded-xl transition-all duration-150"
+          style="color:#166534"
+          onmouseover="if(!this.classList.contains('nav-active')){this.style.background='#bbf7d0';this.style.color='#14532d'}"
+          onmouseout="if(!this.classList.contains('nav-active')){this.style.background='';this.style.color='#166534'}"
+          data-page="notification-settings" title="Thông báo tự động">
+          <span class="material-symbols-outlined text-xl flex-shrink-0">notifications_active</span>
+          <span class="sidebar-label font-body-md text-body-md font-medium">Thông báo tự động</span>
         </button>
       </nav>
 
@@ -351,11 +360,11 @@
           <!-- Bell Icon Notifications -->
           <div class="relative" id="notif-wrapper">
             <button id="btn-bell"
-              class="material-symbols-outlined text-on-surface-variant hover:text-brand-primary p-atom rounded-lg transition-all relative"
+              class="hover:text-brand-primary p-atom rounded-lg transition-all relative flex items-center justify-center w-9 h-9"
               title="Thông báo">
-              notifications
+              <span class="material-symbols-outlined text-on-surface-variant">notifications</span>
               <span id="notif-badge"
-                class="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-0.5 bg-red-500 text-white rounded-full text-[10px] font-bold leading-4 text-center hidden">0</span>
+                class="absolute top-0.5 right-0.5 min-w-[16px] h-4 px-1 bg-red-500 text-white rounded-full text-[9px] font-bold flex items-center justify-center hidden">0</span>
             </button>
             <!-- Dropdown thông báo -->
             <div id="notif-dropdown"
@@ -416,6 +425,11 @@
                   <span class="material-symbols-outlined text-lg">campaign</span>
                   Thông báo tổng
                 </button>
+                <button id="btn-admin-audit-logs"
+                  class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-on-surface-variant hover:text-brand-primary hover:bg-surface-container rounded-lg transition-colors">
+                  <span class="material-symbols-outlined text-lg">history</span>
+                  Nhật ký kiểm tra
+                </button>
                 <div class="h-px bg-outline-variant/50 my-1"></div>
                 <button id="btn-admin-logout"
                   class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-error hover:text-error hover:bg-error-container rounded-lg transition-colors">
@@ -471,6 +485,8 @@
   </div>
 
   <!-- Global Data synced via app.js -->
+  <!-- Socket.IO client cho realtime notifications -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script src="assets/js/api.js"></script>
   <script src="assets/js/auth.js"></script>
   <script src="assets/js/pages/dashboard.js"></script>
@@ -484,6 +500,8 @@
   <script src="assets/js/pages/gym-rules.js"></script>
   <script src="assets/js/pages/birthday.js"></script>
   <script src="assets/js/pages/broadcast.js"></script>
+  <script src="assets/js/pages/notification-settings.js"></script>
+  <script src="assets/js/pages/promotions.js"></script>
   <script src="assets/js/pages/revenue.js"></script>
   <script src="assets/js/pages/audit-logs.js"></script>
   <script src="assets/js/pages/staff.js"></script>
@@ -759,6 +777,35 @@
       <div class="flex flex-col gap-2.5 max-h-[50vh] overflow-y-auto pr-1" id="header-branch-options-container"
         style="scrollbar-width:thin; scrollbar-color:var(--outline-variant) transparent;">
         <!-- Render động từ JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Nhật ký kiểm tra (Audit Logs) -->
+  <div id="modal-audit-logs" style="display: none;"
+    class="fixed inset-0 z-[9100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div
+      class="bg-white dark:bg-[#1e1e1e] border border-outline-variant/40 rounded-3xl w-full max-w-6xl shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]">
+      <!-- Header -->
+      <div class="flex items-center gap-3 px-6 py-4 border-b border-outline-variant/50 bg-surface-container-low/20">
+        <div class="w-9 h-9 bg-brand-primary rounded-xl flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined text-white text-lg"
+            style="font-variation-settings:'FILL' 1">history</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="font-bold text-on-surface text-sm">Nhật ký kiểm tra hệ thống</p>
+          <p class="text-on-surface-variant text-[11px]">Xem dấu vết các thao tác của tài khoản trên hệ thống</p>
+        </div>
+        <button id="btn-close-audit-modal"
+          class="text-on-surface-variant hover:text-error transition-colors p-1.5 rounded-lg cursor-pointer">
+          <span class="material-symbols-outlined text-lg">close</span>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="p-6 overflow-y-auto flex-1" id="audit-modal-body-container"
+        style="scrollbar-width: thin; scrollbar-color: var(--outline-variant) transparent;">
+        <!-- Render nội dung từ audit-logs.js -->
       </div>
     </div>
   </div>

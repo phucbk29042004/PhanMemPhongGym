@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator, Alert, ScrollView,
-  StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View
+  StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View,
+  Modal, Image
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, Dumbbell, User, Save, AlertTriangle } from 'lucide-react-native';
@@ -95,6 +96,8 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
   const [selectedPkg, setSelectedPkg] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [payosData, setPayosData] = useState(null);
+  const [showQrModal, setShowQrModal] = useState(false);
 
   // Loại đăng ký khi có PT cũ:
   //   'noi_tiep' = ngày bắt đầu = ngày kết thúc PT cũ + 1
@@ -176,6 +179,54 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
     };
     loadInitData();
   }, []);
+
+  // Polling check trạng thái thanh toán PayOS cho gói PT
+  useEffect(() => {
+    let timer;
+    if (showQrModal && payosData?.orderCode) {
+      timer = setInterval(async () => {
+        try {
+          const res = await api.get(`/members/me/payos-status/${payosData.orderCode}`);
+          if (res.data?.success && res.data.data?.status === 'PAID') {
+            clearInterval(timer);
+            Alert.alert('Thành công', 'Thanh toán PayOS thành công!', [
+              {
+                text: 'OK',
+                onPress: () => {
+                  setShowQrModal(false);
+                  setPayosData(null);
+                  navigation.goBack();
+                }
+              }
+            ]);
+          } else if (res.data?.success && res.data.data?.status === 'CANCELLED') {
+            clearInterval(timer);
+            Alert.alert('Thông báo', 'Giao dịch thanh toán đã bị hủy.');
+            setShowQrModal(false);
+            setPayosData(null);
+          }
+        } catch (e) {
+          console.log('Poll status error:', e.message);
+        }
+      }, 3000);
+    }
+    return () => clearInterval(timer);
+  }, [showQrModal, payosData, navigation]);
+
+  const handleCancelPayment = async () => {
+    if (!payosData?.orderCode) return;
+    try {
+      setSubmitting(true);
+      await api.delete(`/pt/registrations/payment/${payosData.orderCode}`);
+      Alert.alert('Thông báo', 'Đã hủy bỏ giao dịch đăng ký gói PT.');
+    } catch (e) {
+      console.log('Cancel PT payment error:', e.message);
+    } finally {
+      setSubmitting(false);
+      setShowQrModal(false);
+      setPayosData(null);
+    }
+  };
 
   const handleSelectPackage = (pkg) => {
     setSelectedPkg(pkg);
@@ -262,9 +313,14 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
 
         const res = await api.post('/pt/registrations', payload);
         if (res.data?.success) {
-          Alert.alert('Thành công', `Đăng ký gói PT thành công với HLV ${selectedTrainer.ho_ten}!`, [
-            { text: 'OK', onPress: () => navigation.goBack() }
-          ]);
+          if (paymentMethod === 'chuyen_khoan' && res.data.data?.orderCode) {
+            setPayosData(res.data.data);
+            setShowQrModal(true);
+          } else {
+            Alert.alert('Thành công', `Đăng ký gói PT thành công với HLV ${selectedTrainer.ho_ten}!`, [
+              { text: 'OK', onPress: () => navigation.goBack() }
+            ]);
+          }
         } else {
           Alert.alert('Lỗi', res.data?.message || 'Đăng ký PT thất bại.');
         }
@@ -601,6 +657,64 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* PayOS QR Modal */}
+      <Modal visible={showQrModal} transparent={true} animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: colors.surface }]}>
+            <View style={[styles.modalHeader, { backgroundColor: colors.primary }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalTitle}>Thanh toán chuyển khoản</Text>
+                <Text style={styles.modalSubtitle}>Hội viên: {member?.ho_ten}</Text>
+              </View>
+              <TouchableOpacity onPress={handleCancelPayment} style={styles.modalCloseBtn}>
+                <X color="#ffffff" size={18} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.modalBody}>
+              <View style={[styles.priceCard, { borderColor: colors.border }]}>
+                <Text style={[styles.priceLabel, { color: colors.textSecondary }]}>SỐ TIỀN CẦN THANH TOÁN</Text>
+                <Text style={[styles.priceValue, { color: colors.primary }]}>{formatPrice(payosData?.amount)}</Text>
+              </View>
+              
+              <View style={styles.qrContainer}>
+                {payosData?.qrCodeUrl ? (
+                  <Image
+                    source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(payosData.qrCodeUrl)}` }}
+                    style={styles.qrImage}
+                  />
+                ) : (
+                  <ActivityIndicator size="large" color={colors.primary} />
+                )}
+              </View>
+
+              <View style={[styles.infoCard, { borderColor: colors.border, backgroundColor: colors.surfaceVariant }]}>
+                <View style={styles.infoRow}>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Mã đơn hàng</Text>
+                  <Text style={[styles.infoVal, { color: colors.text }]}>#{payosData?.orderCode}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Nội dung CK</Text>
+                  <Text style={[styles.infoVal, { color: colors.text, fontWeight: '800' }]}>{payosData?.orderCode}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Hạn sử dụng</Text>
+                  <Text style={[styles.infoVal, { color: colors.text }]}>{payosData?.den_ngay ? payosData.den_ngay.substring(0, 10) : '—'}</Text>
+                </View>
+              </View>
+
+              <View style={styles.statusRow}>
+                <ActivityIndicator size="small" color={colors.primary} style={{ marginRight: 6 }} />
+                <Text style={[styles.statusText, { color: colors.primary }]}>Đang chờ thanh toán...</Text>
+              </View>
+
+              <TouchableOpacity onPress={handleCancelPayment} style={styles.cancelPaymentBtn}>
+                <Text style={styles.cancelPaymentBtnText}>Hủy & Quay lại</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -732,5 +846,132 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 8
   },
-  submitBtnText: { color: '#ffffff', fontSize: 15, fontWeight: '800' }
+  submitBtnText: { color: '#ffffff', fontSize: 15, fontWeight: '800' },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 360,
+    borderRadius: 24,
+    overflow: 'hidden',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 }
+  },
+  modalHeader: {
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
+  modalTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#ffffff'
+  },
+  modalSubtitle: {
+    fontSize: 11,
+    color: 'rgba(255, 255, 255, 0.85)',
+    fontWeight: '500',
+    marginTop: 2
+  },
+  modalCloseBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  modalBody: {
+    padding: 20,
+    alignItems: 'center',
+    gap: 16
+  },
+  priceCard: {
+    width: '100%',
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'center',
+    backgroundColor: '#ffffff'
+  },
+  priceLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    marginBottom: 4
+  },
+  priceValue: {
+    fontSize: 22,
+    fontWeight: '800'
+  },
+  qrContainer: {
+    width: 180,
+    height: 180,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#e2e8f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ffffff',
+    padding: 8
+  },
+  qrImage: {
+    width: 160,
+    height: 160,
+    borderRadius: 8
+  },
+  infoCard: {
+    width: '100%',
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 12,
+    gap: 6
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  infoLabel: {
+    fontSize: 12,
+    fontWeight: '500'
+  },
+  infoVal: {
+    fontSize: 12,
+    fontWeight: '700'
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 4
+  },
+  statusText: {
+    fontSize: 13,
+    fontWeight: '700'
+  },
+  cancelPaymentBtn: {
+    width: '100%',
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#f1f5f9',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  cancelPaymentBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#475569'
+  }
 });

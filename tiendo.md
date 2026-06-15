@@ -8,7 +8,169 @@
 ---
 
 ## 📌 Trạng thái hiện tại
-**✅ Đồng bộ chức năng Xóa nhân viên và phân quyền trên Mobile App** — Thêm nút Xóa nhân viên có Alert xác nhận và đồng bộ phân quyền thao tác nhân viên (chỉ dành cho `admin` và `chu_phong_gym`) trên Mobile App.
+**✅ [15/06/2026] Hoàn thành nâng cấp giao diện Tab Bar, bộ lọc Vai trò (Role) động và sửa lỗi thông báo tại trang quản lý Nhân viên (staff.js + staff.controller.js)**
+
+---
+
+### [15/06/2026] — Nâng cấp trang quản lý Nhân viên (Staff.js)
+- **Loại**: Cải tiến UI/UX & Tính năng mới (Fullstack)
+- **File**: `FE/assets/js/pages/staff.js`, `BE/src/controllers/staff.controller.js`
+- **Mô tả**:
+  1. **[Backend]** Cập nhật SQL hàm `getStaff` hỗ trợ `LEFT JOIN vai_tro` và lọc theo `vai_tro` (Quản trị viên, Nhân viên / Lễ tân) từ query params. Trả về `ten_vai_tro` và `ma_vai_tro` động từ Database.
+  2. **[Frontend - Tab Bar]** Đổi giao diện 2 nút chuyển đổi tab cũ thành một Tab Bar bo tròn, có icon và hiệu ứng chuyển đổi mượt mà y hệt như trang Hội viên (`members-list.js`).
+  3. **[Frontend - Bộ lọc & Phân trang]** 
+     - Thêm select box bộ lọc vai trò (Quản trị viên, Nhân viên) bên cạnh các bộ lọc giới tính, trạng thái cho tab Nhân sự.
+     - Động hóa hiển thị cột Vai trò bằng cách hiển thị `ten_vai_tro` lấy trực tiếp từ Database.
+     - **[Infinite Scroll]**: Loại bỏ `IntersectionObserver` và `.staff-sentinel`. Thay thế bằng sự kiện lắng nghe `scroll` trực tiếp trên các container scroll (giống hệt cách làm của trang Hội viên `members-list.js`), giúp việc phân trang vô hạn mượt mà và chính xác hơn. Áp dụng cho cả tab Nhân sự (gọi API) và tab Tài khoản hệ thống (phân trang slice dữ liệu ở Frontend).
+     - **[Tab Switcher Navigation]**: Sửa lỗi không đổi màu tab active bằng cách điều hướng lại trang thông qua hàm `window.GymApp.navigate('staff')` khi click chuyển tab, đảm bảo giao diện luôn được render mới đồng bộ.
+     - **[Popover Filter Modal]**: Bỏ các thẻ `<select>` lọc trực quan cũ. Thay vào đó là một nút **"Bộ lọc"** (kèm số lượng bộ lọc đang chọn và nút xóa bộ lọc). Khi click sẽ mở ra modal chứa radio button cho phép lọc theo các trường: Vai trò, Giới tính, Trạng thái.
+  4. **[Frontend - Sự kiện & Phản hồi]**
+     - Sửa sự kiện lưu thông tin nhân sự thành công gọi `self._resetAndReload()` để đồng bộ cập nhật dữ liệu mới nhất mà không bị lặp hàng.
+     - Thêm Toast thông báo "Đã cập nhật danh sách nhân sự mới nhất" khi click nút Tải lại.
+- **Kết quả**: Trang quản lý nhân viên hoạt động chuyên nghiệp, nhất quán, hỗ trợ phân trang vô hạn và lọc vai trò chuẩn xác.
+
+---
+
+### [15/06/2026] — Sửa lỗi click backdrop đóng modal & lỗi API getAccounts (vt.ten_vai_tro)
+- **Loại**: Sửa bug & Cải tiến UI/UX
+- **File**: `FE/assets/js/pages/members-list.js`, `BE/src/controllers/staff.controller.js`
+- **Mô tả**:
+  1. **[Frontend]** Loại bỏ các listener click overlay tự đóng modal trên file `members-list.js` tại các modal: Đăng ký gói tập mới (`_showAddPackageModal`), Sửa thông tin hội viên (`_showEditMemberModal`), Xóa hội viên (`_showDelMemberModal`), và Import Excel (`_showImportModal`). Nhờ vậy tránh được lỗi lỡ click ra ngoài tự văng ra mất dữ liệu của người dùng.
+  2. **[Backend]** Sửa câu lệnh SQL trong hàm `getAccounts` của `BE/src/controllers/staff.controller.js` bằng cách đổi cột không tồn tại `vt.ten_vai_tro` thành `vt.ten_hien_thi AS ten_vai_tro`.
+- **Kết quả**:
+  - Modal hoạt động ổn định và nhất quán, không tự đóng khi bấm ra ngoài.
+  - API `/api/staff/accounts` hoạt động bình thường, không còn bị trả về HTTP 500 nữa.
+
+---
+
+### [15/06/2026] — Tích hợp Socket.IO cho Mobile App (Expo/React Native)
+- **Loại**: Tính năng mới (Mobile)
+- **File**: `MobileApp/src/services/socket.js` (mới), `MobileApp/src/utils/useSocket.js` (mới), `MobileApp/src/navigation/RootNavigator.js`, `MobileApp/src/store/useNotificationStore.js`, `MobileApp/src/screens/member/MemberNotificationScreen.js`, `MobileApp/src/screens/pt/PTNotificationScreen.js`
+- **Mô tả**:
+  1. **Tạo `services/socket.js`**: Singleton socket.io-client, `connectSocket(user)` join room `user:<id>` và `role:<vai_tro>`, `disconnectSocket()` khi logout.
+  2. **Tạo `utils/useSocket.js`**: Hook đơn giản `useSocket(event, handler)` — tự cleanup khi component unmount.
+  3. **`RootNavigator.js`**: `useEffect` theo dõi `token` + `user` → tự động kết nối/ngắt socket.
+  4. **`useNotificationStore.js`**: Thêm action `addNotification(payload)` để push thông báo socket vào đầu danh sách + tăng `unreadCount`.
+  5. **`MemberNotificationScreen` & `PTNotificationScreen`**: Dùng `useSocket('notification:personal', ...)` → gọi `addNotification()` realtime. Giảm polling từ 15s → 30s.
+- **Kết quả**: Hội viên và PT nhận thông báo ngay khi Admin thực hiện thao tác (hủy gói, đổi lịch...) mà không cần kéo làm mới.
+
+- **Loại**: Tích năng mới (Fullstack — BE + FE)
+- **File**: `BE/index.js`, `BE/src/socket.js` (mới), `BE/src/utils/notifications.js`, `BE/src/utils/emitNotification.js` (mới), `FE/index.html`, `FE/assets/js/app.js`
+- **Mô tả**:
+  1. **[Backend]** Refactor `index.js`: Đổi `app.listen()` sang `http.createServer(app)` rồi `httpServer.listen()` để hỗ trợ Socket.IO.
+  2. **[Backend]** Tạo mới `src/socket.js`: Singleton pattern quản lý instance `Socket.IO Server`. Client join vào `role:admin` hoặc `role:nhan_vien` room sau khi kết nối.
+  3. **[Backend]** Cập nhật `src/utils/notifications.js`: Hàm `createNotification()` giờ đồng thời lưu DB **và** emit `notification:new` qua Socket.IO tới đúng role room. Tương tự với `createUserNotification()` emit `notification:personal`.
+  4. **[Backend]** Tạo mới `src/utils/emitNotification.js`: Utility helper độc lập nếu cần emit từ bất kỳ điểm nào không thông qua `createNotification`.
+  5. **[Frontend]** Thêm `socket.io-client` CDN vào `index.html` (4.7.5).
+  6. **[Frontend]** Cập nhật `app.js`: Sau khi auth thành công, tự động kết nối Socket.IO và emit `join` với userId + vai_tro. Lắng nghe `notification:new` → tăng badge + hiển thị toast ngay lập tức. Polling fallback giảm xuống 60 giây.
+- **Kết quả**: Thông báo hiển thị realtime khi có đăng ký mới, cập nhật lịch, v.v. mà không cần reload trang.
+
+---
+
+### [15/06/2026 13:50] — Tích hợp quản lý tài khoản, modal Audit Logs & vô hiệu hóa click backdrop đóng modal
+- **Loại**: Cải tiến UI/UX & Nghiệp vụ (Fullstack)
+- **File**: `FE/assets/js/pages/staff.js`, `FE/assets/js/pages/packages.js`, `FE/assets/js/pages/gym-rules.js`, `FE/assets/js/pages/promotions.js`, `FE/assets/js/pages/members-list.js`, `FE/index.html`
+- **Mô tả**:
+  1. **[CSS Chuông Thông báo]**: Điều chỉnh vị trí tuyệt đối `top-0.5 right-0.5` và cỡ chữ `text-[9px]` của badge thông báo `#notif-badge` trên header để không bị lệch hay méo.
+  2. **[Tích hợp quản lý tài khoản]**: 
+     - Viết mới các hàm logic `_loadData()`, `_renderAccountsTable()`, và `_showEditAccountModal(tk)` trong `staff.js` để hoàn thành tab **"Tài khoản hệ thống"**.
+     - Cho phép Admin xem danh sách tất cả tài khoản, sửa (đổi tên đăng nhập, phân vai trò, đặt lại mật khẩu, mở/khóa trạng thái) và xóa tài khoản hệ thống (API xóa ở Backend sẽ tự động gỡ liên kết hồ sơ trước khi delete).
+  3. **[Vô hiệu hóa click backdrop đóng modal]**:
+     - Rà soát toàn bộ hệ thống Web Admin. Tìm và xóa bỏ tất cả các event listener click backdrop (`overlay.addEventListener('click', e => { if (e.target === overlay) close(); })`) để tránh việc modal tự động đóng khi người dùng vô tình bấm chuột ra ngoài overlay.
+     - Áp dụng triệt để cho các trang: `staff.js`, `packages.js`, `gym-rules.js`, `promotions.js` và toàn bộ 20+ modal trong `members-list.js` (như modal đăng ký gói tập, modal QR PayOS, modal đổi gói, modal lịch tập, modal thông tin chi tiết, v.v.).
+
+### [15/06/2026 — phiên 3] — Sửa lỗi bộ lọc Sắp hết hạn, cập nhật Badge Sidebar & đồng bộ QR PayOS lên Mobile
+- **Loại**: Sửa bug & Đồng bộ tính năng (Web & Mobile App)
+- **File**: `BE/src/controllers/members.controller.js`, `FE/assets/js/pages/members-list.js`, `FE/assets/js/pages/expired.js`, `FE/assets/js/app.js`, `MobileApp/src/screens/admin/AdminRegisterPackageScreen.js`, `MobileApp/src/screens/admin/AdminRegisterPTScreen.js`
+- **Mô tả**:
+  1. **[Backend & Bộ lọc Sắp hết hạn]**: Sửa triệt để lỗi bộ lọc "Sắp hết hạn" không hiển thị đúng dữ liệu trên Web Admin. Chuyển logic lọc trạng thái hội viên vào CTE SQL trước khi thực hiện `LIMIT`/`OFFSET` ở API `getMembers` để bộ lọc hoạt động chính xác kể cả khi phân trang.
+  2. **[Badge & Auto Tab tại Expired]**: Tối ưu hiển thị badge số lượng tại sidebar dựa trên tab ưu tiên cao nhất có dữ liệu (`requests` > `expired` > `expiring`), tự động lưu vào `sessionStorage` để khi click vào menu "Yêu cầu / Hết hạn" sẽ tự động chuyển thẳng và hiển thị tab đó.
+  3. **[Dropdown Khuyến mãi]**: Rút gọn select option chọn khuyến mãi trong modal gói tập trên Web Admin để chỉ hiển thị tên khuyến mãi thay vì chi tiết rườm rà.
+  4. **[Đồng bộ Mobile App]**: Đồng bộ luồng QR thanh toán PayOS (sử dụng ảnh QRServer) và polling check kết quả giao dịch tự động mỗi 3 giây; đồng thời thêm nút hủy giao dịch gọi API dọn dẹp DB nếu tắt QR cho cả 2 màn hình đăng ký Gói tập Gym (`AdminRegisterPackageScreen`) và Gói PT (`AdminRegisterPTScreen`).
+
+### [15/06/2026 — phiên 2] — Tối ưu luồng thanh toán QR tự động, liên kết Gói PT & Redesign giao diện Modal
+- **Loại**: Cải tiến UI/UX & logic nghiệp vụ (Fullstack)
+- **File**: `FE/assets/js/pages/members-list.js`, `BE/src/controllers/pt-registrations.controller.js`, `BE/src/routes/pt-registrations.routes.js`
+- **Mô tả**:
+  1. **[Tối ưu luồng lưu sau thanh toán]**: Khi thanh toán thành công qua PayOS (trạng thái PAID), hệ thống chỉ thông báo thành công và chuyển trạng thái nút lưu sang "Đã thanh toán", tuyệt đối không tự động click lưu gói tập nữa. Người dùng phải click nút Lưu thủ công để đóng form.
+  2. **[Tích hợp chuyển khoản cho Gói PT]**:
+     - Lắng nghe sự kiện thay đổi phương thức thanh toán của Gói PT. Khi chọn chuyển khoản, tự động kiểm tra nhanh tính hợp lệ của thông tin đăng ký (PT, gói PT, giá thực tế, ngày bắt đầu).
+     - Tự động gọi API tạo đăng ký PT tạm thời `POST /api/pt/registrations`, nhận thông tin PayOS và mở modal QR ngay lập tức.
+     - Khi quét mã thành công, kích hoạt nút Lưu PT và chuyển nhãn thành "Lưu đăng ký PT (Đã thanh toán)".
+     - Thêm API `DELETE /api/pt/registrations/payment/:orderCode` ở Backend. Nếu người dùng tắt hoặc hủy modal QR PT, frontend tự động gọi API DELETE để xóa đăng ký PT tạm thời khỏi DB và trả phương thức thanh toán về "Tiền mặt".
+  3. **[Redesign giao diện Modal Thêm Gói Tập & Gói PT]**:
+     - Thiết kế lại layout modal theo xu hướng hiện đại, cao cấp: bo góc tròn 24px, đổ bóng mờ, phối màu gradient xanh lục thương hiệu tinh tế.
+     - Phân chia bố cục grid khoa học thành các nhóm thông tin (Thông tin dịch vụ, Thông tin thanh toán, Danh sách PT, v.v.), sử dụng các viền border nhạt tinh tế và input focus mềm mại.
+     - Gộp các khối thông tin riêng lẻ thành một container form duy nhất, giảm padding và gap giữa các thành phần để loại bỏ hoàn toàn khoảng trắng thừa và tăng mật độ hiển thị giúp modal vừa vặn, trực quan hơn.
+     - Tuyệt đối không sử dụng bất kỳ icon AI hóa nào, giữ lại giao diện sạch sẽ, chuyên nghiệp.
+
+### [15/06/2026 — phiên 1] — Sửa lỗi logic giá khuyến mãi bằng 0 & Ẩn các trường thanh toán gói tập Web Admin
+- **Loại**: Chỉnh sửa nghiệp vụ, Sửa bug & Bố cục UI (Frontend Web)
+- **File**: `FE/assets/js/pages/members-list.js`, `FE/index.html`
+- **Mô tả**:
+  1. **[Sửa lỗi giá khuyến mãi]**: Sửa lỗi logic không hiển thị số tiền và lỗi validate không cho lưu khi giá sau khuyến mãi bằng 0 (khuyến mãi >= giá gốc). Cho phép hiển thị số 0 và validate dựa vào ô input trống hay không thay vì phủ định số `!price`. Đồng thời sửa lỗi biên dịch trùng lặp khai báo biến `payMethod` trong cùng một scope của sự kiện click.
+  2. **[Ẩn các trường thanh toán]**: Ẩn các trường *Trạng thái đăng ký*, *Cần thanh toán*, *Tiền khách đưa*, *Khách nợ* trong modal Thêm gói tập. Thiết lập tự động đồng bộ số tiền khách đưa bằng giá trị sau khuyến mãi, mặc định trạng thái đã thanh toán và nợ bằng 0 để giữ luồng hoạt động bình thường.
+  3. **[Di chuyển menu Khuyến mãi]**: Di chuyển tab "Khuyến mãi" từ menu chính của sidebar vào thành menu con thụt lề (`sub-nav-item`) nằm bên trong mục lớn "Báo cáo" (accordion menu).
+  4. **[Sửa luồng thanh toán QR & Modal UX/UI]**:
+     - Sửa lỗi tải ảnh QR (404) bằng cách dùng API QRServer để tạo ảnh từ chuỗi VietQR thô.
+     - Thiết kế lại giao diện Modal QR trên Web Admin cao cấp, bo góc tròn 24px, hiển thị số tiền thanh toán lớn và có nút "Hủy & Quay lại" + nút Copy memo trực quan giống Mobile.
+     - Viết mới API Backend `DELETE /api/members/:id/package-payment/:orderCode` để xóa bỏ hoàn toàn bản ghi gói tập và thông báo liên đới nếu người dùng out ra/đóng modal mà chưa thanh toán thành công, giúp hệ thống quay lại trạng thái ban đầu mà không lưu gói rác ở mục lịch sử chờ duyệt.
+  5. **[Tự động bật QR khi chọn Chuyển khoản]**:
+     - Lắng nghe sự kiện thay đổi phương thức thanh toán. Nếu chọn `chuyen_khoan`, thực hiện kiểm tra nhanh dữ liệu đã điền (gói tập, ngày bắt đầu). Nếu đủ thông tin, tự động gọi API tạo hóa đơn và bật QR Modal ngay lập tức mà không cần bấm "Lưu gói tập".
+     - Khóa nút "Lưu gói tập" chính (disable) khi đang đợi chuyển khoản. Chỉ khi poll trạng thái báo thành công (PAID), modal QR tự tắt, mở khóa nút Lưu và tự động kích hoạt tiến trình hoàn tất đăng ký gói tập. Nếu tắt modal QR giữa chừng, tự động đưa phương thức thanh toán trở về "Tiền mặt".
+
+---
+
+### [14/06/2026 — phiên 2] — PayOS Admin Web + Khuyến mãi Mobile + Layout PTMeScreen + Toggle Thông báo
+
+#### Task 1: Tích hợp PayOS vào Web Admin — form đăng ký gói tập
+- **Loại**: Tính năng mới (Backend + Frontend Web)
+- **File**: `BE/src/controllers/members.controller.js`, `FE/assets/js/pages/members-list.js`
+- **Mô tả**:
+  1. Chuyển `registerPackage` từ synchronous → `async`.
+  2. Khi `phuong_thuc_tt === 'chuyen_khoan'`: tạo PayOS link, insert bản ghi với `trang_thai='cho_duyet'`, `payos_status='PENDING'`, trả về `{ orderCode, payosUrl, qrCodeUrl, amount, den_ngay }`.
+  3. Web (`members-list.js`): Phát hiện response có `orderCode` → đóng form → gọi `_showPayosQrModal()`.
+  4. Modal QR: hiển thị QR code PayOS, thông tin đơn hàng, poll `/members/me/payos-status/:orderCode` mỗi 3 giây. Khi PAID → toast + refresh danh sách.
+- **Kết quả**: Luồng chuyển khoản Web Admin nay giống 100% mobile.
+
+#### Task 2: Hệ thống Khuyến mãi — Backend + Web Admin + Mobile
+- **Loại**: Tính năng mới (Fullstack)
+- **File**: `BE/src/config/db.js`, `BE/src/controllers/promotions.controller.js` (mới), `BE/src/routes/promotions.routes.js` (mới), `BE/src/app.js`, `FE/assets/js/pages/promotions.js` (mới), `FE/index.html`, `FE/assets/js/app.js`, `MobileApp/src/screens/admin/AdminRegisterPackageScreen.js`
+- **Mô tả**:
+  1. **DB**: Tạo bảng `khuyen_mai` (id, ten, loai: phan_tram|so_tien, gia_tri, ngay_het_han, is_active, ...).
+  2. **Backend**: CRUD đầy đủ `/api/promotions`, endpoint `GET /api/promotions/active` cho phép tất cả roles.
+  3. **Web Admin**: Trang `promotions.js` — quản lý CRUD khuyến mãi, sidebar icon `local_offer`.
+  4. **Mobile** (`AdminRegisterPackageScreen.js`): Fetch `/promotions/active`, hiển thị chip chọn promo theo chiều ngang, tự động tính giá sau khuyến mãi, gửi `khuyen_mai_id` vào payload.
+- **Kết quả**: Thành công.
+
+#### Task 3: Sửa layout chat PTMeScreen (Mobile)
+- **Loại**: Sửa layout/UX (Mobile)
+- **File**: `MobileApp/src/screens/shared/PTMeScreen.js`
+- **Mô tả**: Viết lại toàn bộ cấu trúc màn hình — dùng `KeyboardAvoidingView` + `FlatList` (tin nhắn scroll) + `View` cố định dưới (input). Tin nhắn của hội viên hiển thị bên phải (màu brand), tin nhắn PT bên trái (màu xám), giống Messenger.
+- **Kết quả**: Thành công.
+
+#### Task 4: Toggle thông báo tự động — Admin Web
+- **Loại**: Tính năng mới (Fullstack)
+- **File**: `BE/src/config/db.js`, `BE/src/controllers/config.controller.js`, `BE/src/routes/config.routes.js`, `BE/src/jobs/cron-daily.js`, `FE/assets/js/pages/notification-settings.js` (mới), `FE/index.html`, `FE/assets/js/app.js`
+- **Mô tả**:
+  1. **DB**: Thêm 6 config keys `notif_*` vào bảng `cau_hinh` với `INSERT OR IGNORE`.
+  2. **Backend**: `GET/PUT /api/config/notification-settings` (chỉ admin).
+  3. **Cron**: Helper `isNotifEnabled(khoa)` đọc DB — mỗi loại thông báo kiểm tra trước khi gửi.
+  4. **Web**: Trang `notification-settings.js` với toggle cards, lưu realtime.
+- **Kết quả**: Thành công.
+
+---
+
+---
+
+### [12/06/2026 16:50] — Khắc phục lỗi hiển thị giao diện (Mất CSS) do chặn CDN
+- **Loại**: Sửa lỗi & Tối ưu hiệu năng
+- **File**: `FE/index.html`, `FE/login.html`
+- **Mô tả**:
+  1. **Nguyên nhân**: Khi dùng tab ẩn danh hoặc trình duyệt có cài tiện ích chặn quảng cáo / chặn theo dõi, link CDN của Tailwind CSS (`cdn.tailwindcss.com`) bị chặn tải, dẫn đến việc toàn bộ giao diện Web không có CSS và vỡ khung.
+  2. **Khắc phục**: 
+     - Chuyển từ CDN sang tải file tĩnh. Đã thay thế thẻ `<script src="https://cdn.tailwindcss.com..."></script>` thành `<script src="./assets/js/tailwindcss.js"></script>` trong cả trang quản trị (`index.html`) và trang đăng nhập (`login.html`).
+- **Kết quả**: Cập nhật mã nguồn thành công. Yêu cầu tải file thủ công.
 
 ---
 

@@ -10,7 +10,11 @@ window.GymApp.pages['staff'] = {
   _staffFiltered: [],
   _hasMore: true,
   _isLoading: false,
-  _observer: null,
+  _activeTab: 'staff', // 'staff' | 'accounts'
+  _accounts: [],
+  _accSearch: '',
+  _accPage: 1,
+  _filterState: { vai_tro: '', gioi_tinh: '', trang_thai: '' },
 
   // Helper: tạo avatar fallback bằng chữ cái đầu (không dùng file local)
   _avatarHtml: function (avatarUrl, hoTen, size) {
@@ -33,105 +37,124 @@ window.GymApp.pages['staff'] = {
   render: function () {
     const self = this;
     const isBoss = ['admin', 'chu_phong_gym'].includes(window.GymApp.auth.user?.vai_tro);
+    const currentTab = self._activeTab || 'staff';
 
-    return `
-      <div class="flex flex-col gap-standard animate-in fade-in duration-500">
-        <!-- Top Header -->
-        <div class="flex flex-wrap items-center justify-end gap-standard">
-          <div class="flex items-center gap-compact">
-            <button id="btn-add-staff" class="flex items-center justify-center gap-xs px-4 py-atom rounded-xl bg-brand-primary text-white hover:bg-brand-primary/90 hover:shadow-lg transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer group">
+    // Top buttons HTML
+    const topButtonsHtml = `
+      <div class="flex flex-wrap items-center justify-between gap-standard w-full border-b border-outline-variant/30 pb-2">
+        <!-- Tab Bar -->
+        <div class="flex p-1 bg-surface-container-low/50 backdrop-blur-sm rounded-2xl border border-outline-variant/50 w-fit shadow-sm group">
+          <button id="tab-staff-list" class="tab-btn flex items-center gap-compact px-loose py-atom rounded-2xl font-bold text-body-md transition-all duration-300 relative overflow-hidden ${currentTab === 'staff' ? 'bg-brand-primary text-white shadow-md' : 'text-on-surface-variant hover:bg-surface-container-high/40'}" data-tab="staff">
+            <span class="material-symbols-outlined text-[18px]">badge</span>
+            <span>Nhân sự</span>
+          </button>
+          ${isBoss ? `
+            <button id="tab-accounts-list" class="tab-btn flex items-center gap-compact px-loose py-atom rounded-2xl font-bold text-body-md transition-all duration-300 relative overflow-hidden ${currentTab === 'accounts' ? 'bg-brand-primary text-white shadow-md' : 'text-on-surface-variant hover:bg-surface-container-high/40'}" data-tab="accounts">
+              <span class="material-symbols-outlined text-[18px]">manage_accounts</span>
+              <span>Tài khoản hệ thống</span>
+            </button>
+          ` : ''}
+        </div>
+        
+        <div class="flex items-center gap-compact">
+          ${currentTab === 'staff' ? `
+            <button id="btn-add-staff" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl bg-brand-primary text-white hover:bg-brand-primary/90 hover:shadow-lg transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer group">
               <span class="material-symbols-outlined text-base transition-transform group-hover:scale-110">person_add</span>
               <span>Thêm nhân viên</span>
             </button>
-            <button id="btn-staff-reload" class="flex items-center justify-center gap-xs px-4 py-atom rounded-xl border border-outline-variant bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer whitespace-nowrap">
-              <span class="material-symbols-outlined text-base">refresh</span>
-              <span>Tải lại</span>
-            </button>
-          </div>
+          ` : ''}
+          <button id="btn-staff-reload" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border border-outline-variant bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer whitespace-nowrap">
+            <span class="material-symbols-outlined text-base">refresh</span>
+            <span>Tải lại</span>
+          </button>
         </div>
+      </div>
+    `;
+
+    // Filter Bar HTML
+    const filterBarHtml = `
+      <div class="flex flex-wrap items-center justify-between gap-standard bg-white dark:bg-[#1e1e1e] p-standard rounded-2xl border border-outline-variant/50 shadow-sm w-full transition-all duration-300 hover:shadow-md">
+        <!-- Search Box -->
+        <div class="relative flex-1 group" style="min-width:min(280px,100%); max-width:450px;">
+          <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors text-[18px]">search</span>
+          <input id="staff-search-input" class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface pl-10 pr-4 py-2 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none placeholder-outline-variant/60 font-body-md text-body-md transition-all shadow-sm focus:shadow-none" placeholder="${currentTab === 'staff' ? 'Tìm theo tên, mã NV, số điện thoại...' : 'Tìm theo tên đăng nhập, họ tên, mã số...'}" type="text" value="${currentTab === 'staff' ? (self._search || '') : (self._accSearch || '')}" />
+        </div>
+
+        <!-- Filter Actions -->
+        <div class="flex flex-wrap items-center gap-compact">
+          <button id="btn-filter-clear" class="flex items-center justify-center gap-xs px-4 py-2 rounded-xl border border-outline-variant bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer" style="display:none;">
+            <span class="material-symbols-outlined text-base">filter_alt_off</span>
+            <span>Xóa bộ lọc</span>
+          </button>
+          <button id="btn-filter-staff" class="relative flex items-center justify-center gap-xs px-4 py-2 rounded-xl border-2 border-outline-variant/50 bg-white dark:bg-[#1e1e1e] text-on-surface-variant hover:text-brand-primary hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-body-md font-bold shadow-sm active:scale-95 duration-200 cursor-pointer group">
+            <span class="material-symbols-outlined text-base transition-transform group-hover:scale-110">filter_alt</span>
+            <span>Bộ lọc</span>
+            <span id="staff-filter-badge" style="display:none;position:absolute;top:-8px;right:-8px;width:22px;height:22px;background:#1D9336;color:#fff;border-radius:50%;font-size:11px;align-items:center;justify-content:center;font-weight:800;box-shadow:0 2px 8px rgba(29,147,54,0.4);border:2px solid #fff;"></span>
+          </button>
+        </div>
+      </div>
+    `;
+
+    return `
+      <div class="flex flex-col gap-standard animate-in fade-in duration-500">
+        <!-- Tab và Top Header -->
+        ${topButtonsHtml}
 
         <!-- Filter Bar -->
-        <div class="flex flex-wrap items-center justify-between gap-standard bg-white dark:bg-[#1e1e1e] p-standard rounded-2xl border-2 border-outline-variant/50 shadow-sm mb-standard transition-all duration-300 hover:shadow-md">
-          <!-- Search Box -->
-          <div class="relative flex-1 group" style="min-width:min(280px,100%); max-width:450px;">
-            <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-brand-primary transition-colors text-[18px]">search</span>
-            <input id="staff-search" class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface pl-10 pr-4 py-2.5 rounded-xl focus:border-brand-primary focus:bg-white dark:focus:bg-[#1e1e1e] outline-none placeholder-outline-variant/60 font-body-md text-body-md transition-all shadow-sm focus:shadow-none" placeholder="Tìm theo tên, mã NV, số điện thoại..." type="text" value="${self._search}" />
-          </div>
+        ${filterBarHtml}
 
-          <!-- Filter Actions -->
-          <div class="flex flex-wrap items-center gap-compact">
-            <!-- Filter Giới tính -->
-            <div class="relative w-[140px]">
-              <select id="staff-gender-filter" class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-3 py-2 rounded-xl focus:border-brand-primary outline-none text-body-sm font-bold transition-all">
-                <option value="">Tất cả giới tính</option>
-                <option value="Nam" ${self._gioi_tinh === 'Nam' ? 'selected' : ''}>Nam</option>
-                <option value="Nu" ${self._gioi_tinh === 'Nu' ? 'selected' : ''}>Nữ</option>
-                <option value="Khac" ${self._gioi_tinh === 'Khac' ? 'selected' : ''}>Khác</option>
-              </select>
-            </div>
-
-            <!-- Filter Trạng thái tài khoản -->
-            <div class="relative w-[160px]">
-              <select id="staff-status-filter" class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-3 py-2 rounded-xl focus:border-brand-primary outline-none text-body-sm font-bold transition-all">
-                <option value="">Tất cả trạng thái</option>
-                <option value="hoat_dong" ${self._trang_thai === 'hoat_dong' ? 'selected' : ''}>Hoạt động</option>
-                <option value="khoa" ${self._trang_thai === 'khoa' ? 'selected' : ''}>Bị khóa</option>
-              </select>
-            </div>
-
-            ${isBoss ? `
-              <div class="relative w-[180px]">
-                <select id="staff-branch-filter" class="w-full bg-surface-container-low/30 border border-outline-variant/50 text-on-surface px-3 py-2.5 rounded-xl focus:border-brand-primary outline-none text-body-sm font-bold transition-all">
-                  <option value="">Tất cả chi nhánh</option>
-                </select>
-              </div>
-            ` : ''}
-          </div>
-        </div>
-
-        <!-- Staff List Container -->
+        <!-- Content Table Container -->
         <div id="staff-table-container" class="w-full">
-          ${self._renderStaffTable()}
+          ${currentTab === 'staff' ? self._renderStaffTable() : self._renderAccountsTable()}
         </div>
       </div>
     `;
   },
 
+
   init: function () {
     const self = this;
     self._chi_nhanh = window.GymApp.selectedBranch || '';
 
-    const searchInput = document.getElementById('staff-search');
+    // Tab switcher events - gọi GymApp.navigate để đổi màu và làm sạch
+    document.getElementById('tab-staff-list')?.addEventListener('click', () => {
+      self._activeTab = 'staff';
+      window.GymApp.navigate('staff');
+    });
+    document.getElementById('tab-accounts-list')?.addEventListener('click', () => {
+      self._activeTab = 'accounts';
+      window.GymApp.navigate('staff');
+    });
+
+    // --- Search box filter ---
+    const searchInput = document.getElementById('staff-search-input');
     let searchTimeout = null;
     searchInput?.addEventListener('input', function () {
       clearTimeout(searchTimeout);
       searchTimeout = setTimeout(() => {
-        self._search = this.value.trim();
+        if (self._activeTab === 'staff') {
+          self._search = this.value.trim();
+        } else {
+          self._accSearch = this.value.trim();
+        }
         self._resetAndReload();
       }, 400);
     });
 
-    document.getElementById('staff-gender-filter')?.addEventListener('change', function () {
-      self._gioi_tinh = this.value;
-      self._resetAndReload();
+    // --- Filter button click ---
+    document.getElementById('btn-filter-staff')?.addEventListener('click', () => {
+      self._showFilterModal();
     });
 
-    document.getElementById('staff-status-filter')?.addEventListener('change', function () {
-      self._trang_thai = this.value;
+    // --- Clear filter button click ---
+    document.getElementById('btn-filter-clear')?.addEventListener('click', () => {
+      self._filterState = { vai_tro: '', gioi_tinh: '', trang_thai: '' };
       self._resetAndReload();
     });
-
-    const branchFilter = document.getElementById('staff-branch-filter');
-    if (branchFilter) {
-      self._fillBranchOptions(branchFilter);
-      branchFilter.addEventListener('change', function () {
-        self._chi_nhanh = this.value;
-        self._resetAndReload();
-      });
-    }
 
     document.getElementById('btn-staff-reload')?.addEventListener('click', () => {
       self._resetAndReload();
+      window.GymApp.toast('Đã cập nhật danh sách nhân sự mới nhất', 'success');
     });
 
     document.getElementById('btn-add-staff')?.addEventListener('click', () => {
@@ -145,11 +168,47 @@ window.GymApp.pages['staff'] = {
       }, 100);
     });
 
-    // Event Delegation: lắng nghe mọi click trên container cha thay vì từng phần tử
-    // Giải quyết: click chập chờn & khựng khi dữ liệu được append (infinite scroll)
     const container = document.getElementById('staff-table-container');
     if (container) {
       container.addEventListener('click', async function (e) {
+        if (self._activeTab === 'accounts') {
+          // --- TAB TÀI KHOẢN ---
+          const editAccBtn = e.target.closest('.acc-edit-btn');
+          if (editAccBtn) {
+            e.stopPropagation();
+            const id = editAccBtn.dataset.id;
+            const tk = self._accounts.find(a => a.id == id);
+            if (tk) self._showEditAccountModal(tk);
+            return;
+          }
+
+          const deleteAccBtn = e.target.closest('.acc-delete-btn');
+          if (deleteAccBtn) {
+            e.stopPropagation();
+            const id = deleteAccBtn.dataset.id;
+            const username = deleteAccBtn.dataset.username;
+            const confirmed = await window.GymApp.confirm(
+              `Bạn có chắc chắn muốn xóa tài khoản "${username}" không? LƯU Ý: Thao tác này sẽ gỡ bỏ tài khoản khỏi hồ sơ liên kết.`,
+              'Xóa tài khoản hệ thống'
+            );
+            if (!confirmed) return;
+            try {
+              const res = await window.GymApp.api.delete(`/staff/accounts/${id}`);
+              if (res.success) {
+                window.GymApp.toast('Xóa tài khoản thành công!', 'success');
+                self._resetAndReload();
+              } else {
+                window.GymApp.toast(res.message || 'Lỗi khi xóa', 'error');
+              }
+            } catch (err) {
+              window.GymApp.toast('Lỗi kết nối máy chủ', 'error');
+            }
+            return;
+          }
+          return;
+        }
+
+        // --- TAB NHÂN VIÊN (STAFF) ---
         // Nút Xem chi tiết
         const viewBtn = e.target.closest('.staff-view-btn');
         if (viewBtn) {
@@ -237,17 +296,19 @@ window.GymApp.pages['staff'] = {
   // Reset toàn bộ state khi search/filter thay đổi rồi tải lại từ đầu
   _resetAndReload: function () {
     const self = this;
-    self._page = 1;
-    self._hasMore = true;
-    self._isLoading = false;
-    self._staffFiltered = [];
+    if (self._activeTab === 'staff') {
+      self._page = 1;
+      self._hasMore = true;
+      self._isLoading = false;
+      self._staffFiltered = [];
+    } else {
+      self._accPage = 1;
+    }
     // Xóa sạch tbody và card list trước khi vẽ lại
     const tbody = document.querySelector('#staff-scroll-container tbody');
     if (tbody) tbody.innerHTML = '';
     const mobileList = document.getElementById('staff-scroll-mobile-container');
     if (mobileList) mobileList.innerHTML = '';
-    // Hủy observer cũ để thiết lập lại sau khi render
-    if (self._observer) { self._observer.disconnect(); self._observer = null; }
     self._loadData();
   },
 
@@ -267,6 +328,41 @@ window.GymApp.pages['staff'] = {
 
   _loadData: async function () {
     const self = this;
+    self._updateFilterUI();
+
+    if (self._activeTab === 'accounts') {
+      let url = `/staff/accounts?`;
+      if (self._accSearch) url += `&search=${encodeURIComponent(self._accSearch)}`;
+      if (self._filterState.vai_tro) url += `&vai_tro=${self._filterState.vai_tro}`;
+      if (self._filterState.trang_thai) url += `&trang_thai=${self._filterState.trang_thai}`;
+
+      try {
+        const res = await window.GymApp.api.get(url);
+        if (!res.success) throw new Error(res.message);
+
+        self._accounts = res.data || [];
+        self._total = self._accounts.length;
+        self._totalPages = Math.ceil(self._total / self._limit);
+        self._hasMore = self._accPage < self._totalPages;
+
+        const container = document.getElementById('staff-table-container');
+        if (container) {
+          container.innerHTML = self._renderAccountsTable();
+          self._initInfiniteScroll();
+        }
+      } catch (e) {
+        console.error('Fetch accounts error:', e);
+        const container = document.getElementById('staff-table-container');
+        if (container) {
+          container.innerHTML = `<div class="p-loose text-center text-error font-bold">Lỗi khi tải dữ liệu tài khoản hệ thống.</div>`;
+        }
+      } finally {
+        self._isLoading = false;
+        self._showSpinner(false);
+      }
+      return;
+    }
+
     // Chặn tải trùng lặp và tải khi đã hết data
     if (self._isLoading || !self._hasMore) return;
     self._isLoading = true;
@@ -274,9 +370,10 @@ window.GymApp.pages['staff'] = {
 
     let url = `/staff?page=${self._page}&limit=${self._limit}`;
     if (self._search) url += `&search=${encodeURIComponent(self._search)}`;
+    if (self._filterState.vai_tro) url += `&vai_tro=${self._filterState.vai_tro}`;
     if (self._chi_nhanh) url += `&chi_nhanh=${encodeURIComponent(self._chi_nhanh)}`;
-    if (self._gioi_tinh) url += `&gioi_tinh=${self._gioi_tinh}`;
-    if (self._trang_thai) url += `&trang_thai=${self._trang_thai}`;
+    if (self._filterState.gioi_tinh) url += `&gioi_tinh=${self._filterState.gioi_tinh}`;
+    if (self._filterState.trang_thai) url += `&trang_thai=${self._filterState.trang_thai}`;
 
     try {
       const res = await window.GymApp.api.get(url);
@@ -293,7 +390,7 @@ window.GymApp.pages['staff'] = {
         const container = document.getElementById('staff-table-container');
         if (container) {
           container.innerHTML = self._renderStaffTable();
-          self._initObserver();
+          self._initInfiniteScroll();
         }
       } else {
         // Tải thêm: chỉ append rows mới vào cuối bảng/card-list hiện có
@@ -301,10 +398,9 @@ window.GymApp.pages['staff'] = {
         self._appendRows(newItems);
       }
 
-      // Nếu đã hết data → ẩn spinner vĩnh viễn và ngắt observer
+      // Nếu đã hết data → ẩn spinner vĩnh viễn
       if (!self._hasMore) {
         self._showSpinner(false);
-        if (self._observer) { self._observer.disconnect(); self._observer = null; }
       }
     } catch (e) {
       console.error('Fetch staff error:', e);
@@ -320,33 +416,350 @@ window.GymApp.pages['staff'] = {
     }
   },
 
-  // Khởi tạo IntersectionObserver đúng root = scroll container
-  _initObserver: function () {
+  _renderAccountsTable: function () {
     const self = this;
-    if (self._observer) self._observer.disconnect();
+    const paginated = self._accounts.slice(0, self._accPage * self._limit);
+    const list = paginated;
 
-    const desktopContainer = document.getElementById('staff-scroll-container');
-    const mobileContainer = document.getElementById('staff-scroll-mobile-container');
+    let rowsHtml = '';
+    if (list.length === 0) {
+      rowsHtml = `
+        <tr>
+          <td colspan="6" style="padding:60px 20px;text-align:center;color:var(--text-on-surface-variant);">
+            <div style="display:flex;flex-direction:column;align-items:center;opacity:0.4;">
+              <span class="material-symbols-outlined" style="font-size:48px;margin-bottom:8px;">manage_search</span>
+              <p style="font-weight:600;margin:0;">Không tìm thấy tài khoản nào</p>
+            </div>
+          </td>
+        </tr>
+      `;
+    } else {
+      rowsHtml = list.map((tk) => {
+        const roleLabels = {
+          admin: 'Quản trị viên',
+          le_tan: 'Nhân viên / Lễ tân',
+          pt: 'Huấn luyện viên (PT)',
+          hoi_vien: 'Hội viên'
+        };
+        const roleClasses = {
+          admin: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
+          le_tan: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
+          pt: 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20',
+          hoi_vien: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20'
+        };
 
-    const createObserver = (root) => {
-      if (!root) return null;
-      const sentinel = root.querySelector('.staff-sentinel');
-      if (!sentinel) return null;
-      const obs = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && !self._isLoading && self._hasMore) {
-          self._page++;
-          self._loadData();
+        const roleLabel = roleLabels[tk.ma_vai_tro] || tk.ten_vai_tro || 'Chưa phân quyền';
+        const roleClass = roleClasses[tk.ma_vai_tro] || 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20';
+
+        const isLocked = tk.trang_thai === 'khoa';
+        const statusBadge = isLocked
+          ? `<span style="padding:2px 8px;border-radius:999px;font-size:9.6px;font-weight:700;background:#ffdad6;color:#ba1a1a;">Bị khóa</span>`
+          : `<span style="padding:2px 8px;border-radius:999px;font-size:9.6px;font-weight:700;background:#e7f5e9;color:#1D9336;">Hoạt động</span>`;
+
+        // Thông tin hồ sơ liên kết
+        let relationInfo = '—';
+        if (tk.ho_so_id) {
+          relationInfo = `<div class="font-bold">${tk.ho_ten || ''}</div>
+                          <div class="text-[11px] opacity-75">${tk.ma_ho_so || ''} (${tk.loai_ho_so === 'pt' ? 'PT' : (tk.loai_ho_so === 'le_tan' ? 'Lễ tân' : 'Hội viên')})</div>`;
         }
-      }, { root, rootMargin: '80px', threshold: 0 });
-      obs.observe(sentinel);
-      return obs;
-    };
 
-    // Quan sát cả 2 container (desktop + mobile web)
-    const obs1 = createObserver(desktopContainer);
-    const obs2 = createObserver(mobileContainer);
-    // Lưu observer đầu tiên khả dụng để có thể disconnect khi cần
-    self._observer = obs1 || obs2;
+        return `
+          <tr class="acc-row transition-colors hover:bg-brand-primary/5 dark:hover:bg-brand-primary/10 border-b border-outline-variant/30 bg-white dark:bg-[#1e1e1e] odd:bg-[#fafafa] odd:dark:bg-[#15171e]">
+            <td class="border-r border-outline-variant/30 text-left font-bold" style="padding:10px 14px;">${tk.ten_dang_nhap}</td>
+            <td class="border-r border-outline-variant/30 text-center" style="padding:10px 14px;">
+              <span class="text-[9px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${roleClass}">
+                ${roleLabel}
+              </span>
+            </td>
+            <td class="border-r border-outline-variant/30 text-left text-body-sm" style="padding:10px 14px;">
+              ${relationInfo}
+            </td>
+            <td class="border-r border-outline-variant/30 text-center" style="padding:10px 14px;">
+              ${statusBadge}
+            </td>
+            <td class="border-r border-outline-variant/30 text-center text-body-sm font-medium text-on-surface-variant" style="padding:10px 14px;">
+              ${window.GymApp.formatDate ? window.GymApp.formatDate(tk.ngay_tao) : tk.ngay_tao.split(' ')[0]}
+            </td>
+            <td class="text-center" style="padding:10px 14px;white-space:nowrap;">
+              <div style="display:inline-flex;gap:6px;align-items:center;justify-content:center;width:100%;">
+                <button class="acc-edit-btn w-[30px] h-[30px] rounded-lg flex items-center justify-center transition-all bg-[#eff6ff] dark:bg-[#0b1a30] text-[#3b82f6] dark:text-[#60a5fa] hover:bg-[#3b82f6] dark:hover:bg-[#60a5fa] hover:text-white dark:hover:text-[#111318]" data-id="${tk.id}" title="Chỉnh sửa tài khoản">
+                  <span class="material-symbols-outlined" style="font-size:15px;">edit</span>
+                </button>
+                ${parseInt(tk.id) !== parseInt(window.GymApp.auth.user?.id) ? `
+                  <button class="acc-delete-btn w-[30px] h-[30px] rounded-lg flex items-center justify-center transition-all bg-[#fff1f2] dark:bg-[#2e0b10] text-[#f43f5e] dark:text-[#f87171] hover:bg-[#f43f5e] dark:hover:bg-[#f87171] hover:text-white dark:hover:text-[#111318]" data-id="${tk.id}" data-username="${tk.ten_dang_nhap}" title="Xóa tài khoản">
+                    <span class="material-symbols-outlined" style="font-size:15px;">delete</span>
+                  </button>
+                ` : ''}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    return `
+      <div class="col-span-full w-full rounded-2xl overflow-hidden border border-outline-variant shadow-sm bg-white dark:bg-[#1e1e1e]">
+        <div style="overflow-x:auto;position:relative;">
+          <table style="width:100%;border-collapse:collapse;min-width:480px;">
+            <thead>
+              <tr style="background:#1D9336;">
+                <th style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:left;white-space:nowrap;border:none;">Tên đăng nhập</th>
+                <th style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Vai trò</th>
+                <th style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:left;white-space:nowrap;border:none;">Hồ sơ liên kết</th>
+                <th style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Trạng thái</th>
+                <th style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Ngày tạo</th>
+                <th style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  },
+
+  _showEditAccountModal: function (tk) {
+    const self = this;
+    document.getElementById('gym-account-edit-modal')?.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'gym-account-edit-modal';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);backdrop-filter:blur(6px);padding:16px;';
+
+    const isLocked = tk.trang_thai === 'khoa';
+
+    overlay.innerHTML = `
+      <div class="modal-card" style="border-radius:24px;width:100%;max-width:480px;background:var(--bg-surface-lowest,#fff);overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:0 32px 80px rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.15);">
+        <!-- Header -->
+        <div style="background:linear-gradient(160deg,#1D9336 0%,#2d6a4f 100%);padding:20px 24px;flex-shrink:0;position:relative;">
+          <h3 style="font-size:18px;font-weight:800;color:#fff;margin:0;">Chỉnh sửa tài khoản hệ thống</h3>
+          <button id="close-acc-modal" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.15);border:none;cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">
+            <span class="material-symbols-outlined" style="color:#fff;font-size:16px;">close</span>
+          </button>
+        </div>
+
+        <!-- Body Form -->
+        <form id="account-edit-form" style="padding:24px;" class="flex flex-col gap-4">
+          <div class="flex flex-col gap-1">
+            <label class="text-body-sm font-bold text-on-surface">Tên đăng nhập <span class="text-error">*</span></label>
+            <input type="text" name="ten_dang_nhap" required value="${tk.ten_dang_nhap}" class="w-full bg-surface-container-low/50 border border-outline-variant/50 text-on-surface px-3 py-2 rounded-xl focus:border-brand-primary outline-none text-body-sm font-medium transition-all" />
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <label class="text-body-sm font-bold text-on-surface">Đổi mật khẩu</label>
+            <input type="password" name="mat_khau" placeholder="Để trống nếu giữ nguyên mật khẩu" class="w-full bg-surface-container-low/50 border border-outline-variant/50 text-on-surface px-3 py-2 rounded-xl focus:border-brand-primary outline-none text-body-sm font-medium transition-all" />
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <label class="text-body-sm font-bold text-on-surface">Vai trò tài khoản <span class="text-error">*</span></label>
+            <select name="vai_tro" required class="w-full bg-surface-container-low/50 border border-outline-variant/50 text-on-surface px-3 py-2 rounded-xl focus:border-brand-primary outline-none text-body-sm font-bold transition-all">
+              <option value="admin" ${tk.ma_vai_tro === 'admin' ? 'selected' : ''}>Quản trị viên</option>
+              <option value="le_tan" ${tk.ma_vai_tro === 'le_tan' ? 'selected' : ''}>Nhân viên / Lễ tân</option>
+              <option value="pt" ${tk.ma_vai_tro === 'pt' ? 'selected' : ''}>Huấn luyện viên (PT)</option>
+              <option value="hoi_vien" ${tk.ma_vai_tro === 'hoi_vien' ? 'selected' : ''}>Hội viên</option>
+            </select>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <label class="text-body-sm font-bold text-on-surface">Trạng thái</label>
+            <select name="trang_thai" class="w-full bg-surface-container-low/50 border border-outline-variant/50 text-on-surface px-3 py-2 rounded-xl focus:border-brand-primary outline-none text-body-sm font-bold transition-all">
+              <option value="hoat_dong" ${!isLocked ? 'selected' : ''}>Hoạt động</option>
+              <option value="khoa" ${isLocked ? 'selected' : ''}>Khóa tài khoản</option>
+            </select>
+          </div>
+
+          <!-- Buttons -->
+          <div class="flex items-center justify-end gap-compact pt-4 border-t border-outline-variant/50 mt-2">
+            <button type="button" id="btn-cancel-acc" class="px-4 py-2 rounded-xl border border-outline-variant text-on-surface hover:bg-surface-container-low transition-all text-body-sm font-bold active:scale-95 duration-200 cursor-pointer">
+              Hủy
+            </button>
+            <button type="submit" class="px-4 py-2 rounded-xl bg-brand-primary text-white hover:bg-brand-primary/90 hover:shadow-lg transition-all text-body-sm font-bold active:scale-95 duration-200 cursor-pointer">
+              Cập nhật
+            </button>
+          </div>
+        </form>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const close = () => overlay.remove();
+    overlay.querySelector('#btn-cancel-acc')?.addEventListener('click', close);
+    overlay.querySelector('#close-acc-modal')?.addEventListener('click', close);
+    // VÔ HIỆU HÓA click overlay đóng modal (e.target === overlay) bằng cách không gán sự kiện click overlay đóng modal ở đây.
+
+    const escH = e => { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', escH); } };
+    document.addEventListener('keydown', escH);
+
+    const form = overlay.querySelector('#account-edit-form');
+    form?.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const formData = new FormData(form);
+      const payload = Object.fromEntries(formData.entries());
+
+      try {
+        const res = await window.GymApp.api.put(`/staff/accounts/${tk.id}`, payload);
+        if (res.success) {
+          window.GymApp.toast('Cập nhật tài khoản thành công!', 'success');
+          close();
+          self._resetAndReload();
+        } else {
+          window.GymApp.toast(res.message || 'Lỗi cập nhật', 'error');
+        }
+      } catch (err) {
+        window.GymApp.toast('Lỗi kết nối máy chủ', 'error');
+      }
+    });
+  },
+
+  _initInfiniteScroll: function () {
+    const self = this;
+    const desktopContainer = document.getElementById('staff-scroll-container');
+    if (desktopContainer) {
+      desktopContainer.addEventListener('scroll', function () {
+        if (desktopContainer.scrollTop + desktopContainer.clientHeight >= desktopContainer.scrollHeight - 20) {
+          if (self._activeTab === 'staff') {
+            if (!self._isLoading && self._hasMore) {
+              self._page++;
+              self._loadData();
+            }
+          } else {
+            if (self._accPage * self._limit < self._accounts.length) {
+              self._accPage++;
+              const scrollPos = desktopContainer.scrollTop;
+              const container = document.getElementById('staff-table-container');
+              if (container) container.innerHTML = self._renderAccountsTable();
+              const newContainer = document.getElementById('staff-scroll-container');
+              if (newContainer) newContainer.scrollTop = scrollPos;
+            }
+          }
+        }
+      });
+    }
+
+    const mobileContainer = document.getElementById('staff-scroll-mobile-container');
+    if (mobileContainer) {
+      mobileContainer.addEventListener('scroll', function () {
+        if (mobileContainer.scrollTop + mobileContainer.clientHeight >= mobileContainer.scrollHeight - 20) {
+          if (self._activeTab === 'staff') {
+            if (!self._isLoading && self._hasMore) {
+              self._page++;
+              self._loadData();
+            }
+          } else {
+            if (self._accPage * self._limit < self._accounts.length) {
+              self._accPage++;
+              const scrollPos = mobileContainer.scrollTop;
+              const container = document.getElementById('staff-table-container');
+              if (container) container.innerHTML = self._renderAccountsTable();
+              const newMobileContainer = document.getElementById('staff-scroll-mobile-container');
+              if (newMobileContainer) newMobileContainer.scrollTop = scrollPos;
+            }
+          }
+        }
+      });
+    }
+  },
+
+  _updateFilterUI: function () {
+    const self = this;
+    let activeFilters = 0;
+    if (self._filterState.vai_tro) activeFilters++;
+    if (self._filterState.gioi_tinh) activeFilters++;
+    if (self._filterState.trang_thai) activeFilters++;
+
+    const badge = document.getElementById('staff-filter-badge');
+    const clearBtn = document.getElementById('btn-filter-clear');
+
+    if (badge) {
+      if (activeFilters > 0) {
+        badge.textContent = activeFilters;
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+    if (clearBtn) {
+      clearBtn.style.display = activeFilters > 0 ? 'flex' : 'none';
+    }
+  },
+
+  _showFilterModal: function () {
+    const self = this;
+    document.getElementById('gym-staff-filter-modal')?.remove();
+
+    const radioGroup = (name, options, currentVal) =>
+      options.map(([v, l]) => `
+        <label class="flex items-center gap-compact cursor-pointer py-xs px-compact rounded-lg hover:bg-surface-container-low transition-colors">
+          <input type="radio" name="${name}" value="${v}" style="accent-color:#1D9336;width:16px;height:16px;" ${currentVal === v ? 'checked' : ''} />
+          <span class="text-body-md text-on-surface font-medium" style="font-size:13px;">${l}</span>
+        </label>
+      `).join('');
+
+    const overlay = document.createElement('div');
+    overlay.id = 'gym-staff-filter-modal';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9100;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);padding:20px;';
+
+    const rolesList = self._activeTab === 'staff'
+      ? [['', 'Tất cả'], ['admin', 'Quản trị viên'], ['nhan_vien', 'Nhân viên / Lễ tân']]
+      : [['', 'Tất cả'], ['admin', 'Quản trị viên'], ['le_tan', 'Nhân viên / Lễ tân'], ['pt', 'Huấn luyện viên (PT)'], ['hoi_vien', 'Hội viên']];
+
+    overlay.innerHTML = `
+      <div class="modal-card bg-surface-container-lowest rounded-2xl shadow-xl flex flex-col" style="width:420px;max-width:100%;max-height:88vh;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,0.35);">
+        <div class="flex items-center justify-between px-loose py-standard border-b border-outline-variant flex-shrink-0" style="background:linear-gradient(135deg,#1a5e2a,#1D9336);">
+          <div class="flex items-center gap-compact">
+            <span class="material-symbols-outlined text-white text-lg">filter_alt</span>
+            <h3 class="text-white font-bold" style="font-size:16px;">Bộ lọc dữ liệu — ${self._activeTab === 'staff' ? 'Nhân sự' : 'Tài khoản'}</h3>
+          </div>
+          <button id="close-filter-modal" style="background:rgba(255,255,255,0.15);border:none;cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;">
+            <span class="material-symbols-outlined text-white" style="font-size:18px;">close</span>
+          </button>
+        </div>
+        <div class="overflow-y-auto flex-1 px-loose py-standard flex flex-col gap-standard bg-white dark:bg-[#1e1e1e]">
+          <div class="border-b border-outline-variant/60 pb-standard">
+            <div class="flex items-center gap-xs mb-compact"><span class="material-symbols-outlined text-brand-primary text-base">manage_accounts</span><h4 class="text-on-surface font-bold text-body-sm uppercase tracking-wider">Vai trò</h4></div>
+            <div class="grid grid-cols-2 gap-xs bg-surface-container-lowest p-compact rounded-xl border border-outline-variant/40">
+              ${radioGroup('f-role', rolesList, self._filterState.vai_tro)}
+            </div>
+          </div>
+          ${self._activeTab === 'staff' ? `
+          <div class="border-b border-outline-variant/60 pb-standard">
+            <div class="flex items-center gap-xs mb-compact"><span class="material-symbols-outlined text-brand-primary text-base">wc</span><h4 class="text-on-surface font-bold text-body-sm uppercase tracking-wider">Giới tính</h4></div>
+            <div class="flex gap-standard bg-surface-container-lowest p-compact rounded-xl border border-outline-variant/40">
+              ${radioGroup('f-gender', [['', 'Tất cả'], ['Nam', 'Nam'], ['Nu', 'Nữ'], ['Khac', 'Khác']], self._filterState.gioi_tinh)}
+            </div>
+          </div>
+          ` : ''}
+          <div>
+            <div class="flex items-center gap-xs mb-compact"><span class="material-symbols-outlined text-brand-primary text-base">donut_large</span><h4 class="text-on-surface font-bold text-body-sm uppercase tracking-wider">Trạng thái</h4></div>
+            <div class="grid grid-cols-2 gap-xs bg-surface-container-lowest p-compact rounded-xl border border-outline-variant/40">
+              ${radioGroup('f-status', [['', 'Tất cả'], ['hoat_dong', 'Hoạt động'], ['khoa', 'Bị khóa']], self._filterState.trang_thai)}
+            </div>
+          </div>
+        </div>
+        <div class="flex gap-standard px-loose py-standard border-t border-outline-variant bg-surface-container-lowest flex-shrink-0">
+          <button id="filter-reset-btn" class="flex-1 py-compact rounded-xl border border-outline-variant text-on-surface-variant font-bold hover:bg-surface-container transition-colors text-body-md cursor-pointer">Đặt lại</button>
+          <button id="filter-apply-btn" class="flex-1 py-compact rounded-xl font-bold text-white text-body-md transition-all hover:opacity-90 cursor-pointer shadow-md" style="background:#1D9336;">Áp dụng bộ lọc</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    const close = () => overlay.remove();
+    document.getElementById('close-filter-modal')?.addEventListener('click', close);
+    document.getElementById('filter-reset-btn')?.addEventListener('click', () => {
+      overlay.querySelectorAll('input[type="radio"]').forEach(r => { r.checked = r.value === ''; });
+    });
+    document.getElementById('filter-apply-btn')?.addEventListener('click', () => {
+      self._filterState.vai_tro = overlay.querySelector('input[name="f-role"]:checked')?.value || '';
+      if (self._activeTab === 'staff') {
+        self._filterState.gioi_tinh = overlay.querySelector('input[name="f-gender"]:checked')?.value || '';
+      } else {
+        self._filterState.gioi_tinh = '';
+      }
+      self._filterState.trang_thai = overlay.querySelector('input[name="f-status"]:checked')?.value || '';
+      self._resetAndReload();
+      close();
+    });
   },
 
   // Hiện/ẩn spinner tải thêm
@@ -392,10 +805,12 @@ window.GymApp.pages['staff'] = {
   // Tách logic build HTML của một row bảng desktop ra riêng để _appendRows dùng lại
   _buildRowHtml: function (nv) {
     const self = this;
-    const roleLabel = nv.loai_ho_so === 'le_tan' ? 'Lễ tân' : 'Nhân viên';
-    const roleClass = nv.loai_ho_so === 'le_tan'
-      ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20'
-      : 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20';
+    const roleLabel = nv.ten_vai_tro || 'Nhân viên';
+    const roleClass = nv.ma_vai_tro === 'admin'
+      ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'
+      : (nv.ma_vai_tro === 'nhan_vien' || nv.loai_ho_so === 'le_tan'
+        ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20'
+        : 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20');
     const isLocked = nv.tk_trang_thai === 'khoa';
     const lockIcon = isLocked ? 'lock' : 'lock_open';
     const lockTitle = isLocked ? 'Mở khóa tài khoản' : 'Khóa tài khoản';
@@ -439,10 +854,12 @@ window.GymApp.pages['staff'] = {
   _buildCardHtml: function (nv) {
     const self = this;
     const isLocked = nv.tk_trang_thai === 'khoa';
-    const roleLabel = nv.loai_ho_so === 'le_tan' ? 'Lễ tân' : 'Nhân viên';
-    const roleClass = nv.loai_ho_so === 'le_tan'
-      ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20'
-      : 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20';
+    const roleLabel = nv.ten_vai_tro || 'Nhân viên';
+    const roleClass = nv.ma_vai_tro === 'admin'
+      ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'
+      : (nv.ma_vai_tro === 'nhan_vien' || nv.loai_ho_so === 'le_tan'
+        ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20'
+        : 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20');
     const statusBadge = isLocked
       ? `<span style="padding:2px 8px;border-radius:999px;font-size:9.6px;font-weight:700;background:#ffdad6;color:#ba1a1a;">Bị khóa</span>`
       : `<span style="padding:2px 8px;border-radius:999px;font-size:9.6px;font-weight:700;background:#e7f5e9;color:#1D9336;">Hoạt động</span>`;
@@ -488,10 +905,12 @@ window.GymApp.pages['staff'] = {
       `;
     } else {
       rowsHtml = paginated.map((nv) => {
-        const roleLabel = nv.loai_ho_so === 'le_tan' ? 'Lễ tân' : 'Nhân viên';
-        const roleClass = nv.loai_ho_so === 'le_tan'
-          ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20'
-          : 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20';
+        const roleLabel = nv.ten_vai_tro || 'Nhân viên';
+        const roleClass = nv.ma_vai_tro === 'admin'
+          ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'
+          : (nv.ma_vai_tro === 'nhan_vien' || nv.loai_ho_so === 'le_tan'
+            ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20'
+            : 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20');
 
         const isLocked = nv.tk_trang_thai === 'khoa';
         const lockIcon = isLocked ? 'lock' : 'lock_open';
@@ -665,16 +1084,12 @@ window.GymApp.pages['staff'] = {
             </thead>
             <tbody>${rowsHtml}</tbody>
           </table>
-          <!-- Sentinel + Spinner cho desktop -->
-          <div class="staff-sentinel" style="height:2px;opacity:0;pointer-events:none;"></div>
           ${spinnerHtml}
         </div>
 
         <!-- CARD LIST mobile -->
         <div id="staff-scroll-mobile-container" class="staff-table-mobile" style="max-height:500px;overflow-y:auto;">
           ${cardRowsHtml}
-          <!-- Sentinel + Spinner cho mobile web -->
-          <div class="staff-sentinel" style="height:2px;opacity:0;pointer-events:none;"></div>
           ${spinnerHtml}
         </div>
       </div>
@@ -761,7 +1176,6 @@ window.GymApp.pages['staff'] = {
     document.body.appendChild(overlay);
     const close = () => overlay.remove();
     document.getElementById('close-staff-modal').addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
     const escH = e => { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', escH); } };
     document.addEventListener('keydown', escH);
   },
@@ -961,7 +1375,6 @@ window.GymApp.pages['staff'] = {
     const close = () => overlay.remove();
     overlay.querySelector('#btn-cancel-staff')?.addEventListener('click', close);
     overlay.querySelector('#close-staff-modal')?.addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
     const escH = e => { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', escH); } };
     document.addEventListener('keydown', escH);
 
@@ -1009,7 +1422,7 @@ window.GymApp.pages['staff'] = {
         if (res.success) {
           window.GymApp.toast('Cập nhật hồ sơ nhân viên thành công!', 'success');
           close();
-          self._loadData();
+          self._resetAndReload();
         } else {
           window.GymApp.toast(res.message || 'Lỗi cập nhật', 'error');
         }

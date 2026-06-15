@@ -65,68 +65,80 @@ export const getMembers = (req, res) => {
     params.push(s, s, s);
   }
 
-  // Lấy danh sách kèm thông tin gói tập từ view
-  const rows = db.prepare(`
-    SELECT
-      h.id, h.ma_ho_so, h.ho_ten, h.gioi_tinh, h.ngay_sinh,
-      h.so_dien_thoai, h.email, h.avatar_url, h.ghi_chu, h.ngay_tao,
-      h.chi_nhanh, h.phong_tap, h.noi_sinh, h.cccd, h.que_quan,
-      h.tinh_thanh, h.quan_huyen, h.phuong_xa, h.loai_hv,
-      -- Tính trạng thái màu sắc
-      CASE
-        WHEN EXISTS (SELECT 1 FROM dang_ky_goi_tap dk WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong')
-             OR EXISTS (SELECT 1 FROM dang_ky_pt dp WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong')
-          THEN CASE
-            WHEN (SELECT MAX(d_ngay) FROM (
-                    SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
-                    UNION ALL
-                    SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
-                 )) < date('now','localtime')
-              THEN 'het_han'
-            WHEN (SELECT MAX(d_ngay) FROM (
-                    SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
-                    UNION ALL
-                    SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
-                 )) <= date('now','localtime','+7 days')
-              THEN 'sap_het_han'
-            ELSE 'con_han'
-          END
-        WHEN EXISTS (SELECT 1 FROM dang_ky_goi_tap dk WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'het_han')
-             OR EXISTS (SELECT 1 FROM dang_ky_pt dp WHERE dp.hoi_vien_id = h.id AND dp.trang_thai IN ('het_han','hoan_thanh'))
-          THEN 'het_han'
-        ELSE 'chua_dang_ky'
-      END AS trang_thai,
-      COALESCE(
-        (SELECT MAX(d_ngay) FROM (
-           SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
-           UNION ALL
-           SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
-        )),
-        (SELECT MAX(den_ngay) FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'het_han')
-      ) AS ngay_het_han,
-      COALESCE(
-        (SELECT gt.ten_goi FROM dang_ky_goi_tap dk JOIN goi_tap gt ON gt.id = dk.goi_tap_id
-         WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong' ORDER BY dk.den_ngay DESC LIMIT 1),
-        (SELECT gt.ten_goi FROM dang_ky_goi_tap dk JOIN goi_tap gt ON gt.id = dk.goi_tap_id
-         WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'het_han' ORDER BY dk.den_ngay DESC LIMIT 1)
-      ) AS ten_goi_tap,
-      (SELECT COUNT(*) FROM dang_ky_pt dp WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS co_pt,
-      ((SELECT loai FROM luot_vao_ra WHERE ho_so_id = h.id AND date(thoi_diem) = date('now','localtime') ORDER BY id DESC LIMIT 1) = 'vao') AS da_check_in_hom_nay,
-      EXISTS (SELECT 1 FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai IN ('cho_duyet', 'cho_kich_hoat')) AS co_yeu_cau_gia_han
-    FROM ho_so h
-    ${where}
-    ORDER BY h.ngay_tao DESC
-    LIMIT ? OFFSET ?
-  `).all(...params, parseInt(limit), offset);
+  // Lấy danh sách kèm thông tin gói tập từ CTE để lọc status chính xác trên DB trước khi phân trang
+  let selectSql = `
+    WITH temp_members AS (
+      SELECT
+        h.id, h.ma_ho_so, h.ho_ten, h.gioi_tinh, h.ngay_sinh,
+        h.so_dien_thoai, h.email, h.avatar_url, h.ghi_chu, h.ngay_tao,
+        h.chi_nhanh, h.phong_tap, h.noi_sinh, h.cccd, h.que_quan,
+        h.tinh_thanh, h.quan_huyen, h.phuong_xa, h.loai_hv,
+        CASE
+          WHEN EXISTS (SELECT 1 FROM dang_ky_goi_tap dk WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong')
+               OR EXISTS (SELECT 1 FROM dang_ky_pt dp WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong')
+            THEN CASE
+              WHEN (SELECT MAX(d_ngay) FROM (
+                      SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+                      UNION ALL
+                      SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+                   )) < date('now','localtime')
+                THEN 'het_han'
+              WHEN (SELECT MAX(d_ngay) FROM (
+                      SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+                      UNION ALL
+                      SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+                   )) <= date('now','localtime','+7 days')
+                THEN 'sap_het_han'
+              ELSE 'con_han'
+            END
+          WHEN EXISTS (SELECT 1 FROM dang_ky_goi_tap dk WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'het_han')
+               OR EXISTS (SELECT 1 FROM dang_ky_pt dp WHERE dp.hoi_vien_id = h.id AND dp.trang_thai IN ('het_han','hoan_thanh'))
+            THEN 'het_han'
+          ELSE 'chua_dang_ky'
+        END AS trang_thai,
+        COALESCE(
+          (SELECT MAX(d_ngay) FROM (
+             SELECT den_ngay as d_ngay FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'dang_hoat_dong'
+             UNION ALL
+             SELECT den_ngay as d_ngay FROM dang_ky_pt WHERE hoi_vien_id = h.id AND trang_thai = 'dang_hoat_dong'
+          )),
+          (SELECT MAX(den_ngay) FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai = 'het_han')
+        ) AS ngay_het_han,
+        COALESCE(
+          (SELECT gt.ten_goi FROM dang_ky_goi_tap dk JOIN goi_tap gt ON gt.id = dk.goi_tap_id
+           WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong' ORDER BY dk.den_ngay DESC LIMIT 1),
+          (SELECT gt.ten_goi FROM dang_ky_goi_tap dk JOIN goi_tap gt ON gt.id = dk.goi_tap_id
+           WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'het_han' ORDER BY dk.den_ngay DESC LIMIT 1)
+        ) AS ten_goi_tap,
+        (SELECT COUNT(*) FROM dang_ky_pt dp WHERE dp.hoi_vien_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS co_pt,
+        ((SELECT loai FROM luot_vao_ra WHERE ho_so_id = h.id AND date(thoi_diem) = date('now','localtime') ORDER BY id DESC LIMIT 1) = 'vao') AS da_check_in_hom_nay,
+        EXISTS (SELECT 1 FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai IN ('cho_duyet', 'cho_kich_hoat')) AS co_yeu_cau_gia_han
+      FROM ho_so h
+      ${where}
+    )
+  `;
 
-  // Lọc theo status nếu có (sau khi query vì tính từ subquery)
-  const filtered = status ? rows.filter(r => r.trang_thai === status) : rows;
+  let mainSql = `${selectSql} SELECT * FROM temp_members`;
+  let countSql = `${selectSql} SELECT COUNT(*) as cnt FROM temp_members`;
+  const selectParams = [...params];
+  const countParams = [...params];
 
-  // Đếm tổng
-  const total = db.prepare(`SELECT COUNT(*) as cnt FROM ho_so h ${where}`).get(...params).cnt;
+  if (status) {
+    mainSql += ` WHERE trang_thai = ?`;
+    selectParams.push(status);
+
+    countSql += ` WHERE trang_thai = ?`;
+    countParams.push(status);
+  }
+
+  mainSql += ` ORDER BY ngay_tao DESC LIMIT ? OFFSET ?`;
+  selectParams.push(parseInt(limit), offset);
+
+  const rows = db.prepare(mainSql).all(...selectParams);
+  const total = db.prepare(countSql).get(...countParams).cnt;
 
   return success(res, {
-    data: filtered,
+    data: rows,
     pagination: {
       page: parseInt(page),
       limit: parseInt(limit),
@@ -777,10 +789,10 @@ export const updateMyHealth = (req, res) => {
 };
 
 // ── POST /api/members/:id/package ────────────────────────
-export const registerPackage = (req, res) => {
+export const registerPackage = async (req, res) => {
   autoUpdateExpiredStatuses();
   const { id } = req.params;
-  const { goi_tap_id, tu_ngay, gia_thuc_te, phuong_thuc_tt, ma_giao_dich, ghi_chu_tt, ghi_chu_gia, ngay_thanh_toan, so_tien_da_thu } = req.body;
+  const { goi_tap_id, tu_ngay, gia_thuc_te, phuong_thuc_tt, ma_giao_dich, ghi_chu_tt, ghi_chu_gia, ngay_thanh_toan, so_tien_da_thu, khuyen_mai_id } = req.body;
 
   if (!goi_tap_id || !tu_ngay || gia_thuc_te === undefined || !phuong_thuc_tt) {
     return error(res, 'Thiếu thông tin bắt buộc: goi_tap_id, tu_ngay, gia_thuc_te, phuong_thuc_tt', 400);
@@ -807,6 +819,31 @@ export const registerPackage = (req, res) => {
 
   const goiTap = db.prepare('SELECT * FROM goi_tap WHERE id = ? AND is_deleted = 0').get(goi_tap_id);
   if (!goiTap) return error(res, 'Gói tập không tồn tại.', 404);
+
+  // Tính giá sau khuyến mãi (backend tự tính — không tin giá từ client)
+  let giaGoc = Number(goiTap.gia);
+  let giaSauKm = giaGoc;
+  let khuyenMai = null;
+  let ghiChuGiaFinal = ghi_chu_gia || null;
+
+  if (khuyen_mai_id) {
+    const todayIso = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
+    khuyenMai = db.prepare(`
+      SELECT * FROM khuyen_mai
+      WHERE id = ? AND is_active = 1
+        AND (ngay_het_han IS NULL OR ngay_het_han >= ?)
+    `).get(khuyen_mai_id, todayIso);
+    if (!khuyenMai) return error(res, 'Mã khuyến mãi không hợp lệ hoặc đã hết hạn.', 400);
+    if (khuyenMai.loai === 'phan_tram') {
+      giaSauKm = Math.max(0, Math.round(giaGoc * (1 - khuyenMai.gia_tri / 100)));
+    } else {
+      giaSauKm = Math.max(0, giaGoc - khuyenMai.gia_tri);
+    }
+    const discountLabel = khuyenMai.loai === 'phan_tram'
+      ? `-${khuyenMai.gia_tri}%`
+      : `-${Number(khuyenMai.gia_tri).toLocaleString('vi-VN')}đ`;
+    ghiChuGiaFinal = `KM: ${khuyenMai.ten} (${discountLabel}) — Gốc: ${giaGoc.toLocaleString('vi-VN')}đ`;
+  }
 
   const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
   if (tu_ngay < todayStr) {
@@ -851,27 +888,112 @@ export const registerPackage = (req, res) => {
 
   const finalStatus = finalTuNgay > todayStr ? 'cho_kich_hoat' : 'dang_hoat_dong';
 
+  // Nếu chuyển khoản → tạo PayOS QR trước khi insert
+  if (phuong_thuc_tt === 'chuyen_khoan') {
+    try {
+      const orderCode = Math.floor(Date.now() / 1000) * 100 + Math.floor(Math.random() * 100);
+      const returnUrl = `https://pay.waystation.vn/success?orderCode=${orderCode}`;
+      const cancelUrl = `https://pay.waystation.vn/cancel?orderCode=${orderCode}`;
+      const description = `Goi tap ${member.ho_ten}`.substring(0, 25);
+      const paymentLink = await createPaymentLink(orderCode, giaSauKm, description, returnUrl, cancelUrl);
+
+      const result = db.prepare(`
+        INSERT INTO dang_ky_goi_tap
+          (ho_so_id, goi_tap_id, tu_ngay, den_ngay, gia_thuc_te, ghi_chu_gia, phuong_thuc_tt, nguoi_thu_id, ma_giao_dich, ghi_chu_tt, ngay_thanh_toan, so_tien_da_thu, nguoi_tao_id, nguoi_cap_nhat_id, trang_thai, payos_order_code, payos_status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'cho_duyet', ?, 'PENDING')
+      `).run(id, goi_tap_id, finalTuNgay, denNgay, giaSauKm, ghiChuGiaFinal,
+        phuong_thuc_tt, req.user.id, ma_giao_dich || null, ghi_chu_tt || null, null,
+        0, req.user.id, req.user.id, orderCode);
+
+      ghi_audit_log(req, 'CREATE', 'dang_ky_goi_tap', result.lastInsertRowid, null,
+        { ho_so_id: id, goi_tap_id, gia_goc: giaGoc, gia_sau_km: giaSauKm, khuyen_mai_id: khuyenMai?.id },
+        'Đăng ký gói tập chuyển khoản PayOS (admin)');
+
+      createNotification(
+        'gia_han_goi_tap',
+        'Gia hạn gói tập — Chờ PayOS',
+        `${member.ho_ten} vừa đăng ký ${goiTap.ten_goi} qua chuyển khoản PayOS${khuyenMai ? ` (KM: ${khuyenMai.ten})` : ''} — chờ thanh toán`,
+        result.lastInsertRowid, 'dang_ky_goi_tap', 'admin'
+      );
+
+      return success(res, {
+        id: result.lastInsertRowid,
+        orderCode,
+        payosUrl: paymentLink.checkoutUrl,
+        qrCodeUrl: paymentLink.qrCode,
+        amount: giaSauKm,
+        gia_goc: giaGoc,
+        khuyen_mai: khuyenMai ? { ten: khuyenMai.ten, gia_tri: khuyenMai.gia_tri, loai: khuyenMai.loai } : null,
+        den_ngay: denNgay,
+      }, 'Tạo link thanh toán PayOS thành công. Vui lòng quét QR để hoàn tất.', 201);
+    } catch (payosErr) {
+      console.error('[registerPackage] PayOS error:', payosErr);
+      return error(res, `Không thể tạo cổng thanh toán PayOS: ${payosErr.message}`, 500);
+    }
+  }
+
   const result = db.prepare(`
     INSERT INTO dang_ky_goi_tap
       (ho_so_id, goi_tap_id, tu_ngay, den_ngay, gia_thuc_te, ghi_chu_gia, phuong_thuc_tt, nguoi_thu_id, ma_giao_dich, ghi_chu_tt, ngay_thanh_toan, so_tien_da_thu, nguoi_tao_id, nguoi_cap_nhat_id, trang_thai)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(id, goi_tap_id, finalTuNgay, denNgay, gia_thuc_te, ghi_chu_gia || null,
+  `).run(id, goi_tap_id, finalTuNgay, denNgay, giaSauKm, ghiChuGiaFinal,
     phuong_thuc_tt, req.user.id, ma_giao_dich || null, ghi_chu_tt || null, ngay_thanh_toan || null,
-    paidAmount, req.user.id, req.user.id, finalStatus);
+    giaSauKm, req.user.id, req.user.id, finalStatus);
 
   ghi_audit_log(req, 'CREATE', 'dang_ky_goi_tap', result.lastInsertRowid, null,
-    { ho_so_id: id, goi_tap_id, gia: gia_thuc_te }, 'Đăng ký gói tập cho hội viên');
+    { ho_so_id: id, goi_tap_id, gia_goc: giaGoc, gia_sau_km: giaSauKm, khuyen_mai_id: khuyenMai?.id },
+    'Đăng ký gói tập cho hội viên');
 
   createNotification(
     'gia_han_goi_tap',
     'Gia hạn gói tập',
-    `${member.ho_ten} vừa đăng ký ${goiTap.ten_goi} — ${Number(gia_thuc_te).toLocaleString('vi-VN')}đ`,
-    result.lastInsertRowid,
-    'dang_ky_goi_tap',
-    'admin'
+    `${member.ho_ten} vừa đăng ký ${goiTap.ten_goi}${khuyenMai ? ` (KM: ${khuyenMai.ten})` : ''} — ${giaSauKm.toLocaleString('vi-VN')}đ`,
+    result.lastInsertRowid, 'dang_ky_goi_tap', 'admin'
   );
 
-  return success(res, { id: result.lastInsertRowid, den_ngay: denNgay, so_tien_da_thu: paidAmount }, 'Đăng ký gói tập thành công', 201);
+  return success(res, {
+    id: result.lastInsertRowid,
+    den_ngay: denNgay,
+    so_tien_da_thu: giaSauKm,
+    gia_goc: giaGoc,
+    gia_sau_km: giaSauKm,
+    khuyen_mai: khuyenMai ? { ten: khuyenMai.ten, gia_tri: khuyenMai.gia_tri, loai: khuyenMai.loai } : null,
+  }, 'Đăng ký gói tập thành công', 201);
+};
+
+// ── DELETE /api/members/:id/package-payment/:orderCode ───
+export const cancelPendingPackagePayment = (req, res) => {
+  const { id, orderCode } = req.params;
+
+  try {
+    const pkg = db.prepare(`
+      SELECT * FROM dang_ky_goi_tap
+      WHERE ho_so_id = ? AND payos_order_code = ? AND trang_thai = 'cho_duyet'
+    `).get(id, orderCode);
+
+    if (!pkg) {
+      return error(res, 'Không tìm thấy gói đăng ký chờ thanh toán phù hợp.', 404);
+    }
+
+    // Xóa hẳn bản ghi khỏi Database
+    db.prepare(`
+      DELETE FROM dang_ky_goi_tap
+      WHERE id = ?
+    `).run(pkg.id);
+
+    // Cũng xóa thông báo liên quan nếu có
+    db.prepare(`
+      DELETE FROM thong_bao
+      WHERE doi_tuong_id = ? AND doi_tuong = 'dang_ky_goi_tap'
+    `).run(pkg.id);
+
+    ghi_audit_log(req, 'DELETE', 'dang_ky_goi_tap', pkg.id, pkg, null, 'Hủy bỏ giao dịch đăng ký gói tập (quét QR)');
+    
+    return success(res, null, 'Đã hủy bỏ giao dịch đăng ký gói tập thành công.');
+  } catch (err) {
+    console.error('Lỗi khi hủy giao dịch gói tập:', err);
+    return error(res, `Lỗi hệ thống: ${err.message}`, 500);
+  }
 };
 
 // ── POST /api/members/me/package-request ──────────────────

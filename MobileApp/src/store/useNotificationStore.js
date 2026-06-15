@@ -42,6 +42,26 @@ export const useNotificationStore = create((set, get) => ({
     }
   },
 
+  /**
+   * Thêm 1 thông báo realtime vào đầu danh sách (nhận từ Socket.IO).
+   * @param {{ loai: string, tieu_de: string, noi_dung: string, ngay_tao: string }} payload
+   */
+  addNotification: (payload) => {
+    const newNotif = {
+      id: `socket_${Date.now()}`,
+      is_custom: true,
+      da_doc: 0,
+      loai: payload.loai || 'thong_bao_chung',
+      tieu_de: payload.tieu_de,
+      noi_dung: payload.noi_dung,
+      ngay_tao: payload.ngay_tao || new Date().toISOString(),
+    };
+    set((state) => ({
+      notifications: [newNotif, ...state.notifications],
+      unreadCount: state.unreadCount + 1,
+    }));
+  },
+
   markAsRead: async () => {
     try {
       await api.post('/members/me/notifications/read');
@@ -58,8 +78,10 @@ export const useNotificationStore = create((set, get) => ({
   deleteNotification: async (item) => {
     try {
       if (item.is_custom) {
-        // Xóa thông báo cá nhân ở server
-        await api.delete(`/members/me/notifications/${item.id}`);
+        // Xóa thông báo cá nhân ở server (bỏ qua nếu là thông báo socket tạm thời)
+        if (!String(item.id).startsWith('socket_')) {
+          await api.delete(`/members/me/notifications/${item.id}`);
+        }
         set((state) => {
           const filtered = state.notifications.filter(n => n.id !== item.id);
           return {

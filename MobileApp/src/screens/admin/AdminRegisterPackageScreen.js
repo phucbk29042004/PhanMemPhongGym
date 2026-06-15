@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator, Alert, ScrollView,
-  StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View
+  StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View,
+  Modal, Image
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, Award, CreditCard, Building2, Calendar, Save } from 'lucide-react-native';
@@ -107,6 +108,10 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
   const [selectedPkg, setSelectedPkg] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [promotions, setPromotions] = useState([]);
+  const [selectedPromo, setSelectedPromo] = useState(null);
+  const [payosData, setPayosData] = useState(null);
+  const [showQrModal, setShowQrModal] = useState(false);
 
   // Khi isSwitch=true (đổi gói): ngày bắt đầu = hôm nay
   // Khi isSwitch=false (đăng ký nối tiếp): ngày bắt đầu = ngày liền sau ngày hết hạn gói cũ
@@ -144,9 +149,10 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
   useEffect(() => {
     const loadInitData = async () => {
       try {
-        const [pkgRes, branchRes] = await Promise.all([
+        const [pkgRes, branchRes, promoRes] = await Promise.all([
           api.get('/packages'),
-          api.get('/branches')
+          api.get('/branches'),
+          api.get('/promotions/active').catch(() => ({ data: { data: [] } })),
         ]);
         if (pkgRes.data?.success) {
           // Lọc gói tập đang hoạt động ra nếu là đổi gói để không chọn lại đúng gói cũ
@@ -161,6 +167,9 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
         if (Array.isArray(branchArr) && branchArr.length > 0) {
           setBranches(branchArr);
         }
+        if (promoRes.data?.success && Array.isArray(promoRes.data.data)) {
+          setPromotions(promoRes.data.data);
+        }
       } catch (err) {
         console.error('[RegisterPackage] init error:', err?.message);
       } finally {
@@ -169,6 +178,54 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
     };
     loadInitData();
   }, [activePkg]);
+
+  // Polling check trạng thái thanh toán PayOS
+  useEffect(() => {
+    let timer;
+    if (showQrModal && payosData?.orderCode) {
+      timer = setInterval(async () => {
+        try {
+          const res = await api.get(`/members/me/payos-status/${payosData.orderCode}`);
+          if (res.data?.success && res.data.data?.status === 'PAID') {
+            clearInterval(timer);
+            Alert.alert('Thành công', 'Thanh toán PayOS thành công!', [
+              {
+                text: 'OK',
+                onPress: () => {
+                  setShowQrModal(false);
+                  setPayosData(null);
+                  navigation.goBack();
+                }
+              }
+            ]);
+          } else if (res.data?.success && res.data.data?.status === 'CANCELLED') {
+            clearInterval(timer);
+            Alert.alert('Thông báo', 'Giao dịch thanh toán đã bị hủy.');
+            setShowQrModal(false);
+            setPayosData(null);
+          }
+        } catch (e) {
+          console.log('Poll status error:', e.message);
+        }
+      }, 3000);
+    }
+    return () => clearInterval(timer);
+  }, [showQrModal, payosData, navigation]);
+
+  const handleCancelPayment = async () => {
+    if (!payosData?.orderCode) return;
+    try {
+      setSubmitting(true);
+      await api.delete(`/members/${member.id}/package-payment/${payosData.orderCode}`);
+      Alert.alert('Thông báo', 'Đã hủy bỏ giao dịch đăng ký gói tập.');
+    } catch (e) {
+      console.log('Cancel payment error:', e.message);
+    } finally {
+      setSubmitting(false);
+      setShowQrModal(false);
+      setPayosData(null);
+    }
+  };
 
   // Tự động tính ngày kết thúc dựa trên gói và ngày bắt đầu
   useEffect(() => {
@@ -190,11 +247,30 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
     }
   }, [selectedPkg, startDate]);
 
+  const calcDiscountedPrice = (basePrice, promo) => {
+    if (!promo) return basePrice;
+    if (promo.loai === 'phan_tram') {
+      return Math.max(0, Math.round(basePrice * (1 - promo.gia_tri / 100)));
+    }
+    return Math.max(0, basePrice - promo.gia_tri);
+  };
+
   const handleSelectPackage = (pkg) => {
     setSelectedPkg(pkg);
-    setActualPrice(formatInputMoney(String(pkg.gia)));
-    if (!activePkg) {
-      setPaidAmount(formatInputMoney(String(pkg.gia)));
+    setSelectedPromo(null);
+    const price = calcDiscountedPrice(pkg.gia, null);
+    setActualPrice(formatInputMoney(String(price)));
+    if (!activePkg) setPaidAmount(formatInputMoney(String(price)));
+  };
+
+  const handleSelectPromo = (promo) => {
+    const next = selectedPromo?.id === promo.id ? null : promo;
+    setSelectedPromo(next);
+    if (selectedPkg) {
+      const basePrice = selectedPkg.gia;
+      const price = calcDiscountedPrice(basePrice, next);
+      setActualPrice(formatInputMoney(String(price)));
+      if (!activePkg) setPaidAmount(formatInputMoney(String(price)));
     }
   };
 
@@ -241,7 +317,8 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
           so_tien_hoan: refundVal,
           gia_thuc_te: price,
           phuong_thuc_tt: paymentMethod,
-          ghi_chu_tt: note || 'Đổi gói qua di động'
+          ghi_chu_tt: note || 'Đổi gói qua di động',
+          khuyen_mai_id: selectedPromo?.id || undefined,
         };
 
         const res = await api.post(`/members/${member.id}/package/switch`, payload);
@@ -272,14 +349,20 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
           so_tien_da_thu: paid,
           phuong_thuc_tt: paymentMethod,
           ghi_chu_tt: note || 'Đăng ký trực tiếp qua di động',
-          chi_nhanh_mua: branch
+          chi_nhanh_mua: branch,
+          khuyen_mai_id: selectedPromo?.id || undefined,
         };
 
         const res = await api.post(`/members/${member.id}/package`, payload);
         if (res.data?.success) {
-          Alert.alert('Thành công', `Đăng ký gói ${selectedPkg.ten_goi} thành công!`, [
-            { text: 'OK', onPress: () => navigation.goBack() }
-          ]);
+          if (paymentMethod === 'chuyen_khoan' && res.data.data?.orderCode) {
+            setPayosData(res.data.data);
+            setShowQrModal(true);
+          } else {
+            Alert.alert('Thành công', `Đăng ký gói ${selectedPkg.ten_goi} thành công!`, [
+              { text: 'OK', onPress: () => navigation.goBack() }
+            ]);
+          }
         } else {
           Alert.alert('Lỗi', res.data?.message || 'Đăng ký thất bại.');
         }
@@ -411,6 +494,56 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
             );
           })}
         </View>
+
+        {selectedPkg && promotions.length > 0 && (
+          <View style={{ marginBottom: 8 }}>
+            <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Khuyến mãi (tuỳ chọn)</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 0 }}>
+              {promotions.map((promo) => {
+                const active = selectedPromo?.id === promo.id;
+                const discountLabel = promo.loai === 'phan_tram'
+                  ? `-${promo.gia_tri}%`
+                  : `-${Number(promo.gia_tri).toLocaleString('vi-VN')}đ`;
+                const expLabel = promo.ngay_het_han ? `HSD: ${promo.ngay_het_han.substring(0, 10)}` : '';
+                return (
+                  <TouchableOpacity
+                    key={promo.id}
+                    onPress={() => handleSelectPromo(promo)}
+                    activeOpacity={0.8}
+                    style={{
+                      borderWidth: active ? 2 : 1,
+                      borderColor: active ? colors.primary : colors.border,
+                      borderRadius: 12,
+                      padding: 10,
+                      minWidth: 120,
+                      backgroundColor: active ? colors.primaryLight : colors.surface,
+                    }}
+                  >
+                    <Text style={{ fontSize: 13, fontWeight: '800', color: active ? colors.primary : colors.text }}>
+                      {discountLabel}
+                    </Text>
+                    <Text style={{ fontSize: 11, color: active ? colors.primary : colors.textSecondary, marginTop: 2 }} numberOfLines={1}>
+                      {promo.ten}
+                    </Text>
+                    {expLabel ? (
+                      <Text style={{ fontSize: 10, color: colors.textMuted, marginTop: 2 }}>{expLabel}</Text>
+                    ) : null}
+                    {active && (
+                      <Text style={{ fontSize: 10, color: colors.primary, fontWeight: '700', marginTop: 4 }}>
+                        → {formatPrice(calcDiscountedPrice(selectedPkg.gia, promo))}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+            {selectedPromo && (
+              <Text style={{ fontSize: 11, color: '#16a34a', fontWeight: '600', marginTop: 6 }}>
+                Đã áp dụng: {selectedPromo.ten} ({selectedPromo.loai === 'phan_tram' ? `-${selectedPromo.gia_tri}%` : `-${Number(selectedPromo.gia_tri).toLocaleString('vi-VN')}đ`}) — Giá sau KM: {formatPrice(calcDiscountedPrice(selectedPkg.gia, selectedPromo))}
+              </Text>
+            )}
+          </View>
+        )}
 
         {selectedPkg && (
           <View style={[styles.formCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -595,6 +728,64 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* PayOS QR Modal */}
+      <Modal visible={showQrModal} transparent={true} animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: colors.surface }]}>
+            <View style={[styles.modalHeader, { backgroundColor: colors.primary }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalTitle}>Thanh toán chuyển khoản</Text>
+                <Text style={styles.modalSubtitle}>Hội viên: {member.ho_ten}</Text>
+              </View>
+              <TouchableOpacity onPress={handleCancelPayment} style={styles.modalCloseBtn}>
+                <X color="#ffffff" size={18} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.modalBody}>
+              <View style={[styles.priceCard, { borderColor: colors.border }]}>
+                <Text style={[styles.priceLabel, { color: colors.textSecondary }]}>SỐ TIỀN CẦN THANH TOÁN</Text>
+                <Text style={[styles.priceValue, { color: colors.primary }]}>{formatPrice(payosData?.amount)}</Text>
+              </View>
+              
+              <View style={styles.qrContainer}>
+                {payosData?.qrCodeUrl ? (
+                  <Image
+                    source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(payosData.qrCodeUrl)}` }}
+                    style={styles.qrImage}
+                  />
+                ) : (
+                  <ActivityIndicator size="large" color={colors.primary} />
+                )}
+              </View>
+
+              <View style={[styles.infoCard, { borderColor: colors.border, backgroundColor: colors.surfaceVariant }]}>
+                <View style={styles.infoRow}>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Mã đơn hàng</Text>
+                  <Text style={[styles.infoVal, { color: colors.text }]}>#{payosData?.orderCode}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Nội dung CK</Text>
+                  <Text style={[styles.infoVal, { color: colors.text, fontWeight: '800' }]}>{payosData?.orderCode}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Hạn sử dụng</Text>
+                  <Text style={[styles.infoVal, { color: colors.text }]}>{payosData?.den_ngay ? payosData.den_ngay.substring(0, 10) : '—'}</Text>
+                </View>
+              </View>
+
+              <View style={styles.statusRow}>
+                <ActivityIndicator size="small" color={colors.primary} style={{ marginRight: 6 }} />
+                <Text style={[styles.statusText, { color: colors.primary }]}>Đang chờ thanh toán...</Text>
+              </View>
+
+              <TouchableOpacity onPress={handleCancelPayment} style={styles.cancelPaymentBtn}>
+                <Text style={styles.cancelPaymentBtnText}>Hủy & Quay lại</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -712,5 +903,132 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 8
   },
-  submitBtnText: { color: '#ffffff', fontSize: 15, fontWeight: '800' }
+  submitBtnText: { color: '#ffffff', fontSize: 15, fontWeight: '800' },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 360,
+    borderRadius: 24,
+    overflow: 'hidden',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 }
+  },
+  modalHeader: {
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
+  modalTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#ffffff'
+  },
+  modalSubtitle: {
+    fontSize: 11,
+    color: 'rgba(255, 255, 255, 0.85)',
+    fontWeight: '500',
+    marginTop: 2
+  },
+  modalCloseBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  modalBody: {
+    padding: 20,
+    alignItems: 'center',
+    gap: 16
+  },
+  priceCard: {
+    width: '100%',
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'center',
+    backgroundColor: '#ffffff'
+  },
+  priceLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    marginBottom: 4
+  },
+  priceValue: {
+    fontSize: 22,
+    fontWeight: '800'
+  },
+  qrContainer: {
+    width: 180,
+    height: 180,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#e2e8f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ffffff',
+    padding: 8
+  },
+  qrImage: {
+    width: 160,
+    height: 160,
+    borderRadius: 8
+  },
+  infoCard: {
+    width: '100%',
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 12,
+    gap: 6
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  infoLabel: {
+    fontSize: 12,
+    fontWeight: '500'
+  },
+  infoVal: {
+    fontSize: 12,
+    fontWeight: '700'
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 4
+  },
+  statusText: {
+    fontSize: 13,
+    fontWeight: '700'
+  },
+  cancelPaymentBtn: {
+    width: '100%',
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#f1f5f9',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  cancelPaymentBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#475569'
+  }
 });

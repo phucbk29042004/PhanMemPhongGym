@@ -125,3 +125,53 @@ export const deleteRule = (req, res) => {
   ghi_audit_log(req, 'xoa_noi_quy', 'noi_quy', req.params.id, null, null, null);
   return success(res, null, 'Đã xóa nội quy');
 };
+
+// ── Cài đặt thông báo tự động ─────────────────────────────
+
+const NOTIF_KEYS = [
+  { khoa: 'notif_sap_het_han',      nhan: 'Sắp hết hạn gói tập',           mo_ta: 'Thông báo khi gói tập còn 1-7 ngày' },
+  { khoa: 'notif_het_han',          nhan: 'Hết hạn gói tập',                mo_ta: 'Thông báo khi gói tập hết hạn hôm nay' },
+  { khoa: 'notif_sinh_nhat',        nhan: 'Sinh nhật hội viên',              mo_ta: 'Chúc mừng sinh nhật hội viên' },
+  { khoa: 'notif_sap_het_buoi_pt',  nhan: 'Sắp hết buổi PT',                mo_ta: 'Thông báo khi còn ≤2 buổi PT' },
+  { khoa: 'notif_tom_tat_buoi_sang',nhan: 'Tóm tắt buổi sáng (Admin)',      mo_ta: 'Tóm tắt hàng ngày lúc 08:00 sáng' },
+  { khoa: 'notif_pt_chua_checkin',  nhan: 'PT chưa check-in trước buổi tập',mo_ta: 'Cảnh báo mỗi 5 phút khi PT chưa check-in' },
+];
+
+// GET /api/config/notification-settings — Lấy cài đặt toggle thông báo
+export const getNotifSettings = (req, res) => {
+  const result = NOTIF_KEYS.map(item => {
+    const row = db.prepare(`SELECT gia_tri, ngay_cap_nhat FROM cau_hinh WHERE khoa = ?`).get(item.khoa);
+    return {
+      khoa: item.khoa,
+      nhan: item.nhan,
+      mo_ta: item.mo_ta,
+      bat: row ? row.gia_tri === '1' : true,
+      ngay_cap_nhat: row?.ngay_cap_nhat || null,
+    };
+  });
+  return success(res, result, 'Lấy cài đặt thông báo thành công');
+};
+
+// PUT /api/config/notification-settings — Cập nhật toggle thông báo
+export const updateNotifSettings = (req, res) => {
+  const updates = req.body; // { notif_sap_het_han: true/false, ... }
+  if (!updates || typeof updates !== 'object') return error(res, 'Body không hợp lệ', 400);
+
+  const validKeys = NOTIF_KEYS.map(k => k.khoa);
+  const stmt = db.prepare(`
+    INSERT INTO cau_hinh (khoa, gia_tri, ngay_cap_nhat)
+    VALUES (?, ?, datetime('now','localtime'))
+    ON CONFLICT(khoa) DO UPDATE SET gia_tri = excluded.gia_tri, ngay_cap_nhat = excluded.ngay_cap_nhat
+  `);
+
+  const updateTx = db.transaction(() => {
+    for (const [khoa, val] of Object.entries(updates)) {
+      if (!validKeys.includes(khoa)) continue;
+      stmt.run(khoa, val ? '1' : '0');
+    }
+  });
+  updateTx();
+
+  ghi_audit_log(req, 'cap_nhat_cai_dat_thong_bao', 'cau_hinh', null, null, updates, null);
+  return success(res, null, 'Đã cập nhật cài đặt thông báo');
+};

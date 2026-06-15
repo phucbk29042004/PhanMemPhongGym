@@ -4,18 +4,28 @@
  */
 
 import 'dotenv/config';
+import { createServer } from 'http';
 import app from './src/app.js';
+import { initSocket } from './src/socket.js';
 import { startCronJob } from './src/jobs/cron-pt-confirm.js';
 import { startDailyCronJobs } from './src/jobs/cron-daily.js';
 
-
 const PORT = process.env.PORT || 3000;
+
+// Tạo http server bọc ngoài Express app
+const httpServer = createServer(app);
+
+// Khởi tạo Socket.IO
+initSocket(httpServer, {
+  origin: process.env.CORS_ORIGIN || '*',
+  methods: ['GET', 'POST'],
+});
 
 // Khởi động cron jobs
 startCronJob();
 startDailyCronJobs();
 
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log('');
   console.log('🏋️  ════════════════════════════════════════════');
   console.log('🏋️   PARADISE GYM BACKEND API');

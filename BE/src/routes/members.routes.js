@@ -11,7 +11,7 @@ import {
   getBirthday, getMyProfile, updateMyHealth, createAccount, checkDuplicate,
   getMyNotifications, requestPackageRenewal, cancelPackageRequest, checkPayosStatus, getPackageRequests, approvePackageRequest,
   notifyMember, markMyNotificationsRead, clearMyNotifications, deleteMyNotification,
-  cancelPackage, editPackage, switchPackage,
+  cancelPackage, editPackage, switchPackage, cancelPendingPackagePayment,
   lookupMember, getMyPayments, requestPackagePause, getInvoice,
   sendBirthdayWish, sendBirthdayWishAll, importMembers,
 } from '../controllers/members.controller.js';
@@ -64,6 +64,7 @@ router.post('/:id/package/switch',         requireRole('admin', 'nhan_vien'), sw
 router.patch('/:id/package/:pkgId/cancel', requireRole('admin'), cancelPackage);            // Hủy gói — chỉ admin
 router.patch('/:id/package/:pkgId',        requireRole('admin', 'nhan_vien'), editPackage);    // Sửa gói
 router.post('/:id/package', requireRole('admin', 'nhan_vien'), registerPackage);              // Đăng ký gói mới
+router.delete('/:id/package-payment/:orderCode', requireRole('admin', 'nhan_vien'), cancelPendingPackagePayment); // Hủy giao dịch đăng ký gói tập chưa thanh toán
 router.get('/:id/package/:pkgId/invoice', requireRole('admin', 'nhan_vien'), getInvoice);     // Xem biên lai
 
 // Tạo tài khoản đăng nhập cho hồ sơ

@@ -13,9 +13,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.thanpait123.mobileapp"
     },
     "android": {
+      "package": "com.thanpait123.mobileapp",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -24,6 +26,20 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Cho phép truy cập ảnh để cập nhật ảnh đại diện.",
+          "cameraPermission": "Cho phép sử dụng camera để chụp ảnh đại diện."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "0899c647-b757-4209-a982-566b85f411cb"
+      }
     }
   }
 }
