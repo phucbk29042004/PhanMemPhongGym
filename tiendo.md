@@ -2223,3 +2223,11 @@
   - Sửa thông báo lịch tập trống của hội viên từ "Liên hệ lễ tân" thành "Liên hệ nhân viên".
   - Đổi placeholder nhập liệu chức vụ từ "VD: Lễ tân, Quản lý..." thành "VD: Nhân viên, Quản lý...".
 - **Kết quả**: Thành công. Nhãn và mô tả trên Mobile App hiển thị đồng bộ và nhất quán với vai trò "Nhân viên" mới.
+
+### [16/06/2026 14:21] — Bật usesCleartextTraffic trong cấu hình Mobile App
+- **Loại**: Cấu hình đóng gói (Mobile)
+- **File**:
+  - `MobileApp/app.json`
+- **Mô tả**:
+  - Thêm cấu hình `"usesCleartextTraffic": true` trong phần cài đặt `"android"` của Expo để cho phép ứng dụng sau khi đóng gói thành tệp APK độc lập có thể thực hiện kết nối HTTP không bảo mật tới máy chủ cục bộ thông qua IP Wifi.
+- **Kết quả**: Thành công.
