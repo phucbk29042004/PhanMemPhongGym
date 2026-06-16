@@ -2,8 +2,10 @@ import axios from 'axios';
 import { useAuthStore } from '../store/useAuthStore';
 
 // Cấu hình URL kết nối tới Backend (BE) đang chạy trên cổng 3000
-// Đã tự động lấy IP Wifi của máy tính: 192.168.11.126 để thiết bị iOS (iPhone/Expo Go) có thể truy cập được BE local.
-const API_URL = 'http://192.168.11.126:3000/api';
+// Tự động sử dụng IP local ở chế độ DEV (Expo Go) và link HTTPS localtunnel khi đóng gói APK (Release).
+const API_URL = __DEV__
+  ? 'http://192.168.11.126:3000/api'
+  : 'https://weak-files-hang.loca.lt/api';
 
 export const api = axios.create({
   baseURL: API_URL,

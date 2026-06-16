@@ -2231,3 +2231,11 @@
 - **Mô tả**:
   - Thêm cấu hình `"usesCleartextTraffic": true` trong phần cài đặt `"android"` của Expo để cho phép ứng dụng sau khi đóng gói thành tệp APK độc lập có thể thực hiện kết nối HTTP không bảo mật tới máy chủ cục bộ thông qua IP Wifi.
 - **Kết quả**: Thành công.
+
+### [16/06/2026 15:18] — Cấu hình dynamic API URL cho môi trường Dev và Release Build
+- **Loại**: Cấu hình mạng (Mobile)
+- **File**:
+  - `MobileApp/src/services/api.js`
+- **Mô tả**:
+  - Cấu hình dynamic cho `API_URL` bằng cách sử dụng biến `__DEV__`. Khi chạy bằng Expo Go (DEV), ứng dụng tự động dùng IP Wifi cục bộ `http://192.168.11.126:3000/api`. Khi đóng gói APK (Release), ứng dụng tự động chuyển hướng sang link HTTPS của localtunnel (`https://weak-files-hang.loca.lt/api`) để vượt qua các lớp chặn HTTP không mã hóa của Android.
+- **Kết quả**: Thành công.
