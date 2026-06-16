@@ -133,7 +133,7 @@ function ChangePasswordModal({ visible, onClose, colors }) {
         Alert.alert('Lỗi', res.data?.message || 'Không thể đổi mật khẩu.');
       }
     } catch (err) {
-      Alert.alert('Lỗi', err?.response?.data?.message || 'Không thể kết nối máy chủ.');
+      Alert.alert('Lỗi', err?.displayMessage || 'Có lỗi xảy ra.');
     } finally {
       setSaving(false);
     }

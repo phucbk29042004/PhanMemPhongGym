@@ -329,7 +329,7 @@ export default function PTScheduleScreen() {
               }
               await fetchSchedules();
             } catch (err) {
-              Alert.alert('Lỗi', err.response?.data?.message || err?.message || 'Không thể xác nhận buổi tập.');
+              Alert.alert('Lỗi', err?.displayMessage || 'Có lỗi xảy ra.');
             } finally {
               setActionLoadingId(null);
             }
@@ -354,7 +354,7 @@ export default function PTScheduleScreen() {
               await api.put(`/pt/schedules/${id}/cancel`);
               await fetchSchedules();
             } catch (err) {
-              Alert.alert('Lỗi', err.response?.data?.message || 'Không thể hủy buổi tập.');
+              Alert.alert('Lỗi', err?.displayMessage || 'Có lỗi xảy ra.');
             } finally {
               setActionLoadingId(null);
             }
@@ -378,7 +378,7 @@ export default function PTScheduleScreen() {
       setSchedules((prev) => prev.map((s) => s.id === noteEditingId ? { ...s, ghi_chu: noteText } : s));
       setNoteModalVisible(false);
     } catch (err) {
-      Alert.alert('Lỗi', err.response?.data?.message || 'Không thể lưu ghi chú.');
+      Alert.alert('Lỗi', err?.displayMessage || 'Có lỗi xảy ra.');
     } finally {
       setNoteSaving(false);
     }
@@ -710,7 +710,7 @@ export default function PTScheduleScreen() {
                       alert(res.data?.message || 'Không thể tạo lịch mới');
                     }
                   } catch (err) {
-                    alert(err.response?.data?.message || 'Lỗi kết nối khi tạo lịch.');
+                    Alert.alert('Lỗi', err?.displayMessage || 'Có lỗi xảy ra.');
                   } finally {
                     setCreating(false);
                   }

@@ -20,3 +20,38 @@ api.interceptors.request.use((config) => {
 }, (error) => {
   return Promise.reject(error);
 });
+
+// Xử lý lỗi tập trung — phân biệt Network Error / Timeout / HTTP Error
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (__DEV__) {
+      console.error('[API Error]', {
+        url: error.config?.url,
+        method: error.config?.method?.toUpperCase(),
+        status: error.response?.status,
+        data: error.response?.data,
+        code: error.code,
+        message: error.message,
+      });
+    }
+
+    if (!error.response) {
+      // Không nhận được response từ server
+      if (error.code === 'ECONNABORTED') {
+        error.displayMessage = 'Kết nối quá chậm (timeout). Vui lòng thử lại.';
+      } else {
+        error.displayMessage = 'Không thể kết nối máy chủ. Kiểm tra lại WiFi/mạng.';
+      }
+    } else if (error.response.status === 401) {
+      error.displayMessage = 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.';
+    } else {
+      // HTTP 4xx / 5xx — ưu tiên message từ server
+      error.displayMessage =
+        error.response.data?.message || `Lỗi máy chủ (${error.response.status}).`;
+    }
+
+    return Promise.reject(error);
+  }
+);
+

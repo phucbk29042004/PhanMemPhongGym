@@ -59,7 +59,7 @@ export function createNotification(loai, tieu_de, noi_dung, doi_tuong_id = null,
  * @param {string} noi_dung  - Nội dung
  * @param {string} loai      - Loại ('thong_bao_chung', 'nhac_nho_gia_han', ...)
  */
-export function createUserNotification(hoSoId, tieu_de, noi_dung, loai = 'thong_bao_chung') {
+export function createUserNotification(hoSoId, tieu_de, noi_dung, loai = 'thong_bao_chung', extra = null) {
   try {
     db.prepare(`
       INSERT INTO thong_bao_user (ho_so_id, loai, tieu_de, noi_dung)
@@ -73,6 +73,7 @@ export function createUserNotification(hoSoId, tieu_de, noi_dung, loai = 'thong_
         loai,
         tieu_de,
         noi_dung,
+        extra,
         ngay_tao: new Date().toISOString(),
       });
     } catch (_) {

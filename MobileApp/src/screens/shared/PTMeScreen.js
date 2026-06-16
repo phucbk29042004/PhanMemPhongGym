@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../../services/api';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useTheme } from '../../context/ThemeContext';
+import { useSocket } from '../../utils/useSocket';
 
 export default function PTMeScreen({ navigation }) {
   const { user } = useAuthStore();
@@ -26,6 +27,7 @@ export default function PTMeScreen({ navigation }) {
   const [form, setForm] = useState({ cam_nhan_tap: '', khau_phan_an: '', so_phut_tap: '', noi_dung_tap: '', loi_dan: '' });
   const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [unreadMembers, setUnreadMembers] = useState([]);
 
   const load = useCallback(async (memberId = selectedMemberId) => {
     try {
@@ -34,7 +36,10 @@ export default function PTMeScreen({ navigation }) {
       const [overviewRes, studentsRes] = await Promise.all(calls);
       if (overviewRes.data?.success) setOverview(overviewRes.data.data);
       if (studentsRes?.data?.success) {
-        setStudents(studentsRes.data.data || []);
+        // Dedup theo hoi_vien_id — tránh lỗi duplicate key trong chips bar
+        const raw = studentsRes.data.data || [];
+        const unique = raw.filter((s, idx, arr) => arr.findIndex(x => x.hoi_vien_id === s.hoi_vien_id) === idx);
+        setStudents(unique);
         if (!memberId && studentsRes.data.data?.[0]?.hoi_vien_id) memberId = studentsRes.data.data[0].hoi_vien_id;
       }
       const endpoint = isPT ? `/pt-me/thread?hoi_vien_id=${memberId}` : '/pt-me/thread';
@@ -50,6 +55,25 @@ export default function PTMeScreen({ navigation }) {
       setRefreshing(false);
     }
   }, [isPT, selectedMemberId]);
+
+  useSocket('notification:personal', useCallback((payload) => {
+    if (payload?.loai === 'chat_pt_me') {
+      const senderId = payload.extra?.nguoi_gui_id;
+      if (!senderId) return;
+
+      if (isPT) {
+        if (selectedMemberId === senderId) {
+          load(senderId);
+        } else {
+          setUnreadMembers(prev => prev.includes(senderId) ? prev : [...prev, senderId]);
+          Alert.alert('Tin nhắn mới', payload.noi_dung);
+        }
+      } else {
+        load();
+        Alert.alert('Tin nhắn mới từ HLV', payload.noi_dung);
+      }
+    }
+  }, [isPT, selectedMemberId, load]));
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -67,7 +91,6 @@ export default function PTMeScreen({ navigation }) {
         setForm({ cam_nhan_tap: '', khau_phan_an: '', so_phut_tap: '', noi_dung_tap: '', loi_dan: '' });
         setEditingId(null);
         await load(selectedMemberId);
-        Alert.alert('Thành công', editingId ? 'Đã cập nhật và thông báo cho bên liên quan.' : (isPT ? 'Đã gửi lời dặn cho hội viên.' : 'Đã gửi cập nhật cho PT.'));
       }
     } catch (err) {
       Alert.alert('Lỗi', err.response?.data?.message || 'Không thể gửi cập nhật.');
@@ -76,10 +99,16 @@ export default function PTMeScreen({ navigation }) {
     }
   };
 
-  const entries = thread?.entries || overview?.latest || [];
+  const rawEntries = thread?.entries || overview?.latest || [];
+
+  // Dedup by id để tránh lỗi duplicate key trong FlatList
+  const entries = rawEntries.reduce((acc, item) => {
+    if (item.id == null || !acc.some(e => e.id === item.id)) acc.push(item);
+    return acc;
+  }, []);
 
   const sortedEntries = [...entries].sort(
-    (a, b) => new Date(a.ngay_tao || a.ngay_cap_nhat).getTime() - new Date(b.ngay_tao || b.ngay_cap_nhat).getTime()
+    (a, b) => new Date(b.ngay_tao || b.ngay_cap_nhat).getTime() - new Date(a.ngay_tao || a.ngay_cap_nhat).getTime()
   );
 
   const startEdit = (item) => {
@@ -125,8 +154,7 @@ export default function PTMeScreen({ navigation }) {
   }
 
   const renderMessage = ({ item }) => {
-    // Tin nhắn Hội viên → bên PHẢI, tin nhắn PT → bên TRÁI
-    const isMemberMsg = item.vai_tro_gui !== 'pt';
+    // Tin nhắn của chính mình → bên PHẢI, tin nhắn đối phương → bên TRÁI
     const isMe = item.nguoi_gui_id === user?.id;
 
     let dateStr = '';
@@ -138,8 +166,8 @@ export default function PTMeScreen({ navigation }) {
     }
 
     return (
-      <View style={[styles.messageRow, isMemberMsg ? styles.messageRowRight : styles.messageRowLeft]}>
-        {!isMemberMsg && (
+      <View style={[styles.messageRow, isMe ? styles.messageRowRight : styles.messageRowLeft]}>
+        {!isMe && (
           <View style={[styles.avatar, { backgroundColor: colors.primaryLight }]}>
             <UserRound color={colors.primary} size={14} />
           </View>
@@ -147,14 +175,14 @@ export default function PTMeScreen({ navigation }) {
         <View
           style={[
             styles.bubble,
-            isMemberMsg
+            isMe
               ? [styles.bubbleRight, { backgroundColor: colors.isDark ? colors.primary : '#e6f4ea', borderColor: colors.primary }]
               : [styles.bubbleLeft, { backgroundColor: colors.surface, borderColor: colors.border }],
           ]}
         >
           <View style={styles.bubbleHead}>
-            <Text style={[styles.bubbleSender, { color: isMemberMsg ? (colors.isDark ? '#fff' : colors.primary) : colors.textSecondary }]}>
-              {item.vai_tro_gui === 'pt' ? 'PT dặn dò' : (isPT ? item.ten_hoi_vien || 'Hội viên' : 'Bạn')}
+            <Text style={[styles.bubbleSender, { color: isMe ? (colors.isDark ? '#fff' : colors.primary) : colors.textSecondary }]}>
+              {isMe ? 'Bạn' : (item.vai_tro_gui === 'pt' ? 'PT dặn dò' : item.ten_nguoi_gui || item.ten_hoi_vien || 'Hội viên')}
             </Text>
             {isMe && (
               <TouchableOpacity style={[styles.editBtn, { backgroundColor: 'rgba(29,147,54,0.1)' }]} onPress={() => startEdit(item)}>
@@ -165,25 +193,25 @@ export default function PTMeScreen({ navigation }) {
 
           {item.vai_tro_gui === 'pt' ? (
             <>
-              {item.noi_dung_tap ? <Text style={[styles.bubbleField, { color: isMemberMsg ? (colors.isDark ? '#fff' : '#141c14') : colors.text }]}><Text style={styles.boldLabel}>Nội dung tập: </Text>{item.noi_dung_tap}</Text> : null}
-              {item.khau_phan_an ? <Text style={[styles.bubbleField, { color: isMemberMsg ? (colors.isDark ? '#fff' : '#141c14') : colors.text }]}><Text style={styles.boldLabel}>Dinh dưỡng: </Text>{item.khau_phan_an}</Text> : null}
-              {item.so_phut_tap ? <Text style={[styles.bubbleField, { color: isMemberMsg ? (colors.isDark ? '#fff' : '#141c14') : colors.text }]}><Text style={styles.boldLabel}>Thời gian: </Text>{item.so_phut_tap} phút</Text> : null}
-              {item.loi_dan ? <Text style={[styles.bubbleField, { color: isMemberMsg ? (colors.isDark ? '#fff' : '#141c14') : colors.text }]}><Text style={styles.boldLabel}>Lời dặn: </Text>{item.loi_dan}</Text> : null}
+              {item.noi_dung_tap ? <Text style={[styles.bubbleField, { color: isMe ? (colors.isDark ? '#fff' : '#141c14') : colors.text }]}><Text style={styles.boldLabel}>Nội dung tập: </Text>{item.noi_dung_tap}</Text> : null}
+              {item.khau_phan_an ? <Text style={[styles.bubbleField, { color: isMe ? (colors.isDark ? '#fff' : '#141c14') : colors.text }]}><Text style={styles.boldLabel}>Dinh dưỡng: </Text>{item.khau_phan_an}</Text> : null}
+              {item.so_phut_tap ? <Text style={[styles.bubbleField, { color: isMe ? (colors.isDark ? '#fff' : '#141c14') : colors.text }]}><Text style={styles.boldLabel}>Thời gian: </Text>{item.so_phut_tap} phút</Text> : null}
+              {item.loi_dan ? <Text style={[styles.bubbleField, { color: isMe ? (colors.isDark ? '#fff' : '#141c14') : colors.text }]}><Text style={styles.boldLabel}>Lời dặn: </Text>{item.loi_dan}</Text> : null}
             </>
           ) : (
             <>
-              {item.cam_nhan_tap ? <Text style={[styles.bubbleField, { color: isMemberMsg ? (colors.isDark ? '#fff' : '#141c14') : colors.text }]}><Text style={styles.boldLabel}>Cảm nhận: </Text>{item.cam_nhan_tap}</Text> : null}
-              {item.khau_phan_an ? <Text style={[styles.bubbleField, { color: isMemberMsg ? (colors.isDark ? '#fff' : '#141c14') : colors.text }]}><Text style={styles.boldLabel}>Khẩu phần ăn: </Text>{item.khau_phan_an}</Text> : null}
-              {item.so_phut_tap ? <Text style={[styles.bubbleField, { color: isMemberMsg ? (colors.isDark ? '#fff' : '#141c14') : colors.text }]}><Text style={styles.boldLabel}>Thời gian tập: </Text>{item.so_phut_tap} phút</Text> : null}
+              {item.cam_nhan_tap ? <Text style={[styles.bubbleField, { color: isMe ? (colors.isDark ? '#fff' : '#141c14') : colors.text }]}><Text style={styles.boldLabel}>Cảm nhận: </Text>{item.cam_nhan_tap}</Text> : null}
+              {item.khau_phan_an ? <Text style={[styles.bubbleField, { color: isMe ? (colors.isDark ? '#fff' : '#141c14') : colors.text }]}><Text style={styles.boldLabel}>Khẩu phần ăn: </Text>{item.khau_phan_an}</Text> : null}
+              {item.so_phut_tap ? <Text style={[styles.bubbleField, { color: isMe ? (colors.isDark ? '#fff' : '#141c14') : colors.text }]}><Text style={styles.boldLabel}>Thời gian tập: </Text>{item.so_phut_tap} phút</Text> : null}
             </>
           )}
-          {item.ghi_chu ? <Text style={[styles.bubbleField, { color: isMemberMsg ? (colors.isDark ? '#fff' : '#141c14') : colors.text }]}><Text style={styles.boldLabel}>Ghi chú: </Text>{item.ghi_chu}</Text> : null}
+          {item.ghi_chu ? <Text style={[styles.bubbleField, { color: isMe ? (colors.isDark ? '#fff' : '#141c14') : colors.text }]}><Text style={styles.boldLabel}>Ghi chú: </Text>{item.ghi_chu}</Text> : null}
 
-          <Text style={[styles.bubbleTime, { color: isMemberMsg ? (colors.isDark ? 'rgba(255,255,255,0.7)' : 'rgba(20,28,20,0.6)') : colors.textMuted }]}>
+          <Text style={[styles.bubbleTime, { color: isMe ? (colors.isDark ? 'rgba(255,255,255,0.7)' : 'rgba(20,28,20,0.6)') : colors.textMuted }]}>
             {dateStr}{item.da_chinh_sua ? ' • Đã sửa' : ''}
           </Text>
         </View>
-        {isMemberMsg && (
+        {isMe && (
           <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
             <UserRound color="#fff" size={14} />
           </View>
@@ -218,17 +246,32 @@ export default function PTMeScreen({ navigation }) {
       {isPT && students.length > 0 && (
         <View style={[styles.chipsBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 12, gap: 8 }}>
-            {students.map(s => (
-              <TouchableOpacity
-                key={s.hoi_vien_id}
-                style={[styles.chip, { backgroundColor: selectedMemberId === s.hoi_vien_id ? colors.primary : colors.surfaceVariant }]}
-                onPress={() => load(s.hoi_vien_id)}
-              >
-                <Text style={[styles.chipText, { color: selectedMemberId === s.hoi_vien_id ? '#fff' : colors.text }]}>
-                  {s.ho_ten || s.ten_hoi_vien}
-                </Text>
-              </TouchableOpacity>
-            ))}
+            {students.map(s => {
+              const hasUnread = unreadMembers.includes(s.hoi_vien_id);
+              return (
+                <TouchableOpacity
+                  key={s.hoi_vien_id}
+                  style={[
+                    styles.chip,
+                    { backgroundColor: selectedMemberId === s.hoi_vien_id ? colors.primary : colors.surfaceVariant },
+                    hasUnread && { borderColor: colors.danger, borderWidth: 1 }
+                  ]}
+                  onPress={() => {
+                    setUnreadMembers(prev => prev.filter(id => id !== s.hoi_vien_id));
+                    load(s.hoi_vien_id);
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text style={[styles.chipText, { color: selectedMemberId === s.hoi_vien_id ? '#fff' : colors.text }]}>
+                      {s.ho_ten || s.ten_hoi_vien}
+                    </Text>
+                    {hasUnread && (
+                      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.danger }} />
+                    )}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
           </ScrollView>
         </View>
       )}
@@ -237,7 +280,8 @@ export default function PTMeScreen({ navigation }) {
       <FlatList
         ref={flatListRef}
         data={sortedEntries}
-        keyExtractor={item => String(item.id)}
+        inverted={true}
+        keyExtractor={(item, index) => `${item.id || index}-${index}`}
         renderItem={renderMessage}
         contentContainerStyle={[styles.messageList, sortedEntries.length === 0 && styles.messageListEmpty]}
         refreshControl={
@@ -247,9 +291,6 @@ export default function PTMeScreen({ navigation }) {
             colors={[colors.primary]}
           />
         }
-        onContentSizeChange={() => {
-          if (sortedEntries.length > 0) flatListRef.current?.scrollToEnd({ animated: false });
-        }}
         ListEmptyComponent={
           loading
             ? <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />

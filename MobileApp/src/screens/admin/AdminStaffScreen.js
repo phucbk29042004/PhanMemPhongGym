@@ -201,7 +201,7 @@ export default function AdminStaffScreen({ navigation }) {
                 Alert.alert('Thất bại', res.data?.message || 'Có lỗi xảy ra.');
               }
             } catch (err) {
-              Alert.alert('Lỗi', 'Không thể kết nối đến máy chủ.');
+              Alert.alert('Lỗi', err.displayMessage || err?.response?.data?.message || 'Có lỗi xảy ra.');
             }
           }
         }
@@ -228,7 +228,7 @@ export default function AdminStaffScreen({ navigation }) {
                 Alert.alert('Thất bại', res.data?.message || 'Có lỗi xảy ra.');
               }
             } catch (err) {
-              Alert.alert('Lỗi', 'Không thể kết nối đến máy chủ.');
+              Alert.alert('Lỗi', err.displayMessage || err?.response?.data?.message || 'Có lỗi xảy ra.');
             }
           }
         }

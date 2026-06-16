@@ -719,6 +719,12 @@ export const getMyMembers = (req, res) => {
     JOIN ho_so hv ON hv.id = dp.hoi_vien_id
     LEFT JOIN goi_pt gpt ON gpt.id = dp.goi_pt_id
     WHERE dp.pt_id = ? AND dp.trang_thai = 'dang_hoat_dong' AND hv.is_deleted = 0
+      AND dp.id = (
+        SELECT dp2.id FROM dang_ky_pt dp2
+        WHERE dp2.hoi_vien_id = dp.hoi_vien_id AND dp2.pt_id = dp.pt_id
+          AND dp2.trang_thai = 'dang_hoat_dong'
+        ORDER BY dp2.id DESC LIMIT 1
+      )
     ORDER BY hv.ho_ten ASC
   `).all(hoSo.id);
 

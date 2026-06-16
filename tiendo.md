@@ -8,7 +8,32 @@
 ---
 
 ## 📌 Trạng thái hiện tại
-**✅ [15/06/2026] Hoàn thành nâng cấp giao diện Tab Bar, bộ lọc Vai trò (Role) động và sửa lỗi thông báo tại trang quản lý Nhân viên (staff.js + staff.controller.js)**
+**✅ [16/06/2026] Hoàn thành nâng cấp giao diện Chat PT & Tôi đi từ dưới lên, căn lề isMe động, sửa lỗi trùng key và đồng bộ tin nhắn realtime kèm chấm đỏ chưa đọc cho PT (Socket.IO)**
+
+---
+
+### [16/06/2026] — Nâng cấp Chat PT & Tôi, sửa lỗi trùng key & Đồng bộ tin nhắn Realtime (Mobile + BE)
+- **Loại**: Sửa bug & Đồng bộ realtime (Mobile App & Backend)
+- **File**: `BE/src/utils/notifications.js`, `BE/src/controllers/pt-me.controller.js`, `MobileApp/src/screens/shared/PTMeScreen.js`
+- **Mô tả**:
+  1. **[Backend]** Cập nhật `createUserNotification` để hỗ trợ truyền thêm siêu dữ liệu (`extra`) qua Socket.IO.
+  2. **[Backend]** Cập nhật controller `pt-me.controller.js` đổi loại thông báo chat sang `'chat_pt_me'` và gửi kèm ID người gửi (`me.id`) trong tham số `extra`.
+  3. **[Mobile - Realtime]** Tích hợp Socket.IO lắng nghe event `'notification:personal'` trực tiếp trong `PTMeScreen.js`.
+  4. **[Mobile - PT]** Khi có học viên gửi tin nhắn mới, hiển thị chấm đỏ báo chưa đọc trên chip tương ứng. Nhấn chọn học viên sẽ xóa chấm đỏ và hiển thị chat. Nếu đang mở chính học viên đó, chat sẽ tự động tải tin nhắn mới trực tiếp.
+  5. **[Mobile - Hội viên]** Khi PT gửi tin nhắn mới, tự động tải tin nhắn mới và hiển thị Alert nếu đang mở app.
+  6. **[Mobile - Chat UI/UX]**:
+     - Đổi chiều hiển thị FlatList thành từ dưới lên (`inverted={true}`), sắp xếp mảng tin nhắn ngược từ mới đến cũ. Gỡ bỏ `scrollToEnd` trong `onContentSizeChange` để FlatList tự động xử lý.
+     - Căn lề bong bóng chat theo `isMe` (bong bóng của mình nằm bên phải, đối phương nằm bên trái) thay vì gán cứng theo vai trò.
+     - Sửa lỗi trùng key component (`Encountered two children with the same key`) bằng cách đổi `keyExtractor` kết hợp cả ID và Index.
+- **Kết quả**: Thành công.
+
+---
+
+### [16/06/2026] — Scan và đối chiếu API endpoint Mobile App
+- **Loại**: Phân tích & Báo cáo (Mobile)
+- **File**: Toàn bộ thư mục `MobileApp`
+- **Mô tả**: Quét tất cả các file mã nguồn của ứng dụng di động để tìm các chỗ gọi API theo yêu cầu (`api.get`, `api.post`, `api.put`, `api.patch`, `api.delete`, `axios.get`, `axios.post`, `fetch`), sau đó đối chiếu với danh sách các route hợp lệ của backend. Kết quả cho thấy 100% các endpoint được gọi đều khớp đúng với cấu trúc tài nguyên của backend.
+- **Kết quả**: Thành công (Không phát hiện lỗi không khớp).
 
 ---
 

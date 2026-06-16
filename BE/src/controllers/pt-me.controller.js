@@ -135,7 +135,8 @@ export const createPTMeEntry = (req, res) => {
     role === 'pt'
       ? `${pair.ten_pt} đã gửi lời dặn mới trong mục PT & Tôi.`
       : `${pair.ten_hoi_vien} vừa cập nhật tập luyện/ăn uống hôm nay.`,
-    'thong_bao_chung'
+    'chat_pt_me',
+    { nguoi_gui_id: me.id }
   );
 
   ghi_audit_log(req, 'CREATE', 'pt_toi_nhat_ky', result.lastInsertRowid, null, req.body, 'Tạo cập nhật PT & Tôi');
@@ -172,7 +173,8 @@ export const updatePTMeEntry = (req, res) => {
     targetId,
     'Nội dung PT & Tôi vừa được chỉnh sửa',
     `${me.ho_ten} vừa chỉnh sửa một cập nhật trong mục PT & Tôi.`,
-    'thong_bao_chung'
+    'chat_pt_me',
+    { nguoi_gui_id: me.id }
   );
 
   ghi_audit_log(req, 'UPDATE', 'pt_toi_nhat_ky', parseInt(id), old, req.body, 'Chỉnh sửa cập nhật PT & Tôi');

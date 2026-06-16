@@ -223,7 +223,7 @@ export default function AIAssistantBubble() {
         ...prev,
         {
           id: `error-${Date.now()}`,
-          text: err.response?.data?.message || 'Không thể kết nối với Trợ lý AI. Vui lòng kiểm tra lại kết nối mạng.',
+          text: err?.displayMessage || 'Có lỗi xảy ra khi kết nối với Trợ lý AI.',
           sender: 'ai',
           time: new Date(),
         },

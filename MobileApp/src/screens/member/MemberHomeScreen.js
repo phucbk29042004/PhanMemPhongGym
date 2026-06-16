@@ -170,7 +170,7 @@ export default function MemberHomeScreen({ navigation }) {
         }
       }
     } catch (err) {
-      Alert.alert('Lỗi', 'Không thể kết nối máy chủ để lấy mã QR thanh toán.');
+      Alert.alert('Lỗi', err?.displayMessage || 'Có lỗi xảy ra.');
     } finally {
       setLoading(false);
     }

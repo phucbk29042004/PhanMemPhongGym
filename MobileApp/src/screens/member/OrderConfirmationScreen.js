@@ -221,7 +221,7 @@ export default function OrderConfirmationScreen({ route, navigation }) {
       }
     } catch (err) {
       console.error('Lỗi mua gói:', err);
-      Alert.alert('Lỗi', err.response?.data?.message || 'Không thể kết nối máy chủ.');
+      Alert.alert('Lỗi', err?.displayMessage || 'Có lỗi xảy ra.');
     } finally {
       setLoading(false);
     }
