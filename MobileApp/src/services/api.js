@@ -2,14 +2,18 @@ import axios from 'axios';
 import { useAuthStore } from '../store/useAuthStore';
 
 // Cấu hình URL kết nối tới Backend (BE) đang chạy trên cổng 3000
-// Tự động sử dụng IP local ở chế độ DEV (Expo Go) và link HTTPS localtunnel khi đóng gói APK (Release).
+// Tự động sử dụng IP local ở chế độ DEV (Expo Go) và link HTTPS ngrok cố định khi đóng gói APK (Release).
 const API_URL = __DEV__
   ? 'http://192.168.11.126:3000/api'
-  : 'https://weak-files-hang.loca.lt/api';
+  : 'https://job-observing-corporal.ngrok-free.dev/api';
 
 export const api = axios.create({
   baseURL: API_URL,
   timeout: 10000, // Timeout 10s
+  headers: {
+    'ngrok-skip-browser-warning': 'true', // Bỏ qua trang cảnh báo của ngrok
+    'Bypass-Tunnel-Reminder': 'true'      // Bỏ qua trang cảnh báo của localtunnel (nếu dùng lại sau này)
+  }
 });
 
 // Tự động đính kèm token vào header cho mọi request cần xác thực

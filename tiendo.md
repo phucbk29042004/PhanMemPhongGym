@@ -2239,3 +2239,12 @@
 - **Mô tả**:
   - Cấu hình dynamic cho `API_URL` bằng cách sử dụng biến `__DEV__`. Khi chạy bằng Expo Go (DEV), ứng dụng tự động dùng IP Wifi cục bộ `http://192.168.11.126:3000/api`. Khi đóng gói APK (Release), ứng dụng tự động chuyển hướng sang link HTTPS của localtunnel (`https://weak-files-hang.loca.lt/api`) để vượt qua các lớp chặn HTTP không mã hóa của Android.
 - **Kết quả**: Thành công.
+
+### [16/06/2026 15:35] — Tích hợp ngrok HTTPS cố định và bypass cảnh báo trình duyệt cho Mobile App
+- **Loại**: Cấu hình mạng (Mobile)
+- **File**:
+  - `MobileApp/src/services/api.js`
+- **Mô tả**:
+  - Cập nhật hằng số `API_URL` khi đóng gói (Release) sang link ngrok HTTPS cố định `https://job-observing-corporal.ngrok-free.dev/api`.
+  - Tích hợp thêm header `'ngrok-skip-browser-warning': 'true'` và `'Bypass-Tunnel-Reminder': 'true'` vào cấu hình Axios mặc định nhằm tự động bỏ qua trang cảnh báo trình duyệt của ngrok và localtunnel, khắc phục triệt để lỗi "Không thể kết nối máy chủ" trên tệp APK đóng gói.
+- **Kết quả**: Thành công.
