@@ -212,7 +212,7 @@ export default function OrderConfirmationScreen({ route, navigation }) {
           pollingErrorCountRef.current = 0;
         } else {
           // Luồng tiền mặt
-          Alert.alert('Gửi yêu cầu thành công', 'Yêu cầu đăng ký gói đã được gửi. Vui lòng liên hệ quầy lễ tân để thanh toán tiền mặt.', [
+          Alert.alert('Gửi yêu cầu thành công', 'Yêu cầu đăng ký gói đã được gửi. Vui lòng liên hệ nhân viên tại quầy để thanh toán tiền mặt.', [
             { text: 'Đồng ý', onPress: () => navigation.popToTop() }
           ]);
         }
@@ -366,7 +366,7 @@ export default function OrderConfirmationScreen({ route, navigation }) {
               </View>
               <View>
                 <Text style={[styles.methodTitle, { color: colors.text }]}>Tiền mặt tại quầy</Text>
-                <Text style={[styles.methodDesc, { color: colors.textMuted }]}>Đến đóng tiền trực tiếp cho lễ tân</Text>
+                <Text style={[styles.methodDesc, { color: colors.textMuted }]}>Đến đóng tiền trực tiếp cho nhân viên</Text>
               </View>
             </View>
             <View style={[styles.radioCircle, { borderColor: paymentMethod === 'tien_mat' ? BRAND.primary : colors.border }]}>

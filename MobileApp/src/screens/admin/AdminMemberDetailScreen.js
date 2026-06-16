@@ -704,7 +704,7 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
                     {formatDate(item.thoi_diem)} lúc {new Date(item.thoi_diem).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                   </Text>
                   <Text style={[styles.checkinType, { color: colors.textSecondary }]}>
-                    {item.loai === 'vao' ? 'Vào phòng tập' : 'Ra khỏi phòng'} • Lễ tân: {item.ten_le_tan || 'Tự động QR'}
+                    {item.loai === 'vao' ? 'Vào phòng tập' : 'Ra khỏi phòng'} • Nhân viên: {item.ten_le_tan || 'Tự động QR'}
                   </Text>
                 </View>
               </View>

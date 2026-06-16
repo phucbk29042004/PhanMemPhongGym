@@ -162,7 +162,7 @@ window.GymApp.pages['staff'] = {
       setTimeout(() => {
         const typeSelect = document.getElementById('reg-loai-ho-so');
         if (typeSelect) {
-          typeSelect.value = 'le_tan';
+          typeSelect.value = 'nhan_vien';
           typeSelect.dispatchEvent(new Event('change'));
         }
       }, 100);
@@ -437,13 +437,13 @@ window.GymApp.pages['staff'] = {
       rowsHtml = list.map((tk) => {
         const roleLabels = {
           admin: 'Quản trị viên',
-          le_tan: 'Nhân viên / Lễ tân',
+          nhan_vien: 'Nhân viên',
           pt: 'Huấn luyện viên (PT)',
           hoi_vien: 'Hội viên'
         };
         const roleClasses = {
           admin: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
-          le_tan: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
+          nhan_vien: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
           pt: 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20',
           hoi_vien: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20'
         };
@@ -460,7 +460,7 @@ window.GymApp.pages['staff'] = {
         let relationInfo = '—';
         if (tk.ho_so_id) {
           relationInfo = `<div class="font-bold">${tk.ho_ten || ''}</div>
-                          <div class="text-[11px] opacity-75">${tk.ma_ho_so || ''} (${tk.loai_ho_so === 'pt' ? 'PT' : (tk.loai_ho_so === 'le_tan' ? 'Lễ tân' : 'Hội viên')})</div>`;
+                          <div class="text-[11px] opacity-75">${tk.ma_ho_so || ''} (${tk.loai_ho_so === 'pt' ? 'PT' : (tk.loai_ho_so === 'nhan_vien' ? 'Nhân viên' : 'Hội viên')})</div>`;
         }
 
         return `
@@ -554,7 +554,7 @@ window.GymApp.pages['staff'] = {
             <label class="text-body-sm font-bold text-on-surface">Vai trò tài khoản <span class="text-error">*</span></label>
             <select name="vai_tro" required class="w-full bg-surface-container-low/50 border border-outline-variant/50 text-on-surface px-3 py-2 rounded-xl focus:border-brand-primary outline-none text-body-sm font-bold transition-all">
               <option value="admin" ${tk.ma_vai_tro === 'admin' ? 'selected' : ''}>Quản trị viên</option>
-              <option value="le_tan" ${tk.ma_vai_tro === 'le_tan' ? 'selected' : ''}>Nhân viên / Lễ tân</option>
+              <option value="nhan_vien" ${tk.ma_vai_tro === 'nhan_vien' ? 'selected' : ''}>Nhân viên</option>
               <option value="pt" ${tk.ma_vai_tro === 'pt' ? 'selected' : ''}>Huấn luyện viên (PT)</option>
               <option value="hoi_vien" ${tk.ma_vai_tro === 'hoi_vien' ? 'selected' : ''}>Hội viên</option>
             </select>
@@ -701,8 +701,8 @@ window.GymApp.pages['staff'] = {
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9100;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);padding:20px;';
 
     const rolesList = self._activeTab === 'staff'
-      ? [['', 'Tất cả'], ['admin', 'Quản trị viên'], ['nhan_vien', 'Nhân viên / Lễ tân']]
-      : [['', 'Tất cả'], ['admin', 'Quản trị viên'], ['le_tan', 'Nhân viên / Lễ tân'], ['pt', 'Huấn luyện viên (PT)'], ['hoi_vien', 'Hội viên']];
+      ? [['', 'Tất cả'], ['admin', 'Quản trị viên'], ['nhan_vien', 'Nhân viên']]
+      : [['', 'Tất cả'], ['admin', 'Quản trị viên'], ['nhan_vien', 'Nhân viên'], ['pt', 'Huấn luyện viên (PT)'], ['hoi_vien', 'Hội viên']];
 
     overlay.innerHTML = `
       <div class="modal-card bg-surface-container-lowest rounded-2xl shadow-xl flex flex-col" style="width:420px;max-width:100%;max-height:88vh;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,0.35);">
@@ -808,7 +808,7 @@ window.GymApp.pages['staff'] = {
     const roleLabel = nv.ten_vai_tro || 'Nhân viên';
     const roleClass = nv.ma_vai_tro === 'admin'
       ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'
-      : (nv.ma_vai_tro === 'nhan_vien' || nv.loai_ho_so === 'le_tan'
+      : (nv.ma_vai_tro === 'nhan_vien' || nv.loai_ho_so === 'nhan_vien'
         ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20'
         : 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20');
     const isLocked = nv.tk_trang_thai === 'khoa';
@@ -857,7 +857,7 @@ window.GymApp.pages['staff'] = {
     const roleLabel = nv.ten_vai_tro || 'Nhân viên';
     const roleClass = nv.ma_vai_tro === 'admin'
       ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'
-      : (nv.ma_vai_tro === 'nhan_vien' || nv.loai_ho_so === 'le_tan'
+      : (nv.ma_vai_tro === 'nhan_vien' || nv.loai_ho_so === 'nhan_vien'
         ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20'
         : 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20');
     const statusBadge = isLocked
@@ -908,7 +908,7 @@ window.GymApp.pages['staff'] = {
         const roleLabel = nv.ten_vai_tro || 'Nhân viên';
         const roleClass = nv.ma_vai_tro === 'admin'
           ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'
-          : (nv.ma_vai_tro === 'nhan_vien' || nv.loai_ho_so === 'le_tan'
+          : (nv.ma_vai_tro === 'nhan_vien' || nv.loai_ho_so === 'nhan_vien'
             ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20'
             : 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20');
 
@@ -986,10 +986,10 @@ window.GymApp.pages['staff'] = {
       </div>
     ` : paginated.map(nv => {
       const isLocked = nv.tk_trang_thai === 'khoa';
-      const roleLabel = nv.loai_ho_so === 'le_tan' ? 'Lễ tân' : 'Nhân viên';
-      const roleClass = nv.loai_ho_so === 'le_tan'
-        ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20'
-        : 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20';
+      const roleLabel = nv.loai_ho_so === 'pt' ? 'Huấn luyện viên (PT)' : 'Nhân viên';
+      const roleClass = nv.loai_ho_so === 'pt'
+        ? 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20'
+        : 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20';
       const statusBadge = isLocked
         ? `<span style="padding:2px 8px;border-radius:999px;font-size:9.6px;font-weight:700;background:#ffdad6;color:#ba1a1a;">Bị khóa</span>`
         : `<span style="padding:2px 8px;border-radius:999px;font-size:9.6px;font-weight:700;background:#e7f5e9;color:#1D9336;">Hoạt động</span>`;
@@ -1122,7 +1122,7 @@ window.GymApp.pages['staff'] = {
     const genderLabel = nv.gioi_tinh === 'nam' || nv.gioi_tinh === 'Nam' ? 'Nam'
       : nv.gioi_tinh === 'nu' || nv.gioi_tinh === 'Nu' ? 'Nữ'
         : (nv.gioi_tinh || '—');
-    const roleLabel = nv.loai_ho_so === 'le_tan' ? 'Lễ tân' : 'Nhân viên';
+    const roleLabel = nv.loai_ho_so === 'pt' ? 'Huấn luyện viên (PT)' : 'Nhân viên';
 
     const infoRow = (icon, label, value) => `
       <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-surface-lowest,#fff);">

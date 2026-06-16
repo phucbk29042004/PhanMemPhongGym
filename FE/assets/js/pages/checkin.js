@@ -209,7 +209,7 @@ window.GymApp.pages['checkin'] = {
                         <p class="text-on-surface-variant text-body-sm flex items-center justify-center gap-1">
                           ${c.loai_ho_so === 'pt' ? '<span class="px-1.5 py-0.5 rounded bg-brand-primary/10 text-brand-primary text-[10px] font-bold">HLV</span>' : ''}
                           ${c.loai_ho_so === 'hoi_vien' ? '<span class="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500 text-[10px] font-bold">HV</span>' : ''}
-                          ${c.loai_ho_so === 'le_tan' || c.loai_ho_so === 'nhan_vien' ? '<span class="px-1.5 py-0.5 rounded bg-gray-500/10 text-gray-500 text-[10px] font-bold">NV</span>' : ''}
+                          ${c.loai_ho_so === 'nhan_vien' ? '<span class="px-1.5 py-0.5 rounded bg-gray-500/10 text-gray-500 text-[10px] font-bold">NV</span>' : ''}
                           <span class="text-on-surface-variant text-[11px] font-medium opacity-80">
                             ${(c.chi_nhanh_thuc_hien && c.chi_nhanh_goc && c.chi_nhanh_thuc_hien !== c.chi_nhanh_goc)
             ? `<span class="text-red-500 font-bold">${c.chi_nhanh_goc}</span>`
@@ -278,7 +278,7 @@ window.GymApp.pages['checkin'] = {
               <p class="text-on-surface-variant text-body-sm flex items-center gap-1">
                 ${c.loai_ho_so === 'pt' ? '<span class="px-1.5 py-0.5 rounded bg-brand-primary/10 text-brand-primary text-[10px] font-bold">HLV</span>' : ''}
                 ${c.loai_ho_so === 'hoi_vien' ? '<span class="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500 text-[10px] font-bold">HV</span>' : ''}
-                ${c.loai_ho_so === 'le_tan' || c.loai_ho_so === 'nhan_vien' ? '<span class="px-1.5 py-0.5 rounded bg-gray-500/10 text-gray-500 text-[10px] font-bold">NV</span>' : ''}
+                ${c.loai_ho_so === 'nhan_vien' ? '<span class="px-1.5 py-0.5 rounded bg-gray-500/10 text-gray-500 text-[10px] font-bold">NV</span>' : ''}
                 <span class="text-on-surface-variant text-[11px] font-medium opacity-80">
                   ${(c.chi_nhanh_thuc_hien && c.chi_nhanh_goc && c.chi_nhanh_thuc_hien !== c.chi_nhanh_goc)
           ? (!window.GymApp.selectedBranch

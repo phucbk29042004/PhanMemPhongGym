@@ -516,7 +516,7 @@ export default function AdminAddEditMemberScreen({ route, navigation }) {
                 <InputField
                   label="Chức vụ" required
                   value={chucVu} onChangeText={setChucVu}
-                  placeholder="VD: Lễ tân, Quản lý..." colors={colors}
+                  placeholder="VD: Nhân viên, Quản lý..." colors={colors}
                 />
               </View>
             </>

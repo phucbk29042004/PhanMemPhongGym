@@ -395,6 +395,18 @@ export const updateAccount = (req, res) => {
   const account = db.prepare('SELECT * FROM tai_khoan WHERE id = ?').get(id);
   if (!account) return error(res, 'Không tìm thấy tài khoản.', 404);
 
+  // Lấy vai trò hiện tại của tài khoản đang sửa
+  const currentRole = db.prepare('SELECT ma_vai_tro FROM vai_tro WHERE id = ?').get(account.vai_tro_id);
+
+  // Bảo vệ quyền admin: Chỉ admin hoặc chu_phong_gym mới được nâng lên admin hoặc chỉnh sửa tài khoản admin
+  const isUpdatingToAdmin = vai_tro === 'admin';
+  const isCurrentlyAdmin = currentRole?.ma_vai_tro === 'admin';
+  const isActorAllowed = ['admin', 'chu_phong_gym'].includes(req.user.vai_tro);
+
+  if ((isUpdatingToAdmin || isCurrentlyAdmin) && !isActorAllowed) {
+    return error(res, 'Chỉ Quản trị viên hoặc Chủ phòng gym mới có quyền cấp hoặc chỉnh sửa tài khoản Quản trị viên.', 403);
+  }
+
   let hash = account.mat_khau_hash;
   if (mat_khau) {
     hash = bcrypt.hashSync(mat_khau, 12);

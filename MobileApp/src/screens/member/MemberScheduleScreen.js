@@ -437,7 +437,7 @@ export default function MemberScheduleScreen() {
                 <View style={[styles.emptyBox, { backgroundColor: colors.surface }]}>
                   <CalendarDays color={colors.textMuted} size={36} strokeWidth={1.5} />
                   <Text style={[styles.emptyText, { color: colors.text }]}>Chưa có lịch tập nào</Text>
-                  <Text style={[styles.emptySubText, { color: colors.textMuted }]}>Liên hệ lễ tân để đặt lịch với HLV</Text>
+                  <Text style={[styles.emptySubText, { color: colors.textMuted }]}>Liên hệ nhân viên để đặt lịch với HLV</Text>
                 </View>
               ) : (
                 historyList.map((item) => (

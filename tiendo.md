@@ -8,7 +8,21 @@
 ---
 
 ## 📌 Trạng thái hiện tại
-**✅ [16/06/2026] Hoàn thành nâng cấp giao diện Chat PT & Tôi đi từ dưới lên, căn lề isMe động, sửa lỗi trùng key và đồng bộ tin nhắn realtime kèm chấm đỏ chưa đọc cho PT (Socket.IO)**
+**✅ [16/06/2026] Tích hợp Tab Tài khoản hệ thống vào Mobile & Bảo vệ quyền nâng cấp tài khoản Admin ở Backend (Fullstack)**
+
+---
+
+### [16/06/2026] — Tích hợp Tab Tài khoản hệ thống vào Mobile & Bảo mật quyền Admin (Fullstack)
+- **Loại**: Tính năng mới & Bảo mật (Fullstack)
+- **File**: `BE/src/controllers/staff.controller.js`, `MobileApp/src/screens/admin/AdminStaffScreen.js`
+- **Mô tả**:
+  1. **[Backend]** Cập nhật hàm `updateAccount`: Thêm logic kiểm tra quyền (guard) nghiêm ngặt. Chỉ cho phép người thực hiện có vai trò là `admin` hoặc `chu_phong_gym` mới được nâng quyền tài khoản khác lên `admin`, hoặc chỉnh sửa bất kỳ thông tin nào của tài khoản có vai trò `admin` hiện tại.
+  2. **[Mobile - UI/UX Tab]** Bổ sung Tab Bar chuyển đổi giữa "Nhân sự" và "Tài khoản hệ thống" ở phía dưới Header, chỉ hiển thị với vai trò `admin` và `chu_phong_gym`. Lọc chi nhánh tự động ẩn khi ở tab tài khoản vì tài khoản là toàn hệ thống.
+  3. **[Mobile - Danh sách tài khoản]** Kết nối API `GET /staff/accounts` lấy danh sách tài khoản, hỗ trợ tìm kiếm không nháy và các chip lọc Vai trò (Quản trị viên, Lễ tân, HLV, Hội viên) & Trạng thái (Hoạt động, Bị khóa).
+  4. **[Mobile - Component AccountCard]** Thiết kế thẻ tài khoản hiển thị: tên đăng nhập, badge vai trò phối màu đẹp mắt, thông tin hồ sơ liên kết (họ tên + mã số), trạng thái tài khoản.
+  5. **[Mobile - Modal Chỉnh sửa]** Tạo Modal nổi bo góc 24px sang trọng chỉnh sửa thông tin tài khoản: nhập Tên đăng nhập, nhập Mật khẩu mới (không bắt buộc), chọn Vai trò dạng Grid chip trực quan và chọn Trạng thái. Gọi API `PUT /staff/accounts/:id` để cập nhật.
+  6. **[Mobile - Xóa tài khoản]** Tích hợp nút Xóa trên card tài khoản gọi API `DELETE /staff/accounts/:id` kèm Alert xác nhận và bảo vệ chặn không cho tự xóa tài khoản đang đăng nhập.
+- **Kết quả**: Thành công.
 
 ---
 
@@ -2181,3 +2195,31 @@
     - **Frontend**: Truyền thêm giá trị `chi_nhanh` (lấy từ `window.GymApp.selectedBranch`) vào query string của API xuất và đổi đuôi tệp tải xuống thành `.xlsx`.
     - **Backend**: Nhận tham số `chi_nhanh` và áp dụng điều kiện `WHERE` vào SQL query. Riêng với thống kê Doanh thu chi nhánh, hệ thống tự động tính toán thực tế từ các bảng giao dịch `dang_ky_goi_tap` và `dang_ky_pt` thay vì bảng tổng hợp `doanh_thu` chung.
 - **Kết quả**: Thành công. Dữ liệu tải về chuẩn xác, đẹp đẽ và có thể lọc dữ liệu dễ dàng.
+
+### [16/06/2026 11:40] — Đồng bộ vai trò Lễ tân thành Nhân viên trên toàn hệ thống
+- **Loại**: Đồng bộ & Gộp vai trò (Fullstack)
+- **File**:
+  - `BE/src/controllers/staff.controller.js`
+  - `MobileApp/src/screens/admin/AdminStaffScreen.js`
+  - `FE/assets/js/app.js`
+  - `FE/assets/js/pages/checkin.js`
+  - `FE/assets/js/pages/staff.js`
+- **Mô tả**:
+  - **Dọn dẹp Frontend & Mobile**: Thay thế toàn bộ các tham chiếu, logic so khớp, và nhãn hiển thị vai trò Lễ tân (`le_tan`) sang Nhân viên (`nhan_vien`) trên cả Web Frontend và Mobile App. 
+  - **Quản lý Tài khoản & Nhân sự**: Cập nhật form sửa tài khoản, bộ lọc tìm kiếm, bảng danh sách nhân viên và cấu hình màu sắc CSS tương ứng để thống nhất dùng duy nhất một mã vai trò là `nhan_vien`.
+  - **Backend**: Cập nhật hàm `updateAccount` thêm kiểm tra quyền hạn chặt chẽ, ngăn cản nhân viên tự nâng vai trò tài khoản của mình lên `admin` (chỉ có Admin thực sự hoặc Chủ phòng gym mới có quyền này).
+- **Kết quả**: Thành công. Luồng đăng ký, sửa tài khoản và lọc danh sách hoạt động ổn định, không còn lỗi không tìm thấy vai trò.
+
+### [16/06/2026 11:47] — Rà soát và cập nhật hiển thị nhãn "Lễ tân" sang "Nhân viên" trên Mobile App
+- **Loại**: Đồng bộ & Cải tiến hiển thị (Mobile)
+- **File**:
+  - `MobileApp/src/screens/admin/AdminMemberDetailScreen.js`
+  - `MobileApp/src/screens/member/OrderConfirmationScreen.js`
+  - `MobileApp/src/screens/member/MemberScheduleScreen.js`
+  - `MobileApp/src/screens/admin/AdminAddEditMemberScreen.js`
+- **Mô tả**:
+  - Cập nhật lịch sử check-in của hội viên hiển thị nhãn "Nhân viên:" thay vì "Lễ tân:" đối với người check-in.
+  - Sửa đổi các thông báo và mô tả thanh toán tiền mặt từ đóng tiền cho "lễ tân" thành đóng cho "nhân viên".
+  - Sửa thông báo lịch tập trống của hội viên từ "Liên hệ lễ tân" thành "Liên hệ nhân viên".
+  - Đổi placeholder nhập liệu chức vụ từ "VD: Lễ tân, Quản lý..." thành "VD: Nhân viên, Quản lý...".
+- **Kết quả**: Thành công. Nhãn và mô tả trên Mobile App hiển thị đồng bộ và nhất quán với vai trò "Nhân viên" mới.
