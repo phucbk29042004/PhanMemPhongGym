@@ -4,6 +4,7 @@ import {
   StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
 import { Bot, ChevronLeft, Send, User } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../../services/api';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useTheme } from '../../context/ThemeContext';
@@ -73,6 +74,7 @@ const renderFormattedText = (text, isUser, colors, isDark) => {
 export default function AIAssistantScreen({ navigation }) {
   const { colors, isDark } = useTheme();
   const { selectedBranch } = useAuthStore();
+  const insets = useSafeAreaInsets();
   const [messages, setMessages] = useState([
     {
       id: 'welcome',
@@ -135,7 +137,7 @@ export default function AIAssistantScreen({ navigation }) {
       <StatusBar barStyle="light-content" backgroundColor={G.primaryDark} />
 
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: G.primaryDark }]}>
+      <View style={[styles.header, { backgroundColor: G.primaryDark, paddingTop: insets.top, height: 56 + insets.top }]}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <ChevronLeft color={G.white} size={24} />
         </TouchableOpacity>
@@ -268,8 +270,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    height: Platform.OS === 'ios' ? 90 : 64,
-    paddingTop: Platform.OS === 'ios' ? 44 : 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

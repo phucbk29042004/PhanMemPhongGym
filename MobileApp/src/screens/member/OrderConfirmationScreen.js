@@ -7,6 +7,7 @@ import {
   ArrowLeft, Building2, CreditCard, ChevronRight, Check, CheckCircle2,
   Calendar, Info, AlertTriangle, Smartphone, Copy, X
 } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { api } from '../../services/api';
 import { formatDate } from '../../utils/data';
@@ -35,6 +36,7 @@ function formatPrice(val) {
 
 export default function OrderConfirmationScreen({ route, navigation }) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const { packageItem: packageItemProp, profile } = route.params || {};
 
   // Khi không có packageItem (vào từ nút Gia hạn), cho user tự chọn gói
@@ -232,7 +234,7 @@ export default function OrderConfirmationScreen({ route, navigation }) {
       <StatusBar barStyle={colors.statusBar} backgroundColor={colors.statusBarBg} />
       
       {/* Header bar */}
-      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border, paddingTop: insets.top, height: 56 + insets.top }]}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <ArrowLeft color={colors.text} size={24} />
         </TouchableOpacity>
@@ -245,31 +247,35 @@ export default function OrderConfirmationScreen({ route, navigation }) {
         {!packageItemProp && (
           <View style={[styles.summaryCard, { backgroundColor: colors.surface }]}>
             <Text style={[styles.summaryTitle, { color: colors.textMuted }]}>Chọn gói tập</Text>
-            {gymPackages.length === 0
-              ? <ActivityIndicator color={BRAND.primary} style={{ marginVertical: 12 }} />
-              : gymPackages.map(p => (
-                <TouchableOpacity
-                  key={p.id}
-                  style={{
-                    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-                    padding: 12, marginBottom: 8, borderRadius: 10, borderWidth: 2,
-                    borderColor: selectedPackage?.id === p.id ? BRAND.primary : colors.border,
-                    backgroundColor: selectedPackage?.id === p.id ? BRAND.primaryLight : colors.surfaceVariant,
-                  }}
-                  onPress={() => setSelectedPackage(p)}
-                  activeOpacity={0.8}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontWeight: '700', color: selectedPackage?.id === p.id ? BRAND.primary : colors.text, fontSize: 14 }}>{p.ten_goi}</Text>
-                    {p.mo_ta ? <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }} numberOfLines={2}>{p.mo_ta}</Text> : null}
-                    <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>
-                      {p.so_thang ? `${p.so_thang} tháng` : ''}{p.so_ngay_them > 0 ? ` +${p.so_ngay_them} ngày` : ''}
-                    </Text>
-                  </View>
-                  <Text style={{ fontWeight: '700', color: BRAND.primary, fontSize: 15, marginLeft: 8 }}>{formatPrice(p.gia)}</Text>
-                </TouchableOpacity>
-              ))
-            }
+            <View style={{ maxHeight: 220, marginTop: 8 }}>
+              <ScrollView nestedScrollEnabled={true} showsVerticalScrollIndicator={true}>
+                {gymPackages.length === 0
+                  ? <ActivityIndicator color={BRAND.primary} style={{ marginVertical: 12 }} />
+                  : gymPackages.map(p => (
+                    <TouchableOpacity
+                      key={p.id}
+                      style={{
+                        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+                        padding: 12, marginBottom: 8, borderRadius: 10, borderWidth: 2,
+                        borderColor: selectedPackage?.id === p.id ? BRAND.primary : colors.border,
+                        backgroundColor: selectedPackage?.id === p.id ? BRAND.primaryLight : colors.surfaceVariant,
+                      }}
+                      onPress={() => setSelectedPackage(p)}
+                      activeOpacity={0.8}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontWeight: '700', color: selectedPackage?.id === p.id ? BRAND.primary : colors.text, fontSize: 14 }}>{p.ten_goi}</Text>
+                        {p.mo_ta ? <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }} numberOfLines={2}>{p.mo_ta}</Text> : null}
+                        <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>
+                          {p.so_thang ? `${p.so_thang} tháng` : ''}{p.so_ngay_them > 0 ? ` +${p.so_ngay_them} ngày` : ''}
+                        </Text>
+                      </View>
+                      <Text style={{ fontWeight: '700', color: BRAND.primary, fontSize: 15, marginLeft: 8 }}>{formatPrice(p.gia)}</Text>
+                    </TouchableOpacity>
+                  ))
+                }
+              </ScrollView>
+            </View>
           </View>
         )}
 

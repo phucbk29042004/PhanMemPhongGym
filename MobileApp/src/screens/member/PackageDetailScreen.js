@@ -5,6 +5,7 @@ import {
 import {
   ArrowLeft, Award, Calendar, Check, Landmark, ShieldCheck, MapPin, Sparkles, Flame, CheckCircle
 } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 
 const BRAND = {
@@ -29,6 +30,7 @@ function formatPrice(val) {
 
 export default function PackageDetailScreen({ route, navigation }) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const { packageItem, profile } = route.params || {};
 
   if (!packageItem) {
@@ -53,7 +55,7 @@ export default function PackageDetailScreen({ route, navigation }) {
       <StatusBar barStyle={colors.statusBar} backgroundColor={colors.statusBarBg} />
       
       {/* Header bar */}
-      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border, paddingTop: insets.top, height: 56 + insets.top }]}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <ArrowLeft color={colors.text} size={24} />
         </TouchableOpacity>

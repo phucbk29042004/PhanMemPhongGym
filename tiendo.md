@@ -8,7 +8,18 @@
 ---
 
 ## 📌 Trạng thái hiện tại
-**✅ [16/06/2026] Tích hợp Tab Tài khoản hệ thống vào Mobile & Bảo vệ quyền nâng cấp tài khoản Admin ở Backend (Fullstack)**
+**✅ [16/06/2026] Tối ưu hóa giao diện thanh toán & Khắc phục lỗi đè Header trên Android (Mobile)**
+
+---
+
+### [16/06/2026] — Tối ưu hóa danh sách gói tập & Khắc phục lỗi đè Header trên Android (Mobile)
+- **Loại**: Sửa lỗi giao diện UI/UX (Mobile)
+- **File**: `MobileApp/src/screens/member/OrderConfirmationScreen.js`, `MobileApp/src/screens/member/PackageDetailScreen.js`, `MobileApp/src/screens/member/AIAssistantScreen.js`
+- **Mô tả**:
+  1. **[Gia hạn gói tập]**: Hạn chế chiều cao vùng chọn gói tập trong `OrderConfirmationScreen.js` xuống tối đa 220px và cho phép cuộn độc lập (`nestedScrollEnabled`), giúp giao diện gọn gàng, không đẩy nút Thanh toán xuống quá sâu.
+  2. **[Sửa lỗi đè Header trên Android]**: Sử dụng `useSafeAreaInsets` từ `react-native-safe-area-context` để tính toán động chiều cao (`height: 56 + insets.top`) và khoảng đệm trên (`paddingTop: insets.top`) cho Header thay vì gán tĩnh.
+  3. **[Rà soát hệ thống]**: Áp dụng đồng bộ cho các trang `OrderConfirmationScreen.js`, `PackageDetailScreen.js` và `AIAssistantScreen.js`, khắc phục triệt để lỗi đè tiêu đề/nút quay lại lên thanh trạng thái hệ thống (StatusBar/Notch) trên Android.
+- **Kết quả**: Giao diện hiển thị cân đối và chuẩn xác trên cả thiết bị iOS và Android.
 
 ---
 
