@@ -46,12 +46,12 @@ window.GymApp.pages['staff'] = {
         <div class="flex p-1 bg-surface-container-low/50 backdrop-blur-sm rounded-2xl border border-outline-variant/50 w-fit shadow-sm group">
           <button id="tab-staff-list" class="tab-btn flex items-center gap-compact px-loose py-atom rounded-2xl font-bold text-body-md transition-all duration-300 relative overflow-hidden ${currentTab === 'staff' ? 'bg-brand-primary text-white shadow-md' : 'text-on-surface-variant hover:bg-surface-container-high/40'}" data-tab="staff">
             <span class="material-symbols-outlined text-[18px]">badge</span>
-            <span>Nhân sự</span>
+            <span>Nhân viên</span>
           </button>
           ${isBoss ? `
             <button id="tab-accounts-list" class="tab-btn flex items-center gap-compact px-loose py-atom rounded-2xl font-bold text-body-md transition-all duration-300 relative overflow-hidden ${currentTab === 'accounts' ? 'bg-brand-primary text-white shadow-md' : 'text-on-surface-variant hover:bg-surface-container-high/40'}" data-tab="accounts">
               <span class="material-symbols-outlined text-[18px]">manage_accounts</span>
-              <span>Tài khoản hệ thống</span>
+              <span>Tài khoản hội viên</span>
             </button>
           ` : ''}
         </div>
@@ -497,12 +497,90 @@ window.GymApp.pages['staff'] = {
       }).join('');
     }
 
+    // Card Layout cho Mobile
+    const cardRowsHtml = list.length === 0 ? `
+      <div style="padding:40px 16px;text-align:center;color:var(--text-on-surface-variant);">
+        <div style="display:flex;flex-direction:column;align-items:center;opacity:0.4;">
+          <span class="material-symbols-outlined" style="font-size:40px;margin-bottom:8px;">manage_search</span>
+          <p style="font-weight:600;margin:0;">Không tìm thấy tài khoản nào</p>
+        </div>
+      </div>
+    ` : list.map(tk => {
+      const roleLabels = {
+        admin: 'Quản trị viên',
+        nhan_vien: 'Nhân viên',
+        pt: 'Huấn luyện viên (PT)',
+        hoi_vien: 'Hội viên'
+      };
+      const roleClasses = {
+        admin: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
+        nhan_vien: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
+        pt: 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20',
+        hoi_vien: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20'
+      };
+      const roleLabel = roleLabels[tk.ma_vai_tro] || tk.ten_vai_tro || 'Chưa phân quyền';
+      const roleClass = roleClasses[tk.ma_vai_tro] || 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20';
+
+      const isLocked = tk.trang_thai === 'khoa';
+      const statusBadge = isLocked
+        ? `<span style="padding:2px 8px;border-radius:999px;font-size:9.6px;font-weight:700;background:#ffdad6;color:#ba1a1a;">Bị khóa</span>`
+        : `<span style="padding:2px 8px;border-radius:999px;font-size:9.6px;font-weight:700;background:#e7f5e9;color:#1D9336;">Hoạt động</span>`;
+
+      return `
+        <div class="acc-row" data-id="${tk.id}" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--outline-variant,#e2e8f0);background:var(--bg-surface-lowest,#fff);" onmouseover="this.style.background='rgba(29,147,54,0.04)'" onmouseout="this.style.background='var(--bg-surface-lowest,#fff)'">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:14px;font-weight:700;color:var(--text-on-surface);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${tk.ten_dang_nhap}</div>
+            <div style="font-size:12px;color:var(--text-on-surface-variant);margin-top:2px;">
+              ${tk.ho_so_id ? `<strong class="text-on-surface">${tk.ho_ten}</strong> (${tk.ma_ho_so})` : '<span class="opacity-60">Không liên kết hồ sơ</span>'}
+            </div>
+            <div style="display:flex;align-items:center;gap:5px;margin-top:4px;flex-wrap:wrap;">
+              ${statusBadge}
+              <span class="text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full border ${roleClass}">${roleLabel}</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:4px;align-items:center;flex-shrink:0;">
+            <button class="acc-edit-btn" data-id="${tk.id}" title="Sửa" style="width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#eff6ff;color:#3b82f6;border:none;cursor:pointer;"><span class="material-symbols-outlined" style="font-size:15px;">edit</span></button>
+            ${parseInt(tk.id) !== parseInt(window.GymApp.auth.user?.id) ? `
+              <button class="acc-delete-btn" data-id="${tk.id}" data-username="${tk.ten_dang_nhap}" title="Xóa" style="width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#fff1f2;color:#f43f5e;border:none;cursor:pointer;"><span class="material-symbols-outlined" style="font-size:15px;">delete</span></button>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    const spinnerHtml = `
+      <div class="staff-load-spinner" style="display:none;justify-content:center;align-items:center;padding:14px 0;gap:8px;">
+        <span class="animate-spin rounded-full border-2 border-brand-primary border-t-transparent" style="width:18px;height:18px;display:inline-block;"></span>
+        <span style="font-size:12px;color:var(--text-on-surface-variant);font-weight:600;">Đang tải thêm...</span>
+      </div>`;
+
     return `
+      <style>
+        .acc-table-desktop { display: block; }
+        .acc-table-mobile  { display: none; }
+
+        #staff-scroll-container::-webkit-scrollbar { width:8px;height:8px; }
+        #staff-scroll-container::-webkit-scrollbar-track {
+          background: linear-gradient(to bottom, #1D9336 40px, transparent 40px) !important;
+        }
+        #staff-scroll-container::-webkit-scrollbar-thumb { background:rgba(0,0,0,0.15);border-radius:4px; }
+        .dark #staff-scroll-container::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.15); }
+        #staff-scroll-container::-webkit-scrollbar-corner {
+          background: transparent !important;
+        }
+
+        @media (max-width:640px) {
+          .acc-table-desktop { display:none; }
+          .acc-table-mobile  { display:block; }
+        }
+      </style>
+
       <div class="col-span-full w-full rounded-2xl overflow-hidden border border-outline-variant shadow-sm bg-white dark:bg-[#1e1e1e]">
-        <div style="overflow-x:auto;position:relative;">
+        <!-- TABLE desktop -->
+        <div id="staff-scroll-container" class="acc-table-desktop" style="max-height:500px;overflow-y:auto;overflow-x:auto;position:relative;">
           <table style="width:100%;border-collapse:collapse;min-width:480px;">
             <thead>
-              <tr style="background:#1D9336;">
+              <tr style="background:#1D9336;position:sticky;top:0;z-index:10;">
                 <th style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:left;white-space:nowrap;border:none;">Tên đăng nhập</th>
                 <th style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:center;white-space:nowrap;border:none;">Vai trò</th>
                 <th style="padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.85);text-align:left;white-space:nowrap;border:none;">Hồ sơ liên kết</th>
@@ -513,6 +591,13 @@ window.GymApp.pages['staff'] = {
             </thead>
             <tbody>${rowsHtml}</tbody>
           </table>
+          ${spinnerHtml}
+        </div>
+
+        <!-- CARD LIST mobile -->
+        <div id="staff-scroll-mobile-container" class="acc-table-mobile" style="max-height:500px;overflow-y:auto;">
+          ${cardRowsHtml}
+          ${spinnerHtml}
         </div>
       </div>
     `;

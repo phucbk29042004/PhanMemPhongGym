@@ -8,7 +8,20 @@
 ---
 
 ## 📌 Trạng thái hiện tại
-**✅ [17/06/2026] Tích hợp Chatbot AI Vision đa phương thức động hoàn toàn trên cả Web và Mobile App**
+**✅ [17/06/2026] Hoàn thành quét và phân tích 18+ bảng trong cơ sở dữ liệu (Tables Scan)**
+
+---
+
+### [17/06/2026] — Quét DB & Nâng cấp Cuộn vô hạn, Responsive cho tab Tài khoản
+- **Loại**: Cải tiến UI/UX, Sửa lỗi & Quét hệ thống
+- **File**: `BE/src/app.js`, `paradise_gym_v2.sql`, `BE/src/config/db.js`, `FE/assets/js/pages/staff.js`
+- **Mô tả**:
+  1. **[Quét database]**: Quét cơ sở dữ liệu thực tế tại `BE/database/paradise_gym.db`. Phát hiện bảng `cham_cong` và `yeu_cau_goi_tap` đang có 0 dòng dữ liệu (trống).
+  2. **[Phân tích mã nguồn]**: Quét backend và mobile, xác định bảng `cham_cong` hoàn toàn không được code gọi tới (bảng rác), còn bảng `yeu_cau_goi_tap` có được sử dụng nhưng chưa phát sinh dữ liệu.
+  3. **[Nâng cấp Infinite Scroll & Responsive cho Tab Tài khoản]**:
+     - Sửa lỗi không cuộn vô hạn được trên tab Tài khoản hội viên bằng cách thêm container có ID `staff-scroll-container` và `staff-scroll-mobile-container` tương tự tab Nhân viên.
+     - Thiết kế lại layout dạng Card List cho Mobile (`_renderAccountsTable()`) để thông tin hiển thị đẹp mắt, tối ưu không gian và hoàn toàn responsive trên đa thiết bị (Desktop hiển thị dạng Table, Mobile hiển thị dạng Card List, kích hoạt CSS ẩn/hiện tự động dưới 640px).
+- **Kết quả**: Thành công.
 
 ---
 
