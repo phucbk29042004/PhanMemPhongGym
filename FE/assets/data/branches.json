@@ -18,6 +18,12 @@
     "quan": "Tân Bình"
   },
   {
+    "id": "tan-phu",
+    "ten": "Chi nhánh Tân Phú",
+    "dia_chi": "Paradise Gym - Tân Phú, TP. Hồ Chí Minh",
+    "quan": "Tân Phú"
+  },
+  {
     "id": "phu-nhuan",
     "ten": "Chi nhánh Phú Nhuận",
     "dia_chi": "Paradise Gym - Phú Nhuận, TP. Hồ Chí Minh",
@@ -36,10 +42,22 @@
     "quan": "Quận 3"
   },
   {
+    "id": "quan-4",
+    "ten": "Chi nhánh Quận 4",
+    "dia_chi": "Paradise Gym - Quận 4, TP. Hồ Chí Minh",
+    "quan": "Quận 4"
+  },
+  {
     "id": "quan-5",
     "ten": "Chi nhánh Quận 5",
     "dia_chi": "Paradise Gym - Quận 5, TP. Hồ Chí Minh",
     "quan": "Quận 5"
+  },
+  {
+    "id": "quan-6",
+    "ten": "Chi nhánh Quận 6",
+    "dia_chi": "Paradise Gym - Quận 6, TP. Hồ Chí Minh",
+    "quan": "Quận 6"
   },
   {
     "id": "quan-7",
@@ -48,10 +66,28 @@
     "quan": "Quận 7"
   },
   {
+    "id": "quan-8",
+    "ten": "Chi nhánh Quận 8",
+    "dia_chi": "Paradise Gym - Quận 8, TP. Hồ Chí Minh",
+    "quan": "Quận 8"
+  },
+  {
     "id": "quan-10",
     "ten": "Chi nhánh Quận 10",
     "dia_chi": "Paradise Gym - Quận 10, TP. Hồ Chí Minh",
     "quan": "Quận 10"
+  },
+  {
+    "id": "quan-11",
+    "ten": "Chi nhánh Quận 11",
+    "dia_chi": "Paradise Gym - Quận 11, TP. Hồ Chí Minh",
+    "quan": "Quận 11"
+  },
+  {
+    "id": "quan-12",
+    "ten": "Chi nhánh Quận 12",
+    "dia_chi": "Paradise Gym - Quận 12, TP. Hồ Chí Minh",
+    "quan": "Quận 12"
   },
   {
     "id": "binh-tan",
@@ -66,9 +102,33 @@
     "quan": "Thủ Đức"
   },
   {
+    "id": "binh-chanh",
+    "ten": "Chi nhánh Bình Chánh",
+    "dia_chi": "Paradise Gym - Bình Chánh, TP. Hồ Chí Minh",
+    "quan": "Bình Chánh"
+  },
+  {
+    "id": "hoc-mon",
+    "ten": "Chi nhánh Hóc Môn",
+    "dia_chi": "Paradise Gym - Hóc Môn, TP. Hồ Chí Minh",
+    "quan": "Hóc Môn"
+  },
+  {
+    "id": "cu-chi",
+    "ten": "Chi nhánh Củ Chi",
+    "dia_chi": "Paradise Gym - Củ Chi, TP. Hồ Chí Minh",
+    "quan": "Củ Chi"
+  },
+  {
     "id": "nha-be",
     "ten": "Chi nhánh Nhà Bè",
     "dia_chi": "Paradise Gym - Nhà Bè, TP. Hồ Chí Minh",
     "quan": "Nhà Bè"
+  },
+  {
+    "id": "can-gio",
+    "ten": "Chi nhánh Cần Giờ",
+    "dia_chi": "Paradise Gym - Cần Giờ, TP. Hồ Chí Minh",
+    "quan": "Cần Giờ"
   }
 ]

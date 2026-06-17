@@ -45,7 +45,8 @@ export async function createPaymentLink(orderCode, amount, description, returnUr
       amount: Number(amount),
       description: cleanedDesc,
       cancelUrl: cancelUrl || 'https://google.com',
-      returnUrl: returnUrl || 'https://google.com'
+      returnUrl: returnUrl || 'https://google.com',
+      expiredAt: Math.floor(Date.now() / 1000) + 600 // Hết hạn sau 10 phút (600 giây)
     };
 
     console.log('[PayOS] Đang tạo link thanh toán:', paymentData);

@@ -112,6 +112,47 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
   const [selectedPromo, setSelectedPromo] = useState(null);
   const [payosData, setPayosData] = useState(null);
   const [showQrModal, setShowQrModal] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(600); // 10 phút = 600 giây
+
+  // Reset timeLeft khi mở modal
+  useEffect(() => {
+    if (showQrModal) {
+      setTimeLeft(600);
+    }
+  }, [showQrModal]);
+
+  // Bộ đếm ngược 10 phút
+  useEffect(() => {
+    let timerId = null;
+    if (showQrModal && timeLeft > 0) {
+      timerId = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(timerId);
+            handleTimeout();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (timerId) clearInterval(timerId);
+    };
+  }, [showQrModal, timeLeft]);
+
+  const handleTimeout = async () => {
+    if (payosData?.orderCode) {
+      try {
+        await api.delete(`/members/${member.id}/package-payment/${payosData.orderCode}`);
+      } catch (err) {
+        console.error('Lỗi khi tự động hủy thanh toán:', err);
+      }
+    }
+    setShowQrModal(false);
+    setPayosData(null);
+    Alert.alert('Thanh toán hết hạn', 'Đã hết thời gian thanh toán 10 phút. Giao dịch đã bị hủy tự động.');
+  };
 
   // Khi isSwitch=true (đổi gói): ngày bắt đầu = hôm nay
   // Khi isSwitch=false (đăng ký nối tiếp): ngày bắt đầu = ngày liền sau ngày hết hạn gói cũ
@@ -142,7 +183,25 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
     { id: 'go-vap', ten: 'Chi nhánh Gò Vấp' },
     { id: 'binh-thanh', ten: 'Chi nhánh Bình Thạnh' },
     { id: 'tan-binh', ten: 'Chi nhánh Tân Bình' },
-    { id: 'quan-1', ten: 'Chi nhánh Quận 1' }
+    { id: 'tan-phu', ten: 'Chi nhánh Tân Phú' },
+    { id: 'phu-nhuan', ten: 'Chi nhánh Phú Nhuận' },
+    { id: 'quan-1', ten: 'Chi nhánh Quận 1' },
+    { id: 'quan-3', ten: 'Chi nhánh Quận 3' },
+    { id: 'quan-4', ten: 'Chi nhánh Quận 4' },
+    { id: 'quan-5', ten: 'Chi nhánh Quận 5' },
+    { id: 'quan-6', ten: 'Chi nhánh Quận 6' },
+    { id: 'quan-7', ten: 'Chi nhánh Quận 7' },
+    { id: 'quan-8', ten: 'Chi nhánh Quận 8' },
+    { id: 'quan-10', ten: 'Chi nhánh Quận 10' },
+    { id: 'quan-11', ten: 'Chi nhánh Quận 11' },
+    { id: 'quan-12', ten: 'Chi nhánh Quận 12' },
+    { id: 'binh-tan', ten: 'Chi nhánh Bình Tân' },
+    { id: 'thu-duc', ten: 'Chi nhánh Thủ Đức' },
+    { id: 'binh-chanh', ten: 'Chi nhánh Bình Chánh' },
+    { id: 'hoc-mon', ten: 'Chi nhánh Hóc Môn' },
+    { id: 'cu-chi', ten: 'Chi nhánh Củ Chi' },
+    { id: 'nha-be', ten: 'Chi nhánh Nhà Bè' },
+    { id: 'can-gio', ten: 'Chi nhánh Cần Giờ' }
   ];
   const [branches, setBranches] = useState(DEFAULT_BRANCHES);
 
@@ -776,7 +835,9 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
 
               <View style={styles.statusRow}>
                 <ActivityIndicator size="small" color={colors.primary} style={{ marginRight: 6 }} />
-                <Text style={[styles.statusText, { color: colors.primary }]}>Đang chờ thanh toán...</Text>
+                <Text style={[styles.statusText, { color: colors.primary, fontWeight: '700' }]}>
+                  Đang chờ thanh toán ({Math.floor(timeLeft / 60).toString().padStart(2, '0')}:{(timeLeft % 60).toString().padStart(2, '0')})...
+                </Text>
               </View>
 
               <TouchableOpacity onPress={handleCancelPayment} style={styles.cancelPaymentBtn}>

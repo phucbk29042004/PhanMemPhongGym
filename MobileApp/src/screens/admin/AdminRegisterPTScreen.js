@@ -98,6 +98,47 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
   const [submitting, setSubmitting] = useState(false);
   const [payosData, setPayosData] = useState(null);
   const [showQrModal, setShowQrModal] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(600); // 10 phút = 600 giây
+
+  // Reset timeLeft khi mở modal
+  useEffect(() => {
+    if (showQrModal) {
+      setTimeLeft(600);
+    }
+  }, [showQrModal]);
+
+  // Bộ đếm ngược 10 phút
+  useEffect(() => {
+    let timerId = null;
+    if (showQrModal && timeLeft > 0) {
+      timerId = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(timerId);
+            handleTimeout();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (timerId) clearInterval(timerId);
+    };
+  }, [showQrModal, timeLeft]);
+
+  const handleTimeout = async () => {
+    if (payosData?.orderCode) {
+      try {
+        await api.delete(`/pt/registrations/payment/${payosData.orderCode}`);
+      } catch (err) {
+        console.error('Lỗi khi tự động hủy thanh toán PT:', err);
+      }
+    }
+    setShowQrModal(false);
+    setPayosData(null);
+    Alert.alert('Thanh toán hết hạn', 'Đã hết thời gian thanh toán 10 phút. Giao dịch đã bị hủy tự động.');
+  };
 
   // Loại đăng ký khi có PT cũ:
   //   'noi_tiep' = ngày bắt đầu = ngày kết thúc PT cũ + 1
@@ -705,7 +746,9 @@ export default function AdminRegisterPTScreen({ route, navigation }) {
 
               <View style={styles.statusRow}>
                 <ActivityIndicator size="small" color={colors.primary} style={{ marginRight: 6 }} />
-                <Text style={[styles.statusText, { color: colors.primary }]}>Đang chờ thanh toán...</Text>
+                <Text style={[styles.statusText, { color: colors.primary, fontWeight: '700' }]}>
+                  Đang chờ thanh toán ({Math.floor(timeLeft / 60).toString().padStart(2, '0')}:{(timeLeft % 60).toString().padStart(2, '0')})...
+                </Text>
               </View>
 
               <TouchableOpacity onPress={handleCancelPayment} style={styles.cancelPaymentBtn}>

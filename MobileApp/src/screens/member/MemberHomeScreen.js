@@ -136,6 +136,49 @@ export default function MemberHomeScreen({ navigation }) {
     pollingActiveRef.current = pollingActive;
   }, [pollingActive]);
 
+  const [timeLeft, setTimeLeft] = useState(600); // 10 phút = 600 giây
+
+  // Reset timeLeft khi mở modal
+  useEffect(() => {
+    if (payosModalVisible) {
+      setTimeLeft(600);
+    }
+  }, [payosModalVisible]);
+
+  // Bộ đếm ngược 10 phút
+  useEffect(() => {
+    let timerId = null;
+    if (payosModalVisible && timeLeft > 0) {
+      timerId = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(timerId);
+            handleTimeout();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (timerId) clearInterval(timerId);
+    };
+  }, [payosModalVisible, timeLeft]);
+
+  const handleTimeout = async () => {
+    setPayosModalVisible(false);
+    setPollingActive(false);
+    if (paymentInfo?.id) {
+      try {
+        await api.post(`/members/me/package-request/${paymentInfo.id}/cancel`);
+        fetchAll();
+      } catch (err) {
+        console.error('Lỗi khi tự động hủy đơn gia hạn:', err);
+      }
+    }
+    Alert.alert('Thanh toán hết hạn', 'Đã hết thời gian thanh toán 10 phút. Giao dịch đã bị hủy tự động.');
+  };
+
   // Turn off polling when screen is blurred/navigated away
   useEffect(() => {
     const unsubscribe = navigation.addListener('blur', () => {
@@ -159,6 +202,7 @@ export default function MemberHomeScreen({ navigation }) {
           fetchAll();
         } else {
           setPaymentInfo({
+            id: plan.id, // Lưu thêm id để gọi API hủy khi timeout
             orderCode: orderCode || plan.payos_order_code,
             qrCodeUrl: qrCode || checkoutUrl,
             amount: plan.gia_thuc_te,
@@ -1106,8 +1150,8 @@ export default function MemberHomeScreen({ navigation }) {
 
                 <View style={styles.pollingStatus}>
                   <ActivityIndicator size="small" color={colors.primary} />
-                  <Text style={[styles.pollingStatusText, { color: colors.textSecondary }]}>
-                    Đang chờ hệ thống kiểm tra giao dịch tự động...
+                  <Text style={[styles.pollingStatusText, { color: colors.textSecondary, fontWeight: '700' }]}>
+                    Đang chờ thanh toán ({Math.floor(timeLeft / 60).toString().padStart(2, '0')}:{(timeLeft % 60).toString().padStart(2, '0')})...
                   </Text>
                 </View>
 

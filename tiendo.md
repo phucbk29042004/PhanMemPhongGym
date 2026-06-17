@@ -12,6 +12,26 @@
 
 ---
 
+### [17/06/2026] — Đồng bộ 22 chi nhánh mới lên các giao diện Mobile App
+- **Loại**: Cải tiến & Đồng bộ dữ liệu (Mobile)
+- **File**: `MobileApp/src/screens/admin/AdminAddEditMemberScreen.js`, `MobileApp/src/screens/admin/AdminAddEditPTScreen.js`, `MobileApp/src/screens/admin/AdminRegisterPackageScreen.js`, `MobileApp/src/screens/member/OrderConfirmationScreen.js`
+- **Mô tả**: Đồng bộ đầy đủ 22 chi nhánh mới (bao gồm các quận/huyện mới như Tân Phú, Quận 4, Quận 6, Quận 8, Quận 11, Quận 12, Bình Chánh, Hóc Môn, Củ Chi, Cần Giờ) từ file `branches.json` vào các mảng `DEFAULT_BRANCHES` tĩnh/fallback trên Mobile App để đồng bộ nhất quán toàn bộ hệ thống.
+- **Kết quả**: Thành công.
+
+---
+
+### [17/06/2026] — Triển khai Hẹn giờ Thanh toán 10 phút & Tự động Hủy giao dịch (Fullstack)
+- **Loại**: Tính năng mới & Nghiệp vụ (Fullstack)
+- **File**: `BE/src/utils/payos.js`, `FE/assets/js/pages/members-list.js`, `MobileApp/src/screens/member/OrderConfirmationScreen.js`, `MobileApp/src/screens/member/MemberHomeScreen.js`, `MobileApp/src/screens/admin/AdminRegisterPackageScreen.js`, `MobileApp/src/screens/admin/AdminRegisterPTScreen.js`
+- **Mô tả**:
+  1. **[Backend]**: Cấu hình thêm thuộc tính `expiredAt` (10 phút kể từ khi tạo link thanh toán) trong hàm `createPaymentLink` khi gửi dữ liệu sang PayOS để khoá đơn hàng không cho thanh toán sau 10 phút.
+  2. **[Web Admin]**: Tích hợp bộ đếm ngược 10 phút (`timeLeft = 600`) định dạng `mm:ss` trên modal QR thanh toán PayOS. Khi hết giờ, tự động tắt modal và gọi API DELETE để hủy bỏ đăng ký tạm và dọn dẹp Database.
+  3. **[Mobile - Hội viên]**: Thêm timer đếm ngược 10 phút hiển thị trực tiếp trên modal QR của màn hình Gia hạn (`OrderConfirmationScreen.js`) và modal QR Trang chủ (`MemberHomeScreen.js`). Tự động gọi API hủy yêu cầu gia hạn và đóng modal khi hết giờ.
+  4. **[Mobile - Admin]**: Tích hợp đếm ngược 10 phút và tự động gọi API dọn dẹp DB khi hết giờ thanh toán trên cả 2 màn hình Đăng ký Gói Gym (`AdminRegisterPackageScreen.js`) và Đăng ký Gói PT (`AdminRegisterPTScreen.js`).
+- **Kết quả**: Thành công.
+
+---
+
 ### [16/06/2026] — Đồng bộ hết hạn, sửa màu chữ Dark Mode và tối ưu tốc độ chuyển theme (Mobile)
 - **Loại**: Sửa bug & Tối ưu UI/UX (Mobile)
 - **File**: `MobileApp/src/screens/admin/AdminExpiredMembersScreen.js`, `MobileApp/src/context/ThemeContext.js`

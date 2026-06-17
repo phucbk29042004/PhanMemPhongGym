@@ -87,7 +87,25 @@ export default function AdminAddEditPTScreen({ route, navigation }) {
     { id: 'go-vap', ten: 'Chi nhánh Gò Vấp' },
     { id: 'binh-thanh', ten: 'Chi nhánh Bình Thạnh' },
     { id: 'tan-binh', ten: 'Chi nhánh Tân Bình' },
+    { id: 'tan-phu', ten: 'Chi nhánh Tân Phú' },
+    { id: 'phu-nhuan', ten: 'Chi nhánh Phú Nhuận' },
     { id: 'quan-1', ten: 'Chi nhánh Quận 1' },
+    { id: 'quan-3', ten: 'Chi nhánh Quận 3' },
+    { id: 'quan-4', ten: 'Chi nhánh Quận 4' },
+    { id: 'quan-5', ten: 'Chi nhánh Quận 5' },
+    { id: 'quan-6', ten: 'Chi nhánh Quận 6' },
+    { id: 'quan-7', ten: 'Chi nhánh Quận 7' },
+    { id: 'quan-8', ten: 'Chi nhánh Quận 8' },
+    { id: 'quan-10', ten: 'Chi nhánh Quận 10' },
+    { id: 'quan-11', ten: 'Chi nhánh Quận 11' },
+    { id: 'quan-12', ten: 'Chi nhánh Quận 12' },
+    { id: 'binh-tan', ten: 'Chi nhánh Bình Tân' },
+    { id: 'thu-duc', ten: 'Chi nhánh Thủ Đức' },
+    { id: 'binh-chanh', ten: 'Chi nhánh Bình Chánh' },
+    { id: 'hoc-mon', ten: 'Chi nhánh Hóc Môn' },
+    { id: 'cu-chi', ten: 'Chi nhánh Củ Chi' },
+    { id: 'nha-be', ten: 'Chi nhánh Nhà Bè' },
+    { id: 'can-gio', ten: 'Chi nhánh Cần Giờ' }
   ]);
 
   // Ảnh đại diện

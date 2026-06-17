@@ -56,11 +56,47 @@ export default function OrderConfirmationScreen({ route, navigation }) {
   const [pollingActive, setPollingActive] = useState(false);
   const pollingErrorCountRef = useRef(0);
   const pollingActiveRef = useRef(false);
+  const [timeLeft, setTimeLeft] = useState(600); // 10 phút = 600 giây
 
-  // Keep ref in sync
+  // Reset timeLeft khi mở modal
   useEffect(() => {
-    pollingActiveRef.current = pollingActive;
-  }, [pollingActive]);
+    if (payosModalVisible) {
+      setTimeLeft(600);
+    }
+  }, [payosModalVisible]);
+
+  // Bộ đếm ngược 10 phút
+  useEffect(() => {
+    let timerId = null;
+    if (payosModalVisible && timeLeft > 0) {
+      timerId = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(timerId);
+            handleTimeout();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (timerId) clearInterval(timerId);
+    };
+  }, [payosModalVisible, timeLeft]);
+
+  const handleTimeout = async () => {
+    setPayosModalVisible(false);
+    setPollingActive(false);
+    if (paymentInfo?.id) {
+      try {
+        await api.post(`/members/me/package-request/${paymentInfo.id}/cancel`);
+      } catch (err) {
+        console.error('Lỗi khi tự động hủy đơn gia hạn:', err);
+      }
+    }
+    Alert.alert('Thanh toán hết hạn', 'Đã hết thời gian thanh toán 10 phút. Giao dịch đã bị hủy tự động.');
+  };
 
   // Turn off polling when screen is blurred/navigated away
   useEffect(() => {
@@ -96,7 +132,26 @@ export default function OrderConfirmationScreen({ route, navigation }) {
           setBranches([
             { id: 'go-vap', ten: 'Chi nhánh Gò Vấp' },
             { id: 'binh-thanh', ten: 'Chi nhánh Bình Thạnh' },
-            { id: 'tan-binh', ten: 'Chi nhánh Tân Bình' }
+            { id: 'tan-binh', ten: 'Chi nhánh Tân Bình' },
+            { id: 'tan-phu', ten: 'Chi nhánh Tân Phú' },
+            { id: 'phu-nhuan', ten: 'Chi nhánh Phú Nhuận' },
+            { id: 'quan-1', ten: 'Chi nhánh Quận 1' },
+            { id: 'quan-3', ten: 'Chi nhánh Quận 3' },
+            { id: 'quan-4', ten: 'Chi nhánh Quận 4' },
+            { id: 'quan-5', ten: 'Chi nhánh Quận 5' },
+            { id: 'quan-6', ten: 'Chi nhánh Quận 6' },
+            { id: 'quan-7', ten: 'Chi nhánh Quận 7' },
+            { id: 'quan-8', ten: 'Chi nhánh Quận 8' },
+            { id: 'quan-10', ten: 'Chi nhánh Quận 10' },
+            { id: 'quan-11', ten: 'Chi nhánh Quận 11' },
+            { id: 'quan-12', ten: 'Chi nhánh Quận 12' },
+            { id: 'binh-tan', ten: 'Chi nhánh Bình Tân' },
+            { id: 'thu-duc', ten: 'Chi nhánh Thủ Đức' },
+            { id: 'binh-chanh', ten: 'Chi nhánh Bình Chánh' },
+            { id: 'hoc-mon', ten: 'Chi nhánh Hóc Môn' },
+            { id: 'cu-chi', ten: 'Chi nhánh Củ Chi' },
+            { id: 'nha-be', ten: 'Chi nhánh Nhà Bè' },
+            { id: 'can-gio', ten: 'Chi nhánh Cần Giờ' }
           ]);
         }
       }
@@ -491,8 +546,8 @@ export default function OrderConfirmationScreen({ route, navigation }) {
 
                 <View style={styles.pollingStatus}>
                   <ActivityIndicator size="small" color={BRAND.primary} />
-                  <Text style={[styles.pollingStatusText, { color: BRAND.gray500 }]}>
-                    Đang chờ hệ thống kiểm tra giao dịch tự động...
+                  <Text style={[styles.pollingStatusText, { color: BRAND.gray500, fontWeight: '700' }]}>
+                    Đang chờ thanh toán ({Math.floor(timeLeft / 60).toString().padStart(2, '0')}:{(timeLeft % 60).toString().padStart(2, '0')})...
                   </Text>
                 </View>
 
