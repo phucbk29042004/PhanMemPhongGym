@@ -8,7 +8,18 @@
 ---
 
 ## 📌 Trạng thái hiện tại
-**✅ [16/06/2026] Tối ưu hóa giao diện thanh toán & Khắc phục lỗi đè Header trên Android (Mobile)**
+**✅ [16/06/2026] Khắc phục lỗi lệch số lượng hết hạn, màu chữ Dark Mode và delay chuyển theme trên Mobile**
+
+---
+
+### [16/06/2026] — Đồng bộ hết hạn, sửa màu chữ Dark Mode và tối ưu tốc độ chuyển theme (Mobile)
+- **Loại**: Sửa bug & Tối ưu UI/UX (Mobile)
+- **File**: `MobileApp/src/screens/admin/AdminExpiredMembersScreen.js`, `MobileApp/src/context/ThemeContext.js`
+- **Mô tả**:
+  1. **[Đồng bộ hết hạn]**: Thêm logic lấy `selectedBranch` từ `useAuthStore` trong `AdminExpiredMembersScreen.js` và gửi kèm vào API endpoints `/members/expired` và `/members/expiring?days=7` để lọc dữ liệu theo chi nhánh đang hoạt động, giúp khớp đúng số lượng 3 hết hạn và 2 sắp hết tương tự Web Admin.
+  2. **[Màu chữ Dark Mode]**: Thêm thuộc tính `isDark: false` vào `lightColors` và `isDark: true` vào `darkColors` trong `ThemeContext.js`. Điều này sửa lỗi đồng loạt cho hàng loạt component sử dụng `colors.isDark ? ...` vốn bị trả về `undefined` khiến chữ giữ nguyên màu đen trên nền tối.
+  3. **[Tối ưu chuyển theme]**: Trì hoãn việc cập nhật state theme 100ms bằng `setTimeout` trong hàm `toggleTheme` của `ThemeContext.js`, giúp hiệu ứng nút bấm (opacity/scale) phản hồi tức thì trước khi bắt đầu chu trình re-render nặng của app, đồng thời tách I/O lưu `AsyncStorage` chạy bất đồng bộ ngoài React render.
+- **Kết quả**: Thành công (Số lượng khớp hoàn toàn, giao diện Dark Mode hiển thị rõ chữ, chuyển đổi theme mượt mà không còn độ trễ).
 
 ---
 

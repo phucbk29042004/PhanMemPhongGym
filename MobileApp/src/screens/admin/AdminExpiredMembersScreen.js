@@ -11,6 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuthStore } from '../../store/useAuthStore';
 
 function formatDate(val) {
   if (!val) return '—';
@@ -48,6 +49,7 @@ export default function AdminExpiredMembersScreen({ navigation, route }) {
   const defaultTab = route.params?.filter === 'expiring' ? 'expiring' : 'expired';
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const { selectedBranch } = useAuthStore();
   
   const [activeTab, setActiveTab] = useState(defaultTab); // 'expired' | 'expiring'
   const [members, setMembers] = useState([]);
@@ -59,7 +61,11 @@ export default function AdminExpiredMembersScreen({ navigation, route }) {
   const fetchMembers = useCallback(async () => {
     setLoading(true);
     try {
-      const endpoint = activeTab === 'expired' ? '/members/expired' : '/members/expiring?days=7';
+      const q = selectedBranch ? `?chi_nhanh=${encodeURIComponent(selectedBranch)}` : '';
+      const expQ = selectedBranch ? `&chi_nhanh=${encodeURIComponent(selectedBranch)}` : '';
+      const endpoint = activeTab === 'expired' 
+        ? `/members/expired${q}` 
+        : `/members/expiring?days=7${expQ}`;
       const res = await api.get(endpoint);
       if (res.data?.success) {
         setMembers(res.data.data || []);
@@ -71,7 +77,7 @@ export default function AdminExpiredMembersScreen({ navigation, route }) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [activeTab]);
+  }, [activeTab, selectedBranch]);
 
   // Refresh mỗi khi màn hình được focus (ví dụ: quay lại từ màn hình gia hạn)
   useFocusEffect(
@@ -80,10 +86,10 @@ export default function AdminExpiredMembersScreen({ navigation, route }) {
     }, [fetchMembers])
   );
 
-  // Vẫn giữ useEffect để reload khi activeTab thay đổi
+  // Vẫn giữ useEffect để reload khi activeTab hoặc selectedBranch thay đổi
   useEffect(() => {
     fetchMembers();
-  }, [activeTab]); // chỉ theo dõi activeTab, fetchMembers được gọi từ useFocusEffect
+  }, [activeTab, selectedBranch]); // chỉ theo dõi activeTab và selectedBranch, fetchMembers được gọi từ useFocusEffect
 
   const onRefresh = () => {
     setRefreshing(true);

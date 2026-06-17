@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const STORAGE_KEY = 'gym_dark_mode';
@@ -10,6 +10,7 @@ const ThemeContext = createContext({
 });
 
 export const lightColors = {
+  isDark: false,
   background: '#f8faf8',
   surface: '#ffffff',
   surfaceVariant: '#f0f4f0',
@@ -31,6 +32,7 @@ export const lightColors = {
 };
 
 export const darkColors = {
+  isDark: true,
   background: '#0f1410',
   surface: '#1a2318',
   surfaceVariant: '#212d22',
@@ -61,17 +63,25 @@ export function ThemeProvider({ children }) {
   }, []);
 
   const toggleTheme = useCallback(() => {
-    setIsDark(prev => {
-      const next = !prev;
-      AsyncStorage.setItem(STORAGE_KEY, String(next)).catch(() => {});
-      return next;
-    });
+    // Trì hoãn đổi state theme 100ms để hiệu ứng nút bấm (opacity, scale) phản hồi ngay trước khi re-render
+    setTimeout(() => {
+      setIsDark(prev => {
+        const next = !prev;
+        // Chạy AsyncStorage ở ngoài quá trình render, không chặn luồng chính
+        setTimeout(() => {
+          AsyncStorage.setItem(STORAGE_KEY, String(next)).catch(() => {});
+        }, 0);
+        return next;
+      });
+    }, 100);
   }, []);
 
   const colors = isDark ? darkColors : lightColors;
 
+  const value = useMemo(() => ({ isDark, toggleTheme, colors }), [isDark, toggleTheme, colors]);
+
   return (
-    <ThemeContext.Provider value={{ isDark, toggleTheme, colors }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );
