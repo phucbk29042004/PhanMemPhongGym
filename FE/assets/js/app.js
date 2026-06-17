@@ -1477,7 +1477,7 @@
       het_han_goi_tap:              'event_busy',
       check_in:                     'how_to_reg',
       chua_check_in_truoc_buoi_pt:  'warning',
-      cron_tu_xac_nhan:             'smart_toy',
+      cron_tu_xac_nhan:             'fact_check',
       sap_het_buoi_pt:              'fitness_center',
       ho_so_moi:                    'person_add',
       gia_han_goi_tap:              'card_membership',

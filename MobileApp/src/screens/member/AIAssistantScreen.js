@@ -2,8 +2,10 @@ import React, { useState, useRef } from 'react';
 import {
   ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView,
   StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View,
+  Alert, Image,
 } from 'react-native';
-import { Bot, ChevronLeft, Send, User } from 'lucide-react-native';
+import { Bot, ChevronLeft, Send, User, Plus, X } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../../services/api';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -86,25 +88,92 @@ export default function AIAssistantScreen({ navigation }) {
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
   const scrollViewRef = useRef();
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedImageBase64, setSelectedImageBase64] = useState(null);
+
+  const handlePickImage = () => {
+    Alert.alert(
+      'Chọn hình ảnh',
+      'Bạn muốn chụp ảnh mới hay chọn ảnh từ thư viện?',
+      [
+        { text: '📸 Chụp ảnh (Camera)', onPress: launchCamera },
+        { text: '🖼️ Thư viện ảnh', onPress: launchLibrary },
+        { text: 'Hủy bỏ', style: 'cancel' }
+      ]
+    );
+  };
+
+  const launchCamera = async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Quyền truy cập', 'Vui lòng cấp quyền truy cập camera trong cài đặt thiết bị.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.7,
+      base64: true,
+    });
+    if (!result.canceled && result.assets?.[0]) {
+      const asset = result.assets[0];
+      setSelectedImage(asset.uri);
+      setSelectedImageBase64(`data:image/jpeg;base64,${asset.base64}`);
+    }
+  };
+
+  const launchLibrary = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Quyền truy cập', 'Vui lòng cấp quyền truy cập thư viện ảnh trong cài đặt thiết bị.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.7,
+      base64: true,
+    });
+    if (!result.canceled && result.assets?.[0]) {
+      const asset = result.assets[0];
+      setSelectedImage(asset.uri);
+      setSelectedImageBase64(`data:image/jpeg;base64,${asset.base64}`);
+    }
+  };
 
   const handleSend = async () => {
     const text = inputText.trim();
-    if (!text || loading) return;
+    const imageToSend = selectedImage;
+    const imageBase64ToSend = selectedImageBase64;
+    
+    if ((!text && !imageToSend) || loading) return;
 
     setInputText('');
+    setSelectedImage(null);
+    setSelectedImageBase64(null);
+
     const userMsgId = `user-${Date.now()}`;
     const newMsg = {
       id: userMsgId,
       text: text,
       sender: 'user',
       time: new Date(),
+      image: imageToSend,
     };
 
     setMessages((prev) => [...prev, newMsg]);
     setLoading(true);
 
     try {
-      const response = await api.post('/assistant/chat', { message: text, chi_nhanh: selectedBranch || '' });
+      const payload = { 
+        message: text || 'Phân tích bức ảnh này giúp tôi.', 
+        chi_nhanh: selectedBranch || '' 
+      };
+      if (imageBase64ToSend) {
+        payload.image = imageBase64ToSend;
+      }
+      
+      const response = await api.post('/assistant/chat', payload);
       const reply = response.data?.data?.reply || 'Rất tiếc, mình gặp sự cố khi xử lý câu hỏi này.';
       
       setMessages((prev) => [
@@ -189,7 +258,10 @@ export default function AIAssistantScreen({ navigation }) {
                         ],
                   ]}
                 >
-                  {renderFormattedText(item.text, isUser, colors, isDark)}
+                  {item.image && (
+                    <Image source={{ uri: item.image }} style={styles.bubbleImage} />
+                  )}
+                  {item.text ? renderFormattedText(item.text, isUser, colors, isDark) : null}
                 </View>
                 {isUser && (
                   <View style={[styles.userAvatar, { backgroundColor: G.primary }]}>
@@ -229,36 +301,61 @@ export default function AIAssistantScreen({ navigation }) {
         {/* Input area */}
         <View
           style={[
-            styles.inputArea,
+            styles.inputAreaContainer,
             {
               backgroundColor: isDark ? colors.surface : G.white,
               borderTopColor: colors.border,
             },
           ]}
         >
-          <TextInput
-            style={[
-              styles.input,
-              {
-                backgroundColor: isDark ? colors.surfaceVariant : G.gray100,
-                color: colors.text,
-                borderColor: colors.border,
-              },
-            ]}
-            value={inputText}
-            onChangeText={setInputText}
-            placeholder="Hỏi về lịch tập, dinh dưỡng..."
-            placeholderTextColor={colors.textMuted}
-            onSubmitEditing={handleSend}
-            returnKeyType="send"
-          />
-          <TouchableOpacity
-            style={[styles.sendBtn, { backgroundColor: G.primary }]}
-            onPress={handleSend}
-            disabled={!inputText.trim()}
-          >
-            <Send color={G.white} size={16} />
-          </TouchableOpacity>
+          {/* Preview Image Area */}
+          {selectedImage && (
+            <View style={[styles.previewContainer, { borderColor: colors.border }]}>
+              <Image source={{ uri: selectedImage }} style={styles.previewImage} />
+              <TouchableOpacity
+                style={styles.previewRemoveBtn}
+                onPress={() => {
+                  setSelectedImage(null);
+                  setSelectedImageBase64(null);
+                }}
+              >
+                <X color={G.white} size={10} strokeWidth={3} />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          <View style={styles.inputArea}>
+            <TouchableOpacity
+              style={[styles.addBtn, { borderColor: colors.border }]}
+              onPress={handlePickImage}
+            >
+              <Plus color={colors.textSecondary} size={18} strokeWidth={2.5} />
+            </TouchableOpacity>
+
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: isDark ? colors.surfaceVariant : G.gray100,
+                  color: colors.text,
+                  borderColor: colors.border,
+                },
+              ]}
+              value={inputText}
+              onChangeText={setInputText}
+              placeholder="Nhập câu hỏi..."
+              placeholderTextColor={colors.textMuted}
+              onSubmitEditing={handleSend}
+              returnKeyType="send"
+            />
+            <TouchableOpacity
+              style={[styles.sendBtn, { backgroundColor: G.primary }]}
+              onPress={handleSend}
+              disabled={!inputText.trim() && !selectedImage}
+            >
+              <Send color={G.white} size={16} />
+            </TouchableOpacity>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </View>
@@ -361,25 +458,73 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginRight: 4,
   },
+  bubbleImage: {
+    width: 180,
+    height: 120,
+    borderRadius: 12,
+    marginBottom: 6,
+  },
+  inputAreaContainer: {
+    borderTopWidth: 1,
+    padding: 12,
+  },
+  previewContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+    borderWidth: 1,
+    borderRadius: 16,
+    marginBottom: 8,
+    position: 'relative',
+    alignSelf: 'flex-start',
+    backgroundColor: '#1d933608',
+  },
+  previewImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e4ebe4',
+  },
+  previewRemoveBtn: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#ff3b30',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#fff',
+  },
+  addBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
   inputArea: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    borderTopWidth: 1,
-    gap: 10,
+    gap: 8,
   },
   input: {
     flex: 1,
-    height: 40,
-    borderRadius: 20,
-    paddingHorizontal: 16,
+    height: 36,
+    borderRadius: 18,
+    paddingHorizontal: 14,
     fontSize: 13,
     borderWidth: 1,
   },
   sendBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 2,

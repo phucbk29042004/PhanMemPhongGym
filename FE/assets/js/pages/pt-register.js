@@ -2,7 +2,7 @@ window.GymApp.pages['pt-register'] = {
   _selectedPT: null,
   _selectedMember: null,
   _bookingPage: 1,
-  _bookingPerPage: 3,
+  _bookingPerPage: 5,
 
   render: function () {
     const pts = Array.isArray(window.GymApp.data.pts) ? window.GymApp.data.pts : [];
@@ -141,7 +141,7 @@ window.GymApp.pages['pt-register'] = {
               </div>
 
               <!-- Nút đặt lịch -->
-              <button id="btn-book" class="w-full py-2.5 rounded-xl bg-brand-primary text-white font-bold text-body-md hover:shadow-lg hover:shadow-brand-primary/20 hover:-translate-y-0.5 active:scale-95 transition-all flex items-center justify-center gap-xs">
+              <button id="btn-book" class="w-[300px] mx-auto py-2.5 rounded-xl bg-brand-primary text-white font-bold text-body-md hover:shadow-lg hover:shadow-brand-primary/20 hover:-translate-y-0.5 active:scale-95 transition-all flex items-center justify-center gap-xs">
                 <span class="material-symbols-outlined text-[16px]" style="font-variation-settings:'FILL' 1">event_available</span>
                 Đặt lịch tập
               </button>
@@ -157,8 +157,8 @@ window.GymApp.pages['pt-register'] = {
               <h3 class="font-bold text-on-surface text-sm">Lịch đã đặt</h3>
               <span id="booking-count" class="ml-auto bg-brand-primary text-white px-2 py-0.5 rounded-full text-label-xs font-bold">${totalBookings}</span>
             </div>
-
-            <div id="booking-list" class="p-standard flex flex-col gap-standard flex-1 lg:min-h-0 overflow-y-auto" style="min-height:400px">
+ 
+            <div id="booking-list" class="p-standard flex flex-col gap-standard flex-1 lg:min-h-0 overflow-y-auto custom-scroll">
               ${this._renderBookingList()}
             </div>
             <div id="booking-pagination"></div>
@@ -328,6 +328,22 @@ window.GymApp.pages['pt-register'] = {
     self._selectedMember = null;
     self._bookingPage = 1;
 
+    // Lắng nghe sự kiện socket để tự động reload danh sách lịch đã đặt
+    if (window.GymApp._socket) {
+      this._onPtScheduleChanged = async () => {
+        try {
+          const res = await window.GymApp.api.get('/pt/schedules');
+          if (res?.success) {
+            window.GymApp.data.ptSchedules = Array.isArray(res.data) ? res.data : [];
+            self._refreshBookingList();
+          }
+        } catch (err) {
+          console.error('Realtime sync schedules failed:', err);
+        }
+      };
+      window.GymApp._socket.on('pt_schedule_changed', this._onPtScheduleChanged);
+    }
+
     // Fetch PT nếu chưa có
     if (!window.GymApp.data.pts || window.GymApp.data.pts.length === 0) {
       try {
@@ -459,7 +475,7 @@ window.GymApp.pages['pt-register'] = {
             document.getElementById('clear-reg-time')?.addEventListener('click', (e) => {
               e.preventDefault();
               e.stopPropagation();
-              
+
               if (startEl) startEl.value = '';
               const endInput = document.getElementById('reg-end');
               if (endInput) endInput.value = '';
@@ -491,11 +507,11 @@ window.GymApp.pages['pt-register'] = {
       if (startEl && startEl.value && timeDisplay) {
         const endEl = document.getElementById('reg-end');
         timeDisplay.innerHTML = `<span class="flex items-center gap-xs">Đã chọn: ${startEl.value} — ${endEl?.value || '—'} <button type="button" id="clear-reg-time" class="material-symbols-outlined text-[16px] text-outline hover:text-error ml-1 transition-colors" style="cursor:pointer;" title="Xóa giờ đã chọn">close</button></span>`;
-        
+
         document.getElementById('clear-reg-time')?.addEventListener('click', (e) => {
           e.preventDefault();
           e.stopPropagation();
-          
+
           startEl.value = '';
           const endInput = document.getElementById('reg-end');
           if (endInput) endInput.value = '';
@@ -857,5 +873,11 @@ window.GymApp.pages['pt-register'] = {
         <p class="text-on-surface-variant leading-relaxed"><strong>Chú ý:</strong> Một hội viên có thể đăng ký nhiều PT cùng một lúc, tuy nhiên thời gian diễn ra các buổi tập của từng PT cần tránh bị trùng lịch.</p>
       </div>
     </div>
-  `
+  `,
+  destroy: function () {
+    if (window.GymApp._socket && this._onPtScheduleChanged) {
+      window.GymApp._socket.off('pt_schedule_changed', this._onPtScheduleChanged);
+      this._onPtScheduleChanged = null;
+    }
+  }
 };

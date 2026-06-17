@@ -8,7 +8,30 @@
 ---
 
 ## 📌 Trạng thái hiện tại
-**✅ [16/06/2026] Khắc phục lỗi lệch số lượng hết hạn, màu chữ Dark Mode và delay chuyển theme trên Mobile**
+**✅ [17/06/2026] Tích hợp Chatbot AI Vision đa phương thức động hoàn toàn trên cả Web và Mobile App**
+
+---
+
+### [17/06/2026] — Tích hợp Chatbot AI Vision đa phương thức động hoàn toàn (Fullstack)
+- **Loại**: Tính năng mới (Fullstack Web & Mobile)
+- **File**: `BE/src/controllers/assistant.controller.js`, `FE/assets/js/components/ai-assistant.js`, `MobileApp/src/screens/member/AIAssistantScreen.js`
+- **Mô tả**:
+  1. **[Backend]**: Viết thêm helper `callGeminiVision` kết nối trực tiếp Google Gemini 1.5 Flash Vision API. Nâng cấp endpoint `POST /api/assistant/chat` tự động phát hiện ảnh thô (Base64). Nếu có ảnh, định cấu hình payload đa phương thức động gửi lên Gemini Vision để xử lý bất kỳ câu hỏi và hình ảnh nào mà không cần áp đặt kịch bản tĩnh. Nếu không có ảnh, tự động fallback về luồng xử lý text/SQL thông thường để tối ưu hóa hiệu suất và chi phí API.
+  2. **[Frontend Web - AI Widget]**: Redesign phần Input Footer. Thêm nút dấu cộng (`+`) đa năng và trường input tệp ẩn. Tích hợp `FileReader` tự động đọc file ảnh thành Base64. Xây dựng khu vực hiển thị preview ảnh (thumbnail) có nút xóa nhanh (`x`). Cập nhật hiển thị ảnh trực tiếp trong bong bóng chat và lưu trữ đồng bộ lịch sử tin nhắn.
+  3. **[Mobile App - AI Screen]**: Cài đặt Expo Image Picker. Thiết kế nút dấu cộng (`+`) nằm bên trái TextInput. Khi bấm, hiển thị ActionSheet/Alert menu native cho phép chọn: Chụp ảnh (Camera) hoặc Chọn ảnh từ thư viện. Tự động nén ảnh (chất lượng 0.7) và chuyển đổi Base64. Xây dựng khu vực hiển thị thumbnail preview ảnh kèm nút xóa ảnh. Render hình ảnh trực tiếp trong bong bóng chat của ScrollView tin nhắn.
+- **Kết quả**: Thành công (Tương tác động hoàn toàn, nhận diện thông minh mọi loại vật thể/hình ảnh).
+
+---
+
+### [17/06/2026] — Đồng bộ Realtime lịch tập PT, tối ưu Layout đặt lịch & Loại bỏ các icon AI hóa trong thông báo
+- **Loại**: Sửa lỗi & Tối ưu UI/UX (Fullstack Web)
+- **File**: `BE/src/controllers/pt-schedules.controller.js`, `FE/assets/js/pages/pt-register.js`, `FE/assets/js/pages/pt-training.js`, `FE/assets/js/app.js`
+- **Mô tả**:
+  1. **[Backend Realtime]**: Import `getIO` từ `socket.js` và phát sự kiện `pt_schedule_changed` qua Socket.IO tới toàn bộ các client đang kết nối khi có bất kỳ hành động nào thay đổi lịch tập PT (`create`, `cancel`, `confirm`, `revert`, `update`).
+  2. **[Frontend Realtime]**: Lắng nghe sự kiện socket `pt_schedule_changed` trong hàm `init()` của cả hai trang `pt-register.js` và `pt-training.js` để tự động tải lại dữ liệu mới nhất bằng API và cập nhật UI realtime mà không cần F5 hay đổi trang. Thêm hàm `destroy()` để hủy lắng nghe sự kiện khi rời trang nhằm tránh memory leak.
+  3. **[Tối ưu Layout đặt lịch PT]**: Đồng bộ chiều cao Card "Lịch đã đặt" (Card 2) luôn bằng chiều cao Card "Thông tin đặt lịch" (Card 1) làm chuẩn thông qua `items-stretch` và `lg:h-full lg:min-h-0`. Khi hiển thị 5 records hoặc các record chứa nhiều thông tin dài, phần danh sách sẽ tự động xuất hiện thanh cuộn đứng (`overflow-y-auto`) bên trong Card 2 thay vì kéo giãn hay làm biến dạng độ cao của cả 2 cột. Gán số record hiển thị mỗi trang là 5 (`_bookingPerPage: 5`).
+  4. **[Loại bỏ icon AI hóa]**: Thay thế icon robot `smart_toy` bằng icon kiểm tra `fact_check` trong config `LOAI_ICON` của `app.js` cho sự kiện `cron_tu_xac_nhan`, trả lại giao diện sạch sẽ, chuyên nghiệp.
+- **Kết quả**: Thành công.
 
 ---
 

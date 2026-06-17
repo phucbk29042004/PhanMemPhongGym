@@ -280,10 +280,50 @@ async function callGeminiWithTools(geminiKey, systemInstruction, messages, enabl
   return await response.json();
 }
 
+async function callGeminiVision(geminiKey, systemInstruction, prompt, base64Image, mimeType = 'image/jpeg') {
+  const model = 'gemini-1.5-flash';
+  const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${geminiKey}`;
+
+  const body = {
+    system_instruction: { parts: [{ text: systemInstruction }] },
+    contents: [
+      {
+        role: 'user',
+        parts: [
+          { text: prompt },
+          {
+            inlineData: {
+              mimeType: mimeType,
+              data: base64Image
+            }
+          }
+        ]
+      }
+    ],
+    generation_config: {
+      temperature: 0.4,
+      max_output_tokens: 1536
+    }
+  };
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Gemini Vision API error ${response.status}: ${errText}`);
+  }
+
+  return await response.json();
+}
+
 // ── HANDLER CHÍNH ──────────────────────────────────────────────────────────
 export const handleChat = async (req, res) => {
   try {
-    const { message, chi_nhanh } = req.body;
+    const { message, chi_nhanh, image } = req.body;
     if (!message || !message.trim()) {
       return error(res, 'Vui lòng nhập tin nhắn.', 400);
     }

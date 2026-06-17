@@ -381,6 +381,26 @@ window.GymApp.pages['pt-training'] = {
     this._currentPage = this._currentPage || 1;
     this._daysPerPage = 3;
 
+    // Lắng nghe sự kiện socket để tự động cập nhật danh sách lịch tập PT realtime
+    if (window.GymApp._socket && !skipFetch) {
+      // Đảm bảo không bị lặp đăng ký
+      if (this._onPtScheduleChanged) {
+        window.GymApp._socket.off('pt_schedule_changed', this._onPtScheduleChanged);
+      }
+      this._onPtScheduleChanged = async () => {
+        try {
+          const res = await window.GymApp.api.get('/pt/schedules');
+          if (res?.success) {
+            window.GymApp.data.ptSchedules = Array.isArray(res.data) ? res.data : [];
+            self._applyFilter();
+          }
+        } catch (err) {
+          console.error('Realtime sync schedules failed:', err);
+        }
+      };
+      window.GymApp._socket.on('pt_schedule_changed', this._onPtScheduleChanged);
+    }
+
     if (!skipFetch) {
       // Tải dữ liệu PT nếu chưa có
       if (!window.GymApp.data.pts || window.GymApp.data.pts.length === 0) {
@@ -841,5 +861,11 @@ window.GymApp.pages['pt-training'] = {
         </ul>
       </div>
     </div>
-  `
+  `,
+  destroy: function () {
+    if (window.GymApp._socket && this._onPtScheduleChanged) {
+      window.GymApp._socket.off('pt_schedule_changed', this._onPtScheduleChanged);
+      this._onPtScheduleChanged = null;
+    }
+  }
 };

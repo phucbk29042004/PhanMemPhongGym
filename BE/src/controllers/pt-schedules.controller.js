@@ -7,6 +7,7 @@ import { success, error } from '../utils/response.js';
 import { ghi_audit_log } from '../utils/audit.js';
 import { createNotification, createUserNotification } from '../utils/notifications.js';
 import { getActorBranch } from '../utils/branch.js';
+import { getIO } from '../socket.js';
 
 
 const getTodayStrHoChiMinh = () => {
@@ -278,6 +279,7 @@ export const createSchedule = (req, res) => {
     'thong_bao_chung'
   );
 
+  try { getIO().emit('pt_schedule_changed', { action: 'create' }); } catch (_) {}
   return success(res, db.prepare('SELECT * FROM lich_tap WHERE id = ?').get(result.lastInsertRowid), 'Đặt lịch thành công', 201);
 };
 
@@ -338,6 +340,7 @@ export const confirmSchedule = (req, res) => {
       createUserNotification(schedInfo.pt_id, '✅ Buổi dạy hoàn thành', `Buổi dạy ngày ${schedInfo.ngay_tap} với học viên ${schedInfo.ten_hv} đã được xác nhận hoàn thành.`, 'thong_bao_chung');
     }
     ghi_audit_log(req, 'UPDATE', 'lich_tap', parseInt(id), { trang_thai: 'cho_tap' }, { trang_thai: 'da_tap' }, 'Xác nhận buổi tập (cả 2 bên)');
+    try { getIO().emit('pt_schedule_changed', { action: 'confirm', id }); } catch (_) {}
     return success(res, { bothConfirmed: true, pt_xac_nhan: 1, hv_xac_nhan: 1 }, 'Cả hai đã xác nhận. Buổi tập hoàn thành!');
   }
 
@@ -354,6 +357,7 @@ export const confirmSchedule = (req, res) => {
     }
   }
   ghi_audit_log(req, 'UPDATE', 'lich_tap', parseInt(id), null, { pt_xac_nhan: updated.pt_xac_nhan, hv_xac_nhan: updated.hv_xac_nhan }, `Ghi nhận xác nhận từ ${vai_tro}`);
+  try { getIO().emit('pt_schedule_changed', { action: 'confirm_partial', id }); } catch (_) {}
   return success(res, { bothConfirmed: false, pt_xac_nhan: updated.pt_xac_nhan, hv_xac_nhan: updated.hv_xac_nhan }, 'Đã ghi nhận xác nhận của bạn. Đang chờ bên còn lại xác nhận.');
 };
 
@@ -510,6 +514,7 @@ export const cancelSchedule = (req, res) => {
   }
 
   ghi_audit_log(req, 'UPDATE', 'lich_tap', parseInt(id), { trang_thai: schedule.trang_thai }, { trang_thai: 'da_huy', ly_do }, 'Hủy buổi tập');
+  try { getIO().emit('pt_schedule_changed', { action: 'cancel', id }); } catch (_) {}
   return success(res, null, 'Đã hủy buổi tập');
 };
 
@@ -584,6 +589,7 @@ export const revertSchedule = (req, res) => {
     );
   }
 
+  try { getIO().emit('pt_schedule_changed', { action: 'revert', id }); } catch (_) {}
   return success(res, null, 'Hoàn tác buổi tập thành công');
 };
 
@@ -666,6 +672,7 @@ export const updateSchedule = (req, res) => {
     );
   }
 
+  try { getIO().emit('pt_schedule_changed', { action: 'update', id }); } catch (_) {}
   return success(res, db.prepare('SELECT * FROM lich_tap WHERE id = ?').get(id), 'Cập nhật lịch thành công');
 };
 

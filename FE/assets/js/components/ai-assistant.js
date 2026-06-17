@@ -113,11 +113,25 @@
         </div>
 
         <!-- Input Footer -->
-        <div class="p-3 border-t border-outline-variant/40 bg-surface-container-low flex gap-2 items-center">
-          <input id="ai-chat-input" type="text" placeholder="Hỏi về lịch tập, thực đơn dinh dưỡng..." class="flex-1 bg-white dark:bg-[#1e1e1e] border border-outline-variant/50 text-on-surface text-xs rounded-xl px-4 py-2 outline-none focus:border-brand-primary transition-all" />
-          <button id="btn-ai-chat-send" class="w-8 h-8 rounded-xl bg-brand-primary hover:bg-[#157a2a] text-white flex items-center justify-center active:scale-95 transition-all shadow-md">
-            <span class="material-symbols-outlined text-base">send</span>
-          </button>
+        <div class="p-3 border-t border-outline-variant/40 bg-surface-container-low flex flex-col gap-2">
+          <!-- Preview Image Area (hidden by default) -->
+          <div id="ai-chat-img-preview-container" class="hidden flex items-center gap-2 bg-white dark:bg-[#1e1e1e] border border-outline-variant/50 rounded-xl p-2 relative">
+            <img id="ai-chat-img-preview" src="" class="w-10 h-10 rounded-lg object-cover border border-outline-variant/30" />
+            <button id="btn-ai-chat-img-remove" class="absolute -top-1.5 -right-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full p-0.5 flex items-center justify-center shadow-sm" style="width: 16px; height: 16px;">
+              <span class="material-symbols-outlined text-[10px] font-bold">close</span>
+            </button>
+            <span class="text-[10px] text-on-surface-variant truncate max-w-[200px]" id="ai-chat-img-name" style="margin-left: 4px;"></span>
+          </div>
+          <div class="flex gap-2 items-center">
+            <button id="btn-ai-chat-add-media" class="w-8 h-8 rounded-xl border border-outline-variant/50 bg-white dark:bg-[#1e1e1e] hover:bg-surface-container text-on-surface-variant flex items-center justify-center active:scale-95 transition-all cursor-pointer" title="Thêm ảnh">
+              <span class="material-symbols-outlined text-base">add</span>
+            </button>
+            <input id="ai-chat-file-input" type="file" accept="image/*" class="hidden" />
+            <input id="ai-chat-input" type="text" placeholder="Hỏi bất kỳ điều gì về bức ảnh..." class="flex-1 bg-white dark:bg-[#1e1e1e] border border-outline-variant/50 text-on-surface text-xs rounded-xl px-4 py-2 outline-none focus:border-brand-primary transition-all" />
+            <button id="btn-ai-chat-send" class="w-8 h-8 rounded-xl bg-brand-primary hover:bg-[#157a2a] text-white flex items-center justify-center active:scale-95 transition-all shadow-md">
+              <span class="material-symbols-outlined text-base">send</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -140,8 +154,17 @@
     const chatMessages = document.getElementById('ai-chat-messages');
     const typingIndicator = document.getElementById('ai-typing-indicator');
 
+    // DOM Elements for Vision
+    const chatAddMedia = document.getElementById('btn-ai-chat-add-media');
+    const chatFileInput = document.getElementById('ai-chat-file-input');
+    const chatImgPreviewContainer = document.getElementById('ai-chat-img-preview-container');
+    const chatImgPreview = document.getElementById('ai-chat-img-preview');
+    const chatImgRemove = document.getElementById('btn-ai-chat-img-remove');
+    const chatImgName = document.getElementById('ai-chat-img-name');
+
     // Chat History Management
     let chatHistory = [];
+    let selectedImageBase64 = null;
     let savedLeft = '';
     let savedTop = '';
 
@@ -165,7 +188,7 @@
 
       chatMessages.innerHTML = '';
       chatHistory.forEach(msg => {
-        appendMessage(msg.text, msg.sender, false);
+        appendMessage(msg.text, msg.sender, false, msg.image);
       });
     };
 
@@ -227,10 +250,17 @@
     // Send Message
     const sendMessage = async () => {
       const text = chatInput.value.trim();
-      if (!text) return;
+      const imageToSend = selectedImageBase64;
+      if (!text && !imageToSend) return;
+
+      // Reset preview image area
+      selectedImageBase64 = null;
+      if (chatImgPreviewContainer) chatImgPreviewContainer.classList.add('hidden');
+      if (chatImgPreview) chatImgPreview.src = '';
+      if (chatImgName) chatImgName.textContent = '';
 
       // Append User Message
-      appendMessage(text, 'user');
+      appendMessage(text, 'user', true, imageToSend);
       chatInput.value = '';
 
       // Show Typing Indicator
@@ -240,7 +270,11 @@
 
       try {
         const chi_nhanh = window.GymApp?.selectedBranch || '';
-        const response = await window.GymApp.api.post('/assistant/chat', { message: text, chi_nhanh });
+        const payload = { message: text || 'Phân tích bức ảnh này giúp tôi.', chi_nhanh };
+        if (imageToSend) {
+          payload.image = imageToSend;
+        }
+        const response = await window.GymApp.api.post('/assistant/chat', payload);
         // Hide Typing Indicator
         typingIndicator.classList.add('hidden');
 
@@ -257,7 +291,7 @@
     };
 
     // Append Message helper
-    const appendMessage = (text, sender, save = true) => {
+    const appendMessage = (text, sender, save = true, image = null) => {
       const msgWrap = document.createElement('div');
       msgWrap.className = sender === 'user' ? 'flex gap-2 max-w-[85%] self-end flex-row-reverse' : 'flex gap-2 max-w-[85%] self-start';
 
@@ -266,13 +300,19 @@
         : `<div class="w-7 h-7 rounded-full bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center flex-shrink-0"><span class="material-symbols-outlined text-brand-primary text-xs">forum</span></div>`;
 
       const bubbleCls = sender === 'user'
-        ? 'bg-brand-primary text-white text-xs rounded-2xl px-3.5 py-2 shadow-sm leading-relaxed'
-        : 'bg-white dark:bg-[#1e1e1e] border border-outline-variant/30 text-on-surface text-xs rounded-2xl px-3.5 py-2 shadow-sm leading-relaxed';
+        ? 'bg-brand-primary text-white text-xs rounded-2xl px-3.5 py-2 shadow-sm leading-relaxed flex flex-col gap-1.5'
+        : 'bg-white dark:bg-[#1e1e1e] border border-outline-variant/30 text-on-surface text-xs rounded-2xl px-3.5 py-2 shadow-sm leading-relaxed flex flex-col gap-1.5';
+
+      let imgHtml = '';
+      if (image) {
+        imgHtml = `<img src="${image}" class="w-full max-w-[180px] rounded-xl object-cover border border-outline-variant/20 shadow-sm mb-1" />`;
+      }
 
       msgWrap.innerHTML = `
         ${avatarHtml}
         <div class="${bubbleCls}">
-          ${formatText(text)}
+          ${imgHtml}
+          ${text ? `<span>${formatText(text)}</span>` : ''}
         </div>
       `;
 
@@ -280,7 +320,7 @@
       scrollToBottom();
 
       if (save) {
-        chatHistory.push({ text, sender });
+        chatHistory.push({ text, sender, image });
         localStorage.setItem('gym-chat-history', JSON.stringify(chatHistory));
       }
     };
@@ -334,6 +374,39 @@
       if (e.key === 'Enter') {
         sendMessage();
       }
+    });
+
+    // Vision Upload Handlers
+    chatAddMedia?.addEventListener('click', () => {
+      chatFileInput?.click();
+    });
+
+    chatFileInput?.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (file.size > 5 * 1024 * 1024) {
+        if (window.GymApp?.toast) window.GymApp.toast('Ảnh không được vượt quá 5MB!', 'error');
+        chatFileInput.value = '';
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        selectedImageBase64 = evt.target.result;
+        if (chatImgPreview) chatImgPreview.src = selectedImageBase64;
+        if (chatImgName) chatImgName.textContent = file.name;
+        if (chatImgPreviewContainer) chatImgPreviewContainer.classList.remove('hidden');
+      };
+      reader.readAsDataURL(file);
+    });
+
+    chatImgRemove?.addEventListener('click', () => {
+      selectedImageBase64 = null;
+      if (chatImgPreviewContainer) chatImgPreviewContainer.classList.add('hidden');
+      if (chatImgPreview) chatImgPreview.src = '';
+      if (chatImgName) chatImgName.textContent = '';
+      if (chatFileInput) chatFileInput.value = '';
     });
 
     chatClear.addEventListener('click', () => {

@@ -50,7 +50,8 @@ api.interceptors.response.use(
         error.displayMessage = 'Không thể kết nối máy chủ. Kiểm tra lại WiFi/mạng.';
       }
     } else if (error.response.status === 401) {
-      error.displayMessage = 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.';
+      // Ưu tiên tin nhắn từ backend (như sai mật khẩu), nếu không có mới báo hết hạn phiên
+      error.displayMessage = error.response.data?.message || 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.';
     } else {
       // HTTP 4xx / 5xx — ưu tiên message từ server
       error.displayMessage =
