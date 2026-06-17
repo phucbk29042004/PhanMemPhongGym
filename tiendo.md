@@ -12,6 +12,20 @@
 
 ---
 
+### [17/06/2026] — Tối ưu hóa Responsive cho Header Web Admin & Sửa nút Menu trên Mobile
+- **Loại**: Cải tiến & Sửa lỗi UI/UX (Frontend Web)
+- **File**: `FE/index.html`, `FE/assets/js/app.js`, `FE/assets/css/main.css`
+- **Mô tả**: Tối ưu hóa responsive cho thanh Header tổng của Web Admin khi xem ở các màn hình thiết bị thu nhỏ (Tablet/Mobile):
+  1. **[Hamburger Menu Mobile]**: Tích hợp nút bấm hamburger `#mobile-sidebar-toggle` trên Header và bind sự kiện mở/đóng sidebar thông qua click delegation trong `app.js` khi chạy trên thiết bị di động (ví dụ: iPhone 14 Pro Max).
+  2. **[Sửa lỗi dư khoảng trắng]**: Thay thế class `px-loose` bằng `pl-loose pr-compact` cho container Header, đồng thời điều chỉnh `padding-right: 8px !important` cho `.gym-header` trên màn hình hẹp nhằm loại bỏ khoảng trống thừa ở góc phải của Avatar Admin.
+  3. Ẩn thanh định vị Breadcrumb khi màn hình dưới 768px để chừa không gian.
+  4. Thu nhỏ kích thước padding, chiều cao và font-size của nút lọc chi nhánh `#header-branch-trigger` khi màn hình dưới 640px.
+  5. Giới hạn độ rộng tối đa (`max-width: 100px`) và thêm hiệu ứng cắt chữ (`ellipsis`) cho nhãn chi nhánh hiện tại khi màn hình dưới 480px để tránh nút đẩy lấn các thành phần khác.
+  6. Ẩn khối hiển thị Tên và Vai trò tài khoản admin, thu nhỏ kích thước avatar tròn trên Header để tránh tràn bố cục header.
+- **Kết quả**: Thành công.
+
+---
+
 ### [17/06/2026] — Đồng bộ 22 chi nhánh mới lên các giao diện Mobile App
 - **Loại**: Cải tiến & Đồng bộ dữ liệu (Mobile)
 - **File**: `MobileApp/src/screens/admin/AdminAddEditMemberScreen.js`, `MobileApp/src/screens/admin/AdminAddEditPTScreen.js`, `MobileApp/src/screens/admin/AdminRegisterPackageScreen.js`, `MobileApp/src/screens/member/OrderConfirmationScreen.js`

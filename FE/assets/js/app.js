@@ -1217,7 +1217,7 @@
     // 5. Click delegation (Cực kỳ quan trọng)
     document.addEventListener('click', function (e) {
       // Sidebar Toggle
-      const sidebarToggle = e.target.closest('#sidebar-toggle');
+      const sidebarToggle = e.target.closest('#sidebar-toggle, #mobile-sidebar-toggle');
       if (sidebarToggle) {
         _toggleSidebar();
         return;

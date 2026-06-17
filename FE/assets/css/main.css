@@ -1344,9 +1344,50 @@ html.dark #sidebar p[style*="color:#16a34a"] {
   }
 }
 
-/* Header: ẩn text dài trên mobile */
+/* Header & Elements Responsive Optimization */
+@media (max-width: 768px) {
+  #breadcrumb {
+    display: none !important;
+  }
+  .gym-header {
+    padding-left: 12px !important;
+    padding-right: 8px !important;
+    gap: 8px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  #header-branch-trigger {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+    height: 34px !important;
+    font-size: 11px !important;
+  }
+  #header-branch-trigger span:not(#header-branch-current-label) {
+    font-size: 16px !important;
+  }
+  #admin-account-dropdown > div.flex.flex-col {
+    display: none !important;
+  }
+  #admin-account-dropdown {
+    padding-left: 8px !important;
+    border-left-width: 1px !important;
+  }
+  #header-avatar-container {
+    width: 28px !important;
+    height: 28px !important;
+  }
+}
+
 @media (max-width: 480px) {
-  .gym-header .header-title {
-    display: none;
+  #header-branch-trigger #header-branch-current-label {
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+  }
+  .gym-header {
+    height: 50px !important;
   }
 }
