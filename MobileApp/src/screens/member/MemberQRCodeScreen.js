@@ -71,7 +71,7 @@ export default function MemberQRCodeScreen() {
         startCountdown(data.het_han_sau_phut * 60);
       }
     } catch (error) {
-      setErrorText(error.response?.data?.message || 'Không tải được mã QR. Vui lòng thử lại.');
+      setErrorText(error.displayMessage || 'Không tải được mã QR. Vui lòng thử lại.');
     } finally {
       setLoading(false);
       setRefreshing(false);

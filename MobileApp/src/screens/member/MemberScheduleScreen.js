@@ -283,7 +283,7 @@ export default function MemberScheduleScreen() {
               fetchSchedules();
             }
           } catch (err) {
-            Alert.alert('Lỗi', err.response?.data?.message || err?.message || 'Không thể xác nhận buổi tập.');
+            Alert.alert('Lỗi', err.displayMessage || 'Không thể xác nhận buổi tập.');
           } finally {
             setConfirmingId(null);
           }
@@ -314,7 +314,7 @@ export default function MemberScheduleScreen() {
         await fetchSchedules();
       }
     } catch (err) {
-      Alert.alert('Lỗi', err.response?.data?.message || 'Không thể gửi đánh giá.');
+      Alert.alert('Lỗi', err.displayMessage || 'Không thể gửi đánh giá.');
     } finally {
       setSavingRating(false);
     }

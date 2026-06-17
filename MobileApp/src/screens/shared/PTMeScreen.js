@@ -93,7 +93,7 @@ export default function PTMeScreen({ navigation }) {
         await load(selectedMemberId);
       }
     } catch (err) {
-      Alert.alert('Lỗi', err.response?.data?.message || 'Không thể gửi cập nhật.');
+      Alert.alert('Lỗi', err.displayMessage || 'Không thể gửi cập nhật.');
     } finally {
       setSaving(false);
     }

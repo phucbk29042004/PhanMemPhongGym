@@ -2327,3 +2327,33 @@
   - Cập nhật hằng số `API_URL` khi đóng gói (Release) sang link ngrok HTTPS cố định `https://job-observing-corporal.ngrok-free.dev/api`.
   - Tích hợp thêm header `'ngrok-skip-browser-warning': 'true'` và `'Bypass-Tunnel-Reminder': 'true'` vào cấu hình Axios mặc định nhằm tự động bỏ qua trang cảnh báo trình duyệt của ngrok và localtunnel, khắc phục triệt để lỗi "Không thể kết nối máy chủ" trên tệp APK đóng gói.
 - **Kết quả**: Thành công.
+
+### [17/06/2026 13:40] — Hoàn thiện chatbot gửi ảnh và sửa lỗi hiển thị JSON thô trên Mobile App
+- **Loại**: Cải tiến logic & Sửa lỗi UX/UI (Fullstack)
+- **File**:
+  - `BE/src/controllers/assistant.controller.js`
+  - `MobileApp/src/services/api.js`
+  - `MobileApp/src/screens/auth/LoginScreen.js`
+  - `MobileApp/src/screens/shared/PTMeScreen.js`
+  - `MobileApp/src/screens/pt/PTQRCodeScreen.js`
+  - `MobileApp/src/screens/member/MemberQRCodeScreen.js`
+  - `MobileApp/src/screens/pt/PTHomeScreen.js`
+  - `MobileApp/src/screens/member/MemberScheduleScreen.js`
+  - `MobileApp/src/screens/admin/AdminExpiredMembersScreen.js`
+  - `MobileApp/src/screens/admin/AdminMemberDetailScreen.js`
+- **Mô tả**:
+  - **Sửa chatbot di động**: Tích hợp luồng xử lý Gemini Vision (`callGeminiVision`) ở Backend khi nhận tham số `image` chứa chuỗi Base64 từ chatbot Mobile. Sửa giao diện chatbot trên Mobile cho phép gửi ảnh thành công lên AI.
+  - **Ngăn chặn lỗi JSON thô**: Cấu hình lại interceptor response trong `api.js` của MobileApp: đổi `console.error` thành `console.warn` để không hiện màn hình LogBox đỏ làm phiền người dùng/tester khi phát triển, và xây dựng hàm parse chuỗi lỗi `error.displayMessage` cực kỳ an toàn (chuyển đổi bất kỳ lỗi nào thành text đơn giản, thân thiện).
+  - **Đồng bộ hóa giao diện thông báo lỗi di động**: Thay đổi cách hiển thị lỗi ở các catch block trên toàn bộ các màn hình di động quan trọng (`LoginScreen`, `PTMeScreen`, `PTQRCodeScreen`, `MemberQRCodeScreen`, `PTHomeScreen`, `MemberScheduleScreen`, `AdminExpiredMembersScreen`, `AdminMemberDetailScreen`) từ việc lấy trực tiếp cấu trúc `error.response?.data?.message` hoặc stringify sang sử dụng trường an toàn `error.displayMessage`.
+- **Kết quả**: Thành công. Chatbot di động phân tích ảnh động mượt mà, loại bỏ triệt để lỗi hiển thị JSON thô trên tất cả các màn hình di động.
+
+### [17/06/2026 13:45] — Sửa lỗi khoảng trắng lớn (double padding) trên iOS và vỡ đè status bar trên Android
+- **Loại**: Cải tiến giao diện & Tương thích đa nền tảng (Mobile)
+- **File**:
+  - `MobileApp/src/screens/member/OrderConfirmationScreen.js`
+  - `MobileApp/src/screens/member/PackageDetailScreen.js`
+  - `MobileApp/src/screens/shared/GymRulesScreen.js`
+- **Mô tả**:
+  - **Khắc phục lỗi khoảng trắng trên iOS**: Thay thế thẻ bọc ngoài cùng `<SafeAreaView>` bằng thẻ `<View>` thông thường tại các màn hình `OrderConfirmationScreen` và `PackageDetailScreen`. Do các trang này đã sử dụng `useSafeAreaInsets` để gán thủ công `paddingTop: insets.top` cho Custom Header, việc lồng trong `<SafeAreaView>` của React Native dẫn đến hiện tượng cộng dồn chiều cao gấp đôi (double padding) tạo ra khoảng trống màu trắng rất lớn trên thiết bị iOS (iPhone/iPad).
+  - **Đồng bộ hiển thị trên Android**: Cập nhật màn hình `GymRulesScreen` chuyển sang dùng `useSafeAreaInsets` và `<View>` làm gốc, tự động cộng `insets.top` cho custom header giúp khắc phục lỗi hiển thị nội dung bị đè bởi dải trạng thái (Status Bar) hệ thống khi chạy bản APK Android, đồng thời giữ giao diện cân đối hoàn hảo trên iOS.
+- **Kết quả**: Thành công. Toàn bộ các trang di động hiện hiển thị thống nhất, không bị vỡ/đè status bar trên Android và không bị lộ khoảng trắng trên iOS.

@@ -50,7 +50,7 @@ export default function LoginScreen() {
         Alert.alert('Đăng nhập thất bại', response.data?.message || 'Tên đăng nhập hoặc mật khẩu không đúng.');
       }
     } catch (error) {
-      const errorMsg = error.response?.data?.message || 'Không thể kết nối máy chủ. Kiểm tra lại kết nối mạng.';
+      const errorMsg = error.displayMessage || 'Không thể kết nối máy chủ. Kiểm tra lại kết nối mạng.';
       Alert.alert('Xác thực thất bại', errorMsg);
     } finally {
       setLoading(false);

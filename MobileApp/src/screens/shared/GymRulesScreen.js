@@ -9,10 +9,10 @@ import {
   LayoutAnimation,
   Platform,
   UIManager,
-  StatusBar,
-  SafeAreaView
+  StatusBar
 } from 'react-native';
 import { ArrowLeft, ChevronDown, ChevronUp, BookOpen, User, Users, GraduationCap, Building2 } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { api } from '../../services/api';
 
@@ -30,6 +30,7 @@ const BRAND = {
 
 export default function GymRulesScreen({ navigation }) {
   const { colors, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const [rules, setRules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('tat_ca'); // tat_ca, hoi_vien, pt, nhan_vien
@@ -79,11 +80,11 @@ export default function GymRulesScreen({ navigation }) {
   ];
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.surface} />
       
       {/* ── Custom Header ──────────────────────────────────────── */}
-      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border, paddingTop: insets.top, height: 56 + insets.top }]}>
         <TouchableOpacity 
           style={styles.backButton} 
           onPress={() => navigation.goBack()}
@@ -219,7 +220,7 @@ export default function GymRulesScreen({ navigation }) {
           )}
         </ScrollView>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 

@@ -124,7 +124,7 @@ export default function PTHomeScreen({ navigation }) {
                 Alert.alert('Lỗi', res.data?.message || 'Không thể xác nhận buổi tập.');
               }
             } catch (err) {
-              Alert.alert('Lỗi', err.response?.data?.message || err?.message || 'Có lỗi xảy ra khi cập nhật DB.');
+              Alert.alert('Lỗi', err.displayMessage || 'Có lỗi xảy ra khi cập nhật.');
             } finally {
               setActionLoadingId(null);
             }

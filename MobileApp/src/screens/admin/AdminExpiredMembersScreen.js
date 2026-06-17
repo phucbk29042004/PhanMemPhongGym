@@ -113,7 +113,7 @@ export default function AdminExpiredMembersScreen({ navigation, route }) {
       }
     } catch (err) {
       console.log('[ExpiredMembers] notify error:', err?.message);
-      Alert.alert('Lỗi', err.response?.data?.message || err?.message || 'Có lỗi khi gửi thông báo.');
+      Alert.alert('Lỗi', err.displayMessage || 'Có lỗi khi gửi thông báo.');
     } finally {
       setSendingNotifId(null);
     }

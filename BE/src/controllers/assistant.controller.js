@@ -573,6 +573,35 @@ Cách bạn làm việc:
 - Luôn dùng tiếng Việt, xưng "mình" hoặc "Parry". Thân thiện nhưng chuyên nghiệp — như một đồng nghiệp giỏi, không phải robot.${branchSQLNote}` + accuracyRules;
     }
 
+    // ── XỬ LÝ ẢNH (VISION) NẾU CÓ ──────────────────────────────────────────
+    if (image) {
+      const geminiKey = process.env.GEMINI_API_KEY;
+      if (!geminiKey) {
+        return error(res, 'Chưa cấu hình Gemini API Key để xử lý hình ảnh.', 500);
+      }
+
+      console.log('📸 [Vision Request] Đang phân tích ảnh...');
+      let base64Data = image;
+      let mimeType = 'image/jpeg';
+
+      if (image.startsWith('data:')) {
+        const matches = image.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/);
+        if (matches && matches.length === 3) {
+          mimeType = matches[1];
+          base64Data = matches[2];
+        }
+      }
+
+      try {
+        const visionRes = await callGeminiVision(geminiKey, systemInstruction, message, base64Data, mimeType);
+        const replyText = visionRes.candidates?.[0]?.content?.parts?.[0]?.text || 'Không nhận diện được nội dung ảnh.';
+        return success(res, { reply: replyText.trim() });
+      } catch (visionErr) {
+        console.error('[Vision Error] Lỗi phân tích ảnh với Gemini:', visionErr);
+        return error(res, 'Không thể phân tích hình ảnh này lúc này. Vui lòng thử lại.', 500);
+      }
+    }
+
     // ── DANH SÁCH MODEL DỰ PHÒNG (ưu tiên model hỗ trợ tool calling) ──────
     const modelsWithTools = [
       'llama-3.3-70b-versatile',

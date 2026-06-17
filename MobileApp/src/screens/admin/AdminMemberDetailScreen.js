@@ -169,7 +169,7 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
       }
     } catch (err) {
       console.error('[AdminMemberDetail] edit error:', err?.message);
-      Alert.alert('Lỗi', err.response?.data?.message || err?.message || 'Không thể cập nhật.');
+      Alert.alert('Lỗi', err.displayMessage || 'Không thể cập nhật.');
     } finally {
       setSavingEdit(false);
     }
@@ -221,7 +221,7 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
             fetchDetail();
           }
         } catch (err) {
-          Alert.alert('Lỗi', err.response?.data?.message || err?.message || 'Không thể hủy lịch.');
+          Alert.alert('Lỗi', err.displayMessage || 'Không thể hủy lịch.');
         }
       }
     );
@@ -262,7 +262,7 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
                 Alert.alert('Lỗi', res.data?.message || 'Không thể gửi thông báo.');
               }
             } catch (err) {
-              Alert.alert('Lỗi', err?.response?.data?.message || 'Không thể gửi thông báo.');
+              Alert.alert('Lỗi', err?.displayMessage || 'Không thể gửi thông báo.');
             }
           }
         }
@@ -317,7 +317,7 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
           Alert.alert('Lỗi', res.data?.message || 'Không thể hủy gói này.');
         }
       } catch (err) {
-        Alert.alert('Lỗi', err?.response?.data?.message || err?.message || 'Có lỗi khi hủy gói.');
+        Alert.alert('Lỗi', err?.displayMessage || 'Có lỗi khi hủy gói.');
       } finally {
         setCancelingPackage(false);
       }
@@ -342,7 +342,7 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
           Alert.alert('Lỗi', res.data?.message || 'Không thể hủy gói PT.');
         }
       } catch (err) {
-        Alert.alert('Lỗi', err?.response?.data?.message || err?.message || 'Có lỗi khi hủy gói PT.');
+        Alert.alert('Lỗi', err?.displayMessage || 'Có lỗi khi hủy gói PT.');
       } finally {
         setCancelingPT(false);
       }
@@ -368,7 +368,7 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
                 navigation.goBack();
               }
             } catch (err) {
-              Alert.alert('Lỗi', err?.response?.data?.message || 'Không thể xóa hội viên.');
+              Alert.alert('Lỗi', err?.displayMessage || 'Không thể xóa hội viên.');
             }
           }
         }
@@ -393,7 +393,7 @@ export default function AdminMemberDetailScreen({ route, navigation }) {
             fetchDetail();
           }
         } catch (err) {
-          Alert.alert('Lỗi', err?.response?.data?.message || 'Tên đăng nhập đã được sử dụng.');
+          Alert.alert('Lỗi', err?.displayMessage || 'Tên đăng nhập đã được sử dụng hoặc có lỗi xảy ra.');
         }
       }
     );

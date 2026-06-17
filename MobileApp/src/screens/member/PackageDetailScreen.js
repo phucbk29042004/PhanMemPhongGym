@@ -35,11 +35,11 @@ export default function PackageDetailScreen({ route, navigation }) {
 
   if (!packageItem) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.errorContainer}>
           <Text style={{ color: colors.text }}>Không tìm thấy gói tập.</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -51,7 +51,7 @@ export default function PackageDetailScreen({ route, navigation }) {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={colors.statusBar} backgroundColor={colors.statusBarBg} />
       
       {/* Header bar */}
@@ -158,7 +158,7 @@ export default function PackageDetailScreen({ route, navigation }) {
           <Text style={styles.buyButtonText}>Mua ngay</Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 

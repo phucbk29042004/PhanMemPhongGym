@@ -27,12 +27,11 @@ api.interceptors.request.use((config) => {
   return Promise.reject(error);
 });
 
-// Xử lý lỗi tập trung — phân biệt Network Error / Timeout / HTTP Error
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (__DEV__) {
-      console.error('[API Error]', {
+      console.warn('[API Error Debug]', {
         url: error.config?.url,
         method: error.config?.method?.toUpperCase(),
         status: error.response?.status,
@@ -43,19 +42,31 @@ api.interceptors.response.use(
     }
 
     if (!error.response) {
-      // Không nhận được response từ server
       if (error.code === 'ECONNABORTED') {
         error.displayMessage = 'Kết nối quá chậm (timeout). Vui lòng thử lại.';
       } else {
         error.displayMessage = 'Không thể kết nối máy chủ. Kiểm tra lại WiFi/mạng.';
       }
-    } else if (error.response.status === 401) {
-      // Ưu tiên tin nhắn từ backend (như sai mật khẩu), nếu không có mới báo hết hạn phiên
-      error.displayMessage = error.response.data?.message || 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.';
     } else {
-      // HTTP 4xx / 5xx — ưu tiên message từ server
-      error.displayMessage =
-        error.response.data?.message || `Lỗi máy chủ (${error.response.status}).`;
+      const data = error.response.data;
+      const status = error.response.status;
+      
+      if (data && typeof data === 'object') {
+        error.displayMessage = data.message || data.error || `Lỗi máy chủ (${status})`;
+      } else if (typeof data === 'string') {
+        error.displayMessage = data;
+      } else if (status === 401) {
+        error.displayMessage = 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.';
+      } else if (status === 403) {
+        error.displayMessage = 'Bạn không có quyền thực hiện hành động này.';
+      } else {
+        error.displayMessage = `Lỗi máy chủ (${status}). Vui lòng thử lại sau.`;
+      }
+    }
+
+    // Đảm bảo displayMessage là chuỗi đơn giản
+    if (typeof error.displayMessage !== 'string') {
+      error.displayMessage = 'Đã xảy ra lỗi không xác định.';
     }
 
     return Promise.reject(error);
