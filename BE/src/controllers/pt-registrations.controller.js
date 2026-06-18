@@ -179,6 +179,16 @@ export const createRegistration = async (req, res) => {
   const pt = db.prepare("SELECT id FROM ho_so WHERE id = ? AND loai_ho_so = 'pt' AND is_deleted = 0").get(pt_id);
   if (!pt) return error(res, 'Không tìm thấy PT.', 404);
 
+  // Kiểm tra tải của PT (giới hạn tối đa 20 học viên đang hoạt động)
+  const PT_MAX_STUDENTS = 20;
+  const activeStudentCount = db.prepare(`
+    SELECT COUNT(DISTINCT hoi_vien_id) as cnt FROM dang_ky_pt
+    WHERE pt_id = ? AND trang_thai = 'dang_hoat_dong'
+  `).get(pt_id).cnt;
+  if (activeStudentCount >= PT_MAX_STUDENTS) {
+    return error(res, `HLV này đang có ${activeStudentCount} học viên đang hoạt động (giới hạn ${PT_MAX_STUDENTS} người). Vui lòng chọn HLV khác hoặc chờ HLV có chỗ trống.`, 400);
+  }
+
   // Kiểm tra gói PT tồn tại
   const goiPt = db.prepare('SELECT * FROM goi_pt WHERE id = ?').get(goi_pt_id);
   if (!goiPt) return error(res, 'Không tìm thấy gói PT.', 404);

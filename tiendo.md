@@ -7,8 +7,65 @@
 
 ---
 
+### [18/06/2026 11:31] — Fix các dòng thông tin định danh thành tĩnh trên màn hình Hội viên
+- **Loại**: Chỉnh sửa & Tối ưu UI/UX (Mobile)
+- **File**: `MobileApp/src/screens/member/MemberProfileScreen.js`
+- **Mô tả**: Cập nhật component `MenuRow` hỗ trợ hiển thị tĩnh (render `View` thay vì `TouchableOpacity` và ẩn icon `ChevronRight` nếu `onPress` là `null`). Đổi thuộc tính `onPress` của toàn bộ các dòng thông tin định danh (Họ tên, Ngày sinh, Giới tính, CCCD, Địa chỉ, Chi nhánh) từ hàm rỗng `() => {}` thành `null`.
+- **Kết quả**: Thành công.
+
+---
+
+### [18/06/2026 11:25] — Thực hiện kiểm toán toàn diện hệ thống phòng Gym (React Native & Node.js/SQLite)
+- **Loại**: Kiểm toán & Rà soát (Fullstack)
+- **File**: `MobileApp/src/screens/pt/PTStudentsScreen.js`, `MobileApp/src/screens/pt/PTProfileScreen.js`, `MobileApp/src/screens/member/MemberProfileScreen.js`, `BE/src/controllers/pt-schedules.controller.js`, `BE/src/controllers/pt-registrations.controller.js`, `BE/src/controllers/trainers.controller.js`, `BE/src/controllers/qr-checkin.controller.js`, `BE/src/routes/revenue.routes.js`, `MobileApp/src/navigation/AdminNavigator.js`
+- **Mô tả**: Tiến hành rà soát mã nguồn trên cả 3 vai trò (PT, Member, Admin) để tìm các điểm Dead UI (nút tìm kiếm, thẻ học viên và menu cá nhân có onPress rỗng), lỗi logic nghiệp vụ nghiêm trọng (không check trùng lịch khi sửa/dời lịch, cho phép tạo lịch quá khứ trong ngày, thiếu quy tắc 24h khi hủy lịch, kẽ hở quét QR check-in không cần gói Gym), lối cụt điều hướng lặp lại và các lỗ hổng phân quyền RBAC (Lễ tân có thể truy cập API và màn hình xem báo cáo doanh thu chi tiết của Admin).
+- **Kết quả**: Thành công, đã xuất báo cáo kiểm toán đầy đủ dưới dạng artifact tại `audit_results.md`.
+
+---
+
+### [18/06/2026 10:52] — Sửa lỗi cấu hình usesCleartextTraffic trong Expo app.json
+- **Loại**: Cải tiến & Sửa lỗi (Mobile)
+- **File**: `MobileApp/app.json`
+- **Mô tả**: Di chuyển cấu hình `usesCleartextTraffic` từ thuộc tính trực tiếp của `android` (không hợp lệ theo schema Expo) sang plugin `expo-build-properties` theo đúng chuẩn Expo managed workflow, giúp vượt qua kiểm tra của `expo doctor` và phục vụ build EAS thành công.
+- **Kết quả**: Thành công.
+
+---
+
+### [18/06/2026 09:55] — Chuyển phương thức truyền Gemini API Key từ URL sang Header & Dọn dẹp tệp test
+- **Loại**: Cải tiến & Sửa lỗi (Backend)
+- **File**: `BE/src/controllers/assistant.controller.js`, `BE/src/test_gemini.js`, `BE/src/test_gemini_key.js`
+- **Mô tả**:
+  1. Thay thế tham số truy vấn URL `?key=...` bằng header `x-goog-api-key` để truyền API key của Gemini nhằm khắc phục lỗi 401 `ACCESS_TOKEN_TYPE_UNSUPPORTED` khi dùng định dạng API Key mới (tiền tố `AQ.`), cải thiện tính bảo mật.
+  2. Dọn dẹp và làm trống toàn bộ nội dung của hai tệp kiểm tra tạm thời `test_gemini.js` và `test_gemini_key.js`.
+- **Kết quả**: Thành công. Cần kiểm tra lại tính năng chat trên Mobile App.
+
+---
+
+### [18/06/2026 09:20] — Nâng cấp phản hồi lỗi Chatbot AI và chẩn đoán cấu trúc Gemini API
+- **Loại**: Cải tiến & Sửa lỗi (Fullstack)
+- **File**: `BE/src/controllers/assistant.controller.js`, `MobileApp/src/services/api.js`
+- **Mô tả**:
+  1. **[Lọc lỗi hiển thị trên Mobile]**: Điều chỉnh interceptor phản hồi (`api.interceptors.response`) trong ứng dụng di động để tự động phát hiện và chặn các chuỗi HTML thô (ví dụ: các trang lỗi 500 mặc định từ Express) hoặc các JSON lỗi thô dài, chuyển đổi thành thông báo thân thiện chuẩn tiếng Việt nhằm tránh làm vỡ giao diện bong bóng chat trên điện thoại.
+  2. **[Chẩn đoán và dọn dẹp API Gemini]**: Xác định lỗi 404/400 liên quan tới endpoint `v1beta`/`v1` và các cấu trúc `system_instruction` (snake_case cho v1) vs `systemInstruction` (camelCase cho v1beta). Dọn dẹp các tệp test tạm để đảm bảo độ sạch sẽ và bảo mật cho mã nguồn backend.
+- **Kết quả**: Thành công, nâng cao trải nghiệm người dùng trên thiết bị di động.
+
+---
+
+### [18/06/2026] — Nâng cấp Chatbot AI Vision, sửa lỗi phân quyền chi nhánh PT 403 & Bộ lọc & Phân trang Mobile
+- **Loại**: Cải tiến & Sửa lỗi Nghiệp vụ (Fullstack)
+- **File**: `BE/src/controllers/pt-schedules.controller.js`, `MobileApp/src/components/AIAssistantBubble.js`, `MobileApp/src/screens/pt/PTScheduleScreen.js`
+- **Mô tả**:
+  1. **[Sửa lỗi phân quyền chi nhánh PT 403]**: Khắc phục lỗi HLV/PT thuộc chi nhánh Bình Thạnh đặt lịch cho học viên thuộc Bình Thạnh bị API Backend chặn 403. Nguyên nhân do `getActorBranch(req.user)` dùng `user.id` (tài khoản ID) để SELECT chi_nhanh của PT trong bảng `ho_so` thông qua cột `tai_khoan_id`, trong khi đó ở bước check quyền tiếp theo lại so sánh trực tiếp với `dkpt.chi_nhanh_dang_ky` và bị lệch dữ liệu nếu tài khoản PT liên kết chưa khớp chi nhánh gốc của gói tập. Khắc phục bằng cách đối chiếu chi nhánh từ hồ sơ PT (`ptProfile.chi_nhanh`) với chi nhánh đăng ký của gói để hợp lệ hoá quyền xếp lịch của HLV.
+  2. **[Chatbot AI Vision]**: Hoàn thiện toàn bộ phần UI cho bong bóng Chatbot AI trên Mobile. Thêm nút đính kèm chọn ảnh (`+`) cạnh khung TextInput, thêm khung thumbnail preview ảnh trước khi gửi có nút hủy `x` độc lập, và hiển thị hình ảnh gửi đi trực tiếp trong bong bóng chat của người dùng.
+  3. **[Bộ lọc Lịch dạy PT]**: Kích hoạt nút bấm Bộ lọc trên Header của màn hình Lịch dạy cá nhân PT (`PTScheduleScreen.js`). Khi nhấn vào, hiển thị Alert Native cho phép chọn nhanh các trạng thái (`Tất cả`, `Chờ tập`, `Đã tập`, `Đã hủy`), tự động lọc danh sách realtime và cập nhật số lượng trên header subtitle.
+  4. **[Phân trang SwipePager]**: Tích hợp component `SwipePager` phân trang danh sách buổi dạy cá nhân của PT (tối đa 10 records mỗi trang), cho phép kéo vuốt ngang để chuyển trang mượt mà như bên phía quản lý hội viên của Admin.
+  5. **[Sửa lỗi Form Thêm Lịch Tập]**: Tối ưu hóa `TimePickerModal` hỗ trợ `keyboardShouldPersistTaps="handled"` và tăng `zIndex: 99999` để tránh bị Modal cha chồng lấp làm mất touch event. Đồng thời tinh chỉnh hàm `useEffect` tự chọn khung giờ bắt đầu/kết thúc trống đầu tiên của ngày được chọn để loại bỏ hiện tượng treo form/không cập nhật giờ khi thêm lịch.
+- **Kết quả**: Thành công tuyệt đối trên cả thiết bị di động Android và iOS.
+
+---
+
 ## 📌 Trạng thái hiện tại
-**✅ [17/06/2026] Hoàn thành quét và phân tích 18+ bảng trong cơ sở dữ liệu (Tables Scan)**
+**✅ [18/06/2026] Hoàn thành sửa lỗi phân quyền chi nhánh PT 403, nâng cấp Chatbot AI Vision và Phân trang Lịch dạy PT trên Mobile App**
 
 ---
 

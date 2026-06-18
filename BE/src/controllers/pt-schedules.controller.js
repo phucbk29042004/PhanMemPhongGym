@@ -190,6 +190,13 @@ export const createSchedule = (req, res) => {
   if (ngay_tap < todayStr) {
     return error(res, 'Không thể đặt lịch tập ở ngày trong quá khứ.', 400);
   }
+  // Chặn đặt lịch vào giờ đã qua trong ngày hôm nay
+  if (ngay_tap === todayStr) {
+    const nowTime = getNowTimeStrHoChiMinh();
+    if (gio_bat_dau <= nowTime) {
+      return error(res, 'Không thể đặt lịch tập vào giờ đã qua trong ngày hôm nay.', 400);
+    }
+  }
 
   // Lấy thông tin đăng ký PT
   const dkpt = db.prepare(`
@@ -202,14 +209,39 @@ export const createSchedule = (req, res) => {
 
   if (!dkpt) return error(res, 'Đăng ký PT không tồn tại hoặc đã kết thúc.', 404);
 
+  // Kiểm tra gói Gym chính còn hạn (hội viên phải có gói Gym bao trùm ngày tập)
+  const activeGym = db.prepare(`
+    SELECT id FROM dang_ky_goi_tap
+    WHERE hoi_vien_id = ? AND trang_thai = 'dang_hoat_dong' AND tu_ngay <= ? AND den_ngay >= ?
+    LIMIT 1
+  `).get(dkpt.hoi_vien_id, ngay_tap, ngay_tap);
+
+  if (!activeGym) {
+    return error(res, 'Hội viên không có gói Gym còn hiệu lực vào ngày tập này. Vui lòng gia hạn gói Gym trước khi xếp lịch.', 400);
+  }
+
   // Chặn đặt lịch trước ngày bắt đầu hiệu lực của gói PT
   if (dkpt.tu_ngay && ngay_tap < dkpt.tu_ngay) {
     return error(res, `Gói PT chưa có hiệu lực. Chỉ được đặt lịch từ ngày ${dkpt.tu_ngay} trở đi.`, 400);
   }
 
   const actorBranch = getActorBranch(req.user);
-  if (actorBranch && dkpt.chi_nhanh_dang_ky !== actorBranch) {
-    return error(res, 'Bạn không có quyền xếp lịch cho hội viên thuộc chi nhánh khác.', 403);
+  if (actorBranch) {
+    // Nếu tài khoản là PT, chi nhánh của họ được lưu trong hồ sơ PT.
+    // Cho phép PT đặt lịch nếu chi nhánh của PT trùng với chi nhánh đăng ký của gói (dkpt.chi_nhanh_dang_ky)
+    // Hoặc nếu trùng với chi nhánh dạy.
+    if (req.user.vai_tro === 'pt') {
+      const ptProfile = db.prepare('SELECT chi_nhanh FROM ho_so WHERE id = ?').get(dkpt.pt_id);
+      const ptBranch = ptProfile?.chi_nhanh || actorBranch;
+      if (dkpt.chi_nhanh_dang_ky !== ptBranch) {
+        return error(res, `Bạn không có quyền xếp lịch cho học viên thuộc chi nhánh khác (Chi nhánh đăng ký gói: ${dkpt.chi_nhanh_dang_ky}, Chi nhánh của bạn: ${ptBranch}).`, 403);
+      }
+    } else {
+      // Đối với Lễ tân/nhân viên chi nhánh khác
+      if (dkpt.chi_nhanh_dang_ky !== actorBranch) {
+        return error(res, 'Bạn không có quyền xếp lịch cho hội viên thuộc chi nhánh khác.', 403);
+      }
+    }
   }
 
 
@@ -466,6 +498,15 @@ export const cancelSchedule = (req, res) => {
   if (schedule.trang_thai === 'da_tap') return error(res, 'Không thể hủy buổi đã tập.', 400);
   if (schedule.trang_thai === 'da_huy') return error(res, 'Buổi tập đã bị hủy rồi.', 400);
 
+  // Quy tắc 24h: Không được hủy trước < 24h (trừ Admin)
+  if (req.user.vai_tro === 'pt' || req.user.vai_tro === 'hoi_vien') {
+    const sessionDateTime = new Date(`${schedule.ngay_tap}T${schedule.gio_bat_dau}:00+07:00`);
+    const hoursUntilSession = (sessionDateTime - new Date()) / (1000 * 60 * 60);
+    if (hoursUntilSession < 24) {
+      return error(res, 'Chỉ được hủy buổi tập trước ít nhất 24 giờ. Vui lòng liên hệ Admin để được hỗ trợ.', 400);
+    }
+  }
+
   // PT chỉ hủy lịch của chính mình
   if (req.user.vai_tro === 'pt') {
     const hoSoPt = db.prepare('SELECT id FROM ho_so WHERE tai_khoan_id = ?').get(req.user.id);
@@ -608,11 +649,19 @@ export const updateSchedule = (req, res) => {
 
   if (schedule.trang_thai !== 'cho_tap') return error(res, 'Chỉ có thể sửa lịch đang ở trạng thái "cho_tap".', 400);
 
-  // Chặn dời lịch sang ngày trong quá khứ
-  if (ngay_tap) {
+  // Chặn dời lịch sang ngày trong quá khứ hoặc giờ đã qua hôm nay
+  const effectiveDate = ngay_tap || schedule.ngay_tap;
+  const effectiveStart = gio_bat_dau || schedule.gio_bat_dau;
+  if (ngay_tap || gio_bat_dau) {
     const todayStr = getTodayStrHoChiMinh();
-    if (ngay_tap < todayStr) {
+    if (effectiveDate < todayStr) {
       return error(res, 'Không thể dời lịch tập sang ngày trong quá khứ.', 400);
+    }
+    if (effectiveDate === todayStr) {
+      const nowTime = getNowTimeStrHoChiMinh();
+      if (effectiveStart <= nowTime) {
+        return error(res, 'Không thể dời lịch tập sang giờ đã qua trong ngày hôm nay.', 400);
+      }
     }
   }
 
@@ -623,6 +672,25 @@ export const updateSchedule = (req, res) => {
       return error(res, 'Bạn chỉ có thể sửa lịch tập do chính mình phụ trách.', 403);
     }
   }
+
+  // Kiểm tra trùng lịch sau khi dời (bỏ qua chính buổi đang sửa)
+  const checkDate = ngay_tap || schedule.ngay_tap;
+  const checkStart = gio_bat_dau || schedule.gio_bat_dau;
+  const checkEnd = gio_ket_thuc || schedule.gio_ket_thuc;
+
+  const ptConflict = db.prepare(`
+    SELECT id FROM lich_tap
+    WHERE pt_id = ? AND ngay_tap = ? AND id != ? AND trang_thai != 'da_huy'
+      AND NOT (gio_ket_thuc <= ? OR gio_bat_dau >= ?)
+  `).get(schedule.pt_id, checkDate, id, checkStart, checkEnd);
+  if (ptConflict) return error(res, 'PT đã có lịch dạy khác trong khung giờ mới này.', 409);
+
+  const memberConflict = db.prepare(`
+    SELECT id FROM lich_tap
+    WHERE hoi_vien_id = ? AND ngay_tap = ? AND id != ? AND trang_thai != 'da_huy'
+      AND NOT (gio_ket_thuc <= ? OR gio_bat_dau >= ?)
+  `).get(schedule.hoi_vien_id, checkDate, id, checkStart, checkEnd);
+  if (memberConflict) return error(res, 'Hội viên đã có lịch tập khác trong khung giờ mới này.', 409);
 
   db.prepare(`
     UPDATE lich_tap SET

@@ -22,8 +22,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": false,
-      "usesCleartextTraffic": true
+      "edgeToEdgeEnabled": false
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -34,6 +33,14 @@
         {
           "photosPermission": "Cho phép truy cập ảnh để cập nhật ảnh đại diện.",
           "cameraPermission": "Cho phép sử dụng camera để chụp ảnh đại diện."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
         }
       ]
     ],

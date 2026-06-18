@@ -148,19 +148,19 @@ export const scanQr = (req, res) => {
       }
 
       // Hội viên chỉ có gói PT hoạt động:
-      // So khớp chi nhánh check-in hiện tại với chi nhánh của PT
+      // Bất kể cùng hay khác chi nhánh PT, đều phải có lịch tập đặt trước hôm nay mới được check-in
       const chiNhanhPt = activePt.chi_nhanh_pt;
-      if (branch && chiNhanhPt && branch !== chiNhanhPt) {
-        // Khác chi nhánh: Phải có lịch tập đặt trước hôm nay tại chi nhánh hiện tại
-        const todaySchedule = db.prepare(`
-          SELECT id FROM lich_tap 
-          WHERE hoi_vien_id = ? AND ngay_tap = ? AND chi_nhanh_tap = ? AND trang_thai = 'cho_tap'
-          LIMIT 1
-        `).get(ho_so_id, today, branch);
+      const todaySchedule = db.prepare(`
+        SELECT id FROM lich_tap 
+        WHERE hoi_vien_id = ? AND ngay_tap = ? AND trang_thai = 'cho_tap'
+        LIMIT 1
+      `).get(ho_so_id, today);
 
-        if (!todaySchedule) {
-          return error(res, `Hội viên chỉ có gói PT tại "${chiNhanhPt}" và không có lịch tập đặt trước tại "${branch}" hôm nay.`, 403);
-        }
+      if (!todaySchedule) {
+        const branchMsg = (branch && chiNhanhPt && branch !== chiNhanhPt)
+          ? `Hội viên chỉ có gói PT tại "${chiNhanhPt}" và không có lịch tập đặt trước tại "${branch}" hôm nay.`
+          : 'Hội viên chỉ có gói PT nhưng không có lịch tập được xếp hôm nay. Vui lòng mua gói Gym để vào tự tập.';
+        return error(res, branchMsg, 403);
       }
     }
 

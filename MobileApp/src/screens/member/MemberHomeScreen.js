@@ -81,11 +81,11 @@ function PackageCard({ item, index, colors: propColors, onPress }) {
       <Text style={[styles.packageNameText, { color: colors.text }]} numberOfLines={2}>
         {item.ten_goi}
       </Text>
-      <Text style={[styles.packagePriceText, { color: accentColor }]}> 
+      <Text style={[styles.packagePriceText, { color: accentColor }]}>
         {formatPrice(item.gia)}
       </Text>
-      <View style={[styles.pkgCardBadge, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}> 
-        <Text style={[styles.pkgCardBadgeText, { color: colors.textSecondary }]}> 
+      <View style={[styles.pkgCardBadge, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
+        <Text style={[styles.pkgCardBadgeText, { color: colors.textSecondary }]}>
         </Text>
       </View>
     </TouchableOpacity>
@@ -392,12 +392,6 @@ export default function MemberHomeScreen({ navigation }) {
                   {profile?.ho_ten || user?.name || 'Hội viên'}
                 </Text>
               </View>
-            </View>
-            <View style={styles.bannerBadge}>
-              <ShieldCheck color={G.white} size={14} strokeWidth={2} />
-              <Text style={styles.bannerBadgeText}>
-                {profile?.loai_hv === 'vip' ? 'VIP' : profile?.loai_hv === 'premium' ? 'Premium' : 'Standard'}
-              </Text>
             </View>
           </View>
 

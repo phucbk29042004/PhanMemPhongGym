@@ -54,7 +54,11 @@ api.interceptors.response.use(
       if (data && typeof data === 'object') {
         error.displayMessage = data.message || data.error || `Lỗi máy chủ (${status})`;
       } else if (typeof data === 'string') {
-        error.displayMessage = data;
+        if (data.trim().startsWith('<') || data.includes('<html>') || data.includes('<!DOCTYPE')) {
+          error.displayMessage = `Đã xảy ra sự cố máy chủ (${status}). Vui lòng thử lại sau.`;
+        } else {
+          error.displayMessage = data;
+        }
       } else if (status === 401) {
         error.displayMessage = 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.';
       } else if (status === 403) {

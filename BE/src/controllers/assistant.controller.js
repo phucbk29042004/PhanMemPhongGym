@@ -9,54 +9,54 @@ const __dirname = path.dirname(__filename);
 
 // ── SCHEMA MÔ TẢ CHO AI ────────────────────────────────────────────────────
 const DB_SCHEMA_DESCRIPTION = `
-Cơ sở dữ liệu SQLite của hệ thống phòng tập Paradise GYM.
+          Cơ sở dữ liệu SQLite của hệ thống phòng tập Paradise GYM.
 
-⚠️ LƯU Ý QUAN TRỌNG VỀ TÊN CỘT (KHÔNG ĐƯỢC NHẦM LẪN):
-- Bảng dang_ky_goi_tap dùng "ho_so_id" để tham chiếu hội viên (KHÔNG PHẢI hoi_vien_id)
-- Bảng dang_ky_pt dùng "hoi_vien_id" để tham chiếu hội viên (KHÔNG PHẢI ho_so_id)
-- Bảng luot_vao_ra dùng "ho_so_id" để tham chiếu hội viên
-- Bảng lich_tap dùng "hoi_vien_id" để tham chiếu hội viên
-- KHÔNG có cột "is_active" trong bất kỳ bảng nào — dùng "is_deleted" (0=hoạt động, 1=đã xóa) thay thế
-- KHÔNG có cột "loai_tai_khoan" — bảng tai_khoan dùng "vai_tro_id" (FK sang bảng vai_tro)
-- Bảng tai_khoan dùng "trang_thai" ('hoat_dong'|'khoa'|'cho_xac_nhan') thay vì is_active
-- Bảng goi_tap: cột giá là "gia" (KHÔNG phải gia_goc/gia_khuyen_mai), thời hạn là "so_thang" và "so_ngay_them"
-- Bảng goi_pt: cột giá là "gia", loại là "loai_goi" ('theo_buoi'|'theo_thang'), số buổi là "so_buoi", số tháng là "so_thang"
+          ⚠️ LƯU Ý QUAN TRỌNG VỀ TÊN CỘT (KHÔNG ĐƯỢC NHẦM LẪN):
+          - Bảng dang_ky_goi_tap dùng "ho_so_id" để tham chiếu hội viên (KHÔNG PHẢI hoi_vien_id)
+          - Bảng dang_ky_pt dùng "hoi_vien_id" để tham chiếu hội viên (KHÔNG PHẢI ho_so_id)
+          - Bảng luot_vao_ra dùng "ho_so_id" để tham chiếu hội viên
+          - Bảng lich_tap dùng "hoi_vien_id" để tham chiếu hội viên
+          - KHÔNG có cột "is_active" trong bất kỳ bảng nào — dùng "is_deleted" (0=hoạt động, 1=đã xóa) thay thế
+          - KHÔNG có cột "loai_tai_khoan" — bảng tai_khoan dùng "vai_tro_id" (FK sang bảng vai_tro)
+          - Bảng tai_khoan dùng "trang_thai" ('hoat_dong'|'khoa'|'cho_xac_nhan') thay vì is_active
+          - Bảng goi_tap: cột giá là "gia" (KHÔNG phải gia_goc/gia_khuyen_mai), thời hạn là "so_thang" và "so_ngay_them"
+          - Bảng goi_pt: cột giá là "gia", loại là "loai_goi" ('theo_buoi'|'theo_thang'), số buổi là "so_buoi", số tháng là "so_thang"
 
-CÁC BẢNG CHÍNH:
-- vai_tro(id, ma_vai_tro['admin'|'nhan_vien'|'pt'|'hoi_vien'], ten_hien_thi)
-- tai_khoan(id, ten_dang_nhap, mat_khau_hash, vai_tro_id[FK→vai_tro.id], trang_thai['hoat_dong'|'khoa'|'cho_xac_nhan'], ngay_tao)
-- ho_so(id, tai_khoan_id, ma_ho_so, loai_ho_so['hoi_vien'|'pt'|'nhan_vien'], ho_ten, gioi_tinh['nam'|'nu'|'khac'], ngay_sinh, so_dien_thoai, email, avatar_url, chieu_cao_cm, can_nang_kg, is_deleted[0|1], ngay_tao)
-- goi_tap(id, ten_goi, so_thang, so_ngay_them, gia, mo_ta, is_deleted[0|1], ngay_tao)
-- goi_pt(id, ten_goi, loai_goi['theo_buoi'|'theo_thang'], so_buoi, so_thang, gia, mo_ta, is_deleted[0|1], ngay_tao)
-- dang_ky_goi_tap(id, ho_so_id[FK→ho_so.id], goi_tap_id[FK→goi_tap.id], tu_ngay, den_ngay, gia_thuc_te, trang_thai['dang_hoat_dong'|'het_han'|'huy'|'tam_dung'|'cho_duyet'], phuong_thuc_tt, nguoi_thu_id, ngay_tao)
-- dang_ky_pt(id, hoi_vien_id[FK→ho_so.id], pt_id[FK→ho_so.id], goi_pt_id[FK→goi_pt.id], so_buoi_dang_ky, so_buoi_da_tap, tu_ngay, den_ngay, gia_thuc_te, trang_thai['dang_hoat_dong'|'hoan_thanh'|'huy'|'tam_dung'], ngay_tao)
-- lich_tap(id, dang_ky_pt_id[FK→dang_ky_pt.id], hoi_vien_id[FK→ho_so.id], pt_id[FK→ho_so.id], ngay_tap[DATE], gio_bat_dau, gio_ket_thuc, loai_buoi['ca_nhan'|'nhom'], trang_thai['cho_tap'|'da_tap'|'da_huy'|'vang'], ngay_tao)
-- luot_vao_ra(id, ho_so_id[FK→ho_so.id], thoi_diem[DATETIME], loai['vao'|'ra'], phuong_thuc['the_tu'|'qr_code'|'thu_cong'|'khuon_mat'])
-- doanh_thu(id, ngay[DATE UNIQUE], tong_tien, tong_don, tien_goi_tap, tien_goi_pt, ngay_cap_nhat)
-- danh_gia_pt(id, lich_tap_id, pt_id, hoi_vien_id, so_sao[1-5], tieu_chi_json, tag_json, noi_dung, ngay_tao)
-- thong_bao(id, loai, tieu_de, noi_dung, danh_cho['admin'|'nhan_vien'|'ca_hai'], da_doc[0|1], ngay_tao)
-- yeu_cau_goi_tap(id, ho_so_id[FK→ho_so.id], dang_ky_id[FK→dang_ky_goi_tap.id], loai_yeu_cau['gia_han'|'tam_dung'|'huy'], trang_thai['cho_duyet'|'da_duyet'|'tu_choi'], ngay_tao)
-- noi_quy(id, tieu_de, noi_dung, thu_tu, ap_dung_cho['tat_ca'|'hoi_vien'|'pt'|'nhan_vien'], is_active[0|1])
-- cau_hinh(khoa, gia_tri, mo_ta)
+          CÁC BẢNG CHÍNH:
+          - vai_tro(id, ma_vai_tro['admin'|'nhan_vien'|'pt'|'hoi_vien'], ten_hien_thi)
+          - tai_khoan(id, ten_dang_nhap, mat_khau_hash, vai_tro_id[FK→vai_tro.id], trang_thai['hoat_dong'|'khoa'|'cho_xac_nhan'], ngay_tao)
+          - ho_so(id, tai_khoan_id, ma_ho_so, loai_ho_so['hoi_vien'|'pt'|'nhan_vien'], ho_ten, gioi_tinh['nam'|'nu'|'khac'], ngay_sinh, so_dien_thoai, email, avatar_url, chieu_cao_cm, can_nang_kg, is_deleted[0|1], ngay_tao)
+          - goi_tap(id, ten_goi, so_thang, so_ngay_them, gia, mo_ta, is_deleted[0|1], ngay_tao)
+          - goi_pt(id, ten_goi, loai_goi['theo_buoi'|'theo_thang'], so_buoi, so_thang, gia, mo_ta, is_deleted[0|1], ngay_tao)
+          - dang_ky_goi_tap(id, ho_so_id[FK→ho_so.id], goi_tap_id[FK→goi_tap.id], tu_ngay, den_ngay, gia_thuc_te, trang_thai['dang_hoat_dong'|'het_han'|'huy'|'tam_dung'|'cho_duyet'], phuong_thuc_tt, nguoi_thu_id, ngay_tao)
+          - dang_ky_pt(id, hoi_vien_id[FK→ho_so.id], pt_id[FK→ho_so.id], goi_pt_id[FK→goi_pt.id], so_buoi_dang_ky, so_buoi_da_tap, tu_ngay, den_ngay, gia_thuc_te, trang_thai['dang_hoat_dong'|'hoan_thanh'|'huy'|'tam_dung'], ngay_tao)
+          - lich_tap(id, dang_ky_pt_id[FK→dang_ky_pt.id], hoi_vien_id[FK→ho_so.id], pt_id[FK→ho_so.id], ngay_tap[DATE], gio_bat_dau, gio_ket_thuc, loai_buoi['ca_nhan'|'nhom'], trang_thai['cho_tap'|'da_tap'|'da_huy'|'vang'], ngay_tao)
+          - luot_vao_ra(id, ho_so_id[FK→ho_so.id], thoi_diem[DATETIME], loai['vao'|'ra'], phuong_thuc['the_tu'|'qr_code'|'thu_cong'|'khuon_mat'])
+          - doanh_thu(id, ngay[DATE UNIQUE], tong_tien, tong_don, tien_goi_tap, tien_goi_pt, ngay_cap_nhat)
+          - danh_gia_pt(id, lich_tap_id, pt_id, hoi_vien_id, so_sao[1-5], tieu_chi_json, tag_json, noi_dung, ngay_tao)
+          - thong_bao(id, loai, tieu_de, noi_dung, danh_cho['admin'|'nhan_vien'|'ca_hai'], da_doc[0|1], ngay_tao)
+          - yeu_cau_goi_tap(id, ho_so_id[FK→ho_so.id], dang_ky_id[FK→dang_ky_goi_tap.id], loai_yeu_cau['gia_han'|'tam_dung'|'huy'], trang_thai['cho_duyet'|'da_duyet'|'tu_choi'], ngay_tao)
+          - noi_quy(id, tieu_de, noi_dung, thu_tu, ap_dung_cho['tat_ca'|'hoi_vien'|'pt'|'nhan_vien'], is_active[0|1])
+          - cau_hinh(khoa, gia_tri, mo_ta)
 
-VÍ DỤ SQL MẪU ĐÚNG:
--- Hội viên sắp hết hạn gói tập trong 7 ngày:
-SELECT h.ho_ten, dk.den_ngay, gt.ten_goi FROM dang_ky_goi_tap dk JOIN ho_so h ON h.id = dk.ho_so_id JOIN goi_tap gt ON gt.id = dk.goi_tap_id WHERE dk.trang_thai = 'dang_hoat_dong' AND dk.den_ngay BETWEEN date('now','localtime') AND date('now','localtime','+7 days') ORDER BY dk.den_ngay
+          VÍ DỤ SQL MẪU ĐÚNG:
+          -- Hội viên sắp hết hạn gói tập trong 7 ngày:
+          SELECT h.ho_ten, dk.den_ngay, gt.ten_goi FROM dang_ky_goi_tap dk JOIN ho_so h ON h.id = dk.ho_so_id JOIN goi_tap gt ON gt.id = dk.goi_tap_id WHERE dk.trang_thai = 'dang_hoat_dong' AND dk.den_ngay BETWEEN date('now','localtime') AND date('now','localtime','+7 days') ORDER BY dk.den_ngay
 
--- Doanh thu 7 ngày qua:
-SELECT ngay, tong_tien, tien_goi_tap, tien_goi_pt FROM doanh_thu WHERE ngay >= date('now','localtime','-7 days') ORDER BY ngay DESC
+          -- Doanh thu 7 ngày qua:
+          SELECT ngay, tong_tien, tien_goi_tap, tien_goi_pt FROM doanh_thu WHERE ngay >= date('now','localtime','-7 days') ORDER BY ngay DESC
 
--- Số lượt check-in theo ngày trong tháng này:
-SELECT date(thoi_diem) AS ngay, COUNT(*) AS luot_vao FROM luot_vao_ra WHERE loai = 'vao' AND strftime('%Y-%m', thoi_diem) = strftime('%Y-%m', date('now','localtime')) GROUP BY date(thoi_diem) ORDER BY ngay
+          -- Số lượt check-in theo ngày trong tháng này:
+          SELECT date(thoi_diem) AS ngay, COUNT(*) AS luot_vao FROM luot_vao_ra WHERE loai = 'vao' AND strftime('%Y-%m', thoi_diem) = strftime('%Y-%m', date('now','localtime')) GROUP BY date(thoi_diem) ORDER BY ngay
 
--- PT dạy nhiều buổi nhất tháng này:
-SELECT h.ho_ten, COUNT(*) AS so_buoi FROM lich_tap lt JOIN ho_so h ON h.id = lt.pt_id WHERE lt.trang_thai = 'da_tap' AND strftime('%Y-%m', lt.ngay_tap) = strftime('%Y-%m', date('now','localtime')) GROUP BY lt.pt_id ORDER BY so_buoi DESC LIMIT 10
+          -- PT dạy nhiều buổi nhất tháng này:
+          SELECT h.ho_ten, COUNT(*) AS so_buoi FROM lich_tap lt JOIN ho_so h ON h.id = lt.pt_id WHERE lt.trang_thai = 'da_tap' AND strftime('%Y-%m', lt.ngay_tap) = strftime('%Y-%m', date('now','localtime')) GROUP BY lt.pt_id ORDER BY so_buoi DESC LIMIT 10
 
--- Gói tập bán chạy nhất (dùng is_deleted thay is_active):
-SELECT gt.ten_goi, COUNT(*) AS so_dang_ky FROM dang_ky_goi_tap dk JOIN goi_tap gt ON gt.id = dk.goi_tap_id WHERE gt.is_deleted = 0 GROUP BY dk.goi_tap_id ORDER BY so_dang_ky DESC LIMIT 5
+          -- Gói tập bán chạy nhất (dùng is_deleted thay is_active):
+          SELECT gt.ten_goi, COUNT(*) AS so_dang_ky FROM dang_ky_goi_tap dk JOIN goi_tap gt ON gt.id = dk.goi_tap_id WHERE gt.is_deleted = 0 GROUP BY dk.goi_tap_id ORDER BY so_dang_ky DESC LIMIT 5
 
--- Hội viên đang hoạt động (dùng is_deleted = 0):
-SELECT ho_ten, so_dien_thoai, email FROM ho_so WHERE loai_ho_so = 'hoi_vien' AND is_deleted = 0 ORDER BY ho_ten
+          -- Hội viên đang hoạt động (dùng is_deleted = 0):
+          SELECT ho_ten, so_dien_thoai, email FROM ho_so WHERE loai_ho_so = 'hoi_vien' AND is_deleted = 0 ORDER BY ho_ten
 
 -- Tổng doanh thu theo tháng:
 SELECT strftime('%Y-%m', ngay) AS thang, SUM(tong_tien) AS doanh_thu FROM doanh_thu GROUP BY thang ORDER BY thang DESC LIMIT 12
@@ -205,8 +205,8 @@ function toGeminiSchema(schema) {
 }
 
 async function callGeminiWithTools(geminiKey, systemInstruction, messages, enableTools = true) {
-  const model = 'gemini-1.5-flash';
-  const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${geminiKey}`;
+  const model = 'gemini-2.0-flash';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
   // Chuyển đổi messages từ OpenAI format → Gemini format
   const contents = messages.map(msg => {
@@ -246,11 +246,11 @@ async function callGeminiWithTools(geminiKey, systemInstruction, messages, enabl
   }).filter(Boolean);
 
   const body = {
-    system_instruction: { parts: [{ text: systemInstruction }] },
+    systemInstruction: { parts: [{ text: systemInstruction }] },
     contents,
-    generation_config: {
+    generationConfig: {
       temperature: 0.3,
-      max_output_tokens: 1536
+      maxOutputTokens: 1536
     }
   };
 
@@ -267,7 +267,10 @@ async function callGeminiWithTools(geminiKey, systemInstruction, messages, enabl
 
   const response = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': geminiKey
+    },
     body: JSON.stringify(body)
   });
 
@@ -281,11 +284,11 @@ async function callGeminiWithTools(geminiKey, systemInstruction, messages, enabl
 }
 
 async function callGeminiVision(geminiKey, systemInstruction, prompt, base64Image, mimeType = 'image/jpeg') {
-  const model = 'gemini-1.5-flash';
-  const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${geminiKey}`;
+  const model = 'gemini-2.0-flash';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
   const body = {
-    system_instruction: { parts: [{ text: systemInstruction }] },
+    systemInstruction: { parts: [{ text: systemInstruction }] },
     contents: [
       {
         role: 'user',
@@ -300,20 +303,24 @@ async function callGeminiVision(geminiKey, systemInstruction, prompt, base64Imag
         ]
       }
     ],
-    generation_config: {
+    generationConfig: {
       temperature: 0.4,
-      max_output_tokens: 1536
+      maxOutputTokens: 1536
     }
   };
 
   const response = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': geminiKey
+    },
     body: JSON.stringify(body)
   });
 
   if (!response.ok) {
     const errText = await response.text();
+    console.error(`💥 [Gemini Vision Details] API Error Response:`, errText);
     throw new Error(`Gemini Vision API error ${response.status}: ${errText}`);
   }
 

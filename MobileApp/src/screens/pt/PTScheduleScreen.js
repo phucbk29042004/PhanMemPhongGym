@@ -14,6 +14,7 @@ import { formatDate, scheduleStatusLabel, unwrapData } from '../../utils/data';
 import ProfileAvatar from '../../components/ProfileAvatar';
 import { useTheme } from '../../context/ThemeContext';
 import DatePickerField from '../../components/DatePickerField';
+import SwipePager from '../../components/SwipePager';
 
 // ── Tạo danh sách giờ từ 06:00 đến 21:00 mỗi 30 phút ──────────
 function buildTimeOptions(fromHour = 6, toHour = 21) {
@@ -32,10 +33,10 @@ const END_TIMES   = buildTimeOptions(6, 22);
 function TimePickerModal({ visible, times, selected, onSelect, onClose, title, colors, checkDisabled }) {
   const tp = StyleSheet.create({
     overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 24 },
-    sheet: { borderRadius: 20, borderWidth: 1, overflow: 'hidden' },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.06)' },
+    sheet: { borderRadius: 20, borderWidth: 1, overflow: 'hidden', zIndex: 99999 },
+    header: { flexDirection: 'row', alignItems: 'center', justifyBetween: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.06)' },
     title: { fontSize: 15, fontWeight: '800' },
-    item: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 16 },
+    item: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 16, width: '100%' },
     itemText: { fontSize: 15, fontWeight: '600', flex: 1 },
     check: { width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   });
@@ -52,7 +53,7 @@ function TimePickerModal({ visible, times, selected, onSelect, onClose, title, c
         
         {/* Hộp thoại Modal thực tế */}
         <View style={[tp.sheet, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={tp.header}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.06)' }}>
             <Text style={[tp.title, { color: colors.text }]}>{title}</Text>
             <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               <X color={colors.textSecondary} size={20} />
@@ -61,6 +62,7 @@ function TimePickerModal({ visible, times, selected, onSelect, onClose, title, c
           <FlatList
             data={times}
             keyExtractor={(t) => t}
+            keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             style={{ maxHeight: 320 }}
             renderItem={({ item }) => {
@@ -183,11 +185,35 @@ export default function PTScheduleScreen() {
   const [creating, setCreating] = useState(false);
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
+  
+  // State phục vụ Bộ lọc & Phân trang vuốt ngang
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [page, setPage] = useState(0);
+
+  const handleFilterPress = () => {
+    Alert.alert(
+      'Bộ lọc trạng thái',
+      'Chọn trạng thái lịch dạy bạn muốn hiển thị:',
+      [
+        { text: 'Tất cả', onPress: () => { setStatusFilter('all'); setPage(0); } },
+        { text: 'Chờ tập', onPress: () => { setStatusFilter('cho_tap'); setPage(0); } },
+        { text: 'Đã tập', onPress: () => { setStatusFilter('da_tap'); setPage(0); } },
+        { text: 'Đã hủy', onPress: () => { setStatusFilter('da_huy'); setPage(0); } },
+        { text: 'Hủy bỏ', style: 'cancel' }
+      ]
+    );
+  };
 
   const isTimeSlotDisabled = (time) => {
     const today = new Date();
     const todayYMD = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     
+    // Chặn hoàn toàn nếu chọn ngày quá khứ
+    if (newDate < todayYMD) {
+      return true;
+    }
+
+    // Nếu chọn ngày hôm nay, chặn các mốc giờ trong quá khứ hoặc cách giờ hiện tại dưới 5 phút
     if (newDate === todayYMD) {
       const [h, m] = time.split(':').map(Number);
       const nowH = today.getHours();
@@ -197,32 +223,39 @@ export default function PTScheduleScreen() {
       }
     }
 
+    // Chặn trùng lịch của PT (hlv đang đăng nhập)
     if (schedules && schedules.length > 0) {
       const [h, m] = time.split(':').map(Number);
       let eh = h + 1;
       let em = m;
       const timeEnd = `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
 
-      return schedules.some(s => {
+      const conflictPT = schedules.some(s => {
         if (s.trang_thai === 'da_huy') return false;
         const sDateYMD = s.ngay_tap ? s.ngay_tap.split('T')[0] : '';
         if (sDateYMD !== newDate) return false;
         return time < s.gio_ket_thuc && timeEnd > s.gio_bat_dau;
       });
+      if (conflictPT) return true;
     }
+
     return false;
   };
 
   const isEndTimeSlotDisabled = (time) => {
     if (time <= newStart) return true;
+    
+    // Chặn trùng lịch của PT trong khoảng từ newStart đến time
     if (schedules && schedules.length > 0) {
-      return schedules.some(s => {
+      const conflictPT = schedules.some(s => {
         if (s.trang_thai === 'da_huy') return false;
         const sDateYMD = s.ngay_tap ? s.ngay_tap.split('T')[0] : '';
         if (sDateYMD !== newDate) return false;
         return newStart < s.gio_ket_thuc && time > s.gio_bat_dau;
       });
+      if (conflictPT) return true;
     }
+
     return false;
   };
 
@@ -249,9 +282,12 @@ export default function PTScheduleScreen() {
         const [h, m] = t.split(':').map(Number);
         if (h < nowH || (h === nowH && m <= nowM)) continue;
       }
+      
       const [h, m] = t.split(':').map(Number);
       let eh = h + 1;
       const tEnd = `${String(eh).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+      
+      // Chỉ check trùng giờ với các buổi dạy CÓ THẬT và KHÔNG bị hủy
       const overlapping = schedules.some(s => {
         if (s.trang_thai === 'da_huy') return false;
         const sDateYMD = s.ngay_tap ? s.ngay_tap.split('T')[0] : '';
@@ -270,6 +306,7 @@ export default function PTScheduleScreen() {
       let nh = h + 1;
       setNewEnd(`${String(nh).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
     } else {
+      // Nếu không tìm thấy slot trống tự động thì đặt giá trị trống thay vì hardcode để tránh lỗi chặn picker
       setNewStart('');
       setNewEnd('');
     }
@@ -401,36 +438,53 @@ export default function PTScheduleScreen() {
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border, borderBottomWidth: 1 }]}>
         <View style={styles.headerLeft}>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Lịch dạy cá nhân</Text>
-          <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>Quản lý các buổi tập 1 kèm 1</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
+            {statusFilter === 'all' ? 'Tất cả trạng thái' :
+             statusFilter === 'cho_tap' ? 'Chỉ lịch Chờ tập' :
+             statusFilter === 'da_tap' ? 'Chỉ lịch Đã tập' : 'Chỉ lịch Đã hủy'} ({sortedSchedules.filter(item => statusFilter === 'all' || item.trang_thai === statusFilter).length})
+          </Text>
         </View>
         <View style={styles.headerActions}>
           <TouchableOpacity style={[styles.iconBtn, { backgroundColor: colors.primaryLight }]} onPress={() => setCreateModalVisible(true)} activeOpacity={0.8}>
             <Plus color={colors.primary} size={18} strokeWidth={2.5} />
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.filterBtn, { backgroundColor: colors.primaryLight }]}>
-            <Filter color={colors.primary} size={20} strokeWidth={2} />
+          <TouchableOpacity 
+            style={[
+              styles.filterBtn, 
+              { backgroundColor: statusFilter !== 'all' ? colors.primary : colors.primaryLight }
+            ]} 
+            onPress={handleFilterPress}
+            activeOpacity={0.8}
+          >
+            <Filter color={statusFilter !== 'all' ? '#fff' : colors.primary} size={20} strokeWidth={2} />
           </TouchableOpacity>
         </View>
       </View>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[G.primary]} tintColor={G.primary} />}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {loading ? (
-          <View style={styles.center}>
-            <ActivityIndicator color={G.primary} size="large" />
-          </View>
-        ) : sortedSchedules.length === 0 ? (
-          <View style={styles.emptyBox}>
-            <CalendarCheck color={G.gray300} size={64} strokeWidth={1} />
-            <Text style={styles.emptyTitle}>Chưa có lịch dạy</Text>
-            <Text style={styles.emptyDesc}>Mọi buổi tập của bạn với học viên sẽ được hiển thị tại đây.</Text>
-          </View>
-        ) : (
-          sortedSchedules.map((item) => (
-            <View key={item.id} style={[
+      {loading ? (
+        <View style={styles.center}>
+          <ActivityIndicator color={G.primary} size="large" />
+        </View>
+      ) : sortedSchedules.filter(item => statusFilter === 'all' || item.trang_thai === statusFilter).length === 0 ? (
+        <View style={styles.emptyBox}>
+          <CalendarCheck color={G.gray300} size={64} strokeWidth={1} />
+          <Text style={styles.emptyTitle}>Chưa có lịch dạy</Text>
+          <Text style={styles.emptyDesc}>Không tìm thấy buổi tập nào khớp với bộ lọc của bạn.</Text>
+        </View>
+      ) : (
+        <SwipePager
+          data={sortedSchedules.filter(item => statusFilter === 'all' || item.trang_thai === statusFilter)}
+          pageSize={10}
+          page={page}
+          onPageChange={setPage}
+          keyExtractor={(item) => String(item.id)}
+          colors={colors}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[G.primary]} tintColor={G.primary} />
+          }
+          contentContainerStyle={styles.scrollContent}
+          renderItem={({ item }) => (
+            <View style={[
               styles.card,
               { backgroundColor: colors.surface, borderColor: colors.border },
               item.trang_thai === 'da_tap' && styles.cardCompleted,
@@ -556,10 +610,9 @@ export default function PTScheduleScreen() {
                 )}
               </View>
             </View>
-          ))
-        )}
-        <View style={{ height: 20 }} />
-      </ScrollView>
+          )}
+        />
+      )}
 
       <Modal
         visible={noteModalVisible}
@@ -646,6 +699,7 @@ export default function PTScheduleScreen() {
               onChangeText={setNewDate}
               placeholder="Chọn ngày tập"
               colors={colors}
+              minDate={todayYMD()}
               returnFormat="YYYY-MM-DD"
             />
             <View style={styles.rowInputs}>
@@ -666,7 +720,7 @@ export default function PTScheduleScreen() {
             </View>
             <Text style={[styles.modalLabel, { color: colors.textMuted }]}>Ghi chú</Text>
             <TextInput
-              style={[styles.modalInput, { minHeight: 80, backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
+              style={[styles.modalInput, { minHeight: 60, backgroundColor: colors.surfaceVariant, color: colors.text, borderColor: colors.border }]}
               value={newNote}
               onChangeText={setNewNote}
               placeholder="Ghi chú tùy chọn"
@@ -689,6 +743,27 @@ export default function PTScheduleScreen() {
                     return;
                   }
                   setCreating(true);
+
+                  // Kiểm tra trùng lịch học viên ở phía Client
+                  if (schedules && schedules.length > 0) {
+                    const selectedMemberName = members.find(m => m.dang_ky_id === selectedRegistration)?.ho_ten || 'Học viên';
+                    const hasConflict = schedules.some(s => {
+                      if (s.trang_thai === 'da_huy') return false;
+                      const sDateYMD = s.ngay_tap ? s.ngay_tap.split('T')[0] : '';
+                      if (sDateYMD !== newDate) return false;
+                      if (s.hoi_vien_id === members.find(m => m.dang_ky_id === selectedRegistration)?.hoi_vien_id) {
+                        return newStart < s.gio_ket_thuc && newEnd > s.gio_bat_dau;
+                      }
+                      return false;
+                    });
+
+                    if (hasConflict) {
+                      Alert.alert('Trùng lịch tập', `${selectedMemberName} đã có lịch tập khác trong khung giờ này.`);
+                      setCreating(false);
+                      return;
+                    }
+                  }
+
                   try {
                     const res = await api.post('/pt/schedules', {
                       dang_ky_pt_id: selectedRegistration,
@@ -707,7 +782,7 @@ export default function PTScheduleScreen() {
                       fetchSchedules();
                       fetchMembers();
                     } else {
-                      alert(res.data?.message || 'Không thể tạo lịch mới');
+                      Alert.alert('Không thể tạo lịch', res.data?.message || 'Có lỗi xảy ra');
                     }
                   } catch (err) {
                     Alert.alert('Lỗi', err?.displayMessage || 'Có lỗi xảy ra.');
@@ -727,29 +802,29 @@ export default function PTScheduleScreen() {
             </View>
           </View>
         </KeyboardAvoidingView>
-      </Modal>
 
-      {/* Pickers */}
-      <TimePickerModal
-        visible={showStartPicker}
-        times={START_TIMES}
-        selected={newStart}
-        onSelect={handleSelectStart}
-        onClose={() => setShowStartPicker(false)}
-        title="Chọn giờ bắt đầu"
-        colors={colors}
-        checkDisabled={isTimeSlotDisabled}
-      />
-      <TimePickerModal
-        visible={showEndPicker}
-        times={END_TIMES.filter(t => t > newStart)}
-        selected={newEnd}
-        onSelect={setNewEnd}
-        onClose={() => setShowEndPicker(false)}
-        title="Chọn giờ kết thúc"
-        colors={colors}
-        checkDisabled={isEndTimeSlotDisabled}
-      />
+        {/* Đưa hai TimePickerModal vào bên trong createModal để tương thích zIndex hoàn hảo của iOS và Android */}
+        <TimePickerModal
+          visible={showStartPicker}
+          times={START_TIMES}
+          selected={newStart}
+          onSelect={handleSelectStart}
+          onClose={() => setShowStartPicker(false)}
+          title="Chọn giờ bắt đầu"
+          colors={colors}
+          checkDisabled={isTimeSlotDisabled}
+        />
+        <TimePickerModal
+          visible={showEndPicker}
+          times={END_TIMES.filter(t => t > newStart)}
+          selected={newEnd}
+          onSelect={setNewEnd}
+          onClose={() => setShowEndPicker(false)}
+          title="Chọn giờ kết thúc"
+          colors={colors}
+          checkDisabled={isEndTimeSlotDisabled}
+        />
+      </Modal>
     </View>
   );
 }

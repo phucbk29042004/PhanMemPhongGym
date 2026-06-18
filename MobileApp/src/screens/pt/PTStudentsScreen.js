@@ -1,11 +1,10 @@
 import React, { useCallback, useState } from 'react';
 import {
-  ActivityIndicator, RefreshControl, ScrollView,
-  StatusBar, StyleSheet, Text, TouchableOpacity, View,
+  ActivityIndicator, Alert, RefreshControl, ScrollView,
+  StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
 import {
-  CalendarCheck, ChevronRight, Filter, Search,
-  TrendingUp, User, Users,
+  CalendarCheck, ChevronRight, Search, TrendingUp, User, Users, X,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../services/api';
@@ -35,6 +34,8 @@ export default function PTStudentsScreen({ navigation }) {
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchText, setSearchText] = useState('');
 
   const fetchSchedules = useCallback(async () => {
     try {
@@ -82,6 +83,13 @@ export default function PTStudentsScreen({ navigation }) {
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [schedules]);
 
+  // Lọc theo từ khóa tìm kiếm
+  const filteredStudents = React.useMemo(() => {
+    if (!searchText.trim()) return students;
+    const q = searchText.toLowerCase().trim();
+    return students.filter(s => s.name?.toLowerCase().includes(q));
+  }, [students, searchText]);
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={isDark ? colors.background : G.white} />
@@ -93,11 +101,31 @@ export default function PTStudentsScreen({ navigation }) {
           <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>Bạn đang hướng dẫn {students.length} học viên</Text>
         </View>
         <View style={styles.headerActions}>
-          <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.primaryLight }]}>
-            <Search color={colors.primary} size={20} />
+          <TouchableOpacity
+            style={[styles.actionBtn, { backgroundColor: showSearch ? colors.primary : colors.primaryLight }]}
+            onPress={() => { setShowSearch(v => !v); setSearchText(''); }}
+          >
+            {showSearch
+              ? <X color={G.white} size={20} />
+              : <Search color={colors.primary} size={20} />}
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* ── Search bar ──────────────────── */}
+      {showSearch && (
+        <View style={[styles.searchBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+          <Search color={colors.textMuted} size={16} />
+          <TextInput
+            style={[styles.searchInput, { color: colors.text }]}
+            placeholder="Tìm theo tên học viên..."
+            placeholderTextColor={colors.textMuted}
+            value={searchText}
+            onChangeText={setSearchText}
+            autoFocus
+          />
+        </View>
+      )}
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -108,19 +136,27 @@ export default function PTStudentsScreen({ navigation }) {
           <View style={styles.center}>
             <ActivityIndicator color={colors.primary} size="large" />
           </View>
-        ) : students.length === 0 ? (
+        ) : filteredStudents.length === 0 ? (
           <View style={styles.emptyBox}>
             <Users color={colors.textMuted} size={64} strokeWidth={1} />
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>Chưa có học viên</Text>
-            <Text style={[styles.emptyDesc, { color: colors.textMuted }]}>Danh sách học viên sẽ tự động hiển thị khi có ca dạy được phân công.</Text>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>
+              {searchText ? 'Không tìm thấy học viên' : 'Chưa có học viên'}
+            </Text>
+            <Text style={[styles.emptyDesc, { color: colors.textMuted }]}>
+              {searchText ? `Không có học viên nào khớp với “${searchText}”.` : 'Danh sách học viên sẽ tự động hiển thị khi có ca dạy được phân công.'}
+            </Text>
           </View>
         ) : (
-          students.map((student) => (
+          filteredStudents.map((student) => (
             <TouchableOpacity
               key={student.id}
               style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
               activeOpacity={0.7}
-              onPress={() => {}} // Có thể mở chi tiết học viên sau này
+              onPress={() => Alert.alert(
+                student.name || 'Hội viên',
+                `✅ Đã tập: ${student.completed}/${student.total} buổi\n⏰ Buổi tiếp theo: ${student.nextDate ? formatDate(student.nextDate) : 'Chưa xếp'}\n📊 Còn lại: ${student.remaining ?? '—'} buổi`,
+                [{ text: 'Đóng', style: 'cancel' }]
+              )}
             >
               <View style={styles.cardTop}>
                 <View style={styles.avatarBox}>
@@ -202,6 +238,20 @@ const styles = StyleSheet.create({
 
   scrollContent: { padding: 16, gap: 14 },
   center: { paddingVertical: 100, alignItems: 'center' },
+
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    paddingVertical: 4,
+  },
 
   emptyBox: { alignItems: 'center', paddingVertical: 80, gap: 12 },
   emptyTitle: { fontSize: 18, fontWeight: '800', color: G.gray900 },

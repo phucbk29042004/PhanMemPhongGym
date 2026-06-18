@@ -2,9 +2,10 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView,
   ActivityIndicator, KeyboardAvoidingView, Platform, Dimensions,
-  Keyboard, Animated
+  Keyboard, Animated, Image, Alert
 } from 'react-native';
-import { MessageSquare, X, Send, Bot, User } from 'lucide-react-native';
+import { MessageSquare, X, Send, Bot, User, Plus } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../context/ThemeContext';
 import { useAuthStore } from '../store/useAuthStore';
 import { api } from '../services/api';
@@ -36,6 +37,8 @@ export default function AIAssistantBubble() {
   const [loading, setLoading] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedImageBase64, setSelectedImageBase64] = useState(null);
 
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
@@ -55,6 +58,56 @@ export default function AIAssistantBubble() {
       hideSubscription.remove();
     };
   }, []);
+
+  const handlePickImage = () => {
+    Alert.alert(
+      'Chọn hình ảnh',
+      'Bạn muốn chụp ảnh mới hay chọn ảnh từ thư viện?',
+      [
+        { text: 'Chụp ảnh', onPress: launchCamera },
+        { text: 'Thư viện ảnh', onPress: launchLibrary },
+        { text: 'Hủy bỏ', style: 'cancel' }
+      ]
+    );
+  };
+
+  const launchCamera = async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Quyền truy cập', 'Vui lòng cấp quyền truy cập camera trong cài đặt thiết bị.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.7,
+      base64: true,
+    });
+    if (!result.canceled && result.assets?.[0]) {
+      const asset = result.assets[0];
+      setSelectedImage(asset.uri);
+      setSelectedImageBase64(`data:image/jpeg;base64,${asset.base64}`);
+    }
+  };
+
+  const launchLibrary = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Quyền truy cập', 'Vui lòng cấp quyền truy cập thư viện ảnh trong cài đặt thiết bị.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.7,
+      base64: true,
+    });
+    if (!result.canceled && result.assets?.[0]) {
+      const asset = result.assets[0];
+      setSelectedImage(asset.uri);
+      setSelectedImageBase64(`data:image/jpeg;base64,${asset.base64}`);
+    }
+  };
 
   const cardStyle = useMemo(() => {
     if (keyboardVisible) {
@@ -88,7 +141,7 @@ export default function AIAssistantBubble() {
   // Dynamic config based on user role
   const chatConfig = useMemo(() => {
     if (!token) return null;
-    
+
     switch (role) {
       case 'pt':
         return {
@@ -143,7 +196,7 @@ export default function AIAssistantBubble() {
       setShowBubble(false);
       setShowCard(true);
       setIsOpen(true);
-      
+
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
@@ -162,7 +215,7 @@ export default function AIAssistantBubble() {
 
   const handleClose = () => {
     Keyboard.dismiss();
-    
+
     // Animate card out, show bubble and animate in
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -179,7 +232,7 @@ export default function AIAssistantBubble() {
       setShowCard(false);
       setIsOpen(false);
       setShowBubble(true);
-      
+
       Animated.spring(bubbleScale, {
         toValue: 1,
         friction: 6,
@@ -190,24 +243,39 @@ export default function AIAssistantBubble() {
 
   const handleSend = async () => {
     const text = inputText.trim();
-    if (!text || loading) return;
+    const imageToSend = selectedImage;
+    const imageBase64ToSend = selectedImageBase64;
+
+    if ((!text && !imageToSend) || loading) return;
 
     setInputText('');
+    setSelectedImage(null);
+    setSelectedImageBase64(null);
+
     const userMsgId = `user-${Date.now()}`;
     const newMsg = {
       id: userMsgId,
       text: text,
       sender: 'user',
       time: new Date(),
+      image: imageToSend,
     };
 
     setMessages((prev) => [...prev, newMsg]);
     setLoading(true);
 
     try {
-      const response = await api.post('/assistant/chat', { message: text, chi_nhanh: selectedBranch || '' });
+      const payload = {
+        message: text || 'Phân tích bức ảnh này giúp tôi.',
+        chi_nhanh: selectedBranch || ''
+      };
+      if (imageBase64ToSend) {
+        payload.image = imageBase64ToSend;
+      }
+
+      const response = await api.post('/assistant/chat', payload);
       const reply = response.data?.data?.reply || 'Rất tiếc, mình gặp sự cố khi xử lý câu hỏi này.';
-      
+
       setMessages((prev) => [
         ...prev,
         {
@@ -310,22 +378,27 @@ export default function AIAssistantBubble() {
                         isUser
                           ? [styles.userBubble, { backgroundColor: G.primary }]
                           : [
-                              styles.aiBubble,
-                              {
-                                backgroundColor: isDark ? colors.surfaceVariant : G.gray100,
-                                borderColor: colors.border,
-                              },
-                            ],
+                            styles.aiBubble,
+                            {
+                              backgroundColor: isDark ? colors.surfaceVariant : G.gray100,
+                              borderColor: colors.border,
+                            },
+                          ],
                       ]}
                     >
-                      <Text
-                        style={[
-                          styles.messageText,
-                          { color: isUser ? G.white : (isDark ? colors.text : G.gray900) },
-                        ]}
-                      >
-                        {item.text}
-                      </Text>
+                      {item.image && (
+                        <Image source={{ uri: item.image }} style={styles.bubbleImage} />
+                      )}
+                      {item.text ? (
+                        <Text
+                          style={[
+                            styles.messageText,
+                            { color: isUser ? G.white : (isDark ? colors.text : G.gray900) },
+                          ]}
+                        >
+                          {item.text}
+                        </Text>
+                      ) : null}
                     </View>
                     {isUser && (
                       <View style={[styles.userAvatar, { backgroundColor: G.primary }]}>
@@ -362,6 +435,25 @@ export default function AIAssistantBubble() {
               )}
             </ScrollView>
 
+            {/* Image Preview Area */}
+            {selectedImage && (
+              <View style={[styles.previewWrapper, { borderTopColor: colors.border }]}>
+                <View style={styles.previewContainer}>
+                  <Image source={{ uri: selectedImage }} style={styles.previewImage} />
+                  <TouchableOpacity
+                    style={[styles.previewRemoveBtn, { backgroundColor: G.danger }]}
+                    onPress={() => {
+                      setSelectedImage(null);
+                      setSelectedImageBase64(null);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <X color={G.white} size={12} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
             {/* Input area */}
             <View
               style={[
@@ -372,6 +464,14 @@ export default function AIAssistantBubble() {
                 },
               ]}
             >
+              <TouchableOpacity
+                style={[styles.attachBtn, { backgroundColor: isDark ? colors.surfaceVariant : G.gray100 }]}
+                onPress={handlePickImage}
+                activeOpacity={0.8}
+              >
+                <Plus color={colors.primary} size={18} strokeWidth={2.5} />
+              </TouchableOpacity>
+
               <TextInput
                 style={[
                   styles.input,
@@ -391,7 +491,7 @@ export default function AIAssistantBubble() {
               <TouchableOpacity
                 style={[styles.sendBtn, { backgroundColor: G.primary }]}
                 onPress={handleSend}
-                disabled={!inputText.trim() || loading}
+                disabled={(!inputText.trim() && !selectedImage) || loading}
               >
                 <Send color={G.white} size={14} />
               </TouchableOpacity>
@@ -545,5 +645,47 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 2,
+  },
+  attachBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
+  },
+  previewWrapper: {
+    padding: 8,
+    borderTopWidth: 1,
+    flexDirection: 'row',
+  },
+  previewContainer: {
+    position: 'relative',
+    width: 60,
+    height: 60,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  previewImage: {
+    width: '100%',
+    height: '100%',
+  },
+  previewRemoveBtn: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bubbleImage: {
+    width: 150,
+    height: 150,
+    borderRadius: 12,
+    marginBottom: 6,
+    resizeMode: 'cover',
   },
 });

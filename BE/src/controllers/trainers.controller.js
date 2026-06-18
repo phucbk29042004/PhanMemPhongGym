@@ -7,6 +7,7 @@ import db from '../config/db.js';
 import { success, error } from '../utils/response.js';
 import { uploadImage, deleteImage } from '../utils/cloudinary.js';
 import { ghi_audit_log } from '../utils/audit.js';
+import { createUserNotification } from '../utils/notifications.js';
 
 // ── GET /api/trainers ─────────────────────────────────────
 export const getTrainers = (req, res) => {
@@ -241,7 +242,24 @@ export const deleteTrainer = (req, res) => {
   const trainer = db.prepare("SELECT * FROM ho_so WHERE id = ? AND loai_ho_so = 'pt' AND is_deleted = 0").get(id);
   if (!trainer) return error(res, 'Không tìm thấy PT.', 404);
 
+  // Lấy danh sách lịch tập sắp tới (chưa xảy ra) để hủy và thông báo
+  const upcomingSchedules = db.prepare(`
+    SELECT lt.id, lt.hoi_vien_id, lt.ngay_tap, lt.gio_bat_dau,
+           hv.ho_ten AS ten_hv
+    FROM lich_tap lt
+    JOIN ho_so hv ON hv.id = lt.hoi_vien_id
+    WHERE lt.pt_id = ? AND lt.trang_thai = 'cho_tap'
+  `).all(id);
+
   const tx = db.transaction(() => {
+    // Hủy tất cả lịch tập sắp tới của PT bị xóa
+    if (upcomingSchedules.length > 0) {
+      db.prepare(`
+        UPDATE lich_tap SET trang_thai = 'da_huy', ly_do_huy = ?, nguoi_huy_id = ?
+        WHERE pt_id = ? AND trang_thai = 'cho_tap'
+      `).run(`PT bị xóa khỏi hệ thống. ${ly_do || ''}`.trim(), req.user.id, id);
+    }
+
     db.prepare(`
       UPDATE ho_so SET
         is_deleted = 1,
@@ -258,6 +276,20 @@ export const deleteTrainer = (req, res) => {
 
   tx();
 
+  // Thông báo cho từng học viên bị ảnh hưởng
+  upcomingSchedules.forEach((s) => {
+    createUserNotification(
+      s.hoi_vien_id,
+      'Buổi tập bị hủy do HLV nghỉ ❌',
+      `Buổi tập lúc ${s.gio_bat_dau} ngày ${s.ngay_tap} đã bị hủy vì HLV ${trainer.ho_ten} đã rời hệ thống. Vui lòng liên hệ phòng gym để sắp xếp HLV thay thế.`,
+      'nhac_nho_gia_han'
+    );
+  });
+
   ghi_audit_log(req, 'DELETE', 'ho_so', parseInt(id), trainer, null, ly_do || 'Xóa hồ sơ PT');
-  return success(res, null, 'Đã xoá hồ sơ PT thành công');
+  return success(res, {
+    cancelledSchedules: upcomingSchedules.length,
+    affectedMembers: [...new Set(upcomingSchedules.map(s => s.hoi_vien_id))].length,
+  }, `Đã xoá hồ sơ PT thành công. ${upcomingSchedules.length > 0 ? `Đã tự động hủy ${upcomingSchedules.length} buổi tập sắp tới.` : ''}`);
 };
+

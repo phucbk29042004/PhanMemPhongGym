@@ -44,14 +44,15 @@ function memberTypeLabel(type) {
 
 // ── Component: Menu row ─────────────────────────────────────
 function MenuRow({ icon: Icon, iconBg, iconColor, label, sublabel, onPress, rightEl, danger, colors }) {
+  const Container = onPress ? TouchableOpacity : View;
+  const containerProps = onPress ? { onPress, activeOpacity: 0.7 } : {};
   return (
-    <TouchableOpacity
+    <Container
       style={[
         menuStyles.row,
         { borderBottomColor: danger ? (colors?.dangerLight || BRAND.dangerLight) : (colors?.borderLight || '#f0f4f0') },
       ]}
-      onPress={onPress}
-      activeOpacity={0.7}
+      {...containerProps}
     >
       <View style={[menuStyles.iconBox, { backgroundColor: iconBg || colors?.primaryLight || BRAND.primaryLight }]}>
         <Icon color={iconColor || colors?.primary || BRAND.primary} size={18} strokeWidth={2} />
@@ -61,9 +62,9 @@ function MenuRow({ icon: Icon, iconBg, iconColor, label, sublabel, onPress, righ
         {sublabel ? <Text style={[menuStyles.sublabel, { color: colors?.textMuted || '#9cad9c' }]} numberOfLines={1}>{sublabel}</Text> : null}
       </View>
       {rightEl !== undefined ? rightEl : (
-        <ChevronRight color={danger ? BRAND.danger : (colors?.textMuted || '#9cad9c')} size={18} strokeWidth={2} />
+        onPress ? <ChevronRight color={danger ? BRAND.danger : (colors?.textMuted || '#9cad9c')} size={18} strokeWidth={2} /> : null
       )}
-    </TouchableOpacity>
+    </Container>
   );
 }
 
@@ -407,12 +408,12 @@ export default function MemberProfileScreen() {
             </TouchableOpacity>
           }
         >
-          <MenuRow icon={User} label="Họ và tên" sublabel={profile?.ho_ten || '—'} onPress={() => {}} rightEl={null} colors={colors} />
-          <MenuRow icon={Calendar} label="Ngày sinh" sublabel={formatDate(profile?.ngay_sinh) || '—'} onPress={() => {}} rightEl={null} colors={colors} />
-          <MenuRow icon={User} label="Giới tính" sublabel={genderLabel(profile?.gioi_tinh)} onPress={() => {}} rightEl={null} colors={colors} />
-          <MenuRow icon={Badge} label="CCCD / CMND" sublabel={profile?.cccd || '—'} onPress={() => {}} rightEl={null} colors={colors} />
-          <MenuRow icon={Building2} label="Địa chỉ" sublabel={diaChi} onPress={() => {}} rightEl={null} colors={colors} />
-          <MenuRow icon={Building2} label="Chi nhánh" sublabel={profile?.chi_nhanh || '—'} onPress={() => {}} rightEl={<View />} colors={colors} />
+          <MenuRow icon={User} label="Họ và tên" sublabel={profile?.ho_ten || '—'} onPress={null} colors={colors} />
+          <MenuRow icon={Calendar} label="Ngày sinh" sublabel={formatDate(profile?.ngay_sinh) || '—'} onPress={null} colors={colors} />
+          <MenuRow icon={User} label="Giới tính" sublabel={genderLabel(profile?.gioi_tinh)} onPress={null} colors={colors} />
+          <MenuRow icon={Badge} label="CCCD / CMND" sublabel={profile?.cccd || '—'} onPress={null} colors={colors} />
+          <MenuRow icon={Building2} label="Địa chỉ" sublabel={diaChi} onPress={null} colors={colors} />
+          <MenuRow icon={Building2} label="Chi nhánh" sublabel={profile?.chi_nhanh || '—'} onPress={null} colors={colors} />
         </Section>
 
         {/* ── CÀI ĐẶT ──────────────────────────── */}

@@ -124,7 +124,6 @@ export default function AdminNavigator() {
       <Stack.Screen name="AdminRegisterPTSchedule" component={AdminRegisterPTScheduleScreen} />
       <Stack.Screen name="AdminExpiredMembers" component={AdminExpiredMembersScreen} />
       <Stack.Screen name="AdminPT" component={AdminPTScreen} />
-      <Stack.Screen name="AdminStaff" component={AdminStaffScreen} />
       <Stack.Screen name="GymRules" component={GymRulesScreen} />
     </Stack.Navigator>
   );

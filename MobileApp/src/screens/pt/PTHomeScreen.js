@@ -166,7 +166,7 @@ export default function PTHomeScreen({ navigation }) {
           </View>
           <Text style={[styles.contractDateText, { color: colors.textMuted }]}>{formatDate(next.ngay_tap)}</Text>
         </View>
-        
+
         <View style={styles.memberRowMain}>
           <ProfileAvatar uri={next.avatar_hoi_vien} name={next.ten_hoi_vien} size={50} />
           <View style={{ flex: 1 }}>
@@ -196,7 +196,7 @@ export default function PTHomeScreen({ navigation }) {
         </View>
 
         {next.pt_xac_nhan === 0 ? (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.confirmBtnMain}
             onPress={() => handleConfirmSchedule(next.id)}
             disabled={actionLoadingId === next.id}
@@ -258,17 +258,12 @@ export default function PTHomeScreen({ navigation }) {
                 </Text>
               </View>
             </View>
-
-            <View style={styles.bannerBadge}>
-              <Award color={G.white} size={14} strokeWidth={2} />
-              <Text style={styles.bannerBadgeText}>HLV CHUYÊN NGHIỆP</Text>
-            </View>
           </View>
 
           <View style={styles.bannerBody}>
             <Text style={styles.bannerTitle}>Paradise GYM</Text>
             <Text style={styles.bannerSubtitle}>
-              {profile?.chi_nhanh || 'Hệ thống Paradise GYM Premium'}
+              {profile?.chi_nhanh || 'Hệ thống Paradise GYM'}
             </Text>
           </View>
         </View>
@@ -432,7 +427,7 @@ export default function PTHomeScreen({ navigation }) {
                         </Text>
                       </View>
                     </View>
-                    
+
                     <View style={[styles.studentStats, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                       <View style={styles.studentStatItem}>
                         <Dumbbell color={colors.primary} size={14} strokeWidth={2} />
