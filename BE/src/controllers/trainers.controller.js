@@ -198,9 +198,11 @@ export const getTrainerMembers = (req, res) => {
       h.id, h.ma_ho_so, h.ho_ten, h.avatar_url, h.so_dien_thoai,
       dp.id AS dang_ky_pt_id,
       dp.so_buoi_dang_ky, dp.so_buoi_da_tap,
-      (dp.so_buoi_dang_ky - dp.so_buoi_da_tap) AS buoi_con_lai
+      (dp.so_buoi_dang_ky - dp.so_buoi_da_tap) AS buoi_con_lai,
+      gp.ten_goi AS ten_goi_tap
     FROM dang_ky_pt dp
     JOIN ho_so h ON h.id = dp.hoi_vien_id
+    LEFT JOIN goi_pt gp ON gp.id = dp.goi_pt_id
     WHERE dp.pt_id = ? AND dp.trang_thai = 'dang_hoat_dong' AND h.is_deleted = 0
     ORDER BY h.ho_ten ASC
   `).all(id);

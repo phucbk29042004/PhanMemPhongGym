@@ -307,7 +307,62 @@ function checkPtCheckinWarning() {
   }
 }
 
+export function syncExpiredAndPendingPackages() {
+  console.log('[CRON-DAILY] Đang chạy đồng bộ trạng thái gói tập và gói PT khi khởi động...');
+  try {
+    // 1. Tự động kích hoạt gói tập thường đã thanh toán khi đến tu_ngay
+    const newlyActivated = db.prepare(`
+      UPDATE dang_ky_goi_tap
+      SET trang_thai = 'dang_hoat_dong'
+      WHERE trang_thai IN ('cho_kich_hoat', 'cho_duyet')
+        AND ngay_thanh_toan IS NOT NULL
+        AND tu_ngay <= date('now','localtime')
+    `).run();
+    if (newlyActivated.changes > 0) {
+      console.log(`[CRON-DAILY] Đã tự động kích hoạt ${newlyActivated.changes} gói tập thường đến hạn.`);
+    }
+
+    // 2. Tự động kích hoạt gói PT khi đến tu_ngay
+    const newlyActivatedPT = db.prepare(`
+      UPDATE dang_ky_pt
+      SET trang_thai = 'dang_hoat_dong'
+      WHERE trang_thai = 'cho_kich_hoat'
+        AND tu_ngay <= date('now','localtime')
+    `).run();
+    if (newlyActivatedPT.changes > 0) {
+      console.log(`[CRON-DAILY] Đã tự động kích hoạt ${newlyActivatedPT.changes} gói PT đến hạn.`);
+    }
+
+    // 3. Tự động hết hạn gói tập thường
+    const updatedGoiTap = db.prepare(`
+      UPDATE dang_ky_goi_tap
+      SET trang_thai = 'het_han'
+      WHERE trang_thai = 'dang_hoat_dong' AND den_ngay < date('now','localtime')
+    `).run();
+
+    // 4. Tự động hoàn thành gói PT (hết hạn hoặc hết buổi)
+    const updatedPt = db.prepare(`
+      UPDATE dang_ky_pt
+      SET trang_thai = 'hoan_thanh'
+      WHERE trang_thai = 'dang_hoat_dong'
+        AND (
+          (den_ngay IS NOT NULL AND den_ngay < date('now','localtime'))
+          OR (so_buoi_dang_ky IS NOT NULL AND so_buoi_da_tap >= so_buoi_dang_ky)
+        )
+    `).run();
+
+    if (updatedGoiTap.changes > 0 || updatedPt.changes > 0) {
+      console.log(`[CRON-DAILY] Đã cập nhật trạng thái hết hạn/hoàn thành cho ${updatedGoiTap.changes} gói tập và ${updatedPt.changes} hợp đồng PT.`);
+    }
+  } catch (err) {
+    console.error('[CRON-DAILY] Lỗi khi đồng bộ trạng thái gói:', err.message);
+  }
+}
+
 export function startDailyCronJobs() {
+  // Chạy đồng bộ ngay lập tức khi khởi động server
+  syncExpiredAndPendingPackages();
+
   // 08:00 sáng mỗi ngày
   cron.schedule('0 8 * * *', runDailyJob, { timezone: 'Asia/Ho_Chi_Minh' });
   console.log('[CRON-DAILY] Job thông báo hàng ngày đã đăng ký — chạy lúc 08:00 mỗi ngày.');

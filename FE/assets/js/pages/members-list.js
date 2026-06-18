@@ -3364,7 +3364,7 @@ window.GymApp.pages['members-list'] = {
           <div>
             <label class="block text-body-sm font-bold text-on-surface mb-xs" style="font-size:13px;font-weight:700;color:#475569;margin-bottom:4px;">Huấn luyện viên phụ trách ${REQ}</label>
             <input type="hidden" id="ptreg-pt" value="" />
-            <div id="ptreg-pt-selection-area" style="display:flex;flex-direction:column;gap:8px;">
+            <div id="ptreg-pt-selection-area" class="flex flex-col gap-2">
               <div style="position:relative;" class="group">
                 <span class="material-symbols-outlined" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:16px;">search</span>
                 <input id="ptreg-search-pt" type="text" placeholder="Tìm kiếm huấn luyện viên..." style="width:100%;padding:8px 12px 8px 32px;border-radius:8px;border:1px solid #cbd5e1;outline:none;font-size:13px;box-sizing:border-box;font-weight:600;color:#1e293b;background-color:#fff;" />
@@ -3374,9 +3374,9 @@ window.GymApp.pages['members-list'] = {
               </div>
             </div>
             
-            <div id="ptreg-selected-pt-display" class="hidden" style="padding:8px 12px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;display:flex;align-items:center;justify-content:between;gap:10px;">
-              <div id="ptreg-selected-pt-info" style="display:flex;align-items:center;gap:8px;flex:1;font-size:13px;font-weight:700;color:#166534;"></div>
-              <button id="ptreg-clear-pt" type="button" class="material-symbols-outlined" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:16px;transition:all 0.2s;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'">close</button>
+            <div id="ptreg-selected-pt-display" class="hidden p-compact bg-[#f0fdf4] dark:bg-[#152e1e] rounded-xl border border-[#bbf7d0] dark:border-[#1b5e20] items-center justify-between gap-compact mt-xs">
+              <div id="ptreg-selected-pt-info" class="flex items-center gap-compact flex-1 text-body-sm font-bold text-[#166534] dark:text-[#4ade80]"></div>
+              <button id="ptreg-clear-pt" type="button" class="material-symbols-outlined text-lg text-on-surface-variant hover:text-error transition-colors">close</button>
             </div>
           </div>
 
@@ -3459,6 +3459,9 @@ window.GymApp.pages['members-list'] = {
               <p class="font-bold text-on-surface text-body-sm truncate">${pt.ho_ten || pt.name}</p>
               <p class="text-on-surface-variant text-[11px] font-semibold truncate">${pt.chuyen_mon || 'Huấn luyện viên'}</p>
               <p class="text-[10px] text-outline font-semibold mt-0.5">${pt.ma_ho_so || 'PT'} · ${pt.so_hoc_vien || 0} HV</p>
+              <p class="text-[10px] font-bold text-amber-500 mt-0.5 flex items-center justify-center gap-0.5">
+                ⭐ ${pt.rating ? `${pt.rating} (${pt.so_luot_danh_gia || 0})` : 'Chưa có ĐG'}
+              </p>
               ${!ptWorking ? '<p class="text-[10px] font-bold text-[#94a3b8] mt-0.5">⏸ Đang tạm nghỉ</p>' : ''}
             </div>
           </div>
@@ -3474,6 +3477,7 @@ window.GymApp.pages['members-list'] = {
             ptregHiddenInputEl.value = ptId;
             ptregSelectionAreaEl.classList.add('hidden');
             ptregSelectedDisplayEl.classList.remove('hidden');
+            ptregSelectedDisplayEl.classList.add('flex');
             ptregSelectedInfoEl.innerHTML = `
               ${window.GymApp.avatarImg(avatarUrl, ptName, 'sm')}
               <span class="text-brand-primary font-bold text-body-sm">${ptName}</span>
@@ -3496,6 +3500,7 @@ window.GymApp.pages['members-list'] = {
     ptregClearBtnEl?.addEventListener('click', () => {
       ptregHiddenInputEl.value = '';
       ptregSelectedDisplayEl.classList.add('hidden');
+      ptregSelectedDisplayEl.classList.remove('flex');
       ptregSelectionAreaEl.classList.remove('hidden');
       if (ptregSearchInputEl) ptregSearchInputEl.value = '';
       ptregListEl?.querySelectorAll('.pt-modal-card').forEach(card => {
@@ -3749,7 +3754,7 @@ window.GymApp.pages['members-list'] = {
                   <p class="text-center py-4 text-on-surface-variant text-body-sm font-semibold">Đang tải danh sách PT...</p>
                 </div>
               </div>
-              <div id="ptedit-selected-pt-display" class="hidden p-compact bg-brand-primary/10 rounded-xl border border-brand-primary/30 flex items-center gap-compact mt-xs">
+              <div id="ptedit-selected-pt-display" class="hidden p-compact bg-brand-primary/10 rounded-xl border border-brand-primary/30 items-center gap-compact mt-xs">
                 <div id="ptedit-selected-pt-info" class="flex items-center gap-compact flex-1 text-body-sm"></div>
                 <button id="ptedit-clear-pt" type="button" class="material-symbols-outlined text-lg text-on-surface-variant hover:text-error transition-colors">close</button>
               </div>
@@ -3783,6 +3788,7 @@ window.GymApp.pages['members-list'] = {
       pteditHiddenInputEl.value = ptId;
       pteditSelectionAreaEl.classList.add('hidden');
       pteditSelectedDisplayEl.classList.remove('hidden');
+      pteditSelectedDisplayEl.classList.add('flex');
       pteditSelectedInfoEl.innerHTML = `
         ${window.GymApp.avatarImg(avatarUrl, ptName, 'sm')}
         <span class="text-brand-primary font-bold text-body-sm">${ptName}</span>
@@ -3804,6 +3810,9 @@ window.GymApp.pages['members-list'] = {
               <p class="font-bold text-on-surface text-body-sm truncate">${pt.ho_ten || pt.name}</p>
               <p class="text-on-surface-variant text-[11px] font-semibold truncate">${pt.chuyen_mon || 'Huấn luyện viên'}</p>
               <p class="text-[10px] text-outline font-semibold mt-0.5">${pt.ma_ho_so || 'PT'} · ${pt.so_hoc_vien || 0} HV</p>
+              <p class="text-[10px] font-bold text-amber-500 mt-0.5 flex items-center justify-center gap-0.5">
+                ⭐ ${pt.rating ? `${pt.rating} (${pt.so_luot_danh_gia || 0})` : 'Chưa có ĐG'}
+              </p>
               ${!ptWorking ? '<p class="text-[10px] font-bold text-[#94a3b8] mt-0.5">⏸ Đang tạm nghỉ</p>' : ''}
             </div>
           </div>
@@ -3833,6 +3842,7 @@ window.GymApp.pages['members-list'] = {
     pteditClearBtnEl?.addEventListener('click', () => {
       pteditHiddenInputEl.value = '';
       pteditSelectedDisplayEl.classList.add('hidden');
+      pteditSelectedDisplayEl.classList.remove('flex');
       pteditSelectionAreaEl.classList.remove('hidden');
       if (pteditSearchInputEl) pteditSearchInputEl.value = '';
       pteditListEl?.querySelectorAll('.pt-modal-card').forEach(card => {
@@ -4039,6 +4049,9 @@ window.GymApp.pages['members-list'] = {
               <p class="font-bold text-on-surface text-body-sm truncate">${pt.ho_ten || pt.name}</p>
               <p class="text-on-surface-variant text-[11px] font-semibold truncate">${pt.chuyen_mon || 'Huấn luyện viên'}</p>
               <p class="text-[10px] text-outline font-semibold mt-0.5">${pt.ma_ho_so || 'PT'} · ${pt.so_hoc_vien || 0} HV</p>
+              <p class="text-[10px] font-bold text-amber-500 mt-0.5 flex items-center justify-center gap-0.5">
+                ⭐ ${pt.rating ? `${pt.rating} (${pt.so_luot_danh_gia || 0})` : 'Chưa có ĐG'}
+              </p>
             </div>
           </div>
         `).join('');

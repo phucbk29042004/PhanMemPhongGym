@@ -12,15 +12,18 @@
 
 ---
 
-### [17/06/2026] — Quét DB & Nâng cấp Cuộn vô hạn, Responsive cho tab Tài khoản
-- **Loại**: Cải tiến UI/UX, Sửa lỗi & Quét hệ thống
-- **File**: `BE/src/app.js`, `paradise_gym_v2.sql`, `BE/src/config/db.js`, `FE/assets/js/pages/staff.js`
+### [17/06/2026] — Sửa lỗi ẩn hiện chọn PT, đồng bộ tự động kích hoạt gói khi Backend start và nâng cấp tab Tài khoản
+- **Loại**: Sửa lỗi & Cải tiến UI/UX (Fullstack Web)
+- **File**: `BE/src/controllers/trainers.controller.js`, `BE/src/jobs/cron-daily.js`, `FE/assets/js/pages/members-list.js`, `FE/assets/js/pages/staff.js`
 - **Mô tả**:
-  1. **[Quét database]**: Quét cơ sở dữ liệu thực tế tại `BE/database/paradise_gym.db`. Phát hiện bảng `cham_cong` và `yeu_cau_goi_tap` đang có 0 dòng dữ liệu (trống).
-  2. **[Phân tích mã nguồn]**: Quét backend và mobile, xác định bảng `cham_cong` hoàn toàn không được code gọi tới (bảng rác), còn bảng `yeu_cau_goi_tap` có được sử dụng nhưng chưa phát sinh dữ liệu.
-  3. **[Nâng cấp Infinite Scroll & Responsive cho Tab Tài khoản]**:
-     - Sửa lỗi không cuộn vô hạn được trên tab Tài khoản hội viên bằng cách thêm container có ID `staff-scroll-container` và `staff-scroll-mobile-container` tương tự tab Nhân viên.
-     - Thiết kế lại layout dạng Card List cho Mobile (`_renderAccountsTable()`) để thông tin hiển thị đẹp mắt, tối ưu không gian và hoàn toàn responsive trên đa thiết bị (Desktop hiển thị dạng Table, Mobile hiển thị dạng Card List, kích hoạt CSS ẩn/hiện tự động dưới 640px).
+  1. **[Sửa lỗi hiển thị PT trong modal đăng ký/chỉnh sửa gói PT]**: 
+     - Sửa lỗi khung viền xanh rỗng luôn hiển thị dưới ô tìm kiếm và lỗi nút Clear (dấu close) không ẩn được khung này. Nguyên nhân do inline style `display:flex` đè lên class `hidden` của Tailwind CSS. Khắc phục bằng cách chuyển toàn bộ class hiển thị sang Tailwind CSS thuần (`hidden flex items-center justify-between`) và đồng bộ xử lý JS `.classList.add('flex')/.classList.remove('flex')`.
+     - Sửa lỗi danh sách PT không ẩn đi sau khi chọn xong PT bằng cách loại bỏ inline style `display:flex` ở container `#ptreg-pt-selection-area` và dùng class Tailwind để ẩn hiện trơn tru.
+  2. **[Đồng bộ tự động kích hoạt gói khi Backend start]**: 
+     - Khắc phục lỗi gói PT "Chờ kích hoạt nối tiếp" có ngày bắt đầu từ ngày quá khứ (12/06) nhưng đến nay (17/06) vẫn chưa được chuyển sang trạng thái "Đang hoạt động". Nguyên nhân do cron job daily chỉ chạy lúc 08:00 sáng, nếu server local bị tắt vào khung giờ này sẽ bị bỏ lỡ.
+     - Viết mới hàm `syncExpiredAndPendingPackages` trong `cron-daily.js` và gọi trực tiếp khi Backend khởi động (`startDailyCronJobs()`) để chạy bù kích hoạt các gói/hợp đồng PT đến hạn và cập nhật trạng thái hết hạn ngay lập tức.
+  3. **[Thêm số sao đánh giá PT khi chọn đăng ký]**: Bổ sung hiển thị điểm đánh giá trung bình và số lượt đánh giá dạng `⭐ 4.8 (12)` vào danh sách card lựa chọn PT.
+  4. **[Nâng cấp Infinite Scroll & Responsive cho Tab Tài khoản]**: Sửa lỗi cuộn vô hạn cho tab Tài khoản và tối ưu hóa responsive dạng Card List trên Mobile (màn hình dưới 640px).
 - **Kết quả**: Thành công.
 
 ---
