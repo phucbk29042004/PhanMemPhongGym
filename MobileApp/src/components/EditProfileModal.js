@@ -82,6 +82,9 @@ export default function EditProfileModal({ visible, onClose, profile, onSaved, c
     if (soDienThoai.trim() && !/^(03|05|07|08|09)\d{8}$/.test(soDienThoai.trim())) {
       return Alert.alert('Lỗi', 'Số điện thoại không hợp lệ (phải gồm 10 chữ số và bắt đầu bằng 03, 05, 07, 08 hoặc 09).');
     }
+    if (cccd.trim() && !/^\d{12}$/.test(cccd.trim())) {
+      return Alert.alert('Lỗi', 'Số CCCD không hợp lệ (phải gồm đúng 12 chữ số).');
+    }
     setSaving(true);
     try {
       // 1. Cập nhật thông tin (tên, sđt, email)
