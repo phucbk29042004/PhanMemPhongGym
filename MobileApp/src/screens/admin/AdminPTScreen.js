@@ -23,9 +23,9 @@ function formatDateTime(val) {
 
 function ScheduleBadge({ status, colors }) {
   const cfg = {
-    cho_tap:  { bg: colors.warningLight || '#fffbeb', color: colors.warning || '#d97706',  label: 'Chờ tập',  Icon: Clock },
-    da_tap:   { bg: colors.primaryLight || '#e6f4ea', color: colors.primary || '#1D9336',  label: 'Đã tập',   Icon: CheckCircle2 },
-    da_huy:   { bg: colors.dangerLight || '#fef2f2',  color: colors.danger || '#dc2626',   label: 'Đã hủy',   Icon: XCircle },
+    cho_tap: { bg: colors.warningLight || '#fffbeb', color: colors.warning || '#d97706', label: 'Chờ tập', Icon: Clock },
+    da_tap: { bg: colors.primaryLight || '#e6f4ea', color: colors.primary || '#1D9336', label: 'Đã tập', Icon: CheckCircle2 },
+    da_huy: { bg: colors.dangerLight || '#fef2f2', color: colors.danger || '#dc2626', label: 'Đã hủy', Icon: XCircle },
   }[status] || { bg: colors.borderLight || '#f0f4f0', color: colors.textMuted || '#9cad9c', label: status, Icon: Clock };
 
   return (
@@ -57,9 +57,9 @@ function Avatar({ name, size = 44 }) {
 // ── PT Card ───────────────────────────────────────────────
 function PTCard({ item, onPress, expanded, onEdit, onDelete, colors, isAdmin }) {
   return (
-    <TouchableOpacity 
-      style={[ptCard.wrap, { backgroundColor: colors.surface, borderColor: colors.border }]} 
-      onPress={onPress} 
+    <TouchableOpacity
+      style={[ptCard.wrap, { backgroundColor: colors.surface, borderColor: colors.border }]}
+      onPress={onPress}
       activeOpacity={0.8}
     >
       <View style={ptCard.top}>
@@ -84,7 +84,7 @@ function PTCard({ item, onPress, expanded, onEdit, onDelete, colors, isAdmin }) 
             <View key={idx} style={[ptCard.scheduleRow, { borderBottomColor: colors.border }]}>
               <View style={ptCard.scheduleLeft}>
                 <Text style={[ptCard.scheduleMember, { color: colors.text }]} numberOfLines={1}>{s.ten_hoi_vien || '—'}</Text>
-                <Text style={[ptCard.scheduleTime, { color: colors.textSecondary }]}>🕒 {s.gio_bat_dau || '—'} – {s.gio_ket_thuc || '—'}</Text>
+                <Text style={[ptCard.scheduleTime, { color: colors.textSecondary }]}> {s.gio_bat_dau || '—'} – {s.gio_ket_thuc || '—'}</Text>
               </View>
               <ScheduleBadge status={s.trang_thai} colors={colors} />
             </View>
@@ -100,8 +100,8 @@ function PTCard({ item, onPress, expanded, onEdit, onDelete, colors, isAdmin }) 
       {/* Hành động sửa/xóa PT */}
       {expanded && (
         <View style={[ptCard.actions, { borderTopWidth: 1, borderTopColor: colors.border }]}>
-          <TouchableOpacity 
-            style={[ptCard.actionBtn, { borderColor: colors.primary }]} 
+          <TouchableOpacity
+            style={[ptCard.actionBtn, { borderColor: colors.primary }]}
             onPress={() => onEdit(item)}
             activeOpacity={0.7}
           >
@@ -109,8 +109,8 @@ function PTCard({ item, onPress, expanded, onEdit, onDelete, colors, isAdmin }) 
             <Text style={[ptCard.actionText, { color: colors.primary }]}>Sửa hồ sơ</Text>
           </TouchableOpacity>
           {isAdmin && (
-            <TouchableOpacity 
-              style={[ptCard.actionBtn, { borderColor: colors.danger }]} 
+            <TouchableOpacity
+              style={[ptCard.actionBtn, { borderColor: colors.danger }]}
               onPress={() => onDelete(item)}
               activeOpacity={0.7}
             >
@@ -312,7 +312,7 @@ export default function AdminPTScreen({ navigation, route }) {
           <Text style={styles.headerSub}>{trainers.length} PT · {totalToday} lịch hôm nay · {doneToday} đã tập</Text>
         </View>
         <View style={styles.headerActions}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.addBtn, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
             onPress={() => navigation.navigate('AdminAddEditPT')}
           >
@@ -362,14 +362,14 @@ export default function AdminPTScreen({ navigation, route }) {
 
       {/* Tabs */}
       <View style={[styles.tabRow, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <TouchableOpacity 
-          style={[styles.tabBtn, tab === 'list' && { borderBottomColor: colors.primary, borderBottomWidth: 2 }]} 
+        <TouchableOpacity
+          style={[styles.tabBtn, tab === 'list' && { borderBottomColor: colors.primary, borderBottomWidth: 2 }]}
           onPress={() => setTab('list')}
         >
           <Text style={[styles.tabText, { color: tab === 'list' ? colors.primary : colors.textSecondary, fontWeight: tab === 'list' ? '700' : '600' }]}>Danh sách PT</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.tabBtn, tab === 'schedule' && { borderBottomColor: colors.primary, borderBottomWidth: 2 }]} 
+        <TouchableOpacity
+          style={[styles.tabBtn, tab === 'schedule' && { borderBottomColor: colors.primary, borderBottomWidth: 2 }]}
           onPress={() => setTab('schedule')}
         >
           <Text style={[styles.tabText, { color: tab === 'schedule' ? colors.primary : colors.textSecondary, fontWeight: tab === 'schedule' ? '700' : '600' }]}>
@@ -479,10 +479,10 @@ export default function AdminPTScreen({ navigation, route }) {
                 {group.list.map((s, idx) => (
                   <View key={s.id || idx} style={[scheduleCard.wrap, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                     <View style={scheduleCard.left}>
-                      <Text style={[scheduleCard.time, { color: colors.primary }]}>🕒 {s.gio_bat_dau || '—'} – {s.gio_ket_thuc || '—'}</Text>
+                      <Text style={[scheduleCard.time, { color: colors.primary }]}>{s.gio_bat_dau || '—'} – {s.gio_ket_thuc || '—'}</Text>
                       <Text style={[scheduleCard.member, { color: colors.text }]} numberOfLines={1}>HV: {s.ten_hoi_vien || '—'}</Text>
                       <Text style={[scheduleCard.pt, { color: colors.textSecondary }]} numberOfLines={1}>PT: {s.ten_pt || '—'}</Text>
-                      {s.ghi_chu ? <Text style={[scheduleCard.note, { color: colors.textSecondary }]} numberOfLines={2}>📝 {s.ghi_chu}</Text> : null}
+                      {s.ghi_chu ? <Text style={[scheduleCard.note, { color: colors.textSecondary }]} numberOfLines={2}>{s.ghi_chu}</Text> : null}
                     </View>
                     <ScheduleBadge status={s.trang_thai} colors={colors} />
                   </View>
