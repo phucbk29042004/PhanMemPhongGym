@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator, Image, RefreshControl, ScrollView,
   StatusBar, StyleSheet, Text, TouchableOpacity, View,
+  Vibration, Alert
 } from 'react-native';
 import {
   Clock, QrCode, RefreshCw, ShieldCheck, UserCheck,
@@ -10,6 +11,7 @@ import ProfileAvatar from '../../components/ProfileAvatar';
 import { api } from '../../services/api';
 import { unwrapData } from '../../utils/data';
 import { useTheme } from '../../context/ThemeContext';
+import { useSocket } from '../../utils/useSocket';
 
 // ── Màu sắc ────────────────────────────────────────────────
 const G = {
@@ -30,8 +32,27 @@ const G = {
   warning: '#f59e0b',
 };
 
-export default function MemberQRCodeScreen() {
+export default function MemberQRCodeScreen({ navigation }) {
   const { colors } = useTheme();
+
+  // Rung phản hồi khi check-in/out thành công
+  useSocket('notification:personal', useCallback((payload) => {
+    if (payload?.loai === 'check_in_success' || payload?.loai === 'check_out_success') {
+      Vibration.vibrate([0, 200, 100, 200]);
+      Alert.alert(
+        payload.tieu_de || 'Thông báo',
+        payload.noi_dung,
+        [
+          {
+            text: 'Đồng ý',
+            onPress: () => {
+              navigation?.navigate?.('Home');
+            }
+          }
+        ]
+      );
+    }
+  }, [navigation]));
   const [qrData, setQrData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

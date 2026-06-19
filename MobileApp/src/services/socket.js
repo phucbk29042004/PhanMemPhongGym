@@ -26,9 +26,10 @@ export function connectSocket(user) {
 
   _socket.on('connect', () => {
     console.log('[Socket] Connected:', _socket.id);
-    if (user?.id) {
-      _socket.emit('join', { userId: user.id, role: user.vai_tro });
-      console.log(`[Socket] Joined room user:${user.id} | role:${user.vai_tro}`);
+    if (user) {
+      const roomUserId = user.ho_so_id || user.id;
+      _socket.emit('join', { userId: roomUserId, role: user.vai_tro });
+      console.log(`[Socket] Joined room user:${roomUserId} | role:${user.vai_tro}`);
     }
   });
 

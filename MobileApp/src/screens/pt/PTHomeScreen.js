@@ -339,7 +339,7 @@ export default function PTHomeScreen({ navigation }) {
 
         {/* Gym Info Card (tappable banner) */}
         <TouchableOpacity
-          style={[styles.gymInfoCard, { backgroundColor: colors.primaryDark }]}
+          style={[styles.gymInfoCard, { backgroundColor: isDark ? '#1f2e21' : '#3a5f43' }]}
           onPress={() => setGymInfoVisible(true)}
           activeOpacity={0.85}
         >
@@ -891,11 +891,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     overflow: 'hidden',
     position: 'relative',
-    shadowColor: G.shadow,
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   gymInfoRay: {
     position: 'absolute',

@@ -8,7 +8,7 @@ import {
   AlertCircle, AlertTriangle, Bell, BellOff,
   CheckCircle, Info, RefreshCw, Trash2,
 } from 'lucide-react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { api } from '../../services/api';
 import { useNotificationStore } from '../../store/useNotificationStore';
 import { useTheme } from '../../context/ThemeContext';
@@ -199,7 +199,7 @@ const getNotifStyle = (loai, tieuDe, noiDung, isDark) => {
 };
 
 // ── Component: Card thông báo ──────────────────────────────
-function NotificationCard({ item }) {
+function NotificationCard({ item, onDelete, onPress }) {
   const { colors } = useTheme();
   const s = getNotifStyle(item.muc_do || item.loai, item.tieu_de, item.noi_dung, colors.isDark);
 
@@ -212,7 +212,11 @@ function NotificationCard({ item }) {
         borderWidth: 1,
       }
     ]}>
-      <View style={notifStyles.content}>
+      <TouchableOpacity
+        style={notifStyles.content}
+        onPress={onPress}
+        activeOpacity={0.7}
+      >
         <View style={notifStyles.titleRow}>
           <View style={notifStyles.titleContainer}>
             {item.is_custom && item.da_doc === 0 && <PulsingDot />}
@@ -229,13 +233,22 @@ function NotificationCard({ item }) {
             {formatTimeAgo(item.ngay_tao)}
           </Text>
         )}
-      </View>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={notifStyles.deleteBtn}
+        onPress={() => onDelete?.(item)}
+        activeOpacity={0.7}
+      >
+        <Trash2 color={s.text} size={14} strokeWidth={2.5} />
+      </TouchableOpacity>
     </View>
   );
 }
 
 const notifStyles = StyleSheet.create({
   card: {
+    flexDirection: 'row',
     padding: 12,
     borderRadius: 12,
     marginBottom: 8,
@@ -254,11 +267,39 @@ const notifStyles = StyleSheet.create({
   title: { fontSize: 13, fontWeight: '700', flex: 1, lineHeight: 18 },
   body: { fontSize: 12, lineHeight: 18 },
   timeText: { fontSize: 10, fontWeight: '600' },
+  deleteBtn: {
+    padding: 6,
+    alignSelf: 'flex-start',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 4,
+  },
 });
 
 // ── Màn hình chính ─────────────────────────────────────────
 export default function PTNotificationScreen() {
-  const { notifications, loading, fetchNotifications, markAsRead, clearNotifications, addNotification } = useNotificationStore();
+  const navigation = useNavigation();
+  const { notifications, loading, fetchNotifications, markAsRead, deleteNotification, clearNotifications, addNotification } = useNotificationStore();
+
+  const handleNotificationPress = (item) => {
+    const loai = (item.loai || '').toLowerCase();
+    const tieuDe = (item.tieu_de || '').toLowerCase();
+    const noiDung = (item.noi_dung || '').toLowerCase();
+
+    if (loai === 'chat_pt_me' || tieuDe.includes('chat') || tieuDe.includes('nhật ký') || noiDung.includes('pt & tôi') || noiDung.includes('tin nhắn')) {
+      const hoiVienId = item.extra?.nguoi_gui_id;
+      navigation.navigate('PTMe', { hoi_vien_id: hoiVienId });
+    } else if (
+      tieuDe.includes('buổi dạy') || tieuDe.includes('lịch dạy') || 
+      noiDung.includes('buổi dạy') || noiDung.includes('lịch dạy') ||
+      tieuDe.includes('xác nhận') || noiDung.includes('xác nhận')
+    ) {
+      navigation.navigate('Schedule');
+    } else {
+      navigation.navigate('Home');
+    }
+  };
+
   const [refreshing, setRefreshing] = useState(false);
   const { colors } = useTheme();
 
@@ -364,7 +405,20 @@ export default function PTNotificationScreen() {
           </View>
         ) : (
           <View style={styles.listContainer}>
-            {notifications.map((n, i) => <NotificationCard key={i} item={n} />)}
+            {notifications.map((n, i) => (
+              <NotificationCard 
+                key={i} 
+                item={n} 
+                onPress={() => handleNotificationPress(n)}
+                onDelete={async (item) => {
+                  try {
+                    await deleteNotification(item);
+                  } catch (e) {
+                    Alert.alert('Lỗi', 'Không thể xóa thông báo này.');
+                  }
+                }}
+              />
+            ))}
           </View>
         )}
         <View style={{ height: 20 }} />

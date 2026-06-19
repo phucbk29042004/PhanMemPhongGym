@@ -8,7 +8,7 @@ import {
   AlertCircle, AlertTriangle, Bell, BellOff,
   CheckCircle, Info, RefreshCw, Trash2,
 } from 'lucide-react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { api } from '../../services/api';
 import { useNotificationStore } from '../../store/useNotificationStore';
 import { useTheme } from '../../context/ThemeContext';
@@ -223,7 +223,7 @@ const getNotifStyle = (loai, tieuDe, noiDung, isDark) => {
 };
 
 // ── Component: Card thông báo ──────────────────────────────
-function NotificationCard({ item, onDelete }) {
+function NotificationCard({ item, onDelete, onPress }) {
   const { colors } = useTheme();
   const s = getNotifStyle(item.muc_do || item.loai, item.tieu_de, item.noi_dung, colors.isDark);
 
@@ -237,7 +237,11 @@ function NotificationCard({ item, onDelete }) {
       }
     ]}>
       {/* Nội dung */}
-      <View style={notifStyles.content}>
+      <TouchableOpacity 
+        style={notifStyles.content} 
+        onPress={onPress}
+        activeOpacity={0.7}
+      >
         <View style={notifStyles.titleRow}>
           <View style={notifStyles.titleContainer}>
             {item.is_custom && item.da_doc === 0 && <PulsingDot />}
@@ -254,7 +258,7 @@ function NotificationCard({ item, onDelete }) {
             {formatTimeAgo(item.ngay_tao)}
           </Text>
         )}
-      </View>
+      </TouchableOpacity>
 
       {/* Nút xóa */}
       <TouchableOpacity 
@@ -303,7 +307,31 @@ const notifStyles = StyleSheet.create({
 
 // ── Màn hình chính ────────────────────────────────────────────
 export default function MemberNotificationScreen() {
+  const navigation = useNavigation();
   const { notifications, loading, fetchNotifications, markAsRead, deleteNotification, clearNotifications, addNotification } = useNotificationStore();
+
+  const handleNotificationPress = (item) => {
+    const loai = (item.loai || '').toLowerCase();
+    const tieuDe = (item.tieu_de || '').toLowerCase();
+    const noiDung = (item.noi_dung || '').toLowerCase();
+
+    if (loai === 'chat_pt_me' || tieuDe.includes('lời dặn') || noiDung.includes('nhật ký') || noiDung.includes('pt & tôi')) {
+      navigation.navigate('PTMe');
+    } else if (
+      tieuDe.includes('buổi tập') || tieuDe.includes('lịch tập') || 
+      noiDung.includes('buổi tập') || noiDung.includes('lịch tập') ||
+      tieuDe.includes('xác nhận') || noiDung.includes('xác nhận')
+    ) {
+      navigation.navigate('Schedule');
+    } else if (
+      tieuDe.includes('gói tập') || noiDung.includes('gói tập') ||
+      tieuDe.includes('gia hạn') || noiDung.includes('gia hạn')
+    ) {
+      navigation.navigate('Home');
+    } else {
+      navigation.navigate('Home');
+    }
+  };
   const [refreshing, setRefreshing] = useState(false);
   const [checkedIn, setCheckedIn] = useState(false);
 
@@ -444,6 +472,7 @@ export default function MemberNotificationScreen() {
               <NotificationCard 
                 key={i} 
                 item={n} 
+                onPress={() => handleNotificationPress(n)}
                 onDelete={async (item) => {
                   try {
                     await deleteNotification(item);

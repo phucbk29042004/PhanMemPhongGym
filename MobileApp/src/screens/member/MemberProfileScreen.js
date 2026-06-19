@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import {
   ActivityIndicator, Alert, KeyboardAvoidingView, Modal,
   Platform, RefreshControl, ScrollView,
@@ -8,7 +8,7 @@ import {
 import {
   Award, Badge, Building2, Calendar, ChevronRight,
   CreditCard, Dumbbell, Eye, EyeOff, KeyRound, LogOut,
-  Moon, Phone, Star, Sun, User, UserCheck, X,
+  Moon, Phone, Star, Sun, Trash2, User, UserCheck, X,
 } from 'lucide-react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import ProfileAvatar from '../../components/ProfileAvatar';
@@ -87,12 +87,89 @@ const menuStyles = StyleSheet.create({
 });
 
 // ── Component: Section container ────────────────────────────
-function Section({ title, children, colors }) {
+function Section({ title, children, colors, extraHeader }) {
   return (
     <View style={secStyles.wrapper}>
-      {title ? <Text style={[secStyles.title, { color: colors?.textMuted || '#9cad9c' }]}>{title}</Text> : null}
+      {title ? (
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, paddingHorizontal: 4 }}>
+          <Text style={[secStyles.title, { color: colors?.textMuted || '#9cad9c', marginBottom: 0 }]}>{title}</Text>
+          {extraHeader || null}
+        </View>
+      ) : null}
       <View style={[secStyles.card, { backgroundColor: colors?.surface || '#ffffff' }]}>{children}</View>
     </View>
+  );
+}
+
+// ── Modal Lịch sử BMI ──────────────────────────────────────
+function BmiHistoryModal({ visible, onClose, history, loading, onDelete, colors }) {
+  const C = colors || {};
+  const textColor = C.text || '#141c14';
+  const labelColor = C.textSecondary || '#6b7c6b';
+  const inputBorder = C.border || '#e4ebe4';
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <View style={pwStyles.overlay}>
+        <View style={[pwStyles.sheet, { backgroundColor: C.surface || '#ffffff', maxHeight: '80%' }]}>
+          {/* Header */}
+          <View style={pwStyles.header}>
+            <Text style={[pwStyles.headerTitle, { color: textColor }]}>Lịch sử chỉ số BMI</Text>
+            <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <X color={C.textMuted || '#9cad9c'} size={22} strokeWidth={2} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Content */}
+          {loading ? (
+            <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+              <ActivityIndicator size="small" color={C.primary || BRAND.primary} />
+            </View>
+          ) : history.length === 0 ? (
+            <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+              <Text style={{ color: C.textMuted || '#9cad9c', fontWeight: '600' }}>Chưa có dữ liệu lịch sử</Text>
+            </View>
+          ) : (
+            <ScrollView style={{ marginBottom: 12 }} showsVerticalScrollIndicator={false}>
+              {history.map((item) => (
+                <View
+                  key={item.id}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    paddingVertical: 12,
+                    borderBottomWidth: 1,
+                    borderBottomColor: inputBorder,
+                  }}
+                >
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text style={{ fontSize: 13, color: labelColor, fontWeight: '500' }}>
+                      {item.ngay_ghi ? new Date(item.ngay_ghi.replace(' ', 'T')).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                    </Text>
+                    <Text style={{ fontSize: 14, color: textColor, fontWeight: '700' }}>
+                      BMI: <Text style={{ color: C.primary || BRAND.primary }}>{item.bmi_value ? item.bmi_value.toFixed(1) : '—'}</Text>
+                      {'  •  '}{item.chieu_cao_cm}cm / {item.can_nang_kg}kg
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => onDelete(item.id)}
+                    style={{ padding: 8 }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Trash2 color={BRAND.danger} size={18} strokeWidth={2} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+
+          <TouchableOpacity style={[pwStyles.btnSave, { backgroundColor: C.primary || BRAND.primary, marginTop: 8 }]} onPress={onClose}>
+            <Text style={pwStyles.btnSaveText}>Đóng</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
   );
 }
 const secStyles = StyleSheet.create({
@@ -246,6 +323,55 @@ export default function MemberProfileScreen() {
   const [heightCm, setHeightCm] = useState('');
   const [weightKg, setWeightKg] = useState('');
   const [savingHealth, setSavingHealth] = useState(false);
+  const [bmiHistory, setBmiHistory] = useState([]);
+  const [showBmiHistory, setShowBmiHistory] = useState(false);
+  const [loadingBmiHistory, setLoadingBmiHistory] = useState(false);
+
+  const fetchBmiHistory = useCallback(async () => {
+    setLoadingBmiHistory(true);
+    try {
+      const res = await api.get('/members/me/bmi-history');
+      if (res.data?.success) {
+        setBmiHistory(res.data.data || []);
+      }
+    } catch (err) {
+      console.error('[ProfileScreen] fetch bmi history error:', err?.message);
+    } finally {
+      setLoadingBmiHistory(false);
+    }
+  }, []);
+
+  const deleteBmiHistoryItem = useCallback((id) => {
+    Alert.alert(
+      'Xác nhận xóa',
+      'Bạn có chắc muốn xóa chỉ số BMI này khỏi lịch sử?',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Xóa',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const res = await api.delete(`/members/me/bmi-history/${id}`);
+              if (res.data?.success) {
+                 Alert.alert('Thành công', 'Đã xóa chỉ số BMI.');
+                 fetchBmiHistory();
+                 fetchProfile();
+              }
+            } catch (err) {
+              Alert.alert('Lỗi', err.response?.data?.message || 'Không thể xóa.');
+            }
+          }
+        }
+      ]
+    );
+  }, [fetchBmiHistory, fetchProfile]);
+
+  useEffect(() => {
+    if (showBmiHistory) {
+      fetchBmiHistory();
+    }
+  }, [showBmiHistory, fetchBmiHistory]);
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -280,6 +406,7 @@ export default function MemberProfileScreen() {
       if (res.data?.success) {
         Alert.alert('Thành công', 'Đã cập nhật BMI.');
         fetchProfile();
+        fetchBmiHistory();
       }
     } catch (err) {
       Alert.alert('Lỗi', err.response?.data?.message || 'Không thể cập nhật BMI.');
@@ -318,6 +445,15 @@ export default function MemberProfileScreen() {
         onClose={() => setShowEditProfile(false)}
         profile={profile}
         onSaved={fetchProfile}
+        colors={colors}
+      />
+
+      <BmiHistoryModal
+        visible={showBmiHistory}
+        onClose={() => setShowBmiHistory(false)}
+        history={bmiHistory}
+        loading={loadingBmiHistory}
+        onDelete={deleteBmiHistoryItem}
         colors={colors}
       />
 
@@ -417,7 +553,15 @@ export default function MemberProfileScreen() {
         </Section>
 
         {/* ── CÀI ĐẶT ──────────────────────────── */}
-        <Section title="Chỉ số BMI" colors={colors}>
+        <Section 
+          title="Chỉ số BMI" 
+          colors={colors}
+          extraHeader={
+            <TouchableOpacity onPress={() => setShowBmiHistory(true)}>
+              <Text style={{ fontSize: 11, color: BRAND.primary, fontWeight: '700' }}>Lịch sử</Text>
+            </TouchableOpacity>
+          }
+        >
           <View style={styles.bmiBox}>
             <View style={{ flex: 1 }}>
               <Text style={[styles.bmiValue, { color: colors.primary }]}>{bmi ? bmi.value.toFixed(1) : '—'}</Text>

@@ -783,10 +783,45 @@ export const updateMyHealth = (req, res) => {
     WHERE id = ?
   `).run(height, weight, req.user.id, hoSo.id);
 
+  if (height !== null && weight !== null) {
+    const bmiVal = weight / Math.pow(height / 100, 2);
+    db.prepare(`
+      INSERT INTO lich_su_bmi (ho_so_id, chieu_cao_cm, can_nang_kg, bmi_value)
+      VALUES (?, ?, ?, ?)
+    `).run(hoSo.id, height, weight, bmiVal);
+  }
+
   const updated = db.prepare('SELECT id, chieu_cao_cm, can_nang_kg FROM ho_so WHERE id = ?').get(hoSo.id);
   ghi_audit_log(req, 'UPDATE', 'ho_so', hoSo.id, { chieu_cao_cm: hoSo.chieu_cao_cm, can_nang_kg: hoSo.can_nang_kg }, updated, 'Cập nhật chỉ số BMI');
   return success(res, updated, 'Đã cập nhật chiều cao/cân nặng');
 };
+
+export const getMyBmiHistory = (req, res) => {
+  const hoSo = db.prepare('SELECT id FROM ho_so WHERE tai_khoan_id = ? AND is_deleted = 0').get(req.user.id);
+  if (!hoSo) return error(res, 'Không tìm thấy hồ sơ người dùng.', 404);
+
+  const rows = db.prepare(`
+    SELECT id, chieu_cao_cm, can_nang_kg, bmi_value, ngay_ghi
+    FROM lich_su_bmi
+    WHERE ho_so_id = ?
+    ORDER BY ngay_ghi DESC
+  `).all(hoSo.id);
+
+  return success(res, rows);
+};
+
+export const deleteMyBmiHistory = (req, res) => {
+  const { id } = req.params;
+  const hoSo = db.prepare('SELECT id FROM ho_so WHERE tai_khoan_id = ? AND is_deleted = 0').get(req.user.id);
+  if (!hoSo) return error(res, 'Không tìm thấy hồ sơ người dùng.', 404);
+
+  const record = db.prepare('SELECT id FROM lich_su_bmi WHERE id = ? AND ho_so_id = ?').get(id, hoSo.id);
+  if (!record) return error(res, 'Không tìm thấy bản ghi lịch sử BMI phù hợp.', 404);
+
+  db.prepare('DELETE FROM lich_su_bmi WHERE id = ?').run(id);
+  return success(res, null, 'Đã xóa bản ghi lịch sử BMI.');
+};
+
 
 // ── POST /api/members/:id/package ────────────────────────
 export const registerPackage = async (req, res) => {
@@ -1577,7 +1612,7 @@ export const getMyNotifications = (req, res) => {
 
     // NEW: Lấy thông báo từ bảng thong_bao_user
     const userNotifs = db.prepare(`
-      SELECT id, loai, tieu_de, noi_dung, da_doc, ngay_tao
+      SELECT id, loai, tieu_de, noi_dung, da_doc, ngay_tao, extra
       FROM thong_bao_user
       WHERE ho_so_id = ?
       ORDER BY ngay_tao DESC LIMIT 10
@@ -1588,6 +1623,13 @@ export const getMyNotifications = (req, res) => {
       if (un.loai === 'nhac_nho_gia_han' || un.loai === 'broadcast_danger') muc_do = 'danger';
       else if (un.loai === 'broadcast_warning') muc_do = 'warning';
 
+      let extraObj = null;
+      if (un.extra) {
+        try {
+          extraObj = JSON.parse(un.extra);
+        } catch (_) {}
+      }
+
       notifications.push({
         id: un.id,
         muc_do: muc_do,
@@ -1596,7 +1638,8 @@ export const getMyNotifications = (req, res) => {
         noi_dung: un.noi_dung,
         ngay_tao: un.ngay_tao,
         is_custom: true,
-        da_doc: un.da_doc
+        da_doc: un.da_doc,
+        extra: extraObj
       });
     });
 
@@ -1796,7 +1839,7 @@ export const getMyNotifications = (req, res) => {
 
     // ── THÔNG BÁO TỪ BẢNG thong_bao_user (Cho cả HV và PT) ─────
     const ptNotifs = db.prepare(`
-      SELECT id, loai, tieu_de, noi_dung, da_doc, ngay_tao
+      SELECT id, loai, tieu_de, noi_dung, da_doc, ngay_tao, extra
       FROM thong_bao_user
       WHERE ho_so_id = ?
       ORDER BY ngay_tao DESC LIMIT 10
@@ -1807,6 +1850,13 @@ export const getMyNotifications = (req, res) => {
       if (un.loai === 'broadcast_danger') muc_do = 'danger';
       else if (un.loai === 'broadcast_warning') muc_do = 'warning';
 
+      let extraObj = null;
+      if (un.extra) {
+        try {
+          extraObj = JSON.parse(un.extra);
+        } catch (_) {}
+      }
+
       notifications.push({
         id: un.id,
         muc_do: muc_do,
@@ -1815,7 +1865,8 @@ export const getMyNotifications = (req, res) => {
         noi_dung: un.noi_dung,
         ngay_tao: un.ngay_tao,
         is_custom: true,
-        da_doc: un.da_doc
+        da_doc: un.da_doc,
+        extra: extraObj
       });
     });
   }

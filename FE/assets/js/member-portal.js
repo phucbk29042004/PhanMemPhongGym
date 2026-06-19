@@ -108,6 +108,71 @@
     _updateHeaderUI(user);
     await _fetchData();
     _initMemberNotifications(); // Khởi tạo bell icon thông báo
+
+    // Tự động kết nối Socket.IO
+    try {
+      const socketUrl = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') ? 'http://localhost:3000' : window.location.origin;
+      window.GymApp._socket = io(socketUrl, { transports: ['websocket', 'polling'] });
+      const sock = window.GymApp._socket;
+      sock.on('connect', () => {
+        console.log('🔌 Socket.IO connected:', sock.id);
+        sock.emit('join', {
+          userId: user.ho_so_id || user.id,
+          vai_tro: 'hoi_vien'
+        });
+      });
+      sock.on('notification:personal', (payload) => {
+        // Cập nhật mảng thông báo local
+        const notifs = window.GymApp.data.myNotifications || [];
+        notifs.unshift(payload);
+        window.GymApp.data.myNotifications = notifs;
+
+        // Cập nhật badge chuông
+        const badge = document.getElementById('member-notif-badge');
+        if (badge) {
+          badge.textContent = notifs.length > 9 ? '9+' : notifs.length;
+          badge.style.display = 'flex';
+        }
+
+        // Render lại dropdown thông báo
+        _renderMemberDropdownList();
+
+        // Render lại banner card thông báo nếu ở trang chủ
+        if (window.GymApp.currentPage === 'dashboard') {
+          const bannerWrap = document.getElementById('member-banner-notifs');
+          if (bannerWrap) {
+            bannerWrap.outerHTML = _buildBannerHTML();
+          } else {
+            const dashboardContainer = document.getElementById('content-area');
+            if (dashboardContainer) {
+              const firstChild = dashboardContainer.querySelector('.space-y-s6');
+              if (firstChild) {
+                const newBannerWrap = document.createElement('div');
+                newBannerWrap.id = 'temp-banner-container';
+                newBannerWrap.innerHTML = _buildBannerHTML();
+                firstChild.insertBefore(newBannerWrap.firstElementChild, firstChild.firstChild);
+              }
+            }
+          }
+          _bindBannerButtons();
+        }
+
+        // Hiển thị toast thông báo
+        window.GymApp.toast(payload.noi_dung || payload.tieu_de || 'Thông báo mới!', payload.muc_do || 'info');
+
+        // Reload dữ liệu âm thầm
+        _fetchData().then(() => {
+          if (window.GymApp.currentPage === 'dashboard') {
+            navigate('dashboard');
+          } else if (window.GymApp.currentPage === 'my-schedule') {
+            pages['my-schedule']._applyFilter();
+          }
+        });
+      });
+    } catch (sockErr) {
+      console.warn('Socket.IO init error:', sockErr);
+    }
+
     _applyTheme(localStorage.getItem('gym-theme') || 'light');
 
     document.getElementById('theme-toggle')?.addEventListener('click', () => {
@@ -254,9 +319,9 @@
   }
 
   const NOTIF_STYLE = {
-    danger:  { bg: 'var(--notif-danger-bg)', border: 'var(--notif-danger-border)', icon_color: 'var(--notif-danger-icon)', text_color: 'var(--notif-danger-text)' },
+    danger: { bg: 'var(--notif-danger-bg)', border: 'var(--notif-danger-border)', icon_color: 'var(--notif-danger-icon)', text_color: 'var(--notif-danger-text)' },
     warning: { bg: 'var(--notif-warning-bg)', border: 'var(--notif-warning-border)', icon_color: 'var(--notif-warning-icon)', text_color: 'var(--notif-warning-text)' },
-    info:    { bg: 'var(--notif-info-bg)', border: 'var(--notif-info-border)', icon_color: 'var(--notif-info-icon)', text_color: 'var(--notif-info-text)' },
+    info: { bg: 'var(--notif-info-bg)', border: 'var(--notif-info-border)', icon_color: 'var(--notif-info-icon)', text_color: 'var(--notif-info-text)' },
     success: { bg: 'var(--notif-success-bg)', border: 'var(--notif-success-border)', icon_color: 'var(--notif-success-icon)', text_color: 'var(--notif-success-text)' },
   };
 
@@ -513,7 +578,7 @@
         </div>
         <div class="p-5 space-y-4">
           <div id="rating-stars" class="flex justify-center gap-2">
-            ${[1,2,3,4,5].map(n => `<button type="button" class="rating-star" data-star="${n}" style="font-size:0;border:none;background:none;cursor:pointer;"><span class="material-symbols-outlined" style="font-size:42px;color:${n <= selectedStars ? '#f59e0b' : 'var(--outline)'};font-variation-settings:'FILL' 1">star</span></button>`).join('')}
+            ${[1, 2, 3, 4, 5].map(n => `<button type="button" class="rating-star" data-star="${n}" style="font-size:0;border:none;background:none;cursor:pointer;"><span class="material-symbols-outlined" style="font-size:42px;color:${n <= selectedStars ? '#f59e0b' : 'var(--outline)'};font-variation-settings:'FILL' 1">star</span></button>`).join('')}
           </div>
           <div id="rating-dynamic">${selectedStars ? renderDynamic() : '<p class="text-center text-on-surface-variant text-body-sm">Chọn số sao để tiếp tục.</p>'}</div>
         </div>
@@ -527,7 +592,7 @@
 
     const close = () => overlay.remove();
     const rerender = () => {
-      overlay.querySelector('#rating-stars').innerHTML = [1,2,3,4,5].map(n => `<button type="button" class="rating-star" data-star="${n}" style="font-size:0;border:none;background:none;cursor:pointer;"><span class="material-symbols-outlined" style="font-size:42px;color:${n <= selectedStars ? '#f59e0b' : 'var(--outline)'};font-variation-settings:'FILL' 1">star</span></button>`).join('');
+      overlay.querySelector('#rating-stars').innerHTML = [1, 2, 3, 4, 5].map(n => `<button type="button" class="rating-star" data-star="${n}" style="font-size:0;border:none;background:none;cursor:pointer;"><span class="material-symbols-outlined" style="font-size:42px;color:${n <= selectedStars ? '#f59e0b' : 'var(--outline)'};font-variation-settings:'FILL' 1">star</span></button>`).join('');
       overlay.querySelector('#rating-dynamic').innerHTML = selectedStars ? renderDynamic() : '<p class="text-center text-on-surface-variant text-body-sm">Chọn số sao để tiếp tục.</p>';
       overlay.querySelector('#rating-submit').disabled = !selectedStars;
     };
@@ -597,9 +662,9 @@
                 </div>
                 <h1 class="text-display-lg font-bold text-on-surface mt-s2">Xin chào, ${user.ho_ten || 'Hội viên'}! 👋</h1>
                 <p class="text-body-lg text-on-surface-variant max-w-md">
-                  ${next 
-                    ? `Bạn có lịch tập PT lúc <strong>${next.gio_bat_dau || '—'}</strong> với HLV <strong>${next.ten_pt || '—'}</strong>. Đừng quên mang theo bình nước nhé!` 
-                    : 'Chào mừng bạn trở lại Paradise GYM. Hãy bắt đầu một buổi tập tuyệt vời hôm nay!'}
+                  ${next
+          ? `Bạn có lịch tập PT lúc <strong>${next.gio_bat_dau || '—'}</strong> với HLV <strong>${next.ten_pt || '—'}</strong>. Đừng quên mang theo bình nước nhé!`
+          : 'Chào mừng bạn trở lại Paradise GYM. Hãy bắt đầu một buổi tập tuyệt vời hôm nay!'}
                 </p>
               </div>
               <div class="relative z-10 flex flex-wrap gap-s3 mt-s4">
@@ -607,9 +672,19 @@
                   <span class="material-symbols-outlined text-[20px]">calendar_month</span> Xem lịch tập
                 </button>
                 ${pendingPackage ? `
-                <button disabled class="bg-surface-container text-on-surface-variant border border-outline-variant px-s6 py-s3 rounded-full font-bold text-label-md cursor-not-allowed flex items-center gap-s2 opacity-80">
-                  <span class="material-symbols-outlined text-[20px] animate-spin">sync</span> Đang chờ duyệt yêu cầu gia hạn...
-                </button>
+                <div class="flex items-center gap-s2 flex-wrap">
+                  <button disabled class="bg-surface-container text-on-surface-variant border border-outline-variant px-s6 py-s3 rounded-full font-bold text-label-md cursor-not-allowed flex items-center gap-s2 opacity-80">
+                    <span class="material-symbols-outlined text-[20px] animate-spin">sync</span> Đang chờ duyệt...
+                  </button>
+                  <button id="btn-dashboard-cancel-pending" data-id="${pendingPackage.id}" class="bg-error-container text-error border border-error px-s5 py-s3 rounded-full font-bold text-label-md hover:bg-error hover:text-white transition-all shadow-sm focus-ring flex items-center gap-s2">
+                    <span class="material-symbols-outlined text-[20px]">cancel</span> Hủy yêu cầu
+                  </button>
+                  ${pendingPackage.phuong_thuc_tt === 'chuyen_khoan' && pendingPackage.payos_status === 'PENDING' ? `
+                  <button id="btn-dashboard-resume-payment" data-order-code="${pendingPackage.payos_order_code}" data-id="${pendingPackage.id}" data-amount="${pendingPackage.gia_thuc_te}" data-ten-goi="${pendingPackage.ten_goi}" class="bg-brand-primary text-white px-s5 py-s3 rounded-full font-bold text-label-md hover:bg-brand-primary/90 transition-all shadow-sm focus-ring flex items-center gap-s2">
+                    <span class="material-symbols-outlined text-[20px]">qr_code</span> Thanh toán ngay
+                  </button>
+                  ` : ''}
+                </div>
                 ` : (isExpired || isExpiringSoon) ? `
                 <button id="btn-dashboard-renew" class="bg-white text-brand-primary border border-brand-primary px-s6 py-s3 rounded-full font-bold text-label-md hover:bg-surface-container transition-colors shadow-sm focus-ring flex items-center gap-s2">
                   <span class="material-symbols-outlined text-[20px]">bolt</span> Gia hạn gói tập
@@ -638,16 +713,16 @@
 
           <div class="grid grid-cols-2 md:grid-cols-4 gap-s4">
             ${[
-              { 
-                label: 'Gói tập', 
-                value: activePackage?.ten_goi || (pendingPackage ? `${pendingPackage.ten_goi} (Chờ duyệt)` : 'Chưa có'), 
-                icon: 'card_membership', 
-                sub: activePackage ? `Hết hạn ${window.GymApp.formatDate(activePackage.den_ngay)}` : pendingPackage ? 'Đang chờ lễ tân duyệt' : 'Chưa có gói tập' 
-              },
-              { label: 'Ngày còn lại', value: daysLeft ?? '—', icon: 'hourglass_top', sub: activePackage ? 'Tính theo gói hiện tại' : 'Chưa đăng ký' },
-              { label: 'Buổi PT còn lại', value: ptRemain ?? '—', icon: 'sports_gymnastics', sub: activePt?.ten_pt || 'Chưa có PT' },
-              { label: 'Lượt vào/ra', value: checkins.length, icon: 'how_to_reg', sub: '30 lượt gần nhất' },
-            ].map(item => `
+          {
+            label: 'Gói tập',
+            value: activePackage?.ten_goi || (pendingPackage ? `${pendingPackage.ten_goi} (Chờ duyệt)` : 'Chưa có'),
+            icon: 'card_membership',
+            sub: activePackage ? `Hết hạn ${window.GymApp.formatDate(activePackage.den_ngay)}` : pendingPackage ? 'Đang chờ lễ tân duyệt' : 'Chưa có gói tập'
+          },
+          { label: 'Ngày còn lại', value: daysLeft ?? '—', icon: 'hourglass_top', sub: activePackage ? 'Tính theo gói hiện tại' : 'Chưa đăng ký' },
+          { label: 'Buổi PT còn lại', value: ptRemain ?? '—', icon: 'sports_gymnastics', sub: activePt?.ten_pt || 'Chưa có PT' },
+          { label: 'Lượt vào/ra', value: checkins.length, icon: 'how_to_reg', sub: '30 lượt gần nhất' },
+        ].map(item => `
               <div class="member-card p-s4 hover:shadow-md transition-shadow">
                 <div class="flex justify-between items-start mb-s2">
                   <span class="text-on-surface-variant text-label-md">${item.label}</span>
@@ -766,6 +841,59 @@
       document.getElementById('btn-dashboard-renew')?.addEventListener('click', () => {
         _showMemberRenewalModal();
       });
+
+      document.getElementById('btn-dashboard-cancel-pending')?.addEventListener('click', async (e) => {
+        const id = e.currentTarget.dataset.id;
+        if (confirm('Bạn có chắc chắn muốn hủy yêu cầu gia hạn đang chờ duyệt này?')) {
+          const btn = e.currentTarget;
+          btn.disabled = true;
+          btn.textContent = 'Đang hủy...';
+          try {
+            const res = await window.GymApp.api.post(`/members/me/package-request/${id}/cancel`);
+            if (res?.success) {
+              window.GymApp.toast('Đã hủy yêu cầu gia hạn thành công!', 'success');
+              await _fetchData();
+              navigate('dashboard');
+            } else {
+              window.GymApp.toast(res?.message || 'Không thể hủy yêu cầu.', 'error');
+              btn.disabled = false;
+              btn.innerHTML = '<span class="material-symbols-outlined text-[20px]">cancel</span> Hủy yêu cầu';
+            }
+          } catch (err) {
+            window.GymApp.toast('Lỗi kết nối máy chủ.', 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<span class="material-symbols-outlined text-[20px]">cancel</span> Hủy yêu cầu';
+          }
+        }
+      });
+
+      document.getElementById('btn-dashboard-resume-payment')?.addEventListener('click', async (e) => {
+        const orderCode = e.currentTarget.dataset.orderCode;
+        const id = e.currentTarget.dataset.id;
+        const amount = e.currentTarget.dataset.amount;
+        const btn = e.currentTarget;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="material-symbols-outlined text-[20px] animate-spin">sync</span> Đang khởi tạo...';
+        try {
+          const res = await window.GymApp.api.get(`/members/me/payos-status/${orderCode}?resume=true`);
+          if (res?.success) {
+            _showPayosQrModal({
+              id: id,
+              orderCode: res.data.orderCode || orderCode,
+              payosUrl: res.data.checkoutUrl,
+              qrCodeUrl: res.data.qrCode,
+              amount: amount
+            });
+          } else {
+            window.GymApp.toast(res?.message || 'Không thể khôi phục thanh toán.', 'error');
+          }
+        } catch (err) {
+          window.GymApp.toast('Lỗi kết nối máy chủ.', 'error');
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = '<span class="material-symbols-outlined text-[20px]">qr_code</span> Thanh toán ngay';
+        }
+      });
     },
 
     destroy() {
@@ -777,6 +905,7 @@
   pages['my-schedule'] = {
     render() {
       const schedules = sortSchedules(window.GymApp.data.ptSchedules || []);
+      const activePt = getActivePt();
       return `
         <div class="space-y-s6">
           <div>
@@ -797,6 +926,11 @@
               <button id="ms-reload" class="flex items-center gap-s2 px-s5 py-s3 rounded-full border border-outline-variant text-on-surface-variant hover:text-brand-primary hover:border-brand-primary transition-all font-bold text-label-md">
                 <span class="material-symbols-outlined text-sm">refresh</span>Tải lại
               </button>
+              ${activePt ? `
+              <button id="ms-create" class="flex items-center gap-s2 px-s5 py-s3 rounded-full bg-brand-primary text-white hover:bg-brand-primary/90 active:scale-95 transition-all font-bold text-label-md shadow-sm">
+                <span class="material-symbols-outlined text-sm">add</span>Đặt lịch mới
+              </button>
+              ` : ''}
             </div>
           </div>
 
@@ -863,6 +997,192 @@
         }
         btn?.classList.remove('opacity-50', 'pointer-events-none');
         window.GymApp.toast('Đã tải lại lịch tập!', 'success');
+      });
+
+      document.getElementById('ms-create')?.addEventListener('click', () => {
+        self._showCreateScheduleModal();
+      });
+    },
+
+    async _showCreateScheduleModal() {
+      const self = this;
+      const activeContracts = (window.GymApp.data.myPtContracts || []).filter(c => c.trang_thai === 'dang_hoat_dong');
+      if (activeContracts.length === 0) {
+        window.GymApp.toast('Bạn không có hợp đồng PT nào đang hoạt động!', 'warning');
+        return;
+      }
+
+      const overlay = document.createElement('div');
+      overlay.style.cssText = `position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:9000;padding:20px;`;
+      overlay.innerHTML = `
+        <div class="animate-fade-in" style="background:var(--bg-surface-lowest);border:1px solid var(--outline-variant);border-radius:24px;width:100%;max-width:500px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,0.15);">
+          <!-- Header -->
+          <div style="padding:20px 24px;background:linear-gradient(135deg,#1D9336,#0a591c);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-top-left-radius:24px;border-top-right-radius:24px;">
+            <div>
+              <h3 style="font-size:16px;font-weight:800;margin:0;letter-spacing:0.02em;">ĐẶT LỊCH TẬP PT</h3>
+              <p style="font-size:11px;opacity:0.85;margin:4px 0 0 0;">Lên lịch tập với Huấn luyện viên cá nhân</p>
+            </div>
+            <button id="close-create-sched" style="background:rgba(255,255,255,0.15);border:none;color:#fff;cursor:pointer;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;margin-left:auto;transition:background .2s;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">
+              <span class="material-symbols-outlined" style="font-size:20px;">close</span>
+            </button>
+          </div>
+          
+          <!-- Body -->
+          <div style="overflow-y:auto;flex:1;padding:24px;display:flex;flex-direction:column;gap:16px;">
+            <!-- Chọn HLV PT -->
+            <div>
+              <label style="display:block;font-size:11px;text-transform:uppercase;font-weight:800;color:var(--text-on-surface-variant);opacity:0.8;margin-bottom:6px;">Huấn luyện viên <span style="color:#ba1a1a;">*</span></label>
+              <select id="cs-contract-id" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl focus:border-brand-primary outline-none text-[14px] font-medium transition-all">
+                ${activeContracts.map(c => `<option value="${c.id}" data-pt-id="${c.pt_id}">${c.ten_pt} (${c.ten_goi} · Còn ${c.so_buoi_dang_ky - c.so_buoi_da_tap} buổi)</option>`).join('')}
+              </select>
+            </div>
+
+            <!-- Ngày tập -->
+            <div>
+              <label style="display:block;font-size:11px;text-transform:uppercase;font-weight:800;color:var(--text-on-surface-variant);opacity:0.8;margin-bottom:6px;">Ngày tập <span style="color:#ba1a1a;">*</span></label>
+              <div class="relative w-full">
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">calendar_month</span>
+                <input id="cs-date" type="date" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface pl-10 pr-4 py-2.5 rounded-xl focus:border-brand-primary outline-none text-[14px] font-medium transition-all" />
+              </div>
+            </div>
+
+            <!-- Khung giờ -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+              <div>
+                <label style="display:block;font-size:11px;text-transform:uppercase;font-weight:800;color:var(--text-on-surface-variant);opacity:0.8;margin-bottom:6px;">Giờ bắt đầu <span style="color:#ba1a1a;">*</span></label>
+                <input id="cs-start" type="time" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl focus:border-brand-primary outline-none text-[14px] font-medium transition-all" />
+              </div>
+              <div>
+                <label style="display:block;font-size:11px;text-transform:uppercase;font-weight:800;color:var(--text-on-surface-variant);opacity:0.8;margin-bottom:6px;">Giờ kết thúc <span style="color:#ba1a1a;">*</span></label>
+                <input id="cs-end" type="time" readonly class="w-full bg-surface-container border border-outline-variant text-on-surface-variant px-4 py-2.5 rounded-xl outline-none text-[14px] font-medium cursor-not-allowed" />
+              </div>
+            </div>
+
+            <!-- Lịch bận của PT trong ngày -->
+            <div id="cs-pt-busy-box" class="hidden bg-surface-container rounded-xl p-s4 border border-outline-variant">
+              <p class="text-label-xs text-on-surface-variant font-bold uppercase tracking-wider">Lịch bận của HLV hôm đó:</p>
+              <div id="cs-pt-busy-list" class="text-body-sm text-error font-medium mt-s1 space-y-1"></div>
+            </div>
+
+            <!-- Ghi chú -->
+            <div>
+              <label style="display:block;font-size:11px;text-transform:uppercase;font-weight:800;color:var(--text-on-surface-variant);opacity:0.8;margin-bottom:6px;">Ghi chú</label>
+              <textarea id="cs-note" placeholder="Lời nhắn hoặc yêu cầu bài tập cho PT..." rows="2" class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl focus:border-brand-primary outline-none text-[14px] font-medium transition-all resize-none"></textarea>
+            </div>
+          </div>
+          
+          <!-- Footer -->
+          <div style="padding:16px 24px;border-top:1px solid var(--outline-variant);display:flex;justify-content:flex-end;gap:12px;background:var(--bg-surface-low);flex-shrink:0;border-bottom-left-radius:24px;border-bottom-right-radius:24px;">
+            <button id="btn-cancel-create-sched" style="padding:10px 20px;border-radius:12px;border:1px solid var(--outline-variant);color:var(--text-on-surface);background:transparent;font-weight:700;font-size:13px;cursor:pointer;">Hủy</button>
+            <button id="btn-submit-create-sched" style="padding:10px 24px;border-radius:12px;border:none;color:#fff;background:#1D9336;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 2px 8px rgba(29,147,54,0.3);">Đặt lịch</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(overlay);
+
+      const close = () => overlay.remove();
+      document.getElementById('close-create-sched').addEventListener('click', close);
+      document.getElementById('btn-cancel-create-sched').addEventListener('click', close);
+
+      const contractSelect = document.getElementById('cs-contract-id');
+      const dateInput = document.getElementById('cs-date');
+      const startInput = document.getElementById('cs-start');
+      const endInput = document.getElementById('cs-end');
+      const ptBusyBox = document.getElementById('cs-pt-busy-box');
+      const ptBusyList = document.getElementById('cs-pt-busy-list');
+
+      // Tự động tính giờ kết thúc = giờ bắt đầu + 1h30p
+      startInput.addEventListener('change', () => {
+        const timeVal = startInput.value;
+        if (timeVal) {
+          const parts = timeVal.split(':');
+          const hr = parseInt(parts[0]);
+          const min = parseInt(parts[1]);
+          const date = new Date();
+          date.setHours(hr, min + 90, 0, 0); // + 1.5h
+          endInput.value = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+        }
+      });
+
+      // Lấy lịch bận của PT khi thay đổi HLV hoặc Ngày tập
+      const checkPtSchedules = async () => {
+        const selectedOpt = contractSelect.options[contractSelect.selectedIndex];
+        const ptId = selectedOpt?.dataset.ptId;
+        const dateVal = dateInput.value;
+
+        if (!ptId || !dateVal) {
+          ptBusyBox.classList.add('hidden');
+          return;
+        }
+
+        try {
+          const res = await window.GymApp.api.get(`/trainers/${ptId}/schedules?date=${dateVal}`);
+          if (res?.success && res.data?.length > 0) {
+            ptBusyBox.classList.remove('hidden');
+            ptBusyList.innerHTML = res.data.map(s => {
+              const statusMap = { cho_tap: 'Chờ tập', da_tap: 'Đã dạy', da_huy: 'Đã hủy', vang: 'Vắng' };
+              return `<div>• ${s.gio_bat_dau} - ${s.gio_ket_thuc} (${statusMap[s.trang_thai] || s.trang_thai})</div>`;
+            }).join('');
+          } else {
+            ptBusyBox.classList.add('hidden');
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      };
+
+      contractSelect.addEventListener('change', checkPtSchedules);
+      dateInput.addEventListener('change', checkPtSchedules);
+
+      document.getElementById('btn-submit-create-sched').addEventListener('click', async () => {
+        const dangKyPtId = contractSelect.value;
+        const ngayTap = dateInput.value;
+        const gioBatDau = startInput.value;
+        const gioKetThuc = endInput.value;
+        const ghiChu = document.getElementById('cs-note').value.trim();
+
+        if (!dangKyPtId || !ngayTap || !gioBatDau || !gioKetThuc) {
+          window.GymApp.toast('Vui lòng chọn đầy đủ thông tin bắt buộc (*)!', 'error');
+          return;
+        }
+
+        const today = todayKey();
+        if (ngayTap < today) {
+          window.GymApp.toast('Không thể xếp lịch ở quá khứ!', 'error');
+          return;
+        }
+
+        const submitBtn = document.getElementById('btn-submit-create-sched');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Đang xử lý...';
+
+        try {
+          const res = await window.GymApp.api.post('/pt/schedules', {
+            dang_ky_pt_id: parseInt(dangKyPtId),
+            ngay_tap: ngayTap,
+            gio_bat_dau: gioBatDau,
+            gio_ket_thuc: gioKetThuc,
+            loai_buoi: 'ca_nhan',
+            ghi_chu: ghiChu || null
+          });
+
+          if (res?.success) {
+            window.GymApp.toast('Đã đặt lịch tập PT thành công!', 'success');
+            close();
+            const fresh = await window.GymApp.api.get('/pt/schedules');
+            if (fresh?.success) window.GymApp.data.ptSchedules = fresh.data || [];
+            self._applyFilter();
+          } else {
+            window.GymApp.toast(res?.message || 'Không thể đặt lịch!', 'error');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Đặt lịch';
+          }
+        } catch (err) {
+          window.GymApp.toast('Xảy ra lỗi khi đặt lịch tập.', 'error');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Đặt lịch';
+        }
       });
     },
 
@@ -1122,7 +1442,7 @@
       const displayPackage = activePackage || pendingPackage || null;
       const activePt = getActivePt();
       const memberType = window.GymApp.formatEnumLabel(p.loai_hv || 'thuong');
-      
+
       let statusText = '○ Hết hạn';
       if (activePackage?.trang_thai === 'dang_hoat_dong') {
         statusText = '● Còn hạn';
@@ -1194,7 +1514,12 @@
               <div class="mb-4 bg-surface-container rounded-xl p-s4 border border-outline-variant">
                 <div class="flex flex-col md:flex-row md:items-center gap-s3">
                   <div class="flex-1">
-                    <p class="text-label-md font-bold text-on-surface-variant">Chỉ số BMI</p>
+                    <div class="flex justify-between items-center">
+                      <p class="text-label-md font-bold text-on-surface-variant">Chỉ số BMI</p>
+                      <button id="btn-bmi-history" class="text-brand-primary text-label-sm font-bold hover:underline flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[16px]">history</span> Lịch sử
+                      </button>
+                    </div>
                     <div class="flex items-end gap-s2 mt-s1">
                       <span class="text-headline-md font-black text-brand-primary">${bmi ? bmi.value.toFixed(1) : '—'}</span>
                       <span class="font-bold text-on-surface">${bmi ? bmi.category : 'Chưa có dữ liệu'}</span>
@@ -1230,6 +1555,36 @@
     },
 
     async init() {
+      const self = this;
+      const bindEvents = () => {
+        document.getElementById('bmi-save')?.addEventListener('click', async () => {
+          const btn = document.getElementById('bmi-save');
+          btn.disabled = true; btn.textContent = 'Đang lưu...';
+          try {
+            const res = await window.GymApp.api.patch('/members/me/health', {
+              chieu_cao_cm: document.getElementById('bmi-height')?.value || null,
+              can_nang_kg: document.getElementById('bmi-weight')?.value || null,
+            });
+            if (res?.success) {
+              window.GymApp.toast('Đã cập nhật BMI!', 'success');
+              const fresh = await window.GymApp.api.get('/members/me/profile');
+              if (fresh?.success) {
+                window.GymApp.data.myProfile = fresh.data;
+                navigate('profile');
+              }
+            }
+          } finally {
+            btn.disabled = false; btn.textContent = 'Lưu';
+          }
+        });
+
+        document.getElementById('btn-bmi-history')?.addEventListener('click', () => {
+          _showBmiHistoryModal();
+        });
+      };
+
+      bindEvents();
+
       try {
         const res = await window.GymApp.api.get('/members/me/profile');
         if (res?.success) {
@@ -1237,31 +1592,14 @@
           window.GymApp.data.myPackages = res.data.goi_tap || [];
           window.GymApp.data.myPtContracts = res.data.dang_ky_pt || [];
           const content = document.getElementById('content-area');
-          if (content) content.innerHTML = this.render();
+          if (content) {
+            content.innerHTML = self.render();
+            bindEvents();
+          }
         }
       } catch (e) {
         console.error(e);
       }
-      document.getElementById('bmi-save')?.addEventListener('click', async () => {
-        const btn = document.getElementById('bmi-save');
-        btn.disabled = true; btn.textContent = 'Đang lưu...';
-        try {
-          const res = await window.GymApp.api.patch('/members/me/health', {
-            chieu_cao_cm: document.getElementById('bmi-height')?.value || null,
-            can_nang_kg: document.getElementById('bmi-weight')?.value || null,
-          });
-          if (res?.success) {
-            window.GymApp.toast('Đã cập nhật BMI!', 'success');
-            const fresh = await window.GymApp.api.get('/members/me/profile');
-            if (fresh?.success) {
-              window.GymApp.data.myProfile = fresh.data;
-              navigate('profile');
-            }
-          }
-        } finally {
-          btn.disabled = false; btn.textContent = 'Lưu';
-        }
-      });
     }
   };
 
@@ -1312,7 +1650,7 @@
         if (!confirm('Xóa tất cả thông báo?')) return;
         try {
           await window.GymApp.api.delete('/members/me/notifications');
-        } catch (_) {}
+        } catch (_) { }
         window.GymApp.data.myNotifications = [];
         const badge = document.getElementById('member-notif-badge');
         if (badge) badge.style.display = 'none';
@@ -1390,7 +1728,7 @@
 
           <!-- Filter -->
           <div class="flex items-center gap-s2 p-s1 bg-surface-container rounded-2xl w-fit border border-outline-variant">
-            ${['all','vao','ra'].map(f => `
+            ${['all', 'vao', 'ra'].map(f => `
               <button class="checkin-filter-btn px-s4 py-s2 rounded-xl text-label-md font-bold transition-all ${f === 'all' ? 'bg-brand-primary text-white shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-high'}"
                 data-filter="${f}">
                 ${{ all: 'Tất cả', vao: 'Vào', ra: 'Ra' }[f]}
@@ -1435,11 +1773,11 @@
     _renderStats() {
       const all = window.GymApp.data.myCheckins || [];
       const vao = all.filter(c => c.loai === 'vao').length;
-      const ra  = all.filter(c => c.loai === 'ra').length;
+      const ra = all.filter(c => c.loai === 'ra').length;
       const stats = [
         { label: 'Tổng lượt', value: all.length, icon: 'history', color: '#1D9336', bg: '#e7f5e9' },
-        { label: 'Lượt vào',  value: vao, icon: 'login',   color: '#1565c0', bg: '#e3f2fd' },
-        { label: 'Lượt ra',   value: ra,  icon: 'logout',  color: '#6a1b9a', bg: '#f3e5f5' },
+        { label: 'Lượt vào', value: vao, icon: 'login', color: '#1565c0', bg: '#e3f2fd' },
+        { label: 'Lượt ra', value: ra, icon: 'logout', color: '#6a1b9a', bg: '#f3e5f5' },
       ];
       const el = document.getElementById('checkin-stats');
       if (!el) return;
@@ -1499,6 +1837,268 @@
     }
   };
 
+  function _showBmiHistoryModal() {
+    const overlay = document.createElement('div');
+    overlay.id = 'modal-bmi-history';
+    overlay.style.cssText = `position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:9000;padding:20px;`;
+    overlay.innerHTML = `
+      <div class="animate-scale-in member-card" style="width:100%;max-width:500px;max-height:85vh;display:flex;flex-direction:column;border-radius:24px;overflow:hidden;background:var(--bg-surface-lowest);border:1px solid var(--outline-variant);box-shadow:0 12px 40px rgba(0,0,0,0.25);">
+        <!-- Header -->
+        <div style="padding:18px 24px;background:linear-gradient(135deg,#1D9336,#0a591c);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+          <div>
+            <h3 style="font-size:15px;font-weight:800;margin:0;letter-spacing:0.02em;">LỊCH SỬ CHỈ SỐ BMI</h3>
+            <p style="font-size:11px;opacity:0.85;margin:3px 0 0 0;">Theo dõi hành trình thay đổi thể trạng</p>
+          </div>
+          <button id="btn-bmi-hist-close" style="background:rgba(255,255,255,0.15);border:none;color:#fff;cursor:pointer;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;margin-left:auto;transition:background .2s;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">
+            <span class="material-symbols-outlined" style="font-size:20px;">close</span>
+          </button>
+        </div>
+        <!-- Body -->
+        <div style="overflow-y:auto;flex:1;padding:20px;display:flex;flex-direction:column;gap:12px;" id="bmi-hist-list-container">
+          <div style="text-align:center;padding:24px 0;"><span class="material-symbols-outlined animate-spin" style="font-size:28px;color:var(--brand-primary);">sync</span></div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const close = () => overlay.remove();
+    document.getElementById('btn-bmi-hist-close').onclick = close;
+
+    const loadHistory = async () => {
+      const container = document.getElementById('bmi-hist-list-container');
+      if (!container) return;
+      try {
+        const res = await window.GymApp.api.get('/members/me/bmi-history');
+        if (res?.success && res.data?.length > 0) {
+          container.innerHTML = res.data.map(item => {
+            const val = Number(item.bmi_value) || 0;
+            const category = val < 18.5 ? 'Gầy' : val < 25 ? 'Bình thường' : val < 30 ? 'Thừa cân' : 'Béo phì';
+            const catColor = val < 18.5 ? '#0284c7' : val < 25 ? '#16a34a' : val < 30 ? '#d97706' : '#dc2626';
+            const dateStr = item.ngay_ghi ? new Date(item.ngay_ghi).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+            return `
+              <div style="background:var(--bg-surface-low);border:1px solid var(--outline-variant);border-radius:16px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                <div style="flex:1;min-width:0;">
+                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <span style="font-size:18px;font-weight:900;color:var(--brand-primary);">${val.toFixed(1)}</span>
+                    <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:${catColor}15;color:${catColor};border:1px solid ${catColor}30;">${category}</span>
+                  </div>
+                  <div style="font-size:12px;color:var(--text-on-surface-variant);margin-top:4px;">
+                    Chiều cao: <strong>${item.chieu_cao_cm}cm</strong> · Cân nặng: <strong>${item.can_nang_kg}kg</strong>
+                  </div>
+                  <div style="font-size:10px;color:var(--text-on-surface-variant);opacity:0.6;margin-top:4px;display:flex;align-items:center;gap:4px;">
+                    <span class="material-symbols-outlined" style="font-size:12px;">schedule</span>${dateStr}
+                  </div>
+                </div>
+                <button class="btn-bmi-hist-delete" data-id="${item.id}" title="Xóa bản ghi" style="background:rgba(220,38,38,0.08);border:none;cursor:pointer;border-radius:10px;padding:6px 8px;display:flex;align-items:center;justify-content:center;color:#dc2626;transition:all .2s;" onmouseover="this.style.background='rgba(220,38,38,0.18)'" onmouseout="this.style.background='rgba(220,38,38,0.08)'">
+                  <span class="material-symbols-outlined" style="font-size:18px;">delete</span>
+                </button>
+              </div>
+            `;
+          }).join('');
+
+          // Bind delete buttons
+          container.querySelectorAll('.btn-bmi-hist-delete').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+              e.stopPropagation();
+              const id = btn.dataset.id;
+              if (confirm('Bạn có chắc chắn muốn xóa bản ghi lịch sử BMI này không?')) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="material-symbols-outlined animate-spin" style="font-size:18px;">sync</span>';
+                try {
+                  const delRes = await window.GymApp.api.delete(`/members/me/bmi-history/${id}`);
+                  if (delRes?.success) {
+                    window.GymApp.toast('Đã xóa bản ghi BMI!', 'success');
+                    await loadHistory();
+                    // Cập nhật profile bên ngoài
+                    const fresh = await window.GymApp.api.get('/members/me/profile');
+                    if (fresh?.success) {
+                      window.GymApp.data.myProfile = fresh.data;
+                      if (window.GymApp.currentPage === 'profile') {
+                        const content = document.getElementById('content-area');
+                        if (content) content.innerHTML = pages['profile'].render();
+                        pages['profile'].init();
+                      }
+                    }
+                  } else {
+                    window.GymApp.toast(delRes?.message || 'Không thể xóa.', 'error');
+                    await loadHistory();
+                  }
+                } catch (err) {
+                  window.GymApp.toast('Lỗi kết nối máy chủ.', 'error');
+                  await loadHistory();
+                }
+              }
+            });
+          });
+        } else {
+          container.innerHTML = `
+            <div style="text-align:center;padding:32px 16px;color:var(--text-on-surface-variant)">
+              <span class="material-symbols-outlined" style="font-size:36px;display:block;margin-bottom:8px;opacity:0.5;">history_toggle_off</span>
+              <p style="font-size:13px;font-weight:700;margin:0 0 4px;color:var(--text-on-surface)">Chưa có lịch sử chỉ số</p>
+              <p style="font-size:11px;margin:0;opacity:0.8;">Các chỉ số BMI bạn đã lưu sẽ hiển thị tại đây.</p>
+            </div>
+          `;
+        }
+      } catch (err) {
+        container.innerHTML = `<p style="color:#dc2626;font-size:12px;text-align:center;padding:16px;">Lỗi tải dữ liệu lịch sử.</p>`;
+      }
+    };
+
+    loadHistory();
+  }
+
+  let payosPollingTimer = null;
+
+  function _showPayosQrModal(data) {
+    const { id, orderCode, payosUrl, qrCodeUrl, amount } = data;
+    clearInterval(payosPollingTimer);
+
+    const qrServerUrl = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&bgcolor=ffffff&color=0a2e13&margin=8&data=${encodeURIComponent(qrCodeUrl || payosUrl)}`;
+    let timeLeft = 600; // 10 phút
+
+    const overlay = document.createElement('div');
+    overlay.id = 'modal-payos-qr';
+    overlay.style.cssText = `position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:9100;padding:20px;`;
+    overlay.innerHTML = `
+      <div class="animate-scale-in member-card" style="width:100%;max-width:440px;display:flex;flex-direction:column;border-radius:24px;overflow:hidden;background:var(--bg-surface-lowest);border:1px solid var(--outline-variant);box-shadow:0 12px 40px rgba(0,0,0,0.25);">
+        <!-- Header -->
+        <div style="padding:18px 24px;background:linear-gradient(135deg,#1D9336,#0a591c);color:#fff;display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <h3 style="font-size:15px;font-weight:800;margin:0;letter-spacing:0.02em;">QUÉT MÃ THANH TOÁN (PAYOS)</h3>
+            <p style="font-size:11px;opacity:0.85;margin:3px 0 0 0;">An toàn · Tự động · Kích hoạt ngay</p>
+          </div>
+          <span style="font-size:10px;font-weight:800;background:rgba(255,255,255,0.2);padding:2px 8px;border-radius:999px;border:1px solid rgba(255,255,255,0.3);margin-left:auto;">PAYOS SECURE</span>
+        </div>
+        <!-- Body -->
+        <div style="padding:24px;display:flex;flex-direction:column;align-items:center;gap:16px;">
+          <!-- QR Code Container -->
+          <div style="background:#fff;padding:12px;border-radius:16px;border:1px solid var(--outline-variant);width:200px;height:200px;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 1px 3px rgba(0,0,0,0.05);">
+            <img src="${qrServerUrl}" alt="PayOS VietQR" style="width:176px;height:176px;border-radius:8px;" />
+          </div>
+
+          <!-- Countdown timer -->
+          <div id="payos-timer-box" style="display:flex;align-items:center;gap:8px;background:var(--bg-surface-low,#f0f4f0);padding:8px 16px;border-radius:12px;font-weight:700;font-size:13px;color:#1D9336;">
+            <span class="material-symbols-outlined text-[16px] animate-pulse">schedule</span>
+            Thanh toán hết hạn sau: <span id="payos-countdown-time">10:00</span>
+          </div>
+
+          <!-- Payment Info Grid -->
+          <div style="width:100%;background:var(--bg-surface-low);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px;border:1px solid var(--outline-variant);">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:11px;color:var(--text-on-surface-variant);font-weight:600;text-transform:uppercase;">Số tiền</span>
+              <span style="font-size:15px;font-weight:900;color:var(--text-on-surface);">${Number(amount).toLocaleString('vi-VN')} VNĐ</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px dashed var(--outline-variant);padding-top:8px;">
+              <span style="font-size:11px;color:var(--text-on-surface-variant);font-weight:600;text-transform:uppercase;">Nội dung chuyển</span>
+              <span style="font-size:12px;font-weight:700;color:var(--text-on-surface);display:flex;align-items:center;gap:6px;">
+                <span id="payos-memo">Gia han ${orderCode}</span>
+                <button id="btn-copy-memo" title="Sao chép nội dung" style="background:none;border:none;cursor:pointer;color:#1D9336;display:flex;align-items:center;">
+                  <span class="material-symbols-outlined text-[16px]">content_copy</span>
+                </button>
+              </span>
+            </div>
+          </div>
+          <p style="font-size:11px;color:var(--text-on-surface-variant);text-align:center;line-height:1.5;margin:0;">
+            * Sử dụng ứng dụng ngân hàng quét mã QR trên để thanh toán.<br>Hệ thống tự động kích hoạt gói ngay khi giao dịch thành công.
+          </p>
+        </div>
+        <!-- Footer -->
+        <div style="padding:16px 24px;border-top:1px solid var(--outline-variant);display:flex;justify-content:space-between;align-items:center;background:var(--bg-surface-low);border-bottom-left-radius:24px;border-bottom-right-radius:24px;">
+          <button id="btn-payos-cancel" style="padding:10px 20px;border-radius:12px;border:1px solid #dc2626;color:#dc2626;background:transparent;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;">
+            <span class="material-symbols-outlined text-[16px]">cancel</span> Hủy yêu cầu gia hạn
+          </button>
+          <button id="btn-payos-close" style="padding:10px 20px;border-radius:12px;border:1px solid var(--outline-variant);color:var(--text-on-surface);background:var(--bg-surface-lowest);font-weight:700;font-size:13px;cursor:pointer;">
+            Tắt QR
+          </button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    // Timer logic
+    const timerInterval = setInterval(() => {
+      timeLeft--;
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        clearInterval(payosPollingTimer);
+        // Tự động hủy
+        window.GymApp.api.post(`/members/me/package-request/${id}/cancel`).then(() => {
+          window.GymApp.toast('Giao dịch đã hết hạn và tự động hủy.', 'warning');
+          overlay.remove();
+          _fetchData().then(() => { if (window.GymApp.currentPage === 'dashboard') navigate('dashboard'); });
+        });
+      } else {
+        const m = Math.floor(timeLeft / 60);
+        const s = timeLeft % 60;
+        const timeStr = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        const timeEl = document.getElementById('payos-countdown-time');
+        if (timeEl) timeEl.textContent = timeStr;
+      }
+    }, 1000);
+
+    // Copy memo
+    document.getElementById('btn-copy-memo').onclick = () => {
+      navigator.clipboard.writeText(`Gia han ${orderCode}`).then(() => {
+        window.GymApp.toast('Đã sao chép nội dung chuyển khoản!', 'success');
+      });
+    };
+
+    // Close buttons
+    const closeAll = () => {
+      clearInterval(timerInterval);
+      clearInterval(payosPollingTimer);
+      overlay.remove();
+    };
+
+    document.getElementById('btn-payos-close').onclick = () => {
+      closeAll();
+      _fetchData().then(() => { if (window.GymApp.currentPage === 'dashboard') navigate('dashboard'); });
+    };
+
+    document.getElementById('btn-payos-cancel').onclick = async () => {
+      if (confirm('Bạn có chắc chắn muốn hủy bỏ yêu cầu gia hạn này không?')) {
+        const cancelBtn = document.getElementById('btn-payos-cancel');
+        cancelBtn.disabled = true;
+        cancelBtn.textContent = 'Đang hủy...';
+        try {
+          const res = await window.GymApp.api.post(`/members/me/package-request/${id}/cancel`);
+          if (res?.success) {
+            window.GymApp.toast('Đã hủy yêu cầu gia hạn.', 'info');
+            closeAll();
+            await _fetchData();
+            if (window.GymApp.currentPage === 'dashboard') navigate('dashboard');
+          }
+        } catch (err) {
+          cancelBtn.disabled = false;
+          cancelBtn.innerHTML = `<span class="material-symbols-outlined text-[16px]">cancel</span> Hủy yêu cầu gia hạn`;
+        }
+      }
+    };
+
+    // Polling logic
+    payosPollingTimer = setInterval(async () => {
+      try {
+        const res = await window.GymApp.api.get(`/members/me/payos-status/${orderCode}`);
+        if (res?.success) {
+          const status = res.data?.status;
+          if (status === 'PAID') {
+            closeAll();
+            window.GymApp.toast('Thanh toán thành công! Gói tập của bạn đã được kích hoạt.', 'success');
+            await _fetchData();
+            if (window.GymApp.currentPage === 'dashboard') navigate('dashboard');
+          } else if (status === 'CANCELLED') {
+            closeAll();
+            window.GymApp.toast('Giao dịch thanh toán đã bị hủy.', 'info');
+            await _fetchData();
+            if (window.GymApp.currentPage === 'dashboard') navigate('dashboard');
+          }
+        }
+      } catch (err) {
+        console.error('Lỗi checkPayosStatus polling:', err);
+      }
+    }, 3000);
+  }
+
   async function _showMemberRenewalModal() {
     const activePackage = getActivePackage();
     const today = todayKey();
@@ -1511,9 +2111,14 @@
     }
 
     let packages = [];
+    let branches = [];
     try {
-      const res = await window.GymApp.api.get('/packages');
-      if (res?.success) packages = res.data || [];
+      const [pkgRes, brRes] = await Promise.all([
+        window.GymApp.api.get('/packages'),
+        window.GymApp.api.get('/branches')
+      ]);
+      if (pkgRes?.success) packages = pkgRes.data || [];
+      if (brRes?.success) branches = brRes.data || [];
     } catch (e) { console.error(e); }
 
     const modalHtml = `
@@ -1545,15 +2150,30 @@
               <p class="text-label-xs text-brand-primary mt-s2">Mặc định: ${activePackage && activePackage.den_ngay >= today ? 'Nối tiếp gói cũ' : 'Hôm nay'}</p>
             </div>
 
+            <div>
+              <label class="block text-label-sm text-on-surface-variant font-bold mb-s2">Phương thức thanh toán</label>
+              <select id="renew-pay-method" class="w-full bg-surface-container-low border border-outline-variant px-s4 py-s3 rounded-xl outline-none focus:border-brand-primary text-body-md">
+                <option value="chuyen_khoan">Chuyển khoản (PayOS VietQR)</option>
+                <option value="tien_mat">Tiền mặt tại quầy</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-label-sm text-on-surface-variant font-bold mb-s2">Chi nhánh gia hạn</label>
+              <select id="renew-branch" class="w-full bg-surface-container-low border border-outline-variant px-s4 py-s3 rounded-xl outline-none focus:border-brand-primary text-body-md">
+                ${branches.map(b => `<option value="${b.ten}" ${b.ten === window.GymApp.data.myProfile?.chi_nhanh ? 'selected' : ''}>${b.ten}</option>`).join('')}
+              </select>
+            </div>
+
             <div class="bg-surface-container rounded-xl p-s4">
               <p class="text-label-xs text-on-surface-variant font-bold uppercase tracking-wider">Lưu ý</p>
-              <p class="text-body-sm text-on-surface mt-s1">Yêu cầu của bạn sẽ được gửi đến lễ tân. Vui lòng thanh toán tại quầy hoặc chuyển khoản để kích hoạt gói.</p>
+              <p class="text-body-sm text-on-surface mt-s1">Nếu chọn Chuyển khoản, hệ thống sẽ mở cổng quét mã QR PayOS tự động. Nếu chọn Tiền mặt, vui lòng thanh toán trực tiếp cho lễ tân để được duyệt kích hoạt gói.</p>
             </div>
           </div>
 
           <div class="px-s6 py-s5 bg-surface-low border-t border-outline-variant flex justify-end gap-s3" style="border-bottom-left-radius: 24px; border-bottom-right-radius: 24px;">
             <button id="btn-renew-cancel" class="px-s5 py-s3 rounded-xl font-bold text-label-md border border-outline-variant text-on-surface hover:bg-surface-container transition-colors">Hủy bỏ</button>
-            <button id="btn-renew-submit" class="px-s6 py-s3 rounded-xl font-bold text-label-md bg-brand-primary text-white hover:opacity-90 transition-all shadow-[0_2px_8px_rgba(29,147,54,0.3)] active:scale-95">Gửi yêu cầu</button>
+            <button id="btn-renew-submit" class="px-s6 py-s3 rounded-xl font-bold text-label-md bg-brand-primary text-white hover:opacity-90 transition-all shadow-[0_2px_8px_rgba(29,147,54,0.3)] active:scale-95">Tiếp tục</button>
           </div>
         </div>
       </div>
@@ -1565,21 +2185,40 @@
     document.getElementById('btn-renew-cancel').onclick = closeModal;
     document.getElementById('btn-renew-close').onclick = closeModal;
     document.getElementById('btn-renew-submit').onclick = async () => {
-      const goi_tap_id = document.getElementById('renew-pkg-id').value;
+      const goi_tap_id = parseInt(document.getElementById('renew-pkg-id').value);
       const tu_ngay = document.getElementById('renew-start-date').value;
-      
+      const phuong_thuc_tt = document.getElementById('renew-pay-method').value;
+      const chi_nhanh_mua = document.getElementById('renew-branch').value;
+      const selectedPkgText = document.getElementById('renew-pkg-id').options[document.getElementById('renew-pkg-id').selectedIndex].text;
+      const ten_goi = selectedPkgText.split('—')[0].trim();
+
       const btn = document.getElementById('btn-renew-submit');
       btn.disabled = true;
       btn.textContent = 'Đang gửi...';
 
       try {
-        const res = await window.GymApp.api.post('/members/me/package-request', { goi_tap_id, tu_ngay });
+        const res = await window.GymApp.api.post('/members/me/package-request', {
+          goi_tap_id,
+          tu_ngay,
+          phuong_thuc_tt,
+          chi_nhanh_mua,
+          ghi_chu: `Gia hạn gói ${ten_goi} tại ${chi_nhanh_mua}`
+        });
         if (res?.success) {
-          window.GymApp.toast('Đã gửi yêu cầu gia hạn!', 'success');
           closeModal();
-          // Reload dashboard
-          await _fetchData();
-          navigate('dashboard');
+          if (phuong_thuc_tt === 'chuyen_khoan') {
+            _showPayosQrModal({
+              id: res.data.id,
+              orderCode: res.data.orderCode,
+              payosUrl: res.data.payosUrl || res.data.checkoutUrl,
+              qrCodeUrl: res.data.qrCodeUrl || res.data.qrCode,
+              amount: res.data.amount
+            });
+          } else {
+            window.GymApp.toast('Đã gửi yêu cầu gia hạn thành công! Vui lòng thanh toán tiền mặt tại quầy.', 'success');
+            await _fetchData();
+            navigate('dashboard');
+          }
         } else {
           window.GymApp.toast(res?.message || 'Lỗi khi gửi yêu cầu.', 'error');
         }
@@ -1587,7 +2226,7 @@
         window.GymApp.toast('Lỗi kết nối máy chủ.', 'error');
       } finally {
         btn.disabled = false;
-        btn.textContent = 'Gửi yêu cầu';
+        btn.textContent = 'Tiếp tục';
       }
     };
   }

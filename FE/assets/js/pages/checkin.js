@@ -185,7 +185,7 @@ window.GymApp.pages['checkin'] = {
                   <span class="material-symbols-outlined text-brand-primary text-lg" style="font-variation-settings:'FILL' 1">calendar_today</span>
                 </div>
                 <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface">Check-in hôm nay</h3>
-                <span id="checkin-count-badge" class="bg-brand-primary text-white px-compact py-xs rounded-full text-label-xs font-bold ml-xs">${checkins.length}</span>
+                <span id="checkin-count-badge" class="bg-brand-primary text-white px-compact py-xs rounded-full text-label-xs font-bold ml-xs">${checkins.filter(c => c.loai === 'vao').length}</span>
               </div>
               <div class="flex items-center gap-standard flex-wrap">
                 <span class="text-on-surface-variant text-body-sm hidden sm:inline">${new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'numeric' })}</span>

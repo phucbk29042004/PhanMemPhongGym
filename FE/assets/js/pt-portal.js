@@ -32,6 +32,50 @@
     // Khởi tạo thông báo bell icon
     _initNotifications();
 
+    // Tự động kết nối Socket.IO
+    try {
+      const socketUrl = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') ? 'http://localhost:3000' : window.location.origin;
+      window.GymApp._socket = io(socketUrl, { transports: ['websocket', 'polling'] });
+      const sock = window.GymApp._socket;
+      sock.on('connect', () => {
+        console.log('🔌 Socket.IO connected for PT:', sock.id);
+        sock.emit('join', {
+          userId: user.ho_so_id || user.id,
+          vai_tro: 'pt'
+        });
+      });
+      sock.on('notification:personal', (payload) => {
+        // Cập nhật mảng thông báo local
+        const notifs = window.GymApp.data.myNotifications || [];
+        notifs.unshift(payload);
+        window.GymApp.data.myNotifications = notifs;
+
+        // Cập nhật badge chuông
+        const badge = document.getElementById('pt-notif-badge');
+        if (badge) {
+          badge.textContent = notifs.length > 9 ? '9+' : notifs.length;
+          badge.style.display = 'flex';
+        }
+
+        // Render lại dropdown thông báo
+        _renderPtDropdownList();
+
+        // Hiển thị toast thông báo
+        window.GymApp.toast(payload.noi_dung || payload.tieu_de || 'Thông báo mới!', payload.muc_do || 'info');
+
+        // Reload dữ liệu âm thầm
+        _fetchData().then(() => {
+          if (window.GymApp.currentPage === 'dashboard') {
+            navigate('dashboard');
+          } else if (window.GymApp.currentPage === 'my-schedule') {
+            pages['my-schedule']._applyFilter(false);
+          }
+        });
+      });
+    } catch (sockErr) {
+      console.warn('Socket.IO init error for PT:', sockErr);
+    }
+
     // Áp dụng theme
     _applyTheme(localStorage.getItem('gym-theme') || 'light');
 
@@ -704,6 +748,73 @@
     });
   }
 
+  // ── Modal sửa/thêm ghi chú cho buổi tập ─────────────────────────
+  function _showNoteModal(scheduleId, currentNote) {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:9000;padding:20px;`;
+    overlay.innerHTML = `
+      <div class="animate-fade-in" style="background:var(--bg-surface-lowest);border:1px solid var(--outline-variant);border-radius:24px;width:100%;max-width:440px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,0.15);">
+        <!-- Header -->
+        <div style="padding:20px 24px;background:linear-gradient(135deg,#1D9336,#0a591c);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-top-left-radius:24px;border-top-right-radius:24px;">
+          <div>
+            <h3 style="font-size:16px;font-weight:800;margin:0;letter-spacing:0.02em;">GHI CHÚ BUỔI TẬP</h3>
+            <p style="font-size:11px;opacity:0.85;margin:4px 0 0 0;">Thêm lưu ý cho buổi tập này</p>
+          </div>
+          <button id="close-note-modal" style="background:rgba(255,255,255,0.15);border:none;color:#fff;cursor:pointer;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;margin-left:auto;transition:background .2s;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">
+            <span class="material-symbols-outlined" style="font-size:20px;">close</span>
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div style="overflow-y:auto;flex:1;padding:24px;display:flex;flex-direction:column;gap:16px;">
+          <div>
+            <label style="display:block;font-size:11px;text-transform:uppercase;font-weight:800;color:var(--text-on-surface-variant);opacity:0.8;margin-bottom:6px;">Nội dung ghi chú</label>
+            <textarea id="note-input" rows="4" placeholder="Ví dụ: Tập trung bài lưng, học viên đau vai trái..." class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl focus:border-brand-primary outline-none text-[14px] font-medium transition-all resize-none">${currentNote || ''}</textarea>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="padding:16px 24px;border-top:1px solid var(--outline-variant);display:flex;justify-content:flex-end;gap:12px;background:var(--bg-surface-low);flex-shrink:0;border-bottom-left-radius:24px;border-bottom-right-radius:24px;">
+          <button id="btn-cancel-note" style="padding:10px 20px;border-radius:12px;border:1px solid var(--outline-variant);color:var(--text-on-surface);background:transparent;font-weight:700;font-size:13px;cursor:pointer;">Hủy</button>
+          <button id="btn-save-note" style="padding:10px 24px;border-radius:12px;border:none;color:#fff;background:#1D9336;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 2px 8px rgba(29,147,54,0.3);">Lưu ghi chú</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const close = () => overlay.remove();
+    document.getElementById('close-note-modal').addEventListener('click', close);
+    document.getElementById('btn-cancel-note').addEventListener('click', close);
+
+    document.getElementById('btn-save-note').addEventListener('click', async () => {
+      const text = document.getElementById('note-input').value.trim();
+      const saveBtn = document.getElementById('btn-save-note');
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Đang lưu...';
+
+      try {
+        const res = await window.GymApp.api.patch(`/pt/schedules/${scheduleId}/note`, { ghi_chu: text || null });
+        if (res?.success) {
+          window.GymApp.toast('Đã lưu ghi chú thành công!', 'success');
+          close();
+          const fresh = await window.GymApp.api.get('/pt/schedules');
+          if (fresh?.success) window.GymApp.data.ptSchedules = fresh.data || [];
+          window.GymApp.pages['my-schedule']._applyFilter();
+        } else {
+          window.GymApp.toast(res?.message || 'Không thể lưu ghi chú!', 'error');
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Lưu ghi chú';
+        }
+      } catch (err) {
+        console.error(err);
+        window.GymApp.toast('Lỗi kết nối máy chủ!', 'error');
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Lưu ghi chú';
+      }
+    });
+  }
+
   async function _cancelScheduleSession(scheduleId, studentName) {
     const reason = prompt(`Nhập lý do hủy buổi tập với ${studentName}:`);
     if (reason === null) return;
@@ -727,6 +838,31 @@
     } catch (err) {
       console.error(err);
       window.GymApp.toast('Lỗi kết nối máy chủ!', 'error');
+    }
+  }
+
+  async function _confirmScheduleSession(scheduleId, studentName, btn) {
+    try {
+      const res = await window.GymApp.api.put(`/pt/schedules/${scheduleId}/confirm`, {});
+      if (res?.success) {
+        window.GymApp.toast(`Đã xác nhận buổi tập với ${studentName} hoàn thành!`, 'success');
+        const fresh = await window.GymApp.api.get('/pt/schedules');
+        if (fresh?.success) window.GymApp.data.ptSchedules = fresh.data || [];
+        window.GymApp.pages['my-schedule']._applyFilter();
+      } else {
+        window.GymApp.toast(res?.message || 'Xác nhận buổi tập thất bại!', 'error');
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `<span class="material-symbols-outlined text-sm">done</span> Xong`;
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      window.GymApp.toast('Lỗi kết nối máy chủ!', 'error');
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<span class="material-symbols-outlined text-sm">done</span> Xong`;
+      }
     }
   }
 
@@ -945,14 +1081,20 @@
       document.getElementById('sch-status')?.addEventListener('change', () => self._applyFilter(true));
       document.getElementById('sch-date')?.addEventListener('change', () => self._applyFilter(true));
       document.getElementById('sch-reload')?.addEventListener('click', async () => {
+        const btn = document.getElementById('sch-reload');
+        btn?.classList.add('opacity-50', 'pointer-events-none');
         try {
           const res = await window.GymApp.api.get('/pt/schedules');
           if (res?.success) window.GymApp.data.ptSchedules = res.data || [];
         } catch (e) { console.error(e); }
-        document.getElementById('sch-search').value = '';
-        document.getElementById('sch-status').value = '';
-        document.getElementById('sch-date').value = '';
+        const searchInput = document.getElementById('sch-search');
+        const statusSelect = document.getElementById('sch-status');
+        const dateInput = document.getElementById('sch-date');
+        if (searchInput) searchInput.value = '';
+        if (statusSelect) statusSelect.value = '';
+        if (dateInput) dateInput.value = '';
         self._applyFilter(true);
+        btn?.classList.remove('opacity-50', 'pointer-events-none');
         window.GymApp.toast('Đã tải lại lịch tập!', 'success');
       });
 
@@ -986,122 +1128,61 @@
         }
 
         // --- Xác nhận đã tập ---
-        const btn = e.target.closest('.btn-confirm-session');
-        if (btn && !btn.disabled) {
-          const scheduleId = btn.dataset.id;
-          const studentName = btn.dataset.name;
+        const confirmBtn = e.target.closest('.btn-confirm-session');
+        if (confirmBtn && !confirmBtn.disabled) {
+          const scheduleId = confirmBtn.dataset.id;
+          const studentName = confirmBtn.dataset.name;
 
           if (!confirm(`Xác nhận buổi tập với ${studentName} đã hoàn thành?\n(Buổi này sẽ được trừ từ gói PT.)`)) return;
 
-          btn.disabled = true;
-          btn.innerHTML = `<span class="material-symbols-outlined text-xs animate-spin">autorenew</span> Đang lưu...`;
+          confirmBtn.disabled = true;
+          confirmBtn.innerHTML = `<span class="material-symbols-outlined text-xs animate-spin">autorenew</span> Đang lưu...`;
 
-          try {
-            const res = await window.GymApp.api.put(`/pt/schedules/${scheduleId}/confirm`, {});
-            if (res?.success) {
-              window.GymApp.toast(`✅ Đã xác nhận buổi tập với ${studentName}!`, 'success');
-              const fresh = await window.GymApp.api.get('/pt/schedules');
-              if (fresh?.success) window.GymApp.data.ptSchedules = fresh.data || [];
-              self._applyFilter();
-            } else {
-              window.GymApp.toast(res?.message || 'Xác nhận thất bại!', 'error');
-              btn.disabled = false;
-              btn.innerHTML = `<span class="material-symbols-outlined text-xs">done</span> Xác nhận`;
-            }
-          } catch (err) {
-            console.error(err);
-            window.GymApp.toast('Lỗi kết nối, vui lòng thử lại.', 'error');
-            btn.disabled = false;
-            btn.innerHTML = `<span class="material-symbols-outlined text-xs">done</span> Xác nhận`;
-          }
+          await _confirmScheduleSession(scheduleId, studentName, confirmBtn);
           return;
         }
 
-        // 2. Sửa lịch tập
-        const editBtn = e.target.closest('.btn-edit-session');
-        if (editBtn) {
-          const s = JSON.parse(decodeURIComponent(editBtn.dataset.sdata));
-          _showEditScheduleModal(s);
-          return;
-        }
-
-        // 3. Hủy lịch tập
+        // --- Hủy buổi tập ---
         const cancelBtn = e.target.closest('.btn-cancel-session');
         if (cancelBtn) {
-          const id = cancelBtn.dataset.id;
-          const name = cancelBtn.dataset.name;
-          _cancelScheduleSession(id, name);
+          const scheduleId = cancelBtn.dataset.id;
+          const studentName = cancelBtn.dataset.name;
+          await _cancelScheduleSession(scheduleId, studentName);
           return;
         }
 
-        // 4. Sửa nhanh ghi chú
+        // --- Sửa lịch tập ---
+        const editBtn = e.target.closest('.btn-edit-session');
+        if (editBtn) {
+          try {
+            const sData = JSON.parse(decodeURIComponent(editBtn.dataset.sdata));
+            _showEditScheduleModal(sData);
+          } catch (err) {
+            console.error(err);
+          }
+          return;
+        }
+
+        // --- Thêm/sửa ghi chú ---
         const noteBtn = e.target.closest('.btn-pt-edit-note');
         if (noteBtn) {
-          const id = noteBtn.dataset.id;
-          const oldNote = noteBtn.dataset.ghiChu;
-          self._showEditNoteModal(id, oldNote);
+          const scheduleId = noteBtn.dataset.id;
+          const currentNote = noteBtn.dataset.ghiChu || '';
+          _showNoteModal(scheduleId, currentNote);
           return;
         }
       });
-    },
 
-    _showEditNoteModal(scheduleId, oldNote) {
-      const self = this;
-      const overlay = document.createElement('div');
-      overlay.style.cssText = `position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:9000;padding:20px;`;
-      overlay.innerHTML = `
-        <div class="animate-fade-in bg-surface-container-lowest border border-outline-variant" style="width:100%;max-width:440px;display:flex;flex-direction:column;border-radius:20px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,0.15);">
-          <!-- Header -->
-          <div style="padding:16px 20px;background:linear-gradient(135deg,#1D9336,#0a591c);color:#fff;display:flex;align-items:center;justify-content:space-between;">
-            <h3 style="font-size:15px;font-weight:800;margin:0;">GHI CHÚ BUỔI TẬP (PT)</h3>
-            <button id="close-note-modal" style="background:none;border:none;color:#fff;cursor:pointer;margin-left:auto;display:flex;align-items:center;">
-              <span class="material-symbols-outlined" style="font-size:20px;">close</span>
-            </button>
-          </div>
-          <!-- Body -->
-          <div style="padding:20px;display:flex;flex-direction:column;gap:12px;">
-            <p class="text-body-sm text-on-surface-variant font-medium">Nhập ghi chú cho buổi tập này:</p>
-            <textarea id="note-input" rows="3" placeholder="Nhập bài tập, lưu ý sức khỏe học viên..." class="w-full bg-surface-container border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl focus:border-brand-primary outline-none text-body-md transition-colors resize-none">${oldNote || ''}</textarea>
-          </div>
-          <!-- Footer -->
-          <div style="padding:12px 20px;border-top:1px solid var(--outline-variant);display:flex;justify-content:flex-end;gap:10px;background:var(--bg-surface-low);">
-            <button id="btn-cancel-note" class="px-loose py-compact rounded-xl border border-outline-variant text-on-surface text-body-sm font-bold" style="padding:8px 16px; border-radius:8px; border:1px solid var(--outline-variant); cursor:pointer;">Hủy</button>
-            <button id="btn-save-note" class="px-loose py-compact rounded-xl bg-brand-primary text-white text-body-sm font-bold" style="padding:8px 18px; border-radius:8px; border:none; background:#1D9336; color:white; cursor:pointer;">Lưu ghi chú</button>
-          </div>
-        </div>
-      `;
-      document.body.appendChild(overlay);
-
-      const close = () => overlay.remove();
-      document.getElementById('close-note-modal').addEventListener('click', close);
-      document.getElementById('btn-cancel-note').addEventListener('click', close);
-
-      document.getElementById('btn-save-note').addEventListener('click', async () => {
-        const text = document.getElementById('note-input').value.trim();
-        const saveBtn = document.getElementById('btn-save-note');
-        saveBtn.disabled = true;
-        saveBtn.textContent = 'Đang lưu...';
-
-        try {
-          const res = await window.GymApp.api.patch(`/pt/schedules/${scheduleId}/note`, { ghi_chu: text || null });
-          if (res?.success) {
-            window.GymApp.toast('Đã lưu ghi chú thành công!', 'success');
-            close();
-            const fresh = await window.GymApp.api.get('/pt/schedules');
-            if (fresh?.success) window.GymApp.data.ptSchedules = fresh.data || [];
-            self._applyFilter();
-          } else {
-            window.GymApp.toast(res?.message || 'Không thể lưu ghi chú!', 'error');
-            saveBtn.disabled = false;
-            saveBtn.textContent = 'Lưu ghi chú';
-          }
-        } catch (err) {
-          console.error(err);
-          window.GymApp.toast('Lỗi kết nối máy chủ!', 'error');
-          saveBtn.disabled = false;
-          saveBtn.textContent = 'Lưu ghi chú';
+      // Tự động tải lịch dạy mới nhất từ backend khi vào tab
+      try {
+        const res = await window.GymApp.api.get('/pt/schedules');
+        if (res?.success) {
+          window.GymApp.data.ptSchedules = res.data || [];
+          self._applyFilter(false);
         }
-      });
+      } catch (e) {
+        console.error('PT Schedule auto-fetch error:', e);
+      }
     }
   };
 
@@ -1525,6 +1606,9 @@
       }
     }
   };
+
+  window.GymApp = window.GymApp || {};
+  window.GymApp.pages = pages;
 
   // ── Khởi động ──────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', initPortal);

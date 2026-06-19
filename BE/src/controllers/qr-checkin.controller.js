@@ -8,7 +8,7 @@ import jwt from 'jsonwebtoken';
 import db from '../config/db.js';
 import { success, error } from '../utils/response.js';
 import { ghi_audit_log } from '../utils/audit.js';
-import { createNotification } from '../utils/notifications.js';
+import { createNotification, createUserNotification } from '../utils/notifications.js';
 import { getActorBranch } from '../utils/branch.js';
 
 
@@ -207,6 +207,13 @@ export const scanQr = (req, res) => {
     hoSo.id,
     'ho_so',
     'ca_hai'
+  );
+
+  createUserNotification(
+    hoSo.id,
+    loaiCheckin === 'vao' ? '✓ Check-in thành công' : '✓ Check-out thành công',
+    `Bạn đã ${loaiCheckin === 'vao' ? 'vào' : 'ra'} phòng tập lúc ${thoiGian} tại ${branch || 'Paradise GYM'}.`,
+    loaiCheckin === 'vao' ? 'check_in_success' : 'check_out_success'
   );
 
   return success(res, {

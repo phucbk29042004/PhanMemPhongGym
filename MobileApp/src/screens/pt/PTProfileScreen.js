@@ -18,6 +18,10 @@ import { useTheme } from '../../context/ThemeContext';
 import { api } from '../../services/api';
 import { formatDate, formatDateTime, checkinMethodLabel } from '../../utils/data';
 
+function genderLabel(g) {
+  return g === 'nam' || g === 'male' ? 'Nam' : g === 'nu' || g === 'female' ? 'Nữ' : (g || '—');
+}
+
 // ── Fixed brand colors ─────────────────────────────────────
 const BRAND = {
   primary: '#1D9336',
@@ -257,6 +261,8 @@ export default function PTProfileScreen() {
   const onRefresh = () => { setRefreshing(true); fetchData(); };
 
   const safeCheckins = Array.isArray(checkins) ? checkins : [];
+  const diaChiParts = [profile?.dia_chi_tam_tru, profile?.phuong_xa, profile?.quan_huyen, profile?.tinh_thanh].filter(Boolean);
+  const diaChi = diaChiParts.join(', ') || '—';
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -357,8 +363,11 @@ export default function PTProfileScreen() {
           }
         >
           <MenuRow icon={User} label="Họ và tên" sublabel={profile?.ho_ten || '—'} onPress={null} colors={colors} />
+          <MenuRow icon={Calendar} label="Ngày sinh" sublabel={formatDate(profile?.ngay_sinh) || '—'} onPress={null} colors={colors} />
+          <MenuRow icon={User} label="Giới tính" sublabel={genderLabel(profile?.gioi_tinh)} onPress={null} colors={colors} />
           <MenuRow icon={Award} label="Chuyên môn" sublabel={profile?.chuyen_mon || '—'} onPress={null} colors={colors} />
           <MenuRow icon={Badge} label="CCCD / CMND" sublabel={profile?.cccd || '—'} onPress={null} colors={colors} />
+          <MenuRow icon={Building2} label="Địa chỉ" sublabel={diaChi} onPress={null} colors={colors} />
           <MenuRow icon={Building2} label="Chi nhánh làm việc" sublabel={profile?.chi_nhanh || '—'} onPress={null} colors={colors} />
         </Section>
 

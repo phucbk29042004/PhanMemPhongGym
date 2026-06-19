@@ -352,6 +352,7 @@ export default function MemberHomeScreen({ navigation }) {
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedDetailPkg, setSelectedDetailPkg] = useState(null);
   const [gymInfoVisible, setGymInfoVisible] = useState(false);
+  const [allPackagesModalVisible, setAllPackagesModalVisible] = useState(false);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -407,13 +408,15 @@ export default function MemberHomeScreen({ navigation }) {
         {/* ────────────────────────────────────── */}
         {/* CARD HỢP ĐỒNG / GÓI TẬP ĐANG HOẠT ĐỘNG */}
         {/* ────────────────────────────────────── */}
-        {hasAnyPackage && (
           <View style={[styles.section, { backgroundColor: colors.surface }]}>
             <View style={styles.sectionHeader}>
               <View style={[styles.sectionIconBox, { backgroundColor: colors.primaryLight }]}>
                 <CreditCard color={colors.primary} size={18} strokeWidth={2} />
               </View>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>Gói Hội Viên</Text>
+              <TouchableOpacity onPress={() => setAllPackagesModalVisible(true)} activeOpacity={0.7}>
+                <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '700' }}>Xem thêm</Text>
+              </TouchableOpacity>
             </View>
 
             {loading ? (
@@ -596,9 +599,14 @@ export default function MemberHomeScreen({ navigation }) {
                   </View>
                 )}
               </TouchableOpacity>
-            ) : null}
+            ) : (
+              <View style={styles.emptyContract}>
+                <CreditCard color={colors.textMuted} size={36} strokeWidth={1.5} />
+                <Text style={[styles.emptyContractText, { color: colors.text }]}>Chưa đăng ký gói tập</Text>
+                <Text style={[styles.emptyContractSub, { color: colors.textMuted }]}>Hãy nhấn Xem thêm ở góc phải để đăng ký gói tập mới.</Text>
+              </View>
+            )}
           </View>
-        )}
 
         {/* ──────────────────── */}
         {/* TIỆN ÍCH NHANH      */}
@@ -654,47 +662,21 @@ export default function MemberHomeScreen({ navigation }) {
           </View>
         </View>
 
-        {/* ──────────────────── */}
-        {/* GÓI HỘI VIÊN THỰC TẾ */}
-        {/* ──────────────────── */}
-        {!loading && allPackages.length > 0 && (
-          <View style={[styles.section, { backgroundColor: colors.surface }]}>
-            <View style={styles.sectionHeader}>
-              <View style={[styles.sectionIconBox, { backgroundColor: colors.primaryLight }]}>
-                <Award color={colors.primary} size={18} strokeWidth={2} />
-              </View>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Gói Hội Viên</Text>
-            </View>
-
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.packageScroll}
-            >
-              {allPackages.map((item, i) => (
-                <PackageCard
-                  key={item._key}
-                  item={item}
-                  index={i}
-                  colors={colors}
-                  onPress={() => {
-                    if (item.loai_goi !== 'pt' && item.loai_goi !== 'theo_buoi') {
-                      navigation.navigate('PackageDetail', { packageItem: item, profile });
-                    } else {
-                      alert(`Đây là gói Huấn Luyện Viên cá nhân (PT).\nVui lòng liên hệ quầy lễ tân để đăng ký tập với HLV.`);
-                    }
-                  }}
-                />
-              ))}
-            </ScrollView>
-          </View>
-        )}
+        {/* Danh sách gói tập đã được đưa lên modal Xem thêm ở card hợp đồng */}
 
         {/* ─────────────────────────────────────── */}
         {/* CARD NỘI DUNG PHÒNG TẬP (bấm mở modal) */}
         {/* ─────────────────────────────────────── */}
         <TouchableOpacity
-          style={[styles.gymInfoCard, { backgroundColor: G.primaryDark }]}
+          style={[
+            styles.gymInfoCard,
+            {
+              backgroundColor: colors.isDark ? '#1f2e21' : '#3a5f43',
+              shadowColor: colors.isDark ? '#000000' : '#3a5f43',
+              shadowOpacity: colors.isDark ? 0.15 : 0.12,
+              elevation: 3,
+            }
+          ]}
           onPress={() => setGymInfoVisible(true)}
           activeOpacity={0.85}
         >
@@ -1286,6 +1268,83 @@ export default function MemberHomeScreen({ navigation }) {
               >
                 <Text style={{ color: G.white, fontWeight: '800', fontSize: 15 }}>Đóng</Text>
               </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Modal Toàn bộ gói tập (Xem thêm) ────────────────── */}
+      <Modal
+        visible={allPackagesModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setAllPackagesModalVisible(false)}
+      >
+        <View style={styles.bottomSheetOverlay}>
+          <View style={[styles.modalContent, styles.bottomSheetContent, { backgroundColor: colors.surface, maxHeight: '85%' }]}>
+            <View style={[styles.modalHeader, { backgroundColor: colors.isDark ? colors.statusBarBg : '#3a5f43' }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalTitle}>Danh sách gói tập</Text>
+                <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 12, marginTop: 2 }}>
+                  Tất cả các gói tập Gym & PT hiện có tại Paradise GYM
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setAllPackagesModalVisible(false)}>
+                <Text style={styles.modalCloseX}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }} showsVerticalScrollIndicator={false}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12 }}>
+                {allPackages.map((item, i) => {
+                  const cardBg = colors.isDark ? colors.surfaceVariant : [colors.primaryLight, '#e8f4fd', '#fef9e7', '#f3e8ff'][i % 4];
+                  const accentColor = colors.isDark ? colors.primary : [G.primary, '#1565c0', '#b7791f', '#7c3aed'][i % 4];
+                  return (
+                    <TouchableOpacity
+                      key={item._key}
+                      style={{
+                        width: '48%',
+                        backgroundColor: cardBg,
+                        borderWidth: colors.isDark ? 1 : 0,
+                        borderColor: colors.isDark ? colors.border : 'transparent',
+                        padding: 16,
+                        borderRadius: 16,
+                        minHeight: 120,
+                        justifyContent: 'space-between'
+                      }}
+                      onPress={() => {
+                        setAllPackagesModalVisible(false);
+                        if (item.loai_goi !== 'pt' && item.loai_goi !== 'theo_buoi') {
+                          navigation.navigate('PackageDetail', { packageItem: item, profile });
+                        } else {
+                          Alert.alert('Thông báo', `Đây là gói Huấn Luyện Viên cá nhân (PT).\nVui lòng liên hệ quầy lễ tân để đăng ký tập với HLV.`);
+                        }
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <View>
+                        <View style={styles.pkgCardBrandRow}>
+                          <Dumbbell color={accentColor} size={11} strokeWidth={2.5} />
+                          <Text style={[styles.pkgCardBrandText, { color: accentColor }]}>PARADISE GYM</Text>
+                        </View>
+                        <Text style={[styles.packageNameText, { color: colors.text }]} numberOfLines={2}>
+                          {item.ten_goi}
+                        </Text>
+                      </View>
+                      <View style={{ marginTop: 8 }}>
+                        <Text style={[styles.packagePriceText, { color: accentColor, fontSize: 15 }]}>
+                          {formatPrice(item.gia)}
+                        </Text>
+                        <View style={[styles.pkgCardBadge, { backgroundColor: colors.isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
+                          <Text style={[styles.pkgCardBadgeText, { color: colors.textSecondary, fontSize: 9 }]}>
+                            {item.loai_goi === 'pt' ? 'Gói PT' : 'Gói Gym'}
+                          </Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </ScrollView>
           </View>
         </View>

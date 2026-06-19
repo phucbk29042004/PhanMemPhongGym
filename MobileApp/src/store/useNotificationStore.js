@@ -54,6 +54,7 @@ export const useNotificationStore = create((set, get) => ({
       loai: payload.loai || 'thong_bao_chung',
       tieu_de: payload.tieu_de,
       noi_dung: payload.noi_dung,
+      extra: payload.extra,
       ngay_tao: payload.ngay_tao || new Date().toISOString(),
     };
     set((state) => ({

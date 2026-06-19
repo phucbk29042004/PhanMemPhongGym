@@ -12,7 +12,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useTheme } from '../../context/ThemeContext';
 import { useSocket } from '../../utils/useSocket';
 
-export default function PTMeScreen({ navigation }) {
+export default function PTMeScreen({ navigation, route }) {
   const { user } = useAuthStore();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -75,7 +75,18 @@ export default function PTMeScreen({ navigation }) {
     }
   }, [isPT, selectedMemberId, load]));
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusEffect(
+    useCallback(() => {
+      const targetId = route?.params?.hoi_vien_id;
+      if (targetId) {
+        // Tiêu thụ tham số chuyển hướng 1 lần để tránh dính cứng focus khi quay lại sau này
+        navigation.setParams({ hoi_vien_id: undefined });
+        load(targetId);
+      } else {
+        load();
+      }
+    }, [load, route?.params?.hoi_vien_id, navigation])
+  );
 
   const submit = async () => {
     if (isPT && !selectedMemberId) return Alert.alert('Thiếu học viên', 'Vui lòng chọn học viên.');

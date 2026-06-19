@@ -8,7 +8,7 @@ import {
   getMembers, getMemberById, createMember, updateMember,
   deleteMember, updateAvatar, getExpiringMembers,
   getExpiredMembers, getMemberHistory, registerPackage,
-  getBirthday, getMyProfile, updateMyHealth, createAccount, checkDuplicate,
+  getBirthday, getMyProfile, updateMyHealth, getMyBmiHistory, deleteMyBmiHistory, createAccount, checkDuplicate,
   getMyNotifications, requestPackageRenewal, cancelPackageRequest, checkPayosStatus, getPackageRequests, approvePackageRequest,
   notifyMember, markMyNotificationsRead, clearMyNotifications, deleteMyNotification,
   cancelPackage, editPackage, switchPackage, cancelPendingPackagePayment,
@@ -35,6 +35,8 @@ router.get('/check-duplicate',  requireRole('admin', 'nhan_vien'), checkDuplicat
 router.get('/package-requests', requireRole('admin', 'nhan_vien'), getPackageRequests); // Xem các yêu cầu chờ duyệt
 router.get('/me/profile', verifyToken, getMyProfile);
 router.patch('/me/health', updateMyHealth);
+router.get('/me/bmi-history', getMyBmiHistory);
+router.delete('/me/bmi-history/:id', deleteMyBmiHistory);
 router.get('/me/notifications', getMyNotifications); // Thông báo realtime + inbox
 router.post('/me/notifications/read', markMyNotificationsRead); // Đánh dấu đã đọc
 router.delete('/me/notifications', clearMyNotifications); // Xoá sạch thông báo inbox

@@ -1796,4 +1796,27 @@ db.exec(`
 `);
 console.log('[DB] ✅ Migration v24: Bảng khuyen_mai đã sẵn sàng.');
 
+// ── Migration v25: Tạo bảng lich_su_bmi và cột extra trong thong_bao_user ──
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS lich_su_bmi (
+      id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      ho_so_id      INTEGER NOT NULL REFERENCES ho_so(id) ON DELETE CASCADE,
+      chieu_cao_cm  REAL NOT NULL,
+      can_nang_kg   REAL NOT NULL,
+      bmi_value     REAL NOT NULL,
+      ngay_ghi      DATETIME NOT NULL DEFAULT (datetime('now','localtime'))
+    );
+  `);
+  console.log('[DB] ✅ Migration v25: Bảng lich_su_bmi đã sẵn sàng.');
+} catch (e) {
+  console.error('[DB] ❌ Lỗi tạo bảng lich_su_bmi:', e.message);
+}
+
+try {
+  db.exec(`ALTER TABLE thong_bao_user ADD COLUMN extra TEXT;`);
+  console.log('[DB] ✅ Thêm cột extra vào bảng thong_bao_user.');
+} catch (_) { }
+
 export default db;
+

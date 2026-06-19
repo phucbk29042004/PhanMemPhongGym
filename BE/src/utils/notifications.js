@@ -61,10 +61,11 @@ export function createNotification(loai, tieu_de, noi_dung, doi_tuong_id = null,
  */
 export function createUserNotification(hoSoId, tieu_de, noi_dung, loai = 'thong_bao_chung', extra = null) {
   try {
+    const extraValue = extra ? (typeof extra === 'string' ? extra : JSON.stringify(extra)) : null;
     db.prepare(`
-      INSERT INTO thong_bao_user (ho_so_id, loai, tieu_de, noi_dung)
-      VALUES (?, ?, ?, ?)
-    `).run(hoSoId, loai, tieu_de, noi_dung);
+      INSERT INTO thong_bao_user (ho_so_id, loai, tieu_de, noi_dung, extra)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(hoSoId, loai, tieu_de, noi_dung, extraValue);
 
     // Emit realtime đến đúng user (mobile/web user cụ thể)
     try {
@@ -73,7 +74,7 @@ export function createUserNotification(hoSoId, tieu_de, noi_dung, loai = 'thong_
         loai,
         tieu_de,
         noi_dung,
-        extra,
+        extra: extra ? (typeof extra === 'string' ? JSON.parse(extra) : extra) : null,
         ngay_tao: new Date().toISOString(),
       });
     } catch (_) {

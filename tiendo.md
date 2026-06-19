@@ -7,6 +7,27 @@
 
 ---
 
+### [19/06/2026 10:05] — Đồng bộ hoàn tất tính năng Web Portal với Mobile App
+- **Loại**: Đồng bộ tính năng & Tính năng mới (Fullstack)
+- **File**: `FE/assets/js/member-portal.js`, `FE/assets/js/pt-portal.js`
+- **Mô tả**:
+  1. **[Lịch sử BMI Hội viên Web]**: Thêm liên kết Lịch sử chỉ số BMI bên cạnh BMI trong Profile. Xây dựng modal `_showBmiHistoryModal` hiển thị danh sách đo BMI lịch sử từ `GET /members/me/bmi-history`, và nút xóa từng bản ghi thông qua `DELETE /members/me/bmi-history/:id`, re-render UI mượt mà.
+  2. **[Thanh toán PayOS & Hủy gia hạn Web]**: Tích hợp gửi đầy đủ `phuong_thuc_tt` và `chi_nhanh_mua` khi gia hạn gói tập. Nếu chọn Chuyển khoản, tự động mở modal quét mã QR PayOS và polling kết quả kích hoạt gói tự động.
+  3. **[Đồng bộ Lịch dạy PT Web]**: Cập nhật hàm `init()` trong Lịch dạy PT để tự động fetch danh sách lịch tập PT mới nhất từ máy chủ khi vào tab, tối ưu bộ lọc tìm kiếm học viên, ngày tập, trạng thái và phân trang mượt mà.
+- **Kết quả**: Thành công, đồng bộ đầy đủ 100% tính năng giữa Web Portal và Mobile App.
+
+---
+
+### [19/06/2026 09:10] — Đồng bộ Socket Room trên di động và sửa badge đếm check-in trên Web Admin
+- **Loại**: Sửa lỗi & Đồng bộ (Fullstack)
+- **File**: `MobileApp/src/services/socket.js`, `FE/assets/js/pages/checkin.js`
+- **Mô tả**:
+  1. **[Đồng bộ Socket Room di động]**: Sửa hàm `connectSocket` trong `socket.js` để gửi `userId` là `user.ho_so_id` (nếu có, fallback là `user.id`) thay vì gửi cứng `user.id`. Điều này giúp điện thoại di động join chính xác phòng socket cá nhân `user:${ho_so_id}` (nơi backend phát tin) thay vì phòng tài khoản `user:${tai_khoan_id}`, giải quyết triệt để lỗi không rung và không hiển thị Alert khi check-in thành công.
+  2. **[Sửa badge đếm check-in Web Admin]**: Cập nhật file `checkin.js` để thay đổi badge `checkin-count-badge` từ `checkins.length` thành `checkins.filter(c => c.loai === 'vao').length`. Việc này giúp badge chỉ hiển thị số lượt vào phòng tập trong ngày hôm nay mà không bị cộng dồn cả lượt check-out.
+- **Kết quả**: Thành công.
+
+---
+
 ### [18/06/2026 11:31] — Fix các dòng thông tin định danh thành tĩnh trên màn hình Hội viên
 - **Loại**: Chỉnh sửa & Tối ưu UI/UX (Mobile)
 - **File**: `MobileApp/src/screens/member/MemberProfileScreen.js`
@@ -2430,3 +2451,35 @@
   - **Khắc phục lỗi khoảng trắng trên iOS**: Thay thế thẻ bọc ngoài cùng `<SafeAreaView>` bằng thẻ `<View>` thông thường tại các màn hình `OrderConfirmationScreen` và `PackageDetailScreen`. Do các trang này đã sử dụng `useSafeAreaInsets` để gán thủ công `paddingTop: insets.top` cho Custom Header, việc lồng trong `<SafeAreaView>` của React Native dẫn đến hiện tượng cộng dồn chiều cao gấp đôi (double padding) tạo ra khoảng trống màu trắng rất lớn trên thiết bị iOS (iPhone/iPad).
   - **Đồng bộ hiển thị trên Android**: Cập nhật màn hình `GymRulesScreen` chuyển sang dùng `useSafeAreaInsets` và `<View>` làm gốc, tự động cộng `insets.top` cho custom header giúp khắc phục lỗi hiển thị nội dung bị đè bởi dải trạng thái (Status Bar) hệ thống khi chạy bản APK Android, đồng thời giữ giao diện cân đối hoàn hảo trên iOS.
 - **Kết quả**: Thành công. Toàn bộ các trang di động hiện hiển thị thống nhất, không bị vỡ/đè status bar trên Android và không bị lộ khoảng trắng trên iOS.
+
+### [18/06/2026 17:25] — Tích hợp điều hướng thông báo PT, tự động chọn hội viên khi chat, Xem thêm gói tập và tinh chỉnh card giới thiệu Paradise GYM
+- **Loại**: Thêm tính năng & Tối ưu UI/UX (Fullstack)
+- **File**:
+  - `BE/src/utils/notifications.js`
+  - `MobileApp/src/screens/pt/PTNotificationScreen.js`
+  - `MobileApp/src/screens/shared/PTMeScreen.js`
+  - `MobileApp/src/screens/member/MemberHomeScreen.js`
+- **Mô tả**:
+  - **Lưu dữ liệu extra**: Cập nhật hàm `createUserNotification` trong `BE/src/utils/notifications.js` để lưu trữ cột `extra` (dạng chuỗi JSON) vào bảng `thong_bao_user`. Điều này đảm bảo thông tin phụ trợ (như `nguoi_gui_id` của tin nhắn) được lưu trong DB phục vụ việc load danh sách sau này chứ không chỉ ở socket realtime.
+  - **Click thông báo cho PT**: Tích hợp điều hướng khi click vào card thông báo trên `PTNotificationScreen.js`: nếu là tin nhắn chat sẽ đi tới màn hình `PTMe` kèm theo ID học viên nhận từ `item.extra.nguoi_gui_id`, nếu là lịch dạy đi tới tab `Schedule`, còn lại về `Home`. Đồng thời tích hợp thêm nút xóa thông báo cá nhân cho PT giống bên phía hội viên.
+  - **Tự động chọn học viên trong phòng chat**: Cập nhật `PTMeScreen.js` nhận `hoi_vien_id` từ `route.params`. Khi PT đi tới màn hình từ thông báo chat, app tự động focus chọn đúng học viên đó, đồng thời dùng `navigation.setParams` để tiêu thụ và reset tham số này tránh việc dính cứng focus khi quay lại sau này.
+  - **Xem thêm gói tập & dịu hóa card giới thiệu**: Thêm nút "Xem thêm" trên `MemberHomeScreen.js` phần Gói tập, mở Modal `AllPackagesModal` liệt kê dạng lưới tất cả gói Gym & PT hiện có, hỗ trợ click xem chi tiết và đóng modal nhanh chóng. Tinh chỉnh màu nền `gymInfoCard` (Paradise GYM) sang màu xanh rêu trầm dịu mắt (`#3a5f43` ở light theme / `#1f2e21` ở dark theme), giảm elevation xuống 3 và shadowOpacity xuống 0.12 để card trông sang trọng, hài hòa hơn.
+- **Kết quả**: Thành công. Ứng dụng hoạt động mượt mà, đúng yêu cầu thiết kế.
+
+### [19/06/2026 08:45] — Tích hợp rung check-in, đồng bộ hiển thị thông tin PT và tái cơ cấu gói tập trang chủ Hội viên
+- **Loại**: Thêm tính năng & Tối ưu UI/UX (Fullstack)
+- **File**:
+  - `BE/src/controllers/qr-checkin.controller.js`
+  - `MobileApp/src/screens/member/MemberHomeScreen.js`
+  - `MobileApp/src/screens/member/MemberQRCodeScreen.js`
+  - `MobileApp/src/screens/pt/PTQRCodeScreen.js`
+  - `MobileApp/src/screens/pt/PTProfileScreen.js`
+- **Mô tả**:
+  - **Gửi thông báo check-in cá nhân**: Cập nhật hàm `scanQr` trong `qr-checkin.controller.js` để gọi `createUserNotification` khi check-in/out thành công, gửi thông báo cá nhân có loại `'check_in_success'` / `'check_out_success'` tới thiết bị của người dùng qua Socket.IO.
+  - **Rung phản hồi check-in**: Tích hợp lắng nghe sự kiện `notification:personal` trong `MemberQRCodeScreen.js` và `PTQRCodeScreen.js`. Khi nhận được tín hiệu check-in thành công, điện thoại sẽ tự động rung 2 lần (`Vibration.vibrate`) kèm theo hiển thị hộp thoại thông báo.
+  - **Tái cơ cấu trang chủ Hội viên**:
+    - Di chuyển liên kết "Xem thêm" lên header của Section "Gói Hội Viên" (trên card hợp đồng).
+    - Cấu hình hiển thị Section này kể cả khi chưa có gói (hiển thị thẻ rỗng hướng dẫn đăng ký gói mới).
+    - Xóa bỏ hoàn toàn phần danh sách tất cả các gói tập cuộn ngang ở phía dưới để giao diện Home gọn gàng.
+  - **Đồng bộ hiển thị hồ sơ PT**: Cập nhật màn hình `PTProfileScreen.js` để hiển thị thêm các trường thông tin cá nhân định danh bao gồm **Ngày sinh**, **Giới tính**, và **Địa chỉ** (ghép chuỗi tự động) giống hệt như màn hình Hội viên, giúp đồng bộ dữ liệu khi PT thực hiện chỉnh sửa hồ sơ.
+- **Kết quả**: Thành công. Giao diện trang chủ hội viên gọn gàng, PT hiển thị đầy đủ thông tin cá nhân và tính năng rung check-in hoạt động mượt mà.

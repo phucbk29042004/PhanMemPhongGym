@@ -238,3 +238,16 @@ graph TD
   - Phát triển component in ấn độc lập `FE/assets/js/components/invoice-template.js` cung cấp hàm `window.GymApp.printInvoice(data)` thực hiện in qua iframe ẩn.
   - Hóa đơn được thiết kế chuẩn khổ A4, font chữ Times New Roman truyền thống theo đúng quy chuẩn biên lai hóa đơn, hiển thị rõ ràng thông tin chi nhánh lấy động từ `branches.json`.
   - Tích hợp các nút **"In hóa đơn"** (màu xanh lục) vào giao diện chi tiết Gói tập thường và Gói PT của hội viên trên Web.
+
+# Cập nhật kiến trúc 18/06/2026 — Lịch sử BMI, Điều hướng Thông báo PT & Tính năng Xem thêm Gói tập
+- **Database (BE)**: Bổ sung Migration v25 tạo bảng `lich_su_bmi` để lưu trữ lịch sử cập nhật chỉ số BMI của hội viên. Bảng `thong_bao_user` được bổ sung thêm cột `extra` (dạng TEXT chứa chuỗi JSON) để lưu trữ thông tin bổ sung (như `nguoi_gui_id` từ tin nhắn chat).
+- **Backend API (`members.controller.js` & `members.routes.js`)**:
+  - Tự động ghi chép bản ghi lịch sử vào bảng `lich_su_bmi` khi hội viên cập nhật cân nặng/chiều cao qua API `PATCH /members/me/health`.
+  - Cung cấp API `GET /members/me/bmi-history` và `DELETE /members/me/bmi-history/:id` để quản lý lịch sử chỉ số BMI.
+  - Cập nhật hàm `createUserNotification` trong `BE/src/utils/notifications.js` để lưu cột `extra` vào database. Hàm `getMyNotifications` tự động SELECT và parse JSON cột `extra` trả về cho app di động.
+- **Frontend/Mobile**:
+  - **Lịch sử BMI**: Bổ sung nút trigger và thiết kế Modal `BmiHistoryModal` cho phép hội viên xem chi tiết biểu đồ/danh sách lịch sử và xóa bản ghi BMI trực tiếp trên màn hình thông tin cá nhân.
+  - **Điều hướng thông minh qua Thông báo**: Bấm vào thông báo ở màn hình `PTNotificationScreen.js` và `MemberNotificationScreen.js` sẽ tự động chuyển tiếp đến các tab/màn hình tương ứng. Với thông báo chat, PT được tự động điều hướng đến màn hình `PTMe` kèm theo ID học viên nhận từ `extra.nguoi_gui_id`, tự động chọn đúng học viên nhắn tin.
+  - **Xem thêm Gói tập**: Thêm liên kết "Xem thêm" trên `MemberHomeScreen.js`, mở modal `AllPackagesModal` hiển thị toàn bộ danh sách gói tập và hỗ trợ chuyển sang trang chi tiết nhanh chóng.
+  - **Tinh chỉnh giao diện**: Card giới thiệu Paradise GYM trên trang chủ được dịu hóa màu nền theo chủ đề xanh rêu trầm (`#3a5f43` ở sáng / `#1f2e21` ở tối), giảm bóng đổ và độ nổi khối (elevation) để giao diện trông sang trọng hơn.
+
