@@ -67,7 +67,7 @@ export function createUserNotification(hoSoId, tieu_de, noi_dung, loai = 'thong_
       VALUES (?, ?, ?, ?, ?)
     `).run(hoSoId, loai, tieu_de, noi_dung, extraValue);
 
-    // Emit realtime đến đúng user (mobile/web user cụ thể)
+    // Emit realtime đến đúng user qua Socket.IO
     try {
       const io = getIO();
       io.to(`user:${hoSoId}`).emit('notification:personal', {
@@ -77,8 +77,55 @@ export function createUserNotification(hoSoId, tieu_de, noi_dung, loai = 'thong_
         extra: extra ? (typeof extra === 'string' ? JSON.parse(extra) : extra) : null,
         ngay_tao: new Date().toISOString(),
       });
-    } catch (_) {
-      // Bỏ qua nếu socket chưa sẵn sàng
+    } catch (_) {}
+
+    // Bắn thông báo đẩy Push Notification bằng Expo Push API qua HTTP request
+    try {
+      const userAccount = db.prepare(`
+        SELECT t.push_token 
+        FROM tai_khoan t
+        JOIN ho_so h ON h.tai_khoan_id = t.id
+        WHERE h.id = ? AND t.push_token IS NOT NULL AND t.push_token != ''
+      `).get(hoSoId);
+
+      if (userAccount && userAccount.push_token) {
+        const expoPushToken = userAccount.push_token;
+        // Chỉ gửi nếu là token Expo hợp lệ
+        if (expoPushToken.startsWith('ExponentPushToken') || expoPushToken.startsWith('ExpoPushToken')) {
+          const payload = {
+            to: expoPushToken,
+            sound: 'default',
+            title: tieu_de,
+            body: noi_dung,
+            data: {
+              loai,
+              extra: extra ? (typeof extra === 'string' ? JSON.parse(extra) : extra) : null,
+            },
+          };
+
+          // Dùng fetch qua dynamic import / global fetch để bắn thông báo mà không cần cài thêm library
+          fetch('https://exp.host/--/api/v2/push/send', {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Accept-encoding': 'gzip, deflate',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+          })
+          .then(res => res.json())
+          .then(data => {
+            if (process.env.NODE_ENV === 'development') {
+              console.log('[PushNotification] Kết quả bắn thông báo đẩy Expo:', data);
+            }
+          })
+          .catch(err => {
+            console.error('[PushNotification] Lỗi khi gửi request đến Expo Push API:', err.message);
+          });
+        }
+      }
+    } catch (pushErr) {
+      console.error('[PushNotification] Lỗi truy vấn/gửi thông báo đẩy:', pushErr.message);
     }
   } catch (err) {
     console.error(`[USER_NOTIFICATION] Lỗi tạo thông báo cho hồ sơ ${hoSoId}:`, err.message);

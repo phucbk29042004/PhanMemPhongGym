@@ -7,6 +7,89 @@
 
 ---
 
+### [22/06/2026 11:45] — Tích hợp hệ thống thông báo đẩy Push Notifications Firebase bằng Expo
+- **Loại**: Tính năng mới & Tích hợp (Fullstack)
+- **File**: `MobileApp/src/services/notificationService.js`, `MobileApp/src/screens/auth/LoginScreen.js`, `BE/src/config/db.js`, `BE/src/controllers/auth.controller.js`, `BE/src/routes/auth.routes.js`, `BE/src/utils/notifications.js`
+- **Mô tả**:
+  1. **[MobileApp - Đăng ký token]**: Tạo module `notificationService.js` để tự động xin quyền và lấy Expo Push Token gửi lên lưu trữ trên server. Gọi đăng ký token ngay khi người dùng đăng nhập thành công ở `LoginScreen.js`.
+  2. **[Backend - SQLite Migration]**: Thêm cơ chế tự động migration tạo cột `push_token` trong bảng `tai_khoan` SQLite khi khởi chạy server.
+  3. **[Backend - API & Push Sender]**: Tạo endpoint `POST /api/auth/save-push-token` để lưu push token thiết bị của người dùng. Cập nhật hàm tạo thông báo cá nhân `createUserNotification` để khi có tin nhắn/lời dặn mới, tự động gửi HTTP POST request gọi Expo Push API chuyển tiếp thông báo đến thiết bị của người nhận ngoài màn hình khóa.
+- **Kết quả**: Thành công tốt đẹp.
+
+---
+
+### [22/06/2026 10:00] — Sửa lỗi và cải tiến giao diện Member Portal và PT Portal
+- **Loại**: Chỉnh sửa & Tối ưu UI/UX (Frontend Web)
+- **File**: `FE/assets/js/member-portal.js`, `FE/assets/js/pt-portal.js`
+- **Mô tả**:
+  1. **[Member Portal - Lịch tập]**: Thu nhỏ lịch chuyên cần 30 ngày trong tab "Lịch tập" bằng cách bọc grid trong thẻ div có style `max-w-[480px] mx-auto` và giảm padding, giúp lịch nhỏ gọn và vừa vặn hơn trên màn hình.
+  2. **[Member Portal - Vào / Ra]**: Hiển thị chi tiết hành động "Vào phòng" / "Ra phòng" kèm giờ vào/ra thực tế tương ứng của mỗi lượt thay vì chỉ in một giờ duy nhất.
+  3. **[PT Portal - Tổng quan]**: Đồng bộ hiển thị đầy đủ học viên lấy từ danh sách chính thức `ptMeStudents` thay vì lọc trùng từ `ptSchedules` trên Dashboard, và bọc grid học viên trong một thẻ div có style `max-h-[360px] overflow-y-auto` để cuộn dọc nếu số lượng học viên nhiều hơn 10.
+  4. **[PT Portal - PT & Tôi]**: Tích hợp dropdown bộ lọc trạng thái (dropdown select) học viên kế bên ô tìm kiếm trong cột trái. Đồng thời thiết lập Event Delegation trên danh sách học viên để ngăn chặn lỗi mất sự kiện click chọn chat khi render lại sau khi tìm kiếm hoặc lọc.
+- **Kết quả**: Thành công vượt mong đợi.
+
+---
+
+### [22/06/2026 09:48] — Tối ưu hóa UI/UX, sửa lỗi hiển thị Web Admin, PT Portal & Member Portal
+- **Loại**: Sửa lỗi & Tối ưu UI/UX (Frontend Web)
+- **File**: `FE/assets/css/main.css`, `FE/assets/js/pt-portal.js`, `FE/assets/js/member-portal.js`, `FE/pt-portal.html`, `FE/member-portal.html`
+- **Mô tả**:
+  1. **[Web Admin - Mobile Sidebar]**: Sửa lỗi menu hamburger của Admin Sidebar bị ẩn trên mobile bằng cách thiết lập `display: none !important` mặc định cho `#sidebar` ở breakpoint dưới `768px`, và chuyển thành `display: flex !important` khi có class `mobile-open`. Đồng thời phân luồng ẩn/hiện aside bằng cách gán thêm class `pt-shell`/`member-shell` tương ứng trên các file HTML để không làm ẩn nhầm sidebar của admin.
+  2. **[PT Portal - Học viên của tôi]**: Chuyển đổi giao diện tab `my-students` của PT từ kiểu Card sang kiểu Table gọn gàng, hỗ trợ Infinite Scroll (cuộn vô hạn) 10 bản ghi mỗi trang trên container cuộn của `content-area`. Sửa lỗi khoảng trắng phía trên thanh scroll.
+  3. **[PT Portal - PT & Tôi]**: Khắc phục lỗi ReferenceError biến `memberId` bằng cách thay thế chính xác bằng `self._activeMemberId` trong sự kiện submit lời dặn, giúp PT có thể lưu và gửi lời dặn thành công.
+  4. **[PT Portal - Profile]**: Đồng bộ lại tỷ lệ avatar cá nhân với khung viền tròn bằng cách sử dụng `object-fit: cover` trực tiếp, tránh vỡ hình ảnh.
+  5. **[Member Portal - Lịch tập]**: Cải tiến lịch 30 ngày trên tab `my-schedule`, tích hợp tính năng tự động phát hiện nếu hôm nay đã check-in thì sẽ highlight ngày mai bằng màu cam và icon tia sét, tạo động lực liên tục cho hội viên.
+- **Kết quả**: Thành công tuyệt đối.
+
+---
+
+### [22/06/2026 09:10] — Chỉnh sửa lỗi hiển thị và cải tiến giao diện Member Portal
+- **Loại**: Sửa lỗi & Cải tiến UI/UX (Frontend Web)
+- **File**: `FE/assets/js/member-portal.js`
+- **Mô tả**:
+  1. **[Vào/Ra]**: Viết helper parse ngày giờ an toàn chống lỗi "Invalid Date" trên trình duyệt Safari (iOS), đảm bảo hiển thị đúng giờ vào/ra của hội viên.
+  2. **[Lịch tập - 30 ngày]**: Tích hợp một bảng lịch grid 7 cột theo tháng (Lịch chuyên cần & Check-in) trên trang lịch tập, tự động đánh dấu xanh lá các ngày đã qua mà hội viên đã check-in dựa trên dữ liệu.
+  3. **[PT & Tôi]**: Tối ưu chiều rộng, giảm padding, và chuyển form nhập liệu từ grid 2 cột sang 4 cột nằm ngang giúp loại bỏ khoảng trắng dư thừa trên giao diện máy tính.
+  4. **[Cá nhân]**: Sửa lỗi co giãn avatar bị lệch lạc bằng cách tự render avatar HTML cho khung tròn 80px thay vì dùng hàm avatarImg có size cố định. Redesign card BMI đưa tiêu đề BMI và nút "Lịch sử BMI" ra đầu hàng và căn phải nút Lịch sử BMI hoàn hảo.
+- **Kết quả**: Thành công.
+
+---
+
+### [22/06/2026 09:05] — Khắc phục lỗi menu hamburger của Admin Sidebar bị display none trên mobile
+- **Loại**: Sửa bug (Frontend Web)
+- **File**: `FE/assets/css/main.css`
+- **Mô tả**: Sửa lỗi menu hamburger của Admin Sidebar (`#sidebar`) khi xem ở các thiết bị di động (ví dụ iPhone 14 Pro Max) không hiển thị nội dung mà chỉ làm xám màn hình. Nguyên nhân do style rule `aside { display: none !important }` ở màn hình `< 768px` ghi đè. Khắc phục bằng cách thay đổi breakpoint `@media (max-width: 767px)` thành `@media (max-width: 768px)` và thêm `display: flex !important` cho `#sidebar` để ưu tiên hiển thị khi sidebar mở.
+- **Kết quả**: Thành công.
+
+---
+
+### [19/06/2026 14:56] — Thiết kế lại giao diện chat PT & Tôi và sửa lỗi so sánh ID người gửi
+- **Loại**: Cải tiến UI/UX & Sửa lỗi (Fullstack Web)
+- **File**: `FE/assets/js/member-portal.js`, `FE/assets/js/pt-portal.js`
+- **Mô tả**:
+  1. **[Sửa lỗi bong bóng chat Hội viên & PT]**: Khắc phục lỗi so sánh `currentUserId` (lấy từ tài khoản ID) với `item.nguoi_gui_id` (lấy từ hồ sơ ID) dẫn đến việc tin nhắn gửi đi của bản thân lại hiển thị lệch sang trái (của đối phương) trên cả hai cổng thông tin. Thay đổi thành lấy đúng `ho_so_id` từ `user.ho_so_id`.
+  2. **[Giao diện Chat PT 2 cột]**: Thiết kế lại tab `pt-me` của PT Portal thành cấu trúc 2 cột dạng Messenger: Cột trái hiển thị danh sách học viên kèm theo ô tìm kiếm nhanh, cột phải hiển thị nội dung chat bong bóng và các trường nhập lời dặn của học viên đang chọn. Tích hợp responsive tự động ẩn sidebar list khi chat active trên màn hình nhỏ.
+  3. **[Đồng bộ Active Tab Mobile Bottom Nav]**: Cập nhật hàm `navigate()` trong `pt-portal.js` để tự động highlight nút trên thanh Bottom Navigation khi co màn hình di động giống với phía Hội viên.
+- **Kết quả**: Thành công.
+
+---
+
+### [19/06/2026 14:43] — Khắc phục lỗi cú pháp await trong hàm init của pt-portal.js
+- **Loại**: Sửa bug (Fullstack Web)
+- **File**: `FE/assets/js/pt-portal.js`
+- **Mô tả**: Sửa đổi khai báo hàm `init()` thành `async init()` cho trang `my-schedule` trong `pt-portal.js` để cho phép sử dụng biểu thức `await` gọi API một cách hợp lệ, khôi phục tính năng tự động tải lịch dạy khi vào trang và loại bỏ hoàn toàn cảnh báo lỗi cú pháp từ IDE.
+- **Kết quả**: Thành công.
+
+---
+
+### [19/06/2026 14:28] — Đồng bộ màu sắc & Override Dark Mode cho Air Datepicker
+- **Loại**: Cải tiến UI/UX (Frontend Web)
+- **File**: `FE/assets/css/main.css`
+- **Mô tả**: Ghi đè CSS cho thư viện Air Datepicker, ép buộc màu chữ và background hiển thị chính xác theo theme hiện tại của hệ thống, loại bỏ tình trạng chữ trắng trên nền trắng khi chuyển sang chế độ tối (Dark Mode).
+- **Kết quả**: Thành công.
+
+---
+
 ### [19/06/2026 10:05] — Đồng bộ hoàn tất tính năng Web Portal với Mobile App
 - **Loại**: Đồng bộ tính năng & Tính năng mới (Fullstack)
 - **File**: `FE/assets/js/member-portal.js`, `FE/assets/js/pt-portal.js`

@@ -37,7 +37,6 @@ export default function LoginScreen() {
         ten_dang_nhap: username.trim(),
         mat_khau: password
       });
-
       if (response.data?.success || response.data?.token || response.data?.data?.token) {
         const { token, user } = response.data.data || response.data;
         const normalizedUser = {
@@ -46,6 +45,14 @@ export default function LoginScreen() {
           role: user.vai_tro,
         };
         await login(normalizedUser, token);
+        
+        // Gọi đăng ký Push Notification
+        try {
+          const { registerForPushNotificationsAsync } = require('../../services/notificationService');
+          await registerForPushNotificationsAsync();
+        } catch (pushErr) {
+          console.warn('Lỗi đăng ký Push Notification khi login:', pushErr.message);
+        }
       } else {
         Alert.alert('Đăng nhập thất bại', response.data?.message || 'Tên đăng nhập hoặc mật khẩu không đúng.');
       }

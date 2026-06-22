@@ -4,7 +4,7 @@
  */
 
 import { Router } from 'express';
-import { login, doiMatKhau, getMe, updateMe, updateAvatarMe } from '../controllers/auth.controller.js';
+import { login, doiMatKhau, getMe, updateMe, updateAvatarMe, savePushToken } from '../controllers/auth.controller.js';
 import { verifyToken } from '../middlewares/auth.js';
 import { uploadAvatar } from '../middlewares/upload.js';
 
@@ -24,5 +24,8 @@ router.put('/me/avatar', verifyToken, uploadAvatar, updateAvatarMe);
 
 // POST /api/auth/doi-mat-khau — Đổi mật khẩu (yêu cầu đăng nhập)
 router.post('/doi-mat-khau', verifyToken, doiMatKhau);
+
+// POST /api/auth/save-push-token — Lưu token thiết bị để gửi push notification (yêu cầu đăng nhập)
+router.post('/save-push-token', verifyToken, savePushToken);
 
 export default router;

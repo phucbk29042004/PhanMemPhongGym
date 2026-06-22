@@ -258,12 +258,21 @@
 
     document.getElementById('content-area').innerHTML = page.render();
 
-    document.querySelectorAll('[data-page]').forEach(btn => {
+    // Đồng bộ sidebar desktop
+    document.querySelectorAll('aside [data-page]').forEach(btn => {
       btn.classList.remove('nav-active', 'text-brand-primary', 'font-bold');
       btn.classList.add('text-on-surface-variant');
       if (btn.dataset.page === pageName) {
         btn.classList.remove('text-on-surface-variant');
         btn.classList.add('nav-active', 'text-brand-primary', 'font-bold');
+      }
+    });
+
+    // Đồng bộ Bottom Nav trên di động
+    document.querySelectorAll('#mobile-bottom-nav button').forEach(btn => {
+      btn.classList.remove('active-mobile-nav', 'text-brand-primary');
+      if (btn.dataset.page === pageName) {
+        btn.classList.add('active-mobile-nav', 'text-brand-primary');
       }
     });
 
@@ -287,14 +296,13 @@
       const monthStart = today.slice(0, 7);
       const doneThisMonth = schedules.filter(s => s.trang_thai === 'da_tap' && s.ngay_tap?.startsWith(monthStart)).length;
 
-      // Unique học viên từ lịch tập
-      const studentMap = {};
-      schedules.forEach(s => {
-        if (s.hoi_vien_id && !studentMap[s.hoi_vien_id]) {
-          studentMap[s.hoi_vien_id] = { id: s.hoi_vien_id, ten: s.ten_hoi_vien, avatar: s.avatar_hoi_vien, buoi_con_lai: s.buoi_con_lai };
-        }
-      });
-      const students = Object.values(studentMap);
+      // Học viên từ danh sách chính thức
+      const students = (window.GymApp.data.ptMeStudents || []).map(s => ({
+        id: s.hoi_vien_id,
+        ten: s.ho_ten || s.ten_hoi_vien || s.ma_ho_so,
+        avatar: s.avatar_url,
+        buoi_con_lai: s.buoi_con_lai ?? 0
+      }));
 
       const stats = [
         { label: 'Lịch hôm nay', value: todaySchedules.length, icon: 'today', color: 'text-brand-primary', bg: 'icon-bg-green' },
@@ -372,7 +380,7 @@
               </div>
 
               <!-- Danh sách học viên -->
-              <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
+              <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden flex flex-col">
                 <div class="section-header px-loose py-standard border-b border-outline-variant flex items-center gap-compact">
                   <div class="icon-bg icon-bg-blue">
                     <span class="material-symbols-outlined text-secondary text-lg" style="font-variation-settings:'FILL' 1">group</span>
@@ -380,21 +388,23 @@
                   <h3 class="font-display-2xl text-display-2xl font-bold text-on-surface">Học viên của tôi</h3>
                   <span class="ml-auto bg-secondary text-white px-compact py-xs rounded-full text-label-xs font-bold">${students.length} HV</span>
                 </div>
-                <div class="p-loose grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-loose">
+                <div class="p-loose overflow-y-auto max-h-[360px]">
                   ${students.length === 0
-          ? `<div class="col-span-3 py-margin text-center text-on-surface-variant">
+          ? `<div class="py-margin text-center text-on-surface-variant">
                          <span class="material-symbols-outlined text-4xl text-outline block mb-standard">person_off</span>
                          Chưa có học viên
                        </div>`
-          : students.map(sv => `
+          : `<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-loose">
+                       ${students.map(sv => `
                         <div class="gym-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-loose shadow-sm flex flex-col items-center gap-standard">
                           ${window.GymApp.avatarImg(sv.avatar, sv.ten, 'lg')}
                           <div class="text-center">
-                            <p class="font-bold text-on-surface text-body-md">${sv.ten || '—'}</p>
+                            <p class="font-bold text-on-surface text-body-md truncate max-w-[120px]">${sv.ten || '—'}</p>
                             <p class="text-on-surface-variant text-body-sm">${sv.buoi_con_lai != null ? sv.buoi_con_lai + ' buổi còn lại' : ''}</p>
                           </div>
                         </div>
-                      `).join('')
+                      `).join('')}
+                     </div>`
         }
                 </div>
               </div>
@@ -1075,7 +1085,7 @@
       document.getElementById('schedule-table-wrap').innerHTML = this._renderTable(filtered);
     },
 
-    init() {
+    async init() {
       const self = this;
       document.getElementById('sch-search')?.addEventListener('input', () => self._applyFilter(true));
       document.getElementById('sch-status')?.addEventListener('change', () => self._applyFilter(true));
@@ -1188,14 +1198,59 @@
 
   // ── Học viên của tôi ──────────────────────────────────────
   pages['my-students'] = {
+    _allStudents: [],
+    _filteredStudents: [],
+    _currentPage: 1,
+    _perPage: 150,
+    _scrollHandler: null,
+
     render() {
       return `
-        <div class="flex flex-col gap-loose">
-          <div id="students-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-loose">
-            <div class="col-span-full bg-surface-container-lowest rounded-2xl border border-outline-variant p-loose text-center text-on-surface-variant">
-              <span class="material-symbols-outlined text-4xl block mb-standard animate-spin">refresh</span>
-              <p class="font-body-sm text-body-sm">Đang tải...</p>
+        <div class="flex flex-col gap-loose animate-in fade-in duration-300 h-full">
+          <div class="flex flex-wrap items-center justify-between gap-standard bg-surface-container-lowest p-loose rounded-2xl border border-outline-variant shadow-sm">
+            <div class="relative flex-1 min-w-[280px] max-w-[400px] group">
+              <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline-variant text-[18px]">search</span>
+              <input id="student-search" type="text" class="w-full bg-surface-container-low border border-outline-variant text-on-surface pl-10 pr-4 py-2.5 rounded-xl focus:border-brand-primary outline-none text-body-sm transition-all" placeholder="Tìm theo tên học viên..." />
             </div>
+            <div class="flex flex-wrap items-center gap-compact">
+              <select id="student-filter-status" class="bg-surface-container-low border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl outline-none text-body-sm">
+                <option value="all">Tất cả trạng thái</option>
+                <option value="active">Còn buổi tập</option>
+                <option value="warning">Sắp hết buổi (≤ 3)</option>
+                <option value="expired">Hết buổi tập</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden flex-1 flex flex-col min-h-0">
+            <div class="overflow-x-auto flex-grow table-responsive" style="margin-top: 0;">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="bg-surface-container-low border-b border-outline-variant text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">
+                    <th class="py-3 px-4 w-12 text-center">STT</th>
+                    <th class="py-3 px-4">Học viên</th>
+                    <th class="py-3 px-4">Gói tập</th>
+                    <th class="py-3 px-4 text-center">Đã tập</th>
+                    <th class="py-3 px-4 text-center">Còn lại</th>
+                    <th class="py-3 px-4 text-center">Tổng số</th>
+                    <th class="py-3 px-4" style="min-width: 150px;">Tiến độ</th>
+                    <th class="py-3 px-4">Hạn hợp đồng</th>
+                  </tr>
+                </thead>
+                <tbody id="students-table-body" class="divide-y divide-outline-variant/50 text-body-sm text-on-surface">
+                  <tr id="students-table-loading">
+                    <td colspan="8" class="py-8 text-center text-on-surface-variant">
+                      <span class="material-symbols-outlined text-4xl block mb-standard animate-spin text-brand-primary">refresh</span>
+                      <span>Đang tải danh sách học viên...</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <div id="students-loading-more" class="hidden justify-center py-3">
+            <span class="material-symbols-outlined text-3xl animate-spin text-brand-primary">sync</span>
           </div>
         </div>
       `;
@@ -1205,7 +1260,7 @@
       try {
         const res = await window.GymApp.api.get('/pt/schedules/my-members');
         if (res?.success) {
-          window.GymApp.data.myStudents = (res.data || []).map(m => ({
+          this._allStudents = (res.data || []).map(m => ({
             ...m,
             buoi_da_tap: m.so_buoi_da_tap || 0,
             tong_buoi_dk: m.so_buoi_dang_ky || 0,
@@ -1213,7 +1268,6 @@
           }));
         }
       } catch (e) {
-        // Fallback: tổng hợp từ ptSchedules nếu API chưa sẵn sàng
         const schedules = window.GymApp.data.ptSchedules || [];
         const map = {};
         schedules.forEach(s => {
@@ -1227,96 +1281,147 @@
           if (s.trang_thai === 'da_tap' || s.trang_thai === 'da_xac_nhan') map[s.hoi_vien_id].buoi_da_tap++;
           map[s.hoi_vien_id].buoi_con_lai = s.buoi_con_lai ?? 0;
         });
-        window.GymApp.data.myStudents = Object.values(map);
+        this._allStudents = Object.values(map);
       }
-      this._renderGrid();
+
+      this._applyFilter();
+
+      // Bind events
+      document.getElementById('student-search')?.addEventListener('input', () => this._applyFilter());
+      document.getElementById('student-filter-status')?.addEventListener('change', () => this._applyFilter());
+
+      // Lắng nghe scroll để làm Infinite Scroll trên chính container scroll của content-area
+      const area = document.getElementById('content-area');
+      if (area) {
+        this._scrollHandler = () => {
+          if (area.scrollTop + area.clientHeight >= area.scrollHeight - 50) {
+            this._loadMore();
+          }
+        };
+        area.addEventListener('scroll', this._scrollHandler);
+      }
     },
 
-    _renderGrid() {
-      const students = window.GymApp.data.myStudents || [];
-      const grid = document.getElementById('students-grid');
-      if (!grid) return;
+    _applyFilter() {
+      const q = document.getElementById('student-search')?.value?.toLowerCase()?.trim() || '';
+      const status = document.getElementById('student-filter-status')?.value || 'all';
 
-      if (!students.length) {
-        grid.innerHTML = `
-          <div class="col-span-full bg-surface-container-lowest rounded-2xl border border-outline-variant p-margin text-center text-on-surface-variant">
-            <span class="material-symbols-outlined text-4xl text-outline block mb-standard">person_off</span>
-            <p class="font-bold text-on-surface">Chưa có học viên nào</p>
-            <p class="font-body-sm text-body-sm mt-xs">Học viên sẽ xuất hiện khi bạn có lịch tập đang hoạt động</p>
-          </div>`;
+      this._filteredStudents = this._allStudents.filter(sv => {
+        const nameMatch = (sv.ho_ten || '').toLowerCase().includes(q);
+        const left = sv.buoi_con_lai ?? 0;
+
+        let statusMatch = true;
+        if (status === 'active') statusMatch = left > 0;
+        else if (status === 'warning') statusMatch = left <= 3 && left > 0;
+        else if (status === 'expired') statusMatch = left === 0;
+
+        return nameMatch && statusMatch;
+      });
+
+      this._currentPage = 1;
+      const tbody = document.getElementById('students-table-body');
+      if (tbody) tbody.innerHTML = '';
+      this._renderPage();
+    },
+
+    _renderPage() {
+      const tbody = document.getElementById('students-table-body');
+      if (!tbody) return;
+
+      const startIndex = (this._currentPage - 1) * this._perPage;
+      const endIndex = startIndex + this._perPage;
+      const pageItems = this._filteredStudents.slice(startIndex, endIndex);
+
+      const loadingRow = document.getElementById('students-table-loading');
+      if (loadingRow) loadingRow.remove();
+
+      if (this._currentPage === 1 && !pageItems.length) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" class="py-12 text-center text-on-surface-variant">
+              <span class="material-symbols-outlined text-4xl text-outline block mb-standard">person_off</span>
+              <p class="font-bold text-on-surface">Không tìm thấy học viên nào</p>
+              <p class="font-body-sm text-body-sm mt-xs">Thử thay đổi từ khóa tìm kiếm hoặc điều kiện lọc</p>
+            </td>
+          </tr>`;
         return;
       }
 
-      grid.innerHTML = students.map(sv => {
+      const html = pageItems.map((sv, index) => {
+        const globalIndex = startIndex + index + 1;
         const total = sv.tong_buoi_dk || (sv.buoi_da_tap + sv.buoi_con_lai) || 0;
         const done = sv.buoi_da_tap || 0;
         const left = sv.buoi_con_lai ?? 0;
         const pct = total > 0 ? Math.round((done / total) * 100) : 0;
         const isAlert = left <= 3 && left > 0;
-        const isAlmost = pct >= 80;
 
         const progressColor = pct >= 80 ? '#e65100' : pct >= 50 ? '#f59e0b' : '#1D9336';
         const progressGradient = pct >= 80 ? 'linear-gradient(90deg,#ea580c,#f97316)' : pct >= 50 ? 'linear-gradient(90deg,#d97706,#fbbf24)' : 'linear-gradient(90deg,#15803d,#4ade80)';
-        const hetHan = sv.ngay_het_han ? window.GymApp.formatDate(sv.ngay_het_han) : null;
+        const hetHan = sv.ngay_het_han ? window.GymApp.formatDate(sv.ngay_het_han) : '—';
 
         return `
-          <div class="group relative rounded-3xl overflow-hidden flex flex-col gap-4 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-500 bg-surface-container-lowest border ${isAlmost ? 'border-[#fdba74]' : 'border-outline-variant'}">
-            <!-- Accent bar top -->
-            <div style="position:absolute;top:0;left:0;right:0;height:4px;background:${progressGradient};border-radius:4px 4px 0 0;"></div>
-            
-            <!-- Card Header: Avatar & Info -->
-            <div class="flex items-start gap-4 pt-6 px-5 relative">
-              <div class="relative flex-shrink-0">
-                ${window.GymApp.avatarImg(sv.avatar_url, sv.ho_ten, 'lg')}
-                ${isAlert ? `<span class="absolute -top-1 -right-1 w-3.5 h-3.5 bg-[#e65100] border-2 border-surface-lowest rounded-full shadow-sm animate-pulse" title="Sắp hết buổi"></span>` : ''}
-              </div>
-              <div class="flex flex-col min-w-0 flex-1 pt-1">
-                <span class="font-bold text-on-surface text-body-lg truncate block leading-tight mb-1" title="${sv.ho_ten || '—'}">${sv.ho_ten || '—'}</span>
-                <span class="text-on-surface-variant font-body-sm truncate block mb-1">${sv.ten_goi_pt || 'Gói PT'}</span>
-                ${isAlert ? `<span class="inline-flex w-fit items-center px-2 py-0.5 rounded-md font-bold text-[10px] uppercase tracking-wider bg-[#fff7ed] text-[#ea580c] border border-[#ffedd5]">Còn ${left} buổi</span>` : ''}
-              </div>
-            </div>
-
-            <!-- Stats Grid -->
-            <div class="px-5 mt-2">
-              <div class="grid grid-cols-3 gap-2 p-1 bg-surface-container-low rounded-2xl border border-outline-variant/30 text-center relative overflow-hidden">
-                <div class="py-2 z-10 flex flex-col items-center justify-center">
-                  <span class="text-[10px] uppercase font-bold tracking-widest text-on-surface-variant mb-0.5">Đã tập</span>
-                  <span class="font-bold text-brand-primary text-body-lg leading-none">${done}</span>
-                </div>
-                <div class="py-2 z-10 flex flex-col items-center justify-center border-x border-outline-variant/30">
-                  <span class="text-[10px] uppercase font-bold tracking-widest text-on-surface-variant mb-0.5">Còn lại</span>
-                  <span class="font-bold text-body-lg leading-none ${left <= 3 ? 'text-[#e65100]' : 'text-on-surface'}">${left}</span>
-                </div>
-                <div class="py-2 z-10 flex flex-col items-center justify-center">
-                  <span class="text-[10px] uppercase font-bold tracking-widest text-on-surface-variant mb-0.5">Tổng</span>
-                  <span class="font-bold text-on-surface text-body-lg leading-none">${total}</span>
+          <tr class="hover:bg-surface-container-low transition-colors duration-150">
+            <td class="py-3 px-4 text-center font-medium text-on-surface-variant">${globalIndex}</td>
+            <td class="py-3 px-4">
+              <div class="flex items-center gap-3">
+                ${window.GymApp.avatarImg(sv.avatar_url, sv.ho_ten, 'sm')}
+                <div class="min-w-0">
+                  <span class="font-bold text-on-surface block truncate max-w-[200px]" title="${sv.ho_ten || '—'}">${sv.ho_ten || '—'}</span>
+                  ${isAlert ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#fff7ed] text-[#ea580c] border border-[#ffedd5] mt-0.5">Sắp hết buổi</span>` : ''}
                 </div>
               </div>
-            </div>
-
-            <!-- Progress section -->
-            <div class="px-5 pb-6 mt-auto">
-              <div class="flex justify-between items-end mb-2">
-                <span class="text-[11px] uppercase font-bold tracking-widest text-on-surface-variant">Tiến độ</span>
-                <span class="font-bold text-body-sm leading-none" style="color:${progressColor}">${pct}%</span>
+            </td>
+            <td class="py-3 px-4 font-medium text-on-surface-variant">${sv.ten_goi_pt || 'Gói PT'}</td>
+            <td class="py-3 px-4 text-center font-semibold text-brand-primary">${done}</td>
+            <td class="py-3 px-4 text-center font-semibold ${left <= 3 ? 'text-[#e65100]' : 'text-on-surface'}">${left}</td>
+            <td class="py-3 px-4 text-center font-bold text-on-surface-variant">${total}</td>
+            <td class="py-3 px-4">
+              <div class="flex flex-col gap-1 w-full max-w-[200px]">
+                <div class="flex justify-between items-center text-[10px] font-bold" style="color: ${progressColor}">
+                  <span>Tiến độ</span>
+                  <span>${pct}%</span>
+                </div>
+                <div class="h-2 rounded-full bg-surface-container overflow-hidden shadow-inner w-full">
+                  <div class="h-full rounded-full transition-all duration-500 ease-out" style="width:${pct}%;background:${progressGradient};"></div>
+                </div>
               </div>
-              <div class="h-2.5 rounded-full bg-surface-container overflow-hidden shadow-inner">
-                <div class="h-full rounded-full transition-all duration-1000 ease-out" style="width:${pct}%;background:${progressGradient};box-shadow:inset 0 1px 2px rgba(255,255,255,0.3)"></div>
-              </div>
-              ${hetHan ? `<div class="mt-4 flex items-center gap-1.5 text-on-surface-variant bg-surface-container-low/50 w-fit px-3 py-1.5 rounded-lg border border-outline-variant/30">
-                <span class="material-symbols-outlined text-[14px]">event</span>
-                <span class="text-[11px] font-medium">Hết hạn: ${hetHan}</span>
-              </div>` : ''}
-            </div>
-          </div>
+            </td>
+            <td class="py-3 px-4 font-semibold text-on-surface-variant">${hetHan}</td>
+          </tr>
         `;
       }).join('');
+
+      tbody.insertAdjacentHTML('beforeend', html);
+    },
+
+    _loadMore() {
+      const totalPages = Math.ceil(this._filteredStudents.length / this._perPage);
+      if (this._currentPage >= totalPages) return;
+
+      const loader = document.getElementById('students-loading-more');
+      if (loader) loader.classList.remove('hidden');
+
+      setTimeout(() => {
+        this._currentPage++;
+        this._renderPage();
+        if (loader) loader.classList.add('hidden');
+      }, 200);
+    },
+
+    destroy() {
+      const area = document.getElementById('content-area');
+      if (area && this._scrollHandler) {
+        area.removeEventListener('scroll', this._scrollHandler);
+        this._scrollHandler = null;
+      }
     }
   };
 
-  // ── Hồ sơ cá nhân ─────────────────────────────────────────
   pages['pt-me'] = {
+    _activeMemberId: null,
+    _searchQuery: '',
+    _filterStatus: 'all',
+
     async _load(memberId) {
       const endpoint = memberId ? `/pt-me/thread?hoi_vien_id=${memberId}` : '/pt-me/overview';
       const res = await window.GymApp.api.get(endpoint);
@@ -1325,101 +1430,342 @@
         else window.GymApp.data.ptMeOverview = res.data || {};
       }
     },
+
+    _getFilteredStudents(students) {
+      const query = this._searchQuery.toLowerCase().trim();
+      const status = this._filterStatus;
+
+      return students.filter(s => {
+        const nameMatch = s.name.toLowerCase().includes(query);
+        const left = s.buoi_con_lai ?? 0;
+
+        let statusMatch = true;
+        if (status === 'active') statusMatch = left > 0;
+        else if (status === 'warning') statusMatch = left <= 3 && left > 0;
+        else if (status === 'expired') statusMatch = left === 0;
+
+        return nameMatch && statusMatch;
+      });
+    },
+
+    _renderSidebarList(filtered) {
+      if (filtered.length === 0) {
+        return `
+          <div class="p-6 text-center text-on-surface-variant text-body-sm">
+            <span class="material-symbols-outlined text-3xl mb-1 text-outline">person_off</span>
+            <p class="font-bold">Không tìm thấy học viên</p>
+          </div>
+        `;
+      }
+
+      return filtered.map(s => {
+        const isActive = String(s.id) === String(this._activeMemberId);
+        const isWarning = s.buoi_con_lai <= 3 && s.buoi_con_lai > 0;
+        return `
+          <button class="w-full text-left p-4 flex items-center gap-3 transition-colors hover:bg-surface-container ptme-student-item ${isActive ? 'bg-brand-primary/10 hover:bg-brand-primary/15 border-l-4 border-brand-primary' : ''}" data-id="${s.id}">
+            <div class="relative shrink-0">
+              ${window.GymApp.avatarImg(s.avatar_url, s.name, 'md')}
+              ${isWarning ? `<span class="absolute -top-1 -right-1 w-3 h-3 bg-[#e65100] border border-surface-lowest rounded-full animate-pulse"></span>` : ''}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-bold text-on-surface text-body-sm truncate">${s.name}</div>
+              <div class="text-[11px] text-on-surface-variant truncate">${s.ten_goi_pt}</div>
+              <div class="text-[10px] font-bold ${s.buoi_con_lai <= 3 ? 'text-error' : 'text-brand-primary'} mt-0.5">Còn ${s.buoi_con_lai} buổi</div>
+            </div>
+          </button>
+        `;
+      }).join('');
+    },
+
     render() {
-      const latest = window.GymApp.data.ptMeOverview?.latest || [];
       const students = (window.GymApp.data.ptMeStudents || []).map(s => ({
         id: s.hoi_vien_id,
         name: s.ho_ten || s.ten_hoi_vien || s.ma_ho_so,
+        avatar_url: s.avatar_url,
+        ten_goi_pt: s.ten_goi_pt || 'Gói PT',
+        buoi_con_lai: s.buoi_con_lai ?? 0
       }));
-      const seen = new Set();
-      latest.forEach(x => {
-        if (x.hoi_vien_id && !seen.has(x.hoi_vien_id)) {
-          seen.add(x.hoi_vien_id);
-          if (!students.some(s => s.id === x.hoi_vien_id)) {
-            students.push({ id: x.hoi_vien_id, name: x.ten_hoi_vien });
-          }
-        }
-      });
+
+      const filteredStudents = this._getFilteredStudents(students);
+      if (!this._activeMemberId && filteredStudents.length > 0) {
+        this._activeMemberId = String(filteredStudents[0].id);
+      }
+
+      const activeStudent = students.find(s => String(s.id) === String(this._activeMemberId));
+      const hasActive = !!activeStudent;
+
       return `
-        <div class="flex flex-col gap-loose">
-          <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant p-loose shadow-sm">
-            <h2 class="text-display-sm font-bold text-on-surface">PT & Tôi</h2>
-            <p class="text-on-surface-variant mt-1">Xem cập nhật của học viên và gửi lời dặn cho buổi tiếp theo.</p>
-            <div class="mt-4 flex flex-wrap gap-3">
-              <select id="ptme-member" class="bg-surface-container-low border border-outline-variant text-on-surface px-4 py-3 rounded-xl outline-none min-w-[220px]">
-                <option value="">Chọn học viên</option>
-                ${students.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
-              </select>
-              <button id="ptme-load" class="px-5 py-3 rounded-xl bg-brand-primary text-white font-bold">Mở luồng</button>
+        <div class="flex flex-col gap-6 max-w-6xl mx-auto animate-in fade-in duration-300">
+          <div>
+            <h2 class="text-headline-md font-bold text-on-surface">PT & Tôi</h2>
+            <p class="text-on-surface-variant text-body-md mt-s1">Xem cập nhật của học viên và gửi lời dặn cho buổi tiếp theo.</p>
+          </div>
+
+          <div class="flex h-[620px] bg-surface-container-lowest border border-outline-variant rounded-3xl overflow-hidden shadow-sm relative">
+            <!-- Cột trái: Danh sách học viên (Messenger-style sidebar) -->
+            <div id="ptme-sidebar" class="w-full md:w-80 border-r border-outline-variant flex flex-col bg-surface-container-low/30 shrink-0 ${hasActive ? 'hidden md:flex' : 'flex'}">
+              <!-- Ô tìm kiếm nhanh và Bộ lọc -->
+              <div class="p-4 border-b border-outline-variant/60 bg-surface-container-lowest space-y-3">
+                <div class="relative">
+                  <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline-variant text-[18px]">search</span>
+                  <input id="ptme-search-student" type="text" value="${this._searchQuery}" class="w-full bg-surface-container-low border border-outline-variant text-on-surface pl-10 pr-4 py-2 rounded-xl outline-none text-body-sm transition-all focus:border-brand-primary" placeholder="Tìm kiếm học viên..." />
+                </div>
+                <div>
+                  <select id="ptme-filter-status" class="w-full bg-surface-container-low border border-outline-variant text-on-surface px-3 py-2 rounded-xl outline-none text-body-xs focus:border-brand-primary">
+                    <option value="all" ${this._filterStatus === 'all' ? 'selected' : ''}>Tất cả trạng thái</option>
+                    <option value="active" ${this._filterStatus === 'active' ? 'selected' : ''}>Còn buổi tập</option>
+                    <option value="warning" ${this._filterStatus === 'warning' ? 'selected' : ''}>Sắp hết buổi (≤ 3)</option>
+                    <option value="expired" ${this._filterStatus === 'expired' ? 'selected' : ''}>Hết buổi tập</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Danh sách item -->
+              <div id="ptme-student-list-container" class="flex-1 overflow-y-auto divide-y divide-outline-variant/30">
+                ${this._renderSidebarList(filteredStudents)}
+              </div>
+            </div>
+
+            <!-- Cột phải: Khung chat và Form dặn dò -->
+            <div id="ptme-chat-pane" class="flex-1 flex flex-col bg-surface-container-lowest shrink-0 md:shrink ${!hasActive ? 'hidden md:flex justify-center items-center' : 'flex'}">
+              ${activeStudent ? this._renderChatPane(activeStudent) : `
+                <div class="text-center py-20 text-on-surface-variant">
+                  <span class="material-symbols-outlined text-5xl mb-3 text-outline">forum</span>
+                  <p class="font-bold text-body-md">Chọn một học viên để bắt đầu</p>
+                  <p class="text-body-sm">Danh sách học viên đang phụ trách hiển thị ở cột bên trái.</p>
+                </div>
+              `}
             </div>
           </div>
-          <section id="ptme-thread" class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
-            ${this._renderLatest(latest)}
-          </section>
         </div>
       `;
     },
-    _renderLatest(list) {
-      if (!list.length) return `<div class="p-margin text-center text-on-surface-variant"><span class="material-symbols-outlined text-4xl text-outline block mb-standard">forum</span><p class="font-bold">Chưa có cập nhật PT & Tôi</p></div>`;
-      const currentUserId = window.GymApp.auth?.user?.id;
-      return `<div class="divide-y divide-outline-variant">${list.map(item => `
-        <div class="p-loose">
-          <div class="flex items-center justify-between gap-3">
-            <div>
-              <p class="font-bold text-on-surface">${item.ten_hoi_vien || item.ten_nguoi_gui || 'Học viên'} ${item.da_chinh_sua ? '<span class="text-label-sm text-on-surface-variant">(đã chỉnh sửa)</span>' : ''}</p>
-              <span class="text-label-sm text-on-surface-variant">${item.ngay_cap_nhat || item.ngay_tao || ''}</span>
-            </div>
-            ${item.nguoi_gui_id === currentUserId ? `<button class="ptme-edit text-brand-primary font-bold text-label-md" data-id="${item.id}">Sửa</button>` : ''}
-          </div>
-          <p class="text-body-sm text-on-surface-variant mt-2">${item.cam_nhan_tap || item.khau_phan_an || item.noi_dung_tap || item.loi_dan || item.ghi_chu || '—'}</p>
-        </div>
-      `).join('')}</div>`;
-    },
-    _renderThread(data) {
+
+    _renderChatPane(student) {
+      const data = window.GymApp.data.ptMeThread || {};
       const entries = data.entries || [];
-      const pair = data.pair || {};
+      const sorted = [...entries].sort((a, b) => new Date(a.ngay_tao || a.ngay_cap_nhat) - new Date(b.ngay_tao || b.ngay_cap_nhat));
+      const currentUserId = window.GymApp.auth?.user?.ho_so_id || window.GymApp.auth?.user?.id;
+
       return `
-        <div class="p-loose border-b border-outline-variant">
-          <h3 class="font-bold text-on-surface text-display-xs">${pair.ten_hoi_vien || 'Học viên'}</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
-            <textarea id="ptme-workout" rows="2" class="bg-surface-container border border-outline-variant rounded-xl px-4 py-3 outline-none" placeholder="Hôm nay/tới buổi sau tập gì?"></textarea>
-            <textarea id="ptme-food" rows="2" class="bg-surface-container border border-outline-variant rounded-xl px-4 py-3 outline-none" placeholder="Cần ăn gì, lưu ý khẩu phần?"></textarea>
-            <input id="ptme-minutes" type="number" min="0" max="600" class="bg-surface-container border border-outline-variant rounded-xl px-4 py-3 outline-none" placeholder="Số phút tập đề xuất" />
-            <textarea id="ptme-note" rows="2" class="bg-surface-container border border-outline-variant rounded-xl px-4 py-3 outline-none" placeholder="Lời dặn thêm"></textarea>
+        <!-- Chat Pane Header -->
+        <div class="p-4 border-b border-outline-variant/60 bg-surface-container-low/20 flex items-center justify-between">
+          <div class="flex items-center gap-3 min-w-0">
+            <button id="ptme-back-to-list" class="md:hidden p-2 rounded-full hover:bg-surface-container text-on-surface-variant mr-1">
+              <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+            </button>
+            <div class="shrink-0">
+              ${window.GymApp.avatarImg(student.avatar_url, student.name, 'sm')}
+            </div>
+            <div class="min-w-0">
+              <h3 class="font-bold text-on-surface text-body-md truncate">${student.name}</h3>
+              <p class="text-[11px] text-on-surface-variant truncate">${student.ten_goi_pt} · Còn ${student.buoi_con_lai} buổi</p>
+            </div>
           </div>
-          <button id="ptme-submit" class="mt-4 px-5 py-3 rounded-xl bg-brand-primary text-white font-bold">Gửi lời dặn</button>
+          
+          <button id="ptme-refresh-chat" class="flex items-center gap-1 px-3 py-1.5 rounded-xl border border-outline-variant hover:border-brand-primary hover:text-brand-primary transition-all text-body-xs font-bold bg-surface-container-lowest">
+            <span class="material-symbols-outlined text-[16px]">sync</span> Tải lại
+          </button>
         </div>
-        ${this._renderLatest(entries)}
+
+        <!-- Chat Area -->
+        <div id="ptme-chat-box" class="flex-1 overflow-y-auto p-4 space-y-4 bg-surface-container-low/10" style="scroll-behavior: smooth;">
+          ${sorted.length ? sorted.map(item => {
+            const isMe = String(item.nguoi_gui_id) === String(currentUserId);
+            let dateStr = '';
+            if (item.ngay_tao) {
+              const dt = new Date(item.ngay_tao);
+              const time = dt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+              const date = dt.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+              dateStr = `${time} ${date}`;
+            }
+            return `
+              <div class="flex ${isMe ? 'justify-end' : 'justify-start'} w-full animate-in fade-in duration-200">
+                <div class="max-w-[85%] md:max-w-[70%] rounded-2xl p-3.5 shadow-sm relative group ${isMe ? 'bg-brand-primary/10 text-on-surface border border-brand-primary/20 rounded-tr-none' : 'bg-white dark:bg-[#1e1e1e] border border-outline-variant text-on-surface rounded-tl-none'}">
+                  <div class="flex items-center justify-between gap-4 mb-2 pb-1.5 border-b border-outline-variant/40">
+                    <span class="text-[11px] font-bold uppercase tracking-wider ${isMe ? 'text-brand-primary' : 'text-on-surface-variant'}">
+                      ${isMe ? 'Bạn (PT)' : 'Học viên cập nhật'}
+                    </span>
+                    ${isMe ? `
+                      <button class="ptme-edit text-brand-primary font-bold text-[11px] opacity-0 group-hover:opacity-100 transition-opacity hover:underline" data-id="${item.id}">
+                        Sửa
+                      </button>
+                    ` : ''}
+                  </div>
+                  <div class="space-y-1 text-body-sm">
+                    ${item.cam_nhan_tap ? `<div><span class="text-on-surface-variant font-medium">Học viên cảm nhận:</span> ${item.cam_nhan_tap}</div>` : ''}
+                    ${item.khau_phan_an ? `<div><span class="text-on-surface-variant font-medium">Dinh dưỡng:</span> ${item.khau_phan_an}</div>` : ''}
+                    ${item.so_phut_tap != null ? `<div><span class="text-on-surface-variant font-medium">Thời lượng:</span> ${item.so_phut_tap} phút</div>` : ''}
+                    ${item.noi_dung_tap ? `<div><span class="text-on-surface-variant font-medium">Nội dung tập:</span> ${item.noi_dung_tap}</div>` : ''}
+                    ${item.loi_dan ? `<div class="bg-brand-primary/10 text-[#0f5132] dark:text-[#a3cfbb] rounded-xl p-2.5 mt-2 border border-brand-primary/20"><b>Lời dặn PT:</b> ${item.loi_dan}</div>` : ''}
+                  </div>
+                  <div class="text-[10px] text-on-surface-variant/70 mt-2 text-right">
+                    ${dateStr}${item.da_chinh_sua ? ' • Đã sửa' : ''}
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('') : '<div class="text-center py-8 text-on-surface-variant text-body-sm">Chưa có tin nhắn/lời dặn nào với học viên này. Hãy gửi lời dặn đầu tiên!</div>'}
+        </div>
+
+        <!-- Chat Input Form -->
+        <div class="p-4 border-t border-outline-variant bg-surface-container-lowest">
+          <form id="ptme-form" onsubmit="return false;" class="space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="flex flex-col gap-1">
+                <label class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Đề xuất bài tập / Nội dung</label>
+                <input id="ptme-workout" type="text" class="w-full bg-surface-container-low border border-outline-variant text-on-surface px-3 py-2 rounded-xl outline-none focus:border-brand-primary text-body-sm" placeholder="Hôm nay/buổi sau tập gì?" />
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Dinh dưỡng đề xuất</label>
+                <input id="ptme-food" type="text" class="w-full bg-surface-container-low border border-outline-variant text-on-surface px-3 py-2 rounded-xl outline-none focus:border-brand-primary text-body-sm" placeholder="Cần ăn uống ra sao?" />
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Số phút tập dự kiến</label>
+                <input id="ptme-minutes" type="number" min="0" max="600" class="w-full bg-surface-container-low border border-outline-variant text-on-surface px-3 py-2 rounded-xl outline-none focus:border-brand-primary text-body-sm" placeholder="Số phút tập đề xuất" />
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Lời dặn thêm</label>
+                <input id="ptme-note" type="text" class="w-full bg-surface-container-low border border-outline-variant text-on-surface px-3 py-2 rounded-xl outline-none focus:border-brand-primary text-body-sm" placeholder="Lời dặn dẹp thêm..." />
+              </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-2 border-t border-outline-variant/60">
+              <button id="ptme-cancel-edit" type="button" class="hidden px-4 py-2 text-body-sm font-bold text-on-surface-variant hover:bg-surface-container rounded-xl transition-all">Hủy sửa</button>
+              <button id="ptme-submit" type="submit" class="px-5 py-2.5 rounded-xl bg-brand-primary text-white font-bold flex items-center gap-1.5 hover:shadow-md transition-all active:scale-95 text-body-sm">
+                <span class="material-symbols-outlined text-[18px]">send</span>Gửi lời dặn
+              </button>
+            </div>
+          </form>
+        </div>
       `;
     },
+
     async init() {
-      await this._load();
-      document.getElementById('ptme-load')?.addEventListener('click', async () => {
-        const memberId = document.getElementById('ptme-member')?.value;
-        if (!memberId) return window.GymApp.toast('Vui lòng chọn học viên', 'error');
-        await this._load(memberId);
-        const wrap = document.getElementById('ptme-thread');
-        if (wrap) wrap.innerHTML = this._renderThread(window.GymApp.data.ptMeThread || {});
-        wrap?.addEventListener('click', e => {
+      const self = this;
+      await self._load();
+      if (self._activeMemberId) await self._load(self._activeMemberId);
+
+      const renderAll = () => {
+        const area = document.getElementById('content-area');
+        if (area && window.GymApp.currentPage === 'pt-me') {
+          area.innerHTML = self.render();
+          bindEvents();
+          scrollChatToBottom();
+        }
+      };
+
+      const scrollChatToBottom = () => {
+        const chatBox = document.getElementById('ptme-chat-box');
+        if (chatBox) chatBox.scrollTop = chatBox.scrollHeight;
+      };
+
+      const reRenderSidebar = () => {
+        const students = (window.GymApp.data.ptMeStudents || []).map(s => ({
+          id: s.hoi_vien_id,
+          name: s.ho_ten || s.ten_hoi_vien || s.ma_ho_so,
+          avatar_url: s.avatar_url,
+          ten_goi_pt: s.ten_goi_pt || 'Gói PT',
+          buoi_con_lai: s.buoi_con_lai ?? 0
+        }));
+        const filtered = self._getFilteredStudents(students);
+        const sidebarList = document.getElementById('ptme-student-list-container');
+        if (sidebarList) {
+          sidebarList.innerHTML = self._renderSidebarList(filtered);
+        }
+      };
+
+      const bindEvents = () => {
+        const searchInput = document.getElementById('ptme-search-student');
+        if (searchInput) {
+          searchInput.addEventListener('input', (e) => {
+            self._searchQuery = e.target.value;
+            reRenderSidebar();
+          });
+        }
+        if (searchInput) {
+          searchInput.addEventListener('input', (e) => {
+            self._searchQuery = e.target.value;
+            reRenderSidebar();
+          });
+        }
+
+        const filterStatusSelect = document.getElementById('ptme-filter-status');
+        if (filterStatusSelect) {
+          filterStatusSelect.addEventListener('change', (e) => {
+            self._filterStatus = e.target.value;
+            reRenderSidebar();
+          });
+        }
+
+        // Click delegation cho sidebar student list
+        const sidebarList = document.getElementById('ptme-student-list-container');
+        if (sidebarList) {
+          sidebarList.addEventListener('click', async (e) => {
+            const item = e.target.closest('.ptme-student-item');
+            if (!item) return;
+            const mid = item.dataset.id;
+            self._activeMemberId = mid;
+            const chatPane = document.getElementById('ptme-chat-pane');
+            if (chatPane) {
+              chatPane.innerHTML = `<div class="flex-1 flex flex-col justify-center items-center text-on-surface-variant py-20"><span class="material-symbols-outlined text-4xl animate-spin mb-2 text-brand-primary">sync</span><p class="text-body-sm">Đang tải cuộc trò chuyện...</p></div>`;
+            }
+            await self._load(mid);
+            renderAll();
+          });
+        }
+
+        document.getElementById('ptme-back-to-list')?.addEventListener('click', () => {
+          self._activeMemberId = null;
+          renderAll();
+        });
+
+        document.getElementById('ptme-refresh-chat')?.addEventListener('click', async () => {
+          if (!self._activeMemberId) return;
+          const btn = document.getElementById('ptme-refresh-chat');
+          btn.disabled = true;
+          btn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">sync</span> Tải lại';
+          await self._load(self._activeMemberId);
+          renderAll();
+        });
+
+        document.getElementById('ptme-chat-box')?.addEventListener('click', e => {
           const editBtn = e.target.closest('.ptme-edit');
           if (!editBtn) return;
           const item = (window.GymApp.data.ptMeThread?.entries || []).find(x => String(x.id) === String(editBtn.dataset.id));
           if (!item) return;
+
           document.getElementById('ptme-workout').value = item.noi_dung_tap || '';
           document.getElementById('ptme-food').value = item.khau_phan_an || '';
           document.getElementById('ptme-minutes').value = item.so_phut_tap ?? '';
           document.getElementById('ptme-note').value = item.loi_dan || '';
+
           const submit = document.getElementById('ptme-submit');
           submit.dataset.editId = item.id;
-          submit.textContent = 'Cập nhật lời dặn';
+          submit.innerHTML = '<span class="material-symbols-outlined text-[18px]">edit</span>Cập nhật lời dặn';
+
+          const cancelBtn = document.getElementById('ptme-cancel-edit');
+          if (cancelBtn) cancelBtn.classList.remove('hidden');
           document.getElementById('ptme-workout')?.focus();
         });
-        document.getElementById('ptme-submit')?.addEventListener('click', async () => {
+
+        document.getElementById('ptme-cancel-edit')?.addEventListener('click', () => {
+          document.getElementById('ptme-form')?.reset();
+          const submit = document.getElementById('ptme-submit');
+          if (submit) {
+            delete submit.dataset.editId;
+            submit.innerHTML = '<span class="material-symbols-outlined text-[18px]">send</span>Gửi lời dặn';
+          }
+          document.getElementById('ptme-cancel-edit')?.classList.add('hidden');
+        });
+
+        document.getElementById('ptme-submit')?.addEventListener('click', async (e) => {
+          e.preventDefault();
+          if (!self._activeMemberId) return;
           const btn = document.getElementById('ptme-submit');
-          btn.disabled = true; btn.textContent = 'Đang gửi...';
+          btn.disabled = true; btn.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">sync</span> Đang gửi...';
           try {
             const payload = {
-              hoi_vien_id: Number(memberId),
+              hoi_vien_id: Number(self._activeMemberId),
               noi_dung_tap: document.getElementById('ptme-workout')?.value?.trim(),
               khau_phan_an: document.getElementById('ptme-food')?.value?.trim(),
               so_phut_tap: document.getElementById('ptme-minutes')?.value ? Number(document.getElementById('ptme-minutes').value) : null,
@@ -1429,15 +1775,19 @@
             const res = editId ? await window.GymApp.api.put(`/pt-me/thread/${editId}`, payload) : await window.GymApp.api.post('/pt-me/thread', payload);
             if (res?.success) {
               window.GymApp.toast(editId ? 'Đã cập nhật và báo cho hội viên!' : 'Đã gửi lời dặn cho hội viên!', 'success');
-              await this._load(memberId);
-              wrap.innerHTML = this._renderThread(window.GymApp.data.ptMeThread || {});
+              document.getElementById('ptme-form')?.reset();
+              document.getElementById('ptme-cancel-edit')?.classList.add('hidden');
+              delete btn.dataset.editId;
+              await self._load(self._activeMemberId);
+              renderAll();
             }
           } finally {
-            delete btn.dataset.editId;
-            btn.disabled = false; btn.textContent = 'Gửi lời dặn';
+            btn.disabled = false; btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">send</span>Gửi lời dặn';
           }
         });
-      });
+      };
+
+      renderAll();
     }
   };
 
@@ -1463,10 +1813,10 @@
       ).join('');
 
       return `
-        <div class="flex flex-col gap-6">
+        <div class="flex flex-col gap-6 animate-in fade-in duration-300">
           <div class="bg-surface-container-lowest rounded-3xl border border-outline-variant shadow-sm overflow-hidden">
 
-            <!-- Banner Header (members-list style) -->
+            <!-- Banner Header -->
             <div style="background:linear-gradient(135deg,#065f46 0%,#10b981 60%,#34d399 100%);padding:20px 24px 0;position:relative;overflow:hidden;min-height:130px;">
               <div style="position:absolute;top:-30px;right:-30px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,0.07);"></div>
               <div style="position:absolute;top:20px;right:80px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.05);"></div>
@@ -1475,8 +1825,8 @@
               <!-- Avatar + Name -->
               <div style="display:flex;align-items:flex-end;gap:16px;margin-bottom:16px;position:relative;z-index:1;">
                 <div style="position:relative;flex-shrink:0;">
-                  <div style="width:80px;height:80px;border-radius:50%;border:3px solid rgba(255,255,255,0.6);overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.25);">
-                    ${window.GymApp.avatarImg(u.avatar_url, u.ho_ten, 'lg', 'width:100%;height:100%;object-fit:cover;')}
+                  <div style="width:80px;height:80px;border-radius:50%;border:3px solid rgba(255,255,255,0.6);overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;">
+                    ${u.avatar_url ? `<img src="${u.avatar_url}" alt="${u.ho_ten || 'PT'}" style="width:100%;height:100%;object-fit:cover;" />` : window.GymApp.avatarInitials(u.ho_ten, 'lg')}
                   </div>
                   <span style="position:absolute;bottom:3px;right:3px;width:14px;height:14px;border-radius:50%;background:${isActive ? '#4ade80' : '#94a3b8'};border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.2);"></span>
                 </div>
@@ -1520,6 +1870,9 @@
                 <span class="material-symbols-outlined" style="font-size:15px;color:#10b981;font-variation-settings:'FILL' 1;">badge</span>
                 <span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#10b981;">Thông tin cá nhân</span>
                 <div style="flex:1;height:1px;background:linear-gradient(to right,#10b98140,transparent);margin-left:4px;"></div>
+                <button id="btn-edit-profile" style="padding:6px 12px;border-radius:10px;border:1px solid #10b981;color:#10b981;background:transparent;font-weight:700;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:4px;" class="hover:bg-brand-primary/10">
+                  <span class="material-symbols-outlined" style="font-size:14px">edit</span> Sửa hồ sơ
+                </button>
               </div>
 
               <!-- 2-col info grid -->
@@ -1541,12 +1894,120 @@
         </div>
       `;
     },
+    _showEditProfileModal(p) {
+      const self = this;
+      const overlay = document.createElement('div');
+      overlay.style.cssText = `position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:9000;padding:20px;`;
+      
+      const birthDate = p.ngay_sinh ? p.ngay_sinh.split('T')[0] : '';
+      overlay.innerHTML = `
+        <div class="animate-fade-in gym-card bg-surface-container-lowest" style="width:100%;max-width:550px;max-height:90vh;display:flex;flex-direction:column;border-radius:24px;overflow:hidden;border:1px solid var(--outline-variant);box-shadow:0 12px 40px rgba(0,0,0,0.15);">
+          <!-- Header -->
+          <div style="padding:18px 24px;background:linear-gradient(135deg,#065f46,#10b981);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+            <h3 style="font-size:16px;font-weight:800;margin:0;">📝 CHỈNH SỬA HỒ SƠ PT</h3>
+            <button id="close-edit-profile" style="background:none;border:none;color:#fff;cursor:pointer;">
+              <span class="material-symbols-outlined" style="font-size:22px;">close</span>
+            </button>
+          </div>
+          <!-- Body -->
+          <div style="overflow-y:auto;flex:1;padding:24px;display:flex;flex-direction:column;gap:16px;">
+            <!-- Form Fields -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-[11px] font-bold text-on-surface-variant uppercase tracking-wider mb-1.5">Họ tên</label>
+                <input id="ep-name" type="text" value="${p.ho_ten || ''}" class="w-full bg-surface-container border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl outline-none focus:border-brand-primary text-body-sm font-medium" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-on-surface-variant uppercase tracking-wider mb-1.5">Giới tính</label>
+                <select id="ep-gender" class="w-full bg-surface-container border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl outline-none focus:border-brand-primary text-body-sm font-medium">
+                  <option value="nam" ${p.gioi_tinh === 'nam' || p.gioi_tinh === 'male' ? 'selected' : ''}>Nam</option>
+                  <option value="nu" ${p.gioi_tinh === 'nu' || p.gioi_tinh === 'female' ? 'selected' : ''}>Nữ</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-on-surface-variant uppercase tracking-wider mb-1.5">Ngày sinh</label>
+                <input id="ep-birthday" type="date" value="${birthDate}" class="w-full bg-surface-container border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl outline-none focus:border-brand-primary text-body-sm font-medium" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-on-surface-variant uppercase tracking-wider mb-1.5">Số điện thoại</label>
+                <input id="ep-phone" type="text" value="${p.so_dien_thoai || ''}" class="w-full bg-surface-container border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl outline-none focus:border-brand-primary text-body-sm font-medium" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-on-surface-variant uppercase tracking-wider mb-1.5">Email</label>
+                <input id="ep-email" type="email" value="${p.email || ''}" class="w-full bg-surface-container border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl outline-none focus:border-brand-primary text-body-sm font-medium" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-on-surface-variant uppercase tracking-wider mb-1.5">Kinh nghiệm (Năm)</label>
+                <input id="ep-exp" type="number" min="0" value="${p.kinh_nghiem || '0'}" class="w-full bg-surface-container border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl outline-none focus:border-brand-primary text-body-sm font-medium" />
+              </div>
+              <div class="sm:col-span-2">
+                <label class="block text-[11px] font-bold text-on-surface-variant uppercase tracking-wider mb-1.5">Chuyên môn</label>
+                <input id="ep-specialty" type="text" value="${p.chuyen_mon || ''}" class="w-full bg-surface-container border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl outline-none focus:border-brand-primary text-body-sm font-medium" />
+              </div>
+            </div>
+          </div>
+          <!-- Footer -->
+          <div style="padding:14px 24px;border-top:1px solid var(--outline-variant);display:flex;justify-content:flex-end;gap:12px;background:var(--bg-surface-low);flex-shrink:0;">
+            <button id="btn-ep-cancel" class="px-5 py-2.5 rounded-xl border border-outline-variant text-on-surface text-body-sm font-bold bg-transparent cursor-pointer">Hủy</button>
+            <button id="btn-ep-save" class="px-5 py-2.5 rounded-xl bg-[#10b981] text-white text-body-sm font-bold border-none cursor-pointer hover:shadow-md transition-all">Lưu thay đổi</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(overlay);
+
+      const close = () => overlay.remove();
+      document.getElementById('close-edit-profile').addEventListener('click', close);
+      document.getElementById('btn-ep-cancel').addEventListener('click', close);
+
+      document.getElementById('btn-ep-save').addEventListener('click', async () => {
+        const saveBtn = document.getElementById('btn-ep-save');
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Đang lưu...';
+
+        const payload = {
+          ho_ten: document.getElementById('ep-name').value.trim(),
+          gioi_tinh: document.getElementById('ep-gender').value,
+          ngay_sinh: document.getElementById('ep-birthday').value || null,
+          so_dien_thoai: document.getElementById('ep-phone').value.trim(),
+          email: document.getElementById('ep-email').value.trim(),
+          kinh_nghiem: Number(document.getElementById('ep-exp').value),
+          chuyen_mon: document.getElementById('ep-specialty').value.trim(),
+        };
+
+        try {
+          const res = await window.GymApp.api.put('/auth/me', payload);
+          if (res?.success) {
+            window.GymApp.toast('Đã cập nhật thông tin cá nhân!', 'success');
+            close();
+            await self.init();
+          } else {
+            window.GymApp.toast(res?.message || 'Lỗi khi cập nhật.', 'error');
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Lưu thay đổi';
+          }
+        } catch (err) {
+          console.error(err);
+          window.GymApp.toast('Lỗi kết nối máy chủ.', 'error');
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Lưu thay đổi';
+        }
+      });
+    },
+
     async init() {
+      const self = this;
       try {
-        const res = await window.GymApp.api.get('/members/me/profile');
+        const res = await window.GymApp.api.get('/auth/me');
         if (res?.success) {
           window.GymApp.data.myProfile = { ...res.data, ...res.data.ho_so };
-          document.getElementById('content-area').innerHTML = this.render();
+          const area = document.getElementById('content-area');
+          if (area && window.GymApp.currentPage === 'my-profile') {
+            area.innerHTML = self.render();
+            document.getElementById('btn-edit-profile')?.addEventListener('click', () => {
+              self._showEditProfileModal(window.GymApp.data.myProfile);
+            });
+          }
         }
       } catch (e) { console.error(e); }
     }

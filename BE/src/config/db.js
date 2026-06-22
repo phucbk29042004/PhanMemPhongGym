@@ -1818,5 +1818,10 @@ try {
   console.log('[DB] ✅ Thêm cột extra vào bảng thong_bao_user.');
 } catch (_) { }
 
+try {
+  db.exec(`ALTER TABLE tai_khoan ADD COLUMN push_token TEXT;`);
+  console.log('[DB] ✅ Thêm cột push_token vào bảng tai_khoan.');
+} catch (_) { }
+
 export default db;
 

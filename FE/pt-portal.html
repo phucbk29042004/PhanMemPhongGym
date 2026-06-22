@@ -79,7 +79,7 @@
     [data-page] {
       transition: all 0.2s ease-in-out;
     }
-    
+
     [data-page]:not(.nav-active):hover {
       background: #fafafa;
       color: #171717;
@@ -100,7 +100,7 @@
   </style>
 </head>
 
-<body class="font-body-md text-body-md overflow-hidden bg-background text-on-surface">
+<body class="font-body-md text-body-md overflow-hidden bg-background text-on-surface pt-shell">
 
   <script>
     window.GymApp = { data: { ptSchedules: [], myStudents: [] }, pages: {}, currentPage: null };
@@ -120,31 +120,26 @@
           <span class="material-symbols-outlined text-on-surface-variant text-xl">menu</span>
         </button>
         <div class="sidebar-label flex items-center gap-compact overflow-hidden flex-1">
-          <!-- White Hexagon Logo -->
-          <svg viewBox="0 0 45 45" width="32" height="32" class="flex-shrink-0">
-             <polygon points="22.5,2 42,13 42,35 22.5,46 3,35 3,13" fill="#ffffff" stroke="#3ecf8e" stroke-width="1.5"/>
-             <path d="M19,37 C19,31 18,24 20,15" fill="none" stroke="#171717" stroke-width="3" stroke-linecap="round"/>
-             <path d="M20,15 C23,11 31,11 34,15 C36,18 35,24 29,26 C24,27 20,26.5 20,26.5" fill="none" stroke="#171717" stroke-width="2.5" stroke-linecap="round"/>
-             <path d="M20.5,19 C24,18 28.5,18.5 30,21" fill="none" stroke="#171717" stroke-width="1.2" stroke-linecap="round"/>
-             <path d="M20,23.5 C23.5,23 27,24 28.5,22.5" fill="none" stroke="#171717" stroke-width="1" stroke-linecap="round"/>
-          </svg>
           <div class="min-w-0">
-            <svg viewBox="0 0 190 40" width="140" height="30" style="display:block;">
+            <svg viewBox="0 0 190 40" width="140" height="30" style="display:block;"
+              class="text-on-surface dark:text-[#dde1e7]">
               <g font-family="'Outfit', 'Inter', 'Roboto', sans-serif" font-weight="800" font-size="22">
-                <text x="5" y="27" fill="#171717" letter-spacing="-0.5">Parad</text>
-                <text x="68" y="27" fill="#171717" letter-spacing="-0.5">ı</text>
-                <path d="M69.5,10 C71.5,8 74,8 74.5,10 C74.5,12.5 72,14 70.5,14 C69.5,14 68.5,12.5 69.5,10 Z" fill="#3ecf8e"/>
-                <text x="79" y="27" fill="#171717" letter-spacing="-0.5">seGy</text>
-                <text x="127" y="27" fill="#171717" letter-spacing="-0.5">m</text>
+                <text x="5" y="27" fill="currentColor" letter-spacing="-0.5">Parad</text>
+                <text x="68" y="27" fill="currentColor" letter-spacing="-0.5">ı</text>
+                <path d="M69.5,10 C71.5,8 74,8 74.5,10 C74.5,12.5 72,14 70.5,14 C69.5,14 68.5,12.5 69.5,10 Z"
+                  fill="#3ecf8e" />
+                <text x="79" y="27" fill="currentColor" letter-spacing="-0.5">seGy</text>
+                <text x="127" y="27" fill="currentColor" letter-spacing="-0.5">m</text>
                 <g transform="translate(131, 9) rotate(15)">
-                  <line x1="1" y1="8" x2="13" y2="2" stroke="#3ecf8e" stroke-width="1.5" stroke-linecap="round"/>
-                  <rect x="0" y="5" width="2.5" height="5" rx="0.8" fill="#171717"/>
-                  <rect x="-2" y="4" width="2" height="7" rx="0.8" fill="#3ecf8e"/>
-                  <rect x="11.5" y="0" width="2.5" height="5" rx="0.8" fill="#171717"/>
-                  <rect x="14" y="-1" width="2" height="7" rx="0.8" fill="#3ecf8e"/>
+                  <line x1="1" y1="8" x2="13" y2="2" stroke="#3ecf8e" stroke-width="1.5" stroke-linecap="round" />
+                  <rect x="0" y="5" width="2.5" height="5" rx="0.8" fill="currentColor" />
+                  <rect x="-2" y="4" width="2" height="7" rx="0.8" fill="#3ecf8e" />
+                  <rect x="11.5" y="0" width="2.5" height="5" rx="0.8" fill="currentColor" />
+                  <rect x="14" y="-1" width="2" height="7" rx="0.8" fill="#3ecf8e" />
                 </g>
               </g>
-              <text x="5" y="38" font-family="'Inter', sans-serif" font-weight="500" font-size="9" fill="#707070">HUẤN LUYỆN VIÊN (PT)</text>
+              <text x="5" y="38" font-family="'Inter', sans-serif" font-weight="500" font-size="9" fill="currentColor"
+                class="opacity-70">HUẤN LUYỆN VIÊN (PT)</text>
             </svg>
           </div>
         </div>
@@ -268,7 +263,8 @@
           box-shadow:0 8px 24px rgba(0,0,0,0.12);
           z-index:200;
         ">
-            <div style="padding:12px 16px;border-bottom:1px solid var(--outline-variant);display:flex;justify-content:space-between;align-items:center;">
+            <div
+              style="padding:12px 16px;border-bottom:1px solid var(--outline-variant);display:flex;justify-content:space-between;align-items:center;">
               <p style="font-weight:700;font-size:13px;color:var(--text-on-surface);margin:0">Thông báo</p>
               <button id="pt-notif-clear-all" style="
                 display:flex;align-items:center;gap:4px;
@@ -295,7 +291,8 @@
           title="Chuyển chế độ sáng/tối">
           <span id="theme-icon">dark_mode</span>
         </button>
-        <div class="flex items-center gap-compact ml-xs pl-standard border-l border-outline-variant" title="Hồ sơ Huấn luyện viên">
+        <div class="flex items-center gap-compact ml-xs pl-standard border-l border-outline-variant"
+          title="Hồ sơ Huấn luyện viên">
           <div id="header-avatar"
             class="w-8 h-8 rounded-full bg-gradient-to-br from-brand-primary to-[#157a2a] flex items-center justify-center shadow-sm hover:opacity-90 transition-opacity cursor-pointer">
             <span class="material-symbols-outlined text-white text-base"
@@ -316,11 +313,11 @@
   <!-- Scripts -->
   <script>
     window.GymApp.toast = function (message, type = 'success') {
-      const colors = { 
-        success: 'background:#3ecf8e;color:#171717;border:1px solid #24b47e;', 
-        error: 'background:#ba1a1a;color:#ffffff;', 
-        info: 'background:#fafafa;color:#171717;border:1px solid #dfdfdf;', 
-        warning: 'background:#ffdb13;color:#171717;border:1px solid #c7c7c7;' 
+      const colors = {
+        success: 'background:#3ecf8e;color:#171717;border:1px solid #24b47e;',
+        error: 'background:#ba1a1a;color:#ffffff;',
+        info: 'background:#fafafa;color:#171717;border:1px solid #dfdfdf;',
+        warning: 'background:#ffdb13;color:#171717;border:1px solid #c7c7c7;'
       };
       const icons = { success: 'check_circle', error: 'error', info: 'info', warning: 'warning' };
       const el = document.createElement('div');
@@ -416,15 +413,15 @@
             autoClose: true,
             container: document.body,
             position: currentPos,
-            onShow: function(isFinished) {
+            onShow: function (isFinished) {
               if (isFinished) return;
               const rect = visibleInput.getBoundingClientRect();
               const spaceBelow = window.innerHeight - rect.bottom;
               const calendarHeight = 350; // Chiều cao an toàn của calendar
-              
+
               // Quyết định vị trí tối ưu: chỉ chọn 'top left' nếu ở dưới không đủ và ở trên đủ chứa calendar
               const desiredPos = (spaceBelow < calendarHeight && rect.top > calendarHeight) ? 'top left' : 'bottom left';
-              
+
               if (currentPos !== desiredPos) {
                 currentPos = desiredPos;
                 adp.update({ position: desiredPos });
@@ -434,13 +431,13 @@
               setTimeout(() => {
                 if (adp.$datepicker) {
                   const dpRect = adp.$datepicker.getBoundingClientRect();
-                  
+
                   // 1. Chống tràn mép trên (Top boundary collision)
                   if (dpRect.top < 10) {
                     const currentTop = parseFloat(adp.$datepicker.style.top) || 0;
                     adp.$datepicker.style.top = `${currentTop + (10 - dpRect.top)}px`;
                   }
-                  
+
                   // 2. Chống tràn mép dưới (Bottom boundary collision)
                   const overflowBottom = dpRect.bottom - (window.innerHeight - 10);
                   if (overflowBottom > 0) {
@@ -454,7 +451,7 @@
                       adp.$datepicker.style.top = `${currentTop + (10 - dpRect.top)}px`;
                     }
                   }
-                  
+
                   // 3. Chống tràn mép trái/phải
                   const spaceRight = window.innerWidth - dpRect.right;
                   if (dpRect.left < 10) {
@@ -482,10 +479,10 @@
           });
 
           Object.defineProperty(originalInput, 'value', {
-            get: function() {
+            get: function () {
               return baseDescriptor.get.call(originalInput);
             },
-            set: function(val) {
+            set: function (val) {
               baseDescriptor.set.call(originalInput, val);
               if (val) {
                 const cleanVal = val.substring(0, 10);
@@ -540,6 +537,36 @@
       observer.observe(document.body, { childList: true, subtree: true });
     });
   </script>
+  <!-- Bottom Navigation Bar cho Mobile -->
+  <div id="mobile-bottom-nav"
+    class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-surface-container-lowest border-t border-outline-variant flex justify-around items-center z-50 shadow-lg">
+    <button data-page="dashboard"
+      class="flex flex-col items-center justify-center text-on-surface-variant hover:text-brand-primary active:scale-95 transition-all">
+      <span class="material-symbols-outlined text-[22px]">home</span>
+      <span class="text-[10px] font-bold mt-0.5">Trang chủ</span>
+    </button>
+    <button data-page="my-schedule"
+      class="flex flex-col items-center justify-center text-on-surface-variant hover:text-brand-primary active:scale-95 transition-all">
+      <span class="material-symbols-outlined text-[22px]">calendar_month</span>
+      <span class="text-[10px] font-bold mt-0.5">Lịch dạy</span>
+    </button>
+    <button data-page="my-students"
+      class="flex flex-col items-center justify-center text-on-surface-variant hover:text-brand-primary active:scale-95 transition-all">
+      <span class="material-symbols-outlined text-[22px]">group</span>
+      <span class="text-[10px] font-bold mt-0.5">Học viên</span>
+    </button>
+    <button data-page="pt-me"
+      class="flex flex-col items-center justify-center text-on-surface-variant hover:text-brand-primary active:scale-95 transition-all">
+      <span class="material-symbols-outlined text-[22px]">forum</span>
+      <span class="text-[10px] font-bold mt-0.5">PT & Tôi</span>
+    </button>
+    <button data-page="my-profile"
+      class="flex flex-col items-center justify-center text-on-surface-variant hover:text-brand-primary active:scale-95 transition-all">
+      <span class="material-symbols-outlined text-[22px]">person</span>
+      <span class="text-[10px] font-bold mt-0.5">Cá nhân</span>
+    </button>
+  </div>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script src="assets/js/api.js"></script>

@@ -1279,8 +1279,9 @@ html.dark #sidebar p[style*="color:#16a34a"] {
 /* ===== RESPONSIVE GLOBAL UTILITIES ===== */
 
 /* Sidebar ẩn hoàn toàn trên mobile, overlay khi mở */
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   #sidebar {
+    display: none !important;
     position: fixed;
     left: 0; top: 0; bottom: 0;
     z-index: 200;
@@ -1289,6 +1290,7 @@ html.dark #sidebar p[style*="color:#16a34a"] {
     box-shadow: 4px 0 24px rgba(0,0,0,0.18);
   }
   #sidebar.mobile-open {
+    display: flex !important;
     transform: translateX(0);
   }
   #sidebar-overlay {
@@ -1389,5 +1391,31 @@ html.dark #sidebar p[style*="color:#16a34a"] {
   }
   .gym-header {
     height: 50px !important;
+  }
+}
+
+/* Responsive bottom navigation styles */
+@media (max-width: 768px) {
+  /* Bỏ quy tắc ẩn aside chung để không đè lên #sidebar ở trang quản lý */
+  body:not(.member-shell):not(.pt-shell) aside:not(#sidebar) {
+    display: none !important;
+  }
+  /* Tránh đè lên #sidebar của index.html */
+  .member-shell aside, .pt-shell aside {
+    display: none !important;
+  }
+  main, #content-area {
+    padding-bottom: 80px !important;
+  }
+  #mobile-bottom-nav {
+    display: flex !important;
+  }
+  #mobile-bottom-nav button.active-mobile-nav {
+    color: #3ecf8e !important;
+  }
+}
+@media (min-width: 769px) {
+  #mobile-bottom-nav {
+    display: none !important;
   }
 }

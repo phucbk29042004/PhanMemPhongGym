@@ -10,6 +10,36 @@
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
 
+  function formatCheckinTime(thoiDiemStr) {
+    if (!thoiDiemStr) return '—';
+    const safeStr = thoiDiemStr.replace(' ', 'T');
+    const d = new Date(safeStr);
+    if (isNaN(d.getTime())) {
+      const parts = thoiDiemStr.split(' ');
+      if (parts.length >= 2) {
+        return parts[1].substring(0, 5); // "HH:MM"
+      }
+      return '—';
+    }
+    return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function formatCheckinDate(thoiDiemStr) {
+    if (!thoiDiemStr) return '—';
+    const safeStr = thoiDiemStr.replace(' ', 'T');
+    const d = new Date(safeStr);
+    if (isNaN(d.getTime())) {
+      const parts = thoiDiemStr.split(' ');
+      const datePart = parts[0];
+      const dateParts = datePart.split('-');
+      if (dateParts.length === 3) {
+        return `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`; // "DD/MM/YYYY"
+      }
+      return datePart;
+    }
+    return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
   function daysBetweenToday(dateValue) {
     if (!dateValue) return null;
     const today = new Date();
@@ -419,6 +449,14 @@
       if (btn.dataset.tab === tabName) {
         btn.classList.remove('text-on-surface-variant');
         btn.classList.add('member-nav-active', 'text-brand-primary', 'font-bold');
+      }
+    });
+
+    // Đồng bộ Bottom Nav trên di động
+    document.querySelectorAll('#mobile-bottom-nav button').forEach(btn => {
+      btn.classList.remove('active-mobile-nav', 'text-brand-primary');
+      if (btn.dataset.tab === tabName) {
+        btn.classList.add('active-mobile-nav', 'text-brand-primary');
       }
     });
 
@@ -903,6 +941,135 @@
   };
 
   pages['my-schedule'] = {
+    viewDate: null,
+
+    _renderCalendar() {
+      if (!this.viewDate) this.viewDate = new Date();
+      const year = this.viewDate.getFullYear();
+      const month = this.viewDate.getMonth();
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const checkinDates = new Set();
+      const checkins = window.GymApp.data.myCheckins || [];
+      checkins.forEach(c => {
+        if (c.loai === 'vao' && c.thoi_diem) {
+          const datePart = c.thoi_diem.split(' ')[0].split('T')[0];
+          checkinDates.add(datePart);
+        }
+      });
+
+      const firstDay = new Date(year, month, 1);
+      let startDayOfWeek = firstDay.getDay();
+      if (startDayOfWeek === 0) startDayOfWeek = 7;
+      
+      const lastDay = new Date(year, month + 1, 0);
+      const totalDays = lastDay.getDate();
+
+      const days = [];
+      for (let i = 1; i < startDayOfWeek; i++) days.push(null);
+      for (let d = 1; d <= totalDays; d++) days.push(new Date(year, month, d));
+
+      const monthNames = [
+        'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
+        'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'
+      ];
+      const weekdayLabels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+
+      return `
+        <div class="member-card p-s4 bg-surface-container-lowest max-w-[480px] mx-auto">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-label-md font-bold text-brand-primary flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[18px]">calendar_month</span>
+              Lịch chuyên cần: ${monthNames[month]} ${year}
+            </h3>
+            <div class="flex gap-1.5">
+              <button id="cal-prev" class="p-1 rounded-lg border border-outline-variant hover:bg-surface-container transition-colors flex items-center justify-center cursor-pointer">
+                <span class="material-symbols-outlined text-xs">chevron_left</span>
+              </button>
+              <button id="cal-next" class="p-1 rounded-lg border border-outline-variant hover:bg-surface-container transition-colors flex items-center justify-center cursor-pointer">
+                <span class="material-symbols-outlined text-xs">chevron_right</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-on-surface-variant border-b border-outline-variant/30 pb-1.5 mb-1.5">
+            ${weekdayLabels.map(label => `<div>${label}</div>`).join('')}
+          </div>
+
+          <div class="grid grid-cols-7 gap-1">
+            ${days.map(date => {
+              if (!date) return `<div class="aspect-square rounded-lg bg-transparent"></div>`;
+              const dNum = date.getDate();
+              const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(dNum).padStart(2, '0')}`;
+              
+              const isToday = date.getTime() === today.getTime();
+              const isPast = date.getTime() < today.getTime();
+              const hasCheckedIn = checkinDates.has(dateStr);
+
+              // Tìm ngày mai (nếu hôm nay đã checkin thì highlight ngày mai)
+              const tomorrow = new Date(today);
+              tomorrow.setDate(tomorrow.getDate() + 1);
+              const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+              const isTomorrow = dateStr === tomorrowStr;
+              
+              // Hôm nay đã check-in chưa?
+              const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+              const todayCheckedIn = checkinDates.has(todayStr);
+
+              let cellClass = 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container';
+              let badgeHtml = '';
+
+              if (isToday) {
+                cellClass = 'border border-brand-primary font-bold text-brand-primary bg-brand-primary/5';
+              }
+
+              if (hasCheckedIn) {
+                cellClass = 'bg-[#1D9336] text-white font-extrabold shadow-sm scale-105 transition-transform duration-200';
+                badgeHtml = `<span class="material-symbols-outlined text-[8px] absolute bottom-0.5 right-0.5">check_circle</span>`;
+              } else if (isTomorrow && todayCheckedIn) {
+                // Highlight ngày mai khi hôm nay đã check-in
+                cellClass = 'border border-dashed border-[#e65100] font-bold text-[#e65100] bg-[#fff3e0] animate-pulse';
+                badgeHtml = `<span class="material-symbols-outlined text-[8px] absolute bottom-0.5 right-0.5 text-[#e65100]">bolt</span>`;
+              } else if (isPast) {
+                cellClass = 'bg-surface-container-highest text-on-surface-variant/40';
+              }
+
+              return `
+                <div class="aspect-square rounded-lg flex flex-col items-center justify-center relative cursor-default text-body-sm transition-all duration-150 ${cellClass}" title="${hasCheckedIn ? 'Đã check-in tập luyện' : isToday ? 'Hôm nay' : isTomorrow && todayCheckedIn ? 'Ngày mai (Mục tiêu tiếp theo)' : ''}">
+                  <span class="text-xs select-none">${dNum}</span>
+                  ${badgeHtml}
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    },
+
+    _updateCalendarUI() {
+      const container = document.getElementById('ms-calendar-container');
+      if (container) {
+        container.innerHTML = this._renderCalendar();
+        this._bindCalendarEvents();
+      }
+    },
+
+    _bindCalendarEvents() {
+      const self = this;
+      document.getElementById('cal-prev')?.addEventListener('click', () => {
+        if (!self.viewDate) self.viewDate = new Date();
+        self.viewDate.setMonth(self.viewDate.getMonth() - 1);
+        self._updateCalendarUI();
+      });
+      document.getElementById('cal-next')?.addEventListener('click', () => {
+        if (!self.viewDate) self.viewDate = new Date();
+        self.viewDate.setMonth(self.viewDate.getMonth() + 1);
+        self._updateCalendarUI();
+      });
+    },
+
     render() {
       const schedules = sortSchedules(window.GymApp.data.ptSchedules || []);
       const activePt = getActivePt();
@@ -934,11 +1101,18 @@
             </div>
           </div>
 
-          <section class="member-card overflow-hidden">
-            <div id="ms-list" class="divide-y divide-outline-variant">
-              ${this._renderList(schedules)}
-            </div>
-          </section>
+          <!-- Bố cục ngang: Lịch chuyên cần (3/10) và Danh sách buổi tập (7/10) -->
+          <div class="grid grid-cols-1 lg:grid-cols-10 gap-s6 items-start">
+            <!-- Cột trái: Lịch chuyên cần 30 ngày (chiếm 3 phần width ở màn hình lg) -->
+            <div id="ms-calendar-container" class="lg:col-span-3"></div>
+
+            <!-- Cột phải: Danh sách các buổi tập (chiếm 7 phần width ở màn hình lg) -->
+            <section class="member-card overflow-hidden lg:col-span-7">
+              <div id="ms-list" class="divide-y divide-outline-variant">
+                ${this._renderList(schedules)}
+              </div>
+            </section>
+          </div>
         </div>
       `;
     },
@@ -962,6 +1136,9 @@
 
     async init() {
       const self = this;
+      self.viewDate = new Date();
+      self._updateCalendarUI();
+
       try {
         const res = await window.GymApp.api.get('/pt/schedules');
         if (res?.success) {
@@ -1275,18 +1452,23 @@
     _renderList(list) {
       if (!list.length) return emptyState('history', 'Chưa có lịch sử vào/ra');
 
-      return list.map(c => `
-        <div class="member-card p-s4 flex items-center gap-s4">
-          <div class="w-10 h-10 rounded-xl ${c.loai === 'vao' ? 'bg-[#e7f5e9]' : 'bg-[#e3f2fd]'} flex items-center justify-center shrink-0">
-            <span class="material-symbols-outlined ${c.loai === 'vao' ? 'text-brand-primary' : 'text-secondary'}" style="font-variation-settings:'FILL' 1">${c.loai === 'vao' ? 'login' : 'logout'}</span>
+      return list.map(c => {
+        const gioHienThi = formatCheckinTime(c.thoi_diem);
+        const ngayHienThi = formatCheckinDate(c.thoi_diem);
+        const hanhDong = c.loai === 'vao' ? 'Vào phòng' : 'Ra phòng';
+        return `
+          <div class="member-card p-s4 flex items-center gap-s4">
+            <div class="w-10 h-10 rounded-xl ${c.loai === 'vao' ? 'bg-[#e7f5e9]' : 'bg-[#e3f2fd]'} flex items-center justify-center shrink-0">
+              <span class="material-symbols-outlined ${c.loai === 'vao' ? 'text-brand-primary' : 'text-secondary'}" style="font-variation-settings:'FILL' 1">${c.loai === 'vao' ? 'login' : 'logout'}</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="font-bold text-on-surface text-body-base">${hanhDong} lúc: <span class="text-brand-primary">${gioHienThi}</span></p>
+              <p class="text-on-surface-variant text-body-sm">${ngayHienThi} | ${window.GymApp.formatEnumLabel(c.phuong_thuc || 'thu_cong')}</p>
+            </div>
+            ${window.GymApp.statusBadge(c.loai)}
           </div>
-          <div class="flex-1 min-w-0">
-            <p class="font-bold text-on-surface text-body-base">${c.gio_hien_thi || new Date(c.thoi_diem).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</p>
-            <p class="text-on-surface-variant text-body-sm">${window.GymApp.formatDate(c.thoi_diem?.split('T')[0] || c.thoi_diem)} | ${window.GymApp.formatEnumLabel(c.phuong_thuc || 'thu_cong')}</p>
-          </div>
-          ${window.GymApp.statusBadge(c.loai)}
-        </div>
-      `).join('');
+        `;
+      }).join('');
     },
 
     init() {
@@ -1315,82 +1497,160 @@
       const entries = data.entries || data.latest || [];
       const pair = data.pair;
       return `
-        <div class="space-y-s6">
-          <div>
-            <h2 class="text-headline-md font-bold text-on-surface">PT & Tôi</h2>
-            <p class="text-on-surface-variant text-body-md mt-s1">${pair ? `Trao đổi với HLV ${pair.ten_pt || ''}` : 'Bạn chưa có PT đang hoạt động.'}</p>
+        <div class="space-y-4 w-full">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-headline-md font-bold text-on-surface">PT & Tôi</h2>
+              <p class="text-on-surface-variant text-body-md mt-s1">
+                ${pair ? `Trò chuyện và theo dõi tiến trình cùng HLV <b>${pair.ten_pt || ''}</b>` : 'Bạn chưa có PT đang hoạt động.'}
+              </p>
+            </div>
+            ${pair ? `<button id="ptme-reload" class="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-outline-variant hover:border-brand-primary hover:text-brand-primary transition-all text-body-sm font-bold bg-surface-container-lowest">
+              <span class="material-symbols-outlined text-[18px]">sync</span> Tải lại
+            </button>` : ''}
           </div>
+
           ${pair ? `
-            <section class="member-card p-s5">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-s4">
-                <textarea id="ptme-feeling" rows="3" class="bg-surface-container border border-outline-variant text-on-surface px-4 py-3 rounded-xl outline-none focus:border-brand-primary resize-none" placeholder="Hôm nay bạn tập luyện như thế nào sau khi tập?"></textarea>
-                <textarea id="ptme-food" rows="3" class="bg-surface-container border border-outline-variant text-on-surface px-4 py-3 rounded-xl outline-none focus:border-brand-primary resize-none" placeholder="Khẩu phần ăn hôm nay, bạn đã ăn gì?"></textarea>
-                <input id="ptme-minutes" type="number" min="0" max="600" class="bg-surface-container border border-outline-variant text-on-surface px-4 py-3 rounded-xl outline-none focus:border-brand-primary" placeholder="Hôm nay bạn tập bao nhiêu phút?" />
-                <textarea id="ptme-workout" rows="2" class="bg-surface-container border border-outline-variant text-on-surface px-4 py-3 rounded-xl outline-none focus:border-brand-primary resize-none" placeholder="Nội dung tập luyện / bài tập đã làm"></textarea>
+            <div class="member-card flex flex-col overflow-hidden h-[680px] bg-surface-container-lowest border border-outline-variant w-full">
+              <!-- Chat Messages Area -->
+              <div id="ptme-chat-box" class="flex-1 overflow-y-auto p-4 space-y-4 bg-surface-container-low/30" style="scroll-behavior: smooth;">
+                ${this._renderEntries(entries)}
               </div>
-              <div class="flex justify-end mt-s4">
-                <button id="ptme-submit" class="px-5 py-3 rounded-xl bg-brand-primary text-white font-bold flex items-center gap-2"><span class="material-symbols-outlined">send</span>Gửi cho PT</button>
+
+              <!-- Input Form Container -->
+              <div class="p-4 border-t border-outline-variant bg-surface-container-lowest">
+                <form id="ptme-form" onsubmit="return false;" class="space-y-3">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div class="flex flex-col gap-1">
+                      <label class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Cảm nhận tập luyện</label>
+                      <input id="ptme-feeling" type="text" class="w-full bg-surface-container-low border border-outline-variant text-on-surface px-3 py-2 rounded-xl outline-none focus:border-brand-primary text-body-sm" placeholder="Hôm nay bạn thấy mệt hay sung sức?" />
+                    </div>
+                    <div class="flex flex-col gap-1">
+                      <label class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Khẩu phần ăn uống</label>
+                      <input id="ptme-food" type="text" class="w-full bg-surface-container-low border border-outline-variant text-on-surface px-3 py-2 rounded-xl outline-none focus:border-brand-primary text-body-sm" placeholder="Hôm nay bạn đã ăn những gì?" />
+                    </div>
+                    <div class="flex flex-col gap-1">
+                      <label class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Nội dung bài tập đã thực hiện</label>
+                      <input id="ptme-workout" type="text" class="w-full bg-surface-container-low border border-outline-variant text-on-surface px-3 py-2 rounded-xl outline-none focus:border-brand-primary text-body-sm" placeholder="Ví dụ: Chạy bộ, squat, đẩy ngực..." />
+                    </div>
+                    <div class="flex flex-col gap-1">
+                      <label class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Thời lượng tập (phút)</label>
+                      <input id="ptme-minutes" type="number" min="0" max="600" class="w-full bg-surface-container-low border border-outline-variant text-on-surface px-3 py-2 rounded-xl outline-none focus:border-brand-primary text-body-sm" placeholder="Nhập số phút tập luyện" />
+                    </div>
+                  </div>
+                  <div class="flex justify-end gap-2 pt-2 border-t border-outline-variant/60">
+                    <button id="ptme-cancel-edit" type="button" class="hidden px-4 py-2 text-body-sm font-bold text-on-surface-variant hover:bg-surface-container rounded-xl transition-all">Hủy sửa</button>
+                    <button id="ptme-submit" type="submit" class="px-5 py-2.5 rounded-xl bg-brand-primary text-white font-bold flex items-center gap-1.5 hover:shadow-md transition-all active:scale-95 text-body-sm">
+                      <span class="material-symbols-outlined text-[18px]">send</span>Gửi cập nhật
+                    </button>
+                  </div>
+                </form>
               </div>
-            </section>
-            <section class="member-card overflow-hidden">
-              <div class="p-s5 border-b border-outline-variant flex items-center justify-between">
-                <h3 class="text-headline-sm font-bold text-brand-primary">Nhật ký trao đổi</h3>
-                <button id="ptme-reload" class="text-brand-primary font-bold text-label-md">Tải lại</button>
-              </div>
-              <div id="ptme-list" class="divide-y divide-outline-variant">${this._renderEntries(entries)}</div>
-            </section>
+            </div>
           ` : emptyState('person_search', 'Chưa có PT đang hoạt động', 'Khi đăng ký gói PT, luồng trao đổi sẽ xuất hiện tại đây.')}
         </div>
       `;
     },
     _renderEntries(entries) {
-      if (!entries?.length) return `<div class="p-s6">${emptyState('forum', 'Chưa có trao đổi nào')}</div>`;
-      const currentUserId = window.GymApp.auth?.user?.id;
-      return entries.map(item => `
-        <div class="p-s5">
-          <div class="flex items-start justify-between gap-s3">
-            <div>
-              <p class="font-bold text-on-surface">${item.vai_tro_gui === 'pt' ? 'PT dặn dò' : 'Bạn cập nhật'} ${item.da_chinh_sua ? '<span class="text-label-sm text-on-surface-variant">(đã chỉnh sửa)</span>' : ''}</p>
-              <p class="text-label-sm text-on-surface-variant">${item.ngay_cap_nhat || item.ngay_tao || ''}</p>
+      if (!entries?.length) return `<div class="flex flex-col items-center justify-center h-full text-on-surface-variant py-10"><span class="material-symbols-outlined text-4xl mb-2 text-outline">forum</span><p class="font-bold text-body-sm">Chưa có tin nhắn nào</p><p class="text-xs">Hãy gửi cập nhật đầu tiên của bạn cho PT!</p></div>`;
+      const currentUserId = window.GymApp.auth?.user?.ho_so_id || window.GymApp.auth?.user?.id;
+      // Sắp xếp tin nhắn theo thời gian tăng dần để tin mới nhất nằm ở dưới cùng
+      const sorted = [...entries].sort((a, b) => new Date(a.ngay_tao || a.ngay_cap_nhat) - new Date(b.ngay_tao || b.ngay_cap_nhat));
+      
+      return sorted.map(item => {
+        const isMe = item.nguoi_gui_id === currentUserId;
+        let dateStr = '';
+        if (item.ngay_tao) {
+          const dt = new Date(item.ngay_tao);
+          const time = dt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+          const date = dt.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+          dateStr = `${time} ${date}`;
+        }
+        return `
+          <div class="flex ${isMe ? 'justify-end' : 'justify-start'} w-full">
+            <div class="max-w-[75%] md:max-w-[60%] rounded-2xl p-3.5 shadow-sm relative group ${isMe ? 'bg-brand-primary/10 text-on-surface border border-brand-primary/20 rounded-tr-none' : 'bg-white dark:bg-[#1e1e1e] border border-outline-variant text-on-surface rounded-tl-none'}">
+              <div class="flex items-center justify-between gap-4 mb-2 pb-1.5 border-b border-outline-variant/40">
+                <span class="text-[11px] font-bold uppercase tracking-wider ${isMe ? 'text-brand-primary' : 'text-on-surface-variant'}">
+                  ${isMe ? 'Bạn' : 'HLV dặn dò'}
+                </span>
+                ${isMe ? `
+                  <button class="ptme-edit text-brand-primary font-bold text-[11px] opacity-0 group-hover:opacity-100 transition-opacity hover:underline" data-id="${item.id}">
+                    Sửa
+                  </button>
+                ` : ''}
+              </div>
+              <div class="space-y-1 text-body-sm">
+                ${item.cam_nhan_tap ? `<div><span class="text-on-surface-variant font-medium">Cảm nhận:</span> ${item.cam_nhan_tap}</div>` : ''}
+                ${item.khau_phan_an ? `<div><span class="text-on-surface-variant font-medium">Dinh dưỡng:</span> ${item.khau_phan_an}</div>` : ''}
+                ${item.so_phut_tap != null ? `<div><span class="text-on-surface-variant font-medium">Thời lượng:</span> ${item.so_phut_tap} phút</div>` : ''}
+                ${item.noi_dung_tap ? `<div><span class="text-on-surface-variant font-medium">Nội dung tập:</span> ${item.noi_dung_tap}</div>` : ''}
+                ${item.loi_dan ? `<div class="bg-brand-primary/10 text-[#0f5132] dark:text-[#a3cfbb] rounded-xl p-2.5 mt-2 border border-brand-primary/20"><b>Lời dặn HLV:</b> ${item.loi_dan}</div>` : ''}
+              </div>
+              <div class="text-[10px] text-on-surface-variant/70 mt-2 text-right">
+                ${dateStr}${item.da_chinh_sua ? ' • Đã sửa' : ''}
+              </div>
             </div>
-            ${item.nguoi_gui_id === currentUserId ? `<button class="ptme-edit text-brand-primary font-bold text-label-md" data-id="${item.id}">Sửa</button>` : ''}
           </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-s3 mt-s3 text-body-sm">
-            ${item.cam_nhan_tap ? `<div class="bg-surface-container rounded-xl p-s3"><b>Cảm nhận:</b> ${item.cam_nhan_tap}</div>` : ''}
-            ${item.khau_phan_an ? `<div class="bg-surface-container rounded-xl p-s3"><b>Ăn uống:</b> ${item.khau_phan_an}</div>` : ''}
-            ${item.so_phut_tap != null ? `<div class="bg-surface-container rounded-xl p-s3"><b>Thời lượng:</b> ${item.so_phut_tap} phút</div>` : ''}
-            ${item.noi_dung_tap ? `<div class="bg-surface-container rounded-xl p-s3"><b>Tập luyện:</b> ${item.noi_dung_tap}</div>` : ''}
-            ${item.loi_dan ? `<div class="bg-[#ecfdf5] text-[#065f46] rounded-xl p-s3 md:col-span-2"><b>Lời dặn:</b> ${item.loi_dan}</div>` : ''}
-          </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     },
     async init() {
       await this._load();
-      const list = document.getElementById('ptme-list');
-      if (list) list.innerHTML = this._renderEntries(window.GymApp.data.ptMeThread?.entries || []);
+      const chatBox = document.getElementById('ptme-chat-box');
+      if (chatBox) {
+        chatBox.innerHTML = this._renderEntries(window.GymApp.data.ptMeThread?.entries || []);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+
+      const list = document.getElementById('ptme-chat-box');
       list?.addEventListener('click', e => {
         const btn = e.target.closest('.ptme-edit');
         if (!btn) return;
         const item = (window.GymApp.data.ptMeThread?.entries || []).find(x => String(x.id) === String(btn.dataset.id));
         if (!item) return;
+        
         document.getElementById('ptme-feeling').value = item.cam_nhan_tap || '';
         document.getElementById('ptme-food').value = item.khau_phan_an || '';
         document.getElementById('ptme-minutes').value = item.so_phut_tap ?? '';
         document.getElementById('ptme-workout').value = item.noi_dung_tap || '';
+        
         const submit = document.getElementById('ptme-submit');
         submit.dataset.editId = item.id;
-        submit.innerHTML = '<span class="material-symbols-outlined">edit</span>Cập nhật';
+        submit.innerHTML = '<span class="material-symbols-outlined text-[18px]">edit</span>Cập nhật';
+        
+        const cancelBtn = document.getElementById('ptme-cancel-edit');
+        if (cancelBtn) cancelBtn.classList.remove('hidden');
         document.getElementById('ptme-feeling')?.focus();
       });
-      document.getElementById('ptme-reload')?.addEventListener('click', async () => {
-        await this._load();
-        const listEl = document.getElementById('ptme-list');
-        if (listEl) listEl.innerHTML = this._renderEntries(window.GymApp.data.ptMeThread?.entries || []);
+
+      document.getElementById('ptme-cancel-edit')?.addEventListener('click', () => {
+        document.getElementById('ptme-form')?.reset();
+        const submit = document.getElementById('ptme-submit');
+        if (submit) {
+          delete submit.dataset.editId;
+          submit.innerHTML = '<span class="material-symbols-outlined text-[18px]">send</span>Gửi cập nhật';
+        }
+        document.getElementById('ptme-cancel-edit')?.classList.add('hidden');
       });
-      document.getElementById('ptme-submit')?.addEventListener('click', async () => {
+
+      document.getElementById('ptme-reload')?.addEventListener('click', async () => {
+        const reloadBtn = document.getElementById('ptme-reload');
+        reloadBtn.disabled = true;
+        reloadBtn.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">sync</span> Tải lại';
+        await this._load();
+        const box = document.getElementById('ptme-chat-box');
+        if (box) {
+          box.innerHTML = this._renderEntries(window.GymApp.data.ptMeThread?.entries || []);
+          box.scrollTop = box.scrollHeight;
+        }
+        reloadBtn.disabled = false;
+        reloadBtn.innerHTML = '<span class="material-symbols-outlined text-[18px]">sync</span> Tải lại';
+      });
+
+      document.getElementById('ptme-submit')?.addEventListener('click', async (e) => {
+        e.preventDefault();
         const btn = document.getElementById('ptme-submit');
-        btn.disabled = true; btn.textContent = 'Đang gửi...';
+        btn.disabled = true; btn.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">sync</span> Đang gửi...';
         try {
           const payload = {
             cam_nhan_tap: document.getElementById('ptme-feeling')?.value?.trim(),
@@ -1402,12 +1662,18 @@
           const res = editId ? await window.GymApp.api.put(`/pt-me/thread/${editId}`, payload) : await window.GymApp.api.post('/pt-me/thread', payload);
           if (res?.success) {
             window.GymApp.toast(editId ? 'Đã cập nhật và báo cho PT!' : 'Đã gửi cập nhật cho PT!', 'success');
+            document.getElementById('ptme-form')?.reset();
+            document.getElementById('ptme-cancel-edit')?.classList.add('hidden');
+            delete btn.dataset.editId;
             await this._load();
-            navigate('pt-me');
+            const box = document.getElementById('ptme-chat-box');
+            if (box) {
+              box.innerHTML = this._renderEntries(window.GymApp.data.ptMeThread?.entries || []);
+              box.scrollTop = box.scrollHeight;
+            }
           }
         } finally {
-          delete btn.dataset.editId;
-          btn.disabled = false; btn.innerHTML = '<span class="material-symbols-outlined">send</span>Gửi cho PT';
+          btn.disabled = false; btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">send</span>Gửi cập nhật';
         }
       });
     }
@@ -1455,13 +1721,25 @@
       const isActive = activePackage?.trang_thai === 'dang_hoat_dong';
       const bmi = calcBmi(p.chieu_cao_cm, p.can_nang_kg);
 
+      // Render avatar custom
+      let avatarHtml = '';
+      if (avatarUrl) {
+        const cacheBuster = avatarUrl.includes('?') ? `&t=${Date.now()}` : `?t=${Date.now()}`;
+        avatarHtml = `<img src="${avatarUrl}${cacheBuster}" alt="${tenHV}" style="width:100%;height:100%;object-fit:cover;" />`;
+      } else {
+        const parts = (tenHV || '').trim().split(' ');
+        const initials = parts.length >= 2 ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase() : (tenHV || '??').slice(0, 2).toUpperCase();
+        const bgColors = ['#006b20', '#a52d59', '#575f67', '#03872c', '#005317', '#1D9336'];
+        const bg = bgColors[((tenHV || '').charCodeAt(0) || 0) % bgColors.length];
+        avatarHtml = `<div style="width:100%;height:100%;background:${bg};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:28px;">${initials}</div>`;
+      }
+
       return `
-        <div class="flex flex-col gap-6">
+        <div class="flex flex-col gap-6 animate-in fade-in duration-300">
           <div class="bg-surface-container-lowest rounded-3xl border border-outline-variant shadow-sm overflow-hidden">
 
-            <!-- Banner Header (members-list style) -->
+            <!-- Banner Header -->
             <div style="background:linear-gradient(135deg,#065f46 0%,#1D9336 60%,#4ade80 100%);padding:20px 24px 0;flex-shrink:0;position:relative;overflow:hidden;min-height:130px;">
-              <!-- Background orbs -->
               <div style="position:absolute;top:-30px;right:-30px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,0.07);"></div>
               <div style="position:absolute;top:20px;right:80px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.05);"></div>
               <div style="position:absolute;bottom:-20px;left:120px;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,0.04);"></div>
@@ -1469,8 +1747,8 @@
               <!-- Avatar + Name -->
               <div style="display:flex;align-items:flex-end;gap:16px;margin-bottom:16px;position:relative;z-index:1;">
                 <div style="position:relative;flex-shrink:0;">
-                  <div style="width:80px;height:80px;border-radius:50%;border:3px solid rgba(255,255,255,0.6);overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.25);">
-                    ${window.GymApp.avatarImg(avatarUrl, tenHV, 'lg', 'width:100%;height:100%;object-fit:cover;')}
+                  <div style="width:80px;height:80px;border-radius:50%;border:3px solid rgba(255,255,255,0.6);overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;">
+                    ${avatarHtml}
                   </div>
                   <span style="position:absolute;bottom:3px;right:3px;width:14px;height:14px;border-radius:50%;background:${isActive ? '#4ade80' : pendingPackage ? '#f59e0b' : '#94a3b8'};border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.2);"></span>
                 </div>
@@ -1509,24 +1787,28 @@
                 <span class="material-symbols-outlined" style="font-size:15px;color:#1D9336;font-variation-settings:'FILL' 1;">badge</span>
                 <span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#1D9336;">Thông tin cá nhân</span>
                 <div style="flex:1;height:1px;background:linear-gradient(to right,#1D933640,transparent);margin-left:4px;"></div>
+                <button id="btn-edit-profile" style="padding:6px 12px;border-radius:10px;border:1px solid #1D9336;color:#1D9336;background:transparent;font-weight:700;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:4px;" class="hover:bg-brand-primary/10">
+                  <span class="material-symbols-outlined" style="font-size:14px">edit</span> Sửa hồ sơ
+                </button>
               </div>
 
+              <!-- BMI Card redesigned with history button on the far right -->
               <div class="mb-4 bg-surface-container rounded-xl p-s4 border border-outline-variant">
+                <div class="flex justify-between items-center mb-2 border-b border-outline-variant/20 pb-1.5">
+                  <p class="text-label-md font-extrabold text-brand-primary uppercase tracking-wider">Chỉ số BMI</p>
+                  <button id="btn-bmi-history" class="text-brand-primary text-label-sm font-bold hover:underline flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[16px]">history</span> Lịch sử BMI
+                  </button>
+                </div>
                 <div class="flex flex-col md:flex-row md:items-center gap-s3">
                   <div class="flex-1">
-                    <div class="flex justify-between items-center">
-                      <p class="text-label-md font-bold text-on-surface-variant">Chỉ số BMI</p>
-                      <button id="btn-bmi-history" class="text-brand-primary text-label-sm font-bold hover:underline flex items-center gap-1">
-                        <span class="material-symbols-outlined text-[16px]">history</span> Lịch sử
-                      </button>
-                    </div>
-                    <div class="flex items-end gap-s2 mt-s1">
+                    <div class="flex items-end gap-s2">
                       <span class="text-headline-md font-black text-brand-primary">${bmi ? bmi.value.toFixed(1) : '—'}</span>
                       <span class="font-bold text-on-surface">${bmi ? bmi.category : 'Chưa có dữ liệu'}</span>
                     </div>
                     <p class="text-body-sm text-on-surface-variant mt-s1">${bmi ? bmi.advice : 'Nhập chiều cao và cân nặng hiện tại để hệ thống tính BMI.'}</p>
                   </div>
-                  <div class="flex gap-s2">
+                  <div class="flex gap-s2 items-center">
                     <input id="bmi-height" type="number" min="80" max="250" value="${p.chieu_cao_cm || ''}" placeholder="cm" class="w-24 bg-surface-container-lowest border border-outline-variant rounded-xl px-3 py-2 outline-none" />
                     <input id="bmi-weight" type="number" min="20" max="300" value="${p.can_nang_kg || ''}" placeholder="kg" class="w-24 bg-surface-container-lowest border border-outline-variant rounded-xl px-3 py-2 outline-none" />
                     <button id="bmi-save" class="px-4 py-2 rounded-xl bg-brand-primary text-white font-bold">Lưu</button>
@@ -1534,7 +1816,7 @@
                 </div>
               </div>
 
-              <!-- 2-col info grid (exact members-list style) -->
+              <!-- 2-col info grid -->
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-[1px] bg-outline-variant rounded-xl overflow-hidden border border-outline-variant">
                 ${fields.map(f => `
                   <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-surface-lowest, #fff);">
@@ -1552,6 +1834,176 @@
           </div>
         </div>
       `;
+    },
+
+    _showEditProfileModal(p) {
+      const self = this;
+      const overlay = document.createElement('div');
+      overlay.style.cssText = `position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:9000;padding:20px;`;
+      
+      const birthDate = p.ngay_sinh ? p.ngay_sinh.split('T')[0] : '';
+      overlay.innerHTML = `
+        <div class="animate-fade-in member-card" style="width:100%;max-width:550px;max-height:90vh;display:flex;flex-direction:column;border-radius:24px;overflow:hidden;background:var(--bg-surface-lowest);border:1px solid var(--outline-variant);box-shadow:0 12px 40px rgba(0,0,0,0.15);">
+          <!-- Header -->
+          <div style="padding:18px 24px;background:linear-gradient(135deg,#1D9336,#0a591c);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+            <h3 style="font-size:16px;font-weight:800;margin:0;">📝 CHỈNH SỬA HỒ SƠ</h3>
+            <button id="close-edit-profile" style="background:none;border:none;color:#fff;cursor:pointer;">
+              <span class="material-symbols-outlined" style="font-size:22px;">close</span>
+            </button>
+          </div>
+          <!-- Body -->
+          <div style="overflow-y:auto;flex:1;padding:24px;display:flex;flex-direction:column;gap:16px;">
+            <!-- Avatar Upload Area -->
+            <div class="flex flex-col items-center gap-2 pb-4 border-b border-outline-variant/40">
+              <div class="relative group cursor-pointer" id="avatar-upload-trigger">
+                <div class="w-20 h-20 rounded-full border-2 border-brand-primary overflow-hidden shadow-md">
+                  <img id="edit-profile-avatar-preview" src="${p.avatar_url || ''}" alt="Avatar" class="w-full h-full object-cover" onerror="this.src='https://cdn-icons-png.flaticon.com/512/149/149071.png'">
+                </div>
+                <div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span class="material-symbols-outlined text-white text-base">photo_camera</span>
+                </div>
+              </div>
+              <input type="file" id="edit-profile-avatar-input" accept="image/*" class="hidden" />
+              <p class="text-[11px] text-on-surface-variant">Nhấn vào ảnh để thay đổi ảnh đại diện</p>
+            </div>
+
+            <!-- Form Fields -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-[11px] font-bold text-on-surface-variant uppercase tracking-wider mb-1.5">Họ tên</label>
+                <input id="ep-name" type="text" value="${p.ho_ten || ''}" class="w-full bg-surface-container border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl outline-none focus:border-brand-primary text-body-sm font-medium" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-on-surface-variant uppercase tracking-wider mb-1.5">Giới tính</label>
+                <select id="ep-gender" class="w-full bg-surface-container border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl outline-none focus:border-brand-primary text-body-sm font-medium">
+                  <option value="nam" ${p.gioi_tinh === 'nam' || p.gioi_tinh === 'male' ? 'selected' : ''}>Nam</option>
+                  <option value="nu" ${p.gioi_tinh === 'nu' || p.gioi_tinh === 'female' ? 'selected' : ''}>Nữ</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-on-surface-variant uppercase tracking-wider mb-1.5">Ngày sinh</label>
+                <input id="ep-birthday" type="date" value="${birthDate}" class="w-full bg-surface-container border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl outline-none focus:border-brand-primary text-body-sm font-medium" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-on-surface-variant uppercase tracking-wider mb-1.5">Số điện thoại</label>
+                <input id="ep-phone" type="text" value="${p.so_dien_thoai || ''}" class="w-full bg-surface-container border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl outline-none focus:border-brand-primary text-body-sm font-medium" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-on-surface-variant uppercase tracking-wider mb-1.5">Email</label>
+                <input id="ep-email" type="email" value="${p.email || ''}" class="w-full bg-surface-container border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl outline-none focus:border-brand-primary text-body-sm font-medium" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-on-surface-variant uppercase tracking-wider mb-1.5">Số CCCD</label>
+                <input id="ep-cccd" type="text" value="${p.cccd || ''}" class="w-full bg-surface-container border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl outline-none focus:border-brand-primary text-body-sm font-medium" />
+              </div>
+              <div class="sm:col-span-2">
+                <label class="block text-[11px] font-bold text-on-surface-variant uppercase tracking-wider mb-1.5">Quê quán</label>
+                <input id="ep-hometown" type="text" value="${p.que_quan || ''}" class="w-full bg-surface-container border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl outline-none focus:border-brand-primary text-body-sm font-medium" />
+              </div>
+              <div class="sm:col-span-2">
+                <label class="block text-[11px] font-bold text-on-surface-variant uppercase tracking-wider mb-1.5">Địa chỉ hiện tại</label>
+                <input id="ep-address" type="text" value="${p.dia_chi_tam_tru || ''}" class="w-full bg-surface-container border border-outline-variant text-on-surface px-4 py-2.5 rounded-xl outline-none focus:border-brand-primary text-body-sm font-medium" />
+              </div>
+            </div>
+          </div>
+          <!-- Footer -->
+          <div style="padding:14px 24px;border-top:1px solid var(--outline-variant);display:flex;justify-content:flex-end;gap:12px;background:var(--bg-surface-low);flex-shrink:0;">
+            <button id="btn-ep-cancel" class="px-5 py-2.5 rounded-xl border border-outline-variant text-on-surface text-body-sm font-bold bg-transparent cursor-pointer">Hủy</button>
+            <button id="btn-ep-save" class="px-5 py-2.5 rounded-xl bg-brand-primary text-white text-body-sm font-bold border-none cursor-pointer hover:shadow-md transition-all">Lưu thay đổi</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(overlay);
+
+      const close = () => overlay.remove();
+      document.getElementById('close-edit-profile').addEventListener('click', close);
+      document.getElementById('btn-ep-cancel').addEventListener('click', close);
+
+      // Trigger file upload khi nhấn vào avatar
+      document.getElementById('avatar-upload-trigger').addEventListener('click', () => {
+        document.getElementById('edit-profile-avatar-input').click();
+      });
+
+      document.getElementById('edit-profile-avatar-input').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('avatar', file);
+
+        try {
+          window.GymApp.toast('Đang tải ảnh đại diện lên...', 'info');
+          const token = localStorage.getItem('gym-token');
+          const response = await fetch('/api/auth/me/avatar', {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            },
+            body: formData
+          });
+          const res = await response.json();
+          if (res?.success) {
+            window.GymApp.toast('Đã cập nhật ảnh đại diện!', 'success');
+            document.getElementById('edit-profile-avatar-preview').src = res.data.avatar_url;
+            p.avatar_url = res.data.avatar_url;
+            
+            // Tải lại header UI
+            const fresh = await window.GymApp.api.get('/members/me/profile');
+            if (fresh?.success) {
+              window.GymApp.data.myProfile = fresh.data;
+              _updateHeaderUI(fresh.data);
+            }
+          } else {
+            window.GymApp.toast(res?.message || 'Không thể cập nhật ảnh!', 'error');
+          }
+        } catch (err) {
+          console.error(err);
+          window.GymApp.toast('Lỗi kết nối máy chủ khi upload ảnh.', 'error');
+        }
+      });
+
+      document.getElementById('btn-ep-save').addEventListener('click', async () => {
+        const saveBtn = document.getElementById('btn-ep-save');
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Đang lưu...';
+
+        const payload = {
+          ho_ten: document.getElementById('ep-name').value.trim(),
+          gioi_tinh: document.getElementById('ep-gender').value,
+          ngay_sinh: document.getElementById('ep-birthday').value || null,
+          so_dien_thoai: document.getElementById('ep-phone').value.trim(),
+          email: document.getElementById('ep-email').value.trim(),
+          cccd: document.getElementById('ep-cccd').value.trim(),
+          que_quan: document.getElementById('ep-hometown').value.trim(),
+          dia_chi_tam_tru: document.getElementById('ep-address').value.trim()
+        };
+
+        try {
+          const res = await window.GymApp.api.put('/auth/me', payload);
+          if (res?.success) {
+            window.GymApp.toast('Đã cập nhật thông tin cá nhân thành công!', 'success');
+            close();
+            
+            // Reload data
+            const fresh = await window.GymApp.api.get('/members/me/profile');
+            if (fresh?.success) {
+              window.GymApp.data.myProfile = fresh.data;
+              _updateHeaderUI(fresh.data);
+              navigate('profile');
+            }
+          } else {
+            window.GymApp.toast(res?.message || 'Không thể cập nhật thông tin!', 'error');
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Lưu thay đổi';
+          }
+        } catch (err) {
+          console.error(err);
+          window.GymApp.toast('Lỗi kết nối máy chủ.', 'error');
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Lưu thay đổi';
+        }
+      });
     },
 
     async init() {
@@ -1580,6 +2032,10 @@
 
         document.getElementById('btn-bmi-history')?.addEventListener('click', () => {
           _showBmiHistoryModal();
+        });
+
+        document.getElementById('btn-edit-profile')?.addEventListener('click', () => {
+          self._showEditProfileModal(window.GymApp.data.myProfile);
         });
       };
 

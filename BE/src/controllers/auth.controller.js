@@ -231,3 +231,21 @@ export const updateAvatarMe = async (req, res) => {
     return error(res, `Lỗi upload ảnh: ${err.message}`, 500);
   }
 };
+
+// ── POST /api/auth/save-push-token ─────────────────────────
+export const savePushToken = (req, res) => {
+  const { token } = req.body;
+  if (!token) return error(res, 'Thiếu token thiết bị.', 400);
+
+  try {
+    db.prepare(`
+      UPDATE tai_khoan 
+      SET push_token = ? 
+      WHERE id = ?
+    `).run(token, req.user.id);
+    
+    return success(res, null, 'Đã lưu token thiết bị thành công.');
+  } catch (err) {
+    return error(res, `Lỗi lưu push token: ${err.message}`, 500);
+  }
+};

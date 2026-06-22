@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "129908949976",
+    "project_id": "paradise-gym-bd333",
+    "storage_bucket": "paradise-gym-bd333.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:129908949976:android:48762b3da02ca7634b68ad",
+        "android_client_info": {
+          "package_name": "com.thanpait123.mobileapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDFvWjKwMIuZlOGkou_25mZGvFvSpO0WcU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
