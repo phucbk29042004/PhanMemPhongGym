@@ -75,7 +75,7 @@ echo  ║          CÀI ĐẶT THÀNH CÔNG!            ║
 echo  ╠══════════════════════════════════════════╣
 echo  ║                                          ║
 echo  ║  Truy cập hệ thống tại:                  ║
-echo  ║  → http://localhost                      ║
+echo  ║  → http://localhost:8080                 ║
 echo  ║                                          ║
 echo  ║  Tài khoản mặc định:                     ║
 echo  ║  → Admin:  admin / 123123                ║
@@ -84,6 +84,6 @@ echo  ╚═══════════════════════�
 echo.
 
 :: Tự động mở trình duyệt
-start http://localhost
+start http://localhost:8080
 
 pause

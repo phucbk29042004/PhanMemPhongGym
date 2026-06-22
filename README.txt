@@ -24,7 +24,7 @@ Bước 2: Khởi động Docker Desktop
 Bước 3: Cài đặt hệ thống
   - Click đúp vào file "cai-dat.bat"
   - Chờ 5-10 phút
-  - Trình duyệt tự động mở http://localhost
+  - Trình duyệt tự động mở http://localhost:8080
 
 ═══════════════════════════════════════════════════
 QUẢN LÝ HỆ THỐNG (sau khi cài)
@@ -36,7 +36,7 @@ QUẢN LÝ HỆ THỐNG (sau khi cài)
   Backup data:    Sao chép thư mục dữ liệu Docker Volume của container ra nơi khác
 
 TÀI KHOẢN MẶC ĐỊNH:
-  - Admin:  admin / 123123
+  - Admin:  admin / 123456
   - Lễ tân: letan01 / 123456
   - HLV:    pt01 / 123456
   - HV:     hoivien01 / 123456

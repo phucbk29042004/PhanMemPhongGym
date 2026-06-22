@@ -17,6 +17,9 @@ COPY . .
 # Tạo thư mục chứa SQLite database
 RUN mkdir -p /data
 
+# COPY FILE SQL VÀO THƯ MỤC GỐC CỦA CONTAINER ĐỂ init-db.js TÌM THẤY
+COPY paradise_gym_v2.sql /paradise_gym_v2.sql
+
 EXPOSE 3000
 
 CMD ["sh", "-c", "node init-db.js && node index.js"]

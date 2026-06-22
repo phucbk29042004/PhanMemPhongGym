@@ -159,6 +159,7 @@ CREATE TABLE IF NOT EXISTS dang_ky_goi_tap (
     ghi_chu_gia     TEXT,   -- Ghi rõ lý do nếu giá khác giá gốc (VD: khuyến mãi)
     trang_thai      TEXT    NOT NULL DEFAULT 'dang_hoat_dong'
                             CHECK (trang_thai IN ('dang_hoat_dong','het_han','huy','tam_dung')),
+    so_tien_hoan    REAL    DEFAULT 0,
     -- Thông tin thanh toán (nghiệp vụ quan trọng)
     phuong_thuc_tt  TEXT    NOT NULL
                             CHECK (phuong_thuc_tt IN ('tien_mat','chuyen_khoan','the','momo','zalopay','khac')),

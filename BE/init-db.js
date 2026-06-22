@@ -12,20 +12,26 @@ import bcrypt from 'bcryptjs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Đường dẫn tới file database và SQL schema
-const DB_DIR = path.join(__dirname, 'database');
-const DB_PATH = path.join(DB_DIR, 'paradise_gym.db');
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'database', 'paradise_gym.db');
 const SQL_PATH = path.join(__dirname, '..', 'paradise_gym_v2.sql');
 
 // Tạo thư mục database nếu chưa có
-if (!fs.existsSync(DB_DIR)) {
-  fs.mkdirSync(DB_DIR, { recursive: true });
-  console.log('Đã tạo thư mục database/');
+const dbDir = path.dirname(DB_PATH);
+if (!fs.existsSync(dbDir)) {
+  fs.mkdirSync(dbDir, { recursive: true });
+  console.log(`Đã tạo thư mục database tại: ${dbDir}`);
 }
 
 // Kiểm tra file SQL tồn tại
 if (!fs.existsSync(SQL_PATH)) {
   console.error(`❌ Không tìm thấy file SQL tại: ${SQL_PATH}`);
   process.exit(1);
+}
+
+// Nếu database đã tồn tại và có dữ liệu, bỏ qua khởi tạo
+if (fs.existsSync(DB_PATH) && fs.statSync(DB_PATH).size > 0) {
+  console.log('✅ Database đã tồn tại và có dữ liệu, bỏ qua khởi tạo.');
+  process.exit(0);
 }
 
 // Khởi tạo DB
@@ -38,7 +44,7 @@ try {
 
   // Tách phần schema (CREATE TABLE, INDEX, VIEW, TRIGGER) ra khỏi phần SEED DATA
   // để chúng ta có thể tạo password hash thật bằng bcrypt
-  const schemaParts = sqlContent.split('-- ============================================================\n-- DỮ LIỆU MẪU (SEED)');
+  const schemaParts = sqlContent.split(/-- ============================================================\r?\n-- DỮ LIỆU MẪU \(SEED\)/);
   const schemaSql = schemaParts[0];
 
   // Thực thi schema
