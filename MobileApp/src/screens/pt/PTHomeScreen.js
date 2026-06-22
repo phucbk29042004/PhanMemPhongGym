@@ -64,13 +64,15 @@ export default function PTHomeScreen({ navigation }) {
   // ── Fetch dữ liệu thực tế từ API Backend ─────────────────
   const fetchAll = useCallback(async () => {
     try {
-      const [profileRes, schedRes] = await Promise.all([
+      const [profileRes, schedRes, studentsRes] = await Promise.all([
         api.get('/members/me/profile'),
         api.get('/pt/schedules'),
+        api.get('/pt/schedules/my-members'),
       ]);
 
       if (profileRes.data?.success) setProfile(profileRes.data.data);
       if (schedRes.data?.success) setSchedules(schedRes.data.data || []);
+      if (studentsRes.data?.success) setStudents(studentsRes.data.data || []);
     } catch (err) {
       console.error('[PTHomeScreen] fetchAll error:', err?.message);
     } finally {
@@ -223,7 +225,7 @@ export default function PTHomeScreen({ navigation }) {
   // ── Thống kê nhanh từ danh sách ──────────────────────────
   const pendingSchedules = schedules.filter(s => s.trang_thai === 'cho_tap');
   const completedCount = schedules.filter(s => s.trang_thai === 'da_tap').length;
-  const uniqueStudents = new Set(schedules.map(s => s.hoi_vien_id).filter(Boolean)).size;
+  const activeStudentCount = students.length;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -271,7 +273,7 @@ export default function PTHomeScreen({ navigation }) {
         <View style={styles.statsWrapper}>
           <View style={[styles.statCard, { backgroundColor: colors.primary }]}>
             <Users color="rgba(255,255,255,0.25)" size={42} style={styles.statBgIcon} />
-            <Text style={styles.statNum}>{uniqueStudents}</Text>
+            <Text style={styles.statNum}>{activeStudentCount}</Text>
             <Text style={styles.statLabel}>Học viên</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: colors.primaryMid }]}>

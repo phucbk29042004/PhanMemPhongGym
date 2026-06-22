@@ -176,8 +176,13 @@ export const createRegistration = async (req, res) => {
 
 
   // Kiểm tra PT tồn tại
-  const pt = db.prepare("SELECT id FROM ho_so WHERE id = ? AND loai_ho_so = 'pt' AND is_deleted = 0").get(pt_id);
+  const pt = db.prepare("SELECT id, chi_nhanh FROM ho_so WHERE id = ? AND loai_ho_so = 'pt' AND is_deleted = 0").get(pt_id);
   if (!pt) return error(res, 'Không tìm thấy PT.', 404);
+
+  // Chặn đăng ký PT khác chi nhánh với hội viên
+  if (hv.chi_nhanh !== pt.chi_nhanh) {
+    return error(res, `Không thể đăng ký: Hội viên và PT phải thuộc cùng một chi nhánh (Hội viên ở chi nhánh: ${hv.chi_nhanh || 'Chưa rõ'}, PT ở chi nhánh: ${pt.chi_nhanh || 'Chưa rõ'}).`, 400);
+  }
 
   // Kiểm tra tải của PT (giới hạn tối đa 20 học viên đang hoạt động)
   const PT_MAX_STUDENTS = 20;

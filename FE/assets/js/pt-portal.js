@@ -1248,6 +1248,10 @@
               </table>
             </div>
           </div>
+
+          <div class="flex items-center justify-between p-loose bg-surface-container-lowest border-t border-outline-variant text-body-sm text-on-surface-variant font-medium rounded-2xl border border-outline-variant shadow-sm mt-xs">
+            <span id="students-counter-text">Đang hiển thị 0/0 học viên</span>
+          </div>
           
           <div id="students-loading-more" class="hidden justify-center py-3">
             <span class="material-symbols-outlined text-3xl animate-spin text-brand-primary">sync</span>
@@ -1392,6 +1396,12 @@
       }).join('');
 
       tbody.insertAdjacentHTML('beforeend', html);
+
+      const counter = document.getElementById('students-counter-text');
+      if (counter) {
+        const visibleCount = Math.min(this._currentPage * this._perPage, this._filteredStudents.length);
+        counter.textContent = `Đang hiển thị ${visibleCount}/${this._filteredStudents.length} học viên`;
+      }
     },
 
     _loadMore() {

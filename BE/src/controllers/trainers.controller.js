@@ -191,7 +191,7 @@ export const updateTrainerAvatar = async (req, res) => {
 };
 
 // ── GET /api/trainers/:id/members ────────────────────────
-// Danh sách hội viên có hợp đồng dang_hoat_dong với PT này
+// Danh sách hội viên có hợp đồng dang_hoat_dong với PT này và gói Gym chính còn hạn
 export const getTrainerMembers = (req, res) => {
   const { id } = req.params;
   const rows = db.prepare(`
@@ -205,6 +205,13 @@ export const getTrainerMembers = (req, res) => {
     JOIN ho_so h ON h.id = dp.hoi_vien_id
     LEFT JOIN goi_pt gp ON gp.id = dp.goi_pt_id
     WHERE dp.pt_id = ? AND dp.trang_thai = 'dang_hoat_dong' AND h.is_deleted = 0
+      AND EXISTS (
+        SELECT 1 FROM dang_ky_goi_tap dkgt
+        WHERE dkgt.ho_so_id = h.id 
+          AND dkgt.trang_thai = 'dang_hoat_dong' 
+          AND dkgt.tu_ngay <= date('now', 'localtime')
+          AND dkgt.den_ngay >= date('now', 'localtime')
+      )
     ORDER BY h.ho_ten ASC
   `).all(id);
   return success(res, rows);

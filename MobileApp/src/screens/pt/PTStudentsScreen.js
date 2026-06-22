@@ -4,13 +4,14 @@ import {
   StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
 import {
-  CalendarCheck, ChevronRight, Search, TrendingUp, User, Users, X,
+  CalendarCheck, ChevronRight, Search, TrendingUp, User, Users, X, Clock, Dumbbell,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../services/api';
 import { formatDate, unwrapData } from '../../utils/data';
 import ProfileAvatar from '../../components/ProfileAvatar';
 import { useTheme } from '../../context/ThemeContext';
+import SwipePager from '../../components/SwipePager';
 
 // ── Màu sắc ────────────────────────────────────────────────
 const G = {
@@ -21,26 +22,27 @@ const G = {
   gray50: '#f8faf8',
   gray100: '#f0f4f0',
   gray200: '#e4ebe4',
-  gray300: '#cdd8cd',
   gray400: '#9cad9c',
-  gray500: '#6b7c6b',
-  gray700: '#2d3c2d',
-  gray900: '#141c14',
-  danger: '#dc2626',
+  gray900: '#1a221a',
+  danger: '#dc3545',
 };
 
 export default function PTStudentsScreen({ navigation }) {
   const { colors, isDark } = useTheme();
-  const [schedules, setSchedules] = useState([]);
+  const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchText, setSearchText] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [page, setPage] = useState(0);
 
-  const fetchSchedules = useCallback(async () => {
+  const fetchStudents = useCallback(async () => {
     try {
-      const res = await api.get('/pt/schedules');
-      setSchedules(unwrapData(res, []));
+      const res = await api.get('/pt/schedules/my-members');
+      if (res.data?.success) {
+        setStudents(res.data.data || []);
+      }
     } catch (err) {
       console.error('[PTStudentsScreen] fetch error:', err?.message);
     } finally {
@@ -51,44 +53,59 @@ export default function PTStudentsScreen({ navigation }) {
 
   useFocusEffect(
     useCallback(() => {
-      fetchSchedules();
-    }, [fetchSchedules])
+      fetchStudents();
+    }, [fetchStudents])
   );
 
-  const onRefresh = () => { setRefreshing(true); fetchSchedules(); };
+  const onRefresh = () => { setRefreshing(true); fetchStudents(); };
 
-  // Nhóm dữ liệu theo học viên
-  const students = React.useMemo(() => {
-    const map = new Map();
-    schedules.forEach((item) => {
-      if (!item.hoi_vien_id) return;
-      const current = map.get(item.hoi_vien_id) || {
-        id: item.hoi_vien_id,
-        name: item.ten_hoi_vien,
-        avatar: item.avatar_hoi_vien,
-        total: 0,
-        completed: 0,
-        nextDate: null,
-        remaining: item.buoi_con_lai,
-      };
-      current.total += 1;
-      if (item.trang_thai === 'da_tap') current.completed += 1;
-      if (item.trang_thai === 'cho_tap' && (!current.nextDate || item.ngay_tap < current.nextDate)) {
-        current.nextDate = item.ngay_tap;
-      }
-      // Lấy số buổi còn lại mới nhất
-      current.remaining = item.buoi_con_lai;
-      map.set(item.hoi_vien_id, current);
-    });
-    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
-  }, [schedules]);
+  const handleFilterPress = () => {
+    Alert.alert(
+      'Bộ lọc trạng thái học viên',
+      'Chọn điều kiện lọc học viên:',
+      [
+        { text: 'Tất cả', onPress: () => { setStatusFilter('all'); setPage(0); } },
+        { text: 'Còn buổi tập', onPress: () => { setStatusFilter('active'); setPage(0); } },
+        { text: 'Sắp hết buổi (≤ 3)', onPress: () => { setStatusFilter('warning'); setPage(0); } },
+        { text: 'Hết buổi tập', onPress: () => { setStatusFilter('expired'); setPage(0); } },
+        { text: 'Hủy bỏ', style: 'cancel' }
+      ]
+    );
+  };
 
-  // Lọc theo từ khóa tìm kiếm
+  // Lọc theo từ khóa tìm kiếm và trạng thái gói PT
   const filteredStudents = React.useMemo(() => {
-    if (!searchText.trim()) return students;
-    const q = searchText.toLowerCase().trim();
-    return students.filter(s => s.name?.toLowerCase().includes(q));
-  }, [students, searchText]);
+    let result = students;
+    if (searchText.trim()) {
+      const q = searchText.toLowerCase().trim();
+      result = result.filter(s => s.ho_ten?.toLowerCase().includes(q));
+    }
+    if (statusFilter !== 'all') {
+      result = result.filter(s => {
+        const left = s.buoi_con_lai ?? 0;
+        if (statusFilter === 'active') return left > 0;
+        if (statusFilter === 'warning') return left <= 3 && left > 0;
+        if (statusFilter === 'expired') return left === 0;
+        return true;
+      });
+    }
+    return result.sort((a, b) => (a.ho_ten || '').localeCompare(b.ho_ten || ''));
+  }, [students, searchText, statusFilter]);
+
+  // Phân trang: mỗi trang 7 học viên
+  const paginatedStudents = React.useMemo(() => {
+    const pages = [];
+    for (let i = 0; i < filteredStudents.length; i += 7) {
+      pages.push(filteredStudents.slice(i, i + 7));
+    }
+    return pages.length > 0 ? pages : [[]];
+  }, [filteredStudents]);
+
+  React.useEffect(() => {
+    if (page >= paginatedStudents.length) {
+      setPage(0);
+    }
+  }, [paginatedStudents, page]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -98,7 +115,11 @@ export default function PTStudentsScreen({ navigation }) {
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border, borderBottomWidth: 1 }]}>
         <View style={styles.headerLeft}>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Học viên của tôi</Text>
-          <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>Bạn đang hướng dẫn {students.length} học viên</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
+            {statusFilter === 'all' ? 'Tất cả học viên' :
+              statusFilter === 'active' ? 'Đang hoạt động' :
+                statusFilter === 'warning' ? 'Sắp hết buổi' : 'Đã hết buổi'} ({filteredStudents.length})
+          </Text>
         </View>
         <View style={styles.headerActions}>
           <TouchableOpacity
@@ -108,6 +129,12 @@ export default function PTStudentsScreen({ navigation }) {
             {showSearch
               ? <X color={G.white} size={20} />
               : <Search color={colors.primary} size={20} />}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionBtn, { backgroundColor: statusFilter !== 'all' ? colors.primary : colors.primaryLight }]}
+            onPress={handleFilterPress}
+          >
+            <Users color={statusFilter !== 'all' ? G.white : colors.primary} size={20} />
           </TouchableOpacity>
         </View>
       </View>
@@ -127,85 +154,117 @@ export default function PTStudentsScreen({ navigation }) {
         </View>
       )}
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {loading ? (
-          <View style={styles.center}>
-            <ActivityIndicator color={colors.primary} size="large" />
-          </View>
-        ) : filteredStudents.length === 0 ? (
+      {loading ? (
+        <View style={styles.center}>
+          <ActivityIndicator color={colors.primary} size="large" />
+        </View>
+      ) : filteredStudents.length === 0 ? (
+        <ScrollView
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
+          contentContainerStyle={[styles.scrollContent, { flexGrow: 1, justifyContent: 'center' }]}
+        >
           <View style={styles.emptyBox}>
             <Users color={colors.textMuted} size={64} strokeWidth={1} />
             <Text style={[styles.emptyTitle, { color: colors.text }]}>
               {searchText ? 'Không tìm thấy học viên' : 'Chưa có học viên'}
             </Text>
             <Text style={[styles.emptyDesc, { color: colors.textMuted }]}>
-              {searchText ? `Không có học viên nào khớp với “${searchText}”.` : 'Danh sách học viên sẽ tự động hiển thị khi có ca dạy được phân công.'}
+              {searchText ? `Không có học viên nào khớp với “${searchText}”.` : 'Danh sách học viên đang hoạt động của bạn sẽ tự động hiển thị.'}
             </Text>
           </View>
-        ) : (
-          filteredStudents.map((student) => (
-            <TouchableOpacity
-              key={student.id}
-              style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
-              activeOpacity={0.7}
-              onPress={() => Alert.alert(
-                student.name || 'Hội viên',
-                `✅ Đã tập: ${student.completed}/${student.total} buổi\n⏰ Buổi tiếp theo: ${student.nextDate ? formatDate(student.nextDate) : 'Chưa xếp'}\n📊 Còn lại: ${student.remaining ?? '—'} buổi`,
-                [{ text: 'Đóng', style: 'cancel' }]
-              )}
-            >
-              <View style={styles.cardTop}>
-                <View style={styles.avatarBox}>
-                  <ProfileAvatar uri={student.avatar} name={student.name} size={54} />
-                  <View style={[styles.statusDot, { borderColor: colors.surface }]} />
+        </ScrollView>
+      ) : (
+        <View style={{ flex: 1 }}>
+          <SwipePager
+            data={paginatedStudents}
+            pageSize={1}
+            page={page}
+            onPageChange={setPage}
+            keyExtractor={(item, index) => String(index)}
+            colors={colors}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />
+            }
+            contentContainerStyle={{ padding: 16 }}
+            renderItem={({ item: studentPage }) => (
+              <View style={[styles.tableCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                {/* Table Header */}
+                <View style={[styles.tableHeaderRow, { backgroundColor: colors.surfaceVariant, borderBottomColor: colors.border }]}>
+                  <Text style={[styles.thText, { flex: 2.2, color: colors.textSecondary }]}>Học viên</Text>
+                  <Text style={[styles.thText, { flex: 1, color: colors.textSecondary, textAlign: 'center' }]}>Đã dạy</Text>
+                  <Text style={[styles.thText, { flex: 1, color: colors.textSecondary, textAlign: 'center' }]}>Còn lại</Text>
+                  <Text style={[styles.thText, { flex: 1.3, color: colors.textSecondary }]}>Tiếp theo</Text>
                 </View>
-                <View style={styles.infoBox}>
-                  <Text style={[styles.name, { color: colors.text }]}>{student.name || 'Hội viên'}</Text>
-                  <View style={styles.idRow}>
-                    <User color={colors.primary} size={11} strokeWidth={2.5} />
-                    <Text style={[styles.idText, { color: colors.primary }]}>Hội viên chính thức</Text>
-                  </View>
-                </View>
-                <ChevronRight color={colors.textMuted} size={18} strokeWidth={2} />
+
+                {/* Table Rows */}
+                {studentPage.map((student, index) => {
+                  const isWarning = student.buoi_con_lai <= 3 && student.buoi_con_lai > 0;
+                  return (
+                    <TouchableOpacity
+                      key={student.dang_ky_id}
+                      style={[styles.tableRow, { borderBottomColor: colors.border }]}
+                      activeOpacity={0.7}
+                      onPress={() => Alert.alert(
+                        student.ho_ten || 'Học viên',
+                        `Đã tập: ${student.so_buoi_da_tap}/${student.so_buoi_dang_ky} buổi\n⏰ Buổi tiếp theo: ${student.buoi_tap_sap_toi ? formatDate(student.buoi_tap_sap_toi) : 'Chưa xếp'}\n📊 Còn lại: ${student.buoi_con_lai ?? '—'} buổi`,
+                        [{ text: 'Đóng', style: 'cancel' }]
+                      )}
+                    >
+                      {/* Cột 1: Avatar + Tên */}
+                      <View style={{ flex: 2.2, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <ProfileAvatar uri={student.avatar_url} name={student.ho_ten} size={32} />
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text style={[styles.rowTextBold, { color: colors.text }]} numberOfLines={1}>
+                            {student.ho_ten}
+                          </Text>
+                          {isWarning ? (
+                            <Text style={{ fontSize: 9, color: G.danger, fontWeight: '700' }}>Sắp hết hạn</Text>
+                          ) : (
+                            <Text style={{ fontSize: 9, color: colors.textMuted }} numberOfLines={1}>
+                              {student.ten_goi_pt || 'Học viên'}
+                            </Text>
+                          )}
+                        </View>
+                      </View>
+
+                      {/* Cột 2: Đã dạy */}
+                      <Text style={[styles.rowText, { flex: 1, color: colors.text, textAlign: 'center' }]}>
+                        {student.so_buoi_da_tap}
+                      </Text>
+
+                      {/* Cột 3: Còn lại */}
+                      <Text style={[
+                        styles.rowTextBold,
+                        { flex: 1, color: student.buoi_con_lai <= 3 ? G.danger : colors.text, textAlign: 'center' }
+                      ]}>
+                        {student.buoi_con_lai ?? '—'}
+                      </Text>
+
+                      {/* Cột 4: Lịch tiếp theo */}
+                      <View style={{ flex: 1.3, flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                        <Clock color={colors.textMuted} size={10} />
+                        <Text style={[styles.rowText, { color: colors.text, fontSize: 11, flex: 1 }]} numberOfLines={1}>
+                          {student.buoi_tap_sap_toi ? formatDate(student.buoi_tap_sap_toi).split(' ')[0] : 'Chưa xếp'}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
+            )}
+          />
 
-              <View style={[styles.divider, { backgroundColor: colors.border }]} />
-
-              <View style={styles.statsRow}>
-                <View style={styles.statItem}>
-                  <TrendingUp color={colors.primary} size={14} strokeWidth={2} />
-                  <Text style={[styles.statVal, { color: colors.text }]}>{student.completed}/{student.total}</Text>
-                  <Text style={[styles.statLabel, { color: colors.textMuted }]}>Buổi dạy</Text>
-                </View>
-                <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
-                <View style={styles.statItem}>
-                  <CalendarCheck color={colors.primary} size={14} strokeWidth={2} />
-                  <Text style={[styles.statVal, { color: colors.text }]}>{student.remaining ?? '—'}</Text>
-                  <Text style={[styles.statLabel, { color: colors.textMuted }]}>Còn lại</Text>
-                </View>
-                <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
-                <View style={styles.statItem}>
-                  <Text style={[styles.statVal, { color: colors.text }]}>
-                    {student.nextDate ? formatDate(student.nextDate) : '—'}
-                  </Text>
-                  <Text style={[styles.statLabel, { color: colors.textMuted }]}>Tiếp theo</Text>
-                </View>
-              </View>
-
-              {student.completed / student.total >= 0.8 && student.total > 0 && (
-                <View style={styles.alertBox}>
-                  <Text style={styles.alertText}>Sắp hoàn thành gói tập ({Math.round(student.completed/student.total*100)}%)</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          ))
-        )}
-        <View style={{ height: 20 }} />
-      </ScrollView>
+          {/* Footer thông tin phân trang */}
+          <View style={[styles.tableFooter, { borderTopColor: colors.border, backgroundColor: colors.surface }]}>
+            <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '600' }}>
+              Trang {page + 1}/{paginatedStudents.length}
+            </Text>
+            <Text style={{ color: colors.textMuted, fontSize: 12 }}>
+              Đang hiển thị {Math.min((page + 1) * 7, filteredStudents.length)}/{filteredStudents.length} học viên
+            </Text>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -236,6 +295,51 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
+  tableCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  tableHeaderRow: {
+    flexDirection: 'row',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+  },
+  thText: {
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  tableRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+  },
+  rowText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  rowTextBold: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  tableFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderTopWidth: 1,
+  },
+
   scrollContent: { padding: 16, gap: 14 },
   center: { paddingVertical: 100, alignItems: 'center' },
 
@@ -256,57 +360,4 @@ const styles = StyleSheet.create({
   emptyBox: { alignItems: 'center', paddingVertical: 80, gap: 12 },
   emptyTitle: { fontSize: 18, fontWeight: '800', color: G.gray900 },
   emptyDesc: { fontSize: 13, color: G.gray400, textAlign: 'center', paddingHorizontal: 40, lineHeight: 20 },
-
-  card: {
-    backgroundColor: G.white,
-    borderRadius: 20,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
-  },
-  cardTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
-  avatarBox: { position: 'relative' },
-  statusDot: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: G.primary,
-    borderWidth: 2,
-    borderColor: G.white,
-  },
-  infoBox: { flex: 1 },
-  name: { fontSize: 17, fontWeight: '800', color: G.gray900, marginBottom: 2 },
-  idRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  idText: { fontSize: 11, fontWeight: '700', color: G.primary },
-  
-  divider: { height: 1, backgroundColor: G.gray100, marginVertical: 16 },
-
-  statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statItem: { flex: 1, alignItems: 'center', gap: 2 },
-  statDivider: { width: 1, height: 24, backgroundColor: G.gray100 },
-  statVal: { fontSize: 13, fontWeight: '800', color: G.primary },
-  statLabel: { fontSize: 10, color: G.gray400, fontWeight: '600' },
-
-  alertBox: {
-    marginTop: 14,
-    backgroundColor: '#fffbeb',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  alertText: { fontSize: 10, fontWeight: '700', color: '#a16207' },
 });

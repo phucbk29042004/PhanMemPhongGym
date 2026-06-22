@@ -7,6 +7,25 @@
 
 ---
 
+### [22/06/2026 14:50] — Khắc phục lỗi cú pháp Javascript & JSX trong PTStudentsScreen.js
+- **Loại**: Sửa bug
+- **File**: `MobileApp/src/screens/pt/PTStudentsScreen.js`
+- **Mô tả**: Sửa lỗi cú pháp do hằng số màu sắc `G` bị đứt gãy nối chuỗi và sửa lỗi đóng thiếu thẻ JSX ở cột 4 (thời gian tiếp theo) trong Table danh sách học viên PT.
+- **Kết quả**: Thành công, file không còn lỗi biên dịch.
+
+---
+
+### [22/06/2026 14:11] — Khắc phục lỗi lọc học viên hết hạn, đăng ký chéo chi nhánh & Đồng bộ danh sách học viên Mobile
+- **Loại**: Sửa lỗi logic & Đồng bộ tính năng (Fullstack)
+- **File**: `BE/src/controllers/pt-schedules.controller.js`, `BE/src/controllers/pt-registrations.controller.js`, `MobileApp/src/screens/pt/PTStudentsScreen.js`, `MobileApp/src/screens/pt/PTHomeScreen.js`
+- **Mô tả**:
+  1. **[Backend - Lọc học viên hết hạn Gym]**: Cập nhật API `GET /api/pt/schedules/my-members` để tự động loại bỏ các học viên đã hết hạn gói Gym chính (`dang_ky_goi_tap`) bằng mệnh đề `EXISTS`. Việc này giúp danh sách học viên ở cả Web và Mobile tự động ẩn đi những người không còn hạn gói tập Gym.
+  2. **[Backend - Chặn đăng ký chéo chi nhánh]**: Cập nhật hàm `createRegistration` kiểm tra và so sánh chi nhánh của học viên với chi nhánh của PT được chọn. Nếu khác chi nhánh, chặn lại và phản hồi thông báo lỗi chi tiết.
+  3. **[MobileApp - Đồng bộ hiển thị học viên]**: Thay đổi logic màn hình danh sách học viên `PTStudentsScreen.js` và Card tổng quan Dashboard ở `PTHomeScreen.js` sang dùng trực tiếp API `/pt/schedules/my-members` thay vì tự lọc và nhóm từ danh sách lịch tập cũ.
+- **Kết quả**: Thành công.
+
+---
+
 ### [22/06/2026 11:45] — Tích hợp hệ thống thông báo đẩy Push Notifications Firebase bằng Expo
 - **Loại**: Tính năng mới & Tích hợp (Fullstack)
 - **File**: `MobileApp/src/services/notificationService.js`, `MobileApp/src/screens/auth/LoginScreen.js`, `BE/src/config/db.js`, `BE/src/controllers/auth.controller.js`, `BE/src/routes/auth.routes.js`, `BE/src/utils/notifications.js`

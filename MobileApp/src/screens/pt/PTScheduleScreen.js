@@ -421,14 +421,34 @@ export default function PTScheduleScreen() {
     }
   };
 
-  // Sắp xếp: Cho tập (sắp tới) lên đầu, rồi tới đã tập, rồi tới đã hủy
-  const sortedSchedules = [...schedules].sort((a, b) => {
-    const order = { 'cho_tap': 0, 'da_tap': 1, 'da_huy': 2 };
-    if (order[a.trang_thai] !== order[b.trang_thai]) {
-      return order[a.trang_thai] - order[b.trang_thai];
+  // Nhóm lịch tập theo ngày và chia thành các cụm 3 ngày
+  const paginatedDays = React.useMemo(() => {
+    const filtered = schedules.filter(item => statusFilter === 'all' || item.trang_thai === statusFilter);
+    const groups = {};
+    filtered.forEach(s => {
+      const d = s.ngay_tap ? s.ngay_tap.split('T')[0] : 'Chưa xác định';
+      if (!groups[d]) groups[d] = [];
+      groups[d].push(s);
+    });
+
+    const dayEntries = Object.entries(groups).sort((a, b) => {
+      if (a[0] === 'Chưa xác định') return 1;
+      if (b[0] === 'Chưa xác định') return -1;
+      return new Date(b[0]) - new Date(a[0]);
+    });
+
+    const pages = [];
+    for (let i = 0; i < dayEntries.length; i += 3) {
+      pages.push(dayEntries.slice(i, i + 3));
     }
-    return new Date(b.ngay_tap) - new Date(a.ngay_tap);
-  });
+    return pages.length > 0 ? pages : [[]];
+  }, [schedules, statusFilter]);
+
+  React.useEffect(() => {
+    if (page >= paginatedDays.length) {
+      setPage(0);
+    }
+  }, [paginatedDays, page]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -440,8 +460,8 @@ export default function PTScheduleScreen() {
           <Text style={[styles.headerTitle, { color: colors.text }]}>Lịch dạy cá nhân</Text>
           <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
             {statusFilter === 'all' ? 'Tất cả trạng thái' :
-             statusFilter === 'cho_tap' ? 'Chỉ lịch Chờ tập' :
-             statusFilter === 'da_tap' ? 'Chỉ lịch Đã tập' : 'Chỉ lịch Đã hủy'} ({sortedSchedules.filter(item => statusFilter === 'all' || item.trang_thai === statusFilter).length})
+             statusFilter === 'cho_tap' ? 'Chỉ ca Chờ tập' :
+             statusFilter === 'da_tap' ? 'Chỉ ca Đã tập' : 'Chỉ ca Đã hủy'} ({schedules.filter(item => statusFilter === 'all' || item.trang_thai === statusFilter).length} ca)
           </Text>
         </View>
         <View style={styles.headerActions}>
@@ -465,153 +485,163 @@ export default function PTScheduleScreen() {
         <View style={styles.center}>
           <ActivityIndicator color={G.primary} size="large" />
         </View>
-      ) : sortedSchedules.filter(item => statusFilter === 'all' || item.trang_thai === statusFilter).length === 0 ? (
-        <View style={styles.emptyBox}>
-          <CalendarCheck color={G.gray300} size={64} strokeWidth={1} />
-          <Text style={styles.emptyTitle}>Chưa có lịch dạy</Text>
-          <Text style={styles.emptyDesc}>Không tìm thấy buổi tập nào khớp với bộ lọc của bạn.</Text>
-        </View>
+      ) : schedules.filter(item => statusFilter === 'all' || item.trang_thai === statusFilter).length === 0 ? (
+        <ScrollView
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[G.primary]} tintColor={G.primary} />}
+          contentContainerStyle={[styles.scrollContent, { flexGrow: 1, justifyContent: 'center' }]}
+        >
+          <View style={styles.emptyBox}>
+            <CalendarCheck color={G.gray300} size={64} strokeWidth={1} />
+            <Text style={styles.emptyTitle}>Chưa có lịch dạy</Text>
+            <Text style={styles.emptyDesc}>Không tìm thấy buổi tập nào khớp với bộ lọc của bạn.</Text>
+          </View>
+        </ScrollView>
       ) : (
-        <SwipePager
-          data={sortedSchedules.filter(item => statusFilter === 'all' || item.trang_thai === statusFilter)}
-          pageSize={10}
-          page={page}
-          onPageChange={setPage}
-          keyExtractor={(item) => String(item.id)}
-          colors={colors}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[G.primary]} tintColor={G.primary} />
-          }
-          contentContainerStyle={styles.scrollContent}
-          renderItem={({ item }) => (
-            <View style={[
-              styles.card,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-              item.trang_thai === 'da_tap' && styles.cardCompleted,
-              item.trang_thai === 'da_huy' && styles.cardCancelled,
-            ]}>
-              {/* Cột trái: Thời gian & Trạng thái */}
-              <View style={[
-                styles.cardAccent,
-                { backgroundColor: item.trang_thai === 'da_tap' ? G.gray400 : item.trang_thai === 'da_huy' ? G.danger : colors.primary }
-              ]} />
+        <View style={{ flex: 1 }}>
+          <SwipePager
+            data={paginatedDays}
+            pageSize={1}
+            page={page}
+            onPageChange={setPage}
+            keyExtractor={(item, index) => String(index)}
+            colors={colors}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[G.primary]} tintColor={G.primary} />
+            }
+            contentContainerStyle={{ padding: 12 }}
+            renderItem={({ item: dayGroup }) => (
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 14 }}>
+                {dayGroup.map(([dateStr, items]) => {
+                  const dayObj = dateStr !== 'Chưa xác định' ? new Date(dateStr) : null;
+                  const weekday = dayObj ? dayObj.toLocaleDateString('vi-VN', { weekday: 'long' }) : '';
+                  const formattedDate = dayObj ? dayObj.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : dateStr;
 
-              <View style={styles.cardContent}>
-                <View style={styles.cardHeader}>
-                  <View style={styles.timeBox}>
-                    <Clock color={colors.textMuted} size={14} strokeWidth={2} />
-                    <Text style={[styles.timeText, { color: colors.textSecondary }]}>{item.gio_bat_dau} - {item.gio_ket_thuc}</Text>
-                  </View>
-                  <View style={[
-                    styles.statusBadge,
-                    item.trang_thai === 'cho_tap' && (item.pt_xac_nhan === 1 || item.hv_xac_nhan === 1) ? { backgroundColor: colors.warningLight } : (item.trang_thai === 'cho_tap' ? styles.statusBadgePending : {}),
-                    item.trang_thai === 'da_tap' && styles.statusBadgeDone,
-                    item.trang_thai === 'da_huy' && styles.statusBadgeFail,
-                  ]}>
-                    <Text style={[
-                      styles.statusText,
-                      item.trang_thai === 'cho_tap' && (item.pt_xac_nhan === 1 || item.hv_xac_nhan === 1) ? { color: colors.warning } : (item.trang_thai === 'cho_tap' ? { color: G.warning } : {}),
-                      item.trang_thai === 'da_tap' && { color: G.primary },
-                      item.trang_thai === 'da_huy' && { color: G.danger },
-                    ]}>
-                      {item.trang_thai === 'cho_tap' ? (
-                        item.pt_xac_nhan === 1 && item.hv_xac_nhan === 0 ? 'Chờ HV xác nhận' :
-                        item.hv_xac_nhan === 1 && item.pt_xac_nhan === 0 ? 'Chờ bạn xác nhận' : 'Chờ tập'
-                      ) : scheduleStatusLabel(item.trang_thai)}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={[styles.divider, { backgroundColor: colors.border }]} />
-
-                <View style={styles.cardBody}>
-                  <View style={styles.memberRow}>
-                    <ProfileAvatar uri={item.avatar_hoi_vien} name={item.ten_hoi_vien} size={44} />
-                    <View style={styles.memberText}>
-                      <Text style={[styles.memberName, { color: colors.text }]}>{item.ten_hoi_vien || 'Học viên'}</Text>
-                      <View style={styles.metaRow}>
-                        <Dumbbell color={colors.textMuted} size={12} strokeWidth={2} />
-                        <Text style={[styles.metaText, { color: colors.textMuted }]}>
-                          {item.loai_buoi === 'ca_nhan' ? 'Cá nhân' : 'Nhóm'} • Đã tập {item.so_buoi_da_tap ?? 0}/{item.so_buoi_dang_ky ?? '—'} • Còn {item.buoi_con_lai ?? '—'} buổi
+                  return (
+                    <View key={dateStr} style={[styles.dayContainer, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 16, padding: 12, gap: 8 }]}>
+                      {/* Tiêu đề ngày */}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                        <View style={{ width: 4, height: 16, borderRadius: 2, backgroundColor: colors.primary }} />
+                        <Text style={{ fontSize: 14, fontWeight: '800', color: colors.text, textTransform: 'capitalize' }}>
+                          {weekday ? `${weekday}, ` : ''}{formattedDate}
                         </Text>
+                        <View style={{ backgroundColor: colors.primaryLight, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 }}>
+                          <Text style={{ fontSize: 10, fontWeight: '800', color: colors.primary }}>{items.length} ca</Text>
+                        </View>
                       </View>
-                    </View>
-                  </View>
 
-                  <View style={styles.infoGrid}>
-                    <View style={styles.infoItem}>
-                      <CalendarCheck color={colors.textMuted} size={14} strokeWidth={2} />
-                      <Text style={[styles.infoVal, { color: colors.textSecondary }]}>{formatDate(item.ngay_tap)}</Text>
-                    </View>
-                    <View style={styles.infoItem}>
-                      <MapPin color={colors.textMuted} size={14} strokeWidth={2} />
-                      <Text style={[styles.infoVal, { color: colors.textSecondary }]} numberOfLines={1}>{item.chi_nhanh_tap || 'Paradise GYM'}</Text>
-                    </View>
-                  </View>
+                      {/* Scroll ngang các Card lịch */}
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingBottom: 4 }}>
+                        {items.sort((a, b) => (a.gio_bat_dau || '').localeCompare(b.gio_bat_dau || '')).map(item => (
+                          <View key={item.id} style={[
+                            styles.horizontalCard, 
+                            { backgroundColor: colors.surfaceVariant, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 10, width: 280 },
+                            item.trang_thai === 'da_tap' && { opacity: 0.8 },
+                            item.trang_thai === 'da_huy' && { opacity: 0.6 }
+                          ]}>
+                            {/* Card Header */}
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                <Clock color={colors.textMuted} size={12} />
+                                <Text style={{ fontSize: 12, fontWeight: '800', color: colors.text }}>
+                                  {item.gio_bat_dau} - {item.gio_ket_thuc}
+                                </Text>
+                              </View>
+                              {/* Badge */}
+                              <View style={[
+                                styles.statusBadge,
+                                item.trang_thai === 'cho_tap' && (item.pt_xac_nhan === 1 || item.hv_xac_nhan === 1) ? { backgroundColor: colors.warningLight } : (item.trang_thai === 'cho_tap' ? styles.statusBadgePending : {}),
+                                item.trang_thai === 'da_tap' && styles.statusBadgeDone,
+                                item.trang_thai === 'da_huy' && styles.statusBadgeFail,
+                                { paddingVertical: 2, paddingHorizontal: 6, borderRadius: 6 }
+                              ]}>
+                                <Text style={[
+                                  styles.statusText,
+                                  { fontSize: 10 },
+                                  item.trang_thai === 'cho_tap' && (item.pt_xac_nhan === 1 || item.hv_xac_nhan === 1) ? { color: colors.warning } : (item.trang_thai === 'cho_tap' ? { color: G.warning } : {}),
+                                  item.trang_thai === 'da_tap' && { color: G.primary },
+                                  item.trang_thai === 'da_huy' && { color: G.danger },
+                                ]}>
+                                  {item.trang_thai === 'cho_tap' ? (
+                                    item.pt_xac_nhan === 1 && item.hv_xac_nhan === 0 ? 'Chờ HV' :
+                                    item.hv_xac_nhan === 1 && item.pt_xac_nhan === 0 ? 'Chờ bạn' : 'Chờ tập'
+                                  ) : scheduleStatusLabel(item.trang_thai)}
+                                </Text>
+                              </View>
+                            </View>
 
-                  {item.ghi_chu ? (
-                    <View style={[styles.noteBox, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
-                      <Info color={colors.textMuted} size={12} strokeWidth={2} />
-                      <Text style={[styles.noteText, { color: colors.textSecondary }]}>{item.ghi_chu}</Text>
+                            <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 8 }} />
+
+                            {/* Card Body */}
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                              <ProfileAvatar uri={item.avatar_hoi_vien} name={item.ten_hoi_vien} size={36} />
+                              <View style={{ flex: 1, minWidth: 0 }}>
+                                <Text style={{ fontSize: 13, fontWeight: '800', color: colors.text }} numberOfLines={1}>
+                                  {item.ten_hoi_vien}
+                                </Text>
+                                <Text style={{ fontSize: 10, color: colors.textMuted }} numberOfLines={1}>
+                                  {item.loai_buoi === 'ca_nhan' ? 'Cá nhân' : 'Nhóm'} • Còn {item.buoi_con_lai ?? '—'} buổi
+                                </Text>
+                              </View>
+                            </View>
+
+                            {item.ghi_chu ? (
+                              <View style={{ marginTop: 8, padding: 6, borderRadius: 8, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }}>
+                                <Text style={{ fontSize: 11, color: colors.textSecondary }} numberOfLines={2}>{item.ghi_chu}</Text>
+                              </View>
+                            ) : null}
+
+                            {/* Card Actions */}
+                            {item.trang_thai === 'cho_tap' && (
+                              <View style={{ flexDirection: 'row', gap: 6, marginTop: 10 }}>
+                                <TouchableOpacity 
+                                  style={[styles.smallActionBtn, { borderColor: G.danger, borderWidth: 1, borderRadius: 8, paddingVertical: 4, flex: 1, alignItems: 'center' }]} 
+                                  onPress={() => cancelSchedule(item.id)}
+                                  disabled={actionLoadingId === item.id}
+                                >
+                                  <Text style={{ color: G.danger, fontSize: 11, fontWeight: '700' }}>Hủy</Text>
+                                </TouchableOpacity>
+                                
+                                {item.pt_xac_nhan === 0 ? (
+                                  <TouchableOpacity 
+                                    style={[styles.smallActionBtn, { backgroundColor: colors.primary, borderColor: colors.primary, borderWidth: 1, borderRadius: 8, paddingVertical: 4, flex: 1.5, alignItems: 'center' }]} 
+                                    onPress={() => confirmSchedule(item.id)}
+                                    disabled={actionLoadingId === item.id}
+                                  >
+                                    <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700' }}>Xong</Text>
+                                  </TouchableOpacity>
+                                ) : (
+                                  <View style={[styles.smallActionBtn, { backgroundColor: colors.surfaceVariant, borderColor: colors.border, borderWidth: 1, borderRadius: 8, paddingVertical: 4, flex: 1.5, alignItems: 'center', justifyContent: 'center' }]}>
+                                    <Text style={{ color: colors.textMuted, fontSize: 10, fontWeight: '600', textAlign: 'center' }}>Chờ HV</Text>
+                                  </View>
+                                )}
+
+                                <TouchableOpacity 
+                                  style={[styles.smallActionBtn, { borderColor: colors.primary, borderWidth: 1, borderRadius: 8, paddingVertical: 4, flex: 1, alignItems: 'center' }]} 
+                                  onPress={() => openNoteEditor(item)}
+                                >
+                                  <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '700' }}>Note</Text>
+                                </TouchableOpacity>
+                              </View>
+                            )}
+                          </View>
+                        ))}
+                      </ScrollView>
                     </View>
-                  ) : null}
-
-                  {item.trang_thai === 'cho_tap' && (
-                    <TouchableOpacity
-                      style={[styles.noteActionBtn, { backgroundColor: colors.primaryLight, borderColor: colors.primary }]}
-                      onPress={() => openNoteEditor(item)}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={styles.noteActionText}>{item.ghi_chu ? 'Sửa ghi chú' : 'Thêm ghi chú'}</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-
-                {item.trang_thai === 'cho_tap' && (
-                  <View style={styles.actionRow}>
-                    <TouchableOpacity
-                      style={styles.cancelBtn}
-                      onPress={() => cancelSchedule(item.id)}
-                      disabled={actionLoadingId === item.id}
-                      activeOpacity={0.8}
-                    >
-                      {actionLoadingId === item.id ? (
-                        <ActivityIndicator color={G.danger} size="small" />
-                      ) : (
-                        <>
-                          <X color={G.danger} size={16} strokeWidth={2.5} />
-                          <Text style={styles.cancelBtnText}>Hủy lịch</Text>
-                        </>
-                      )}
-                    </TouchableOpacity>
-                    {item.pt_xac_nhan === 0 ? (
-                      <TouchableOpacity
-                        style={styles.confirmBtn}
-                        onPress={() => confirmSchedule(item.id)}
-                        disabled={actionLoadingId === item.id}
-                        activeOpacity={0.8}
-                      >
-                        {actionLoadingId === item.id ? (
-                          <ActivityIndicator color={G.white} size="small" />
-                        ) : (
-                          <>
-                            <Zap color={G.white} size={16} strokeWidth={2.5} />
-                            <Text style={styles.confirmBtnText}>Hoàn thành</Text>
-                          </>
-                        )}
-                      </TouchableOpacity>
-                    ) : (
-                      <View style={[styles.confirmBtn, { backgroundColor: colors.surfaceVariant, borderWidth: 1, borderColor: colors.border }]}>
-                        <Clock color={colors.textMuted} size={14} strokeWidth={2} />
-                        <Text style={[styles.confirmBtnText, { color: colors.textMuted, marginLeft: 4 }]}>Chờ học viên</Text>
-                      </View>
-                    )}
-                  </View>
-                )}
-              </View>
-            </View>
-          )}
-        />
+                  );
+                })}
+              </ScrollView>
+            )}
+          />
+          {/* Footer thông tin phân trang */}
+          <View style={[styles.tableFooter, { borderTopColor: colors.border, backgroundColor: colors.surface, flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: 20, borderTopWidth: 1 }]}>
+            <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '600' }}>
+              Trang {page + 1}/{paginatedDays.length}
+            </Text>
+            <Text style={{ color: colors.textMuted, fontSize: 12 }}>
+              Hiển thị {paginatedDays[page] ? paginatedDays[page].length : 0} ngày gần nhất
+            </Text>
+          </View>
+        </View>
       )}
 
       <Modal

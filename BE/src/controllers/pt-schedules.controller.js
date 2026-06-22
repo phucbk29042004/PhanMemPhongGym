@@ -212,7 +212,7 @@ export const createSchedule = (req, res) => {
   // Kiểm tra gói Gym chính còn hạn (hội viên phải có gói Gym bao trùm ngày tập)
   const activeGym = db.prepare(`
     SELECT id FROM dang_ky_goi_tap
-    WHERE hoi_vien_id = ? AND trang_thai = 'dang_hoat_dong' AND tu_ngay <= ? AND den_ngay >= ?
+    WHERE ho_so_id = ? AND trang_thai = 'dang_hoat_dong' AND tu_ngay <= ? AND den_ngay >= ?
     LIMIT 1
   `).get(dkpt.hoi_vien_id, ngay_tap, ngay_tap);
 
@@ -773,7 +773,7 @@ export const updateNote = (req, res) => {
 };
 
 // ── GET /api/pt/my-members ────────────────────────────────
-// PT xem danh sách học viên của mình (có đăng ký PT đang HĐ)
+// PT xem danh sách học viên của mình (có đăng ký PT đang HĐ và gói Gym chính còn hạn)
 export const getMyMembers = (req, res) => {
   const hoSo = db.prepare('SELECT id FROM ho_so WHERE tai_khoan_id = ?').get(req.user.id);
   if (!hoSo) return error(res, 'Không tìm thấy hồ sơ PT.', 404);
@@ -794,6 +794,13 @@ export const getMyMembers = (req, res) => {
     JOIN ho_so hv ON hv.id = dp.hoi_vien_id
     LEFT JOIN goi_pt gpt ON gpt.id = dp.goi_pt_id
     WHERE dp.pt_id = ? AND dp.trang_thai = 'dang_hoat_dong' AND hv.is_deleted = 0
+      AND EXISTS (
+        SELECT 1 FROM dang_ky_goi_tap dkgt
+        WHERE dkgt.ho_so_id = hv.id 
+          AND dkgt.trang_thai = 'dang_hoat_dong' 
+          AND dkgt.tu_ngay <= date('now', 'localtime')
+          AND dkgt.den_ngay >= date('now', 'localtime')
+      )
       AND dp.id = (
         SELECT dp2.id FROM dang_ky_pt dp2
         WHERE dp2.hoi_vien_id = dp.hoi_vien_id AND dp2.pt_id = dp.pt_id

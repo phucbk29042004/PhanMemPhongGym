@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+
+  # ── BACKEND ─────────────────────────────────────
+  backend:
+    build:
+      context: ./BE
+      dockerfile: Dockerfile
+    container_name: gym_backend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DB_PATH=/data/paradise_gym.db
+      - JWT_SECRET=paradise_gym_secret_2024
+      - CORS_ORIGIN=http://localhost
+    volumes:
+      - sqlite_data:/data
+    networks:
+      - gym_network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── FRONTEND ─────────────────────────────────────
+  frontend:
+    build:
+      context: ./FE
+      dockerfile: Dockerfile
+    container_name: gym_frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - gym_network
+
+volumes:
+  sqlite_data:
+    driver: local
+
+networks:
+  gym_network:
+    driver: bridge

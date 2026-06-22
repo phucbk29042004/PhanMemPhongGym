@@ -1,0 +1,8 @@
+node_modules
+.env
+*.log
+database/*.db
+database/*.db-wal
+database/*.db-shm
+.git
+MobileApp
