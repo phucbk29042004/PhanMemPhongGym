@@ -5,6 +5,62 @@
 - **Ngày bắt đầu**: 07/05/2026
 - **Mô tả**: Hệ thống quản lý phòng GYM hiện đại sử dụng SPA Vanilla JS (Frontend) và Node.js/SQLite (Backend).
 
+### [23/06/2026 10:15] — Đồng bộ trạng thái hợp đồng PT và sửa vị trí bong bóng chat ở các Portal và Mobile App
+- **Loại**: Sửa lỗi & Đồng bộ tính năng (Fullstack)
+- **File**: `MobileApp/src/screens/shared/PTMeScreen.js`, `FE/assets/js/member-portal.js`, `FE/assets/js/pt-portal.js`
+- **Mô tả**:
+  1. **[Vị trí bong bóng chat]**: Chuyển đổi logic nhận diện tin nhắn của bản thân (`isMe`) trên cả Web và Mobile App từ so sánh ID (`nguoi_gui_id` vs `user.id`) sang so sánh vai trò gửi (`vai_tro_gui === 'pt'` hoặc `vai_tro_gui === 'hoi_vien'`). Điều này khắc phục triệt để lỗi lệch vị trí (tin nhắn của mình lại hiển thị bên trái của đối phương) do khác biệt kiểu dữ liệu hoặc không khớp ID giữa bảng `ho_so` và bảng `tai_khoan`.
+  2. **[Đồng bộ gói PT Chờ kích hoạt]**: Cập nhật hàm helper `getActivePt` và logic lọc `activeContracts` trên Web Member Portal để chấp nhận hợp đồng PT ở cả hai trạng thái `'dang_hoat_dong'` và `'cho_kich_hoat'`, giúp đồng bộ hoàn toàn với cập nhật ở backend cho phép lên lịch tập trước khi kích hoạt.
+- **Kết quả**: Thành công tốt đẹp.
+
+---
+
+### [23/06/2026 09:55] — Sửa lỗi hiển thị Card gói PT ở Trang chủ, gửi Thông báo đăng ký PT và sửa ẩn Lịch tập trên Mobile
+- **Loại**: Sửa bug (Fullstack)
+- **File**: `MobileApp/src/screens/member/MemberHomeScreen.js`, `BE/src/controllers/pt-registrations.controller.js`, `BE/src/controllers/pt-schedules.controller.js`
+- **Mô tả**:
+  1. **[Trang chủ di động]**: Sửa `MemberHomeScreen.js` để nếu hội viên chưa đăng ký gói Gym chính nhưng có gói PT đang hoạt động/chờ kích hoạt, card "Gói Hội Viên" vẫn hiển thị đầy đủ thông tin của gói PT thay vì chuyển sang trạng thái "Chưa đăng ký gói tập".
+  2. **[Thông báo đăng ký PT]**: Cập nhật `pt-registrations.controller.js` để tự động tạo thông báo cá nhân (`createUserNotification`) gửi cho cả Hội viên và PT ngay sau khi đăng ký thành công hợp đồng PT mới.
+  3. **[Ẩn lịch tập]**: Sửa `getSchedules` trong `pt-schedules.controller.js` bỏ bắt buộc lọc chi nhánh đối với tài khoản PT và Hội viên. Nhờ đó tránh được việc lịch tập bị ẩn khi trường `chi_nhanh_tap` bị NULL hoặc chưa đồng bộ.
+- **Kết quả**: Thành công tốt đẹp.
+
+---
+
+### [23/06/2026 09:41] — Khắc phục lỗi xếp lịch tập PT và hiển thị danh sách học viên/gói tập PT
+- **Loại**: Sửa bug (Backend)
+- **File**: `BE/src/controllers/pt-schedules.controller.js`, `BE/src/controllers/trainers.controller.js`, `BE/src/controllers/members.controller.js`
+- **Mô tả**:
+  1. **[Xếp lịch tập PT]**: Cho phép xếp lịch tập PT nếu hội viên có gói Gym còn hiệu lực HOẶC chính gói PT đó đang còn hiệu lực bao trùm ngày xếp lịch.
+  2. **[Học viên của PT]**: Bỏ điều kiện kiểm tra bắt buộc phải có gói Gym (`dang_ky_goi_tap`) trong danh sách học viên của PT tại `getMyMembers` và `getTrainerMembers` để PT luôn thấy đầy đủ học viên đã đăng ký gói PT của mình trên Web và Mobile.
+  3. **[Gói PT của hội viên trên Mobile]**: Sửa hàm `getMyProfile` để lấy cả gói PT ở trạng thái `'cho_kich_hoat'` (mới đăng ký) thay vì chỉ lấy trạng thái `'dang_hoat_dong'`, giúp Mobile App của hội viên hiển thị đúng gói PT vừa mua.
+- **Kết quả**: Thành công tốt đẹp.
+
+---
+
+### [23/06/2026 09:15] — Sửa lỗi không thể đặt lịch tập & 0 học viên khi gói PT/Gym vừa đăng ký hôm nay
+- **Loại**: Sửa bug (Fullstack)
+- **File**: `BE/src/controllers/trainers.controller.js`, `BE/src/controllers/pt-schedules.controller.js`, `BE/src/controllers/pt-registrations.controller.js`
+- **Mô tả**:
+  1. **[Root Cause]**: Khi đăng ký gói PT hôm nay, trạng thái có thể là `'cho_kich_hoat'` (nếu ngày bắt đầu trong tương lai) hoặc `'dang_hoat_dong'` (nếu ngày bắt đầu hôm nay). Tương tự với gói tập Gym. Toàn bộ các query đếm/lọc học viên chỉ xét `'dang_hoat_dong'` nên bị bỏ sót.
+  2. **[trainers.controller.js]**: Sửa `getTrainers`, `getTrainerById`, `getTrainerMembers` — đếm số học viên, gói đang dạy và danh sách học viên bao gồm cả `'cho_kich_hoat'`.
+  3. **[pt-schedules.controller.js]**: Sửa `createSchedule` — cho phép tìm gói PT ở trạng thái `'cho_kich_hoat'` khi đặt lịch. Sửa kiểm tra gói Gym chính cũng chấp nhận `'cho_kich_hoat'` (gói vừa đăng ký, cron chưa kịp kích hoạt). Sửa `getMyMembers` — lấy học viên PT ở cả 2 trạng thái.
+  4. **[pt-registrations.controller.js]**: Sửa kiểm tra tải PT (giới hạn 20 học viên) cũng đếm cả `'cho_kich_hoat'` để tránh overflow.
+- **Kết quả**: Thành công tốt đẹp.
+
+---
+
+### [23/06/2026 08:39] — Khắc phục hiển thị gói tập, định dạng ngày thông báo, lọc chi nhánh tài khoản và click thông báo chuyển trang
+- **Loại**: Sửa lỗi & Cải tiến tính năng (Fullstack)
+- **File**: `BE/src/controllers/members.controller.js`, `BE/src/controllers/staff.controller.js`, `FE/assets/js/member-portal.js`, `FE/assets/js/pt-portal.js`, `FE/assets/js/app.js`, `MobileApp/src/screens/pt/PTNotificationScreen.js`, `MobileApp/src/screens/member/MemberNotificationScreen.js`, `MobileApp/src/screens/admin/AdminStaffScreen.js`, `FE/assets/js/pages/staff.js`
+- **Mô tả**:
+  1. **[Backend]**: Sửa hàm lấy danh sách hội viên hết hạn/sắp hết hạn để truy vấn chính xác tên gói tập mới nhất của họ thay vì chỉ lấy gói khi đang hoạt động, sửa lỗi hiển thị tên gói tập `N/A`.
+  2. **[Backend]**: Nâng cấp API lấy danh sách tài khoản hệ thống `/staff/accounts` hỗ trợ lọc theo chi nhánh của hồ sơ liên kết.
+  3. **[Frontend Web - Lọc tài khoản]**: Đồng bộ truyền tham số chi nhánh của header lên API tài khoản hệ thống, sửa lỗi đổi chi nhánh không tự load dữ liệu mới.
+  4. **[MobileApp - Lọc tài khoản]**: Cập nhật hàm `fetchAccounts` và dependency list truyền chi nhánh của header, sửa lỗi đổi chi nhánh không tự load dữ liệu tương tự Web Admin.
+  5. **[Thông báo - Ngày tạo]**: Thay thế các hàm định dạng ngày thông báo trên Web (`member-portal.js`) và Mobile (`MemberNotificationScreen.js`, `PTNotificationScreen.js`) để in định dạng chuẩn `dd-mm-yyyy` thay cho dạng thô `yyyy-mm-dd`.
+  6. **[Web - Click thông báo chuyển trang]**: Tích hợp sự kiện click trên dropdown và trang thông báo của các vai trò (Admin, Lễ tân, PT, Hội viên) để tự động điều hướng sang trang chức năng liên quan (ví dụ: Check-in, Lịch tập, Gói tập v.v.) và đóng dropdown.
+- **Kết quả**: Thành công tốt đẹp.
+
 ---
 
 ### [22/06/2026 14:50] — Khắc phục lỗi cú pháp Javascript & JSX trong PTStudentsScreen.js

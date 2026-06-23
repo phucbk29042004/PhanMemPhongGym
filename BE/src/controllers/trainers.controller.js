@@ -41,11 +41,11 @@ export const getTrainers = (req, res) => {
       COALESCE(h.trang_thai_lam_viec, 'hoat_dong') AS trang_thai_lam_viec,
       COALESCE(tk.trang_thai, 'hoat_dong') AS trang_thai,
       -- Số học viên đang tập
-      (SELECT COUNT(DISTINCT dp.hoi_vien_id) FROM dang_ky_pt dp WHERE dp.pt_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS so_hoc_vien,
+      (SELECT COUNT(DISTINCT dp.hoi_vien_id) FROM dang_ky_pt dp WHERE dp.pt_id = h.id AND dp.trang_thai IN ('dang_hoat_dong', 'cho_kich_hoat')) AS so_hoc_vien,
       -- Tổng buổi đã dạy
       (SELECT COUNT(*) FROM lich_tap lt WHERE lt.pt_id = h.id AND lt.trang_thai = 'da_tap') AS tong_buoi_da_day,
       -- Gói PT đang nhận
-      (SELECT COUNT(*) FROM dang_ky_pt dp WHERE dp.pt_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS so_goi_dang_day,
+      (SELECT COUNT(*) FROM dang_ky_pt dp WHERE dp.pt_id = h.id AND dp.trang_thai IN ('dang_hoat_dong', 'cho_kich_hoat')) AS so_goi_dang_day,
       ROUND((SELECT AVG(so_sao) FROM danh_gia_pt dg WHERE dg.pt_id = h.id), 1) AS rating,
       ROUND((SELECT AVG(so_sao) FROM danh_gia_pt dg WHERE dg.pt_id = h.id), 1) AS danh_gia,
       (SELECT COUNT(*) FROM danh_gia_pt dg WHERE dg.pt_id = h.id) AS so_luot_danh_gia
@@ -69,17 +69,17 @@ export const getTrainerById = (req, res) => {
            ROUND((SELECT AVG(so_sao) FROM danh_gia_pt dg WHERE dg.pt_id = h.id), 1) AS danh_gia,
            (SELECT COUNT(*) FROM danh_gia_pt dg WHERE dg.pt_id = h.id) AS so_luot_danh_gia,
            -- Số học viên đang tập
-           (SELECT COUNT(DISTINCT dp.hoi_vien_id) FROM dang_ky_pt dp WHERE dp.pt_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS so_hoc_vien,
+           (SELECT COUNT(DISTINCT dp.hoi_vien_id) FROM dang_ky_pt dp WHERE dp.pt_id = h.id AND dp.trang_thai IN ('dang_hoat_dong', 'cho_kich_hoat')) AS so_hoc_vien,
            -- Tổng buổi đã dạy
            (SELECT COUNT(*) FROM lich_tap lt WHERE lt.pt_id = h.id AND lt.trang_thai = 'da_tap') AS tong_buoi_da_day,
            -- Gói PT đang nhận
-           (SELECT COUNT(*) FROM dang_ky_pt dp WHERE dp.pt_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS so_goi_dang_day,
+           (SELECT COUNT(*) FROM dang_ky_pt dp WHERE dp.pt_id = h.id AND dp.trang_thai IN ('dang_hoat_dong', 'cho_kich_hoat')) AS so_goi_dang_day,
            (SELECT json_group_array(json_object(
              'hoi_vien_id', dp.hoi_vien_id, 'ten_hoi_vien', hv.ho_ten,
              'avatar_hoi_vien', hv.avatar_url, 'buoi_con_lai', dp.so_buoi_dang_ky - dp.so_buoi_da_tap,
              'trang_thai', dp.trang_thai
            )) FROM dang_ky_pt dp JOIN ho_so hv ON hv.id = dp.hoi_vien_id
-            WHERE dp.pt_id = h.id AND dp.trang_thai = 'dang_hoat_dong') AS hoc_vien_hien_tai
+            WHERE dp.pt_id = h.id AND dp.trang_thai IN ('dang_hoat_dong', 'cho_kich_hoat')) AS hoc_vien_hien_tai
     FROM ho_so h
     LEFT JOIN tai_khoan tk ON tk.id = h.tai_khoan_id
     WHERE h.id = ? AND h.loai_ho_so = 'pt' AND h.is_deleted = 0
@@ -204,14 +204,7 @@ export const getTrainerMembers = (req, res) => {
     FROM dang_ky_pt dp
     JOIN ho_so h ON h.id = dp.hoi_vien_id
     LEFT JOIN goi_pt gp ON gp.id = dp.goi_pt_id
-    WHERE dp.pt_id = ? AND dp.trang_thai = 'dang_hoat_dong' AND h.is_deleted = 0
-      AND EXISTS (
-        SELECT 1 FROM dang_ky_goi_tap dkgt
-        WHERE dkgt.ho_so_id = h.id 
-          AND dkgt.trang_thai = 'dang_hoat_dong' 
-          AND dkgt.tu_ngay <= date('now', 'localtime')
-          AND dkgt.den_ngay >= date('now', 'localtime')
-      )
+    WHERE dp.pt_id = ? AND dp.trang_thai IN ('dang_hoat_dong', 'cho_kich_hoat') AND h.is_deleted = 0
     ORDER BY h.ho_ten ASC
   `).all(id);
   return success(res, rows);

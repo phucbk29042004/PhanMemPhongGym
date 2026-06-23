@@ -188,7 +188,7 @@ export const createRegistration = async (req, res) => {
   const PT_MAX_STUDENTS = 20;
   const activeStudentCount = db.prepare(`
     SELECT COUNT(DISTINCT hoi_vien_id) as cnt FROM dang_ky_pt
-    WHERE pt_id = ? AND trang_thai = 'dang_hoat_dong'
+    WHERE pt_id = ? AND trang_thai IN ('dang_hoat_dong', 'cho_kich_hoat')
   `).get(pt_id).cnt;
   if (activeStudentCount >= PT_MAX_STUDENTS) {
     return error(res, `HLV này đang có ${activeStudentCount} học viên đang hoạt động (giới hạn ${PT_MAX_STUDENTS} người). Vui lòng chọn HLV khác hoặc chờ HLV có chỗ trống.`, 400);
@@ -277,6 +277,22 @@ export const createRegistration = async (req, res) => {
     result.lastInsertRowid,
     'dang_ky_pt',
     'admin'
+  );
+
+  // Gửi thông báo cá nhân đến Hội viên
+  createUserNotification(
+    hoi_vien_id,
+    'Đăng ký gói PT thành công 🎉',
+    `Bạn đã đăng ký thành công gói ${goiPt.ten_goi} với HLV PT ${ptInfo?.ho_ten || 'HLV'}.`,
+    'dang_ky_goi_pt'
+  );
+
+  // Gửi thông báo cá nhân đến PT
+  createUserNotification(
+    pt_id,
+    'Học viên mới đăng ký 🎯',
+    `Học viên ${hvInfo?.ho_ten || 'Hội viên'} vừa đăng ký gói ${goiPt.ten_goi} do bạn phụ trách.`,
+    'dang_ky_goi_pt'
   );
 
   return success(res, db.prepare('SELECT * FROM dang_ky_pt WHERE id = ?').get(result.lastInsertRowid),

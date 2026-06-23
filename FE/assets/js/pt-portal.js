@@ -163,12 +163,12 @@
     list.innerHTML = notifs.map((n, idx) => {
       const s = PT_NOTIF_STYLE[n.muc_do] || PT_NOTIF_STYLE.info;
       return `
-        <div data-notif-idx="${idx}" style="
+        <div data-notif-idx="${idx}" data-loai="${n.loai || ''}" style="
           margin-bottom:6px;background:${s.bg};border:1px solid ${s.border};
           border-radius:8px;padding:10px 12px;display:flex;align-items:flex-start;gap:10px;
         ">
           <span class="material-symbols-outlined" style="color:${s.icon_color};font-size:18px;flex-shrink:0;margin-top:1px;font-variation-settings:'FILL' 1">${n.icon}</span>
-          <div style="flex:1;min-width:0">
+          <div style="flex:1;min-width:0;cursor:pointer" class="pt-notif-body">
             <p style="font-weight:700;font-size:12px;color:${s.text_color};margin:0 0 2px">${n.tieu_de}</p>
             <p style="font-size:11px;color:${s.text_color};opacity:0.85;margin:0;line-height:1.5">${n.noi_dung}</p>
           </div>
@@ -187,6 +187,30 @@
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         _removePtNotif(parseInt(btn.dataset.idx));
+      });
+    });
+
+    // Bind click body để chuyển trang
+    list.querySelectorAll('.pt-notif-body').forEach(body => {
+      body.addEventListener('click', () => {
+        const item = body.closest('[data-notif-idx]');
+        const loai = item?.dataset.loai;
+        
+        let targetPage = 'dashboard';
+        if (loai) {
+          const l = loai.toLowerCase();
+          if (l.includes('lich_tap') || l.includes('booking') || l.includes('dat_lich_pt') || l.includes('pt')) {
+            targetPage = 'my-schedule';
+          } else if (l.includes('hoc_vien') || l.includes('student')) {
+            targetPage = 'my-students';
+          }
+        }
+        
+        // Đóng dropdown thông báo
+        const dd = document.getElementById('pt-notif-dropdown');
+        if (dd) dd.style.display = 'none';
+        
+        navigate(targetPage);
       });
     });
   }
@@ -1581,7 +1605,7 @@
         <!-- Chat Area -->
         <div id="ptme-chat-box" class="flex-1 overflow-y-auto p-4 space-y-4 bg-surface-container-low/10" style="scroll-behavior: smooth;">
           ${sorted.length ? sorted.map(item => {
-            const isMe = String(item.nguoi_gui_id) === String(currentUserId);
+            const isMe = item.vai_tro_gui === 'pt';
             let dateStr = '';
             if (item.ngay_tao) {
               const dt = new Date(item.ngay_tao);

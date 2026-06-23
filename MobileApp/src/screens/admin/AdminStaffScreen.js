@@ -261,6 +261,7 @@ export default function AdminStaffScreen({ navigation }) {
       let url = `/staff/accounts?search=${encodeURIComponent(accSearch)}`;
       if (accRoleFilter !== 'all') url += `&vai_tro=${accRoleFilter}`;
       if (accStatusFilter !== 'all') url += `&trang_thai=${accStatusFilter}`;
+      if (selectedBranch) url += `&chi_nhanh=${encodeURIComponent(selectedBranch)}`;
       const res = await api.get(url);
       if (res.data?.success) {
         setAccountsList(res.data.data || []);
@@ -271,7 +272,7 @@ export default function AdminStaffScreen({ navigation }) {
       setAccountsLoading(false);
       setRefreshing(false);
     }
-  }, [accSearch, accRoleFilter, accStatusFilter, user]);
+  }, [accSearch, accRoleFilter, accStatusFilter, user, selectedBranch]);
 
   useFocusEffect(useCallback(() => {
     fetchBranches();

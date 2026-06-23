@@ -1570,7 +1570,7 @@
           const s      = STYLE_MUC_DO[mucDo];
           const unread = n.da_doc === 0;
           return `
-            <div class="notif-item" data-notif-id="${n.id}" data-da-doc="${n.da_doc}" style="
+            <div class="notif-item" data-notif-id="${n.id}" data-da-doc="${n.da_doc}" data-loai="${n.loai || ''}" style="
               margin-bottom:6px;
               background:${s.bg};
               border:1px solid ${s.border};
@@ -1727,13 +1727,35 @@
           if (item && id) _deleteOne(id, item, true); // actual delete
           return;
         }
-        // Click vào body item → đánh dấu đã đọc
+        // Click vào body item → đánh dấu đã đọc và điều hướng
         const body = e.target.closest('.notif-body');
         if (body) {
           const item  = body.closest('.notif-item');
           const id    = item?.dataset.notifId;
           const daDoc = item?.dataset.daDoc;
+          const loai  = item?.dataset.loai;
           if (id && daDoc === '0') _deleteOne(id, item, false); // mark read
+          
+          // Điều hướng
+          let targetPage = 'dashboard';
+          if (loai) {
+            const l = loai.toLowerCase();
+            if (l.includes('check_in') || l.includes('checkin')) {
+              targetPage = 'checkin';
+            } else if (l.includes('gia_han') || l.includes('het_han') || l.includes('expired') || l.includes('sap_het_han')) {
+              targetPage = 'expired';
+            } else if (l.includes('dat_lich_pt') || l.includes('lich_tap') || l.includes('booking')) {
+              targetPage = 'pt-register';
+            } else if (l.includes('sinh_nhat')) {
+              targetPage = 'birthday';
+            } else if (l.includes('doanh_thu')) {
+              targetPage = 'revenue';
+            } else if (l.includes('nhan_vien') || l.includes('staff')) {
+              targetPage = 'staff';
+            }
+          }
+          _closeDropdown();
+          window.GymApp.navigate(targetPage);
         }
       });
 

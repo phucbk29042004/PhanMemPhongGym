@@ -423,81 +423,125 @@ export default function MemberHomeScreen({ navigation }) {
               <View style={styles.loadingBox}>
                 <ActivityIndicator color={colors.primary} size="small" />
               </View>
-            ) : currentPlan ? (
+            ) : (currentPlan || activePT) ? (
               <TouchableOpacity
                 style={[styles.contractCard, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
                 onPress={() => {
-                  setSelectedDetailPkg(currentPlan);
-                  setDetailModalVisible(true);
+                  if (currentPlan) {
+                    setSelectedDetailPkg(currentPlan);
+                    setDetailModalVisible(true);
+                  } else {
+                    setRemainingPtVisible(true);
+                  }
                 }}
                 activeOpacity={0.8}
               >
                 {/* Trạng thái + tên gói */}
                 <View style={styles.contractTop}>
-                  {activePlan ? (
+                  {currentPlan ? (
+                    <>
+                      {activePlan ? (
+                        <View style={[styles.contractBadge, { backgroundColor: colors.primaryLight }]}>
+                          <ShieldCheck color={colors.primary} size={12} strokeWidth={2.5} />
+                          <Text style={[styles.contractBadgeText, { color: colors.primary }]}>Đang hoạt động</Text>
+                        </View>
+                      ) : null}
+                      {choKichHoatPlan && !activePlan ? (
+                        <View style={[styles.contractBadge, { backgroundColor: colors.primaryLight }]}>
+                          <ShieldCheck color={colors.primary} size={12} strokeWidth={2.5} />
+                          <Text style={[styles.contractBadgeText, { color: colors.primary }]}>Chờ kích hoạt nối tiếp</Text>
+                        </View>
+                      ) : null}
+                      {pendingPlan && !activePlan && !choKichHoatPlan ? (
+                        <View style={[styles.contractBadge, { backgroundColor: colors.warningLight }]}>
+                          <Clock color={colors.warning} size={12} strokeWidth={2.5} />
+                          <Text style={[styles.contractBadgeText, { color: colors.warning }]}>
+                            {pendingPlan.phuong_thuc_tt === 'chuyen_khoan' && pendingPlan.payos_status === 'PENDING'
+                              ? 'Đang chờ thanh toán chuyển khoản'
+                              : 'Đang chờ duyệt'}
+                          </Text>
+                        </View>
+                      ) : null}
+                      {!activePlan && !choKichHoatPlan && !pendingPlan && expiredPlan ? (
+                        <View style={[styles.contractBadge, { backgroundColor: colors.dangerLight }]}>
+                          <Clock color={colors.danger} size={12} strokeWidth={2.5} />
+                          <Text style={[styles.contractBadgeText, { color: colors.danger }]}>Đã hết hạn</Text>
+                        </View>
+                      ) : null}
+                      {remaining !== null && remaining <= 7 && activePlan && (
+                        <View style={[styles.contractBadge, { backgroundColor: colors.dangerLight }]}>
+                          <Clock color={colors.danger} size={12} strokeWidth={2.5} />
+                          <Text style={[styles.contractBadgeText, { color: colors.danger }]}>Sắp hết hạn</Text>
+                        </View>
+                      )}
+                    </>
+                  ) : (
                     <View style={[styles.contractBadge, { backgroundColor: colors.primaryLight }]}>
                       <ShieldCheck color={colors.primary} size={12} strokeWidth={2.5} />
-                      <Text style={[styles.contractBadgeText, { color: colors.primary }]}>Đang hoạt động</Text>
-                    </View>
-                  ) : null}
-                  {choKichHoatPlan && !activePlan ? (
-                    <View style={[styles.contractBadge, { backgroundColor: colors.primaryLight }]}>
-                      <ShieldCheck color={colors.primary} size={12} strokeWidth={2.5} />
-                      <Text style={[styles.contractBadgeText, { color: colors.primary }]}>Chờ kích hoạt nối tiếp</Text>
-                    </View>
-                  ) : null}
-                  {pendingPlan && !activePlan && !choKichHoatPlan ? (
-                    <View style={[styles.contractBadge, { backgroundColor: colors.warningLight }]}>
-                      <Clock color={colors.warning} size={12} strokeWidth={2.5} />
-                      <Text style={[styles.contractBadgeText, { color: colors.warning }]}>
-                        {pendingPlan.phuong_thuc_tt === 'chuyen_khoan' && pendingPlan.payos_status === 'PENDING'
-                          ? 'Đang chờ thanh toán chuyển khoản'
-                          : 'Đang chờ duyệt'}
+                      <Text style={[styles.contractBadgeText, { color: colors.primary }]}>
+                        {activePT.trang_thai === 'dang_hoat_dong' ? 'PT Đang hoạt động' : 'PT Chờ kích hoạt'}
                       </Text>
-                    </View>
-                  ) : null}
-                  {!activePlan && !choKichHoatPlan && !pendingPlan && expiredPlan ? (
-                    <View style={[styles.contractBadge, { backgroundColor: colors.dangerLight }]}>
-                      <Clock color={colors.danger} size={12} strokeWidth={2.5} />
-                      <Text style={[styles.contractBadgeText, { color: colors.danger }]}>Đã hết hạn</Text>
-                    </View>
-                  ) : null}
-                  {remaining !== null && remaining <= 7 && activePlan && (
-                    <View style={[styles.contractBadge, { backgroundColor: colors.dangerLight }]}>
-                      <Clock color={colors.danger} size={12} strokeWidth={2.5} />
-                      <Text style={[styles.contractBadgeText, { color: colors.danger }]}>Sắp hết hạn</Text>
                     </View>
                   )}
                 </View>
-                <Text style={[styles.contractPackageName, { color: colors.text }]}>{currentPlan.ten_goi}</Text>
+                
+                <Text style={[styles.contractPackageName, { color: colors.text }]}>
+                  {currentPlan ? currentPlan.ten_goi : activePT.ten_goi_pt || 'Gói Huấn Luyện Viên Cá Nhân'}
+                </Text>
 
                 {/* Thông số grid */}
-                <View style={[styles.contractGrid, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                  <View style={styles.contractGridItem}>
-                    <CalendarCheck color={colors.textMuted} size={14} strokeWidth={2} />
-                    <Text style={[styles.contractGridLabel, { color: colors.textMuted }]}>Từ ngày</Text>
-                    <Text style={[styles.contractGridValue, { color: colors.text }]}>{formatDate(currentPlan.tu_ngay)}</Text>
+                {currentPlan ? (
+                  <View style={[styles.contractGrid, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                    <View style={styles.contractGridItem}>
+                      <CalendarCheck color={colors.textMuted} size={14} strokeWidth={2} />
+                      <Text style={[styles.contractGridLabel, { color: colors.textMuted }]}>Từ ngày</Text>
+                      <Text style={[styles.contractGridValue, { color: colors.text }]}>{formatDate(currentPlan.tu_ngay)}</Text>
+                    </View>
+                    <View style={[styles.contractDivider, { backgroundColor: colors.border }]} />
+                    <View style={styles.contractGridItem}>
+                      <Clock color={remaining !== null && remaining <= 7 && activePlan ? colors.danger : colors.textMuted} size={14} strokeWidth={2} />
+                      <Text style={[styles.contractGridLabel, { color: colors.textMuted }]}>Hết hạn</Text>
+                      <Text style={[styles.contractGridValue, { color: colors.text }, remaining !== null && remaining <= 7 && activePlan && { color: colors.danger }]}>
+                        {formatDate(currentPlan.den_ngay)}
+                      </Text>
+                    </View>
+                    <View style={[styles.contractDivider, { backgroundColor: colors.border }]} />
+                    <View style={styles.contractGridItem}>
+                      <TrendingUp color={colors.primary} size={14} strokeWidth={2} />
+                      <Text style={[styles.contractGridLabel, { color: colors.textMuted }]}>Còn lại</Text>
+                      <Text style={[styles.contractGridValue, { color: remaining !== null && remaining <= 7 && activePlan ? colors.danger : colors.primary }]}>
+                        {remaining !== null && activePlan ? `${remaining} ngày` : '—'}
+                      </Text>
+                    </View>
                   </View>
-                  <View style={[styles.contractDivider, { backgroundColor: colors.border }]} />
-                  <View style={styles.contractGridItem}>
-                    <Clock color={remaining !== null && remaining <= 7 && activePlan ? colors.danger : colors.textMuted} size={14} strokeWidth={2} />
-                    <Text style={[styles.contractGridLabel, { color: colors.textMuted }]}>Hết hạn</Text>
-                    <Text style={[styles.contractGridValue, { color: colors.text }, remaining !== null && remaining <= 7 && activePlan && { color: colors.danger }]}>
-                      {formatDate(currentPlan.den_ngay)}
-                    </Text>
+                ) : (
+                  <View style={[styles.contractGrid, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                    <View style={styles.contractGridItem}>
+                      <CalendarCheck color={colors.textMuted} size={14} strokeWidth={2} />
+                      <Text style={[styles.contractGridLabel, { color: colors.textMuted }]}>Từ ngày</Text>
+                      <Text style={[styles.contractGridValue, { color: colors.text }]}>{formatDate(activePT.tu_ngay)}</Text>
+                    </View>
+                    <View style={[styles.contractDivider, { backgroundColor: colors.border }]} />
+                    <View style={styles.contractGridItem}>
+                      <Clock color={colors.textMuted} size={14} strokeWidth={2} />
+                      <Text style={[styles.contractGridLabel, { color: colors.textMuted }]}>Hết hạn</Text>
+                      <Text style={[styles.contractGridValue, { color: colors.text }]}>
+                        {formatDate(activePT.den_ngay)}
+                      </Text>
+                    </View>
+                    <View style={[styles.contractDivider, { backgroundColor: colors.border }]} />
+                    <View style={styles.contractGridItem}>
+                      <TrendingUp color={colors.primary} size={14} strokeWidth={2} />
+                      <Text style={[styles.contractGridLabel, { color: colors.textMuted }]}>Số buổi</Text>
+                      <Text style={[styles.contractGridValue, { color: colors.primary }]}>
+                        {ptRemaining} buổi
+                      </Text>
+                    </View>
                   </View>
-                  <View style={[styles.contractDivider, { backgroundColor: colors.border }]} />
-                  <View style={styles.contractGridItem}>
-                    <TrendingUp color={colors.primary} size={14} strokeWidth={2} />
-                    <Text style={[styles.contractGridLabel, { color: colors.textMuted }]}>Còn lại</Text>
-                    <Text style={[styles.contractGridValue, { color: remaining !== null && remaining <= 7 && activePlan ? colors.danger : colors.primary }]}>
-                      {remaining !== null && activePlan ? `${remaining} ngày` : '—'}
-                    </Text>
-                  </View>
-                </View>
+                )}
 
                 {/* HLV PT (nếu có) — bấm để xem lịch tập */}
-                {activePT ? (
+                {currentPlan && activePT ? (
                   <TouchableOpacity style={[styles.ptRow, { backgroundColor: colors.surface }]} onPress={openPtSchedule} activeOpacity={0.75}>
                     <Dumbbell color={colors.primary} size={15} strokeWidth={2} />
                     <Text style={[styles.ptRowText, { color: colors.text }]}>
@@ -509,6 +553,15 @@ export default function MemberHomeScreen({ navigation }) {
                       ) : null}
                       HLV: <Text style={{ fontWeight: '700', color: colors.text }}>{activePT.ten_pt}</Text>
                       {'  •  '}Còn <Text style={{ fontWeight: '700', color: colors.primary }}>{ptRemaining} buổi</Text>
+                    </Text>
+                    <ChevronRight color={colors.primary} size={16} strokeWidth={2.5} />
+                  </TouchableOpacity>
+                ) : !currentPlan && activePT ? (
+                  <TouchableOpacity style={[styles.ptRow, { backgroundColor: colors.surface }]} onPress={openPtSchedule} activeOpacity={0.75}>
+                    <Dumbbell color={colors.primary} size={15} strokeWidth={2} />
+                    <Text style={[styles.ptRowText, { color: colors.text }]}>
+                      HLV: <Text style={{ fontWeight: '700', color: colors.text }}>{activePT.ten_pt}</Text>
+                      {'  •  '}Bấm để xem lịch tập với PT
                     </Text>
                     <ChevronRight color={colors.primary} size={16} strokeWidth={2.5} />
                   </TouchableOpacity>

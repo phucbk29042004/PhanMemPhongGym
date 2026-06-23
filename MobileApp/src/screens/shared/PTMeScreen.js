@@ -166,7 +166,7 @@ export default function PTMeScreen({ navigation, route }) {
 
   const renderMessage = ({ item }) => {
     // Tin nhắn của chính mình → bên PHẢI, tin nhắn đối phương → bên TRÁI
-    const isMe = item.nguoi_gui_id === user?.id;
+    const isMe = isPT ? item.vai_tro_gui === 'pt' : item.vai_tro_gui === 'hoi_vien';
 
     let dateStr = '';
     if (item.ngay_tao) {

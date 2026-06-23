@@ -335,6 +335,7 @@ window.GymApp.pages['staff'] = {
       if (self._accSearch) url += `&search=${encodeURIComponent(self._accSearch)}`;
       if (self._filterState.vai_tro) url += `&vai_tro=${self._filterState.vai_tro}`;
       if (self._filterState.trang_thai) url += `&trang_thai=${self._filterState.trang_thai}`;
+      if (self._chi_nhanh) url += `&chi_nhanh=${encodeURIComponent(self._chi_nhanh)}`;
 
       try {
         const res = await window.GymApp.api.get(url);

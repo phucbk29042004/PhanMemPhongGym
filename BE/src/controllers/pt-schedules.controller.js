@@ -111,8 +111,10 @@ export const getSchedules = (req, res) => {
 
   const { date, pt_id, hoi_vien_id, trang_thai, chi_nhanh } = req.query;
 
-  let filterBranch = chi_nhanh;
-  if (req.user.vai_tro !== 'admin' && req.user.vai_tro !== 'chu_phong_gym') {
+  let filterBranch = null;
+  if (req.user.vai_tro === 'admin' || req.user.vai_tro === 'chu_phong_gym') {
+    filterBranch = chi_nhanh;
+  } else if (req.user.vai_tro === 'nhan_vien') {
     const actor = db.prepare('SELECT chi_nhanh FROM ho_so WHERE tai_khoan_id = ? AND is_deleted = 0').get(req.user.id);
     filterBranch = actor?.chi_nhanh || 'KHONG_CO_CHI_NHANH';
   }
@@ -204,20 +206,31 @@ export const createSchedule = (req, res) => {
     FROM dang_ky_pt dp
     JOIN ho_so h_hv ON h_hv.id = dp.hoi_vien_id
     JOIN ho_so h_pt ON h_pt.id = dp.pt_id
-    WHERE dp.id = ? AND dp.trang_thai = 'dang_hoat_dong' AND h_hv.is_deleted = 0 AND h_pt.is_deleted = 0
+    WHERE dp.id = ? AND dp.trang_thai IN ('dang_hoat_dong', 'cho_kich_hoat') AND h_hv.is_deleted = 0 AND h_pt.is_deleted = 0
   `).get(dang_ky_pt_id);
 
   if (!dkpt) return error(res, 'Đăng ký PT không tồn tại hoặc đã kết thúc.', 404);
 
   // Kiểm tra gói Gym chính còn hạn (hội viên phải có gói Gym bao trùm ngày tập)
+  // Chấp nhận cả 'dang_hoat_dong' và 'cho_kich_hoat' (vừa đăng ký, cron chưa kịp kích hoạt)
   const activeGym = db.prepare(`
     SELECT id FROM dang_ky_goi_tap
-    WHERE ho_so_id = ? AND trang_thai = 'dang_hoat_dong' AND tu_ngay <= ? AND den_ngay >= ?
+    WHERE ho_so_id = ? AND trang_thai IN ('dang_hoat_dong', 'cho_kich_hoat') AND tu_ngay <= ? AND den_ngay >= ?
     LIMIT 1
   `).get(dkpt.hoi_vien_id, ngay_tap, ngay_tap);
 
   if (!activeGym) {
-    return error(res, 'Hội viên không có gói Gym còn hiệu lực vào ngày tập này. Vui lòng gia hạn gói Gym trước khi xếp lịch.', 400);
+    // Nếu không có gói Gym còn hiệu lực, kiểm tra xem gói PT này có hiệu lực bao trùm ngày tập không
+    const activePt = db.prepare(`
+      SELECT id FROM dang_ky_pt
+      WHERE id = ? AND trang_thai IN ('dang_hoat_dong', 'cho_kich_hoat')
+        AND (tu_ngay IS NULL OR tu_ngay <= ?)
+        AND (den_ngay IS NULL OR den_ngay >= ?)
+    `).get(dang_ky_pt_id, ngay_tap, ngay_tap);
+
+    if (!activePt) {
+      return error(res, 'Hội viên không có gói Gym hoặc gói PT còn hiệu lực vào ngày tập này. Vui lòng gia hạn trước khi xếp lịch.', 400);
+    }
   }
 
   // Chặn đặt lịch trước ngày bắt đầu hiệu lực của gói PT
@@ -793,18 +806,11 @@ export const getMyMembers = (req, res) => {
     FROM dang_ky_pt dp
     JOIN ho_so hv ON hv.id = dp.hoi_vien_id
     LEFT JOIN goi_pt gpt ON gpt.id = dp.goi_pt_id
-    WHERE dp.pt_id = ? AND dp.trang_thai = 'dang_hoat_dong' AND hv.is_deleted = 0
-      AND EXISTS (
-        SELECT 1 FROM dang_ky_goi_tap dkgt
-        WHERE dkgt.ho_so_id = hv.id 
-          AND dkgt.trang_thai = 'dang_hoat_dong' 
-          AND dkgt.tu_ngay <= date('now', 'localtime')
-          AND dkgt.den_ngay >= date('now', 'localtime')
-      )
+    WHERE dp.pt_id = ? AND dp.trang_thai IN ('dang_hoat_dong', 'cho_kich_hoat') AND hv.is_deleted = 0
       AND dp.id = (
         SELECT dp2.id FROM dang_ky_pt dp2
         WHERE dp2.hoi_vien_id = dp.hoi_vien_id AND dp2.pt_id = dp.pt_id
-          AND dp2.trang_thai = 'dang_hoat_dong'
+          AND dp2.trang_thai IN ('dang_hoat_dong', 'cho_kich_hoat')
         ORDER BY dp2.id DESC LIMIT 1
       )
     ORDER BY hv.ho_ten ASC

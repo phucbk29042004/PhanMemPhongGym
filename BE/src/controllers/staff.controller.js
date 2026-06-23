@@ -354,9 +354,20 @@ export const deleteStaff = (req, res) => {
 
 // ── GET /api/staff/accounts (Lấy danh sách tài khoản) ────────────────────────
 export const getAccounts = (req, res) => {
-  const { search, vai_tro, trang_thai } = req.query;
+  const { search, vai_tro, trang_thai, chi_nhanh } = req.query;
   let where = 'WHERE tk.id IS NOT NULL';
   const params = [];
+
+  let filterBranch = chi_nhanh;
+  if (req.user.vai_tro !== 'admin' && req.user.vai_tro !== 'chu_phong_gym') {
+    const actor = db.prepare('SELECT chi_nhanh FROM ho_so WHERE tai_khoan_id = ? AND is_deleted = 0').get(req.user.id);
+    filterBranch = actor?.chi_nhanh || 'KHONG_CO_CHI_NHANH';
+  }
+
+  if (filterBranch) {
+    where += ' AND hs.chi_nhanh = ?';
+    params.push(filterBranch);
+  }
 
   if (vai_tro) {
     where += ' AND vt.ma_vai_tro = ?';

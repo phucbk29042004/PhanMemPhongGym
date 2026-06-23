@@ -523,7 +523,7 @@ export const getExpiringMembers = (req, res) => {
       )) AS ngay_het_han,
       (SELECT gt.ten_goi FROM dang_ky_goi_tap dk
        JOIN goi_tap gt ON gt.id = dk.goi_tap_id
-       WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong'
+       WHERE dk.ho_so_id = h.id
        ORDER BY dk.den_ngay DESC LIMIT 1) AS ten_goi_tap,
       EXISTS (SELECT 1 FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai IN ('cho_duyet', 'cho_kich_hoat')) AS co_yeu_cau_gia_han
     FROM ho_so h
@@ -583,7 +583,7 @@ export const getExpiredMembers = (req, res) => {
       )) AS ngay_het_han,
       (SELECT gt.ten_goi FROM dang_ky_goi_tap dk
        JOIN goi_tap gt ON gt.id = dk.goi_tap_id
-       WHERE dk.ho_so_id = h.id AND dk.trang_thai = 'dang_hoat_dong'
+       WHERE dk.ho_so_id = h.id
        ORDER BY dk.den_ngay DESC LIMIT 1) AS ten_goi_tap,
       EXISTS (SELECT 1 FROM dang_ky_goi_tap WHERE ho_so_id = h.id AND trang_thai IN ('cho_duyet', 'cho_kich_hoat')) AS co_yeu_cau_gia_han
     FROM ho_so h
@@ -735,7 +735,7 @@ export const getMyProfile = (req, res) => {
       FROM dang_ky_pt dp
       JOIN ho_so pt ON pt.id = dp.pt_id
       LEFT JOIN goi_pt gp ON gp.id = dp.goi_pt_id
-      WHERE dp.hoi_vien_id = ? AND dp.trang_thai = 'dang_hoat_dong'
+      WHERE dp.hoi_vien_id = ? AND dp.trang_thai IN ('dang_hoat_dong', 'cho_kich_hoat')
       ORDER BY
         CASE WHEN dp.den_ngay IS NULL THEN 1 ELSE 0 END,
         dp.den_ngay DESC,

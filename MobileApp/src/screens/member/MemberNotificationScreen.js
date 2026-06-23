@@ -88,34 +88,40 @@ const LEVEL_CONFIG = {
 // ── Hàm helper định dạng thời gian tương đối ───────────────
 function formatTimeAgo(dateStr) {
   if (!dateStr) return '';
-  const parts = dateStr.split(/[- :]/);
-  if (parts.length < 6) return dateStr;
-  
-  const year = parseInt(parts[0], 10);
-  const month = parseInt(parts[1], 10) - 1;
-  const day = parseInt(parts[2], 10);
-  const hour = parseInt(parts[3], 10);
-  const minute = parseInt(parts[4], 10);
-  const second = parseInt(parts[5], 10);
-  
-  const date = new Date(year, month, day, hour, minute, second);
-  const now = new Date();
-  const diffMs = now - date;
-  
-  if (diffMs < 0) return 'vừa xong';
-  
-  const diffSec = Math.floor(diffMs / 1000);
-  const diffMin = Math.floor(diffSec / 60);
-  const diffHr = Math.floor(diffMin / 60);
-  const diffDays = Math.floor(diffHr / 24);
-  
-  if (diffSec < 60) return 'vừa xong';
-  if (diffMin < 60) return `${diffMin} phút trước`;
-  if (diffHr < 24) return `${diffHr} giờ trước`;
-  if (diffDays === 1) return 'hôm qua';
-  if (diffDays < 7) return `${diffDays} ngày trước`;
-  
-  return `${String(day).padStart(2, '0')}/${String(month + 1).padStart(2, '0')}/${year} ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+  const parts = dateStr.split(/[- :T]/);
+  if (parts.length >= 3) {
+    const year = parts[0];
+    const month = parts[1];
+    const day = parts[2];
+    
+    if (parts.length >= 5) {
+      const hour = parseInt(parts[3], 10);
+      const minute = parseInt(parts[4], 10);
+      const second = parts[5] ? parseInt(parts[5], 10) : 0;
+      
+      const date = new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10), hour, minute, second);
+      const now = new Date();
+      const diffMs = now - date;
+      
+      if (diffMs < 0) return 'vừa xong';
+      
+      const diffSec = Math.floor(diffMs / 1000);
+      const diffMin = Math.floor(diffSec / 60);
+      const diffHr = Math.floor(diffMin / 60);
+      const diffDays = Math.floor(diffHr / 24);
+      
+      if (diffSec < 60) return 'vừa xong';
+      if (diffMin < 60) return `${diffMin} phút trước`;
+      if (diffHr < 24) return `${diffHr} giờ trước`;
+      if (diffDays === 1) return 'hôm qua';
+      if (diffDays < 7) return `${diffDays} ngày trước`;
+      
+      return `${String(day).padStart(2, '0')}-${String(month).padStart(2, '0')}-${year} ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+    } else {
+      return `${String(day).padStart(2, '0')}-${String(month).padStart(2, '0')}-${year}`;
+    }
+  }
+  return dateStr;
 }
 
 // ── Component: Chấm xanh nhấp nháy cho thông báo chưa đọc ──

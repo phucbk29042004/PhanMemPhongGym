@@ -78,7 +78,7 @@
 
   function getActivePt() {
     const contracts = window.GymApp.data.myPtContracts || [];
-    return contracts.find(p => p.trang_thai === 'dang_hoat_dong') || null;
+    return contracts.find(p => p.trang_thai === 'dang_hoat_dong' || p.trang_thai === 'cho_kich_hoat') || null;
   }
 
   function calcBmi(heightCm, weightKg) {
@@ -371,12 +371,12 @@
     list.innerHTML = notifs.map((n, idx) => {
       const s = NOTIF_STYLE[n.muc_do] || NOTIF_STYLE.info;
       return `
-        <div data-notif-idx="${idx}" style="
+        <div data-notif-idx="${idx}" data-loai="${n.loai || ''}" style="
           margin-bottom:6px;background:${s.bg};border:1px solid ${s.border};
           border-radius:8px;padding:10px 12px;display:flex;align-items:flex-start;gap:10px;
         ">
           <span class="material-symbols-outlined" style="color:${s.icon_color};font-size:18px;flex-shrink:0;margin-top:1px;font-variation-settings:'FILL' 1">${n.icon}</span>
-          <div style="flex:1;min-width:0">
+          <div style="flex:1;min-width:0;cursor:pointer" class="member-notif-body">
             <p style="font-weight:700;font-size:12px;color:${s.text_color};margin:0 0 2px">${n.tieu_de}</p>
             <p style="font-size:11px;color:${s.text_color};opacity:0.85;margin:0;line-height:1.5">${n.noi_dung}</p>
           </div>
@@ -395,6 +395,34 @@
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         _removeMemberNotif(parseInt(btn.dataset.idx));
+      });
+    });
+
+    // Bind click body để chuyển trang
+    list.querySelectorAll('.member-notif-body').forEach(body => {
+      body.addEventListener('click', () => {
+        const item = body.closest('[data-notif-idx]');
+        const loai = item?.dataset.loai;
+        
+        let targetPage = 'dashboard';
+        if (loai) {
+          const l = loai.toLowerCase();
+          if (l.includes('check_in') || l.includes('checkin')) {
+            targetPage = 'dashboard';
+          } else if (l.includes('lich_tap') || l.includes('pt') || l.includes('booking') || l.includes('dat_lich_pt')) {
+            targetPage = 'schedules';
+          } else if (l.includes('gia_han') || l.includes('het_han') || l.includes('goi_tap') || l.includes('sap_het_han')) {
+            targetPage = 'packages';
+          } else if (l.includes('khuyen_mai')) {
+            targetPage = 'promotions';
+          }
+        }
+        
+        // Đóng dropdown thông báo
+        const dd = document.getElementById('member-notif-dropdown');
+        if (dd) dd.style.display = 'none';
+        
+        navigate(targetPage);
       });
     });
   }
@@ -1183,7 +1211,7 @@
 
     async _showCreateScheduleModal() {
       const self = this;
-      const activeContracts = (window.GymApp.data.myPtContracts || []).filter(c => c.trang_thai === 'dang_hoat_dong');
+      const activeContracts = (window.GymApp.data.myPtContracts || []).filter(c => c.trang_thai === 'dang_hoat_dong' || c.trang_thai === 'cho_kich_hoat');
       if (activeContracts.length === 0) {
         window.GymApp.toast('Bạn không có hợp đồng PT nào đang hoạt động!', 'warning');
         return;
@@ -1558,7 +1586,7 @@
       const sorted = [...entries].sort((a, b) => new Date(a.ngay_tao || a.ngay_cap_nhat) - new Date(b.ngay_tao || b.ngay_cap_nhat));
       
       return sorted.map(item => {
-        const isMe = item.nguoi_gui_id === currentUserId;
+        const isMe = item.vai_tro_gui === 'hoi_vien';
         let dateStr = '';
         if (item.ngay_tao) {
           const dt = new Date(item.ngay_tao);
@@ -2129,16 +2157,26 @@
         const s = NOTIF_STYLE[n.muc_do] || NOTIF_STYLE.info;
         const iconMap = { danger: 'warning', warning: 'info', info: 'notifications', success: 'check_circle' };
         const icon = n.icon || iconMap[n.muc_do] || 'notifications';
-        const dateStr = n.ngay_tao ? new Date(n.ngay_tao).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+        const dateStr = (() => {
+          if (!n.ngay_tao) return '';
+          const d = new Date(n.ngay_tao);
+          if (isNaN(d.getTime())) return n.ngay_tao;
+          const day = String(d.getDate()).padStart(2, '0');
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const year = d.getFullYear();
+          const hour = String(d.getHours()).padStart(2, '0');
+          const minute = String(d.getMinutes()).padStart(2, '0');
+          return `${day}-${month}-${year} ${hour}:${minute}`;
+        })();
         return `
-          <div class="member-card overflow-hidden transition-all" data-notif-idx="${idx}"
-            style="border-left:4px solid ${s.border}">
+          <div class="member-card overflow-hidden transition-all member-page-notif-item" data-notif-idx="${idx}" data-loai="${n.loai || ''}"
+            style="border-left:4px solid ${s.border}; cursor:pointer;">
             <div class="p-s4 flex items-start gap-s4">
               <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                 style="background:${s.bg}">
                 <span class="material-symbols-outlined" style="color:${s.icon_color};font-size:20px;font-variation-settings:'FILL' 1">${icon}</span>
               </div>
-              <div class="flex-1 min-w-0">
+              <div class="flex-1 min-w-0 member-page-notif-body">
                 <div class="flex items-start justify-between gap-s2">
                   <p class="font-bold text-body-md" style="color:${s.text_color}">${n.tieu_de}</p>
                   <button class="page-notif-del flex-shrink-0 p-s1 rounded-lg hover:bg-surface-container transition-colors" data-idx="${idx}" title="Xóa">
@@ -2154,7 +2192,8 @@
       }).join('');
 
       container.querySelectorAll('.page-notif-del').forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
           const idx = parseInt(btn.dataset.idx);
           window.GymApp.data.myNotifications.splice(idx, 1);
           const badge = document.getElementById('member-notif-badge');
@@ -2162,6 +2201,31 @@
           if (badge) { badge.textContent = count > 9 ? '9+' : count; badge.style.display = count > 0 ? 'flex' : 'none'; }
           this._renderList();
           _renderMemberDropdownList();
+        });
+      });
+
+      // Bind click body để chuyển trang
+      container.querySelectorAll('.member-page-notif-body').forEach(body => {
+        body.addEventListener('click', (e) => {
+          if (e.target.closest('.page-notif-del')) return;
+          const item = body.closest('[data-notif-idx]');
+          const loai = item?.dataset.loai;
+          
+          let targetPage = 'dashboard';
+          if (loai) {
+            const l = loai.toLowerCase();
+            if (l.includes('check_in') || l.includes('checkin')) {
+              targetPage = 'dashboard';
+            } else if (l.includes('lich_tap') || l.includes('pt') || l.includes('booking') || l.includes('dat_lich_pt')) {
+              targetPage = 'schedules';
+            } else if (l.includes('gia_han') || l.includes('het_han') || l.includes('goi_tap') || l.includes('sap_het_han')) {
+              targetPage = 'packages';
+            } else if (l.includes('khuyen_mai')) {
+              targetPage = 'promotions';
+            }
+          }
+          
+          navigate(targetPage);
         });
       });
     }
