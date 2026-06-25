@@ -2474,7 +2474,7 @@
     clearInterval(payosPollingTimer);
 
     const qrServerUrl = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&bgcolor=ffffff&color=0a2e13&margin=8&data=${encodeURIComponent(qrCodeUrl || payosUrl)}`;
-    let timeLeft = 600; // 10 phút
+    let timeLeft = 300; // 5 phút
 
     const overlay = document.createElement('div');
     overlay.id = 'modal-payos-qr';
@@ -2495,11 +2495,11 @@
           <div style="background:#fff;padding:12px;border-radius:16px;border:1px solid var(--outline-variant);width:200px;height:200px;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 1px 3px rgba(0,0,0,0.05);">
             <img src="${qrServerUrl}" alt="PayOS VietQR" style="width:176px;height:176px;border-radius:8px;" />
           </div>
-
+ 
           <!-- Countdown timer -->
           <div id="payos-timer-box" style="display:flex;align-items:center;gap:8px;background:var(--bg-surface-low,#f0f4f0);padding:8px 16px;border-radius:12px;font-weight:700;font-size:13px;color:#1D9336;">
             <span class="material-symbols-outlined text-[16px] animate-pulse">schedule</span>
-            Thanh toán hết hạn sau: <span id="payos-countdown-time">10:00</span>
+            Thanh toán hết hạn sau: <span id="payos-countdown-time">05:00</span>
           </div>
 
           <!-- Payment Info Grid -->

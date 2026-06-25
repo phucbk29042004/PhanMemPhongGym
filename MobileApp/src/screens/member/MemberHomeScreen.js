@@ -136,16 +136,16 @@ export default function MemberHomeScreen({ navigation }) {
     pollingActiveRef.current = pollingActive;
   }, [pollingActive]);
 
-  const [timeLeft, setTimeLeft] = useState(600); // 10 phút = 600 giây
+  const [timeLeft, setTimeLeft] = useState(300); // 5 phút = 300 giây
 
   // Reset timeLeft khi mở modal
   useEffect(() => {
     if (payosModalVisible) {
-      setTimeLeft(600);
+      setTimeLeft(300);
     }
   }, [payosModalVisible]);
 
-  // Bộ đếm ngược 10 phút
+  // Bộ đếm ngược 5 phút
   useEffect(() => {
     let timerId = null;
     if (payosModalVisible && timeLeft > 0) {
@@ -176,7 +176,7 @@ export default function MemberHomeScreen({ navigation }) {
         console.error('Lỗi khi tự động hủy đơn gia hạn:', err);
       }
     }
-    Alert.alert('Thanh toán hết hạn', 'Đã hết thời gian thanh toán 10 phút. Giao dịch đã bị hủy tự động.');
+    Alert.alert('Thanh toán hết hạn', 'Đã hết thời gian thanh toán 5 phút. Giao dịch đã bị hủy tự động.');
   };
 
   // Turn off polling when screen is blurred/navigated away

@@ -2748,7 +2748,7 @@ window.GymApp.pages['members-list'] = {
           <!-- Spinner and Polling Status -->
           <div id="payos-poll-status" style="display:flex;align-items:center;justify-content:center;gap:10px;font-size:14px;color:#1d9336;font-weight:700;width:100%;padding:4px 0;">
             <span class="material-symbols-outlined" style="font-size:20px;animation:spin 1s linear infinite;color:#1d9336;">progress_activity</span>
-            <span id="payos-countdown-text">Đang chờ thanh toán (10:00)...</span>
+            <span id="payos-countdown-text">Đang chờ thanh toán (05:00)...</span>
           </div>
           
           <!-- Actions -->
@@ -2772,7 +2772,7 @@ window.GymApp.pages['members-list'] = {
     });
 
     let isPaid = false;
-    let timeLeft = 600; // 10 phút
+    let timeLeft = 300; // 5 phút
 
     const updateCountdownText = () => {
       const min = String(Math.floor(timeLeft / 60)).padStart(2, '0');
@@ -2814,7 +2814,7 @@ window.GymApp.pages['members-list'] = {
       if (timeLeft <= 0) {
         clearInterval(countdownInterval);
         clearInterval(pollInterval);
-        window.GymApp.toast('Hết thời gian thanh toán (10 phút). Giao dịch đã bị hủy tự động.', 'error');
+        window.GymApp.toast('Hết thời gian thanh toán (5 phút). Giao dịch đã bị hủy tự động.', 'error');
         await close(true);
       }
     }, 1000);

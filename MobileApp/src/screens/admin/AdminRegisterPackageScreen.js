@@ -112,16 +112,16 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
   const [selectedPromo, setSelectedPromo] = useState(null);
   const [payosData, setPayosData] = useState(null);
   const [showQrModal, setShowQrModal] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(600); // 10 phút = 600 giây
+  const [timeLeft, setTimeLeft] = useState(300); // 5 phút = 300 giây
 
   // Reset timeLeft khi mở modal
   useEffect(() => {
     if (showQrModal) {
-      setTimeLeft(600);
+      setTimeLeft(300);
     }
   }, [showQrModal]);
 
-  // Bộ đếm ngược 10 phút
+  // Bộ đếm ngược 5 phút
   useEffect(() => {
     let timerId = null;
     if (showQrModal && timeLeft > 0) {
@@ -151,7 +151,7 @@ export default function AdminRegisterPackageScreen({ route, navigation }) {
     }
     setShowQrModal(false);
     setPayosData(null);
-    Alert.alert('Thanh toán hết hạn', 'Đã hết thời gian thanh toán 10 phút. Giao dịch đã bị hủy tự động.');
+    Alert.alert('Thanh toán hết hạn', 'Đã hết thời gian thanh toán 5 phút. Giao dịch đã bị hủy tự động.');
   };
 
   // Khi isSwitch=true (đổi gói): ngày bắt đầu = hôm nay

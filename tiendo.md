@@ -5,6 +5,17 @@
 - **Ngày bắt đầu**: 07/05/2026
 - **Mô tả**: Hệ thống quản lý phòng GYM hiện đại sử dụng SPA Vanilla JS (Frontend) và Node.js/SQLite (Backend).
 
+### [25/06/2026 15:15] — Đồng bộ đếm ngược 5 phút thanh toán QR PayOS và tự động hủy giao dịch
+- **Loại**: Cải tiến tính năng & Đồng bộ (Fullstack)
+- **File**: `BE/src/utils/payos.js`, `FE/assets/js/pages/members-list.js`, `FE/assets/js/member-portal.js`, `MobileApp/src/screens/member/MemberHomeScreen.js`, `MobileApp/src/screens/member/OrderConfirmationScreen.js`, `MobileApp/src/screens/admin/AdminRegisterPackageScreen.js`, `MobileApp/src/screens/admin/AdminRegisterPTScreen.js`
+- **Mô tả**:
+  1. **[Backend]**: Cập nhật thời hạn hết hạn link PayOS `expiredAt` từ 10 phút (600 giây) xuống 5 phút (300 giây).
+  2. **[Web Admin & Member Portal]**: Đồng bộ thời gian đếm ngược `timeLeft` xuống 300 giây. Cập nhật nhãn đếm ngược bắt đầu từ `05:00` và sửa thông báo lỗi quá hạn hiển thị "5 phút".
+  3. **[Mobile App - Cả Admin và Hội viên]**: Cập nhật lại toàn bộ bộ đếm ngược `timeLeft` và `handleTimeout` sang 5 phút (300 giây) trên tất cả các màn hình có chức năng quét QR thanh toán PayOS.
+- **Kết quả**: Thành công tốt đẹp.
+
+---
+
 ### [23/06/2026 10:15] — Đồng bộ trạng thái hợp đồng PT và sửa vị trí bong bóng chat ở các Portal và Mobile App
 - **Loại**: Sửa lỗi & Đồng bộ tính năng (Fullstack)
 - **File**: `MobileApp/src/screens/shared/PTMeScreen.js`, `FE/assets/js/member-portal.js`, `FE/assets/js/pt-portal.js`
