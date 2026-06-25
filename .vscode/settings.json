@@ -41,12 +41,13 @@
         "**/BE/**",
         "**/*.db*",
         "**/database/**"
-      ],
+    ],
     "fiveServer.ignore": [
         "**/.git/**",
         "**/node_modules/**",
         "**/BE/**",
         "**/*.db*",
         "**/database/**"
-    ]
+    ],
+    "liveServer.settings.port": 5501
 }

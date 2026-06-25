@@ -5,8 +5,7 @@
 
 import { io } from 'socket.io-client';
 
-// Phải trùng với IP trong api.js
-const SOCKET_URL = 'http://192.168.11.126:3000';
+const SOCKET_URL = 'https://job-observing-corporal.ngrok-free.dev';
 
 let _socket = null;
 

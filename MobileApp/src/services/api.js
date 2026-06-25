@@ -4,7 +4,7 @@ import { useAuthStore } from '../store/useAuthStore';
 // Cấu hình URL kết nối tới Backend (BE) đang chạy trên cổng 3000
 // Tự động sử dụng IP local ở chế độ DEV (Expo Go) và link HTTPS ngrok cố định khi đóng gói APK (Release).
 const API_URL = __DEV__
-  ? 'http://192.168.11.126:3000/api'
+  ? 'https://job-observing-corporal.ngrok-free.dev/api'
   : 'https://job-observing-corporal.ngrok-free.dev/api';
 
 export const api = axios.create({
@@ -50,7 +50,7 @@ api.interceptors.response.use(
     } else {
       const data = error.response.data;
       const status = error.response.status;
-      
+
       if (data && typeof data === 'object') {
         error.displayMessage = data.message || data.error || `Lỗi máy chủ (${status})`;
       } else if (typeof data === 'string') {
