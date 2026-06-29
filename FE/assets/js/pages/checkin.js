@@ -270,7 +270,7 @@ window.GymApp.pages['checkin'] = {
       const showCheckout = isFirstVao && !hasCheckedOut;
       return `
       <tr class="h-11 border-b border-outline-variant/30 hover:bg-brand-primary/5 transition-colors">
-        <td class="px-standard">
+        <td class="px-standard whitespace-nowrap">
           <div class="flex items-center gap-compact">
             ${window.GymApp.avatarImg(c.avatar_url, c.ho_ten, 'sm')}
             <div>
@@ -290,13 +290,13 @@ window.GymApp.pages['checkin'] = {
             </div>
           </div>
         </td>
-        <td class="px-standard">
+        <td class="px-standard whitespace-nowrap">
           <div class="flex items-center gap-xs text-on-surface text-body-md">
             <span class="material-symbols-outlined text-brand-primary" style="font-size:14px">schedule</span>
             ${c.gio_hien_thi || c.thoi_diem.substring(11, 16)}
           </div>
         </td>
-        <td class="px-standard">
+        <td class="px-standard whitespace-nowrap">
           <span class="font-bold text-on-surface text-body-sm">
             ${(c.chi_nhanh_thuc_hien && c.chi_nhanh_goc && c.chi_nhanh_thuc_hien !== c.chi_nhanh_goc)
           ? (!window.GymApp.selectedBranch
@@ -305,12 +305,12 @@ window.GymApp.pages['checkin'] = {
           : (c.chi_nhanh_goc || '—')}
           </span>
         </td>
-        <td class="px-standard">${window.GymApp.statusBadge(c.loai === 'vao' ? 'active' : 'inactive')}</td>
-        <td class="px-standard">
+        <td class="px-standard whitespace-nowrap">${window.GymApp.statusBadge(c.loai === 'vao' ? 'active' : 'inactive')}</td>
+        <td class="px-standard whitespace-nowrap">
           ${showCheckout
           ? `<button class="btn-checkout text-[#dc2626] hover:bg-[#fee2e2] px-compact py-3xs rounded-md transition-colors text-body-sm font-bold flex items-center gap-xs" data-id="${c.ho_so_id}">
-                 <span class="material-symbols-outlined" style="font-size:14px">logout</span> Check-out
-               </button>`
+                  <span class="material-symbols-outlined" style="font-size:14px">logout</span> Check-out
+                </button>`
           : ''}
         </td>
       </tr>
@@ -322,11 +322,11 @@ window.GymApp.pages['checkin'] = {
         <table class="w-full text-left border-collapse gym-table">
           <thead>
             <tr class="h-10">
-              <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Hội viên</th>
-              <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Giờ</th>
-              <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Chi nhánh thực hiện</th>
-              <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider">Trạng thái</th>
-              <th class="px-standard font-bold text-body-sm text-on-surface-wider">THAO TÁC</th>
+              <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider whitespace-nowrap">Hội viên</th>
+              <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider whitespace-nowrap">Giờ</th>
+              <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider whitespace-nowrap">Chi nhánh thực hiện</th>
+              <th class="px-standard font-bold text-body-sm text-on-surface-variant uppercase tracking-wider whitespace-nowrap">Trạng thái</th>
+              <th class="px-standard font-bold text-body-sm text-on-surface-wider whitespace-nowrap">THAO TÁC</th>
             </tr>
           </thead>
           <tbody>${rows || `<tr><td colspan="5" class="px-standard py-standard text-center text-on-surface-variant">Chưa có dữ liệu</td></tr>`}</tbody>

@@ -6,6 +6,16 @@
 import db from '../config/db.js';
 import { getIO } from '../socket.js';
 
+/**
+ * Chuyển đổi yyyy-mm-dd hoặc yyyy/mm/dd → dd/mm/yyyy trong chuỗi văn bản
+ * @param {string} str
+ * @returns {string}
+ */
+function formatDateVN(str) {
+  if (!str || typeof str !== 'string') return str;
+  return str.replace(/(\d{4})[\-\/](\d{2})[\-\/](\d{2})/g, '$3/$2/$1');
+}
+
 const insertNotification = db.prepare(`
   INSERT INTO thong_bao (loai, tieu_de, noi_dung, doi_tuong_id, doi_tuong, danh_cho)
   VALUES (?, ?, ?, ?, ?, ?)
@@ -24,7 +34,8 @@ export function createNotification(loai, tieu_de, noi_dung, doi_tuong_id = null,
   try {
     let final_danh_cho = danh_cho;
     if (final_danh_cho === 'le_tan') final_danh_cho = 'nhan_vien';
-    insertNotification.run(loai, tieu_de, noi_dung, doi_tuong_id, doi_tuong, final_danh_cho);
+    const noi_dung_vn = formatDateVN(noi_dung);
+    insertNotification.run(loai, tieu_de, noi_dung_vn, doi_tuong_id, doi_tuong, final_danh_cho);
 
     // Emit realtime qua Socket.IO (không throw nếu socket chưa sẵn sàng)
     try {
@@ -32,7 +43,7 @@ export function createNotification(loai, tieu_de, noi_dung, doi_tuong_id = null,
       const payload = {
         loai,
         tieu_de,
-        noi_dung,
+        noi_dung: noi_dung_vn,
         danh_cho: final_danh_cho,
         doi_tuong_id,
         doi_tuong,
@@ -62,10 +73,11 @@ export function createNotification(loai, tieu_de, noi_dung, doi_tuong_id = null,
 export function createUserNotification(hoSoId, tieu_de, noi_dung, loai = 'thong_bao_chung', extra = null) {
   try {
     const extraValue = extra ? (typeof extra === 'string' ? extra : JSON.stringify(extra)) : null;
+    const noi_dung_vn = formatDateVN(noi_dung);
     db.prepare(`
       INSERT INTO thong_bao_user (ho_so_id, loai, tieu_de, noi_dung, extra)
       VALUES (?, ?, ?, ?, ?)
-    `).run(hoSoId, loai, tieu_de, noi_dung, extraValue);
+    `).run(hoSoId, loai, tieu_de, noi_dung_vn, extraValue);
 
     // Emit realtime đến đúng user qua Socket.IO
     try {
@@ -73,7 +85,7 @@ export function createUserNotification(hoSoId, tieu_de, noi_dung, loai = 'thong_
       io.to(`user:${hoSoId}`).emit('notification:personal', {
         loai,
         tieu_de,
-        noi_dung,
+        noi_dung: noi_dung_vn,
         extra: extra ? (typeof extra === 'string' ? JSON.parse(extra) : extra) : null,
         ngay_tao: new Date().toISOString(),
       });
@@ -96,7 +108,7 @@ export function createUserNotification(hoSoId, tieu_de, noi_dung, loai = 'thong_
             to: expoPushToken,
             sound: 'default',
             title: tieu_de,
-            body: noi_dung,
+            body: noi_dung_vn,
             data: {
               loai,
               extra: extra ? (typeof extra === 'string' ? JSON.parse(extra) : extra) : null,

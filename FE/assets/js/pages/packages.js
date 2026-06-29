@@ -100,7 +100,15 @@ window.GymApp.pages['packages'] = {
             <p class="text-on-surface-variant text-body-sm mt-xs">Hãy nhấn nút "Thêm gói mới" ở góc phải để tạo gói tập đầu tiên.</p>
           </div>
         ` : `
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          <style>
+            #pkg-scroll-container::-webkit-scrollbar { height: 5px; }
+            #pkg-scroll-container::-webkit-scrollbar-track { background: transparent; }
+            #pkg-scroll-container::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
+            #pkg-scroll-container::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+            .dark #pkg-scroll-container::-webkit-scrollbar-thumb { background: #374151; }
+          </style>
+          <div id="pkg-scroll-container" class="flex flex-row overflow-x-auto gap-3 pb-2 select-none" style="cursor:grab;-webkit-overflow-scrolling:touch;">
+
             ${currentPackages.map(p => {
               const popularity = currentTotalReg > 0 ? Math.round(((p.so_nguoi_dang_ky || 0) / currentTotalReg) * 100) : 0;
               const isGym = self.activeTab === 'gym';
@@ -125,7 +133,7 @@ window.GymApp.pages['packages'] = {
               }
 
               return `
-                <div class="group relative rounded-xl overflow-hidden flex flex-col gap-2 p-3 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 bg-white dark:bg-[#1e1e1e] border border-outline-variant/60 w-full">
+                <div class="group relative rounded-xl overflow-hidden flex flex-col gap-2 p-3 shadow-sm hover:shadow-md transition-all duration-300 bg-white dark:bg-[#1e1e1e] border border-outline-variant/60 w-[240px] flex-shrink-0">
 
                   <!-- Header Section: Title & Actions -->
                   <div class="flex items-center justify-between gap-2">
@@ -187,12 +195,12 @@ window.GymApp.pages['packages'] = {
               <table class="w-full text-left border-collapse">
                 <thead>
                   <tr class="h-10 border-b border-outline-variant/50 bg-surface-container-low/10">
-                    <th class="px-loose font-bold text-label-bold text-on-surface-variant uppercase tracking-wider text-xs">Tên gói</th>
-                    <th class="px-loose font-bold text-label-bold text-on-surface-variant uppercase tracking-wider text-xs">Đơn giá</th>
-                    <th class="px-loose font-bold text-label-bold text-on-surface-variant uppercase tracking-wider text-xs">Thời lượng / Số lượng</th>
-                    <th class="px-loose font-bold text-label-bold text-on-surface-variant uppercase tracking-wider text-xs">Tính trung bình</th>
-                    <th class="px-loose font-bold text-label-bold text-on-surface-variant uppercase tracking-wider text-xs text-center">Hội viên đăng ký</th>
-                    <th class="px-loose font-bold text-label-bold text-on-surface-variant uppercase tracking-wider text-xs">Trạng thái</th>
+                    <th class="px-loose font-bold text-label-bold text-on-surface-variant uppercase tracking-wider text-xs whitespace-nowrap">Tên gói</th>
+                    <th class="px-loose font-bold text-label-bold text-on-surface-variant uppercase tracking-wider text-xs whitespace-nowrap">Đơn giá</th>
+                    <th class="px-loose font-bold text-label-bold text-on-surface-variant uppercase tracking-wider text-xs whitespace-nowrap">Thời lượng / Số lượng</th>
+                    <th class="px-loose font-bold text-label-bold text-on-surface-variant uppercase tracking-wider text-xs whitespace-nowrap">Tính trung bình</th>
+                    <th class="px-loose font-bold text-label-bold text-on-surface-variant uppercase tracking-wider text-xs text-center whitespace-nowrap">Hội viên đăng ký</th>
+                    <th class="px-loose font-bold text-label-bold text-on-surface-variant uppercase tracking-wider text-xs whitespace-nowrap">Trạng thái</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -220,12 +228,12 @@ window.GymApp.pages['packages'] = {
 
                     return `
                       <tr class="h-10 border-b border-outline-variant/30 hover:bg-surface-container-high/40 transition-colors">
-                        <td class="px-loose font-bold text-on-surface text-body-md">${p.ten_goi}</td>
-                        <td class="px-loose font-extrabold text-body-md" style="color: ${isGym ? '#1D9336' : '#047857'}">${window.GymApp.formatCurrency(p.gia)}</td>
-                        <td class="px-loose text-on-surface-variant text-body-sm font-bold">${durationStr}</td>
-                        <td class="px-loose text-on-surface-variant text-body-sm font-extrabold">${rateStr}</td>
-                        <td class="px-loose text-body-md font-bold text-on-surface text-center">${p.so_nguoi_dang_ky || 0}</td>
-                        <td class="px-loose">
+                        <td class="px-loose font-bold text-on-surface text-body-md whitespace-nowrap">${p.ten_goi}</td>
+                        <td class="px-loose font-extrabold text-body-md whitespace-nowrap" style="color: ${isGym ? '#1D9336' : '#047857'}">${window.GymApp.formatCurrency(p.gia)}</td>
+                        <td class="px-loose text-on-surface-variant text-body-sm font-bold whitespace-nowrap">${durationStr}</td>
+                        <td class="px-loose text-on-surface-variant text-body-sm font-extrabold whitespace-nowrap">${rateStr}</td>
+                        <td class="px-loose text-body-md font-bold text-on-surface text-center whitespace-nowrap">${p.so_nguoi_dang_ky || 0}</td>
+                        <td class="px-loose whitespace-nowrap">
                           <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">Đang hoạt động</span>
                         </td>
                       </tr>
@@ -278,6 +286,32 @@ window.GymApp.pages['packages'] = {
         );
       });
     });
+
+    // Drag-to-scroll cho container gói tập
+    const pkgScroll = document.getElementById('pkg-scroll-container');
+    if (pkgScroll) {
+      let isDown = false, startX = 0, scrollLeft = 0, hasDragged = false;
+      pkgScroll.addEventListener('mousedown', e => {
+        isDown = true;
+        hasDragged = false;
+        pkgScroll.style.cursor = 'grabbing';
+        startX = e.pageX - pkgScroll.offsetLeft;
+        scrollLeft = pkgScroll.scrollLeft;
+      });
+      pkgScroll.addEventListener('mouseleave', () => { isDown = false; pkgScroll.style.cursor = 'grab'; });
+      pkgScroll.addEventListener('mouseup', () => { isDown = false; pkgScroll.style.cursor = 'grab'; });
+      pkgScroll.addEventListener('mousemove', e => {
+        if (!isDown) return;
+        const x = e.pageX - pkgScroll.offsetLeft;
+        const walk = x - startX;
+        if (Math.abs(walk) > 5) hasDragged = true;
+        pkgScroll.scrollLeft = scrollLeft - walk;
+      });
+      // Ngăn click button khi đang drag
+      pkgScroll.addEventListener('click', e => {
+        if (hasDragged) { e.stopPropagation(); hasDragged = false; }
+      }, true);
+    }
   },
 
   _refreshView: function () {

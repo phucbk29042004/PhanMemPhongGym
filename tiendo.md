@@ -5,7 +5,56 @@
 - **Ngày bắt đầu**: 07/05/2026
 - **Mô tả**: Hệ thống quản lý phòng GYM hiện đại sử dụng SPA Vanilla JS (Frontend) và Node.js/SQLite (Backend).
 
+### [29/06/2026 10:37] — Tối ưu hóa dropdown thông báo trên mobile cho tất cả portal
+- **Loại**: Chỉnh sửa UI/UX Responsive
+- **File**: `FE/assets/css/main.css`
+- **Mô tả**: Cập nhật media query trong `main.css` để áp dụng cấu hình vị trí `fixed`, tự động giãn rộng theo màn hình (`width: calc(100vw - 32px)`) cho cả 3 dropdown thông báo: Admin (`#notif-dropdown`), HLV (`#pt-notif-dropdown`) và Hội viên (`#member-notif-dropdown`) khi xem trên điện thoại.
+- **Kết quả**: Thành công tốt đẹp.
+
+### [29/06/2026 10:30] — Sửa lỗi hiển thị rớt dòng bảng Hội viên hết hạn và Check-in trên mobile
+- **Loại**: Chỉnh sửa UI/UX Responsive
+- **File**: `FE/assets/js/pages/expired.js`, `FE/assets/js/pages/checkin.js`
+- **Mô tả**:
+  1. Thêm class `whitespace-nowrap` cho tiêu đề và các ô dữ liệu trong bảng "Hội viên hết hạn" và "Sắp hết hạn" của trang `expired.js`.
+  2. Thêm class `whitespace-nowrap` cho tiêu đề và dữ liệu cột trong bảng "Chi tiết lượt vào" của trang `checkin.js`.
+- **Kết quả**: Thành công tốt đẹp.
+
+### [29/06/2026 10:25] — Sửa lỗi tràn bảng dữ liệu và responsive khung thông báo admin
+- **Loại**: Chỉnh sửa UI/UX Responsive
+- **File**: `FE/assets/js/pages/revenue.js`, `FE/assets/js/pages/packages.js`, `FE/assets/css/main.css`, `FE/assets/js/app.js`
+- **Mô tả**:
+  1. Thêm class `whitespace-nowrap` cho bảng doanh thu giao dịch hôm nay (`revenue.js`) và bảng so sánh hiệu quả gói tập (`packages.js`) tránh rớt dòng và giữ text nằm trên 1 hàng ngang, hoạt động tốt với cuộn ngang.
+  2. Bổ sung CSS media query trong `main.css` để khống chế chiều rộng tối đa và tọa độ hiển thị của dropdown thông báo `#notif-dropdown` và popup toast `.gym-toast` trên màn hình nhỏ.
+  3. Cập nhật `app.js` chuyển style inline của toast sang dùng CSS class `.gym-toast`.
+- **Kết quả**: Thành công tốt đẹp.
+
+### [25/06/2026 16:45] — Gói tập: Horizontal drag scroll thay thế grid
+- **Loại**: Cải tiến UI
+- **File**: `FE/assets/js/pages/packages.js`
+- **Mô tả**: Thay grid `grid-cols-4` thành flex row `overflow-x-auto` với card `w-[240px]`. Thêm mouse drag-to-scroll vào `init()` với cờ `hasDragged` để phân biệt drag vs click (tránh trigger nút edit/delete khi kéo). Thêm custom scrollbar style.
+- **Kết quả**: Thành công
+
+### [25/06/2026 16:45] — Fix bug null addEventListener trong _showEditModal
+- **Loại**: Sửa bug
+- **File**: `FE/assets/js/pages/members-list.js`
+- **Mô tả**: Dòng 5108 gọi `getElementById('close-edit-member')` nhưng HTML modal dùng ID `close-member-edit-modal` → null → TypeError. Đã sửa đúng ID.
+- **Kết quả**: Thành công
+
+### [25/06/2026 16:30] — Fix định dạng ngày trong thông báo đẩy Push Notification
+
+- **Loại**: Sửa bug
+- **File**: `BE/src/utils/notifications.js`
+- **Mô tả**: Thêm hàm `formatDateVN()` dùng regex `(\d{4})[-\/](\d{2})[-\/](\d{2})` để tự động convert tất cả chuỗi ngày dạng `yyyy-mm-dd` hoặc `yyyy/mm/dd` sang `dd/mm/yyyy` trong `noi_dung` trước khi lưu DB, emit Socket và gửi Expo Push Notification.
+- **Kết quả**: Thành công — áp dụng tập trung cho cả `createNotification` và `createUserNotification`
+
+### [25/06/2026 16:30] — Fix responsive card lịch tập PT trên mobile
+- **Loại**: Sửa UI/Responsive
+- **File**: `FE/assets/js/pages/pt-training.js`
+- **Mô tả**: Thay `w-full` thành `w-[280px]` cho card lịch tập ở breakpoint mobile. Container đã có `overflow-x-auto flex flex-row` nên cards giờ scroll ngang mượt mà, breakpoint sm/md/lg vẫn giữ nguyên layout grid.
+- **Kết quả**: Thành công
+
 ### [25/06/2026 15:15] — Đồng bộ đếm ngược 5 phút thanh toán QR PayOS và tự động hủy giao dịch
+
 - **Loại**: Cải tiến tính năng & Đồng bộ (Fullstack)
 - **File**: `BE/src/utils/payos.js`, `FE/assets/js/pages/members-list.js`, `FE/assets/js/member-portal.js`, `MobileApp/src/screens/member/MemberHomeScreen.js`, `MobileApp/src/screens/member/OrderConfirmationScreen.js`, `MobileApp/src/screens/admin/AdminRegisterPackageScreen.js`, `MobileApp/src/screens/admin/AdminRegisterPTScreen.js`
 - **Mô tả**:

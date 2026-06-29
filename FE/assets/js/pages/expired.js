@@ -248,7 +248,7 @@ window.GymApp.pages['expired'] = {
 
     const rows = paginated.map(m => `
       <tr class="group hover:bg-brand-primary/5 transition-colors border-b border-outline-variant/30">
-        <td class="px-standard py-3">
+        <td class="px-standard py-3 whitespace-nowrap">
           <div class="flex items-center gap-standard">
             ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'lg', 'width:48px;height:48px;border-radius:16px;')}
             <div class="flex flex-col min-w-0">
@@ -264,10 +264,10 @@ window.GymApp.pages['expired'] = {
             </div>
           </div>
         </td>
-        <td class="px-standard py-3">
+        <td class="px-standard py-3 whitespace-nowrap">
           <span class="text-on-surface-variant text-body-sm font-mono font-black bg-surface-container px-2.5 py-1 rounded-xl border border-outline-variant/30">${m.ma_ho_so}</span>
         </td>
-        <td class="px-standard py-3">
+        <td class="px-standard py-3 whitespace-nowrap">
           <div class="flex flex-col gap-1">
             <div class="inline-flex items-center px-2 py-0.5 rounded-lg bg-surface-container text-on-surface text-body-sm font-black border border-outline-variant/50 w-fit">
               ${m.ten_goi_tap || 'N/A'}
@@ -278,10 +278,10 @@ window.GymApp.pages['expired'] = {
             </div>
           </div>
         </td>
-        <td class="px-standard py-3">
+        <td class="px-standard py-3 whitespace-nowrap">
           <span class="font-bold text-on-surface text-body-sm">${m.chi_nhanh || '—'}</span>
         </td>
-        <td class="px-standard py-3 text-center">
+        <td class="px-standard py-3 text-center whitespace-nowrap">
           <div class="flex justify-center items-center gap-compact">
             <button class="notify-btn w-9 h-9 flex items-center justify-center rounded-xl bg-surface-container-low text-on-surface-variant hover:bg-brand-primary hover:text-white transition-all shadow-sm active:scale-95" data-id="${m.id}" title="Gửi nhắc nhở">
               <span class="material-symbols-outlined text-[20px]">notifications_active</span>
@@ -300,11 +300,11 @@ window.GymApp.pages['expired'] = {
           <table class="w-full text-left border-collapse">
             <thead>
               <tr class="bg-surface-container-low/30 border-b border-outline-variant/50">
-                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60">Hội viên</th>
-                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60">Mã HV</th>
-                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60">Gói tập</th>
-                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60">Chi nhánh</th>
-                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60 text-center">Thao tác</th>
+                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60 whitespace-nowrap">Hội viên</th>
+                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60 whitespace-nowrap">Mã HV</th>
+                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60 whitespace-nowrap">Gói tập</th>
+                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60 whitespace-nowrap">Chi nhánh</th>
+                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60 text-center whitespace-nowrap">Thao tác</th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>
@@ -328,7 +328,7 @@ window.GymApp.pages['expired'] = {
 
       return `
         <tr class="group hover:bg-brand-primary/5 transition-colors border-b border-outline-variant/30">
-          <td class="px-standard py-3">
+          <td class="px-standard py-3 whitespace-nowrap">
             <div class="flex items-center gap-standard">
               ${window.GymApp.avatarImg(m.avatar_url, m.ho_ten, 'lg', 'width:48px;height:48px;border-radius:16px;')}
               <div class="flex flex-col min-w-0">
@@ -339,10 +339,10 @@ window.GymApp.pages['expired'] = {
               </div>
             </div>
           </td>
-          <td class="px-standard py-3">
+          <td class="px-standard py-3 whitespace-nowrap">
             <span class="text-on-surface-variant text-body-sm font-mono font-black bg-surface-container px-2.5 py-1 rounded-xl border border-outline-variant/30">${m.ma_ho_so}</span>
           </td>
-          <td class="px-standard py-3">
+          <td class="px-standard py-3 whitespace-nowrap">
             <div class="flex flex-col gap-1">
               <div class="inline-flex items-center px-2 py-0.5 rounded-lg bg-surface-container text-on-surface text-body-sm font-black border border-outline-variant/50 w-fit">
                 ${m.ten_goi_tap || 'N/A'}
@@ -359,10 +359,10 @@ window.GymApp.pages['expired'] = {
               </div>
             </div>
           </td>
-          <td class="px-standard py-3">
+          <td class="px-standard py-3 whitespace-nowrap">
             <span class="font-bold text-on-surface text-body-sm">${m.chi_nhanh || '—'}</span>
           </td>
-          <td class="px-standard py-3 text-center">
+          <td class="px-standard py-3 text-center whitespace-nowrap">
             <div class="flex justify-center items-center gap-compact">
               <button class="notify-btn w-9 h-9 flex items-center justify-center rounded-xl bg-surface-container-low text-on-surface-variant hover:bg-brand-primary hover:text-white transition-all shadow-sm active:scale-95" data-id="${m.id}" title="Gửi nhắc nhở">
                 <span class="material-symbols-outlined text-[20px]">notifications_active</span>
@@ -382,11 +382,11 @@ window.GymApp.pages['expired'] = {
           <table class="w-full text-left border-collapse">
             <thead>
               <tr class="bg-surface-container-low/30 border-b border-outline-variant/50">
-                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60">Hội viên</th>
-                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60">Mã HV</th>
-                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60">Gói tập</th>
-                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60">Chi nhánh</th>
-                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60 text-center">Thao tác</th>
+                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60 whitespace-nowrap">Hội viên</th>
+                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60 whitespace-nowrap">Mã HV</th>
+                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60 whitespace-nowrap">Gói tập</th>
+                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60 whitespace-nowrap">Chi nhánh</th>
+                <th class="px-standard py-4 font-black text-label-bold text-on-surface-variant uppercase tracking-widest opacity-60 text-center whitespace-nowrap">Thao tác</th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>

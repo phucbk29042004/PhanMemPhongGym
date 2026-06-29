@@ -102,15 +102,15 @@ window.GymApp.pages['revenue'] = {
             <table class="w-full text-body-sm text-left">
               <thead>
                 <tr class="border-b border-outline-variant/50 bg-surface-container-low/10">
-                  <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60">Khách hàng</th>
-                  <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60">Sản phẩm</th>
-                  <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60">Loại</th>
-                  <th id="rev-th-chinhanh" class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60">Chi nhánh</th>
-                  <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60">Trạng thái</th>
-                  <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60">Phương thức</th>
-                  <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60 text-right">Số tiền</th>
-                  <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60 text-right">Chênh lệch</th>
-                  <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60">Thời gian</th>
+                  <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60 whitespace-nowrap">Khách hàng</th>
+                  <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60 whitespace-nowrap">Sản phẩm</th>
+                  <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60 whitespace-nowrap">Loại</th>
+                  <th id="rev-th-chinhanh" class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60 whitespace-nowrap">Chi nhánh</th>
+                  <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60 whitespace-nowrap">Trạng thái</th>
+                  <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60 whitespace-nowrap">Phương thức</th>
+                  <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60 text-right whitespace-nowrap">Số tiền</th>
+                  <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60 text-right whitespace-nowrap">Chênh lệch</th>
+                  <th class="px-standard py-3 text-on-surface-variant text-label-bold uppercase tracking-wider opacity-60 whitespace-nowrap">Thời gian</th>
                 </tr>
               </thead>
               <tbody id="rev-today-tbody">
@@ -1308,15 +1308,15 @@ window.GymApp.pages['revenue'] = {
 
       return `
         <tr class="border-b border-outline-variant/30 hover:bg-brand-primary/5 transition-colors">
-          <td class="px-standard py-3 font-bold text-on-surface text-body-md">${t.khach_hang || '—'}</td>
-          <td class="px-standard py-3 text-on-surface-variant font-medium text-body-sm">${t.san_pham || '—'}</td>
-          <td class="px-standard py-3">${loaiLabel}</td>
+          <td class="px-standard py-3 font-bold text-on-surface text-body-md whitespace-nowrap">${t.khach_hang || '—'}</td>
+          <td class="px-standard py-3 text-on-surface-variant font-medium text-body-sm whitespace-nowrap">${t.san_pham || '—'}</td>
+          <td class="px-standard py-3 whitespace-nowrap">${loaiLabel}</td>
           ${branchCell}
-          <td class="px-standard py-3">${statusLabel}</td>
-          <td class="px-standard py-3">${paymentLabel}</td>
-          <td class="px-standard py-3 text-right font-bold text-brand-primary text-body-md">${this._formatMoney(t.gia_thuc_te)}</td>
-          <td class="px-standard py-3 text-right font-bold">${chenhLechHtml}</td>
-          <td class="px-standard py-3 text-on-surface-variant font-medium text-body-sm">${timeDisplay}</td>
+          <td class="px-standard py-3 whitespace-nowrap">${statusLabel}</td>
+          <td class="px-standard py-3 whitespace-nowrap">${paymentLabel}</td>
+          <td class="px-standard py-3 text-right font-bold text-brand-primary text-body-md whitespace-nowrap">${this._formatMoney(t.gia_thuc_te)}</td>
+          <td class="px-standard py-3 text-right font-bold whitespace-nowrap">${chenhLechHtml}</td>
+          <td class="px-standard py-3 text-on-surface-variant font-medium text-body-sm whitespace-nowrap">${timeDisplay}</td>
         </tr>
       `;
     }).join('');

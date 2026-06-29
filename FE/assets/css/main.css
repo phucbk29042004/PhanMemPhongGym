@@ -380,7 +380,30 @@ input[type="time"] {
 }
 
 .gym-toast {
+  position: fixed;
+  z-index: 9997;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  bottom: 20px;
+  right: 20px;
+  max-width: 350px;
   animation: toastSlideUp 0.2s ease;
+}
+
+@media (max-width: 640px) {
+  .gym-toast {
+    bottom: 16px;
+    right: 16px;
+    left: 16px;
+    max-width: calc(100vw - 32px);
+  }
 }
 
 /* ===== AVATAR IMAGE ===== */
@@ -392,6 +415,20 @@ input[type="time"] {
 /* ===== NOTIFICATION DROPDOWN ===== */
 #notif-dropdown {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.14), 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+@media (max-width: 640px) {
+  #notif-dropdown,
+  #pt-notif-dropdown,
+  #member-notif-dropdown {
+    position: fixed !important;
+    top: 64px !important;
+    left: 16px !important;
+    right: 16px !important;
+    width: calc(100vw - 32px) !important;
+    max-width: none !important;
+    z-index: 9999 !important;
+  }
 }
 
 #notif-list::-webkit-scrollbar {

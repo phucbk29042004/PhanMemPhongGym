@@ -265,7 +265,7 @@ window.GymApp.pages['pt-training'] = {
           ${items.map(s => {
         const hasActions = (s.trang_thai === 'cho_tap' || s.status === 'cho_tap') || ((s.trang_thai === 'da_tap' || s.status === 'da_tap') && (s.ghi_chu === 'auto_cron' || s.notes === 'auto_cron'));
         return `
-            <div class="group relative rounded-xl overflow-hidden flex flex-col gap-2 p-3 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 bg-surface-container-lowest border border-outline-variant w-full sm:w-[calc(50%-6px)] md:w-[calc(33.333%-8px)] lg:w-[calc(25%-9px)] shrink-0">
+            <div class="group relative rounded-xl overflow-hidden flex flex-col gap-2 p-3 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 bg-surface-container-lowest border border-outline-variant w-[280px] sm:w-[calc(50%-6px)] md:w-[calc(33.333%-8px)] lg:w-[calc(25%-9px)] shrink-0">
               <!-- Card Header: Time & Status -->
               <div class="flex items-start justify-between gap-2">
                 <div class="flex flex-col min-w-0">

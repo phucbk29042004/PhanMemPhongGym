@@ -5105,7 +5105,7 @@ window.GymApp.pages['members-list'] = {
       reader.readAsDataURL(file);
     });
 
-    document.getElementById('close-edit-member').addEventListener('click', close);
+    document.getElementById('close-member-edit-modal').addEventListener('click', close);
     document.getElementById('cancel-edit-member').addEventListener('click', close);
 
     document.getElementById('save-edit-member').addEventListener('click', async () => {

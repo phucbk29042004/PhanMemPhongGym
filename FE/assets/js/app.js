@@ -350,7 +350,7 @@
     const icons = { success: 'check_circle', error: 'error', info: 'info', warning: 'warning' };
     const el = document.createElement('div');
     el.className = 'gym-toast';
-    el.style.cssText = `position:fixed;bottom:20px;right:20px;z-index:9997;${colors[type]};color:#fff;padding:10px 20px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.2);font-size:14px;display:flex;align-items:center;gap:8px;font-weight:500;`;
+    el.style.cssText = colors[type];
     el.innerHTML = `<span class="material-symbols-outlined" style="font-size:18px">${icons[type]}</span>${message}`;
     document.body.appendChild(el);
     setTimeout(() => el.remove(), 3000);
