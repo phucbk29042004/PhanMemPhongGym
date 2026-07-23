@@ -1633,7 +1633,7 @@ export const getMyNotifications = (req, res) => {
       notifications.push({
         id: un.id,
         muc_do: muc_do,
-        icon: un.loai === 'nhac_nho_gia_han' ? 'notification_important' : (un.loai.startsWith('broadcast') ? 'campaign' : 'chat'),
+        icon: un.loai === 'nhac_nho_gia_han' ? 'notification_important' : ((un.loai && un.loai.startsWith('broadcast')) ? 'campaign' : 'chat'),
         tieu_de: un.tieu_de,
         noi_dung: un.noi_dung,
         ngay_tao: un.ngay_tao,
@@ -1860,7 +1860,7 @@ export const getMyNotifications = (req, res) => {
       notifications.push({
         id: un.id,
         muc_do: muc_do,
-        icon: un.loai.startsWith('broadcast') ? 'campaign' : 'chat',
+        icon: (un.loai && un.loai.startsWith('broadcast')) ? 'campaign' : 'chat',
         tieu_de: un.tieu_de,
         noi_dung: un.noi_dung,
         ngay_tao: un.ngay_tao,

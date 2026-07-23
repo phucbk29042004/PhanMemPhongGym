@@ -5,7 +5,16 @@
 - **Ngày bắt đầu**: 07/05/2026
 - **Mô tả**: Hệ thống quản lý phòng GYM hiện đại sử dụng SPA Vanilla JS (Frontend) và Node.js/SQLite (Backend).
 
+### [29/06/2026 16:25] — Sửa đổi realtime chat "PT & Tôi" & Sửa lỗi hiển thị "undefined" thông báo
+- **Loại**: Cải tiến tính năng & Sửa bug (Fullstack)
+- **File**: `BE/src/controllers/members.controller.js`, `FE/assets/js/pt-portal.js`, `FE/assets/js/member-portal.js`
+- **Mô tả**:
+  1. Thêm lắng nghe Socket.IO `notification:personal` với `payload.loai === 'chat_pt_me'` để tự động reload và render lại cuộc trò chuyện realtime mà không cần tải lại trang trên cả Web PT và Web Hội viên.
+  2. Sửa lỗi icon thông báo hiển thị chữ "undefined" bằng cách gán fallback icon mặc định (`n.icon || 'notifications'`) tại Web, đồng thời sửa logic kiểm tra `un.loai` tránh lỗi crash Backend khi `loai` bị null.
+- **Kết quả**: Thành công
+
 ### [29/06/2026 10:37] — Tối ưu hóa dropdown thông báo trên mobile cho tất cả portal
+
 - **Loại**: Chỉnh sửa UI/UX Responsive
 - **File**: `FE/assets/css/main.css`
 - **Mô tả**: Cập nhật media query trong `main.css` để áp dụng cấu hình vị trí `fixed`, tự động giãn rộng theo màn hình (`width: calc(100vw - 32px)`) cho cả 3 dropdown thông báo: Admin (`#notif-dropdown`), HLV (`#pt-notif-dropdown`) và Hội viên (`#member-notif-dropdown`) khi xem trên điện thoại.

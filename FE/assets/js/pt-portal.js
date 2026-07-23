@@ -63,6 +63,14 @@
         // Hiển thị toast thông báo
         window.GymApp.toast(payload.noi_dung || payload.tieu_de || 'Thông báo mới!', payload.muc_do || 'info');
 
+        // Nếu đang ở trang chat 'pt-me' và có tin nhắn chat mới, reload và render lại
+        if (window.GymApp.currentPage === 'pt-me' && payload.loai === 'chat_pt_me') {
+          const ptMePage = pages['pt-me'];
+          if (ptMePage && typeof ptMePage.init === 'function') {
+            ptMePage.init();
+          }
+        }
+
         // Reload dữ liệu âm thầm
         _fetchData().then(() => {
           if (window.GymApp.currentPage === 'dashboard') {
@@ -167,7 +175,7 @@
           margin-bottom:6px;background:${s.bg};border:1px solid ${s.border};
           border-radius:8px;padding:10px 12px;display:flex;align-items:flex-start;gap:10px;
         ">
-          <span class="material-symbols-outlined" style="color:${s.icon_color};font-size:18px;flex-shrink:0;margin-top:1px;font-variation-settings:'FILL' 1">${n.icon}</span>
+          <span class="material-symbols-outlined" style="color:${s.icon_color};font-size:18px;flex-shrink:0;margin-top:1px;font-variation-settings:'FILL' 1">${n.icon || 'notifications'}</span>
           <div style="flex:1;min-width:0;cursor:pointer" class="pt-notif-body">
             <p style="font-weight:700;font-size:12px;color:${s.text_color};margin:0 0 2px">${n.tieu_de}</p>
             <p style="font-size:11px;color:${s.text_color};opacity:0.85;margin:0;line-height:1.5">${n.noi_dung}</p>
